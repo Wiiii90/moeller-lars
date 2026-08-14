@@ -24,6 +24,10 @@ Replace the public Lars Möller website while replacing its administration and o
 5. Media: deduplicated original asset, generated derivatives, ALT text, copyright/credit, and safe deletion checks.
 6. Statistics: visits, landing pages, referrers, device category, and top content, without storing unnecessary personal data.
 
+## Cost constraint
+
+Additional software, licence, plugin, and SaaS cost must be 0 EUR. Server and hosting cost is allowed, but must be minimized, documented, and justified against reliability, TLS, backup, analytics, and maintenance requirements.
+
 ## Explicit exclusions for the first release
 
 - No general-purpose website builder or free-form layout editor.
@@ -42,4 +46,5 @@ The new site passes a route/content comparison against the live reference, relia
 - Admin tests cover authentication, authorization, drafts, publication state, separate exhibitions/CV editing, and the blog-disabled default.
 - Migration tests reconcile record counts, original-media checksums, required fields, and representative rendered content.
 - Deployment tests cover HTTPS, HTTP redirect, backup/restore, rollback, and a staging-to-production rehearsal.
-- Analytics tests confirm Matomo collection and dashboard visibility without introducing a paid service or storing unnecessary raw identifiers.
+- Analytics tests confirm Matomo collection and dashboard visibility without introducing a paid service or storing unnecessary raw identifiers. They also cover traffic sources, geography, devices, content interaction, and separate bot/operational metrics.
+- The chosen deployment documents all recurring costs and demonstrates that additional software, licence, plugin, and SaaS cost remains 0 EUR.
