@@ -1,0 +1,26 @@
+# Secrets and local runtime configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# Dependencies and build output
+node_modules/
+vendor/
+dist/
+build/
+.cache/
+
+# Logs and local tooling
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Runtime media and database backups must be stored outside Git.
+storage/
+uploads/
+backups/
