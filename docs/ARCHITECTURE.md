@@ -8,7 +8,7 @@ Whatever stack is selected must implement the following boundaries.
 
 ## Cost constraint
 
-Additional software, licence, plugin, and SaaS cost must be 0 EUR. Server and hosting cost is allowed, but must be minimized and justified. Architecture decisions must therefore prefer capabilities that can be self-hosted or are already available in the chosen hosting environment, without turning that preference into a premature framework selection.
+Avoid mandatory paid third-party services and commercial runtime dependencies. Prefer self-hosted or open-source components where practical. Server and hosting cost is allowed, but must be minimized and justified. Architecture decisions should therefore prefer capabilities that can be self-hosted or are already available in the chosen hosting environment, without turning that preference into a premature framework selection.
 
 ```text
 Public pages (legacy-informed templates)
@@ -48,11 +48,11 @@ Exhibitions and CV entries remain separate entities and separate admin workflows
 
 ## Analytics ownership and operations
 
-Self-hosted Matomo Community/Core is the source of truth for human visitor analytics, with zero licence or SaaS cost. It must cover traffic sources/referrers, geography, devices, page and artwork visits, and meaningful content interaction. Do not duplicate Matomo human analytics in the editorial database. Local `daily_metric`/operational storage may contain lightweight bot, error, performance, and deployment aggregates, plus optionally cached summaries for dashboard convenience; it must not become a parallel human-analytics warehouse. Separate bot and operational metrics from human visitor metrics in the admin presentation.
+Self-hosted Matomo Community/Core is the source of truth for human visitor analytics. It must cover traffic sources/referrers, geography, devices, page and artwork visits, and meaningful content interaction. Do not duplicate Matomo human analytics in the editorial database. Local `daily_metric`/operational storage may contain lightweight bot, error, performance, and deployment aggregates, plus optionally cached summaries for dashboard convenience; it must not become a parallel human-analytics warehouse. Separate bot and operational metrics from human visitor metrics in the admin presentation.
 
 Matomo/API/log-parser failure must never affect public rendering or normal admin functionality. Analytics collection and dashboard reads are asynchronous or failure-tolerant, and the public application must have a clear degraded mode. Logical separation from the public application is required; a separate physical server is not required.
 
-The Matomo deployment must document storage, updates, backups, access control, retention, and its zero-cost operation. Do not add paid analytics plugins or services. Do not retain full IP addresses or raw user-agent strings in the editorial database; confirm the final Matomo configuration against applicable privacy requirements before production.
+The Matomo deployment must document storage, updates, backups, access control, retention, and its operational cost. Do not make a commercial analytics plugin or SaaS service mandatory. Do not retain full IP addresses or raw user-agent strings in the editorial database; confirm the final Matomo configuration against applicable privacy requirements before production.
 
 Production operations are part of this architecture: server/runtime selection, hosting cost, TLS certificates and renewal, deployment automation, secrets, monitoring, encrypted backups, restore testing, rollback, and a possible server replacement must be designed and tested alongside the application.
 
@@ -62,9 +62,9 @@ Production operations are part of this architecture: server/runtime selection, h
 - Public templates can render the migrated content without depending on the legacy schema.
 - The admin boundary is independently authenticated and authorized; no public route can mutate editorial data.
 - Blog visibility is tested as a separate feature flag: disabled by default, invisible publicly, and enabled only by an explicit artist action.
-- Matomo is deployable and testable in the selected hosting model without a paid plugin or SaaS dependency and is the source of truth for human analytics.
+- Matomo is deployable and testable in the selected hosting model without a mandatory commercial plugin or SaaS dependency and is the source of truth for human analytics.
 - Analytics failure is tested as isolated from public rendering and normal admin workflows; operational aggregates remain distinguishable from Matomo data.
 - Analytics acceptance covers traffic sources, geography, devices, content interaction, and separate bot/error/performance metrics without exposing unnecessary raw identifiers.
 - Logical separation of analytics from the public application is demonstrated; physical server separation is not required.
 - A staging deployment proves TLS, backup/restore, rollback, and the chosen deployment process before production cutover.
-- A cost review confirms 0 EUR for additional software, licences, plugins, and SaaS, with minimized and justified server/hosting cost.
+- A cost review confirms that mandatory commercial runtime dependencies are avoided where practical, with minimized and justified server/hosting cost.

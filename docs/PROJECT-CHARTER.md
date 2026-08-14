@@ -26,14 +26,14 @@ Replace the public Lars Möller website while replacing its administration and o
 
 ## Cost constraint
 
-Additional software, licence, plugin, and SaaS cost must be 0 EUR. Server and hosting cost is allowed, but must be minimized, documented, and justified against reliability, TLS, backup, analytics, and maintenance requirements.
+Avoid mandatory paid third-party services and commercial runtime dependencies. Prefer self-hosted or open-source components where practical. Recurring hosting and operational cost is allowed, but must be minimized, documented, and justified against reliability, TLS, backup, analytics, and maintenance requirements.
 
 ## Explicit exclusions for the first release
 
 - No general-purpose website builder or free-form layout editor.
 - No public registration, customer accounts, marketplace, or social feed.
 - No migration of legacy authentication or database credentials.
-- No paid analytics plugin or SaaS service; the analytics target is self-hosted Matomo Community/Core with zero licence/SaaS cost.
+- No mandatory commercial analytics plugin or SaaS service; the analytics target is self-hosted Matomo Community/Core.
 
 ## Definition of done
 
@@ -47,4 +47,4 @@ The new site passes a route/content comparison against the live reference, relia
 - Migration tests reconcile record counts, original-media checksums, required fields, and representative rendered content.
 - Deployment tests cover HTTPS, HTTP redirect, backup/restore, rollback, and a staging-to-production rehearsal.
 - Analytics tests confirm Matomo collection and dashboard visibility without introducing a paid service or storing unnecessary raw identifiers. They also cover traffic sources, geography, devices, content interaction, and separate bot/operational metrics.
-- The chosen deployment documents all recurring costs and demonstrates that additional software, licence, plugin, and SaaS cost remains 0 EUR.
+- The chosen deployment documents recurring costs, avoids mandatory commercial runtime dependencies, and demonstrates practical use of self-hosted/open-source components.

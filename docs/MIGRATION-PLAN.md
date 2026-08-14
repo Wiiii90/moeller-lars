@@ -6,7 +6,7 @@
 2. Export the legacy database and media only into encrypted, access-controlled backup storage; do not commit either to Git.
 3. Rotate any legacy credentials that have appeared in source control before creating a public archival repository.
 4. Inspect the live server's runtime, DNS, TLS, hosting cost, deployment hook, backup mechanism, and replacement options without changing production.
-5. Record the cost baseline and reject any additional software, licence, plugin, or SaaS dependency with a non-zero EUR cost; server/hosting options remain allowed only when minimized and justified.
+5. Record the cost baseline, avoid mandatory paid third-party services and commercial runtime dependencies, and prefer self-hosted/open-source components where practical; server/hosting options remain allowed only when minimized and justified.
 
 ## 1. Characterise the visitor experience
 
@@ -33,7 +33,7 @@ No writable admin slice may precede or bypass the secure admin/authentication/se
 
 ## 4. Staging and cutover
 
-Deploy the selected application under a staging hostname with TLS. Import a fresh content copy, deploy and validate self-hosted Matomo and its logical separation, rehearse backup/restore and rollback, obtain editorial sign-off, back up production, lower DNS TTL in advance, then switch traffic. Keep the old deployment intact for a defined rollback window. If the current server cannot satisfy the runtime, TLS, backup, cost, or deployment requirements, evaluate and document a server replacement before cutover. Confirm that additional software, licence, plugin, and SaaS cost is 0 EUR and that server/hosting spend is minimized and justified.
+Deploy the selected application under a staging hostname with TLS. Import a fresh content copy, deploy and validate self-hosted Matomo and its logical separation, rehearse backup/restore and rollback, obtain editorial sign-off, back up production, lower DNS TTL in advance, then switch traffic. Keep the old deployment intact for a defined rollback window. If the current server cannot satisfy the runtime, TLS, backup, cost, or deployment requirements, evaluate and document a server replacement before cutover. Confirm that mandatory commercial runtime dependencies are avoided where practical and that server/hosting spend is minimized and justified.
 
 ## Migration acceptance checklist
 
@@ -45,7 +45,7 @@ Deploy the selected application under a staging hostname with TLS. Import a fres
 - Staging proves HTTPS, deployment, Matomo operation, isolated analytics failure, backups, restore, rollback, and monitoring before production is changed.
 - Analytics acceptance covers traffic sources, geography, devices, content interaction, and separate bot/error/performance/operational metrics without unnecessary raw identifiers.
 - The secure admin/authentication/session foundation is proven before any writable artwork, media, CV, exhibition, or blog slice is accepted.
-- Cost reconciliation proves 0 EUR for additional software, licences, plugins, and SaaS, with minimized and justified server/hosting cost.
+- Cost reconciliation documents recurring dependencies, confirms practical use of self-hosted/open-source components, and shows minimized and justified server/hosting cost.
 
 ## Source use policy
 
