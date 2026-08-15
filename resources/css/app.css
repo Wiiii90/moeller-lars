@@ -1,0 +1,47 @@
+:root {
+    color-scheme: light;
+    font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+    background: #777;
+    color: #111;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    background: #777;
+}
+
+.site-header {
+    width: min(920px, 100%);
+    margin: 0 auto;
+    padding: 2rem 1.5rem 1rem;
+}
+
+.site-title {
+    color: #fff;
+    font-size: 1.8rem;
+    letter-spacing: .18em;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+#content {
+    width: min(920px, 100%);
+    min-height: 60vh;
+    margin: 0 auto;
+    background: #fff;
+}
+
+@media (max-width: 550px) {
+    .site-header {
+        padding-inline: 1rem;
+    }
+
+    .site-title {
+        font-size: 1.35rem;
+    }
+}
