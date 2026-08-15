@@ -18,15 +18,41 @@ body {
 .site-header {
     width: min(920px, 100%);
     margin: 0 auto;
-    padding: 2rem 1.5rem 1rem;
+    padding: 3.75rem 1.5rem 0;
+}
+
+.site-header h1 {
+    margin: 0 0 1.4rem;
+    padding-bottom: .65rem;
+    border-bottom: 2px solid #dedede;
+    font-size: 1.78rem;
+    font-weight: 400;
+    letter-spacing: .18em;
+    text-transform: uppercase;
 }
 
 .site-title {
     color: #fff;
-    font-size: 1.8rem;
-    letter-spacing: .18em;
+    color: #fff;
+}
+
+.site-header nav {
+    display: flex;
+    gap: 0;
+    border: 1px solid #444;
+    background: #fff;
+}
+
+.site-header nav a {
+    padding: .55rem .65rem;
+    color: #555;
+    font-size: .92rem;
     text-decoration: none;
     text-transform: uppercase;
+}
+
+.site-header nav a:hover {
+    color: #999;
 }
 
 #content {
@@ -36,6 +62,60 @@ body {
     background: #fff;
 }
 
+.site-content {
+    padding: 1.25rem 5%;
+    border: 1px solid #333;
+}
+
+.artwork-list {
+    display: grid;
+    gap: 6rem;
+}
+
+.artwork-card, .artwork-detail {
+    margin: 0 auto;
+    width: min(75%, 650px);
+}
+
+.artwork-card a {
+    color: #454545;
+    text-decoration: none;
+}
+
+.artwork-card img, .artwork-detail img {
+    display: block;
+    width: 100%;
+    height: auto;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+}
+
+.artwork-card figcaption, .artwork-detail__metadata {
+    margin-top: .7rem;
+    line-height: 1.35;
+}
+
+.artwork-card p, .artwork-detail p {
+    margin: .25rem 0;
+}
+
+.missing-media {
+    display: grid;
+    min-height: 12rem;
+    place-items: center;
+    border: 1px solid #aaa;
+    background: #eee;
+    color: #666;
+}
+
+.category-heading {
+    margin: 0 0 2rem;
+    color: #929292;
+    font-size: 1.45rem;
+    font-weight: 300;
+    text-align: center;
+    text-transform: uppercase;
+}
+
 @media (max-width: 550px) {
     .site-header {
         padding-inline: 1rem;
@@ -43,5 +123,13 @@ body {
 
     .site-title {
         font-size: 1.35rem;
+    }
+
+    .site-header nav {
+        flex-wrap: wrap;
+    }
+
+    .artwork-card, .artwork-detail {
+        width: 100%;
     }
 }

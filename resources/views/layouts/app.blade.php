@@ -11,9 +11,15 @@
     </head>
     <body>
         <header class="site-header">
-            <a href="{{ route('home') }}" class="site-title">Lars Möller</a>
+            <h1><a href="{{ route('home') }}" class="site-title">Lars Möller</a></h1>
+            <nav aria-label="Main navigation">
+                <a href="{{ route('artworks.paintings') }}">Paintings</a>
+                <a href="{{ route('artworks.prints') }}">Prints</a>
+                <a href="{{ route('artworks.drawings') }}">Drawings</a>
+                <a href="/cv">CV &amp; Exhibitions</a>
+            </nav>
         </header>
-        <main id="content">
+        <main id="content" class="site-content">
             @yield('content')
         </main>
     </body>
