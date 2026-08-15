@@ -38,14 +38,19 @@ implement migrations, or prescribe a production PostgreSQL version or topology.
 
 ## artwork_category
 
-Purpose: normalized replacement for legacy paintings, drawings, and prints. It
-is justified because categories have public routes, labels, ordering, and
-editorial meaning; it is not a generic taxonomy system.
+Purpose: normalized replacement for the finite public artwork category set
+(paintings, prints, drawings, cyanotype, bichromate, litho, photo, ignis, and
+other). It is justified because categories have public routes, labels,
+ordering, and editorial meaning; it is not a generic taxonomy system. The
+table remains extensible for an additional reviewed category without a schema
+change; migration/editorial reconciliation owns category population and
+mapping.
 
 Required fields:
 - id bigint primary key
-- slug varchar(80), stable and unique; initially paintings, drawings, prints
-  unless editorial review approves different public slugs
+- slug varchar(80), stable and unique; supported public slugs include
+  paintings, prints, drawings, cyanotype, bichromate, litho, photo, ignis, and
+  other. No category records are seeded by this schema task.
 - name varchar(160)
 - state: published or hidden
 - position integer, default 0, check position >= 0

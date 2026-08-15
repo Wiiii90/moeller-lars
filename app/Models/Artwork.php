@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Guarded;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+#[Fillable(['artwork_category_id', 'slug', 'title', 'medium', 'dimensions', 'description', 'state', 'position', 'legacy_date_raw', 'work_date', 'date_precision', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Guarded(['id'])]
+class Artwork extends Model
+{
+    use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'work_date' => 'date',
+            'migrated_at' => 'datetime',
+            'published_at' => 'datetime',
+        ];
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ArtworkCategory::class, 'artwork_category_id');
+    }
+
+    public function artworkMedia(): HasMany
+    {
+        return $this->hasMany(ArtworkMedia::class);
+    }
+
+    public function mediaAssets(): BelongsToMany
+    {
+        return $this->belongsToMany(MediaAsset::class, 'artwork_media')
+            ->withPivot(['role', 'position', 'alt_text_override'])
+            ->withTimestamps();
+    }
+}
