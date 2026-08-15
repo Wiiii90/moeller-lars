@@ -15,5 +15,5 @@
 
 ## moeller-lars: target
 
-- Contains only target documentation and later clean implementation.
+- Clean Laravel/PostgreSQL target implementation, tests, and target documentation now live here.
 - No legacy source, data dump, production image archive, or production configuration is copied here.

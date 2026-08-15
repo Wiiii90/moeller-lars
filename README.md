@@ -16,7 +16,7 @@ This repository is the future production codebase. It deliberately contains no c
 | --- | --- | --- |
 | `larsmoeller` | visual/behavioural reference, content inventory, deployment evidence | authentication, configuration, direct SQL/PHP admin code |
 | `glassygallery` | ideas for media handling, structured data, role concepts, and CI/CD | visual site builder, unfinished admin shell, current authorization/API implementation |
-| `moeller-lars` | clean target for implementation, tests, staging, and final deployment | — |
+| `moeller-lars` | clean target for implementation, tests, temporary release validation, and final deployment | — |
 
 ## Start here
 
@@ -24,7 +24,6 @@ This repository is the future production codebase. It deliberately contains no c
 - [Target architecture](docs/ARCHITECTURE.md)
 - [Migration plan](docs/MIGRATION-PLAN.md)
 - [Source inventory](docs/SOURCE-INVENTORY.md)
-- [Sol handoff prompt](docs/SOL-HANDOFF.md)
 
 ## Security rule
 
