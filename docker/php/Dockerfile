@@ -16,14 +16,19 @@ RUN apt-get update \
         git \
         libcurl4-openssl-dev \
         libicu-dev \
+        libjpeg62-turbo-dev \
         libonig-dev \
+        libpng-dev \
         libpq-dev \
+        libwebp-dev \
         libxml2-dev \
         libzip-dev \
         unzip \
+    && docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" \
         bcmath \
         curl \
+        gd \
         intl \
         mbstring \
         pcntl \

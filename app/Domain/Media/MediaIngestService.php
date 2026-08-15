@@ -1,0 +1,262 @@
+<?php
+
+namespace App\Domain\Media;
+
+use App\Models\MediaAsset;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Throwable;
+
+class MediaIngestService
+{
+    public const MAX_BYTES = 20 * 1024 * 1024;
+
+    public const MAX_PIXELS = 40_000_000;
+
+    public const THUMBNAIL_MAX_EDGE = 960;
+
+    public const THUMBNAIL_KIND = 'thumbnail';
+
+    public const TRANSFORM_PROFILE = 'public-v1';
+
+    /**
+     * @var array<string, string>
+     */
+    private const MIME_EXTENSIONS = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
+
+    public function ingest(UploadedFile $upload): MediaAsset
+    {
+        $originalImage = null;
+        $thumbnailImage = null;
+
+        try {
+            [$mime, $width, $height, $originalBytes, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight] = $this->prepare($upload, $originalImage, $thumbnailImage);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw $this->validationFailure('The uploaded media could not be processed.', $exception);
+        }
+
+        try {
+            $disk = Storage::disk(config('media.disk'));
+            $uuid = (string) Str::uuid();
+            $originalKey = 'originals/'.$uuid.'.'.self::MIME_EXTENSIONS[$mime];
+            $thumbnailKey = 'variants/'.$uuid.'-'.self::THUMBNAIL_KIND.'.webp';
+
+            if ($disk->exists($originalKey) || $disk->exists($thumbnailKey)) {
+                throw new \RuntimeException('Generated media storage key already exists.');
+            }
+
+            try {
+                if (! $disk->put($originalKey, $originalBytes)) {
+                    throw new \RuntimeException('Unable to write canonical media.');
+                }
+
+                if (! $disk->put($thumbnailKey, $thumbnailBytes)) {
+                    throw new \RuntimeException('Unable to write media thumbnail.');
+                }
+
+                return DB::transaction(function () use ($originalKey, $upload, $mime, $originalBytes, $width, $height, $thumbnailKey, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight): MediaAsset {
+                    $asset = new MediaAsset;
+                    $asset->fill([
+                        'storage_key' => $originalKey,
+                        'original_filename' => $this->basename($upload->getClientOriginalName()),
+                        'mime_type' => $mime,
+                        'byte_size' => strlen($originalBytes),
+                        'sha256' => hash('sha256', $originalBytes),
+                        'state' => 'available',
+                        'width' => $width,
+                        'height' => $height,
+                    ]);
+                    $asset->save();
+
+                    $asset->variants()->create([
+                        'variant_kind' => self::THUMBNAIL_KIND,
+                        'storage_key' => $thumbnailKey,
+                        'mime_type' => 'image/webp',
+                        'byte_size' => strlen($thumbnailBytes),
+                        'sha256' => hash('sha256', $thumbnailBytes),
+                        'transform_profile' => self::TRANSFORM_PROFILE,
+                        'state' => 'available',
+                        'width' => $thumbnailWidth,
+                        'height' => $thumbnailHeight,
+                    ]);
+
+                    return $asset;
+                });
+            } catch (Throwable $exception) {
+                $this->deleteBestEffort($disk, $originalKey, $thumbnailKey);
+
+                throw $exception;
+            }
+        } catch (Throwable $exception) {
+            throw $exception;
+        } finally {
+            $this->destroyImage($originalImage);
+            $this->destroyImage($thumbnailImage);
+        }
+    }
+
+    /** @return array{string, int, int, string, string, int, int} */
+    private function prepare(UploadedFile $upload, mixed &$originalImage, mixed &$thumbnailImage): array
+    {
+        if (! $upload->isValid()) {
+            throw $this->validationFailure('The upload was not successful.');
+        }
+
+        $size = $upload->getSize();
+        if (! is_int($size) || $size <= 0 || $size > self::MAX_BYTES) {
+            throw $this->validationFailure('The uploaded media has an invalid size.');
+        }
+
+        $path = $upload->getRealPath();
+        $bytes = is_string($path) ? @file_get_contents($path) : false;
+        if (! is_string($bytes) || strlen($bytes) !== $size) {
+            throw $this->validationFailure('The uploaded media could not be read completely.');
+        }
+
+        $mime = $this->detectMime($bytes);
+        if (! isset(self::MIME_EXTENSIONS[$mime])) {
+            throw $this->validationFailure('The uploaded media type is not allowed.');
+        }
+
+        $dimensions = @getimagesizefromstring($bytes);
+        if ($dimensions === false) {
+            throw $this->validationFailure('The uploaded media is not a valid image.');
+        }
+
+        $width = $dimensions[0];
+        $height = $dimensions[1];
+        if ($width <= 0 || $height <= 0 || ($width * $height) > self::MAX_PIXELS) {
+            throw $this->validationFailure('The uploaded image dimensions are not allowed.');
+        }
+
+        $originalImage = @imagecreatefromstring($bytes);
+        if (! $originalImage instanceof \GdImage) {
+            throw $this->validationFailure('The uploaded image could not be decoded.');
+        }
+
+        $originalQuality = match ($mime) {
+            'image/jpeg', 'image/webp' => 90,
+            'image/png' => 6,
+        };
+        $originalBytes = $this->encode($originalImage, $mime, $originalQuality);
+        $thumbnailImage = $this->makeThumbnail($originalImage, $width, $height);
+        $thumbnailWidth = imagesx($thumbnailImage);
+        $thumbnailHeight = imagesy($thumbnailImage);
+        $thumbnailBytes = $this->encode($thumbnailImage, 'image/webp', 85);
+
+        return [$mime, $width, $height, $originalBytes, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight];
+    }
+
+    private function detectMime(string $bytes): string
+    {
+        $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
+        if ($fileInfo === false) {
+            throw $this->validationFailure('The uploaded media type could not be detected.');
+        }
+
+        try {
+            $mime = finfo_buffer($fileInfo, $bytes);
+        } finally {
+            finfo_close($fileInfo);
+        }
+
+        if (! is_string($mime)) {
+            throw $this->validationFailure('The uploaded media type could not be detected.');
+        }
+
+        return $mime;
+    }
+
+    private function encode(\GdImage $image, string $mime, int $quality): string
+    {
+        $this->configureAlpha($image, $mime);
+        ob_start();
+
+        try {
+            $encoded = match ($mime) {
+                'image/jpeg' => imagejpeg($image, null, $quality),
+                'image/png' => imagepng($image, null, $quality),
+                'image/webp' => imagewebp($image, null, $quality),
+                default => false,
+            };
+            $bytes = ob_get_clean();
+        } catch (Throwable $exception) {
+            ob_end_clean();
+            throw $exception;
+        }
+
+        if ($encoded !== true || ! is_string($bytes) || $bytes === '') {
+            throw $this->validationFailure('The uploaded image could not be encoded.');
+        }
+
+        return $bytes;
+    }
+
+    private function makeThumbnail(\GdImage $image, int $width, int $height): \GdImage
+    {
+        $scale = min(1, self::THUMBNAIL_MAX_EDGE / max($width, $height));
+        $thumbnailWidth = max(1, (int) round($width * $scale));
+        $thumbnailHeight = max(1, (int) round($height * $scale));
+        $thumbnail = imagecreatetruecolor($thumbnailWidth, $thumbnailHeight);
+        if (! $thumbnail instanceof \GdImage) {
+            throw $this->validationFailure('The thumbnail could not be created.');
+        }
+
+        $this->configureAlpha($thumbnail, 'image/webp');
+        if (! imagecopyresampled($thumbnail, $image, 0, 0, 0, 0, $thumbnailWidth, $thumbnailHeight, $width, $height)) {
+            imagedestroy($thumbnail);
+            throw $this->validationFailure('The thumbnail could not be created.');
+        }
+
+        return $thumbnail;
+    }
+
+    private function configureAlpha(\GdImage $image, string $mime): void
+    {
+        if ($mime === 'image/jpeg') {
+            return;
+        }
+
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+    }
+
+    private function basename(string $filename): string
+    {
+        return basename(str_replace('\\', '/', $filename));
+    }
+
+    private function deleteBestEffort(mixed $disk, string $originalKey, string $thumbnailKey): void
+    {
+        foreach ([$originalKey, $thumbnailKey] as $key) {
+            try {
+                $disk->delete($key);
+            } catch (Throwable) {
+                // Cleanup is best effort and must not mask the original exception.
+            }
+        }
+    }
+
+    private function destroyImage(mixed &$image): void
+    {
+        if ($image instanceof \GdImage) {
+            imagedestroy($image);
+        }
+
+        $image = null;
+    }
+
+    private function validationFailure(string $message, ?Throwable $previous = null): ValidationException
+    {
+        return ValidationException::withMessages(['media' => $message]);
+    }
+}
