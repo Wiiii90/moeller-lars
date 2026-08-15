@@ -83,11 +83,14 @@ implementation.
 - The home page combines paintings, drawings, and prints and selects the
   newest record by date descending, matching the verified legacy landing query.
   It does not silently broaden the home query to the other subcategory routes.
-- Same-date ordering is undefined by the legacy SQL. During migration
-  reconciliation, the target must choose and record a deterministic tie-breaker
-  and retain the original date. The eventual editorial ordering must use an
-  explicit position for same-date records rather than relying on database
-  insertion order or an implicit ID order.
+- Same-date ordering is undefined by the legacy SQL. Migration reconciliation
+  establishes an explicit target `position` from the approved and reconciled
+  legacy display or export ordering wherever authoritative ordering can be
+  established, while retaining the original date. The process must never
+  silently substitute source ID, target ID, insertion order, or database order.
+  If authoritative same-date ordering cannot be established, an explicit
+  migration/editorial exception must be recorded for review. Runtime/public
+  ordering uses the resulting explicit position semantics.
 - The migration/reconciliation fixture must compare category counts, complete
   ordered result sets, same-date groups, and the home-page winner.
 - Only published content is public. Draft/unpublished content is absent from
