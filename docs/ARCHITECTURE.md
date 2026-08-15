@@ -1,14 +1,16 @@
 # Target architecture
 
-## Technology decision gate
+## Selected application stack
 
-No application framework or language is selected yet. The choice remains open until the production server/runtime, hosting constraints, TLS and deployment path, backup/restore options, database support, maintenance burden, and explicit architecture trade-offs have been investigated. Laravel, Filament, Node, and other stacks are candidates only; none is a project requirement at this stage.
+The application technology decision is recorded in [ADR-0001: Application stack](adr/ADR-0001-APPLICATION-STACK.md): a Laravel 13/PHP 8.3+ modular monolith with Blade public rendering, custom CSS/targeted vanilla JavaScript, Filament 5 for `/admin`, Eloquent, PostgreSQL, and Pest. The public site is not a SPA; Livewire is limited to admin/Filament use where appropriate.
 
-Whatever stack is selected must implement the following boundaries.
+The ADR selects application technology only. Deployment/platform items remain open: exact PostgreSQL production version, Docker/Compose, container topology, common ingress, exact OS migration path, CI/CD, recurring backup implementation, monitoring, and Matomo deployment topology.
+
+The selected application must implement the following boundaries.
 
 ## Cost constraint
 
-Avoid mandatory paid third-party services and commercial runtime dependencies. Prefer self-hosted or open-source components where practical. Server and hosting cost is allowed, but must be minimized and justified. Architecture decisions should therefore prefer capabilities that can be self-hosted or are already available in the chosen hosting environment, without turning that preference into a premature framework selection.
+Avoid mandatory paid third-party services and commercial runtime dependencies. Prefer self-hosted or open-source components where practical. Server and hosting cost is allowed, but must be minimized and justified. Deployment/platform decisions should therefore prefer capabilities that can be self-hosted or are already available in the chosen hosting environment, without changing the selected application stack without a separate architecture decision.
 
 ```text
 Public pages (legacy-informed templates)
