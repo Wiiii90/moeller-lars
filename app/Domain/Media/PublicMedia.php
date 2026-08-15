@@ -14,6 +14,33 @@ class PublicMedia
 
     public const PUBLIC_TRANSFORM_PROFILE = 'public-v1';
 
+    public function isPublicAsset(MediaAsset $asset): bool
+    {
+        if ($asset->getAttribute('state') !== 'available') {
+            return false;
+        }
+
+        return ArtworkMedia::query()
+            ->where('media_asset_id', $asset->getKey())
+            ->where('role', 'primary')
+            ->whereHas('artwork', fn ($query) => $query
+                ->where('state', 'published')
+                ->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('state', 'published')))
+            ->exists();
+    }
+
+    public function isPublicVariant(MediaVariant $variant): bool
+    {
+        if ($variant->getAttribute('state') !== 'available') {
+            return false;
+        }
+
+        /** @var MediaAsset|null $asset */
+        $asset = $variant->getRelationValue('mediaAsset');
+
+        return $asset !== null && $this->isPublicAsset($asset);
+    }
+
     public function primaryMedia(Artwork $artwork): ?ArtworkMedia
     {
         /** @var Collection<int, ArtworkMedia> $mediaRows */

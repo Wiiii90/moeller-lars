@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Media\PublicMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Illuminate\Support\Facades\Storage;
@@ -9,9 +10,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PublicMediaController extends Controller
 {
+    public function __construct(private readonly PublicMedia $publicMedia) {}
+
     public function original(MediaAsset $mediaAsset): StreamedResponse
     {
-        abort_unless($mediaAsset->getAttribute('state') === 'available', 404);
+        abort_unless($this->publicMedia->isPublicAsset($mediaAsset), 404);
 
         $disk = Storage::disk(config('media.disk'));
         abort_unless($disk->exists($mediaAsset->getAttribute('storage_key')), 404);
@@ -21,10 +24,7 @@ class PublicMediaController extends Controller
 
     public function variant(MediaVariant $mediaVariant): StreamedResponse
     {
-        abort_unless($mediaVariant->getAttribute('state') === 'available', 404);
-        /** @var MediaAsset $mediaAsset */
-        $mediaAsset = $mediaVariant->getRelationValue('mediaAsset');
-        abort_unless($mediaAsset->getAttribute('state') === 'available', 404);
+        abort_unless($this->publicMedia->isPublicVariant($mediaVariant), 404);
 
         $disk = Storage::disk(config('media.disk'));
         abort_unless($disk->exists($mediaVariant->getAttribute('storage_key')), 404);
