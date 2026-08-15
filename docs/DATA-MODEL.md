@@ -31,6 +31,7 @@ implement migrations, or prescribe a production PostgreSQL version or topology.
   media asset when published.
 - media_asset has many media_variant derivative rows.
 - exhibition optionally references one hero media asset.
+- cv_entry optionally references one image media asset.
 - blog_post optionally references one cover media asset.
 - blog_settings is a singleton independent of blog_post state.
 - audit_event optionally records an admin_user actor.
@@ -233,6 +234,7 @@ Required fields:
 - created_at, updated_at
 
 Nullable fields:
+- kind varchar(32), exactly solo or group when present
 - venue varchar(240)
 - city varchar(160)
 - country varchar(160)
@@ -254,6 +256,11 @@ Indexes and deletion:
 - hero media deletion is restricted
 - normally archive; hard deletion requires an editorial decision
 
+Temporal state is derived at read time, never persisted: a future starts_on is
+upcoming; a date on or between starts_on and ends_on is current; an exhibition
+with only starts_on is current on that date and past afterwards; an end before
+the requested date is past; insufficient date information is unknown.
+
 ## cv_entry
 
 Purpose: one structured CV entry from the legacy Vita source or new editorial
@@ -273,6 +280,8 @@ Nullable fields:
 - organisation varchar(240)
 - location varchar(240)
 - body text, sanitized if rich text is allowed
+- external_url varchar(2048), HTTPS only
+- image_media_asset_id bigint foreign key to media_asset.id
 - year_text varchar(80)
 - starts_on date, ends_on date, only when semantics are confirmed
 - legacy_id bigint
@@ -287,6 +296,7 @@ Indexes and deletion:
 - archive rather than delete; retain the legacy vita.txt source as the
   migration reference and do not collapse its exhibition lines into this table
 - txt/vita.txt remains a migration reference and is not discarded
+- image media deletion is restricted
 
 ## blog_post
 
@@ -311,6 +321,13 @@ Nullable fields:
 - legacy_source varchar(160)
 - migration_batch_id varchar(120)
 - migrated_at timestamptz
+
+Preview is authenticated admin preview of non-public content. It does not
+require a persistent preview-token column and does not change public
+eligibility. Blog body is rendered only through the project's constrained,
+sanitized content path shared with later rich-text/editor work; raw untrusted
+HTML is never rendered. Immediate publication uses published state plus
+published_at. Scheduled publication uses scheduled state plus scheduled_at.
 
 Indexes and constraints:
 - unique slug

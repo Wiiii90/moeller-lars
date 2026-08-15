@@ -123,6 +123,7 @@ return new class extends Migration
             $table->string('title', 240);
             $table->string('state', 32)->default('draft');
             $table->integer('position');
+            $table->string('kind', 32)->nullable();
             $table->string('venue', 240)->nullable();
             $table->string('city', 160)->nullable();
             $table->string('country', 160)->nullable();
@@ -155,6 +156,11 @@ return new class extends Migration
             $table->string('organisation', 240)->nullable();
             $table->string('location', 240)->nullable();
             $table->text('body')->nullable();
+            $table->string('external_url', 2048)->nullable();
+            $table->foreignId('image_media_asset_id')
+                ->nullable()
+                ->constrained('media_assets')
+                ->restrictOnDelete();
             $table->string('year_text', 80)->nullable();
             $table->date('starts_on')->nullable();
             $table->date('ends_on')->nullable();
@@ -273,10 +279,12 @@ return new class extends Migration
         DB::statement('ALTER TABLE artwork_media ADD CONSTRAINT artwork_media_position_check CHECK (position >= 0)');
         DB::statement("ALTER TABLE exhibitions ADD CONSTRAINT exhibitions_state_check CHECK (state IN ('draft', 'published', 'hidden', 'archived'))");
         DB::statement('ALTER TABLE exhibitions ADD CONSTRAINT exhibitions_position_check CHECK (position >= 0)');
+        DB::statement("ALTER TABLE exhibitions ADD CONSTRAINT exhibitions_kind_check CHECK (kind IS NULL OR kind IN ('solo', 'group'))");
         DB::statement('ALTER TABLE exhibitions ADD CONSTRAINT exhibitions_dates_check CHECK (ends_on IS NULL OR starts_on IS NULL OR ends_on >= starts_on)');
         DB::statement("ALTER TABLE cv_entries ADD CONSTRAINT cv_entries_state_check CHECK (state IN ('draft', 'published', 'hidden', 'archived'))");
         DB::statement('ALTER TABLE cv_entries ADD CONSTRAINT cv_entries_position_check CHECK (position >= 0)');
         DB::statement("ALTER TABLE cv_entries ADD CONSTRAINT cv_entries_date_precision_check CHECK (date_precision IN ('unknown', 'year', 'month', 'day'))");
+        DB::statement("ALTER TABLE cv_entries ADD CONSTRAINT cv_entries_external_url_check CHECK (external_url IS NULL OR external_url LIKE 'https://%')");
         DB::statement("ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_state_check CHECK (state IN ('draft', 'scheduled', 'published', 'unpublished', 'archived'))");
         DB::statement('ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_position_check CHECK (position >= 0)');
         DB::statement("ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_published_check CHECK (state <> 'published' OR (btrim(title) <> '' AND body IS NOT NULL AND btrim(body) <> '' AND published_at IS NOT NULL))");

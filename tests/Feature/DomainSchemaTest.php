@@ -13,6 +13,7 @@ use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\Redirect;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -57,6 +58,9 @@ it('applies the PostgreSQL domain schema with critical columns', function () {
     ]))->toBeTrue();
     expect(Schema::hasColumns('media_assets', [
         'storage_key', 'sha256', 'alt_text', 'legacy_path',
+    ]))->toBeTrue();
+    expect(Schema::hasColumns('cv_entries', [
+        'external_url', 'image_media_asset_id',
     ]))->toBeTrue();
     expect(Schema::hasColumns('audit_events', [
         'admin_user_id', 'action', 'entity_type', 'occurred_at',
@@ -404,6 +408,56 @@ it('keeps CV entries and exhibitions as independent entities', function () {
         ->and($exhibition->getTable())->toBe('exhibitions')
         ->and(Schema::hasTable('cv_entries'))->toBeTrue()
         ->and(Schema::hasTable('exhibitions'))->toBeTrue();
+});
+
+it('connects CV entries to image media through a normal relation', function () {
+    $asset = makeAsset(['storage_key' => 'originals/cv-'.uniqid().'.jpg']);
+    $entry = CvEntry::create([
+        'section' => 'awards',
+        'title' => 'Award',
+        'state' => 'published',
+        'position' => 0,
+        'image_media_asset_id' => $asset->id,
+    ]);
+
+    expect($entry->imageMediaAsset->is($asset))->toBeTrue()
+        ->and($asset->cvEntries->first()->is($entry))->toBeTrue();
+
+    expect(fn () => $asset->delete())->toThrow(QueryException::class);
+});
+
+it('enforces HTTPS CV external URLs', function () {
+    expect(fn () => CvEntry::create([
+        'section' => 'publications',
+        'title' => 'Publication',
+        'state' => 'draft',
+        'position' => 0,
+        'external_url' => 'http://example.com',
+    ]))->toThrow(QueryException::class);
+});
+
+it('enforces exhibition kinds', function () {
+    expect(fn () => Exhibition::create([
+        'slug' => 'invalid-kind',
+        'title' => 'Invalid Kind',
+        'state' => 'draft',
+        'position' => 0,
+        'kind' => 'festival',
+    ]))->toThrow(QueryException::class);
+});
+
+it('derives deterministic exhibition temporal state', function () {
+    $exhibition = new Exhibition(['starts_on' => '2026-08-20', 'ends_on' => '2026-08-25']);
+
+    expect($exhibition->temporalState(CarbonImmutable::parse('2026-08-19')))->toBe('upcoming')
+        ->and($exhibition->temporalState(CarbonImmutable::parse('2026-08-22')))->toBe('current')
+        ->and($exhibition->temporalState(CarbonImmutable::parse('2026-08-26')))->toBe('past')
+        ->and((new Exhibition)->temporalState(CarbonImmutable::parse('2026-08-22')))->toBe('unknown');
+
+    $singleDay = new Exhibition(['starts_on' => '2026-08-20']);
+
+    expect($singleDay->temporalState(CarbonImmutable::parse('2026-08-20')))->toBe('current')
+        ->and($singleDay->temporalState(CarbonImmutable::parse('2026-08-21')))->toBe('past');
 });
 
 it('nulls the audit actor when the canonical user is deleted', function () {
