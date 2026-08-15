@@ -22,7 +22,7 @@ These invariants define what must remain true when legacy content is moved into 
 - Category ordering is date descending.
 - The landing/latest-work query combines all three categories and selects the newest date descending.
 - The stored date controls chronology and displayed year; the exact visitor-visible day is not assumed to be part of the public display.
-- Equal-date ordering is undefined by the legacy queries. The target must choose and document a deterministic tie-breaker (for example source id or migrated stable id) and retain the original date unchanged.
+- Equal-date ordering is undefined by the legacy queries. Migration reconciliation must establish an explicit target `position` from the approved and reconciled legacy display or export ordering wherever authoritative ordering can be established, while retaining the original date unchanged. The process must never silently substitute source ID, target ID, insertion order, or database order. If authoritative same-date ordering cannot be established, record an explicit migration/editorial exception for review. Runtime/public ordering uses the resulting explicit position semantics.
 - Ordering reconciliation must compare the approved legacy result set with the target result set, including equal-date cases and category boundaries.
 
 ## CV/Vita source
