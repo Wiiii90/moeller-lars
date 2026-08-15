@@ -8,14 +8,31 @@ These invariants define what must remain true when legacy content is moved into 
 - Each artwork record contains the factual fields `id`, `filename`, `title`, `date`, `material`, `dimension`, and optional `comment`.
 - The target may normalize categories and fields differently, but every source value must map to a documented target field or an explicit, reviewed exception.
 - The displayed year is derived from `date`; material, dimensions, title, and comment are rendered as content when present.
+- Every source record and every public source-category mapping is explicit and
+  reviewed; this task does not invent mappings for dispatcher-only categories.
+- Reconciliation compares total artwork count, each source-table/category
+  count, and each target-category count. Any unexplained difference is a
+  blocking migration exception, not an accepted normalization.
 
 ## Media and originals
 
 - A source artwork references its original filename in its category media directory and a thumbnail with the same logical filename in the category thumbnail directory.
 - Original media is retained; generated derivatives never replace or become the only copy of an original.
 - Migration records the source path, target asset identity, byte size, media type, and cryptographic checksum for every original and required derivative.
+- Original source filename and path provenance are retained even when target
+  storage keys are generated. Originals remain authoritative.
+- Thumbnail/derivative reconciliation detects both missing and unexpected
+  files, in addition to checksum/byte-size mismatches.
 - Duplicate content is detected by checksum and handled by an explicit deduplication rule that preserves every artwork-to-asset relationship.
 - Unsupported, corrupt, or missing files are quarantined and reported; they are never silently discarded.
+
+## ALT text semantics
+
+- Capture legacy image ALT/title semantics wherever present; the reviewed
+  artwork templates use the artwork title as image ALT.
+- Target ALT preserves meaningful legacy artwork-title semantics while allowing
+  a safe accessibility correction when the source value is empty, misleading,
+  or unsafe. Any unexplained loss or change is a reconciliation finding.
 
 ## Date and ordering semantics
 
@@ -37,7 +54,20 @@ These invariants define what must remain true when legacy content is moved into 
 - Imports are repeatable and idempotent against a clean target database. A failed import can be resumed or rolled back without partial silent loss.
 - Every required source artwork/content record has a target record or a documented exception with reason and owner.
 - Reconciliation compares source/target counts by category and content type, original-media checksums and byte sizes, stable ordering, required-field coverage, and representative rendered text/HTML.
+- Cutover reconciliation verifies every approved legacy-to-canonical redirect
+  listed in `PUBLIC-IMPLEMENTATION-CONTRACT.md`, including status code and
+  target behaviour. Broken or non-public legacy routes (for example the
+  missing `links` and Contact handler paths) remain explicit exclusions rather
+  than being silently redirected.
 - A migration report is retained with import version, source snapshot identity, counts, checksum results, warnings, exceptions, and sign-off.
+
+## Validation and acceptance
+
+- The migration report makes unexplained count, mapping, media, ALT, text,
+  ordering, and redirect differences visible.
+- Validation fails migration acceptance until each difference is resolved or
+  recorded as an explicit exception with reason, owner, and review decision;
+  differences are never silently normalized.
 
 ## Explicit exclusions
 
