@@ -288,6 +288,17 @@ it('enforces published blog post requirements', function (array $attributes) {
     'missing published timestamp' => ['body' => 'Content'],
 ]);
 
+it('rejects a published blog post with a blank title', function () {
+    expect(fn () => BlogPost::create([
+        'slug' => 'blank-published-title',
+        'title' => '   ',
+        'body' => 'Content',
+        'state' => 'published',
+        'position' => 0,
+        'published_at' => now(),
+    ]))->toThrow(QueryException::class);
+});
+
 it('accepts a valid published blog post', function () {
     $post = BlogPost::create([
         'slug' => 'valid-published',
@@ -365,6 +376,9 @@ it('rejects unsafe redirect paths and targets', function (string $source, string
     'source fragment' => ['/old-work#part', '/artworks/new-work'],
     'source query' => ['/old-work?x=1', '/artworks/new-work'],
     'same paths' => ['/old-work', '/old-work'],
+    'internal target fragment' => ['/old-work', '/target#fragment'],
+    'internal target query' => ['/old-work', '/target?x=1'],
+    'external target fragment' => ['/old-work', 'https://example.com/work#fragment'],
     'javascript target' => ['/old-work', 'javascript:alert(1)'],
     'data target' => ['/old-work', 'data:text/plain,unsafe'],
     'http target' => ['/old-work', 'http://example.com/work'],

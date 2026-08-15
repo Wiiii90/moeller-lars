@@ -114,6 +114,7 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->unique(['artwork_id', 'position']);
+            $table->unique(['artwork_id', 'media_asset_id']);
         });
 
         Schema::create('exhibitions', function (Blueprint $table) {
@@ -282,7 +283,7 @@ return new class extends Migration
         DB::statement("ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_scheduled_check CHECK (state <> 'scheduled' OR scheduled_at IS NOT NULL)");
         DB::statement('ALTER TABLE blog_settings ADD CONSTRAINT blog_settings_singleton_check CHECK (id = 1)');
         DB::statement('ALTER TABLE redirects ADD CONSTRAINT redirects_status_code_check CHECK (status_code IN (301, 302, 308))');
-        DB::statement("ALTER TABLE redirects ADD CONSTRAINT redirects_paths_check CHECK (source_path LIKE '/%' AND source_path NOT LIKE '//%' AND source_path NOT LIKE '%#%' AND source_path NOT LIKE '%?%' AND source_path <> target_path AND ((target_path LIKE '/%' AND target_path NOT LIKE '//%') OR target_path LIKE 'https://%'))");
+        DB::statement("ALTER TABLE redirects ADD CONSTRAINT redirects_paths_check CHECK (source_path LIKE '/%' AND source_path NOT LIKE '//%' AND source_path NOT LIKE '%#%' AND source_path NOT LIKE '%?%' AND source_path <> target_path AND ((target_path LIKE '/%' AND target_path NOT LIKE '//%' AND target_path NOT LIKE '%?%' AND target_path NOT LIKE '%#%') OR (target_path LIKE 'https://%' AND target_path NOT LIKE '%#%')))");
         DB::statement('ALTER TABLE daily_metrics ADD CONSTRAINT daily_metrics_value_check CHECK (value >= 0)');
         DB::statement("ALTER TABLE daily_metrics ADD CONSTRAINT daily_metrics_source_check CHECK (source IN ('local_log', 'application', 'matomo_cache'))");
         DB::statement("ALTER TABLE daily_metrics ADD CONSTRAINT daily_metrics_name_check CHECK (metric_name ~ '^(bot|error|performance|security|operation|storage|deployment|matomo_cache)([:._-].*)?$')");
