@@ -58,11 +58,7 @@ Exhibitions and CV entries remain separate entities and separate admin workflows
 
 ## Analytics ownership and operations
 
-Self-hosted Matomo Community/Core is the source of truth for human visitor analytics. It must cover traffic sources/referrers, geography, devices, page and artwork visits, and meaningful content interaction. Do not duplicate Matomo human analytics in the editorial database. Local `daily_metric`/operational storage may contain lightweight bot, error, performance, and deployment aggregates, plus optionally cached summaries for dashboard convenience; it must not become a parallel human-analytics warehouse. Separate bot and operational metrics from human visitor metrics in the admin presentation.
-
-Matomo/API/log-parser failure must never affect public rendering or normal admin functionality. Analytics collection and dashboard reads are asynchronous or failure-tolerant, and the public application must have a clear degraded mode. Logical separation from the public application is required; a separate physical server is not required.
-
-The Matomo deployment must document storage, updates, backups, access control, retention, and its operational cost. Do not make a commercial analytics plugin or SaaS service mandatory. Do not retain full IP addresses or raw user-agent strings in the editorial database; confirm the final Matomo configuration against applicable privacy requirements before production.
+The analytics boundary is fixed: self-hosted Matomo Community/Core owns human visitor analytics, while local operational aggregates remain separate. Matomo is logically isolated, failure-tolerant, and may be co-hosted; a separate physical server is not required. The compact taxonomy, privacy, retention, dashboard and operations contract is documented in [ANALYTICS.md](ANALYTICS.md).
 
 Production operations are part of this architecture: deployment automation, secrets, TLS renewal, monitoring, encrypted recurring backups, restore testing, rollback, and CI/CD must be designed and tested alongside the application. The current host remains the baseline; a future OS/runtime or server replacement is an explicit architecture/operations decision, not an assumption. Automated recurring offsite backups and monitoring are not yet complete.
 
