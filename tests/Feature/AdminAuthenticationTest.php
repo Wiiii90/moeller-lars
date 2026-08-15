@@ -3,6 +3,7 @@
 use App\Models\User;
 use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -147,6 +148,11 @@ it('uses the required session security configuration', function () {
     expect(config('session.encrypt'))->toBeTrue()
         ->and(config('session.http_only'))->toBeTrue()
         ->and(config('session.same_site'))->toBe('lax');
+});
+
+it('registers CSRF protection on the admin panel', function () {
+    expect(Filament::getCurrentOrDefaultPanel()->getMiddleware())
+        ->toContain(PreventRequestForgery::class);
 });
 
 it('does not expose registration or password reset routes', function () {
