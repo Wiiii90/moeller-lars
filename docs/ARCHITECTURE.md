@@ -24,11 +24,11 @@ Relational database                        Generated derivatives
 
 ## Verified production baseline
 
-The current production host is the working baseline documented in [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md): Scaleway dev-play-1 / DEV1-S in AMS1 with 2 vCPU, 2 GB RAM, and 50 GB block storage. Ubuntu 20.04.6 is retained as a transition host with Ubuntu Pro/ESM and current security updates at audit completion. The host is intended for `moeller-lars` production only; current utilization is not a downsizing signal because future services may share it.
+The current production host is the working baseline documented in [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md): Scaleway dev-play-1 / DEV1-S in AMS1 with 2 vCPU, 2 GB RAM, and 50 GB block storage. Ubuntu 20.04.6 is retained as a transition host with Ubuntu Pro/ESM and current security updates at audit completion. For `moeller-lars`, the host has one permanent environment: production. Independent services may share the host later; current utilization is not a downsizing signal because future services may share it.
 
 The verified containment baseline includes UFW default-deny inbound rules, public ports 22/80/443 only, localhost-only MySQL bindings, valid renewing TLS for apex and `www`, working HTTPS/canonical-host redirects, disabled directory listing, removed public phpinfo, and blocked sensitive source/vendor/config paths.
 
-Production is not a Git checkout and no current Git hook/deploy script was found. The historical live remote is not the current production VM, so the deployment model must be newly designed. Temporary staging/release validation is required, but a permanent staging environment is not. Docker/Compose remains a candidate, Kubernetes is not selected, and common ingress remains undecided.
+Production is not a Git checkout and no current Git hook/deploy script was found. The historical live remote is not the current production VM, so the deployment model must be newly designed. `moeller-lars` has no permanent staging environment requirement; temporary staging/release validation remains required. Docker/Compose remains a candidate, Kubernetes is not selected, and common ingress remains undecided.
 
 ## Content model
 

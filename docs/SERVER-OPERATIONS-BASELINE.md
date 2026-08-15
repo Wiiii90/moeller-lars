@@ -9,7 +9,7 @@ This document records the verified production-server audit. It contains no crede
 - Capacity: 2 vCPU, 2 GB RAM, and 50 GB block storage.
 - This current production host remains the working baseline for `moeller-lars`.
 - Current utilization is not a valid downsizing signal: future services may share the host, so capacity decisions must consider the target architecture and service set.
-- Only production for `moeller-lars` is intended on this host.
+- For `moeller-lars`, this host has one permanent environment: production. Independent services may share the host later; this does not create a permanent `moeller-lars` staging environment.
 
 ## OS and runtime posture
 
@@ -49,7 +49,7 @@ Backup locations, credentials, hashes, and secret values are intentionally exclu
 
 ## Architecture and operations constraints
 
-- There is no permanent staging requirement.
+- `moeller-lars` has one permanent environment on this host: production; no permanent `moeller-lars` staging environment is required.
 - Temporary staging/release validation remains required before production cutover or high-risk maintenance.
 - Matomo belongs to the `moeller-lars` system but must be logically isolated from public rendering and normal admin operation. A separate physical server is not required.
 - Docker/Compose is a candidate only, not a decision.
