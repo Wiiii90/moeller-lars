@@ -19,4 +19,11 @@ class BlogSetting extends Model
     {
         return ['public_enabled' => 'boolean'];
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (): never {
+            throw new \LogicException('The blog setting singleton cannot be deleted.');
+        });
+    }
 }

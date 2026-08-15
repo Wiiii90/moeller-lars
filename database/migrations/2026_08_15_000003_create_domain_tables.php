@@ -13,7 +13,7 @@ return new class extends Migration
             $table->id();
             $table->string('slug', 80)->unique();
             $table->string('name', 160);
-            $table->string('state', 32)->default('published');
+            $table->string('state', 32)->default('hidden');
             $table->integer('position')->default(0);
             $table->text('description')->nullable();
             $table->bigInteger('legacy_id')->nullable();
@@ -32,7 +32,7 @@ return new class extends Migration
             $table->string('mime_type', 120);
             $table->unsignedBigInteger('byte_size');
             $table->char('sha256', 64);
-            $table->string('state', 32)->default('available');
+            $table->string('state', 32)->default('quarantined');
             $table->string('alt_text', 500)->nullable();
             $table->string('copyright_notice', 500)->nullable();
             $table->string('credit', 240)->nullable();
@@ -76,7 +76,7 @@ return new class extends Migration
             $table->timestampTz('published_at')->nullable();
             $table->timestampsTz();
 
-            $table->index(['state', 'artwork_category_id', 'position']);
+            $table->index(['artwork_category_id', 'state', 'work_date', 'position']);
             $table->index(['state', 'work_date', 'position']);
         });
 
@@ -101,6 +101,7 @@ return new class extends Migration
         });
 
         Schema::create('artwork_media', function (Blueprint $table) {
+            $table->id();
             $table->foreignId('artwork_id')
                 ->constrained('artworks')
                 ->restrictOnDelete();
@@ -112,7 +113,6 @@ return new class extends Migration
             $table->string('alt_text_override', 500)->nullable();
             $table->timestampsTz();
 
-            $table->primary(['artwork_id', 'media_asset_id']);
             $table->unique(['artwork_id', 'position']);
         });
 
@@ -207,7 +207,7 @@ return new class extends Migration
 
         Schema::create('redirects', function (Blueprint $table) {
             $table->id();
-            $table->string('source_path', 2048)->unique();
+            $table->string('source_path', 512)->unique();
             $table->string('target_path', 2048);
             $table->smallInteger('status_code')->default(301);
             $table->boolean('enabled')->default(true);
@@ -259,11 +259,13 @@ return new class extends Migration
         DB::statement('ALTER TABLE artworks ADD CONSTRAINT artworks_position_check CHECK (position >= 0)');
         DB::statement("ALTER TABLE artworks ADD CONSTRAINT artworks_date_precision_check CHECK (date_precision IN ('unknown', 'year', 'month', 'day'))");
         DB::statement('ALTER TABLE media_assets ADD CONSTRAINT media_assets_byte_size_check CHECK (byte_size > 0)');
+        DB::statement('ALTER TABLE media_assets ADD CONSTRAINT media_assets_dimensions_check CHECK ((width IS NULL OR width > 0) AND (height IS NULL OR height > 0))');
         DB::statement("ALTER TABLE media_assets ADD CONSTRAINT media_assets_sha256_check CHECK (sha256 ~ '^[0-9a-f]{64}$')");
         DB::statement("ALTER TABLE media_assets ADD CONSTRAINT media_assets_state_check CHECK (state IN ('available', 'quarantined', 'deleted'))");
         DB::statement('ALTER TABLE media_assets ADD CONSTRAINT media_assets_focal_x_check CHECK (focal_point_x IS NULL OR focal_point_x BETWEEN 0 AND 1)');
         DB::statement('ALTER TABLE media_assets ADD CONSTRAINT media_assets_focal_y_check CHECK (focal_point_y IS NULL OR focal_point_y BETWEEN 0 AND 1)');
         DB::statement('ALTER TABLE media_variants ADD CONSTRAINT media_variants_byte_size_check CHECK (byte_size > 0)');
+        DB::statement('ALTER TABLE media_variants ADD CONSTRAINT media_variants_dimensions_check CHECK ((width IS NULL OR width > 0) AND (height IS NULL OR height > 0))');
         DB::statement("ALTER TABLE media_variants ADD CONSTRAINT media_variants_sha256_check CHECK (sha256 ~ '^[0-9a-f]{64}$')");
         DB::statement("ALTER TABLE media_variants ADD CONSTRAINT media_variants_state_check CHECK (state IN ('available', 'stale', 'deleted'))");
         DB::statement("ALTER TABLE artwork_media ADD CONSTRAINT artwork_media_role_check CHECK (role IN ('primary', 'additional'))");
@@ -276,8 +278,11 @@ return new class extends Migration
         DB::statement("ALTER TABLE cv_entries ADD CONSTRAINT cv_entries_date_precision_check CHECK (date_precision IN ('unknown', 'year', 'month', 'day'))");
         DB::statement("ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_state_check CHECK (state IN ('draft', 'scheduled', 'published', 'unpublished', 'archived'))");
         DB::statement('ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_position_check CHECK (position >= 0)');
+        DB::statement("ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_published_check CHECK (state <> 'published' OR (body IS NOT NULL AND btrim(body) <> '' AND published_at IS NOT NULL))");
+        DB::statement("ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_scheduled_check CHECK (state <> 'scheduled' OR scheduled_at IS NOT NULL)");
+        DB::statement('ALTER TABLE blog_settings ADD CONSTRAINT blog_settings_singleton_check CHECK (id = 1)');
         DB::statement('ALTER TABLE redirects ADD CONSTRAINT redirects_status_code_check CHECK (status_code IN (301, 302, 308))');
-        DB::statement("ALTER TABLE redirects ADD CONSTRAINT redirects_paths_check CHECK (source_path <> target_path AND source_path NOT LIKE '%#%' AND target_path NOT LIKE '%#%')");
+        DB::statement("ALTER TABLE redirects ADD CONSTRAINT redirects_paths_check CHECK (source_path LIKE '/%' AND source_path NOT LIKE '//%' AND source_path NOT LIKE '%#%' AND source_path NOT LIKE '%?%' AND source_path <> target_path AND ((target_path LIKE '/%' AND target_path NOT LIKE '//%') OR target_path LIKE 'https://%'))");
         DB::statement('ALTER TABLE daily_metrics ADD CONSTRAINT daily_metrics_value_check CHECK (value >= 0)');
         DB::statement("ALTER TABLE daily_metrics ADD CONSTRAINT daily_metrics_source_check CHECK (source IN ('local_log', 'application', 'matomo_cache'))");
         DB::statement("ALTER TABLE daily_metrics ADD CONSTRAINT daily_metrics_name_check CHECK (metric_name ~ '^(bot|error|performance|security|operation|storage|deployment|matomo_cache)([:._-].*)?$')");

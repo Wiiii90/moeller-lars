@@ -52,7 +52,7 @@ Required fields:
   paintings, prints, drawings, cyanotype, bichromate, litho, photo, ignis, and
   other. No category records are seeded by this schema task.
 - name varchar(160)
-- state: published or hidden
+- state: published or hidden, default hidden for newly created categories
 - position integer, default 0, check position >= 0
 - created_at, updated_at
 
@@ -130,7 +130,8 @@ Required fields:
 - mime_type varchar(120), determined from content and allowlisted
 - byte_size bigint, check byte_size > 0
 - sha256 char(64), lowercase hexadecimal SHA-256 of original bytes
-- state: available, quarantined, or deleted
+- state: available, quarantined, or deleted; default quarantined for newly
+  created originals
 - created_at, updated_at
 
 Nullable fields:
@@ -199,13 +200,14 @@ It supports a primary image plus future additional views without a generic CMS
 attachment abstraction.
 
 Fields:
+- id bigint primary key
 - artwork_id bigint, required foreign key
 - media_asset_id bigint, required foreign key
 - role: primary or additional
 - position integer, non-negative
 - alt_text_override varchar(500), nullable
 - created_at, updated_at
-- composite primary key artwork_id, media_asset_id
+- unique artwork_id, media_asset_id
 
 Constraints:
 - unique artwork_id, position
@@ -317,6 +319,9 @@ Indexes and constraints:
 - scheduled requires scheduled_at in the future at scheduling time; published
   requires non-empty title/body and published_at; unpublished and archived
   posts are never public
+- PostgreSQL requires body and published_at for published posts and requires
+  scheduled_at for scheduled posts; future-time validation remains application
+  logic
 - a post is publicly eligible only when state is published, published_at is due,
   and blog_settings.public_enabled is true
 - cover media deletion is restrictive; normally archive posts
@@ -343,7 +348,7 @@ Purpose: maps retired legacy public paths to canonical target paths.
 
 Required fields:
 - id bigint primary key
-- source_path varchar(2048), normalized path only and unique
+- source_path varchar(512), normalized internal path only and unique
 - target_path varchar(2048), internal canonical path or approved HTTPS URL
 - status_code smallint: 301, 308, or deliberate temporary 302
 - enabled boolean, default true
@@ -359,6 +364,9 @@ Nullable fields:
 Indexes and constraints:
 - index on enabled, source_path
 - reject loops, fragments, unsafe schemes, and source equal to target
+- source paths begin with a single `/` and contain no query string or fragment;
+  targets are normalized internal paths or approved `https://` URLs. Database
+  validation does not perform hostname allowlisting.
 - prefer disabling over deletion after route reconciliation
 
 ## admin_user integration boundary

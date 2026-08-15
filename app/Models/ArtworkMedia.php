@@ -14,8 +14,6 @@ class ArtworkMedia extends Model
 {
     use HasFactory;
 
-    public $incrementing = false;
-
     protected function casts(): array
     {
         return ['position' => 'integer'];

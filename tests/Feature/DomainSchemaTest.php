@@ -11,8 +11,10 @@ use App\Models\DailyMetric;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use App\Models\Redirect;
 use App\Models\User;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 function makeCategory(array $attributes = []): ArtworkCategory
@@ -96,12 +98,115 @@ it('connects artwork, original media, derivatives, and category relationships', 
         ->and($variant->mediaAsset->is($asset))->toBeTrue();
 });
 
+it('manages artwork media through normal Eloquent identity', function () {
+    $category = makeCategory(['slug' => 'prints']);
+    $artwork = Artwork::create([
+        'artwork_category_id' => $category->id,
+        'slug' => 'identity-test',
+        'title' => 'Identity Test',
+        'state' => 'draft',
+        'position' => 0,
+    ]);
+    $asset = makeAsset();
+    $usage = ArtworkMedia::create([
+        'artwork_id' => $artwork->id,
+        'media_asset_id' => $asset->id,
+        'role' => 'primary',
+        'position' => 0,
+    ]);
+
+    $retrieved = ArtworkMedia::findOrFail($usage->id);
+    $retrieved->update(['alt_text_override' => 'Updated artwork text']);
+
+    expect($retrieved->id)->toBe($usage->id)
+        ->and($retrieved->fresh()->alt_text_override)->toBe('Updated artwork text');
+
+    $retrieved->delete();
+    expect(ArtworkMedia::find($usage->id))->toBeNull();
+});
+
+it('rejects duplicate artwork media pairs', function () {
+    $category = makeCategory(['slug' => 'drawings']);
+    $artwork = Artwork::create([
+        'artwork_category_id' => $category->id,
+        'slug' => 'duplicate-pair',
+        'title' => 'Duplicate Pair',
+        'state' => 'draft',
+        'position' => 0,
+    ]);
+    $asset = makeAsset();
+    ArtworkMedia::create(['artwork_id' => $artwork->id, 'media_asset_id' => $asset->id, 'position' => 0]);
+
+    expect(fn () => ArtworkMedia::create([
+        'artwork_id' => $artwork->id,
+        'media_asset_id' => $asset->id,
+        'position' => 1,
+    ]))->toThrow(QueryException::class);
+});
+
+it('rejects a second primary artwork media row', function () {
+    $category = makeCategory(['slug' => 'cyanotype']);
+    $artwork = Artwork::create([
+        'artwork_category_id' => $category->id,
+        'slug' => 'second-primary',
+        'title' => 'Second Primary',
+        'state' => 'draft',
+        'position' => 0,
+    ]);
+    $first = makeAsset();
+    $second = makeAsset();
+    ArtworkMedia::create(['artwork_id' => $artwork->id, 'media_asset_id' => $first->id, 'role' => 'primary', 'position' => 0]);
+
+    expect(fn () => ArtworkMedia::create([
+        'artwork_id' => $artwork->id,
+        'media_asset_id' => $second->id,
+        'role' => 'primary',
+        'position' => 1,
+    ]))->toThrow(QueryException::class);
+});
+
 it('defaults the singleton blog setting to publicly disabled', function () {
     $setting = BlogSetting::query()->first();
 
     expect($setting)->not->toBeNull()
         ->and($setting->id)->toBe(1)
         ->and($setting->public_enabled)->toBeFalse();
+});
+
+it('uses safe defaults for categories and original media', function () {
+    $category = ArtworkCategory::create([
+        'slug' => 'default-hidden',
+        'name' => 'Default Hidden',
+        'position' => 0,
+    ]);
+    $asset = MediaAsset::create([
+        'storage_key' => 'originals/'.uniqid().'.jpg',
+        'original_filename' => 'default.jpg',
+        'mime_type' => 'image/jpeg',
+        'byte_size' => 1,
+        'sha256' => str_repeat('e', 64),
+        'alt_text' => 'Default asset',
+    ]);
+
+    expect($category->state)->toBe('hidden')
+        ->and($asset->state)->toBe('quarantined');
+});
+
+it('enforces the blog setting singleton and permits updates', function () {
+    expect(fn () => DB::table('blog_settings')->insert([
+        'id' => 2,
+        'public_enabled' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]))->toThrow(QueryException::class);
+});
+
+it('updates but does not delete the blog setting singleton', function () {
+    $setting = BlogSetting::query()->firstOrFail();
+    $setting->update(['public_enabled' => true]);
+
+    expect($setting->fresh()->public_enabled)->toBeTrue();
+    expect(fn () => $setting->delete())->toThrow(LogicException::class);
 });
 
 it('enforces stable category slugs', function () {
@@ -170,6 +275,101 @@ it('rejects invalid blog post states', function () {
     ]))->toThrow(QueryException::class);
 });
 
+it('enforces published blog post requirements', function (array $attributes) {
+    expect(fn () => BlogPost::create(array_merge([
+        'slug' => 'invalid-published-'.uniqid(),
+        'title' => 'Published',
+        'state' => 'published',
+        'position' => 0,
+    ], $attributes)))->toThrow(QueryException::class);
+})->with([
+    'null body' => ['body' => null, 'published_at' => now()],
+    'blank body' => ['body' => '   ', 'published_at' => now()],
+    'missing published timestamp' => ['body' => 'Content'],
+]);
+
+it('accepts a valid published blog post', function () {
+    $post = BlogPost::create([
+        'slug' => 'valid-published',
+        'title' => 'Published',
+        'body' => 'Content',
+        'state' => 'published',
+        'position' => 0,
+        'published_at' => now(),
+    ]);
+
+    expect($post->exists)->toBeTrue();
+});
+
+it('enforces scheduled blog post timestamps', function () {
+    expect(fn () => BlogPost::create([
+        'slug' => 'invalid-scheduled',
+        'title' => 'Scheduled',
+        'state' => 'scheduled',
+        'position' => 0,
+    ]))->toThrow(QueryException::class);
+});
+
+it('accepts a scheduled blog post with a scheduled timestamp', function () {
+    $post = BlogPost::create([
+        'slug' => 'valid-scheduled',
+        'title' => 'Scheduled',
+        'state' => 'scheduled',
+        'position' => 0,
+        'scheduled_at' => now()->addDay(),
+    ]);
+
+    expect($post->exists)->toBeTrue();
+});
+
+it('enforces positive media dimensions', function (string $table, array $attributes) {
+    expect(fn () => $table === 'media_assets'
+        ? MediaAsset::create(array_merge([
+            'storage_key' => 'originals/'.uniqid().'.jpg',
+            'original_filename' => 'invalid.jpg',
+            'mime_type' => 'image/jpeg',
+            'byte_size' => 100,
+            'sha256' => str_repeat('e', 64),
+            'state' => 'quarantined',
+        ], $attributes))
+        : MediaVariant::create(array_merge([
+            'media_asset_id' => makeAsset()->id,
+            'variant_kind' => 'medium',
+            'storage_key' => 'derivatives/'.uniqid().'.jpg',
+            'mime_type' => 'image/jpeg',
+            'byte_size' => 10,
+            'sha256' => str_repeat('d', 64),
+            'transform_profile' => 'medium-v1',
+            'state' => 'available',
+        ], $attributes)))->toThrow(QueryException::class);
+})->with([
+    'asset width' => ['media_assets', ['width' => 0]],
+    'asset height' => ['media_assets', ['height' => 0]],
+    'variant width' => ['media_variants', ['width' => 0]],
+    'variant height' => ['media_variants', ['height' => 0]],
+]);
+
+it('accepts redirects to internal and HTTPS targets', function () {
+    $internal = Redirect::create(['source_path' => '/old-work', 'target_path' => '/artworks/new-work']);
+    $external = Redirect::create(['source_path' => '/external-work', 'target_path' => 'https://example.com/work']);
+
+    expect($internal->exists)->toBeTrue()->and($external->exists)->toBeTrue();
+});
+
+it('rejects unsafe redirect paths and targets', function (string $source, string $target) {
+    expect(fn () => Redirect::create(['source_path' => $source, 'target_path' => $target]))
+        ->toThrow(QueryException::class);
+})->with([
+    'source without slash' => ['old-work', '/artworks/new-work'],
+    'protocol-relative source' => ['//old-work', '/artworks/new-work'],
+    'source fragment' => ['/old-work#part', '/artworks/new-work'],
+    'source query' => ['/old-work?x=1', '/artworks/new-work'],
+    'same paths' => ['/old-work', '/old-work'],
+    'javascript target' => ['/old-work', 'javascript:alert(1)'],
+    'data target' => ['/old-work', 'data:text/plain,unsafe'],
+    'http target' => ['/old-work', 'http://example.com/work'],
+]);
+
 it('keeps CV entries and exhibitions as independent entities', function () {
     $cvEntry = CvEntry::create([
         'section' => 'education',
@@ -206,6 +406,29 @@ it('nulls the audit actor when the canonical user is deleted', function () {
     expect($event->adminUser->is($user))->toBeTrue();
     $user->delete();
     expect($event->fresh()->admin_user_id)->toBeNull();
+});
+
+it('rejects audit event updates and deletes', function () {
+    $event = AuditEvent::create([
+        'action' => 'artwork.create',
+        'entity_type' => 'artwork',
+        'entity_id' => 1,
+        'occurred_at' => now(),
+    ]);
+
+    expect(fn () => $event->update(['action' => 'artwork.delete']))
+        ->toThrow(LogicException::class);
+    expect(fn () => $event->delete())
+        ->toThrow(LogicException::class);
+});
+
+it('retains both public artwork listing indexes', function () {
+    $definitions = collect(DB::select("SELECT indexdef FROM pg_indexes WHERE tablename = 'artworks'"))
+        ->pluck('indexdef')
+        ->implode("\n");
+
+    expect($definitions)->toContain('(artwork_category_id, state, work_date, position)')
+        ->and($definitions)->toContain('(state, work_date, position)');
 });
 
 it('stores only allowlisted operational metric names', function () {
