@@ -11,7 +11,11 @@ use Illuminate\Support\Facades\Storage;
 
 function sliceCategory(string $slug, string $state = 'published'): ArtworkCategory
 {
-    return ArtworkCategory::create(['slug' => $slug, 'name' => ucfirst($slug), 'state' => $state, 'position' => 0]);
+    $category = ArtworkCategory::query()->firstOrNew(['slug' => $slug]);
+    $category->fill(['name' => ucfirst($slug), 'state' => $state, 'position' => 0]);
+    $category->save();
+
+    return $category;
 }
 
 function sliceArtwork(ArtworkCategory $category, array $attributes = []): Artwork

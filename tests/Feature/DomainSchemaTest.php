@@ -68,7 +68,7 @@ it('applies the PostgreSQL domain schema with critical columns', function () {
 });
 
 it('connects artwork, original media, derivatives, and category relationships', function () {
-    $category = makeCategory(['slug' => 'paintings']);
+    $category = makeCategory(['slug' => 'schema-paintings']);
     $artwork = Artwork::create([
         'artwork_category_id' => $category->id,
         'slug' => 'work-one',
@@ -103,7 +103,7 @@ it('connects artwork, original media, derivatives, and category relationships', 
 });
 
 it('manages artwork media through normal Eloquent identity', function () {
-    $category = makeCategory(['slug' => 'prints']);
+    $category = makeCategory(['slug' => 'schema-prints']);
     $artwork = Artwork::create([
         'artwork_category_id' => $category->id,
         'slug' => 'identity-test',
@@ -130,7 +130,7 @@ it('manages artwork media through normal Eloquent identity', function () {
 });
 
 it('rejects duplicate artwork media pairs', function () {
-    $category = makeCategory(['slug' => 'drawings']);
+    $category = makeCategory(['slug' => 'schema-drawings']);
     $artwork = Artwork::create([
         'artwork_category_id' => $category->id,
         'slug' => 'duplicate-pair',
@@ -149,7 +149,7 @@ it('rejects duplicate artwork media pairs', function () {
 });
 
 it('rejects a second primary artwork media row', function () {
-    $category = makeCategory(['slug' => 'cyanotype']);
+    $category = makeCategory(['slug' => 'schema-cyanotype']);
     $artwork = Artwork::create([
         'artwork_category_id' => $category->id,
         'slug' => 'second-primary',
@@ -214,21 +214,21 @@ it('updates but does not delete the blog setting singleton', function () {
 });
 
 it('enforces stable category slugs', function () {
-    makeCategory(['slug' => 'paintings']);
+    makeCategory(['slug' => 'schema-duplicate']);
 
-    expect(fn () => makeCategory(['slug' => 'paintings']))
+    expect(fn () => makeCategory(['slug' => 'schema-duplicate']))
         ->toThrow(QueryException::class);
 });
 
 it('enforces partial legacy provenance uniqueness', function () {
     makeCategory([
-        'slug' => 'prints',
+        'slug' => 'schema-provenance-one',
         'legacy_id' => 42,
         'legacy_source' => 'legacy:prints',
     ]);
 
     expect(fn () => makeCategory([
-        'slug' => 'drawings',
+        'slug' => 'schema-provenance-two',
         'legacy_id' => 42,
         'legacy_source' => 'legacy:prints',
     ]))->toThrow(QueryException::class);
@@ -243,10 +243,10 @@ it('does not impose global uniqueness on original media SHA-256 values', functio
 });
 
 it('allows incomplete legacy provenance to remain non-unique', function () {
-    makeCategory(['slug' => 'cyanotype', 'legacy_source' => 'legacy:prints']);
-    makeCategory(['slug' => 'bichromate', 'legacy_source' => 'legacy:prints']);
+    makeCategory(['slug' => 'schema-incomplete-one', 'legacy_source' => 'legacy:prints']);
+    makeCategory(['slug' => 'schema-incomplete-two', 'legacy_source' => 'legacy:prints']);
 
-    expect(ArtworkCategory::count())->toBe(2);
+    expect(ArtworkCategory::query()->where('legacy_source', 'legacy:prints')->count())->toBe(2);
 });
 
 it('rejects a negative category position', function () {
@@ -260,7 +260,7 @@ it('rejects invalid category states', function () {
 });
 
 it('rejects a negative artwork position', function () {
-    $category = makeCategory(['slug' => 'drawings']);
+    $category = makeCategory(['slug' => 'schema-negative-artwork']);
     expect(fn () => Artwork::create([
         'artwork_category_id' => $category->id,
         'slug' => 'negative-position',
