@@ -66,6 +66,8 @@ The Matomo deployment must document storage, updates, backups, access control, r
 
 Production operations are part of this architecture: deployment automation, secrets, TLS renewal, monitoring, encrypted recurring backups, restore testing, rollback, and CI/CD must be designed and tested alongside the application. The current host remains the baseline; a future OS/runtime or server replacement is an explicit architecture/operations decision, not an assumption. Automated recurring offsite backups and monitoring are not yet complete.
 
+The hosting and cost baseline is recorded in [ADR-0002](adr/ADR-0002-HOSTING-COST-BASELINE.md); it does not decide deployment topology, ingress, OS migration, or other platform items that remain open.
+
 ## Architecture acceptance tests
 
 - A written decision record compares viable stacks against the technology decision gate before implementation is locked.
