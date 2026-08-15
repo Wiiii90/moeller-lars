@@ -37,7 +37,7 @@ Avoid mandatory paid third-party services and commercial runtime dependencies. P
 
 ## Definition of done
 
-The new site passes a route/content comparison against the live reference, reliable viewer and admin acceptance tests, a lossless migration reconciliation, and an editorial acceptance pass by Lars. It is deployed first to staging under HTTPS with tested backups, restore, monitoring, rollback, and the Matomo deployment path. Production server/runtime work, hosting cost, TLS, deployment, backups, and a possible server replacement are all part of the project scope; only after those are accepted does the new site replace production traffic.
+The new site passes a route/content comparison against the live reference, reliable viewer and admin acceptance tests, a lossless migration reconciliation, and an editorial acceptance pass by Lars. It uses the verified [server and operations baseline](SERVER-OPERATIONS-BASELINE.md), with temporary staging/release validation under HTTPS, tested backups, restore, monitoring, rollback, and the Matomo deployment path before production cutover. Production deployment design, hosting cost, TLS, recurring backups, monitoring, and a possible future server/runtime replacement remain in scope; only after those are accepted does the new site replace production traffic.
 
 ## Acceptance and test requirements
 
@@ -45,6 +45,6 @@ The new site passes a route/content comparison against the live reference, relia
 - Viewer tests cover loading, navigation, keyboard/touch input where implemented, missing media, and mobile layouts.
 - Admin tests cover authentication, authorization, drafts, publication state, separate exhibitions/CV editing, and the blog-disabled default.
 - Migration tests reconcile record counts, original-media checksums, required fields, and representative rendered content.
-- Deployment tests cover HTTPS, HTTP redirect, backup/restore, rollback, and a staging-to-production rehearsal.
+- Deployment tests cover HTTPS, HTTP redirect, backup/restore, rollback, temporary release validation, and a staging-to-production rehearsal on the verified production baseline.
 - Analytics tests confirm Matomo collection and dashboard visibility without introducing a paid service or storing unnecessary raw identifiers. They also cover traffic sources, geography, devices, content interaction, and separate bot/operational metrics.
 - The chosen deployment documents recurring costs, avoids mandatory commercial runtime dependencies, and demonstrates practical use of self-hosted/open-source components.

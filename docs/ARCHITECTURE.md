@@ -22,6 +22,14 @@ Relational database                        Generated derivatives
         +---- New artist-only admin ---- Audit log / analytics aggregates
 ```
 
+## Verified production baseline
+
+The current production host is the working baseline documented in [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md): Scaleway dev-play-1 / DEV1-S in AMS1 with 2 vCPU, 2 GB RAM, and 50 GB block storage. Ubuntu 20.04.6 is retained as a transition host with Ubuntu Pro/ESM and current security updates at audit completion. The host is intended for `moeller-lars` production only; current utilization is not a downsizing signal because future services may share it.
+
+The verified containment baseline includes UFW default-deny inbound rules, public ports 22/80/443 only, localhost-only MySQL bindings, valid renewing TLS for apex and `www`, working HTTPS/canonical-host redirects, disabled directory listing, removed public phpinfo, and blocked sensitive source/vendor/config paths.
+
+Production is not a Git checkout and no current Git hook/deploy script was found. The historical live remote is not the current production VM, so the deployment model must be newly designed. Temporary staging/release validation is required, but a permanent staging environment is not. Docker/Compose remains a candidate, Kubernetes is not selected, and common ingress remains undecided.
+
 ## Content model
 
 - `artwork`: stable slug, category, metadata, publication state, position.
@@ -54,7 +62,7 @@ Matomo/API/log-parser failure must never affect public rendering or normal admin
 
 The Matomo deployment must document storage, updates, backups, access control, retention, and its operational cost. Do not make a commercial analytics plugin or SaaS service mandatory. Do not retain full IP addresses or raw user-agent strings in the editorial database; confirm the final Matomo configuration against applicable privacy requirements before production.
 
-Production operations are part of this architecture: server/runtime selection, hosting cost, TLS certificates and renewal, deployment automation, secrets, monitoring, encrypted backups, restore testing, rollback, and a possible server replacement must be designed and tested alongside the application.
+Production operations are part of this architecture: deployment automation, secrets, TLS renewal, monitoring, encrypted recurring backups, restore testing, rollback, and CI/CD must be designed and tested alongside the application. The current host remains the baseline; a future OS/runtime or server replacement is an explicit architecture/operations decision, not an assumption. Automated recurring offsite backups and monitoring are not yet complete.
 
 ## Architecture acceptance tests
 
@@ -66,5 +74,7 @@ Production operations are part of this architecture: server/runtime selection, h
 - Analytics failure is tested as isolated from public rendering and normal admin workflows; operational aggregates remain distinguishable from Matomo data.
 - Analytics acceptance covers traffic sources, geography, devices, content interaction, and separate bot/error/performance metrics without exposing unnecessary raw identifiers.
 - Logical separation of analytics from the public application is demonstrated; physical server separation is not required.
-- A staging deployment proves TLS, backup/restore, rollback, and the chosen deployment process before production cutover.
+- Temporary staging/release validation proves TLS, backup/restore, rollback, and the newly designed deployment process before production cutover; permanent staging is not required.
+- Matomo is logically isolated from public rendering and normal admin operation; a separate physical server is not required.
+- CI/CD, recurring offsite backups, monitoring, Docker/Compose use, and common ingress each have an explicit target-platform decision before production adoption; Kubernetes remains unselected.
 - A cost review confirms that mandatory commercial runtime dependencies are avoided where practical, with minimized and justified server/hosting cost.
