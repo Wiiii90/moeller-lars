@@ -192,8 +192,8 @@ it('uses safe defaults for categories and original media', function () {
         'alt_text' => 'Default asset',
     ]);
 
-    expect($category->state)->toBe('hidden')
-        ->and($asset->state)->toBe('quarantined');
+    expect($category->fresh()->state)->toBe('hidden')
+        ->and($asset->fresh()->state)->toBe('quarantined');
 });
 
 it('enforces the blog setting singleton and permits updates', function () {
@@ -287,9 +287,9 @@ it('enforces published blog post requirements', function (array $attributes) {
         'position' => 0,
     ], $attributes)))->toThrow(QueryException::class);
 })->with([
-    'null body' => ['body' => null, 'published_at' => now()],
-    'blank body' => ['body' => '   ', 'published_at' => now()],
-    'missing published timestamp' => ['body' => 'Content'],
+    'null body' => [['body' => null, 'published_at' => now()]],
+    'blank body' => [['body' => '   ', 'published_at' => now()]],
+    'missing published timestamp' => [['body' => 'Content']],
 ]);
 
 it('rejects a published blog post with a blank title', function () {
@@ -495,8 +495,8 @@ it('retains both public artwork listing indexes', function () {
         ->pluck('indexdef')
         ->implode("\n");
 
-    expect($definitions)->toContain('(artwork_category_id, state, work_date, position)')
-        ->and($definitions)->toContain('(state, work_date, position)');
+    expect($definitions)->toContain('(artwork_category_id, state, work_date, "position")')
+        ->and($definitions)->toContain('(state, work_date, "position")');
 });
 
 it('stores only allowlisted operational metric names', function () {
