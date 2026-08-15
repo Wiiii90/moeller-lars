@@ -33,19 +33,25 @@ class Exhibition extends Model
 
     public function temporalState(CarbonInterface $date): string
     {
-        if ($this->starts_on === null) {
+        /** @var CarbonInterface|null $startsOn */
+        $startsOn = $this->getAttribute('starts_on');
+
+        if ($startsOn === null) {
             return 'unknown';
         }
 
         $date = CarbonImmutable::instance($date)->startOfDay();
-        $startsOn = CarbonImmutable::instance($this->starts_on)->startOfDay();
+        $startsOn = CarbonImmutable::instance($startsOn)->startOfDay();
 
         if ($date->isBefore($startsOn)) {
             return 'upcoming';
         }
 
-        if ($this->ends_on !== null) {
-            return $date->isAfter(CarbonImmutable::instance($this->ends_on)->startOfDay())
+        /** @var CarbonInterface|null $endsOn */
+        $endsOn = $this->getAttribute('ends_on');
+
+        if ($endsOn !== null) {
+            return $date->isAfter(CarbonImmutable::instance($endsOn)->startOfDay())
                 ? 'past'
                 : 'current';
         }

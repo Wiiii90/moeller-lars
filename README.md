@@ -29,3 +29,31 @@ This repository is the future production codebase. It deliberately contains no c
 ## Security rule
 
 Do not place secrets in this repository, including in issues, screenshots, sample data, commits, or CI files. Real deployment configuration belongs in the hosting platform's secret store or a server-local `.env` file.
+
+## Local Docker development
+
+The minimal local environment uses one PHP 8.3 application container and one
+PostgreSQL 17 container. Its credentials are local development defaults only.
+
+Start:
+
+~~~sh
+docker compose up -d --build
+docker compose exec app composer install
+docker compose exec app npm install --ignore-scripts
+~~~
+
+Test:
+
+~~~sh
+docker compose exec app composer test
+docker compose exec app composer format
+docker compose exec app composer analyse
+docker compose exec app npm run build
+~~~
+
+Stop:
+
+~~~sh
+docker compose down
+~~~
