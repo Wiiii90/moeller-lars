@@ -279,7 +279,7 @@ return new class extends Migration
         DB::statement("ALTER TABLE cv_entries ADD CONSTRAINT cv_entries_date_precision_check CHECK (date_precision IN ('unknown', 'year', 'month', 'day'))");
         DB::statement("ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_state_check CHECK (state IN ('draft', 'scheduled', 'published', 'unpublished', 'archived'))");
         DB::statement('ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_position_check CHECK (position >= 0)');
-        DB::statement("ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_published_check CHECK (state <> 'published' OR (body IS NOT NULL AND btrim(body) <> '' AND published_at IS NOT NULL))");
+        DB::statement("ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_published_check CHECK (state <> 'published' OR (btrim(title) <> '' AND body IS NOT NULL AND btrim(body) <> '' AND published_at IS NOT NULL))");
         DB::statement("ALTER TABLE blog_posts ADD CONSTRAINT blog_posts_scheduled_check CHECK (state <> 'scheduled' OR scheduled_at IS NOT NULL)");
         DB::statement('ALTER TABLE blog_settings ADD CONSTRAINT blog_settings_singleton_check CHECK (id = 1)');
         DB::statement('ALTER TABLE redirects ADD CONSTRAINT redirects_status_code_check CHECK (status_code IN (301, 302, 308))');
