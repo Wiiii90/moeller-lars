@@ -58,36 +58,39 @@ implementation.
 
 ## 3. Public content ordering
 
-- Category gallery listings order published artwork by artwork.position ASC,
-  then work_date DESC NULLS LAST, then slug ASC. Explicit editorial ordering
-  may intentionally place an older artwork before a newer one. The displayed
-  year is derived from that date; the exact day is not part of the public
-  display contract.
-- The home page selects the newest eligible record from categories whose
-  persisted presentation data marks them for the home surface. The imported
-  data may initially reproduce the familiar legacy landing selection, but the
-  selection is not based on hardcoded category slugs.
-- Duplicate or gapped legacy positions are tolerated. Explicit editorial
-  reorder normalizes a complete category to contiguous positions; slug is the
-  final stable tie-breaker when position and date are equal. The process must
-  never silently substitute source ID, target ID, insertion order, or database
-  order.
+- Category gallery listings order published artwork solely by the persisted
+  `artwork.position` value. Explicit editorial ordering may intentionally place
+  an older artwork before a newer one. `work_date`, slug, IDs, timestamps,
+  insertion order, and database order are never secondary ordering fallbacks.
+- Published artwork positions must be unique within a category. Legacy
+  duplicate positions are migration/reconciliation input and must be resolved
+  before the affected category is considered publish-ready. Gaps are harmless;
+  explicit editorial reorder normalizes a complete category to contiguous
+  positions.
+- The home page selects the newest eligible record by `work_date` from
+  categories whose persisted presentation data marks them for the home surface.
+  The imported data may initially reproduce the familiar legacy landing
+  selection, but the selection is not based on hardcoded category slugs.
+- If more than one eligible artwork has the same newest canonical `work_date`,
+  the home winner is ambiguous and the invariant must fail explicitly. Position,
+  slug, IDs, timestamps, insertion order, or database order must not silently
+  decide the winner.
 - The migration/reconciliation fixture must compare category counts, complete
   ordered result sets, same-date groups, and the home-page winner.
 - Only published content is public. Draft/unpublished content is absent from
   listings, direct views, navigation, sitemap, and viewer previous/next
   sequences. Within a category, the viewer previous/next sequence follows the
-  same curated order: position ASC, work_date DESC NULLS LAST, slug ASC.
+  same canonical `position` order and no secondary tie-break ordering.
 
 ## 4. Artwork presentation contract
 
-Each gallery item renders, when available:
+Each public gallery item renders:
 
-- a thumbnail;
+- its required canonical thumbnail;
 - title;
-- year;
-- medium/material;
-- dimensions; and
+- year when a normalized `work_date` exists;
+- medium/material when authored;
+- dimensions when authored; and
 - optional description/comment.
 
 The legacy source displays title and year on one line, medium followed by
@@ -95,23 +98,27 @@ dimensions when dimensions are non-empty, and the optional comment below.
 The target may improve markup and spacing subtly, but must retain this
 information and its meaning.
 
-Every meaningful artwork image requires ALT text derived from the artwork
-title, with a safe fallback only when the title is genuinely unavailable.
-Loading indicators, close controls, and decorative interface images must have
-appropriate accessible names or be hidden from assistive technology; they
-must not use artwork titles as decorative ALT text.
+Every meaningful public artwork image requires canonical ALT data. A
+usage-specific `artwork_media.alt_text_override`, when explicitly present,
+intentionally overrides the asset-level ALT value; otherwise the asset-level
+ALT value is required. This is an explicit editorial precedence rule, not a
+recovery fallback. Artwork title, filename, legacy metadata, or empty
+placeholder text must never be substituted for missing required ALT data.
 
-The thumbnail and original are two references to the same artwork asset
-relationship: the legacy source uses the same logical filename under a
-category thumbnail directory and a category original-media directory. The
-target retains the original/full-resolution asset and may generate derivatives;
-a derivative must never replace the original or become the only copy. Opening
-an artwork from a thumbnail loads the corresponding original/full-resolution
-media, subject to safe media failure handling.
+The thumbnail and original are two required references derived from the same
+artwork asset relationship. The legacy source uses the same logical filename
+under a category thumbnail directory and a category original-media directory.
+The target retains the original/full-resolution asset and generates controlled
+derivatives; a derivative never replaces the original or becomes the only copy.
+Opening an artwork from a thumbnail loads the corresponding canonical original.
+A missing required derivative must not silently fall back to the original.
 
-Missing, corrupt, oversized, or unavailable media must not break the gallery
-page. The item needs a stable fallback state and the rest of the page must
-remain usable.
+Missing, corrupt, unavailable, ambiguous, or otherwise invalid required public
+media is an invariant failure and must be surfaced explicitly rather than
+replaced with another media source, empty URL, placeholder content, or legacy
+value. Transient delivery failures after valid public data has been selected may
+still be represented by the viewer's explicit loading/error state; that error
+state is diagnostic behavior, not alternate successful content.
 
 ## 5. Viewer behavioral contract
 
@@ -204,7 +211,8 @@ must be covered by responsive and interaction tests.
 - The verified artwork categories and their public route meanings.
 - Artwork-first listings with title, displayed year, medium, dimensions, and
   optional comment.
-- Category date-descending order and the home latest-work behavior.
+- The artist-curated category order and the chronological home latest-work
+  behavior.
 - Thumbnail-to-original artwork relationship and image loading/viewer intent.
 - The CV/Vita portrait, authored content meaning, links, and intended order.
 - The intended Contact fields and successful-delivery outcome.
@@ -216,7 +224,8 @@ must be covered by responsive and interaction tests.
 - Clean path-based canonical URLs; redirects are created only for deliberate
   new-application slug/path changes or a separately evidenced external-link
   need.
-- Deterministic explicit position for equal-date ordering after reconciliation.
+- Explicit normalized positions for the complete curated category order after
+  legacy reconciliation.
 - Reliable viewer loading/error states, two-dimensional pan, touch/pinch,
   keyboard/Escape support, focus management, and previous/next navigation.
 - Responsive handling that improves readability and touch operation without
@@ -229,7 +238,10 @@ must be covered by responsive and interaction tests.
 - The sitemap's HTTP/query URLs and its `links` entry with no working route.
 - The unreachable Contact dispatcher path and missing `inc/contact.php`
   handler; preserve the intended outcome, not the broken implementation.
-- Undefined same-date ordering or reliance on database/insertion order.
+- Ambiguous or duplicate public ordering masked by dates, slugs, IDs,
+  insertion order, or database order.
+- Missing normalized dates or media metadata masked by legacy/raw values,
+  alternate media sources, generated placeholders, or unrelated fields.
 - PHP warnings, directory includes, database errors, debug output, or exposed
   internal details for invalid routes or failed media.
 - Unsafe legacy SQL construction, upload handling, formatting/parser behavior,
