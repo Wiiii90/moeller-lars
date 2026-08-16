@@ -62,7 +62,7 @@ $slugify = static function (string $value): string {
     return $slug;
 };
 
-$nullable = static function (mixed $value): ?string {
+$nullable = static function ($value): ?string {
     if ($value === null) {
         return null;
     }
@@ -160,7 +160,7 @@ foreach ($categories as $category) {
             throw new RuntimeException("Missing canonical original for {$table} legacy ID {$legacyId}: {$relativeMediaPath}");
         }
         $rootPrefix = rtrim($mediaRoot, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
-        if (! str_starts_with($sourcePath, $rootPrefix)) {
+        if (strncmp($sourcePath, $rootPrefix, strlen($rootPrefix)) !== 0) {
             throw new RuntimeException("Media path escapes configured media_root for {$table} legacy ID {$legacyId}.");
         }
 
