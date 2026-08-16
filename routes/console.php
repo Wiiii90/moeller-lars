@@ -5,6 +5,7 @@ use App\Domain\Migration\LegacyMigrationValidator;
 use App\Domain\Migration\LegacyPublicCvImporter;
 use App\Domain\Migration\LegacyPublicProfileImporter;
 use App\Domain\Migration\LegacyPublicProfileMediaValidator;
+use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,40 @@ use Illuminate\Support\Facades\DB;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('admin:provision {--name=} {--email=}', function () {
+    $name = trim((string) ($this->option('name') ?: $this->ask('Name')));
+    $email = strtolower(trim((string) ($this->option('email') ?: $this->ask('Email'))));
+    $password = (string) $this->secret('Password');
+    $confirmation = (string) $this->secret('Confirm password');
+
+    if ($name === '') {
+        throw new RuntimeException('Admin name is required.');
+    }
+    if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+        throw new RuntimeException('Admin email is invalid.');
+    }
+    if (strlen($password) < 12) {
+        throw new RuntimeException('Admin password must contain at least 12 characters.');
+    }
+    if ($password !== $confirmation) {
+        throw new RuntimeException('Admin password confirmation does not match.');
+    }
+    if (User::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
+        throw new RuntimeException('A user with this email already exists.');
+    }
+
+    DB::transaction(function () use ($name, $email, $password): void {
+        $user = User::query()->create([
+            'name' => $name,
+            'email' => $email,
+            'password' => $password,
+        ]);
+        $user->forceFill(['is_admin' => true])->save();
+    });
+
+    $this->info('Admin account created.');
+})->purpose('Create the first explicitly authorized administration account');
 
 Artisan::command('legacy:import-public-cv {manifest} {media-root}', function (LegacyPublicCvImporter $cvImporter, LegacyPublicProfileImporter $profileImporter) {
     $count = DB::transaction(function () use ($cvImporter, $profileImporter): int {

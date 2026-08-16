@@ -69,6 +69,16 @@ Feature/runtime configuration names include:
 
 No real values belong in Git. When Matomo browser tracking is enabled the image additionally requires a valid HTTPS `MATOMO_BASE_URL` and positive `MATOMO_SITE_ID`. The admin Reporting API requires `MATOMO_API_TOKEN`; an unavailable Reporting API produces an explicit dashboard error state and does not break public requests.
 
+## Administration provisioning
+
+No production administrator is seeded and no legacy credential is imported. Create the initial administration account explicitly from the deployed application container:
+
+```sh
+php artisan admin:provision
+```
+
+`--name` and `--email` may be supplied for operator convenience; the password is always entered through a hidden interactive prompt and is never accepted as a command-line option. Provisioning refuses duplicate email addresses and creates the account with `is_admin=true`, which is required by the production Filament panel-access policy.
+
 ## Workers and scheduling
 
 No background queue worker or application scheduler is required for the current release contract. Contact delivery is synchronous. Scheduled blog visibility is evaluated against `scheduled_at` at read time; no promotion job is required.
