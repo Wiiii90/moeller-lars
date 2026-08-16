@@ -161,6 +161,18 @@ img { max-width: 100%; }
     overflow-wrap: anywhere;
 }
 
+.artwork-detail__context {
+    margin: 0 0 1rem;
+}
+
+.artwork-detail__context a {
+    color: #777;
+    font-size: .85rem;
+    text-decoration: none;
+}
+
+.artwork-detail__context a:hover { color: #333; }
+
 @media (min-width: 700px) {
     .artwork-card,
     .artwork-detail { width: min(75%, 650px); }
