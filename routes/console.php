@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Migration\LegacyArtworkManifestImporter;
+use App\Domain\Migration\LegacyMigrationValidator;
 use App\Domain\Migration\LegacyPublicCvImporter;
 use App\Domain\Migration\LegacyPublicProfileImporter;
 use Illuminate\Foundation\Inspiring;
@@ -25,3 +26,11 @@ Artisan::command('legacy:import-artworks {manifest} {media-root}', function (Leg
 
     $this->info("Imported {$result['categories']} categories, {$result['artworks']} artworks and {$result['media']} original media assets.");
 })->purpose('Import a reviewed legacy artwork manifest and authoritative original media');
+
+Artisan::command('legacy:validate {manifest}', function (LegacyMigrationValidator $validator) {
+    $result = $validator->validate((string) $this->argument('manifest'));
+    $json = json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+    $this->line($json);
+
+    return $result['ok'] ? 0 : 1;
+})->purpose('Validate imported legacy content and media against the reviewed source manifest');

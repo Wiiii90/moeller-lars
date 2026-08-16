@@ -7,9 +7,9 @@ use RuntimeException;
 
 final class LegacyPublicCvImporter
 {
-    private const SOURCE = 'legacy-public-vita';
+    public const SOURCE = 'legacy-public-vita';
 
-    private const BATCH = 'legacy-public-vita-2026-08-16';
+    public const BATCH = 'legacy-public-vita-2026-08-16';
 
     public function import(): int
     {
@@ -31,7 +31,7 @@ final class LegacyPublicCvImporter
             }
 
             $now = now();
-            $rows = $this->rows();
+            $rows = $this->expectedRows();
 
             foreach ($rows as $index => $row) {
                 DB::table('cv_entries')->insert([
@@ -77,7 +77,7 @@ final class LegacyPublicCvImporter
      *
      * @return list<array{section:string,title:string,year_text:string,date_precision:string,starts_on:?string,ends_on:?string,organisation:?string,location:?string,body:?string}>
      */
-    private function rows(): array
+    public function expectedRows(): array
     {
         return [
             $this->row('Biography', 'Born in Hamburg', '1.6.1989', 'day', '1989-06-01', null, null, 'Hamburg'),
