@@ -18,7 +18,9 @@ use Illuminate\Database\Eloquent\Model;
 final class BlogSettingResource extends Resource
 {
     protected static ?string $model = BlogSetting::class;
+
     protected static ?string $navigationLabel = 'Blog settings';
+
     protected static ?int $navigationSort = 23;
 
     public static function form(Schema $schema): Schema

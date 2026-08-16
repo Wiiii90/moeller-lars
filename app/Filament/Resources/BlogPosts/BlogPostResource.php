@@ -22,7 +22,9 @@ use Illuminate\Support\Str;
 final class BlogPostResource extends Resource
 {
     protected static ?string $model = BlogPost::class;
+
     protected static ?string $navigationLabel = 'Blog';
+
     protected static ?int $navigationSort = 22;
 
     public static function form(Schema $schema): Schema

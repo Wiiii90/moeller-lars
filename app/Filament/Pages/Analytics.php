@@ -12,7 +12,9 @@ use LogicException;
 final class Analytics extends Page
 {
     protected static ?string $navigationLabel = 'Analytics';
+
     protected static ?int $navigationSort = 40;
+
     protected string $view = 'filament.pages.analytics';
 
     /** @var array<string, mixed> */
