@@ -542,3 +542,17 @@ incorrect analytics data: a Matomo outage, archive failure, or local
 metric-parser failure may omit/report analytics state, but must never invent
 successful values or fail public rendering, editorial reads, authentication, or
 content writes.
+
+## Decisions requiring orchestrator review before migrations
+
+1. Confirm the shared Laravel foundation's admin-user table name and key type.
+2. Confirm which legacy date values may become work_date; otherwise retain raw
+   values with unknown precision.
+3. Approve initial category slugs/labels and category-position semantics.
+4. Confirm the media storage adapter and whether SHA-256 uniqueness is used for
+   deduplication or only reconciliation.
+5. Confirm the sanitized rich-text format for descriptions, CV body, and posts.
+6. Confirm retention periods for provenance, audit events, operational metrics,
+   and cached Matomo summaries.
+7. Confirm whether exhibitions and posts need additional explicit media usage
+   tables beyond hero/cover references.
