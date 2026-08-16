@@ -40,12 +40,22 @@ class PublicArtworkQuery
 
         /** @var Collection<int, Artwork> $candidates */
         $candidates = $this->homeQuery()->where('work_year', $latestYear)->get();
-        if ($candidates->count() !== 1) {
+        if ($candidates->count() === 1) {
+            /** @var Artwork $artwork */
+            $artwork = $candidates->first();
+
+            return $artwork;
+        }
+
+        $featured = $candidates->filter(
+            static fn (Artwork $artwork): bool => (bool) $artwork->getAttribute('featured_on_home'),
+        );
+        if ($featured->count() !== 1) {
             throw new LogicException('The newest eligible home artwork is ambiguous.');
         }
 
         /** @var Artwork $artwork */
-        $artwork = $candidates->first();
+        $artwork = $featured->first();
 
         return $artwork;
     }

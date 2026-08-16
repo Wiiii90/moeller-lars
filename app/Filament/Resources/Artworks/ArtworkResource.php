@@ -14,6 +14,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -64,7 +65,18 @@ class ArtworkResource extends Resource
             TextInput::make('medium')->nullable()->maxLength(240),
             TextInput::make('dimensions')->nullable()->maxLength(240),
             Textarea::make('description')->nullable()->maxLength(10000),
-            DatePicker::make('work_date')->nullable(),
+            TextInput::make('work_year')
+                ->label('Year')
+                ->numeric()
+                ->minValue(1000)
+                ->maxValue(9999)
+                ->nullable(),
+            DatePicker::make('work_date')
+                ->label('Exact date')
+                ->nullable(),
+            Toggle::make('featured_on_home')
+                ->label('Feature on home when newest year is shared')
+                ->default(false),
         ]);
     }
 
@@ -75,7 +87,7 @@ class ArtworkResource extends Resource
                 TextColumn::make('title')->searchable()->sortable(),
                 TextColumn::make('category.name')->label('Category')->sortable(),
                 TextColumn::make('state')->badge()->sortable(),
-                TextColumn::make('work_date')->date()->sortable(),
+                TextColumn::make('work_year')->label('Year')->sortable(),
                 TextColumn::make('position')->label('Gallery order')->sortable(),
                 TextColumn::make('updated_at')->dateTime()->sortable(),
             ])
