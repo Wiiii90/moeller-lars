@@ -7,6 +7,14 @@
         <title>@yield('title')</title>
         <meta name="description" content="{{ trim($__env->yieldContent('meta_description', 'Lars Möller — artist')) }}">
         <link rel="canonical" href="{{ trim($__env->yieldContent('canonical', app(\App\Domain\Content\CanonicalUrl::class)->current())) }}">
+        @php($matomoTracking = app(\App\Domain\Analytics\MatomoConfiguration::class)->browserTracking())
+        @if ($matomoTracking !== null)
+            <meta
+                data-matomo-tracking
+                data-matomo-base-url="{{ $matomoTracking['base_url'] }}"
+                data-matomo-site-id="{{ $matomoTracking['site_id'] }}"
+            >
+        @endif
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body>
