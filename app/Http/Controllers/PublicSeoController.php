@@ -6,7 +6,6 @@ use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\CanonicalUrl;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
-use App\Models\BlogPost;
 use App\Models\BlogSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,16 +19,16 @@ final class PublicSeoController extends Controller
     {
         $urls = [$this->canonical->forPath('/')];
 
-        ArtworkCategory::query()
-            ->where('state', 'published')
-            ->get(['slug'])
-            ->each(fn (ArtworkCategory $category) => $urls[] = $this->canonical->forPath('/'.$category->getAttribute('slug')));
+        foreach (ArtworkCategory::query()->where('state', 'published')->get(['slug']) as $category) {
+            $urls[] = $this->canonical->forPath('/'.$category->getAttribute('slug'));
+        }
 
-        Artwork::query()
+        foreach (Artwork::query()
             ->where('state', 'published')
             ->whereHas('category', fn (Builder $query) => $query->where('state', 'published'))
-            ->get(['slug'])
-            ->each(fn (Artwork $artwork) => $urls[] = $this->canonical->forPath('/artworks/'.$artwork->getAttribute('slug')));
+            ->get(['slug']) as $artwork) {
+            $urls[] = $this->canonical->forPath('/artworks/'.$artwork->getAttribute('slug'));
+        }
 
         $publicSettings = PublicContentSetting::query()->findOrFail(1);
         if ($publicSettings->cvSurfaceEnabled()) {
@@ -42,10 +41,9 @@ final class PublicSeoController extends Controller
         $blogSettings = BlogSetting::query()->findOrFail(1);
         if ((bool) $blogSettings->getAttribute('public_enabled')) {
             $urls[] = $this->canonical->forPath('/blog');
-            BlogEditorialService::publicQuery()
-                ->orderBy('position')
-                ->get(['slug'])
-                ->each(fn (BlogPost $post) => $urls[] = $this->canonical->forPath('/blog/'.$post->getAttribute('slug')));
+            foreach (BlogEditorialService::publicQuery()->orderBy('position')->get(['slug']) as $post) {
+                $urls[] = $this->canonical->forPath('/blog/'.$post->getAttribute('slug'));
+            }
         }
 
         return response()
