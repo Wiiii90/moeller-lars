@@ -2,6 +2,7 @@
 
 use App\Models\PublicContentSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
@@ -25,8 +26,12 @@ it('keeps hidden contact unavailable and renders the explicit construction state
         ->assertDontSee('<form', false);
 });
 
-it('accepts a valid enabled submission through the real array mail transport', function () {
-    config(['contact.recipient' => 'artist@example.test']);
+it('accepts a valid enabled submission with a delivering mailer configured', function () {
+    config([
+        'contact.recipient' => 'artist@example.test',
+        'mail.default' => 'smtp',
+    ]);
+    Mail::fake();
     publicContactSettings()->update(['contact_state' => 'enabled']);
 
     $this->from('/contact')->post('/contact', [
