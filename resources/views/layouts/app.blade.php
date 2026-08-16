@@ -15,7 +15,7 @@
                 data-matomo-site-id="{{ $matomoTracking['site_id'] }}"
             >
         @endif
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css', 'resources/css/public-content.css', 'resources/js/app.js'])
     </head>
     <body>
         <header class="site-header">
