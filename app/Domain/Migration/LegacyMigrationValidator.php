@@ -317,6 +317,7 @@ final class LegacyMigrationValidator
             $actual = $actualRows->get($position);
             if (is_object($actual) === false) {
                 $errors[] = "Legacy CV entry {$position} is missing.";
+
                 continue;
             }
 
