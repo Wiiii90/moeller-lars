@@ -12,17 +12,22 @@ use Throwable;
 
 final class LegacyPublicProfileImporter
 {
-    public function __construct(private readonly MediaIngestService $mediaIngestService) {}
+    private readonly MediaIngestService $mediaIngestService;
+
+    public function __construct(MediaIngestService $mediaIngestService)
+    {
+        $this->mediaIngestService = $mediaIngestService;
+    }
 
     public function import(string $manifestPath, string $mediaRoot): void
     {
-        [$batch, $profileMedia, $sourcePath] = $this->preflight($manifestPath, $mediaRoot);
+        [$snapshotBatch, $profileMedia, $sourcePath] = $this->preflight($manifestPath, $mediaRoot);
 
         $cvEntry = DB::table('cv_entries')
             ->where('legacy_source', LegacyPublicCvImporter::SOURCE)
             ->where('legacy_id', 1)
             ->first();
-        if (! is_object($cvEntry)) {
+        if (is_object($cvEntry) === false) {
             throw new RuntimeException('Verified legacy biography entry is missing; import CV content before the public profile portrait.');
         }
         if (($cvEntry->image_media_asset_id ?? null) !== null) {
@@ -32,7 +37,7 @@ final class LegacyPublicProfileImporter
         $storageKeys = [];
 
         try {
-            DB::transaction(function () use ($batch, $profileMedia, $sourcePath, $cvEntry, &$storageKeys): void {
+            DB::transaction(function () use ($snapshotBatch, $profileMedia, $sourcePath, $cvEntry, &$storageKeys): void {
                 $upload = new UploadedFile(
                     $sourcePath,
                     basename($sourcePath),
@@ -49,11 +54,12 @@ final class LegacyPublicProfileImporter
                 $now = now();
                 $asset->fill([
                     'alt_text' => $profileMedia['alt_text'],
+                    'metadata' => ['legacy_snapshot_batch' => $snapshotBatch],
                     'legacy_source' => $profileMedia['legacy_source'],
                     'legacy_path' => $profileMedia['media_path'],
                     'legacy_filename' => basename(str_replace('\\', '/', $profileMedia['media_path'])),
                     'legacy_byte_size' => $profileMedia['media_byte_size'],
-                    'migration_batch_id' => $batch,
+                    'migration_batch_id' => LegacyPublicCvImporter::BATCH,
                     'migrated_at' => $now,
                 ]);
                 $asset->save();
@@ -103,17 +109,17 @@ final class LegacyPublicProfileImporter
     private function preflight(string $manifestPath, string $mediaRoot): array
     {
         $manifestFile = realpath($manifestPath);
-        if ($manifestFile === false || ! is_file($manifestFile)) {
+        if ($manifestFile === false || is_file($manifestFile) === false) {
             throw new RuntimeException('Legacy manifest does not exist.');
         }
 
         $root = realpath($mediaRoot);
-        if ($root === false || ! is_dir($root)) {
+        if ($root === false || is_dir($root) === false) {
             throw new RuntimeException('Legacy media root does not exist.');
         }
 
         $json = file_get_contents($manifestFile);
-        if (! is_string($json)) {
+        if (is_string($json) === false) {
             throw new RuntimeException('Legacy manifest could not be read.');
         }
 
@@ -122,13 +128,13 @@ final class LegacyPublicProfileImporter
         } catch (JsonException $exception) {
             throw new RuntimeException('Legacy manifest is not valid JSON.', 0, $exception);
         }
-        if (! is_array($manifest)) {
+        if (is_array($manifest) === false) {
             throw new RuntimeException('Legacy manifest root must be an object.');
         }
 
-        $batch = $this->requiredString($manifest, 'batch');
+        $snapshotBatch = $this->requiredString($manifest, 'batch');
         $profileMedia = $manifest['profile_media'] ?? null;
-        if (! is_array($profileMedia) || array_is_list($profileMedia)) {
+        if (is_array($profileMedia) === false || array_is_list($profileMedia)) {
             throw new RuntimeException('Legacy manifest field profile_media must be an object.');
         }
 
@@ -141,7 +147,7 @@ final class LegacyPublicProfileImporter
         $sourcePath = $this->sourceMediaPath($root, $mediaPath);
         $expectedBytes = $this->requiredInteger($profileMedia, 'media_byte_size');
         $actualBytes = filesize($sourcePath);
-        if (! is_int($actualBytes) || $actualBytes !== $expectedBytes) {
+        if (is_int($actualBytes) === false || $actualBytes !== $expectedBytes) {
             throw new RuntimeException('Legacy portrait byte size does not match the manifest.');
         }
 
@@ -153,7 +159,7 @@ final class LegacyPublicProfileImporter
         $altText = $this->requiredString($profileMedia, 'alt_text');
 
         return [
-            $batch,
+            $snapshotBatch,
             [
                 'legacy_source' => $legacySource,
                 'media_path' => $mediaPath,
@@ -175,13 +181,13 @@ final class LegacyPublicProfileImporter
         }
 
         $candidate = realpath($mediaRoot.DIRECTORY_SEPARATOR.str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativePath));
-        if ($candidate === false || ! is_file($candidate)) {
+        if ($candidate === false || is_file($candidate) === false) {
             throw new RuntimeException("Legacy portrait file is missing: {$relativePath}");
         }
 
         $normalizedRoot = rtrim(str_replace('\\', '/', $mediaRoot), '/').'/';
         $normalizedCandidate = str_replace('\\', '/', $candidate);
-        if (! str_starts_with(strtolower($normalizedCandidate), strtolower($normalizedRoot))) {
+        if (str_starts_with(strtolower($normalizedCandidate), strtolower($normalizedRoot)) === false) {
             throw new RuntimeException('Legacy portrait path escapes the supplied media root.');
         }
 
@@ -213,7 +219,7 @@ final class LegacyPublicProfileImporter
     private function requiredString(array $data, string $key): string
     {
         $value = $data[$key] ?? null;
-        if (! is_string($value) || trim($value) === '') {
+        if (is_string($value) === false || trim($value) === '') {
             throw new RuntimeException("Legacy manifest field {$key} must be a non-empty string.");
         }
 
@@ -223,7 +229,7 @@ final class LegacyPublicProfileImporter
     private function requiredInteger(array $data, string $key): int
     {
         $value = $data[$key] ?? null;
-        if (! is_int($value)) {
+        if (is_int($value) === false) {
             throw new RuntimeException("Legacy manifest field {$key} must be an integer.");
         }
 
