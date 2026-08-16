@@ -2,25 +2,18 @@
 
 @php
     $year = $artwork->work_date?->format('Y');
-    if (! $year && $artwork->date_precision === 'year' && preg_match('/(?<!\d)(\d{4})(?!\d)/', (string) $artwork->legacy_date_raw, $matches)) {
-        $year = $matches[1];
-    }
     $imageUrl = $media->originalUrl($artwork);
-    $primaryMedia = $artwork->artworkMedia->firstWhere('role', 'primary');
-    $primaryAsset = $primaryMedia?->mediaAsset;
+    $primaryMedia = $media->primaryMedia($artwork);
+    $primaryAsset = $primaryMedia->getRelationValue('mediaAsset');
 @endphp
 
 @section('title', $artwork->title.' — Lars Möller')
 
 @section('content')
     <article class="artwork-detail" data-artwork-viewer-sequence>
-        @if ($imageUrl)
-            <a class="artwork-detail__viewer-trigger" href="{{ $imageUrl }}" data-artwork-viewer-trigger data-viewer-key="{{ $artwork->slug }}">
-                <img class="artwork-image artwork-detail__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
-            </a>
-        @else
-            <div class="missing-media" role="img" aria-label="Media unavailable">Media unavailable</div>
-        @endif
+        <a class="artwork-detail__viewer-trigger" href="{{ $imageUrl }}" data-artwork-viewer-trigger data-viewer-key="{{ $artwork->slug }}">
+            <img class="artwork-image artwork-detail__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
+        </a>
         <div class="artwork-detail__metadata">
             <p>{{ $artwork->title }}@if ($year), {{ $year }}@endif</p>
             @if ($artwork->medium || $artwork->dimensions)
@@ -29,10 +22,10 @@
             @if ($artwork->description)
                 <p>{{ $artwork->description }}</p>
             @endif
-            @if ($primaryAsset?->credit)
+            @if ($primaryAsset->credit)
                 <p class="artwork-credit">{{ $primaryAsset->credit }}</p>
             @endif
-            @if ($primaryAsset?->copyright_notice)
+            @if ($primaryAsset->copyright_notice)
                 <p class="artwork-copyright">{{ $primaryAsset->copyright_notice }}</p>
             @endif
         </div>
@@ -42,7 +35,7 @@
                 <span
                     data-artwork-viewer-item
                     data-viewer-key="{{ $viewerArtwork->slug }}"
-                    data-viewer-src="{{ $viewerMediaUrl ?? '' }}"
+                    data-viewer-src="{{ $viewerMediaUrl }}"
                     data-viewer-alt="{{ $media->altText($viewerArtwork) }}"
                     data-viewer-title="{{ $viewerArtwork->title }}"
                     data-viewer-page="{{ route('artworks.show', $viewerArtwork->slug) }}"

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 class EditArtworkCategory extends EditRecord
 {
@@ -77,11 +78,19 @@ class EditArtworkCategory extends EditRecord
                 ])
                 ->action(function (array $data): void {
                     try {
-                        $ids = array_map(
-                            static fn (mixed $item): mixed => is_array($item) ? ($item['id'] ?? null) : null,
-                            $data['artworks'] ?? [],
-                        );
-                        app(ArtworkCategoryEditorialService::class)->reorderArtworks($this->categoryRecord(), array_map(static fn (mixed $id): int => (int) $id, $ids));
+                        if (! array_key_exists('artworks', $data) || ! is_array($data['artworks'])) {
+                            throw ValidationException::withMessages(['artworks' => 'The artwork order is missing.']);
+                        }
+
+                        $ids = [];
+                        foreach ($data['artworks'] as $item) {
+                            if (! is_array($item) || ! array_key_exists('id', $item) || ! is_numeric($item['id'])) {
+                                throw ValidationException::withMessages(['artworks' => 'The artwork order is invalid.']);
+                            }
+                            $ids[] = (int) $item['id'];
+                        }
+
+                        app(ArtworkCategoryEditorialService::class)->reorderArtworks($this->categoryRecord(), $ids);
                     } catch (ValidationException) {
                         Notification::make()->title('Gallery order could not be updated')->danger()->send();
 
@@ -100,9 +109,14 @@ class EditArtworkCategory extends EditRecord
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $this->categoryRecord()->artworks()
             ->orderBy('position')
-            ->orderByRaw('work_date DESC NULLS LAST')
-            ->orderBy('slug')
             ->get();
+
+        $positions = $artworks
+            ->map(static fn (Artwork $artwork): int => (int) $artwork->getAttribute('position'))
+            ->all();
+        if (count($positions) !== count(array_unique($positions))) {
+            throw new LogicException('Artwork positions must be unique before the gallery can be reordered.');
+        }
 
         return $artworks->map(static function (Artwork $artwork): array {
             $workDate = $artwork->getAttribute('work_date');

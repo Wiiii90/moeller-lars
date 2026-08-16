@@ -54,17 +54,16 @@ export function adjacentIndex(index, direction, length) {
 
 function normalizeItem(element) {
     const key = element.dataset.viewerKey;
-    if (!key) {
-        return null;
+    const src = element.dataset.viewerSrc;
+    const alt = element.dataset.viewerAlt;
+    const title = element.dataset.viewerTitle;
+    const page = element.dataset.viewerPage;
+
+    if (!key || !src || alt === undefined || !title || !page) {
+        throw new Error('Artwork viewer item is missing required canonical data.');
     }
 
-    return {
-        key,
-        src: element.dataset.viewerSrc || '',
-        alt: element.dataset.viewerAlt || '',
-        title: element.dataset.viewerTitle || '',
-        page: element.dataset.viewerPage || '',
-    };
+    return { key, src, alt, title, page };
 }
 
 export function initializeArtworkViewer(root = document) {
@@ -117,7 +116,9 @@ export function initializeArtworkViewer(root = document) {
 
     const showItem = (nextIndex) => {
         const item = items[nextIndex];
-        if (!item) return;
+        if (!item) {
+            throw new RangeError('Artwork viewer index is outside the canonical sequence.');
+        }
         index = nextIndex;
         state = { scale: 1, x: 0, y: 0 };
         pointers.clear();
@@ -126,27 +127,27 @@ export function initializeArtworkViewer(root = document) {
         title.textContent = item.title;
         previous.disabled = adjacentIndex(index, -1, items.length) === null;
         next.disabled = adjacentIndex(index, 1, items.length) === null;
-        pageLink.hidden = !item.page;
-        if (item.page) pageLink.href = item.page;
+        pageLink.hidden = false;
+        pageLink.href = item.page;
         expectedSrc = item.src;
         image.removeAttribute('src');
         image.hidden = true;
-        missing.hidden = Boolean(item.src);
-        loading.hidden = !item.src;
+        missing.hidden = true;
+        loading.hidden = false;
         zoomOut.disabled = true;
         zoomIn.disabled = true;
         reset.disabled = true;
         reset.textContent = '100%';
-        if (!item.src) return;
         image.alt = item.alt;
         image.src = item.src;
     };
 
     const open = (source, sequence) => {
-        const normalized = Array.from(sequence.querySelectorAll('[data-artwork-viewer-item]'))
-            .map(normalizeItem).filter(Boolean);
+        const normalized = Array.from(sequence.querySelectorAll('[data-artwork-viewer-item]')).map(normalizeItem);
         const start = normalized.findIndex((item) => item.key === source.dataset.viewerKey);
-        if (start < 0) return false;
+        if (start < 0) {
+            throw new Error('Artwork viewer trigger is not present in its canonical sequence.');
+        }
         trigger = source;
         items = normalized;
         showItem(start);

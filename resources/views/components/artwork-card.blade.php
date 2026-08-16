@@ -1,8 +1,5 @@
 @php
     $year = $artwork->work_date?->format('Y');
-    if (! $year && $artwork->date_precision === 'year' && preg_match('/(?<!\d)(\d{4})(?!\d)/', (string) $artwork->legacy_date_raw, $matches)) {
-        $year = $matches[1];
-    }
     $imageUrl = $media->thumbnailUrl($artwork);
     $originalUrl = $media->originalUrl($artwork);
 @endphp
@@ -14,16 +11,12 @@
         data-artwork-viewer-item
         data-artwork-viewer-trigger
         data-viewer-key="{{ $artwork->slug }}"
-        data-viewer-src="{{ $originalUrl ?? '' }}"
+        data-viewer-src="{{ $originalUrl }}"
         data-viewer-alt="{{ $media->altText($artwork) }}"
         data-viewer-title="{{ $artwork->title }}"
         data-viewer-page="{{ route('artworks.show', $artwork->slug) }}"
     >
-        @if ($imageUrl)
-            <img class="artwork-image artwork-card__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
-        @else
-            <div class="missing-media artwork-card__image" role="img" aria-label="Media unavailable">Media unavailable</div>
-        @endif
+        <img class="artwork-image artwork-card__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
         <div class="artwork-card__metadata">
             <p>{{ $artwork->title }}@if ($year), {{ $year }}@endif</p>
             @if ($artwork->medium || $artwork->dimensions)

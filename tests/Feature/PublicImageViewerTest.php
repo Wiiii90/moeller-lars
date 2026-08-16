@@ -4,16 +4,19 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use Illuminate\Support\Facades\Storage;
 
-function viewerCategory(string $slug = 'sculptures'): ArtworkCategory
+function viewerCategory(string $slug, int $position): ArtworkCategory
 {
-    $category = ArtworkCategory::query()->firstOrNew(['slug' => $slug]);
-    $position = $category->exists ? (int) $category->getAttribute('position') : ((int) ArtworkCategory::query()->max('position') + 1);
-    $category->fill(['name' => ucfirst($slug), 'state' => 'published', 'position' => $position, 'show_in_navigation' => true, 'show_on_home' => true]);
-    $category->save();
-
-    return $category;
+    return ArtworkCategory::create([
+        'name' => ucfirst($slug),
+        'slug' => $slug,
+        'state' => 'published',
+        'position' => $position,
+        'show_in_navigation' => true,
+        'show_on_home' => true,
+    ]);
 }
 
 function viewerArtwork(ArtworkCategory $category, string $slug, array $attributes = []): Artwork
@@ -37,6 +40,20 @@ function viewerPrimary(Artwork $artwork, MediaAsset $asset): void
     ArtworkMedia::create(['artwork_id' => $artwork->id, 'media_asset_id' => $asset->id, 'role' => 'primary', 'position' => 0]);
 }
 
+function viewerThumbnail(MediaAsset $asset): MediaVariant
+{
+    return MediaVariant::create([
+        'media_asset_id' => $asset->id,
+        'variant_kind' => 'thumbnail',
+        'storage_key' => 'variants/'.$asset->id.'.webp',
+        'mime_type' => 'image/webp',
+        'byte_size' => 4,
+        'sha256' => str_repeat('d', 64),
+        'transform_profile' => 'public-v1',
+        'state' => 'available',
+    ]);
+}
+
 it('renders one accessible global viewer modal with all controls', function () {
     $content = $this->get('/')->assertSuccessful()->getContent();
 
@@ -49,13 +66,15 @@ it('renders one accessible global viewer modal with all controls', function () {
 
 it('renders ordered category and home viewer sequences with controlled URLs', function () {
     Storage::fake(config('media.disk'));
-    $category = viewerCategory();
-    $first = viewerArtwork($category, 'viewer-first', ['work_date' => '2025-01-01', 'position' => 1]);
+    $category = viewerCategory('sculptures', 0);
+    $first = viewerArtwork($category, 'viewer-first', ['work_date' => '2026-01-01', 'position' => 1]);
     $second = viewerArtwork($category, 'viewer-second', ['work_date' => '2025-01-01', 'position' => 2]);
     foreach ([$first, $second] as $artwork) {
         $asset = viewerAsset('originals/'.$artwork->slug.'.jpg');
         viewerPrimary($artwork, $asset);
+        $thumbnail = viewerThumbnail($asset);
         Storage::disk(config('media.disk'))->put($asset->storage_key, 'image');
+        Storage::disk(config('media.disk'))->put($thumbnail->storage_key, 'thumb');
     }
     $categoryContent = $this->get('/sculptures')->assertSuccessful()->getContent();
     $firstPosition = strpos($categoryContent, 'data-viewer-key="viewer-first"');
@@ -74,11 +93,11 @@ it('renders ordered category and home viewer sequences with controlled URLs', fu
 
 it('renders direct-view sequence data and preserves the no-JS original link', function () {
     Storage::fake(config('media.disk'));
-    $category = viewerCategory();
+    $category = viewerCategory('sculptures', 0);
     $current = viewerArtwork($category, 'viewer-current', ['work_date' => '2026-01-01', 'position' => 2]);
     $other = viewerArtwork($category, 'viewer-other', ['work_date' => '2025-01-01', 'position' => 1]);
     $third = viewerArtwork($category, 'viewer-third', ['work_date' => '2024-01-01', 'position' => 0]);
-    $outside = viewerArtwork(viewerCategory('works-a'), 'viewer-outside');
+    $outside = viewerArtwork(viewerCategory('works-a', 1), 'viewer-outside');
     foreach ([$current, $other, $third, $outside] as $artwork) {
         $asset = viewerAsset('originals/'.$artwork->slug.'.jpg');
         viewerPrimary($artwork, $asset);
@@ -97,21 +116,20 @@ it('renders direct-view sequence data and preserves the no-JS original link', fu
         ->and(strpos($sequence, 'data-viewer-key="viewer-other"'))->toBeLessThan(strpos($sequence, 'data-viewer-key="viewer-current"'));
 });
 
-it('keeps missing primary media as a normal card link with empty viewer source', function () {
-    $artwork = viewerArtwork(viewerCategory(), 'viewer-missing');
-    $content = $this->get('/sculptures')->assertSuccessful()->getContent();
+it('fails explicitly when a gallery card has no canonical primary media', function () {
+    viewerArtwork(viewerCategory('sculptures', 0), 'viewer-missing');
+    $this->withoutExceptionHandling();
 
-    expect($content)->toContain('href="'.route('artworks.show', $artwork->slug).'"')
-        ->and($content)->toContain('data-viewer-src=""')
-        ->and($content)->toContain('data-artwork-viewer');
+    expect(fn () => $this->get('/sculptures'))->toThrow(LogicException::class);
 });
 
 it('escapes viewer data and keeps the viewer source free of unsafe DOM APIs', function () {
-    $category = viewerCategory();
+    $category = viewerCategory('sculptures', 0);
     $artwork = viewerArtwork($category, 'viewer-escaping', ['title' => '<script>" &']);
     $asset = viewerAsset('originals/escaping.jpg');
     $asset->update(['alt_text' => '<script>" &']);
     viewerPrimary($artwork, $asset);
+    viewerThumbnail($asset);
     $content = $this->get('/sculptures')->assertSuccessful()->getContent();
     $source = file_get_contents(resource_path('js/artwork-viewer.js'));
 

@@ -7,6 +7,7 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Illuminate\Database\Eloquent\Collection;
+use LogicException;
 
 class PublicMedia
 {
@@ -41,50 +42,78 @@ class PublicMedia
         return $asset !== null && $this->isPublicAsset($asset);
     }
 
-    public function primaryMedia(Artwork $artwork): ?ArtworkMedia
+    public function primaryMedia(Artwork $artwork): ArtworkMedia
     {
         /** @var Collection<int, ArtworkMedia> $mediaRows */
         $mediaRows = $artwork->getRelationValue('artworkMedia');
+        $primaries = $mediaRows->filter(
+            static fn (ArtworkMedia $media): bool => $media->getAttribute('role') === 'primary',
+        )->values();
 
-        return $mediaRows->first(fn (ArtworkMedia $media) => $media->getAttribute('role') === 'primary');
+        if ($primaries->count() !== 1) {
+            throw new LogicException('Published artwork must have exactly one primary media usage.');
+        }
+
+        /** @var ArtworkMedia $primary */
+        $primary = $primaries->first();
+
+        return $primary;
     }
 
     public function altText(Artwork $artwork): string
     {
         $media = $this->primaryMedia($artwork);
-        /** @var MediaAsset|null $asset */
-        $asset = $media?->getRelationValue('mediaAsset');
+        $override = $media->getAttribute('alt_text_override');
+        if ($override !== null) {
+            if (! is_string($override)) {
+                throw new LogicException('Artwork ALT override must be text.');
+            }
 
-        return $media?->getAttribute('alt_text_override') ?? $asset?->getAttribute('alt_text') ?? $artwork->getAttribute('title');
+            return $override;
+        }
+
+        $asset = $this->primaryAsset($artwork);
+        $altText = $asset->getAttribute('alt_text');
+        if (! is_string($altText)) {
+            throw new LogicException('Published artwork requires explicit ALT text.');
+        }
+
+        return $altText;
     }
 
-    public function thumbnailUrl(Artwork $artwork): ?string
+    public function thumbnailUrl(Artwork $artwork): string
     {
-        /** @var MediaAsset|null $asset */
-        $asset = $this->primaryMedia($artwork)?->getRelationValue('mediaAsset');
-        if (! $asset) {
-            return null;
-        }
+        $asset = $this->primaryAsset($artwork);
 
         /** @var Collection<int, MediaVariant> $variants */
         $variants = $asset->getRelationValue('variants');
-        $variant = $variants->first(fn (MediaVariant $variant) => $variant->getAttribute('variant_kind') === self::THUMBNAIL_KIND
+        $matching = $variants->filter(fn (MediaVariant $variant): bool => $variant->getAttribute('variant_kind') === self::THUMBNAIL_KIND
             && $variant->getAttribute('transform_profile') === self::PUBLIC_TRANSFORM_PROFILE
             && $variant->getAttribute('state') === 'available'
-        );
+        )->values();
 
-        if ($variant) {
-            return route('media.variant', $variant);
+        if ($matching->count() !== 1) {
+            throw new LogicException('Published artwork requires exactly one available public thumbnail.');
         }
 
-        return $asset->getAttribute('state') === 'available' ? route('media.original', $asset) : null;
+        /** @var MediaVariant $variant */
+        $variant = $matching->first();
+
+        return route('media.variant', $variant);
     }
 
-    public function originalUrl(Artwork $artwork): ?string
+    public function originalUrl(Artwork $artwork): string
     {
-        /** @var MediaAsset|null $asset */
-        $asset = $this->primaryMedia($artwork)?->getRelationValue('mediaAsset');
+        return route('media.original', $this->primaryAsset($artwork));
+    }
 
-        return $asset?->getAttribute('state') === 'available' ? route('media.original', $asset) : null;
+    private function primaryAsset(Artwork $artwork): MediaAsset
+    {
+        $asset = $this->primaryMedia($artwork)->getRelationValue('mediaAsset');
+        if (! $asset instanceof MediaAsset || $asset->getAttribute('state') !== 'available') {
+            throw new LogicException('Published artwork requires an available primary media asset.');
+        }
+
+        return $asset;
     }
 }

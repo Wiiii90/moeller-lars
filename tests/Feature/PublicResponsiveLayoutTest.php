@@ -2,31 +2,77 @@
 
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use App\Models\ArtworkMedia;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    responsiveArtwork('sculptures', 'navigation-sculpture');
-    responsiveArtwork('works-a', 'navigation-work-a');
-    responsiveArtwork('works-b', 'navigation-work-b');
+    responsiveArtwork('sculptures', 'navigation-sculpture', 0, 0);
+    responsiveArtwork('works-a', 'navigation-work-a', 1, 0);
+    responsiveArtwork('works-b', 'navigation-work-b', 2, 0);
 });
 
-function responsiveArtwork(string $categorySlug = 'sculptures', string $slug = 'responsive-work'): Artwork
-{
-    $category = ArtworkCategory::query()->firstOrNew(['slug' => $categorySlug]);
-    $position = $category->exists ? (int) $category->getAttribute('position') : ((int) ArtworkCategory::query()->max('position') + 1);
-    $category->fill(['name' => ucfirst($categorySlug), 'state' => 'published', 'position' => $position, 'show_in_navigation' => true, 'show_on_home' => true]);
-    $category->save();
+function responsiveArtwork(
+    string $categorySlug,
+    string $slug,
+    ?int $categoryPosition,
+    int $artworkPosition,
+): Artwork {
+    $category = ArtworkCategory::query()->where('slug', $categorySlug)->first();
+    if (! $category instanceof ArtworkCategory) {
+        if ($categoryPosition === null) {
+            throw new LogicException('A new responsive test category requires an explicit position.');
+        }
+        $category = ArtworkCategory::create([
+            'name' => ucfirst($categorySlug),
+            'slug' => $categorySlug,
+            'state' => 'published',
+            'position' => $categoryPosition,
+            'show_in_navigation' => true,
+            'show_on_home' => true,
+        ]);
+    } elseif ($categoryPosition !== null && (int) $category->getAttribute('position') !== $categoryPosition) {
+        throw new LogicException('Responsive test category position does not match the existing fixture.');
+    }
 
-    return Artwork::create([
+    $artwork = Artwork::create([
         'artwork_category_id' => $category->id,
         'slug' => $slug,
         'title' => 'Responsive work',
         'state' => 'published',
-        'position' => 0,
+        'position' => $artworkPosition,
         'date_precision' => 'unknown',
     ]);
+    $asset = MediaAsset::create([
+        'storage_key' => 'originals/'.$slug.'.jpg',
+        'original_filename' => $slug.'.jpg',
+        'mime_type' => 'image/jpeg',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', $slug),
+        'state' => 'available',
+        'alt_text' => 'Responsive artwork ALT',
+    ]);
+    ArtworkMedia::create([
+        'artwork_id' => $artwork->id,
+        'media_asset_id' => $asset->id,
+        'role' => 'primary',
+        'position' => 0,
+    ]);
+    MediaVariant::create([
+        'media_asset_id' => $asset->id,
+        'variant_kind' => 'thumbnail',
+        'storage_key' => 'variants/'.$slug.'.webp',
+        'mime_type' => 'image/webp',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', 'thumb-'.$slug),
+        'transform_profile' => 'public-v1',
+        'state' => 'available',
+    ]);
+
+    return $artwork;
 }
 
 it('renders the responsive shell and ordered main navigation', function () {
@@ -56,7 +102,7 @@ it('marks only the active artwork navigation link', function (string $path, stri
 ]);
 
 it('does not mark artwork navigation active on a custom published category', function () {
-    responsiveArtwork('etchings', 'custom-responsive-work');
+    responsiveArtwork('etchings', 'custom-responsive-work', 3, 0);
     ArtworkCategory::query()->where('slug', 'etchings')->update(['show_in_navigation' => false]);
     $content = $this->get('/etchings')->assertSuccessful()->getContent();
 
@@ -64,29 +110,38 @@ it('does not mark artwork navigation active on a custom published category', fun
 });
 
 it('renders responsive artwork card and direct artwork markup', function () {
-    $artwork = responsiveArtwork('sculptures', 'card-responsive-work');
+    $artwork = responsiveArtwork('sculptures', 'card-responsive-work', null, 1);
     $categoryContent = $this->get('/sculptures')->assertSuccessful()->getContent();
     $detailContent = $this->get('/artworks/'.$artwork->slug)->assertSuccessful()->getContent();
 
     expect($categoryContent)->toContain('class="artwork-card"', 'class="artwork-card__link"')
-        ->and($categoryContent)->toContain('class="missing-media artwork-card__image"')
+        ->and($categoryContent)->toContain('class="artwork-image artwork-card__image"')
         ->and($categoryContent)->toContain('class="artwork-card__metadata"')
         ->and($categoryContent)->toContain('href="'.route('artworks.show', $artwork->slug).'"')
-        ->and($detailContent)->toContain('class="artwork-detail"', 'class="missing-media"')
-        ->and($detailContent)->toContain('class="artwork-detail__metadata"')
-        ->and($detailContent)->toContain('role="img" aria-label="Media unavailable"');
+        ->and($detailContent)->toContain('class="artwork-detail"', 'class="artwork-image artwork-detail__image"')
+        ->and($detailContent)->toContain('class="artwork-detail__metadata"');
 });
 
-it('renders missing and empty public states accessibly', function () {
-    $artwork = responsiveArtwork('sculptures', 'missing-responsive-work');
-    $categoryContent = $this->get('/sculptures')->assertSuccessful()->getContent();
-    $detailContent = $this->get('/artworks/'.$artwork->slug)->assertSuccessful()->getContent();
+it('fails explicitly when required public media is missing', function () {
+    $category = ArtworkCategory::query()->where('slug', 'sculptures')->firstOrFail();
+    $artwork = Artwork::create([
+        'artwork_category_id' => $category->id,
+        'slug' => 'missing-responsive-work',
+        'title' => 'Missing media',
+        'state' => 'published',
+        'position' => 1,
+        'date_precision' => 'unknown',
+    ]);
+    $this->withoutExceptionHandling();
 
-    expect($categoryContent)->toContain('role="img" aria-label="Media unavailable"');
-    expect($detailContent)->toContain('role="img" aria-label="Media unavailable"');
+    expect(fn () => $this->get('/sculptures'))->toThrow(LogicException::class);
+    expect(fn () => $this->get('/artworks/'.$artwork->slug))->toThrow(LogicException::class);
+});
 
+it('renders the legitimate empty home state when no eligible dated artwork exists', function () {
     Artwork::query()->delete();
     ArtworkCategory::query()->delete();
+
     expect($this->get('/')->assertSuccessful()->getContent())
         ->toContain('class="missing-media public-empty-state"');
 });

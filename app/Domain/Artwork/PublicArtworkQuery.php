@@ -5,33 +5,46 @@ namespace App\Domain\Artwork;
 use App\Models\Artwork;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use LogicException;
 
 class PublicArtworkQuery
 {
     /** @return Collection<int, Artwork> */
     public function category(string $slug): Collection
     {
-        return $this->publicQuery()
+        $artworks = $this->publicQuery()
             ->whereHas('category', fn (Builder $query) => $query
                 ->where('slug', $slug)
                 ->where('state', 'published'))
             ->orderBy('position')
-            ->orderByRaw('work_date DESC NULLS LAST')
-            ->orderBy('slug')
             ->get();
+
+        $positions = $artworks
+            ->map(static fn (Artwork $artwork): int => (int) $artwork->getAttribute('position'))
+            ->all();
+
+        if (count($positions) !== count(array_unique($positions))) {
+            throw new LogicException('Published artwork positions must be unique within a category.');
+        }
+
+        return $artworks;
     }
 
     public function latestForHome(): ?Artwork
     {
-        /** @var Artwork|null $artwork */
-        $artwork = $this->publicQuery()
-            ->whereHas('category', fn (Builder $query) => $query
-                ->where('state', 'published')
-                ->where('show_on_home', true))
-            ->orderByRaw('work_date DESC NULLS LAST')
-            ->orderBy('position')
-            ->orderBy('slug')
-            ->first();
+        $latestDate = $this->homeQuery()->max('work_date');
+        if ($latestDate === null) {
+            return null;
+        }
+
+        /** @var Collection<int, Artwork> $candidates */
+        $candidates = $this->homeQuery()->whereDate('work_date', $latestDate)->get();
+        if ($candidates->count() !== 1) {
+            throw new LogicException('The newest eligible home artwork is ambiguous.');
+        }
+
+        /** @var Artwork $artwork */
+        $artwork = $candidates->first();
 
         return $artwork;
     }
@@ -42,6 +55,16 @@ class PublicArtworkQuery
             ->where('slug', $slug)
             ->whereHas('category', fn (Builder $query) => $query->where('state', 'published'))
             ->first();
+    }
+
+    /** @return Builder<Artwork> */
+    private function homeQuery(): Builder
+    {
+        return $this->publicQuery()
+            ->whereHas('category', fn (Builder $query) => $query
+                ->where('state', 'published')
+                ->where('show_on_home', true))
+            ->whereNotNull('work_date');
     }
 
     /** @return Builder<Artwork> */
