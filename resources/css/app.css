@@ -206,3 +206,127 @@ img { max-width: 100%; }
     .site-header h1 { font-size: 1.2rem; }
     .site-content { padding-inline: .65rem; }
 }
+
+.artwork-detail__viewer-trigger {
+    display: block;
+    color: inherit;
+}
+
+.artwork-viewer {
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgba(18, 18, 18, .97);
+    color: #fff;
+}
+
+.artwork-viewer::backdrop { background: rgba(0, 0, 0, .82); }
+
+.artwork-viewer__surface {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    gap: .75rem;
+    height: 100%;
+    min-width: 0;
+    padding: max(.75rem, env(safe-area-inset-top)) max(.75rem, env(safe-area-inset-right)) max(.75rem, env(safe-area-inset-bottom)) max(.75rem, env(safe-area-inset-left));
+}
+
+.artwork-viewer__topbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .75rem;
+    min-width: 0;
+}
+
+.artwork-viewer__page-link {
+    margin-right: auto;
+    color: #eee;
+    font-size: .85rem;
+    overflow-wrap: anywhere;
+}
+
+.artwork-viewer button {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: .45rem .7rem;
+    border: 1px solid rgba(255, 255, 255, .55);
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+}
+
+.artwork-viewer button:disabled { opacity: .4; cursor: default; }
+
+.artwork-viewer button:focus-visible,
+.artwork-viewer__page-link:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.artwork-viewer__close { font-size: 1.5rem !important; line-height: 1; }
+
+.artwork-viewer__stage {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    place-items: center;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+}
+
+.artwork-viewer__image {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 100%;
+    object-fit: contain;
+    transform-origin: center center;
+    will-change: transform;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.artwork-viewer__loading,
+.artwork-viewer__missing {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    text-align: center;
+    pointer-events: none;
+}
+
+[data-viewer-loading][hidden],
+[data-viewer-missing][hidden],
+[data-viewer-image][hidden] { display: none; }
+
+.artwork-viewer__controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .5rem;
+}
+
+.artwork-viewer__title {
+    min-height: 1.3em;
+    margin: 0;
+    font-size: .9rem;
+    font-weight: 400;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .artwork-viewer * { transition: none !important; }
+}

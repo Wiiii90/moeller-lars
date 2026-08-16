@@ -4,7 +4,7 @@
 
 @section('content')
     <h2 class="category-heading">{{ $category->name }}</h2>
-    <div class="artwork-list">
+    <div class="artwork-list" data-artwork-viewer-sequence>
         @forelse ($artworks as $artwork)
             <x-artwork-card :artwork="$artwork" :media="$media" />
         @empty

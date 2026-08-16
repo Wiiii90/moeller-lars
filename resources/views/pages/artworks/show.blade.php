@@ -13,9 +13,11 @@
 @section('title', $artwork->title.' — Lars Möller')
 
 @section('content')
-    <article class="artwork-detail">
+    <article class="artwork-detail" data-artwork-viewer-sequence>
         @if ($imageUrl)
-            <img class="artwork-image artwork-detail__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
+            <a class="artwork-detail__viewer-trigger" href="{{ $imageUrl }}" data-artwork-viewer-trigger data-viewer-key="{{ $artwork->slug }}">
+                <img class="artwork-image artwork-detail__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
+            </a>
         @else
             <div class="missing-media" role="img" aria-label="Media unavailable">Media unavailable</div>
         @endif
@@ -33,6 +35,19 @@
             @if ($primaryAsset?->copyright_notice)
                 <p class="artwork-copyright">{{ $primaryAsset->copyright_notice }}</p>
             @endif
+        </div>
+        <div class="artwork-viewer-sequence-data" hidden aria-hidden="true">
+            @foreach ($viewerArtworks as $viewerArtwork)
+                @php($viewerMediaUrl = $media->originalUrl($viewerArtwork))
+                <span
+                    data-artwork-viewer-item
+                    data-viewer-key="{{ $viewerArtwork->slug }}"
+                    data-viewer-src="{{ $viewerMediaUrl ?? '' }}"
+                    data-viewer-alt="{{ $media->altText($viewerArtwork) }}"
+                    data-viewer-title="{{ $viewerArtwork->title }}"
+                    data-viewer-page="{{ route('artworks.show', $viewerArtwork->slug) }}"
+                ></span>
+            @endforeach
         </div>
     </article>
 @endsection

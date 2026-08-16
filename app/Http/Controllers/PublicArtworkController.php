@@ -56,9 +56,13 @@ class PublicArtworkController extends Controller
         $artwork = $this->artworks->publishedBySlug($slug);
         abort_unless($artwork !== null, 404);
 
+        /** @var ArtworkCategory $categoryRecord */
+        $categoryRecord = $artwork->getRelationValue('category');
+
         return view('pages.artworks.show', [
             'artwork' => $artwork,
             'media' => $this->media,
+            'viewerArtworks' => $this->artworks->category($categoryRecord->getAttribute('slug')),
         ]);
     }
 }

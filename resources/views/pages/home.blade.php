@@ -4,7 +4,7 @@
 
 @section('content')
     @if ($artwork)
-        <div class="home-artwork">
+        <div class="home-artwork" data-artwork-viewer-sequence>
             <x-artwork-card :artwork="$artwork" :media="$media" />
         </div>
     @else

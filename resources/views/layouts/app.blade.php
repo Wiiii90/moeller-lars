@@ -22,5 +22,6 @@
         <main id="content" class="site-content">
             @yield('content')
         </main>
+        <x-artwork-viewer />
     </body>
 </html>
