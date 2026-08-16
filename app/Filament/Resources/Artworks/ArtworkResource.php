@@ -65,7 +65,6 @@ class ArtworkResource extends Resource
             TextInput::make('dimensions')->nullable()->maxLength(240),
             Textarea::make('description')->nullable()->maxLength(10000),
             DatePicker::make('work_date')->nullable(),
-            TextInput::make('position')->numeric()->integer()->required()->minValue(0)->default(0),
         ]);
     }
 
@@ -77,10 +76,10 @@ class ArtworkResource extends Resource
                 TextColumn::make('category.name')->label('Category')->sortable(),
                 TextColumn::make('state')->badge()->sortable(),
                 TextColumn::make('work_date')->date()->sortable(),
-                TextColumn::make('position')->sortable(),
+                TextColumn::make('position')->label('Gallery order')->sortable(),
                 TextColumn::make('updated_at')->dateTime()->sortable(),
             ])
-            ->defaultSort('work_date', 'desc')
+            ->defaultSort('position')
             ->filters([
                 SelectFilter::make('state')->options([
                     'draft' => 'Draft',

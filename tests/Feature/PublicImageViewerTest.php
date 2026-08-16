@@ -74,10 +74,11 @@ it('renders ordered category and home viewer sequences with controlled URLs', fu
 it('renders direct-view sequence data and preserves the no-JS original link', function () {
     Storage::fake(config('media.disk'));
     $category = viewerCategory();
-    $current = viewerArtwork($category, 'viewer-current', ['work_date' => '2026-01-01']);
-    $other = viewerArtwork($category, 'viewer-other', ['work_date' => '2025-01-01']);
+    $current = viewerArtwork($category, 'viewer-current', ['work_date' => '2026-01-01', 'position' => 2]);
+    $other = viewerArtwork($category, 'viewer-other', ['work_date' => '2025-01-01', 'position' => 1]);
+    $third = viewerArtwork($category, 'viewer-third', ['work_date' => '2024-01-01', 'position' => 0]);
     $outside = viewerArtwork(viewerCategory('prints'), 'viewer-outside');
-    foreach ([$current, $other, $outside] as $artwork) {
+    foreach ([$current, $other, $third, $outside] as $artwork) {
         $asset = viewerAsset('originals/'.$artwork->slug.'.jpg');
         viewerPrimary($artwork, $asset);
         Storage::disk(config('media.disk'))->put($asset->storage_key, 'image');
@@ -87,9 +88,12 @@ it('renders direct-view sequence data and preserves the no-JS original link', fu
     $url = route('media.original', ['mediaAsset' => $current->artworkMedia()->first()->mediaAsset]);
     expect($content)->toContain('class="artwork-detail" data-artwork-viewer-sequence')
         ->and($content)->toContain('class="artwork-detail__viewer-trigger" href="'.$url.'"')
-        ->and($content)->toContain('data-viewer-key="viewer-current"', 'data-viewer-key="viewer-other"')
+        ->and($content)->toContain('data-viewer-key="viewer-current"', 'data-viewer-key="viewer-other"', 'data-viewer-key="viewer-third"')
         ->and($content)->not->toContain('data-viewer-key="viewer-outside"')
         ->and($content)->toContain('data-viewer-page="'.route('artworks.show', 'viewer-current').'"');
+    $sequence = substr($content, (int) strpos($content, 'artwork-viewer-sequence-data'));
+    expect(strpos($sequence, 'data-viewer-key="viewer-third"'))->toBeLessThan(strpos($sequence, 'data-viewer-key="viewer-other"'))
+        ->and(strpos($sequence, 'data-viewer-key="viewer-other"'))->toBeLessThan(strpos($sequence, 'data-viewer-key="viewer-current"'));
 });
 
 it('keeps missing primary media as a normal card link with empty viewer source', function () {

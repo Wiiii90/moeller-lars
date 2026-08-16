@@ -100,3 +100,97 @@ it('does not change legacy stable slugs and safely deletes custom categories', f
         ->and(AuditEvent::query()->where('action', 'artwork_category.deleted')->where('entity_id', $category->id)->exists())->toBeTrue()
         ->and(Redirect::query()->where('reason', 'artwork_category_slug_change')->where(fn ($q) => $q->where('source_path', '/deletable')->orWhere('target_path', '/deletable-new'))->exists())->toBeFalse();
 });
+
+it('reorders every artwork in a category and audits once', function () {
+    $admin = categoryServiceAdmin();
+    $this->actingAs($admin, 'web');
+    $category = customCategoryService('reorderable', 'published');
+    $first = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'reorder-first', 'title' => 'First', 'state' => 'published', 'position' => 10, 'date_precision' => 'unknown']);
+    $second = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'reorder-second', 'title' => 'Second', 'state' => 'draft', 'position' => 20, 'date_precision' => 'unknown']);
+    $third = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'reorder-third', 'title' => 'Third', 'state' => 'archived', 'position' => 30, 'date_precision' => 'unknown']);
+
+    app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, [$third->id, $first->id, $second->id]);
+
+    expect($third->fresh()->position)->toBe(0)
+        ->and($first->fresh()->position)->toBe(1)
+        ->and($second->fresh()->position)->toBe(2)
+        ->and(AuditEvent::query()->where('action', 'artwork_category.gallery_reordered')->where('entity_id', $category->id)->where('admin_user_id', $admin->id)->count())->toBe(1);
+});
+
+it('rejects invalid artwork reorder sets without mutation', function (array $ids) {
+    $this->actingAs(categoryServiceAdmin(), 'web');
+    $category = customCategoryService('invalid-reorder', 'published');
+    $first = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'invalid-first', 'title' => 'First', 'state' => 'draft', 'position' => 4, 'date_precision' => 'unknown']);
+    $second = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'invalid-second', 'title' => 'Second', 'state' => 'draft', 'position' => 8, 'date_precision' => 'unknown']);
+
+    expect(fn () => app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, $ids))
+        ->toThrow(ValidationException::class);
+    expect($first->fresh()->position)->toBe(4)
+        ->and($second->fresh()->position)->toBe(8)
+        ->and(AuditEvent::query()->where('action', 'artwork_category.gallery_reordered')->count())->toBe(0);
+})->with([
+    'missing' => [[1]],
+    'duplicate' => [[1, 1]],
+    'non-positive' => [[0, 2]],
+    'non-int' => [['1', 2]],
+]);
+
+it('rejects an artwork from another category during reorder', function () {
+    $this->actingAs(categoryServiceAdmin(), 'web');
+    $category = customCategoryService('reorder-owned', 'published');
+    $other = customCategoryService('reorder-other', 'published');
+    $owned = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'owned-reorder', 'title' => 'Owned', 'state' => 'draft', 'position' => 4, 'date_precision' => 'unknown']);
+    $foreign = Artwork::create(['artwork_category_id' => $other->id, 'slug' => 'foreign-reorder', 'title' => 'Foreign', 'state' => 'draft', 'position' => 9, 'date_precision' => 'unknown']);
+
+    expect(fn () => app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, [$foreign->id]))
+        ->toThrow(ValidationException::class);
+    expect($owned->fresh()->position)->toBe(4)->and($foreign->fresh()->position)->toBe(9);
+});
+
+it('does not write or audit an already normalized reorder', function () {
+    $this->actingAs(categoryServiceAdmin(), 'web');
+    $category = customCategoryService('reorder-noop', 'published');
+    $first = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'noop-first', 'title' => 'First', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
+    $second = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'noop-second', 'title' => 'Second', 'state' => 'draft', 'position' => 1, 'date_precision' => 'unknown']);
+    $updatedAt = $first->fresh()->updated_at;
+
+    app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, [$first->id, $second->id]);
+
+    expect($first->fresh()->updated_at->equalTo($updatedAt))->toBeTrue()
+        ->and(AuditEvent::query()->where('action', 'artwork_category.gallery_reordered')->count())->toBe(0);
+});
+
+it('rolls back all positions when reorder auditing fails', function () {
+    $this->actingAs(categoryServiceAdmin(), 'web');
+    $category = customCategoryService('reorder-rollback', 'published');
+    $first = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'rollback-first', 'title' => 'First', 'state' => 'draft', 'position' => 10, 'date_precision' => 'unknown']);
+    $second = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'rollback-second', 'title' => 'Second', 'state' => 'draft', 'position' => 20, 'date_precision' => 'unknown']);
+    AuditEvent::creating(function (AuditEvent $event): void {
+        if ($event->getAttribute('action') === 'artwork_category.gallery_reordered') {
+            throw new RuntimeException('reorder audit failed');
+        }
+    });
+
+    try {
+        expect(fn () => app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, [$second->id, $first->id]))
+            ->toThrow(RuntimeException::class, 'reorder audit failed');
+    } finally {
+        AuditEvent::flushEventListeners();
+    }
+
+    expect($first->fresh()->position)->toBe(10)
+        ->and($second->fresh()->position)->toBe(20)
+        ->and(AuditEvent::query()->where('action', 'artwork_category.gallery_reordered')->count())->toBe(0);
+});
+
+it('requires an admin for artwork reorder', function () {
+    $category = customCategoryService('reorder-auth', 'published');
+    $artwork = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'auth-reorder', 'title' => 'Auth', 'state' => 'draft', 'position' => 5, 'date_precision' => 'unknown']);
+
+    expect(fn () => app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, [$artwork->id]))
+        ->toThrow(AuthorizationException::class);
+    $this->actingAs(User::factory()->create(), 'web');
+    expect(fn () => app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, [$artwork->id]))
+        ->toThrow(AuthorizationException::class);
+    expect($artwork->fresh()->position)->toBe(5)->and(AuditEvent::query()->count())->toBe(0);
+});

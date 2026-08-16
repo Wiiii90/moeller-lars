@@ -5,12 +5,17 @@ namespace App\Filament\Resources\ArtworkCategories\Pages;
 use App\Domain\Artwork\ArtworkCategoryEditorialService;
 use App\Domain\Artwork\ArtworkCategoryPathPolicy;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
+use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 class EditArtworkCategory extends EditRecord
@@ -55,7 +60,61 @@ class EditArtworkCategory extends EditRecord
                     $this->runCategoryAction(fn () => app(ArtworkCategoryEditorialService::class)->delete($this->categoryRecord()), 'Category deleted');
                     $this->redirect(ArtworkCategoryResource::getUrl('index'));
                 }),
+            Action::make('reorderArtworks')
+                ->label('Reorder gallery')
+                ->visible(fn (): bool => $this->categoryRecord()->artworks()->count() >= 2)
+                ->schema([
+                    Repeater::make('artworks')
+                        ->default(fn (): array => $this->reorderableArtworkState())
+                        ->schema([
+                            Hidden::make('id'),
+                            TextInput::make('label')
+                                ->disabled()
+                                ->dehydrated(false),
+                        ])
+                        ->addable(false)
+                        ->deletable(false)
+                        ->cloneable(false)
+                        ->reorderable(),
+                ])
+                ->action(function (array $data): void {
+                    try {
+                        $ids = array_map(
+                            static fn (mixed $item): mixed => is_array($item) ? ($item['id'] ?? null) : null,
+                            $data['artworks'] ?? [],
+                        );
+                        app(ArtworkCategoryEditorialService::class)->reorderArtworks($this->categoryRecord(), array_map(static fn (mixed $id): int => (int) $id, $ids));
+                    } catch (ValidationException) {
+                        Notification::make()->title('Gallery order could not be updated')->danger()->send();
+
+                        return;
+                    }
+
+                    $this->categoryRecord()->refresh();
+                    Notification::make()->title('Gallery order updated')->success()->send();
+                }),
         ];
+    }
+
+    /** @return list<array{id:int,label:string}> */
+    private function reorderableArtworkState(): array
+    {
+        /** @var Collection<int, Artwork> $artworks */
+        $artworks = $this->categoryRecord()->artworks()
+            ->orderBy('position')
+            ->orderByRaw('work_date DESC NULLS LAST')
+            ->orderBy('slug')
+            ->get();
+
+        return $artworks->map(static function (Artwork $artwork): array {
+            $workDate = $artwork->getAttribute('work_date');
+            $year = $workDate instanceof Carbon ? $workDate->format('Y') : 'undated';
+
+            return [
+                'id' => (int) $artwork->getKey(),
+                'label' => sprintf('%s — %s — %s', (string) $artwork->getAttribute('title'), $year, (string) $artwork->getAttribute('state')),
+            ];
+        })->values()->all();
     }
 
     private function categoryRecord(): ArtworkCategory

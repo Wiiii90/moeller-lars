@@ -15,8 +15,9 @@ class PublicArtworkQuery
             ->whereHas('category', fn (Builder $query) => $query
                 ->where('slug', $slug)
                 ->where('state', 'published'))
-            ->orderByRaw('work_date DESC NULLS LAST')
             ->orderBy('position')
+            ->orderByRaw('work_date DESC NULLS LAST')
+            ->orderBy('slug')
             ->get();
     }
 
@@ -29,6 +30,7 @@ class PublicArtworkQuery
                 ->where('state', 'published'))
             ->orderByRaw('work_date DESC NULLS LAST')
             ->orderBy('position')
+            ->orderBy('slug')
             ->first();
 
         return $artwork;

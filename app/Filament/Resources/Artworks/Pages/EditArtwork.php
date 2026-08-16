@@ -42,6 +42,7 @@ class EditArtwork extends EditRecord
         foreach (['state', 'published_at', 'legacy_id', 'legacy_source', 'legacy_date_raw', 'migration_batch_id', 'migrated_at'] as $field) {
             unset($data[$field]);
         }
+        unset($data['position']);
 
         return $data;
     }
@@ -53,6 +54,17 @@ class EditArtwork extends EditRecord
         return DB::transaction(function () use ($record, $data, $actor): Model {
             /** @var Artwork $artwork */
             $artwork = $record;
+            unset($data['position']);
+            $originalCategoryId = (int) $artwork->getRawOriginal('artwork_category_id');
+            $targetCategoryId = (int) ($data['artwork_category_id'] ?? $originalCategoryId);
+            if ($targetCategoryId !== $originalCategoryId) {
+                /** @var ArtworkCategory|null $destination */
+                $destination = ArtworkCategory::query()->whereKey($targetCategoryId)->lockForUpdate()->first();
+                if (! $destination) {
+                    throw ValidationException::withMessages(['artwork_category_id' => 'The artwork category is invalid.']);
+                }
+                $data['position'] = ((int) ($destination->artworks()->max('position') ?? -1)) + 1;
+            }
             $artwork->fill($data);
 
             if ($artwork->getAttribute('state') === 'published' && $artwork->category()->where('state', '!=', 'published')->exists()) {

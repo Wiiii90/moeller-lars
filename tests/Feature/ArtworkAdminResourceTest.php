@@ -96,11 +96,11 @@ it('uses unknown precision without a work date', function () {
     expect(Artwork::query()->first()->date_precision)->toBe('unknown');
 });
 
-it('validates slug, position, and required fields', function () {
+it('validates slug and required fields', function () {
     Livewire::test(CreateArtwork::class)
         ->fillForm(['title' => '', 'slug' => 'Bad Slug', 'position' => -1])
         ->call('create')
-        ->assertHasFormErrors(['title', 'slug', 'artwork_category_id', 'position']);
+        ->assertHasFormErrors(['title', 'slug', 'artwork_category_id']);
 });
 
 it('rejects a duplicate slug', function () {
@@ -193,6 +193,60 @@ it('allows moving published artwork to another published category and audits onc
 
     expect($artwork->fresh()->artwork_category_id)->toBe($second->id)
         ->and(AuditEvent::query()->where('action', 'artwork.updated')->where('entity_id', $artwork->id)->count())->toBe(1);
+});
+
+it('hides numeric artwork position input and appends new artwork to the category', function () {
+    $category = adminArtworkCategory();
+    Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'append-zero', 'title' => 'Zero', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
+    Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'append-one', 'title' => 'One', 'state' => 'draft', 'position' => 1, 'date_precision' => 'unknown']);
+    Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'append-five', 'title' => 'Five', 'state' => 'draft', 'position' => 5, 'date_precision' => 'unknown']);
+
+    Livewire::test(CreateArtwork::class)
+        ->assertFormFieldDoesNotExist('position')
+        ->fillForm(['title' => 'Appended', 'slug' => 'appended-artwork', 'artwork_category_id' => $category->id, 'position' => 99])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Artwork::query()->where('slug', 'appended-artwork')->value('position'))->toBe(6);
+});
+
+it('ignores injected position data and preserves position on an ordinary edit', function () {
+    $category = adminArtworkCategory();
+    $artwork = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'position-immutable-edit', 'title' => 'Before', 'state' => 'draft', 'position' => 12, 'date_precision' => 'unknown']);
+
+    Livewire::test(EditArtwork::class, ['record' => $artwork->id])
+        ->assertFormFieldDoesNotExist('position')
+        ->fillForm(['title' => 'After', 'position' => 1])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($artwork->fresh()->position)->toBe(12);
+});
+
+it('starts a new category gallery at position zero', function () {
+    $category = ArtworkCategory::create(['name' => 'Empty category', 'slug' => 'empty-artwork-category', 'state' => 'published', 'position' => 2]);
+
+    Livewire::test(CreateArtwork::class)
+        ->fillForm(['title' => 'First artwork', 'slug' => 'first-empty-category-artwork', 'artwork_category_id' => $category->id])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Artwork::query()->where('slug', 'first-empty-category-artwork')->value('position'))->toBe(0);
+});
+
+it('appends an artwork to the destination category when moved', function () {
+    $source = adminArtworkCategory();
+    $destination = ArtworkCategory::create(['name' => 'Destination', 'slug' => 'destination-category', 'state' => 'published', 'position' => 1]);
+    Artwork::create(['artwork_category_id' => $destination->id, 'slug' => 'destination-seven', 'title' => 'Seven', 'state' => 'draft', 'position' => 7, 'date_precision' => 'unknown']);
+    $artwork = Artwork::create(['artwork_category_id' => $source->id, 'slug' => 'moving-artwork', 'title' => 'Moving', 'state' => 'draft', 'position' => 2, 'date_precision' => 'unknown']);
+
+    Livewire::test(EditArtwork::class, ['record' => $artwork->id])
+        ->fillForm(['artwork_category_id' => $destination->id])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($artwork->fresh()->artwork_category_id)->toBe($destination->id)
+        ->and($artwork->fresh()->position)->toBe(8);
 });
 
 it('uploads primary media through the real Filament action', function () {

@@ -85,25 +85,25 @@ implementation.
 
 ## 3. Public content ordering
 
-- Category listings order published artwork by the stored legacy date,
-  descending. The displayed year is derived from that date; the exact day is
-  not part of the public display contract.
+- Category gallery listings order published artwork by artwork.position ASC,
+  then work_date DESC NULLS LAST, then slug ASC. Explicit editorial ordering
+  may intentionally place an older artwork before a newer one. The displayed
+  year is derived from that date; the exact day is not part of the public
+  display contract.
 - The home page combines paintings, drawings, and prints and selects the
   newest record by date descending, matching the verified legacy landing query.
   It does not silently broaden the home query to the other subcategory routes.
-- Same-date ordering is undefined by the legacy SQL. Migration reconciliation
-  establishes an explicit target `position` from the approved and reconciled
-  legacy display or export ordering wherever authoritative ordering can be
-  established, while retaining the original date. The process must never
-  silently substitute source ID, target ID, insertion order, or database order.
-  If authoritative same-date ordering cannot be established, an explicit
-  migration/editorial exception must be recorded for review. Runtime/public
-  ordering uses the resulting explicit position semantics.
+- Duplicate or gapped legacy positions are tolerated. Explicit editorial
+  reorder normalizes a complete category to contiguous positions; slug is the
+  final stable tie-breaker when position and date are equal. The process must
+  never silently substitute source ID, target ID, insertion order, or database
+  order.
 - The migration/reconciliation fixture must compare category counts, complete
   ordered result sets, same-date groups, and the home-page winner.
 - Only published content is public. Draft/unpublished content is absent from
   listings, direct views, navigation, sitemap, and viewer previous/next
-  sequences.
+  sequences. Within a category, the viewer previous/next sequence follows the
+  same curated order: position ASC, work_date DESC NULLS LAST, slug ASC.
 
 ## 4. Artwork presentation contract
 

@@ -24,6 +24,7 @@ class AdminAuditService
         'artwork_category.hidden',
         'artwork_category.slug_changed',
         'artwork_category.deleted',
+        'artwork_category.gallery_reordered',
         'media.metadata_updated',
         'media.deleted',
         'artwork.primary_media_alt_updated',

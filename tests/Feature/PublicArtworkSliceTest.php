@@ -79,15 +79,25 @@ it('includes only published artwork in published categories', function () {
     $this->get('/artworks/draft-work')->assertNotFound();
 });
 
-it('orders category artwork by work date descending and position ascending', function () {
+it('orders category artwork by curated position before work date', function () {
     $category = sliceCategory('paintings');
-    sliceArtwork($category, ['slug' => 'old', 'work_date' => '2020-01-01', 'position' => 99]);
-    sliceArtwork($category, ['slug' => 'same-date-first', 'work_date' => '2025-01-01', 'position' => 1]);
-    sliceArtwork($category, ['slug' => 'same-date-second', 'work_date' => '2025-01-01', 'position' => 2]);
-    sliceArtwork($category, ['slug' => 'no-date', 'work_date' => null, 'position' => 0]);
+    sliceArtwork($category, ['slug' => 'older-curated-first', 'work_date' => '2010-01-01', 'position' => 0]);
+    sliceArtwork($category, ['slug' => 'newest-curated-last', 'work_date' => '2026-01-01', 'position' => 2]);
+    sliceArtwork($category, ['slug' => 'middle-curated', 'work_date' => '2020-01-01', 'position' => 1]);
 
     expect(app(PublicArtworkQuery::class)->category('paintings')->pluck('slug')->all())
-        ->toBe(['same-date-first', 'same-date-second', 'old', 'no-date']);
+        ->toBe(['older-curated-first', 'middle-curated', 'newest-curated-last']);
+});
+
+it('uses work date and slug as deterministic position tie-breakers', function () {
+    $category = sliceCategory('prints');
+    sliceArtwork($category, ['slug' => 'same-position-old', 'work_date' => '2020-01-01', 'position' => 4]);
+    sliceArtwork($category, ['slug' => 'same-position-new', 'work_date' => '2025-01-01', 'position' => 4]);
+    sliceArtwork($category, ['slug' => 'same-position-a', 'work_date' => '2025-01-01', 'position' => 5]);
+    sliceArtwork($category, ['slug' => 'same-position-b', 'work_date' => '2025-01-01', 'position' => 5]);
+
+    expect(app(PublicArtworkQuery::class)->category('prints')->pluck('slug')->all())
+        ->toBe(['same-position-new', 'same-position-old', 'same-position-a', 'same-position-b']);
 });
 
 it('selects the newest eligible home artwork and has a usable empty state', function () {
@@ -106,6 +116,17 @@ it('selects the newest eligible home artwork and has a usable empty state', func
     Artwork::query()->delete();
     ArtworkCategory::query()->delete();
     $this->get('/')->assertSuccessful()->assertSee('No artwork is currently available.');
+});
+
+it('keeps homepage latest-work chronological despite curated positions', function () {
+    $paintings = sliceCategory('paintings');
+    $drawings = sliceCategory('drawings');
+    $prints = sliceCategory('prints');
+    sliceArtwork($paintings, ['slug' => 'home-curated-first-old', 'work_date' => '2010-01-01', 'position' => 0]);
+    sliceArtwork($drawings, ['slug' => 'home-newest-position-last', 'work_date' => '2026-01-01', 'position' => 9]);
+    sliceArtwork($prints, ['slug' => 'home-middle', 'work_date' => '2020-01-01', 'position' => 1]);
+
+    expect(app(PublicArtworkQuery::class)->latestForHome()?->slug)->toBe('home-newest-position-last');
 });
 
 it('serves all canonical category routes and the direct published route', function () {

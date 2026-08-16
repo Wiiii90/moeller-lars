@@ -14,7 +14,9 @@ implement migrations, or prescribe a production PostgreSQL version or topology.
 - Editorial states are constrained values where applicable: draft, published,
   hidden, archived. Blog posts use the lifecycle defined in their section.
 - position is a required non-negative integer for ordered editorial records;
-  lower values render first. It is established by editorial or migration
+  lower values render first. For artwork it is the category-relative editorial
+  presentation order and is authoritative over work_date for category galleries.
+  It is established by editorial or migration
   reconciliation and never inferred from source ID, target ID, insertion order,
   or database order.
 - Foreign keys are restrictive by default. Archive or detach records before
@@ -120,8 +122,14 @@ Constraints and deletion:
   primary usage in artwork_media that resolves to an available original
 - work_date must be consistent with date_precision
 - position >= 0
-- work_date is ordered descending first; position is the explicit same-date
-  ordering input for category and home sequences after reconciliation
+- position is authoritative for category gallery presentation; work_date
+  describes the artwork and is the deterministic fallback after position
+- duplicate or gapped legacy positions are tolerated; explicit admin reorder
+  normalizes a complete category to contiguous 0..n-1
+- new artwork appends to its category and a category move appends to the
+  destination
+- normal editorial UI does not expose numeric artwork position input
+- ordering mutations are authorized and audited
 - normally archive rather than delete; media deletion is restricted while used
 
 ## media_asset

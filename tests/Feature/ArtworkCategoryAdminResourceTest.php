@@ -73,3 +73,49 @@ it('blocks hiding a category with published artwork', function () {
     Livewire::test(EditArtworkCategory::class, ['record' => $category->id])->call('mountAction', 'hide')->call('callMountedAction');
     expect($category->fresh()->state)->toBe('published');
 });
+
+it('shows gallery reorder only for categories with at least two artworks', function () {
+    $category = ArtworkCategory::create(['name' => 'Reorder category', 'slug' => 'admin-reorder-category', 'state' => 'published', 'position' => 0]);
+    Livewire::test(EditArtworkCategory::class, ['record' => $category->id])->assertActionHidden('reorderArtworks');
+
+    Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'admin-reorder-one', 'title' => 'One', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
+    Livewire::test(EditArtworkCategory::class, ['record' => $category->id])->assertActionHidden('reorderArtworks');
+    Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'admin-reorder-two', 'title' => 'Two', 'state' => 'published', 'position' => 1, 'date_precision' => 'unknown']);
+    Livewire::test(EditArtworkCategory::class, ['record' => $category->id])->assertActionVisible('reorderArtworks');
+});
+
+it('reorders artworks through the category drag-order action', function () {
+    $category = ArtworkCategory::create(['name' => 'Drag category', 'slug' => 'drag-order-category', 'state' => 'published', 'position' => 0]);
+    $first = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'drag-first', 'title' => 'First', 'state' => 'draft', 'position' => 10, 'date_precision' => 'unknown']);
+    $second = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'drag-second', 'title' => 'Second', 'state' => 'published', 'position' => 20, 'date_precision' => 'unknown']);
+    $third = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'drag-third', 'title' => 'Third', 'state' => 'archived', 'position' => 30, 'date_precision' => 'unknown']);
+
+    Livewire::test(EditArtworkCategory::class, ['record' => $category->id])
+        ->call('mountAction', 'reorderArtworks')
+        ->set('mountedActions.0.data.artworks', [
+            ['id' => $third->id],
+            ['id' => $first->id],
+            ['id' => $second->id],
+        ])
+        ->call('callMountedAction');
+
+    expect($third->fresh()->position)->toBe(0)
+        ->and($first->fresh()->position)->toBe(1)
+        ->and($second->fresh()->position)->toBe(2)
+        ->and(AuditEvent::query()->where('action', 'artwork_category.gallery_reordered')->where('entity_id', $category->id)->count())->toBe(1);
+});
+
+it('rejects a manipulated category reorder payload without partial mutation', function () {
+    $category = ArtworkCategory::create(['name' => 'Safe drag category', 'slug' => 'safe-drag-category', 'state' => 'published', 'position' => 0]);
+    $first = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'safe-drag-first', 'title' => 'First', 'state' => 'draft', 'position' => 4, 'date_precision' => 'unknown']);
+    $second = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'safe-drag-second', 'title' => 'Second', 'state' => 'draft', 'position' => 8, 'date_precision' => 'unknown']);
+
+    Livewire::test(EditArtworkCategory::class, ['record' => $category->id])
+        ->call('mountAction', 'reorderArtworks')
+        ->set('mountedActions.0.data.artworks', [['id' => $first->id], ['id' => 999999]])
+        ->call('callMountedAction');
+
+    expect($first->fresh()->position)->toBe(4)
+        ->and($second->fresh()->position)->toBe(8)
+        ->and(AuditEvent::query()->where('action', 'artwork_category.gallery_reordered')->count())->toBe(0);
+});
