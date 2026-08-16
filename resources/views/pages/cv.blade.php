@@ -102,5 +102,9 @@
                 @endforeach
             </section>
         @endif
+
+        @if ($settings->contact_state !== 'hidden')
+            <x-contact :settings="$settings" />
+        @endif
     </div>
 @endsection
