@@ -8,69 +8,42 @@ application or presentation technology.
 ## 1. Canonical public route map
 
 All canonical public URLs are HTTPS URLs on the approved canonical host. The
-paths below are the target paths; legacy query URLs are mapped in section 2.
+new application uses modern path-based routes; legacy dispatcher/query syntax
+is historical evidence, not a required public interface.
 
 | Public area | Canonical path | Content and behavior |
 | --- | --- | --- |
-| Home / latest work | `/` | The latest artwork across the legacy landing-page set: paintings, drawings, and prints. |
-| Paintings | `/paintings` | Published paintings, newest first. |
-| Prints | `/prints` | Published prints, newest first. |
-| Drawings | `/drawings` | Published drawings, newest first. |
-| Cyanotype | `/cyanotype` | Published cyanotype work, newest first. |
-| Bichromate | `/bichromate` | Published bichromate work, newest first. |
-| Litho | `/litho` | Published lithography/etching work, newest first. |
-| Photo | `/photo` | Published photography, newest first. |
-| Ignis | `/ignis` | Published Ignis-serial work, newest first. |
-| Other | `/other` | Published other-photography work, newest first. |
-| CV and exhibitions | `/cv` | The public CV/Vita and exhibition presentation, retaining the legacy page meaning and order. |
+| Home | `/` | Home artwork selected from persisted category presentation data. |
+| Artwork category | `/{category-slug}` | Any published category, ordered by its persisted presentation data. |
+| Artwork direct view | `/artworks/{slug}` | Stable, shareable public artwork URL with the gallery viewer context. |
+| CV and exhibitions | `/cv` | Public CV and exhibition presentation with the intended authored meaning and order. |
 | Contact | `/contact` | Public contact form and its successful-delivery outcome. |
-| Artwork direct view | `/artworks/{slug}` | Stable, shareable public artwork URL. It opens the same artwork presentation/viewer context as the gallery. |
 
-The legacy navigation order is Paintings, Prints, Drawings, and CV &
-Exhibitions. Contact is part of the intended public surface even though the
-reviewed legacy header does not expose a working contact navigation route.
-The additional print and photography routes are public dispatcher routes
-verified in the legacy configuration and sitemap, even where they are not in
-the main navigation.
+Navigation is generated from published categories marked for navigation. Home
+eligibility is generated from persisted category presentation data. Imported
+data may initially reproduce familiar Paintings, Prints, and Drawings labels,
+but those are editorial records, not application route definitions. A category
+created and published in admin must use the same route, navigation and home
+pipeline without a code change.
 
 There are no public blog routes while the blog is disabled. A disabled blog
 must not appear in navigation, generated metadata, or the sitemap.
 
-## 2. Legacy route and redirect mapping
+## 2. Legacy routes and new-application redirects
 
-Redirects from the legacy dispatcher must be permanent redirects to the
-canonical target, preserving HTTPS and the canonical host. Query-string
-routes must not remain the target site's public URL format.
+Legacy dispatcher and query forms are historical source evidence. They do not
+need to remain reachable, and this contract contains no compatibility map for
+`/index.php?site=...`. Any redirect lifecycle in the new application is
+separate: when a canonical new-application category or artwork slug changes,
+generic redirect records may preserve that new-application URL.
 
-| Legacy URL | Target | Classification |
-| --- | --- | --- |
-| `/` | `/` | Preserve entry point. |
-| `/index.php` | `/` | Permanent redirect; the legacy Apache rule already intends the direct entry point to resolve to the root. |
-| `/index.php?site=paintings` | `/paintings` | Permanent redirect. |
-| `/index.php?site=prints` | `/prints` | Permanent redirect. |
-| `/index.php?site=drawings` | `/drawings` | Permanent redirect. |
-| `/index.php?site=cyanotype` | `/cyanotype` | Permanent redirect. |
-| `/index.php?site=bichromate` | `/bichromate` | Permanent redirect. |
-| `/index.php?site=litho` | `/litho` | Permanent redirect. |
-| `/index.php?site=photo` | `/photo` | Permanent redirect. The legacy internal category is `photos`. |
-| `/index.php?site=ignis` | `/ignis` | Permanent redirect. |
-| `/index.php?site=other` | `/other` | Permanent redirect. |
-| `/index.php?site=vita` | `/cv` | Permanent redirect; the legacy navigation labels this page “CV & Exhibitions”. |
-| `/index.php?site=links` | none | Broken legacy route: advertised by the sitemap/config metadata but has no dispatcher case. It is a defect, not a compatibility requirement. |
-| `/index.php?site=contact` | `/contact` | No working legacy dispatcher route was verified. The new route implements the intended contact behavior; this is not a claim that the legacy URL worked. |
-| `/workshop/...` and administrative paths | none | Non-public/development or admin paths. Do not expose or redirect them into public content. |
+`/workshop/...` and administrative paths remain non-public and must not be
+exposed or redirected into public content.
 
-The nine category URLs listed above are the required legacy-compatible initial
-paths, not the maximum category set. Additional admin-published artwork
-categories use `/{category-slug}`. Reserved application namespaces cannot be
-category slugs. The legacy main navigation remains Paintings, Prints, Drawings,
-and CV & Exhibitions; #45 does not add additional categories to that
-navigation. Home latest-work remains exclusively paintings, drawings, and
-prints.
-
-Unknown `site` values and malformed dispatcher requests are not public
-content. They must produce a safe not-found response or a documented redirect,
-never a PHP warning, directory include, database error, or debug output.
+Unknown legacy selector values and malformed dispatcher requests are migration
+evidence, not new-application routes. Unknown new category slugs must produce
+a safe not-found response, never a PHP warning, directory include, database
+error, or debug output.
 
 ### Contact behavior
 
@@ -90,9 +63,10 @@ implementation.
   may intentionally place an older artwork before a newer one. The displayed
   year is derived from that date; the exact day is not part of the public
   display contract.
-- The home page combines paintings, drawings, and prints and selects the
-  newest record by date descending, matching the verified legacy landing query.
-  It does not silently broaden the home query to the other subcategory routes.
+- The home page selects the newest eligible record from categories whose
+  persisted presentation data marks them for the home surface. The imported
+  data may initially reproduce the familiar legacy landing selection, but the
+  selection is not based on hardcoded category slugs.
 - Duplicate or gapped legacy positions are tolerated. Explicit editorial
   reorder normalizes a complete category to contiguous positions; slug is the
   final stable tie-breaker when position and date are equal. The process must
@@ -239,7 +213,9 @@ must be covered by responsive and interaction tests.
 
 ### Subtle improvements allowed
 
-- Clean path-based canonical URLs and permanent redirects from query URLs.
+- Clean path-based canonical URLs; redirects are created only for deliberate
+  new-application slug/path changes or a separately evidenced external-link
+  need.
 - Deterministic explicit position for equal-date ordering after reconciliation.
 - Reliable viewer loading/error states, two-dimensional pan, touch/pinch,
   keyboard/Escape support, focus management, and previous/next navigation.

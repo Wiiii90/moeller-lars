@@ -6,7 +6,9 @@ Replace the public Lars Möller website while replacing its administration and o
 
 ## Non-negotiable public contract
 
-- Existing public URLs remain reachable or redirect permanently to an equivalent page.
+- Preserve public content, artistic identity, and meaningful public information architecture.
+- The rebuilt application uses clean, modern canonical URLs; legacy PHP/query URL syntax is not itself a compatibility requirement.
+- Add a redirect for a legacy URL only when later evidence establishes a concrete SEO or external-link need.
 - The artistic visual language, typography, layout, artwork presentation, and ordering remain recognisably unchanged, with room for reviewed subtle improvements.
 - Existing images, ALT text, page titles, SEO metadata, sitemap, and contact behaviour are inventoried before switching traffic.
 - HTTPS is canonical; HTTP redirects to HTTPS in one hop.

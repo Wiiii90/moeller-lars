@@ -43,20 +43,20 @@ implement migrations, or prescribe a production PostgreSQL version or topology.
 
 Purpose: a generic, artist-managed artwork grouping entity. It is not a
 table-per-category architecture or a generic taxonomy system. Categories have
-public routes, labels, ordering, and editorial meaning. The nine legacy
-categories are canonical bootstrap data for compatibility and migration; they
-do not define the maximum category set. Additional categories are normal
+public routes, labels, ordering, and editorial meaning. Legacy category names
+and mappings are migration data only; they do not define application route
+semantics or the maximum category set. Additional categories are normal
 editorial data and require no schema or code change.
 
 Required fields:
 - id bigint primary key
-- slug varchar(80), stable and unique; the nine legacy-compatible bootstrap
-  slugs are paintings, prints, drawings, cyanotype, bichromate, litho, photo,
-  ignis, and other. The existing provisioning migration creates those nine
-  bootstrap categories; further categories are normal editorial data.
+- slug varchar(80), stable and unique; category identity is editorial data and
+  is not a production application constant.
 - name varchar(160)
 - state: published or hidden, default hidden for newly created categories
 - position integer, default 0, check position >= 0
+- show_in_navigation boolean, default false
+- show_on_home boolean, default false
 - created_at, updated_at
 
 Nullable fields:
@@ -71,11 +71,12 @@ Indexes and uniqueness:
 
 Deletion: referenced categories are not hard-deleted. A category is publicly
 available only while published; hidden is the editor-controlled unavailable
-state. position is editorial ordering. Public category slugs are stable.
-The nine legacy compatibility slugs remain reserved stable paths. Custom slug
-changes are explicit operations that create a permanent canonical redirect;
-reserved application paths cannot be category slugs. Hard deletion requires a
-hidden, unreferenced custom category and an audit decision.
+state. `position` is editorial ordering, `show_in_navigation` controls visible
+category navigation, and `show_on_home` controls home eligibility. Public
+category slugs are stable. A deliberate new-application slug change may create
+a generic redirect record; reserved application paths cannot be category
+slugs. Hard deletion requires a hidden, unreferenced category and an audit
+decision.
 
 ## artwork
 

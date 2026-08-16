@@ -61,7 +61,10 @@ The current production host is the working baseline documented in [SERVER-OPERAT
 
 The verified containment baseline includes UFW default-deny inbound rules, public ports 22/80/443 only, localhost-only MySQL bindings, valid renewing TLS for apex and `www`, working HTTPS/canonical-host redirects, disabled directory listing, removed public phpinfo, and blocked sensitive source/vendor/config paths.
 
-The platform baseline is operational: Docker Engine and Compose are installed; Caddy is public ingress on 80/443, legacy Apache is localhost-only on 127.0.0.1:8080, and MySQL is local-only. Production is not a Git checkout and does not use `git pull`; it has no GitHub account, token, or key. GitHub Actions transports an exact `server-platform` commit through a restricted deploy user and forced-command dispatcher with stage, activate, status, exact releases, and rollback. Platform placement uses `/srv/stacks`, persistent data uses `/srv/data`, and platform releases use `/srv/releases/server-platform`.
+The verified platform containment and deployment details are maintained by
+`server-platform`; this repository consumes that contract and does not define
+production ingress, `/srv` placement, deployment transport, or host-level
+runtime topology.
 
 `moeller-lars` owns application code/tests, Dockerfile/build/runtime contract, migrations, application configuration templates, health/readiness, CI/build artifacts, persistence declarations, and migration expectations. `server-platform` owns production manifests, deployed artifact/image references, Compose, networks, Caddy, host ports, resource limits, production secret placement, monitoring, backups, and deployment/rollback. Do not duplicate platform implementation here.
 
@@ -110,7 +113,7 @@ gallery script.
 
 ## Analytics ownership and operations
 
-The analytics boundary is fixed: self-hosted Matomo Community/Core owns human visitor analytics, while local operational aggregates remain separate. The current platform contract provides one independent Matomo Compose project under `/srv/stacks/matomo` with `matomo-web`, dedicated `matomo-db` MariaDB, a private Compose network, no public database port, and Caddy origin `analytics.moeller-lars.de`. The application receives a platform-assigned site ID and tracking base URL; optional reporting uses a separate read-only API identity/token outside Git. Matomo failure cannot block public or admin application behaviour. The compact taxonomy, privacy, retention, dashboard and operations contract is documented in [ANALYTICS.md](ANALYTICS.md).
+The analytics boundary is fixed: self-hosted Matomo Community/Core owns human visitor analytics, while local operational aggregates remain separate. The application consumes a platform-provided Matomo base URL and site ID; optional reporting uses a separate restricted read-only API identity/token outside Git. Runtime topology, networking, persistence and ingress remain owned by `server-platform`. Matomo failure cannot block public or admin application behaviour. The compact taxonomy, privacy, retention, dashboard and operations contract is documented in [ANALYTICS.md](ANALYTICS.md).
 
 The application owns browser tracking integration, event taxonomy, consent/privacy behaviour, site-specific configuration, reporting client/dashboard, and application-local operational aggregates. The platform owns Matomo containers/database, persistence, Caddy, secrets, resource limits, health, archiving, upgrades, and backup integration.
 

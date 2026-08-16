@@ -4,7 +4,11 @@ Secure rebuild of the Lars Möller artist website.
 
 ## Product rule
 
-Visitors should experience the existing public website: its visual language, routes, artwork order, and core interactions are preserved. The rebuild changes the operational layer, not the artistic presentation.
+Visitors should experience the existing public website: its visual language,
+meaningful information architecture, artwork order, and core interactions are
+preserved. The rebuild uses clean modern canonical URLs and changes the
+operational layer, not the artistic presentation; legacy PHP/query URL syntax
+is not itself a compatibility requirement.
 
 The artist receives a purpose-built editorial backend for artworks, exhibitions, CV, blog posts, media, and privacy-conscious visitor statistics.
 

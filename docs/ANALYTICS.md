@@ -12,14 +12,13 @@ The Laravel editorial database must not duplicate raw human visitor, pageview,
 or event analytics. `daily_metrics` is limited to lightweight operational
 aggregates and optional disposable Matomo dashboard cache.
 
-Matomo is provided as one independent Compose project under `/srv/stacks/matomo`:
-`matomo-web` and a dedicated `matomo-db` MariaDB share a private Compose
-network, with no public or host database port. Caddy exposes
-`analytics.moeller-lars.de`. The application receives the platform-assigned
-site ID and tracking base URL. A separate read-only Reporting API identity/token
-may be used for dashboard integration and remains outside Git. Matomo failure
-must never break public rendering, contact handling, login, or normal admin
-editing.
+The platform provides Matomo as a logically isolated service and supplies the
+application's site ID and tracking base URL. Physical deployment, database
+runtime, private networking, persistence, ingress and secrets are owned by
+`server-platform` and are intentionally not prescribed here. A separate
+read-only Reporting API identity/token may be used for dashboard integration
+and remains outside Git. Matomo failure must never break public rendering,
+contact handling, login, or normal admin editing.
 
 ## Human collection and event taxonomy
 
