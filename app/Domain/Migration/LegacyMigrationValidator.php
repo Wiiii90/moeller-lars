@@ -115,7 +115,7 @@ final class LegacyMigrationValidator
                     $sameDateGroups[] = [
                         'source' => $source,
                         'date' => $date,
-                        'legacy_ids' => array_values($legacyIds),
+                        'legacy_ids' => $legacyIds,
                     ];
                 }
             }
