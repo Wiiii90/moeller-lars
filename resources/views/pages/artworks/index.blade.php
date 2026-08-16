@@ -8,7 +8,7 @@
         @forelse ($artworks as $artwork)
             <x-artwork-card :artwork="$artwork" :media="$media" />
         @empty
-            <p>No artwork is currently available.</p>
+            <p class="public-empty-state">No artwork is currently available.</p>
         @endforelse
     </div>
 @endsection

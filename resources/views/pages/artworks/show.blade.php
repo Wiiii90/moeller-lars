@@ -15,7 +15,7 @@
 @section('content')
     <article class="artwork-detail">
         @if ($imageUrl)
-            <img src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
+            <img class="artwork-image artwork-detail__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
         @else
             <div class="missing-media" role="img" aria-label="Media unavailable">Media unavailable</div>
         @endif

@@ -7,11 +7,11 @@
 @endphp
 
 <article class="artwork-card">
-    <a href="{{ route('artworks.show', $artwork->slug) }}">
+    <a class="artwork-card__link" href="{{ route('artworks.show', $artwork->slug) }}">
         @if ($imageUrl)
-            <img src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
+            <img class="artwork-image artwork-card__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
         @else
-            <div class="missing-media" role="img" aria-label="Media unavailable">Media unavailable</div>
+            <div class="missing-media artwork-card__image" role="img" aria-label="Media unavailable">Media unavailable</div>
         @endif
         <div class="artwork-card__metadata">
             <p>{{ $artwork->title }}@if ($year), {{ $year }}@endif</p>

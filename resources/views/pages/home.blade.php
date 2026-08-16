@@ -4,8 +4,10 @@
 
 @section('content')
     @if ($artwork)
-        <x-artwork-card :artwork="$artwork" :media="$media" />
+        <div class="home-artwork">
+            <x-artwork-card :artwork="$artwork" :media="$media" />
+        </div>
     @else
-        <p class="missing-media">No artwork is currently available.</p>
+        <p class="missing-media public-empty-state">No artwork is currently available.</p>
     @endif
 @endsection
