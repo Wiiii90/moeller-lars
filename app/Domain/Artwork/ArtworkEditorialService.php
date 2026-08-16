@@ -207,7 +207,7 @@ class ArtworkEditorialService
         $id = $asset->getKey();
 
         return DB::table('artwork_media')->where('media_asset_id', $id)->exists()
-            || DB::table('exhibitions')->where('hero_media_asset_id', $id)->exists()
+            || DB::table('exhibition_media')->where('media_asset_id', $id)->exists()
             || DB::table('cv_entries')->where('image_media_asset_id', $id)->exists()
             || DB::table('blog_posts')->where('cover_media_asset_id', $id)->exists();
     }
