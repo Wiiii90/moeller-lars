@@ -32,8 +32,23 @@ class ArtworkEditorialService
         $primary = $primaries->count() === 1 ? $primaries->first() : null;
         $category = $fresh->category()->first();
         $mediaAsset = $primary?->getRelation('mediaAsset');
+        $altText = $mediaAsset?->getAttribute('alt_text');
+        $publicThumbnails = $mediaAsset?->variants()
+            ->where('variant_kind', 'thumbnail')
+            ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE)
+            ->where('state', 'available')
+            ->get();
 
-        if (! $category || $category->getAttribute('state') !== 'published' || ! $primary || ! $mediaAsset || $mediaAsset->getAttribute('state') !== 'available') {
+        if (
+            ! $category
+            || $category->getAttribute('state') !== 'published'
+            || ! $primary
+            || ! $mediaAsset
+            || $mediaAsset->getAttribute('state') !== 'available'
+            || ! is_string($altText)
+            || trim($altText) === ''
+            || $publicThumbnails?->count() !== 1
+        ) {
             throw ValidationException::withMessages(['state' => 'This artwork is not ready to publish.']);
         }
 

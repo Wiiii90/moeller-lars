@@ -57,6 +57,7 @@ function editorialAsset(string $state = 'available'): MediaAsset
         'byte_size' => 3,
         'sha256' => str_repeat('a', 64),
         'state' => $state,
+        'alt_text' => 'Test asset ALT',
         'width' => 2,
         'height' => 2,
     ]);
@@ -107,7 +108,9 @@ function editorialJpegUpload(): UploadedFile
 
 it('publishes only an artwork with a published category and one available primary asset', function () {
     $artwork = editorialArtwork(editorialCategory());
-    attachEditorialPrimary($artwork, editorialAsset());
+    $asset = editorialAsset();
+    attachEditorialPrimary($artwork, $asset);
+    editorialVariant($asset);
 
     $published = app(ArtworkEditorialService::class)->publish($artwork);
 
@@ -117,7 +120,9 @@ it('publishes only an artwork with a published category and one available primar
 
 it('does not change published_at when publishing again', function () {
     $artwork = editorialArtwork(editorialCategory(), ['published_at' => now()->subDay()]);
-    attachEditorialPrimary($artwork, editorialAsset());
+    $asset = editorialAsset();
+    attachEditorialPrimary($artwork, $asset);
+    editorialVariant($asset);
     $artwork->forceFill(['state' => 'published'])->save();
     $publishedAt = $artwork->published_at;
 
@@ -138,6 +143,21 @@ it('rejects hidden categories, missing primaries, and unavailable assets', funct
         ->toThrow(ValidationException::class);
     expect($artwork->fresh()->state)->toBe('draft');
 })->with(['hidden', 'missing', 'unavailable']);
+
+it('rejects publication without canonical ALT or public thumbnail', function (string $case) {
+    $artwork = editorialArtwork(editorialCategory());
+    $asset = editorialAsset();
+    attachEditorialPrimary($artwork, $asset);
+
+    if ($case === 'missing-alt') {
+        $asset->update(['alt_text' => null]);
+        editorialVariant($asset);
+    }
+
+    expect(fn () => app(ArtworkEditorialService::class)->publish($artwork))
+        ->toThrow(ValidationException::class);
+    expect($artwork->fresh()->state)->toBe('draft');
+})->with(['missing-alt', 'missing-thumbnail']);
 
 it('unpublishes without clearing published_at', function () {
     $artwork = editorialArtwork(editorialCategory(), ['state' => 'published', 'published_at' => now()->subDay()]);
