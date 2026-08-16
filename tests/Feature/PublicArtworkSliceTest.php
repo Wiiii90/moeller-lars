@@ -98,7 +98,17 @@ it('selects the newest eligible home artwork and has a usable empty state', func
 it('serves all canonical category routes and the direct published route', function () {
     $paintings = sliceCategory('paintings');
     sliceArtwork($paintings, ['slug' => 'direct-work']);
-    foreach (PublicArtworkQuery::CATEGORY_SLUGS as $slug) {
+    foreach ([
+        'paintings',
+        'prints',
+        'drawings',
+        'cyanotype',
+        'bichromate',
+        'litho',
+        'photo',
+        'ignis',
+        'other',
+    ] as $slug) {
         if ($slug !== 'paintings') {
             sliceCategory($slug);
         }

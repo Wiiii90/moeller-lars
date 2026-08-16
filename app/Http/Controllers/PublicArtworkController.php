@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Artwork\ArtworkCategoryPathPolicy;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Media\PublicMedia;
 use App\Models\ArtworkCategory;
+use App\Models\Redirect;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class PublicArtworkController extends Controller
 {
@@ -22,13 +25,24 @@ class PublicArtworkController extends Controller
         ]);
     }
 
-    public function category(string $category): View
+    public function category(string $category): View|RedirectResponse
     {
-        abort_unless(in_array($category, PublicArtworkQuery::CATEGORY_SLUGS, true), 404);
         $categoryRecord = ArtworkCategory::query()
             ->where('slug', $category)
             ->where('state', 'published')
-            ->firstOrFail();
+            ->first();
+
+        if ($categoryRecord === null) {
+            $redirect = Redirect::query()
+                ->where('source_path', '/'.$category)
+                ->where('enabled', true)
+                ->where('reason', ArtworkCategoryPathPolicy::CATEGORY_SLUG_REDIRECT_REASON)
+                ->first();
+
+            abort_unless($redirect !== null, 404);
+
+            return redirect($redirect->getAttribute('target_path'), (int) $redirect->getAttribute('status_code'));
+        }
 
         return view('pages.artworks.index', [
             'category' => $categoryRecord,

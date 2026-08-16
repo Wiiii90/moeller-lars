@@ -60,6 +60,14 @@ routes must not remain the target site's public URL format.
 | `/index.php?site=contact` | `/contact` | No working legacy dispatcher route was verified. The new route implements the intended contact behavior; this is not a claim that the legacy URL worked. |
 | `/workshop/...` and administrative paths | none | Non-public/development or admin paths. Do not expose or redirect them into public content. |
 
+The nine category URLs listed above are the required legacy-compatible initial
+paths, not the maximum category set. Additional admin-published artwork
+categories use `/{category-slug}`. Reserved application namespaces cannot be
+category slugs. The legacy main navigation remains Paintings, Prints, Drawings,
+and CV & Exhibitions; #45 does not add additional categories to that
+navigation. Home latest-work remains exclusively paintings, drawings, and
+prints.
+
 Unknown `site` values and malformed dispatcher requests are not public
 content. They must produce a safe not-found response or a documented redirect,
 never a PHP warning, directory include, database error, or debug output.

@@ -7,6 +7,7 @@ use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Media\MediaIngestService;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\FileUpload;
@@ -23,6 +24,16 @@ class EditArtwork extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        /** @var Artwork $record */
+        $record = $this->getRecord();
+        $categoryId = $data['artwork_category_id'] ?? $record->getAttribute('artwork_category_id');
+        $category = ArtworkCategory::query()->find($categoryId);
+        if ($record->getAttribute('state') === 'published' && $category?->getAttribute('state') !== 'published') {
+            throw ValidationException::withMessages([
+                'data.artwork_category_id' => 'Published artwork requires a published category.',
+            ]);
+        }
+
         $data['date_precision'] = filled($data['work_date'] ?? null) ? 'day' : 'unknown';
 
         foreach (['state', 'published_at', 'legacy_id', 'legacy_source', 'legacy_date_raw', 'migration_batch_id', 'migrated_at'] as $field) {
@@ -37,14 +48,22 @@ class EditArtwork extends EditRecord
         $actor = app(AdminAuditService::class)->requireActor();
 
         return DB::transaction(function () use ($record, $data, $actor): Model {
-            $record->fill($data);
+            /** @var Artwork $artwork */
+            $artwork = $record;
+            $artwork->fill($data);
 
-            if ($record->isDirty()) {
-                $record->save();
-                app(AdminAuditService::class)->record($actor, 'artwork.updated', 'artwork', $record->getKey());
+            if ($artwork->getAttribute('state') === 'published' && $artwork->category()->where('state', '!=', 'published')->exists()) {
+                throw ValidationException::withMessages([
+                    'artwork_category_id' => 'Published artwork requires a published category.',
+                ]);
             }
 
-            return $record;
+            if ($artwork->isDirty()) {
+                $artwork->save();
+                app(AdminAuditService::class)->record($actor, 'artwork.updated', 'artwork', $artwork->getKey());
+            }
+
+            return $artwork;
         });
     }
 

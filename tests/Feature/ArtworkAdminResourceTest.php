@@ -157,6 +157,43 @@ it('does not allow a published slug to be edited', function () {
     Livewire::test(EditArtwork::class, ['record' => $artwork->getKey()])->assertSet('data.slug', 'published-artwork');
 });
 
+it('rejects moving published artwork to a hidden category without auditing', function () {
+    $publishedCategory = adminArtworkCategory();
+    $hiddenCategory = new ArtworkCategory;
+    $hiddenCategory->fill(['slug' => 'hidden-target', 'name' => 'Hidden target', 'state' => 'hidden', 'position' => 1]);
+    $hiddenCategory->save();
+    $artwork = new Artwork;
+    $artwork->fill(['artwork_category_id' => $publishedCategory->id, 'slug' => 'published-category-invariant', 'title' => 'Invariant', 'state' => 'published', 'position' => 0, 'date_precision' => 'unknown', 'published_at' => now()]);
+    $artwork->save();
+
+    Livewire::test(EditArtwork::class, ['record' => $artwork->id])
+        ->fillForm(['artwork_category_id' => $hiddenCategory->id])
+        ->assertSet('data.artwork_category_id', $hiddenCategory->id)
+        ->call('save')
+        ->assertHasFormErrors(['artwork_category_id']);
+
+    expect($artwork->fresh()->artwork_category_id)->toBe($publishedCategory->id)
+        ->and(AuditEvent::query()->where('action', 'artwork.updated')->where('entity_id', $artwork->id)->count())->toBe(0);
+});
+
+it('allows moving published artwork to another published category and audits once', function () {
+    $first = adminArtworkCategory();
+    $second = new ArtworkCategory;
+    $second->fill(['slug' => 'published-target', 'name' => 'Published target', 'state' => 'published', 'position' => 1]);
+    $second->save();
+    $artwork = new Artwork;
+    $artwork->fill(['artwork_category_id' => $first->id, 'slug' => 'published-category-move', 'title' => 'Move', 'state' => 'published', 'position' => 0, 'date_precision' => 'unknown', 'published_at' => now()]);
+    $artwork->save();
+
+    Livewire::test(EditArtwork::class, ['record' => $artwork->id])
+        ->fillForm(['artwork_category_id' => $second->id])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($artwork->fresh()->artwork_category_id)->toBe($second->id)
+        ->and(AuditEvent::query()->where('action', 'artwork.updated')->where('entity_id', $artwork->id)->count())->toBe(1);
+});
+
 it('uploads primary media through the real Filament action', function () {
     Storage::fake('local');
     $category = adminArtworkCategory();

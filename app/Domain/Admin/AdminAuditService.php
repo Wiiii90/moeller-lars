@@ -17,9 +17,15 @@ class AdminAuditService
         'artwork.unpublished',
         'artwork.primary_media_attached',
         'media.ingested',
+        'artwork_category.created',
+        'artwork_category.updated',
+        'artwork_category.published',
+        'artwork_category.hidden',
+        'artwork_category.slug_changed',
+        'artwork_category.deleted',
     ];
 
-    private const ENTITY_TYPES = ['artwork', 'media_asset'];
+    private const ENTITY_TYPES = ['artwork', 'media_asset', 'artwork_category'];
 
     public function requireActor(): User
     {

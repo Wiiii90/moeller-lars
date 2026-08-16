@@ -5,22 +5,12 @@ namespace App\Domain\Artwork;
 use App\Models\Artwork;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use InvalidArgumentException;
 
 class PublicArtworkQuery
 {
-    public const CATEGORY_SLUGS = [
-        'paintings', 'prints', 'drawings', 'cyanotype', 'bichromate',
-        'litho', 'photo', 'ignis', 'other',
-    ];
-
     /** @return Collection<int, Artwork> */
     public function category(string $slug): Collection
     {
-        if (! in_array($slug, self::CATEGORY_SLUGS, true)) {
-            throw new InvalidArgumentException('Unsupported public artwork category.');
-        }
-
         return $this->publicQuery()
             ->whereHas('category', fn (Builder $query) => $query
                 ->where('slug', $slug)

@@ -39,19 +39,19 @@ implement migrations, or prescribe a production PostgreSQL version or topology.
 
 ## artwork_category
 
-Purpose: normalized replacement for the finite public artwork category set
-(paintings, prints, drawings, cyanotype, bichromate, litho, photo, ignis, and
-other). It is justified because categories have public routes, labels,
-ordering, and editorial meaning; it is not a generic taxonomy system. The
-table remains extensible for an additional reviewed category without a schema
-change; migration/editorial reconciliation owns category population and
-mapping.
+Purpose: a generic, artist-managed artwork grouping entity. It is not a
+table-per-category architecture or a generic taxonomy system. Categories have
+public routes, labels, ordering, and editorial meaning. The nine legacy
+categories are canonical bootstrap data for compatibility and migration; they
+do not define the maximum category set. Additional categories are normal
+editorial data and require no schema or code change.
 
 Required fields:
 - id bigint primary key
-- slug varchar(80), stable and unique; supported public slugs include
-  paintings, prints, drawings, cyanotype, bichromate, litho, photo, ignis, and
-  other. No category records are seeded by this schema task.
+- slug varchar(80), stable and unique; the nine legacy-compatible bootstrap
+  slugs are paintings, prints, drawings, cyanotype, bichromate, litho, photo,
+  ignis, and other. The existing provisioning migration creates those nine
+  bootstrap categories; further categories are normal editorial data.
 - name varchar(160)
 - state: published or hidden, default hidden for newly created categories
 - position integer, default 0, check position >= 0
@@ -67,8 +67,13 @@ Indexes and uniqueness:
 - partial unique legacy_source, legacy_id where both are non-null
 - index on state, position, id
 
-Deletion: do not hard-delete a referenced category; set state to hidden.
-Hard deletion requires all references removed and an audit/migration decision.
+Deletion: referenced categories are not hard-deleted. A category is publicly
+available only while published; hidden is the editor-controlled unavailable
+state. position is editorial ordering. Public category slugs are stable.
+The nine legacy compatibility slugs remain reserved stable paths. Custom slug
+changes are explicit operations that create a permanent canonical redirect;
+reserved application paths cannot be category slugs. Hard deletion requires a
+hidden, unreferenced custom category and an audit decision.
 
 ## artwork
 

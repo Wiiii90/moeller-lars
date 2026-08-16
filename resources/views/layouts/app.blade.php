@@ -13,9 +13,9 @@
         <header class="site-header">
             <h1><a href="{{ route('home') }}" class="site-title">Lars Möller</a></h1>
             <nav aria-label="Main navigation">
-                <a href="{{ route('artworks.paintings') }}">Paintings</a>
-                <a href="{{ route('artworks.prints') }}">Prints</a>
-                <a href="{{ route('artworks.drawings') }}">Drawings</a>
+                <a href="{{ route('artworks.category', ['category' => 'paintings']) }}">Paintings</a>
+                <a href="{{ route('artworks.category', ['category' => 'prints']) }}">Prints</a>
+                <a href="{{ route('artworks.category', ['category' => 'drawings']) }}">Drawings</a>
                 <a href="/cv">CV &amp; Exhibitions</a>
             </nav>
         </header>
