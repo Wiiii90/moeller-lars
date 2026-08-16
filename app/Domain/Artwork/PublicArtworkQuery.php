@@ -3,6 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Models\Artwork;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use LogicException;
@@ -47,17 +48,42 @@ class PublicArtworkQuery
             return $artwork;
         }
 
-        $featured = $candidates->filter(
-            static fn (Artwork $artwork): bool => (bool) $artwork->getAttribute('featured_on_home'),
+        $exactDates = $candidates->map(
+            static function (Artwork $artwork): ?string {
+                $date = $artwork->getAttribute('work_date');
+
+                return $date instanceof DateTimeInterface ? $date->format('Y-m-d') : null;
+            },
         );
-        if ($featured->count() !== 1) {
-            throw new LogicException('The newest eligible home artwork is ambiguous.');
+
+        if ($exactDates->contains(null)) {
+            return $this->explicitHomeSelection(
+                $candidates,
+                'The newest eligible home year contains artwork without an exact comparable date.',
+            );
         }
 
-        /** @var Artwork $artwork */
-        $artwork = $featured->first();
+        /** @var string $latestDate */
+        $latestDate = $exactDates->max();
+        $latest = $candidates->filter(
+            static function (Artwork $artwork) use ($latestDate): bool {
+                $date = $artwork->getAttribute('work_date');
 
-        return $artwork;
+                return $date instanceof DateTimeInterface && $date->format('Y-m-d') === $latestDate;
+            },
+        )->values();
+
+        if ($latest->count() === 1) {
+            /** @var Artwork $artwork */
+            $artwork = $latest->first();
+
+            return $artwork;
+        }
+
+        return $this->explicitHomeSelection(
+            $latest,
+            "The newest eligible home date {$latestDate} is ambiguous.",
+        );
     }
 
     public function publishedBySlug(string $slug): ?Artwork
@@ -66,6 +92,23 @@ class PublicArtworkQuery
             ->where('slug', $slug)
             ->whereHas('category', fn (Builder $query) => $query->where('state', 'published'))
             ->first();
+    }
+
+    /** @param Collection<int, Artwork> $candidates */
+    private function explicitHomeSelection(Collection $candidates, string $message): Artwork
+    {
+        $featured = $candidates->filter(
+            static fn (Artwork $artwork): bool => (bool) $artwork->getAttribute('featured_on_home'),
+        )->values();
+
+        if ($featured->count() !== 1) {
+            throw new LogicException($message.' Exactly one explicit featured_on_home selection is required.');
+        }
+
+        /** @var Artwork $artwork */
+        $artwork = $featured->first();
+
+        return $artwork;
     }
 
     /** @return Builder<Artwork> */
