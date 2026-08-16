@@ -134,7 +134,7 @@ class MediaAssetEditorialService
         $id = $asset->getKey();
         $references = [
             ['artwork_media', 'media_asset_id'],
-            ['exhibitions', 'hero_media_asset_id'],
+            ['exhibition_media', 'media_asset_id'],
             ['cv_entries', 'image_media_asset_id'],
             ['blog_posts', 'cover_media_asset_id'],
         ];

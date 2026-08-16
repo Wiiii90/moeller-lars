@@ -4,8 +4,11 @@ namespace App\Domain\Media;
 
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
+use App\Models\CvEntry;
+use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use App\Models\PublicContentSetting;
 use Illuminate\Database\Eloquent\Collection;
 use LogicException;
 
@@ -21,13 +24,31 @@ class PublicMedia
             return false;
         }
 
-        return ArtworkMedia::query()
+        if (ArtworkMedia::query()
             ->where('media_asset_id', $asset->getKey())
             ->where('role', 'primary')
             ->whereHas('artwork', fn ($query) => $query
                 ->where('state', 'published')
                 ->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('state', 'published')))
-            ->exists();
+            ->exists()) {
+            return true;
+        }
+
+        $settings = PublicContentSetting::query()->findOrFail(1);
+
+        if ((bool) $settings->getAttribute('cv_enabled')
+            && CvEntry::query()
+                ->where('state', 'published')
+                ->where('image_media_asset_id', $asset->getKey())
+                ->exists()) {
+            return true;
+        }
+
+        return (bool) $settings->getAttribute('exhibitions_enabled')
+            && ExhibitionMedia::query()
+                ->where('media_asset_id', $asset->getKey())
+                ->whereHas('exhibition', fn ($query) => $query->where('state', 'published'))
+                ->exists();
     }
 
     public function isPublicVariant(MediaVariant $variant): bool
@@ -63,27 +84,45 @@ class PublicMedia
     public function altText(Artwork $artwork): string
     {
         $media = $this->primaryMedia($artwork);
-        $override = $media->getAttribute('alt_text_override');
+
+        return $this->altTextForAsset(
+            $this->primaryAsset($artwork),
+            $media->getAttribute('alt_text_override'),
+        );
+    }
+
+    public function thumbnailUrl(Artwork $artwork): string
+    {
+        return $this->thumbnailUrlForAsset($this->primaryAsset($artwork));
+    }
+
+    public function originalUrl(Artwork $artwork): string
+    {
+        return $this->originalUrlForAsset($this->primaryAsset($artwork));
+    }
+
+    public function altTextForAsset(MediaAsset $asset, mixed $override = null): string
+    {
         if ($override !== null) {
-            if (! is_string($override)) {
-                throw new LogicException('Artwork ALT override must be text.');
+            if (! is_string($override) || trim($override) === '') {
+                throw new LogicException('Media ALT override must be non-empty text when provided.');
             }
 
             return $override;
         }
 
-        $asset = $this->primaryAsset($artwork);
         $altText = $asset->getAttribute('alt_text');
-        if (! is_string($altText)) {
-            throw new LogicException('Published artwork requires explicit ALT text.');
+        if (! is_string($altText) || trim($altText) === '') {
+            throw new LogicException('Public media requires explicit ALT text.');
         }
 
         return $altText;
     }
 
-    public function thumbnailUrl(Artwork $artwork): string
+    public function thumbnailUrlForAsset(MediaAsset $asset): string
     {
-        $asset = $this->primaryAsset($artwork);
+        $this->assertAvailable($asset);
+        $asset->loadMissing('variants');
 
         /** @var Collection<int, MediaVariant> $variants */
         $variants = $asset->getRelationValue('variants');
@@ -93,7 +132,7 @@ class PublicMedia
         )->values();
 
         if ($matching->count() !== 1) {
-            throw new LogicException('Published artwork requires exactly one available public thumbnail.');
+            throw new LogicException('Public media requires exactly one available public thumbnail.');
         }
 
         /** @var MediaVariant $variant */
@@ -102,18 +141,29 @@ class PublicMedia
         return route('media.variant', $variant);
     }
 
-    public function originalUrl(Artwork $artwork): string
+    public function originalUrlForAsset(MediaAsset $asset): string
     {
-        return route('media.original', $this->primaryAsset($artwork));
+        $this->assertAvailable($asset);
+
+        return route('media.original', $asset);
     }
 
     private function primaryAsset(Artwork $artwork): MediaAsset
     {
         $asset = $this->primaryMedia($artwork)->getRelationValue('mediaAsset');
-        if (! $asset instanceof MediaAsset || $asset->getAttribute('state') !== 'available') {
+        if (! $asset instanceof MediaAsset) {
             throw new LogicException('Published artwork requires an available primary media asset.');
         }
 
+        $this->assertAvailable($asset);
+
         return $asset;
+    }
+
+    private function assertAvailable(MediaAsset $asset): void
+    {
+        if ($asset->getAttribute('state') !== 'available') {
+            throw new LogicException('Public media requires an available media asset.');
+        }
     }
 }

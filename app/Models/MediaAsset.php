@@ -41,4 +41,16 @@ class MediaAsset extends Model
             ->withPivot(['role', 'position', 'alt_text_override'])
             ->withTimestamps();
     }
+
+    public function exhibitionMedia(): HasMany
+    {
+        return $this->hasMany(ExhibitionMedia::class);
+    }
+
+    public function exhibitions(): BelongsToMany
+    {
+        return $this->belongsToMany(Exhibition::class, 'exhibition_media')
+            ->withPivot(['role', 'position', 'alt_text_override'])
+            ->withTimestamps();
+    }
 }
