@@ -1,0 +1,42 @@
+{
+  "media_root": "/var/www/html",
+  "categories": [
+    {
+      "table": "paintings",
+      "slug": "paintings",
+      "name": "Paintings",
+      "position": 0,
+      "show_in_navigation": true,
+      "show_on_home": true,
+      "media_directory": "img/paintings",
+      "description": null,
+      "tie_order": {}
+    },
+    {
+      "table": "prints",
+      "slug": "prints",
+      "name": "Prints",
+      "position": 1,
+      "show_in_navigation": true,
+      "show_on_home": true,
+      "media_directory": "img/prints",
+      "description": null,
+      "tie_order": {
+        "2013-02-02": []
+      }
+    },
+    {
+      "table": "drawings",
+      "slug": "drawings",
+      "name": "Drawings",
+      "position": 2,
+      "show_in_navigation": true,
+      "show_on_home": true,
+      "media_directory": "img/drawings",
+      "description": null,
+      "tie_order": {
+        "2014-03-03": []
+      }
+    }
+  ]
+}

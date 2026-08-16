@@ -42,6 +42,7 @@ Thumbs.db
 !/storage/logs/.gitignore
 /storage/*.key
 
-# Runtime media and database backups must be stored outside Git.
+# Runtime media, legacy snapshots and database backups must stay outside Git.
 /uploads/
 /backups/
+/legacy-snapshot*.json
