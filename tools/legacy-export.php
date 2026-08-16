@@ -8,18 +8,18 @@ if (PHP_SAPI !== 'cli') {
 }
 
 [$script, $configPath, $outputPath] = array_pad($argv, 3, null);
-if (! is_string($configPath) || ! is_string($outputPath)) {
+if (is_string($configPath) === false || is_string($outputPath) === false) {
     fwrite(STDERR, "Usage: php tools/legacy-export.php <mapping.json> <output.json>\n");
     exit(64);
 }
 
 $configJson = file_get_contents($configPath);
-if (! is_string($configJson)) {
+if (is_string($configJson) === false) {
     throw new RuntimeException('Could not read mapping file.');
 }
 
 $config = json_decode($configJson, true, 512, JSON_THROW_ON_ERROR);
-if (! is_array($config)) {
+if (is_array($config) === false) {
     throw new RuntimeException('Mapping root must be an object.');
 }
 
@@ -31,12 +31,12 @@ if ($dsn === false || trim($dsn) === '' || $user === false || $password === fals
 }
 
 $mediaRoot = realpath((string) ($config['media_root'] ?? ''));
-if ($mediaRoot === false || ! is_dir($mediaRoot)) {
+if ($mediaRoot === false || is_dir($mediaRoot) === false) {
     throw new RuntimeException('Configured media_root does not exist.');
 }
 
 $categories = $config['categories'] ?? null;
-if (! is_array($categories) || $categories === []) {
+if (is_array($categories) === false || $categories === []) {
     throw new RuntimeException('Mapping must define at least one category.');
 }
 
@@ -50,7 +50,7 @@ $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
 
 $slugify = static function (string $value): string {
     $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
-    if (! is_string($ascii)) {
+    if (is_string($ascii) === false) {
         throw new RuntimeException('Could not transliterate artwork title.');
     }
 
@@ -75,7 +75,7 @@ $manifestCategories = [];
 $homeCandidates = [];
 
 foreach ($categories as $category) {
-    if (! is_array($category)) {
+    if (is_array($category) === false) {
         throw new RuntimeException('Every category mapping must be an object.');
     }
 
@@ -107,7 +107,7 @@ foreach ($categories as $category) {
     krsort($byDate, SORT_STRING);
 
     $tieOrder = $category['tie_order'] ?? [];
-    if (! is_array($tieOrder)) {
+    if (is_array($tieOrder) === false) {
         throw new RuntimeException("Category {$table} tie_order must be an object.");
     }
 
@@ -119,7 +119,7 @@ foreach ($categories as $category) {
         }
 
         $reviewedIds = $tieOrder[$date] ?? null;
-        if (! is_array($reviewedIds)) {
+        if (is_array($reviewedIds) === false) {
             $ids = implode(', ', array_map(static fn (array $row): string => (string) $row['id'], $sameDateRows));
             throw new RuntimeException("Ambiguous {$table} date {$date}; reviewed tie_order required for legacy IDs {$ids}.");
         }
@@ -156,7 +156,7 @@ foreach ($categories as $category) {
 
         $relativeMediaPath = str_replace('\\', '/', $mediaDirectory.'/'.$filename);
         $sourcePath = realpath($mediaRoot.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativeMediaPath));
-        if ($sourcePath === false || ! is_file($sourcePath)) {
+        if ($sourcePath === false || is_file($sourcePath) === false) {
             throw new RuntimeException("Missing canonical original for {$table} legacy ID {$legacyId}: {$relativeMediaPath}");
         }
         $rootPrefix = rtrim($mediaRoot, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
@@ -166,7 +166,7 @@ foreach ($categories as $category) {
 
         $byteSize = filesize($sourcePath);
         $sha256 = hash_file('sha256', $sourcePath);
-        if (! is_int($byteSize) || ! is_string($sha256)) {
+        if (is_int($byteSize) === false || is_string($sha256) === false) {
             throw new RuntimeException("Could not fingerprint media for {$table} legacy ID {$legacyId}.");
         }
 
