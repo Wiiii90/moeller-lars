@@ -16,9 +16,16 @@ implement migrations, or prescribe a production PostgreSQL version or topology.
 - position is a required non-negative integer for ordered editorial records;
   lower values render first. For artwork it is the category-relative editorial
   presentation order and is authoritative over work_date for category galleries.
-  It is established by editorial or migration
-  reconciliation and never inferred from source ID, target ID, insertion order,
-  or database order.
+  It is established by editorial or migration reconciliation and never inferred
+  from source ID, target ID, insertion order, database order, or another field
+  used as a secondary tie-breaker.
+- Required business data has one canonical source. Missing, duplicate,
+  ambiguous, or contradictory required data is an invariant failure and must
+  not be repaired at runtime by choosing a legacy/raw value, unrelated field,
+  placeholder, alternate media source, or accidental database ordering.
+- Explicit product precedence is not fallback behavior. For example, a nullable
+  usage-specific media ALT override intentionally supersedes the asset-level ALT
+  value when present; otherwise the asset-level value is the canonical source.
 - Foreign keys are restrictive by default. Archive or detach records before
   deletion.
 - Migrated entities retain legacy_id and legacy_source. New records leave them
@@ -68,6 +75,7 @@ Indexes and uniqueness:
 - unique slug
 - partial unique legacy_source, legacy_id where both are non-null
 - index on state, position, id
+- published categories shown in navigation require a unique position
 
 Deletion: referenced categories are not hard-deleted. A category is publicly
 available only while published; hidden is the editor-controlled unavailable
@@ -89,9 +97,8 @@ Required fields:
 - title varchar(240)
 - state: draft, published, hidden, archived
 - position integer, non-negative; explicit display order for the applicable
-  public artwork sequence. Same-date records must receive positions from the
-  approved/reconciled legacy display or export ordering; no implicit tie is
-  permitted.
+  public artwork sequence. The complete publish-ready category order must be
+  unambiguous; no implicit tie is permitted.
 - created_at, updated_at
 
 Nullable fields:
@@ -109,7 +116,9 @@ Nullable fields:
 
 Date rule: convert a legacy YYYYMMDD value to work_date only after its
 semantics are confirmed. If only the year is reliable, retain the raw value
-and use date_precision year; do not invent a day or month.
+and use date_precision year; do not invent a day or month. `legacy_date_raw`
+is migration/reconciliation evidence and is never a runtime substitute for a
+missing normalized value.
 
 Indexes and uniqueness:
 - unique slug
@@ -123,10 +132,13 @@ Constraints and deletion:
   primary usage in artwork_media that resolves to an available original
 - work_date must be consistent with date_precision
 - position >= 0
-- position is authoritative for category gallery presentation; work_date
-  describes the artwork and is the deterministic fallback after position
-- duplicate or gapped legacy positions are tolerated; explicit admin reorder
-  normalizes a complete category to contiguous 0..n-1
+- position is authoritative for category gallery presentation; `work_date`
+  describes the artwork and never acts as an ordering fallback after position
+- published artwork positions within one category must be unique; duplicate
+  legacy positions are migration/reconciliation exceptions that must be resolved
+  before the affected category is publish-ready
+- gaps in positions are permitted; explicit admin reorder normalizes a complete
+  category to contiguous 0..n-1
 - new artwork appends to its category and a category move appends to the
   destination
 - normal editorial UI does not expose numeric artwork position input
@@ -174,27 +186,31 @@ Indexes and constraints:
 - optional unique sha256 for physical deduplication, only if every usage
   reference is preserved
 
-Asset metadata is plain-text editorial metadata. `alt_text` is the asset-level
-default; `artwork_media.alt_text_override` is usage-specific and takes
-precedence. Original technical identity fields, storage identity, checksums,
-and provenance are immutable through the editorial UI.
+Asset metadata is plain-text editorial metadata. `alt_text` is the canonical
+asset-level ALT value. `artwork_media.alt_text_override` is an explicitly
+optional usage-specific value that takes precedence when present. Missing
+required public ALT data is an invariant failure; artwork title, filename,
+legacy metadata, or placeholder text is never substituted. Original technical
+identity fields, storage identity, checksums, and provenance are immutable
+through the editorial UI.
 
 Media deletion is logical: the asset and its variants transition to deleted.
 Any artwork_media, exhibition hero, CV image, or blog cover reference blocks
 deletion. Storage cleanup occurs only after the durable database and audit
-transaction commits. Cleanup failure may leave private orphaned bytes, but it
-must never reactivate logically deleted media. Integrity verification compares
-stored bytes with persisted size, SHA-256, and content MIME and checks
-available derivative consistency. No hard delete is part of normal media
-editorial workflow. Primary media replacement is an explicit atomic editorial
-operation: it switches an existing primary usage to a newly validated
-available asset without committing an intermediate media-less artwork state.
-The usage-specific ALT override is cleared when the underlying primary image
-changes. An old asset is logically deleted only when no artwork, exhibition,
-CV, or blog reference remains; shared old assets stay available. Physical
-cleanup of an unreferenced replaced asset occurs only after the durable
-database and audit commit. Cleanup failure may leave private orphan bytes but
-does not revert the logical replacement.
+transaction commits. Cleanup failure is surfaced explicitly as an operation
+failure; it may leave private orphaned bytes but is never reported as successful
+cleanup and must never reactivate logically deleted media. Integrity
+verification compares stored bytes with persisted size, SHA-256, and content
+MIME and checks available derivative consistency. No hard delete is part of
+normal media editorial workflow. Primary media replacement is an explicit
+atomic editorial operation: it switches an existing primary usage to a newly
+validated available asset without committing an intermediate media-less artwork
+state. The usage-specific ALT override is cleared when the underlying primary
+image changes. An old asset is logically deleted only when no artwork,
+exhibition, CV, or blog reference remains; shared old assets stay available.
+Physical cleanup of an unreferenced replaced asset occurs only after the durable
+database and audit commit. Cleanup failure is surfaced explicitly and must not
+be converted into a warning-success or alternate-success path.
 
 ## media_variant
 
@@ -248,8 +264,9 @@ Constraints:
 - at most one primary row per artwork
 - published artwork must have one primary row
 - foreign keys reference artwork.id and media_asset.id restrictively
-- primary usage is the artwork's first-class original-media reference; variant
-  selection is resolved from that original and never replaces it
+- primary usage is the artwork's first-class original-media reference; the
+  required public variant is resolved from that original and never replaced by
+  the original or another derivative when missing
 
 Deletion is restrictive. Removing a usage does not delete the asset.
 Replacement updates the existing primary usage row rather than deleting and
@@ -396,7 +413,9 @@ Migration must create it disabled by default.
 
 ## redirect
 
-Purpose: maps retired legacy public paths to canonical target paths.
+Purpose: maps retired public paths of the new application to canonical target
+paths. Legacy dispatcher/query URLs are migration evidence only and are not a
+blanket compatibility surface.
 
 Required fields:
 - id bigint primary key
@@ -503,9 +522,11 @@ exhibition, cv_entry, and blog_post, and may be used on redirect:
 For media, also retain legacy_path, legacy_filename, and legacy_byte_size.
 Preserve source values exactly. Every clean import must be repeatable and
 idempotent, with counts, ordering exceptions, and SHA-256 reconciliation
-recorded in a migration report. Unresolved same-date ordering is an explicit
-migration/editorial exception for review, never an implicit ID or database
-ordering choice. Secrets must never enter the report, fixtures, or this model.
+recorded in a migration report. Duplicate or ambiguous imported ordering is an
+explicit migration/editorial exception for review and must be resolved before
+public readiness; it is never repaired by an implicit ID, date, slug, insertion,
+or database ordering choice. Secrets must never enter the report, fixtures, or
+this model.
 
 ## Analytics and failure boundary
 
@@ -515,20 +536,9 @@ daily_metric is limited to bots, errors, performance, deployment/health
 signals, and optional cached dashboard values.
 
 Analytics collection, log aggregation, and dashboard reads are asynchronous or
-failure-tolerant. A Matomo outage, archive failure, or local metric-parser
-failure must never fail public rendering, editorial reads, authentication, or
+failure-tolerant because analytics is explicitly non-critical to the public and
+editorial application path. This resilience boundary must not substitute
+incorrect analytics data: a Matomo outage, archive failure, or local
+metric-parser failure may omit/report analytics state, but must never invent
+successful values or fail public rendering, editorial reads, authentication, or
 content writes.
-
-## Decisions requiring orchestrator review before migrations
-
-1. Confirm the shared Laravel foundation's admin-user table name and key type.
-2. Confirm which legacy date values may become work_date; otherwise retain raw
-   values with unknown precision.
-3. Approve initial category slugs/labels and category-position semantics.
-4. Confirm the media storage adapter and whether SHA-256 uniqueness is used for
-   deduplication or only reconciliation.
-5. Confirm the sanitized rich-text format for descriptions, CV body, and posts.
-6. Confirm retention periods for provenance, audit events, operational metrics,
-   and cached Matomo summaries.
-7. Confirm whether exhibitions and posts need additional explicit media usage
-   tables beyond hero/cover references.
