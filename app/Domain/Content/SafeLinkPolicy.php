@@ -19,7 +19,7 @@ final class SafeLinkPolicy
             return false;
         }
 
-        $scheme = $parts['scheme'];
+        $scheme = strtolower($parts['scheme']);
         if (! in_array($scheme, ['http', 'https', 'mailto'], true)) {
             return false;
         }
@@ -38,7 +38,6 @@ final class SafeLinkPolicy
         return filter_var($url, FILTER_VALIDATE_URL) !== false
             && ! empty($parts['host'])
             && ! array_key_exists('user', $parts)
-            && ! array_key_exists('pass', $parts)
-            && $scheme === strtolower($scheme);
+            && ! array_key_exists('pass', $parts);
     }
 }

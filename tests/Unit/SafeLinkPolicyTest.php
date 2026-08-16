@@ -9,6 +9,9 @@ it('allows only the approved absolute link schemes', function (string $url): voi
     'http://example.com',
     'https://example.com/path?q=1#part',
     'mailto:lars@example.com',
+    'HTTPS://example.com',
+    'HTTP://example.com/path',
+    'MAILTO:lars@example.com',
 ]);
 
 it('rejects disallowed, relative, malformed, and credential-bearing links', function (string $url): void {
