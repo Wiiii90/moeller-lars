@@ -46,7 +46,7 @@ $pdo = new PDO($dsn, $user, $password, [
     PDO::ATTR_EMULATE_PREPARES => false,
 ]);
 $pdo->exec('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
-$pdo->exec('START TRANSACTION READ ONLY WITH CONSISTENT SNAPSHOT');
+$pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
 
 $slugify = static function (string $value): string {
     $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
