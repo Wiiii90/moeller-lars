@@ -45,7 +45,7 @@ final class LegacyMigrationValidator
         $expectedHomeSlug = null;
 
         foreach ($categories as $categoryData) {
-            if (! is_array($categoryData)) {
+            if (is_array($categoryData) === false) {
                 throw new RuntimeException('Legacy manifest category must be an object.');
             }
 
@@ -60,7 +60,7 @@ final class LegacyMigrationValidator
                 ->where('slug', $slug)
                 ->first();
 
-            if (! $category instanceof ArtworkCategory) {
+            if (($category instanceof ArtworkCategory) === false) {
                 $errors[] = "Missing target category {$source} -> {$slug}.";
                 $categoryMapping[] = [
                     'source' => $source,
@@ -91,7 +91,7 @@ final class LegacyMigrationValidator
 
             $dateGroups = [];
             foreach ($artworks as $artworkData) {
-                if (! is_array($artworkData)) {
+                if (is_array($artworkData) === false) {
                     throw new RuntimeException("Legacy manifest artwork in {$source} must be an object.");
                 }
 
@@ -138,7 +138,7 @@ final class LegacyMigrationValidator
         $targetHomeSlug = null;
         try {
             $targetHomeSlug = $this->publicArtworkQuery->latestForHome()?->getAttribute('slug');
-            if ($targetHomeSlug !== null && ! is_string($targetHomeSlug)) {
+            if ($targetHomeSlug !== null && is_string($targetHomeSlug) === false) {
                 $errors[] = 'Public home query returned an invalid artwork slug.';
                 $targetHomeSlug = null;
             }
@@ -211,7 +211,7 @@ final class LegacyMigrationValidator
             ->where('legacy_id', $legacyId)
             ->first();
 
-        if (! $artwork instanceof Artwork) {
+        if (($artwork instanceof Artwork) === false) {
             $errors[] = "Missing target artwork {$source}#{$legacyId}.";
 
             return;
@@ -255,7 +255,7 @@ final class LegacyMigrationValidator
         }
 
         $asset = MediaAsset::query()->find($primary->first()?->getAttribute('media_asset_id'));
-        if (! $asset instanceof MediaAsset) {
+        if (($asset instanceof MediaAsset) === false) {
             $errors[] = "Artwork {$source}#{$legacyId} primary media asset is missing.";
 
             return;
@@ -313,7 +313,7 @@ final class LegacyMigrationValidator
 
         foreach ($expectedRows as $position => $expected) {
             $actual = $actualRows->get($position);
-            if (! is_object($actual)) {
+            if (is_object($actual) === false) {
                 $errors[] = "Legacy CV entry {$position} is missing.";
                 continue;
             }
@@ -346,7 +346,7 @@ final class LegacyMigrationValidator
     private function validatePublicProfile(array &$errors): void
     {
         $settings = DB::table('public_content_settings')->where('id', 1)->first();
-        if (! is_object($settings)) {
+        if (is_object($settings) === false) {
             $errors[] = 'Public content settings singleton is missing.';
 
             return;
@@ -363,12 +363,12 @@ final class LegacyMigrationValidator
     private function manifest(string $path): array
     {
         $file = realpath($path);
-        if ($file === false || ! is_file($file)) {
+        if ($file === false || is_file($file) === false) {
             throw new RuntimeException('Legacy manifest does not exist.');
         }
 
         $json = file_get_contents($file);
-        if (! is_string($json)) {
+        if (is_string($json) === false) {
             throw new RuntimeException('Legacy manifest could not be read.');
         }
 
@@ -377,7 +377,7 @@ final class LegacyMigrationValidator
         } catch (JsonException $exception) {
             throw new RuntimeException('Legacy manifest is not valid JSON.', 0, $exception);
         }
-        if (! is_array($data)) {
+        if (is_array($data) === false) {
             throw new RuntimeException('Legacy manifest root must be an object.');
         }
 
@@ -387,7 +387,7 @@ final class LegacyMigrationValidator
     private function requiredString(array $data, string $key): string
     {
         $value = $data[$key] ?? null;
-        if (! is_string($value) || trim($value) === '') {
+        if (is_string($value) === false || trim($value) === '') {
             throw new RuntimeException("Legacy manifest field {$key} must be a non-empty string.");
         }
 
@@ -400,7 +400,7 @@ final class LegacyMigrationValidator
         if ($value === null) {
             return null;
         }
-        if (! is_string($value)) {
+        if (is_string($value) === false) {
             throw new RuntimeException("Legacy manifest field {$key} must be a string or null.");
         }
 
@@ -410,7 +410,7 @@ final class LegacyMigrationValidator
     private function requiredInteger(array $data, string $key): int
     {
         $value = $data[$key] ?? null;
-        if (! is_int($value)) {
+        if (is_int($value) === false) {
             throw new RuntimeException("Legacy manifest field {$key} must be an integer.");
         }
 
@@ -421,7 +421,7 @@ final class LegacyMigrationValidator
     private function requiredList(array $data, string $key): array
     {
         $value = $data[$key] ?? null;
-        if (! is_array($value) || ! array_is_list($value)) {
+        if (is_array($value) === false || array_is_list($value) === false) {
             throw new RuntimeException("Legacy manifest field {$key} must be a list.");
         }
 
