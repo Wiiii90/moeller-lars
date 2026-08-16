@@ -1,20 +1,25 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
+namespace App\Domain\Migration;
+
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
-return new class extends Migration
+final class LegacyPublicCvImporter
 {
     private const SOURCE = 'legacy-public-vita';
 
     private const BATCH = 'legacy-public-vita-2026-08-16';
 
-    public function up(): void
+    public function import(): int
     {
-        DB::transaction(function (): void {
+        return DB::transaction(function (): int {
             if (DB::table('cv_entries')->exists()) {
                 throw new RuntimeException('Legacy CV import requires an empty cv_entries table.');
+            }
+
+            if (! DB::table('public_content_settings')->where('id', 1)->exists()) {
+                throw new RuntimeException('Public content settings singleton is missing.');
             }
 
             if (DB::table('artwork_categories')
@@ -61,24 +66,8 @@ return new class extends Migration
                     'cv_navigation_position' => 3,
                     'updated_at' => $now,
                 ]);
-        });
-    }
 
-    public function down(): void
-    {
-        DB::transaction(function (): void {
-            DB::table('cv_entries')
-                ->where('migration_batch_id', self::BATCH)
-                ->delete();
-
-            if (! DB::table('cv_entries')->where('state', 'published')->exists()) {
-                DB::table('public_content_settings')
-                    ->where('id', 1)
-                    ->update([
-                        'cv_enabled' => false,
-                        'updated_at' => now(),
-                    ]);
-            }
+            return count($rows);
         });
     }
 
@@ -86,24 +75,13 @@ return new class extends Migration
      * Verified factual content from the currently public legacy Vita surface.
      * Exhibition lines remain CV entries; they are not promoted into Exhibition entities.
      *
-     * @return list<array{
-     *     section: string,
-     *     title: string,
-     *     year_text: string,
-     *     date_precision: string,
-     *     starts_on: ?string,
-     *     ends_on: ?string,
-     *     organisation: ?string,
-     *     location: ?string,
-     *     body: ?string
-     * }>
+     * @return list<array{section:string,title:string,year_text:string,date_precision:string,starts_on:?string,ends_on:?string,organisation:?string,location:?string,body:?string}>
      */
     private function rows(): array
     {
         return [
             $this->row('Biography', 'Born in Hamburg', '1.6.1989', 'day', '1989-06-01', null, null, 'Hamburg'),
             $this->row('Biography', 'Studies at Berlin University of the Arts', '2010–2015 / 2018–2021', 'unknown', null, null, 'Berlin University of the Arts', 'Berlin', 'Lives and works in Hamburg.'),
-
             $this->row('Exhibitions', 'Annual Rundgang University of Arts Berlin', '2010–2013', 'unknown', null, null, 'University of Arts Berlin', 'Berlin'),
             $this->row('Exhibitions', 'Atelierbesuche – junge surreale Positionen: Illusions to carry on', '2012', 'year', null, null, 'Galerie Rosendahl, Thöne & Westphal', 'Berlin'),
             $this->row('Exhibitions', 'Gallery Weekend', '02.05.2014', 'day', '2014-05-02', null, 'Westphal Berlin', 'Berlin'),
@@ -136,30 +114,9 @@ return new class extends Migration
         ];
     }
 
-    /**
-     * @return array{
-     *     section: string,
-     *     title: string,
-     *     year_text: string,
-     *     date_precision: string,
-     *     starts_on: ?string,
-     *     ends_on: ?string,
-     *     organisation: ?string,
-     *     location: ?string,
-     *     body: ?string
-     * }
-     */
-    private function row(
-        string $section,
-        string $title,
-        string $yearText,
-        string $datePrecision,
-        ?string $startsOn,
-        ?string $endsOn,
-        ?string $organisation,
-        ?string $location,
-        ?string $body = null,
-    ): array {
+    /** @return array{section:string,title:string,year_text:string,date_precision:string,starts_on:?string,ends_on:?string,organisation:?string,location:?string,body:?string} */
+    private function row(string $section, string $title, string $yearText, string $datePrecision, ?string $startsOn, ?string $endsOn, ?string $organisation, ?string $location, ?string $body = null): array
+    {
         return [
             'section' => $section,
             'title' => $title,
@@ -172,4 +129,4 @@ return new class extends Migration
             'body' => $body,
         ];
     }
-};
+}
