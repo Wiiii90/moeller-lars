@@ -2,6 +2,7 @@
 
 use App\Domain\Migration\LegacyArtworkManifestImporter;
 use App\Domain\Migration\LegacyPublicCvImporter;
+use App\Domain\Migration\LegacyPublicProfileImporter;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 
@@ -9,11 +10,12 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Artisan::command('legacy:import-public-cv', function (LegacyPublicCvImporter $importer) {
-    $count = $importer->import();
+Artisan::command('legacy:import-public-cv', function (LegacyPublicCvImporter $cvImporter, LegacyPublicProfileImporter $profileImporter) {
+    $count = $cvImporter->import();
+    $profileImporter->import();
 
-    $this->info("Imported {$count} verified legacy CV entries.");
-})->purpose('Import verified public legacy CV content into an empty target');
+    $this->info("Imported {$count} verified legacy CV entries and public profile details.");
+})->purpose('Import verified public legacy CV and profile content into an empty target');
 
 Artisan::command('legacy:import-artworks {manifest} {media-root}', function (LegacyArtworkManifestImporter $importer) {
     $result = $importer->import(

@@ -31,6 +31,9 @@ class PublicContentSettingResource extends Resource
             Toggle::make('exhibitions_enabled')->label('Exhibitions public'),
             TextInput::make('cv_navigation_label')->required()->maxLength(120),
             TextInput::make('cv_navigation_position')->integer()->required()->minValue(0),
+            TextInput::make('public_email')->label('Public email')->email()->maxLength(254)->nullable(),
+            TextInput::make('instagram_handle')->label('Instagram handle')->maxLength(30)->regex('/^[A-Za-z0-9._]{1,30}$/')->nullable(),
+            Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
             Select::make('contact_state')->options([
                 'enabled' => 'Enabled',
                 'under_construction' => 'Under construction',

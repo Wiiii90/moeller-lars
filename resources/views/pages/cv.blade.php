@@ -103,8 +103,27 @@
             </section>
         @endif
 
+        @if ($settings->public_email !== null || $settings->instagram_handle !== null)
+            <section class="public-contact-details" aria-labelledby="public-contact-heading">
+                <h2 id="public-contact-heading" class="category-heading">Contact</h2>
+                @if ($settings->public_email !== null)
+                    <p><a href="mailto:{{ $settings->public_email }}">{{ $settings->public_email }}</a></p>
+                @endif
+                @if ($settings->instagram_handle !== null)
+                    <p><a href="https://www.instagram.com/{{ $settings->instagram_handle }}/" rel="noopener noreferrer">Instagram: {{ $settings->instagram_handle }}</a></p>
+                @endif
+            </section>
+        @endif
+
         @if ($settings->contact_state !== 'hidden')
             <x-contact :settings="$settings" />
+        @endif
+
+        @if ($settings->legal_disclaimer !== null)
+            <section class="legal-disclaimer" aria-labelledby="legal-disclaimer-heading">
+                <h2 id="legal-disclaimer-heading">Haftungsablehnung</h2>
+                <p>{{ $settings->legal_disclaimer }}</p>
+            </section>
         @endif
     </div>
 @endsection
