@@ -4,13 +4,16 @@ namespace App\Filament\Resources\Artworks\Pages;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\ArtworkEditorialService;
+use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIngestService;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use App\Models\ArtworkMedia;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -30,7 +33,7 @@ class EditArtwork extends EditRecord
         $category = ArtworkCategory::query()->find($categoryId);
         if ($record->getAttribute('state') === 'published' && $category?->getAttribute('state') !== 'published') {
             throw ValidationException::withMessages([
-                'data.artwork_category_id' => 'Published artwork requires a published category.',
+                'artwork_category_id' => 'Published artwork requires a published category.',
             ]);
         }
 
@@ -120,6 +123,28 @@ class EditArtwork extends EditRecord
                     $this->artworkRecord()->refresh();
                     Notification::make()->title('Artwork unpublished')->success()->send();
                 }),
+            Action::make('editPrimaryAlt')
+                ->label('Edit image ALT text')
+                ->visible(fn (): bool => $this->primaryArtworkMedia() !== null)
+                ->schema([
+                    TextInput::make('alt_text_override')
+                        ->label('Artwork ALT override')
+                        ->maxLength(500)
+                        ->nullable()
+                        ->default(fn (): ?string => $this->primaryArtworkMedia()?->getAttribute('alt_text_override')),
+                ])
+                ->action(function (array $data): void {
+                    try {
+                        app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($this->artworkRecord(), $data['alt_text_override'] ?? null);
+                    } catch (ValidationException) {
+                        Notification::make()->title('Image ALT text could not be updated')->danger()->send();
+
+                        return;
+                    }
+
+                    $this->artworkRecord()->refresh();
+                    Notification::make()->title('Image ALT text updated')->success()->send();
+                }),
         ];
     }
 
@@ -129,5 +154,13 @@ class EditArtwork extends EditRecord
         $record = $this->getRecord();
 
         return $record;
+    }
+
+    private function primaryArtworkMedia(): ?ArtworkMedia
+    {
+        /** @var ArtworkMedia|null $media */
+        $media = $this->artworkRecord()->artworkMedia()->where('role', 'primary')->first();
+
+        return $media;
     }
 }

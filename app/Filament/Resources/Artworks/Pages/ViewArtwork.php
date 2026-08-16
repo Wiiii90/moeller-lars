@@ -55,6 +55,42 @@ class ViewArtwork extends ViewRecord
             TextEntry::make('artworkMedia.mediaAsset.mime_type')->label('Primary MIME type'),
             TextEntry::make('artworkMedia.mediaAsset.width')->label('Primary width'),
             TextEntry::make('artworkMedia.mediaAsset.height')->label('Primary height'),
+            TextEntry::make('primary_default_alt')
+                ->label('Primary default ALT')
+                ->state(fn (Artwork $record): ?string => $this->primaryMediaAttribute($record, 'alt_text')),
+            TextEntry::make('primary_alt_override')
+                ->label('Primary ALT override')
+                ->state(fn (Artwork $record): ?string => $this->primaryMediaAttribute($record, 'alt_text_override', true)),
+            TextEntry::make('primary_credit')
+                ->label('Primary credit')
+                ->state(fn (Artwork $record): ?string => $this->primaryMediaAttribute($record, 'credit')),
+            TextEntry::make('primary_copyright')
+                ->label('Primary copyright')
+                ->state(fn (Artwork $record): ?string => $this->primaryMediaAttribute($record, 'copyright_notice')),
+            TextEntry::make('primary_sha256')
+                ->label('Primary SHA-256')
+                ->state(fn (Artwork $record): ?string => $this->primaryMediaAttribute($record, 'sha256')),
         ]);
+    }
+
+    private function primaryMediaAttribute(Artwork $record, string $attribute, bool $usage = false): ?string
+    {
+        /** @var Collection<int, ArtworkMedia> $artworkMedia */
+        $artworkMedia = $record->getRelationValue('artworkMedia');
+        $primary = $artworkMedia->firstWhere('role', 'primary');
+        if (! $primary instanceof ArtworkMedia) {
+            return null;
+        }
+
+        if ($usage) {
+            $value = $primary->getAttribute($attribute);
+
+            return is_string($value) ? $value : null;
+        }
+
+        $asset = $primary->getRelationValue('mediaAsset');
+        $value = $asset?->getAttribute($attribute);
+
+        return is_string($value) ? $value : null;
     }
 }

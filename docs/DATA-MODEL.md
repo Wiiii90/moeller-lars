@@ -165,10 +165,19 @@ Indexes and constraints:
 - optional unique sha256 for physical deduplication, only if every usage
   reference is preserved
 
-Deletion: a safe deletion service must verify zero references from artwork_media,
-exhibition hero media, blog_post cover media, and other approved usage
-references; then mark deleted, remove storage only after the transaction is
-durable, and write an audit_event. A referenced original cannot be deleted.
+Asset metadata is plain-text editorial metadata. `alt_text` is the asset-level
+default; `artwork_media.alt_text_override` is usage-specific and takes
+precedence. Original technical identity fields, storage identity, checksums,
+and provenance are immutable through the editorial UI.
+
+Media deletion is logical: the asset and its variants transition to deleted.
+Any artwork_media, exhibition hero, CV image, or blog cover reference blocks
+deletion. Storage cleanup occurs only after the durable database and audit
+transaction commits. Cleanup failure may leave private orphaned bytes, but it
+must never reactivate logically deleted media. Integrity verification compares
+stored bytes with persisted size, SHA-256, and content MIME and checks
+available derivative consistency. No hard delete is part of normal media
+editorial workflow.
 
 ## media_variant
 
@@ -196,8 +205,10 @@ Indexes and constraints:
 - derivative metadata is separate from the original asset and never overwrites
   its MIME type, dimensions, byte size, or SHA-256
 
-Deletion: deleting an original is restricted while variants or usage references
-exist. Variants may be regenerated or deleted without deleting the original.
+Deletion: variants transition to deleted when their unreferenced original is
+logically deleted; neither the original nor variants are hard-deleted by the
+normal media editorial workflow. Variants may be regenerated without changing
+the original technical identity.
 
 ## artwork_media
 

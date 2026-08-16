@@ -216,3 +216,37 @@ it('keeps the required shell navigation and excludes Blog, Admin, and Contact', 
         ->and(strpos($html, 'Drawings'))->toBeLessThan(strpos($html, 'CV &amp; Exhibitions'))
         ->and($html)->not->toContain('Blog')->and($html)->not->toContain('Admin')->and($html)->not->toContain('Contact');
 });
+
+it('renders public media metadata with escaped output and preserves ALT precedence', function () {
+    Storage::fake(config('media.disk'));
+    $category = sliceCategory('paintings');
+    $artwork = sliceArtwork($category, ['slug' => 'metadata-public-artwork', 'title' => 'Artwork title']);
+    $asset = sliceAsset([
+        'storage_key' => 'originals/metadata-public.jpg',
+        'alt_text' => 'Asset ALT',
+        'credit' => '<script>alert(1)</script>',
+        'copyright_notice' => '<img src=x onerror=alert(1)>',
+    ]);
+    attachMedia($artwork, $asset, 'primary', 'Usage ALT');
+    Storage::disk(config('media.disk'))->put($asset->storage_key, 'orig');
+    $content = $this->get('/artworks/metadata-public-artwork')->assertSuccessful()->getContent();
+
+    expect($content)->toContain('Usage ALT')
+        ->and($content)->toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+        ->and($content)->toContain('&lt;img src=x onerror=alert(1)&gt;')
+        ->and($content)->not->toContain('<script>alert(1)</script>')
+        ->and($content)->not->toContain('<img src=x onerror=alert(1)>');
+});
+
+it('omits empty public media metadata and keeps deleted media unavailable', function () {
+    Storage::fake(config('media.disk'));
+    $category = sliceCategory('prints');
+    $artwork = sliceArtwork($category, ['slug' => 'no-metadata-public']);
+    $asset = sliceAsset(['storage_key' => 'originals/no-metadata.jpg', 'alt_text' => null, 'credit' => null, 'copyright_notice' => null]);
+    attachMedia($artwork, $asset);
+    Storage::disk(config('media.disk'))->put($asset->storage_key, 'orig');
+    $content = $this->get('/artworks/no-metadata-public')->assertSuccessful()->getContent();
+    expect($content)->not->toContain('artwork-credit')->and($content)->not->toContain('artwork-copyright');
+    $asset->update(['state' => 'deleted']);
+    $this->get(route('media.original', $asset))->assertNotFound();
+});

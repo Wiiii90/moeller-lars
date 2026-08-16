@@ -6,6 +6,8 @@
         $year = $matches[1];
     }
     $imageUrl = $media->originalUrl($artwork);
+    $primaryMedia = $artwork->artworkMedia->firstWhere('role', 'primary');
+    $primaryAsset = $primaryMedia?->mediaAsset;
 @endphp
 
 @section('title', $artwork->title.' — Lars Möller')
@@ -24,6 +26,12 @@
             @endif
             @if ($artwork->description)
                 <p>{{ $artwork->description }}</p>
+            @endif
+            @if ($primaryAsset?->credit)
+                <p class="artwork-credit">{{ $primaryAsset->credit }}</p>
+            @endif
+            @if ($primaryAsset?->copyright_notice)
+                <p class="artwork-copyright">{{ $primaryAsset->copyright_notice }}</p>
             @endif
         </div>
     </article>

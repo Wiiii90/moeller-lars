@@ -23,6 +23,9 @@ class AdminAuditService
         'artwork_category.hidden',
         'artwork_category.slug_changed',
         'artwork_category.deleted',
+        'media.metadata_updated',
+        'media.deleted',
+        'artwork.primary_media_alt_updated',
     ];
 
     private const ENTITY_TYPES = ['artwork', 'media_asset', 'artwork_category'];

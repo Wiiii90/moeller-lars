@@ -170,7 +170,7 @@ it('rejects moving published artwork to a hidden category without auditing', fun
         ->fillForm(['artwork_category_id' => $hiddenCategory->id])
         ->assertSet('data.artwork_category_id', $hiddenCategory->id)
         ->call('save')
-        ->assertHasFormErrors(['artwork_category_id']);
+        ->assertHasErrors(['artwork_category_id']);
 
     expect($artwork->fresh()->artwork_category_id)->toBe($publishedCategory->id)
         ->and(AuditEvent::query()->where('action', 'artwork.updated')->where('entity_id', $artwork->id)->count())->toBe(0);
@@ -211,6 +211,54 @@ it('uploads primary media through the real Filament action', function () {
         ->and($asset)->not->toBeNull()
         ->and($asset->variants()->where('transform_profile', 'public-v1')->exists())->toBeTrue();
     expect(AuditEvent::query()->whereIn('action', ['media.ingested', 'artwork.primary_media_attached'])->where('admin_user_id', auth()->id())->count())->toBe(2);
+});
+
+it('edits the primary artwork ALT override without changing the asset default', function () {
+    $category = adminArtworkCategory();
+    $artwork = new Artwork;
+    $artwork->fill(['artwork_category_id' => $category->getKey(), 'slug' => 'alt-action-artwork', 'title' => 'ALT action', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
+    $artwork->save();
+    $asset = new MediaAsset;
+    $asset->fill(['storage_key' => 'originals/alt-action.jpg', 'original_filename' => 'alt-action.jpg', 'mime_type' => 'image/jpeg', 'byte_size' => 3, 'sha256' => str_repeat('c', 64), 'state' => 'available', 'alt_text' => 'Asset default']);
+    $asset->save();
+    ArtworkMedia::create(['artwork_id' => $artwork->id, 'media_asset_id' => $asset->id, 'role' => 'primary', 'position' => 0]);
+
+    Livewire::test(EditArtwork::class, ['record' => $artwork->id])
+        ->call('mountAction', 'editPrimaryAlt')
+        ->set('mountedActions.0.data.alt_text_override', 'Artwork override')
+        ->call('callMountedAction');
+
+    expect($artwork->artworkMedia()->firstOrFail()->alt_text_override)->toBe('Artwork override')
+        ->and($asset->fresh()->alt_text)->toBe('Asset default')
+        ->and(AuditEvent::query()->where('action', 'artwork.primary_media_alt_updated')->count())->toBe(1);
+});
+
+it('hides the primary ALT action when no primary usage exists', function () {
+    $category = adminArtworkCategory();
+    $artwork = new Artwork;
+    $artwork->fill(['artwork_category_id' => $category->getKey(), 'slug' => 'no-alt-action', 'title' => 'No ALT action', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
+    $artwork->save();
+
+    Livewire::test(EditArtwork::class, ['record' => $artwork->id])->assertActionHidden('editPrimaryAlt');
+});
+
+it('shows primary media editorial metadata without storage keys', function () {
+    $category = adminArtworkCategory();
+    $artwork = new Artwork;
+    $artwork->fill(['artwork_category_id' => $category->getKey(), 'slug' => 'view-media-metadata', 'title' => 'View metadata', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
+    $artwork->save();
+    $asset = new MediaAsset;
+    $asset->fill(['storage_key' => 'originals/view-metadata.jpg', 'original_filename' => 'view-metadata.jpg', 'mime_type' => 'image/jpeg', 'byte_size' => 3, 'sha256' => str_repeat('d', 64), 'state' => 'available', 'alt_text' => 'Default ALT', 'credit' => 'Credit name', 'copyright_notice' => 'Copyright notice']);
+    $asset->save();
+    ArtworkMedia::create(['artwork_id' => $artwork->id, 'media_asset_id' => $asset->id, 'role' => 'primary', 'position' => 0, 'alt_text_override' => 'Usage ALT']);
+
+    Livewire::test(ViewArtwork::class, ['record' => $artwork->id])
+        ->assertSee('Default ALT')
+        ->assertSee('Usage ALT')
+        ->assertSee('Credit name')
+        ->assertSee('Copyright notice')
+        ->assertSee((string) $asset->sha256)
+        ->assertDontSee('storage_key');
 });
 
 it('publishes and unpublishes through the editorial actions', function () {
