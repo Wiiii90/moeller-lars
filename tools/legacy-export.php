@@ -115,6 +115,7 @@ foreach ($categories as $category) {
     foreach ($byDate as $date => $sameDateRows) {
         if (count($sameDateRows) === 1) {
             $orderedRows[] = $sameDateRows[0];
+
             continue;
         }
 
