@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Artworks\Pages;
 
+use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Media\MediaIngestService;
 use App\Filament\Resources\Artworks\ArtworkResource;
@@ -11,6 +12,8 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
@@ -27,6 +30,22 @@ class EditArtwork extends EditRecord
         }
 
         return $data;
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        $actor = app(AdminAuditService::class)->requireActor();
+
+        return DB::transaction(function () use ($record, $data, $actor): Model {
+            $record->fill($data);
+
+            if ($record->isDirty()) {
+                $record->save();
+                app(AdminAuditService::class)->record($actor, 'artwork.updated', 'artwork', $record->getKey());
+            }
+
+            return $record;
+        });
     }
 
     protected function getHeaderActions(): array

@@ -460,7 +460,7 @@ it('derives deterministic exhibition temporal state', function () {
         ->and($singleDay->temporalState(CarbonImmutable::parse('2026-08-21')))->toBe('past');
 });
 
-it('nulls the audit actor when the canonical user is deleted', function () {
+it('prevents deleting an audit actor when append-only history exists', function () {
     $user = User::factory()->admin()->create();
     $event = AuditEvent::create([
         'admin_user_id' => $user->id,
@@ -472,8 +472,17 @@ it('nulls the audit actor when the canonical user is deleted', function () {
     ]);
 
     expect($event->adminUser->is($user))->toBeTrue();
-    $user->delete();
-    expect($event->fresh()->admin_user_id)->toBeNull();
+    DB::statement('SAVEPOINT audit_actor_delete');
+
+    try {
+        $user->delete();
+    } catch (QueryException $exception) {
+        DB::statement('ROLLBACK TO SAVEPOINT audit_actor_delete');
+        expect($exception)->toBeInstanceOf(QueryException::class);
+    }
+
+    expect($event->fresh()->admin_user_id)->toBe($user->getKey())
+        ->and($user->fresh())->not->toBeNull();
 });
 
 it('rejects audit event updates and deletes', function () {

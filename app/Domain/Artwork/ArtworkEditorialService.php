@@ -2,6 +2,7 @@
 
 namespace App\Domain\Artwork;
 
+use App\Domain\Admin\AdminAuditService;
 use App\Domain\Media\MediaIngestService;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
@@ -15,10 +16,14 @@ use Throwable;
 
 class ArtworkEditorialService
 {
-    public function __construct(private readonly MediaIngestService $mediaIngestService) {}
+    public function __construct(
+        private readonly MediaIngestService $mediaIngestService,
+        private readonly AdminAuditService $adminAuditService,
+    ) {}
 
     public function publish(Artwork $artwork): Artwork
     {
+        $actor = $this->adminAuditService->requireActor();
         /** @var Artwork $fresh */
         $fresh = Artwork::query()->with(['category', 'artworkMedia.mediaAsset'])->findOrFail($artwork->getKey());
         /** @var Collection<int, ArtworkMedia> $primaries */
@@ -31,25 +36,41 @@ class ArtworkEditorialService
             throw ValidationException::withMessages(['state' => 'This artwork is not ready to publish.']);
         }
 
-        $fresh->setAttribute('state', 'published');
-        $fresh->setAttribute('published_at', $fresh->getAttribute('published_at') ?? now());
-        $fresh->save();
+        $wasPublished = $fresh->getAttribute('state') === 'published';
+        DB::transaction(function () use ($fresh, $actor, $wasPublished): void {
+            $fresh->setAttribute('state', 'published');
+            $fresh->setAttribute('published_at', $fresh->getAttribute('published_at') ?? now());
+            $fresh->save();
+
+            if (! $wasPublished) {
+                $this->adminAuditService->record($actor, 'artwork.published', 'artwork', $fresh->getKey());
+            }
+        });
 
         return $fresh->fresh(['category', 'artworkMedia.mediaAsset']);
     }
 
     public function unpublish(Artwork $artwork): Artwork
     {
+        $actor = $this->adminAuditService->requireActor();
         /** @var Artwork $fresh */
         $fresh = Artwork::query()->findOrFail($artwork->getKey());
-        $fresh->setAttribute('state', 'draft');
-        $fresh->save();
+        $wasPublished = $fresh->getAttribute('state') === 'published';
+        DB::transaction(function () use ($fresh, $actor, $wasPublished): void {
+            $fresh->setAttribute('state', 'draft');
+            $fresh->save();
+
+            if ($wasPublished) {
+                $this->adminAuditService->record($actor, 'artwork.unpublished', 'artwork', $fresh->getKey());
+            }
+        });
 
         return $fresh->fresh(['category', 'artworkMedia.mediaAsset']);
     }
 
     public function attachPrimaryMedia(Artwork $artwork, UploadedFile $upload): Artwork
     {
+        $actor = $this->adminAuditService->requireActor();
         /** @var Artwork $fresh */
         /** @var Artwork $fresh */
         $fresh = Artwork::query()->findOrFail($artwork->getKey());
@@ -60,15 +81,24 @@ class ArtworkEditorialService
         $asset = $this->mediaIngestService->ingest($upload);
 
         try {
-            $artworkMedia = new ArtworkMedia;
-            $artworkMedia->fill([
-                'artwork_id' => $fresh->getKey(),
-                'media_asset_id' => $asset->getKey(),
-                'role' => 'primary',
-                'position' => 0,
-                'alt_text_override' => null,
-            ]);
-            $artworkMedia->save();
+            DB::transaction(function () use ($fresh, $asset, $actor): void {
+                $artworkMedia = new ArtworkMedia;
+                $artworkMedia->fill([
+                    'artwork_id' => $fresh->getKey(),
+                    'media_asset_id' => $asset->getKey(),
+                    'role' => 'primary',
+                    'position' => 0,
+                    'alt_text_override' => null,
+                ]);
+                $artworkMedia->save();
+
+                $this->adminAuditService->record($actor, 'media.ingested', 'media_asset', $asset->getKey(), [
+                    'artwork_id' => $fresh->getKey(),
+                ]);
+                $this->adminAuditService->record($actor, 'artwork.primary_media_attached', 'artwork', $fresh->getKey(), [
+                    'media_asset_id' => $asset->getKey(),
+                ]);
+            });
         } catch (Throwable $exception) {
             $this->removeIngestedAsset($asset);
 

@@ -8,6 +8,7 @@ use App\Filament\Resources\Artworks\Pages\ViewArtwork;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
+use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\User;
 use Filament\Facades\Filament;
@@ -57,6 +58,7 @@ it('denies the artwork resource to a non-admin', function () {
     $this->actingAs(User::factory()->create(), 'web');
 
     $this->get(ArtworkResource::getUrl('index'))->assertForbidden();
+    expect(AuditEvent::query()->count())->toBe(0);
 });
 
 it('creates a draft with normalized date metadata', function () {
@@ -80,6 +82,7 @@ it('creates a draft with normalized date metadata', function () {
     expect($artwork->state)->toBe('draft')
         ->and($artwork->date_precision)->toBe('day')
         ->and($artwork->published_at)->toBeNull();
+    expect(AuditEvent::query()->where('action', 'artwork.created')->where('admin_user_id', auth()->id())->count())->toBe(1);
 });
 
 it('uses unknown precision without a work date', function () {
@@ -129,6 +132,20 @@ it('keeps editorial and provenance fields immutable on edit', function () {
     expect($artwork->fresh()->title)->toBe('After')
         ->and($artwork->fresh()->state)->toBe('published')
         ->and($artwork->fresh()->legacy_id)->toBe(42);
+    expect(AuditEvent::query()->where('action', 'artwork.updated')->where('entity_id', $artwork->getKey())->count())->toBe(1);
+});
+
+it('does not audit an edit save with no actual change', function () {
+    $category = adminArtworkCategory();
+    $artwork = new Artwork;
+    $artwork->fill(['artwork_category_id' => $category->getKey(), 'slug' => 'unchanged-artwork', 'title' => 'Unchanged', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
+    $artwork->save();
+
+    Livewire::test(EditArtwork::class, ['record' => $artwork->getKey()])
+        ->fillForm(['title' => 'Unchanged'])
+        ->call('save');
+
+    expect(AuditEvent::query()->where('action', 'artwork.updated')->count())->toBe(0);
 });
 
 it('does not allow a published slug to be edited', function () {
@@ -156,6 +173,7 @@ it('uploads primary media through the real Filament action', function () {
     expect(ArtworkMedia::query()->where('artwork_id', $artwork->getKey())->where('role', 'primary')->count())->toBe(1)
         ->and($asset)->not->toBeNull()
         ->and($asset->variants()->where('transform_profile', 'public-v1')->exists())->toBeTrue();
+    expect(AuditEvent::query()->whereIn('action', ['media.ingested', 'artwork.primary_media_attached'])->where('admin_user_id', auth()->id())->count())->toBe(2);
 });
 
 it('publishes and unpublishes through the editorial actions', function () {
@@ -171,9 +189,11 @@ it('publishes and unpublishes through the editorial actions', function () {
 
     Livewire::test(EditArtwork::class, ['record' => $artwork->getKey()])->call('mountAction', 'publish')->call('callMountedAction');
     expect($artwork->fresh()->state)->toBe('published');
+    expect(AuditEvent::query()->where('action', 'artwork.published')->where('admin_user_id', auth()->id())->count())->toBe(1);
 
     Livewire::test(EditArtwork::class, ['record' => $artwork->getKey()])->call('mountAction', 'unpublish')->call('callMountedAction');
     expect($artwork->fresh()->state)->toBe('draft')->and($artwork->fresh()->published_at)->not->toBeNull();
+    expect(AuditEvent::query()->where('action', 'artwork.unpublished')->where('admin_user_id', auth()->id())->count())->toBe(1);
 });
 
 it('shows a visible action error and stays draft when publishing without primary media', function () {

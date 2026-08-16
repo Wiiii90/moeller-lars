@@ -5,6 +5,7 @@ use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
+use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\User;
 use Filament\Facades\Filament;
@@ -28,7 +29,8 @@ function verticalSliceJpeg(): UploadedFile
 it('runs the complete canonical artwork admin and public vertical slice', function () {
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
-    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin, 'web');
     Storage::fake(config('media.disk'));
 
     $category = ArtworkCategory::query()->where('slug', 'paintings')->firstOrFail();
@@ -98,4 +100,10 @@ it('runs the complete canonical artwork admin and public vertical slice', functi
     $this->get('/artworks/vertical-slice-artwork')->assertNotFound();
     $this->get(route('media.original', $asset))->assertNotFound();
     $this->get(route('media.variant', $variant))->assertNotFound();
+
+    $events = AuditEvent::query()->where('entity_id', $artwork->getKey())->orWhere('metadata->artwork_id', $artwork->getKey())->get();
+    expect($events->pluck('action')->sort()->values()->all())
+        ->toBe(['artwork.created', 'artwork.primary_media_attached', 'artwork.published', 'artwork.unpublished', 'media.ingested'])
+        ->and($events->every(fn (AuditEvent $event): bool => $event->admin_user_id === $admin->getKey()))->toBeTrue()
+        ->and($events->every(fn (AuditEvent $event): bool => collect($event->metadata ?? [])->keys()->every(fn (string $key): bool => in_array($key, ['artwork_id', 'media_asset_id'], true))))->toBeTrue();
 });

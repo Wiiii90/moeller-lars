@@ -4,13 +4,21 @@ use App\Domain\Artwork\ArtworkEditorialService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
+use App\Models\AuditEvent;
 use App\Models\MediaAsset;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+});
 
 function editorialCategory(string $state = 'published'): ArtworkCategory
 {
@@ -86,6 +94,7 @@ it('publishes only an artwork with a published category and one available primar
     $published = app(ArtworkEditorialService::class)->publish($artwork);
 
     expect($published->state)->toBe('published')->and($published->published_at)->not->toBeNull();
+    expect(AuditEvent::query()->where('action', 'artwork.published')->count())->toBe(1);
 });
 
 it('does not change published_at when publishing again', function () {
@@ -97,6 +106,7 @@ it('does not change published_at when publishing again', function () {
     $result = app(ArtworkEditorialService::class)->publish($artwork);
 
     expect($result->published_at->equalTo($publishedAt))->toBeTrue();
+    expect(AuditEvent::query()->where('action', 'artwork.published')->count())->toBe(0);
 });
 
 it('rejects hidden categories, missing primaries, and unavailable assets', function (string $case) {
@@ -118,6 +128,7 @@ it('unpublishes without clearing published_at', function () {
     $result = app(ArtworkEditorialService::class)->unpublish($artwork);
 
     expect($result->state)->toBe('draft')->and($result->published_at->equalTo($publishedAt))->toBeTrue();
+    expect(AuditEvent::query()->where('action', 'artwork.unpublished')->count())->toBe(1);
 });
 
 it('ingests and attaches one primary media record', function () {
@@ -133,6 +144,8 @@ it('ingests and attaches one primary media record', function () {
         ->and($asset)->not->toBeNull()
         ->and($asset->variants)->toHaveCount(1)
         ->and($asset->variants->first()->transform_profile)->toBe('public-v1');
+    expect(AuditEvent::query()->where('action', 'media.ingested')->first()->metadata)->toBe(['artwork_id' => $artwork->getKey()])
+        ->and(AuditEvent::query()->where('action', 'artwork.primary_media_attached')->first()->metadata)->toBe(['media_asset_id' => $asset->getKey()]);
 });
 
 it('rejects a second primary before ingesting anything', function () {
@@ -143,6 +156,7 @@ it('rejects a second primary before ingesting anything', function () {
     expect(fn () => app(ArtworkEditorialService::class)->attachPrimaryMedia($artwork, editorialJpegUpload()))
         ->toThrow(ValidationException::class);
     expect(MediaAsset::query()->count())->toBe(1);
+    expect(AuditEvent::query()->count())->toBe(0);
 });
 
 it('cleans the newly ingested media if the artwork media insert fails', function () {
@@ -158,5 +172,38 @@ it('cleans the newly ingested media if the artwork media insert fails', function
     }
 
     expect(MediaAsset::query()->count())->toBe(0)
+        ->and(Storage::disk('local')->allFiles())->toBeEmpty()
+        ->and(AuditEvent::query()->count())->toBe(0);
+});
+
+it('rolls back media attachment and cleanup when an audit insert fails', function () {
+    Storage::fake('local');
+    $artwork = editorialArtwork(editorialCategory('hidden'));
+    AuditEvent::creating(fn (): never => throw new RuntimeException('audit failed'));
+
+    try {
+        expect(fn () => app(ArtworkEditorialService::class)->attachPrimaryMedia($artwork, editorialJpegUpload()))
+            ->toThrow(RuntimeException::class, 'audit failed');
+    } finally {
+        AuditEvent::flushEventListeners();
+    }
+
+    expect(ArtworkMedia::query()->count())->toBe(0)
+        ->and(AuditEvent::query()->count())->toBe(0)
+        ->and(MediaAsset::query()->count())->toBe(0)
         ->and(Storage::disk('local')->allFiles())->toBeEmpty();
+});
+
+it('denies unauthenticated and non-admin publish and attach mutations', function () {
+    $artwork = editorialArtwork(editorialCategory());
+    Auth::guard('web')->logout();
+
+    expect(fn () => app(ArtworkEditorialService::class)->publish($artwork))->toThrow(AuthorizationException::class)
+        ->and(fn () => app(ArtworkEditorialService::class)->attachPrimaryMedia($artwork, editorialJpegUpload()))->toThrow(AuthorizationException::class);
+    expect($artwork->fresh()->state)->toBe('draft')->and(MediaAsset::query()->count())->toBe(0)->and(AuditEvent::query()->count())->toBe(0);
+
+    $this->actingAs(User::factory()->create(), 'web');
+    expect(fn () => app(ArtworkEditorialService::class)->publish($artwork))->toThrow(AuthorizationException::class)
+        ->and(fn () => app(ArtworkEditorialService::class)->attachPrimaryMedia($artwork, editorialJpegUpload()))->toThrow(AuthorizationException::class);
+    expect($artwork->fresh()->state)->toBe('draft')->and(MediaAsset::query()->count())->toBe(0)->and(AuditEvent::query()->count())->toBe(0);
 });
