@@ -4,6 +4,7 @@ use App\Domain\Migration\LegacyArtworkManifestImporter;
 use App\Domain\Migration\LegacyMigrationValidator;
 use App\Domain\Migration\LegacyPublicCvImporter;
 use App\Domain\Migration\LegacyPublicProfileImporter;
+use App\Domain\Migration\LegacyPublicProfileMediaValidator;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -35,8 +36,16 @@ Artisan::command('legacy:import-artworks {manifest} {media-root}', function (Leg
     $this->info("Imported {$result['categories']} categories, {$result['artworks']} artworks and {$result['media']} original media assets.");
 })->purpose('Import a reviewed legacy artwork manifest and authoritative original media');
 
-Artisan::command('legacy:validate {manifest}', function (LegacyMigrationValidator $validator) {
-    $result = $validator->validate((string) $this->argument('manifest'));
+Artisan::command('legacy:validate {manifest}', function (LegacyMigrationValidator $validator, LegacyPublicProfileMediaValidator $profileMediaValidator) {
+    $manifestPath = (string) $this->argument('manifest');
+    $result = $validator->validate($manifestPath);
+    $profileMedia = $profileMediaValidator->validate($manifestPath);
+
+    $result['source'] = [...$result['source'], 'profile_media' => $profileMedia['source']];
+    $result['target'] = [...$result['target'], 'profile_media' => $profileMedia['target']];
+    $result['errors'] = [...$result['errors'], ...$profileMedia['errors']];
+    $result['ok'] = $result['errors'] === [];
+
     $json = json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     $this->line($json);
 
