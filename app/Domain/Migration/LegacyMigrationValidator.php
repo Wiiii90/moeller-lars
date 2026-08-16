@@ -19,7 +19,8 @@ final class LegacyMigrationValidator
         private readonly PublicArtworkQuery $publicArtworkQuery,
         private readonly LegacyPublicCvImporter $cvImporter,
         private readonly LegacyPublicProfileImporter $profileImporter,
-    ) {}
+    ) {
+    }
 
     /**
      * @return array{
