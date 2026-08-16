@@ -381,9 +381,10 @@ it('publishes and unpublishes through the editorial actions', function () {
     $artwork->save();
 
     $asset = new MediaAsset;
-    $asset->fill(['storage_key' => 'originals/publish.jpg', 'original_filename' => 'publish.jpg', 'mime_type' => 'image/jpeg', 'byte_size' => 3, 'sha256' => str_repeat('b', 64), 'state' => 'available', 'width' => 2, 'height' => 2]);
+    $asset->fill(['storage_key' => 'originals/publish.jpg', 'original_filename' => 'publish.jpg', 'mime_type' => 'image/jpeg', 'byte_size' => 3, 'sha256' => str_repeat('b', 64), 'state' => 'available', 'alt_text' => 'Publish artwork', 'width' => 2, 'height' => 2]);
     $asset->save();
     ArtworkMedia::create(['artwork_id' => $artwork->getKey(), 'media_asset_id' => $asset->getKey(), 'role' => 'primary', 'position' => 0]);
+    MediaVariant::create(['media_asset_id' => $asset->getKey(), 'variant_kind' => 'thumbnail', 'storage_key' => 'variants/publish.webp', 'mime_type' => 'image/webp', 'byte_size' => 4, 'sha256' => str_repeat('c', 64), 'transform_profile' => 'public-v1', 'state' => 'available', 'width' => 2, 'height' => 2]);
 
     Livewire::test(EditArtwork::class, ['record' => $artwork->getKey()])->call('mountAction', 'publish')->call('callMountedAction');
     expect($artwork->fresh()->state)->toBe('published');
