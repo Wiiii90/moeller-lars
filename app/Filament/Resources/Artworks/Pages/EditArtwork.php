@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use LogicException;
 
 class EditArtwork extends EditRecord
 {
@@ -27,17 +28,26 @@ class EditArtwork extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        if (! array_key_exists('artwork_category_id', $data) || ! array_key_exists('work_date', $data)) {
+            throw ValidationException::withMessages(['artwork' => 'Required artwork form data is missing.']);
+        }
+
         /** @var Artwork $record */
         $record = $this->getRecord();
-        $categoryId = $data['artwork_category_id'] ?? $record->getAttribute('artwork_category_id');
+        $categoryId = $data['artwork_category_id'];
         $category = ArtworkCategory::query()->find($categoryId);
-        if ($record->getAttribute('state') === 'published' && $category?->getAttribute('state') !== 'published') {
+        if (! $category instanceof ArtworkCategory) {
+            throw ValidationException::withMessages([
+                'artwork_category_id' => 'The artwork category is invalid.',
+            ]);
+        }
+        if ($record->getAttribute('state') === 'published' && $category->getAttribute('state') !== 'published') {
             throw ValidationException::withMessages([
                 'artwork_category_id' => 'Published artwork requires a published category.',
             ]);
         }
 
-        $data['date_precision'] = filled($data['work_date'] ?? null) ? 'day' : 'unknown';
+        $data['date_precision'] = filled($data['work_date']) ? 'day' : 'unknown';
 
         foreach (['state', 'published_at', 'legacy_id', 'legacy_source', 'legacy_date_raw', 'migration_batch_id', 'migrated_at'] as $field) {
             unset($data[$field]);
@@ -52,18 +62,25 @@ class EditArtwork extends EditRecord
         $actor = app(AdminAuditService::class)->requireActor();
 
         return DB::transaction(function () use ($record, $data, $actor): Model {
+            if (! array_key_exists('artwork_category_id', $data)) {
+                throw ValidationException::withMessages([
+                    'artwork_category_id' => 'The artwork category is required.',
+                ]);
+            }
+
             /** @var Artwork $artwork */
             $artwork = $record;
             unset($data['position']);
             $originalCategoryId = (int) $artwork->getRawOriginal('artwork_category_id');
-            $targetCategoryId = (int) ($data['artwork_category_id'] ?? $originalCategoryId);
+            $targetCategoryId = (int) $data['artwork_category_id'];
             if ($targetCategoryId !== $originalCategoryId) {
                 /** @var ArtworkCategory|null $destination */
                 $destination = ArtworkCategory::query()->whereKey($targetCategoryId)->lockForUpdate()->first();
                 if (! $destination) {
                     throw ValidationException::withMessages(['artwork_category_id' => 'The artwork category is invalid.']);
                 }
-                $data['position'] = ((int) ($destination->artworks()->max('position') ?? -1)) + 1;
+                $maxPosition = $destination->artworks()->max('position');
+                $data['position'] = $maxPosition === null ? 0 : ((int) $maxPosition) + 1;
             }
             $artwork->fill($data);
 
@@ -97,11 +114,11 @@ class EditArtwork extends EditRecord
                         ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024)),
                 ])
                 ->action(function (array $data): void {
-                    $upload = $data['media'];
+                    if (! array_key_exists('media', $data) || ! $data['media'] instanceof TemporaryUploadedFile) {
+                        throw ValidationException::withMessages(['media' => 'A valid uploaded image is required.']);
+                    }
                     try {
-                        if ($upload instanceof TemporaryUploadedFile) {
-                            app(ArtworkEditorialService::class)->attachPrimaryMedia($this->artworkRecord(), $upload);
-                        }
+                        app(ArtworkEditorialService::class)->attachPrimaryMedia($this->artworkRecord(), $data['media']);
                     } catch (ValidationException) {
                         Notification::make()->title('Primary image upload failed')->danger()->send();
 
@@ -123,11 +140,11 @@ class EditArtwork extends EditRecord
                         ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024)),
                 ])
                 ->action(function (array $data): void {
-                    $upload = $data['media'];
+                    if (! array_key_exists('media', $data) || ! $data['media'] instanceof TemporaryUploadedFile) {
+                        throw ValidationException::withMessages(['media' => 'A valid uploaded image is required.']);
+                    }
                     try {
-                        if ($upload instanceof TemporaryUploadedFile) {
-                            app(ArtworkEditorialService::class)->replacePrimaryMedia($this->artworkRecord(), $upload);
-                        }
+                        app(ArtworkEditorialService::class)->replacePrimaryMedia($this->artworkRecord(), $data['media']);
                     } catch (ValidationException) {
                         Notification::make()->title('Primary image could not be replaced')->danger()->send();
 
@@ -169,11 +186,21 @@ class EditArtwork extends EditRecord
                         ->label('Artwork ALT override')
                         ->maxLength(500)
                         ->nullable()
-                        ->default(fn (): ?string => $this->primaryArtworkMedia()?->getAttribute('alt_text_override')),
+                        ->default(function (): ?string {
+                            $primary = $this->primaryArtworkMedia();
+                            if (! $primary instanceof ArtworkMedia) {
+                                throw new LogicException('Artwork has no primary media usage.');
+                            }
+
+                            return $primary->getAttribute('alt_text_override');
+                        }),
                 ])
                 ->action(function (array $data): void {
                     try {
-                        app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($this->artworkRecord(), $data['alt_text_override'] ?? null);
+                        if (! array_key_exists('alt_text_override', $data)) {
+                            throw ValidationException::withMessages(['alt_text_override' => 'ALT override form data is missing.']);
+                        }
+                        app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($this->artworkRecord(), $data['alt_text_override']);
                     } catch (ValidationException) {
                         Notification::make()->title('Image ALT text could not be updated')->danger()->send();
 
@@ -196,9 +223,14 @@ class EditArtwork extends EditRecord
 
     private function primaryArtworkMedia(): ?ArtworkMedia
     {
-        /** @var ArtworkMedia|null $media */
-        $media = $this->artworkRecord()->artworkMedia()->where('role', 'primary')->first();
+        $media = $this->artworkRecord()->artworkMedia()->where('role', 'primary')->get();
+        if ($media->count() > 1) {
+            throw new LogicException('Artwork has multiple primary media usages.');
+        }
 
-        return $media;
+        /** @var ArtworkMedia|null $primary */
+        $primary = $media->first();
+
+        return $primary;
     }
 }

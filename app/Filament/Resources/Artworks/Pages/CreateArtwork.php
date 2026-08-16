@@ -17,10 +17,14 @@ class CreateArtwork extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        if (! array_key_exists('artwork_category_id', $data) || ! array_key_exists('work_date', $data)) {
+            throw ValidationException::withMessages(['artwork' => 'Required artwork form data is missing.']);
+        }
+
         unset($data['position']);
         $data['state'] = 'draft';
         $data['published_at'] = null;
-        $data['date_precision'] = filled($data['work_date'] ?? null) ? 'day' : 'unknown';
+        $data['date_precision'] = filled($data['work_date']) ? 'day' : 'unknown';
         $data['legacy_date_raw'] = null;
 
         return $data;
@@ -31,7 +35,13 @@ class CreateArtwork extends CreateRecord
         $actor = app(AdminAuditService::class)->requireActor();
 
         return DB::transaction(function () use ($data, $actor): Model {
-            $categoryId = $data['artwork_category_id'] ?? null;
+            if (! array_key_exists('artwork_category_id', $data)) {
+                throw ValidationException::withMessages([
+                    'artwork_category_id' => 'The artwork category is required.',
+                ]);
+            }
+
+            $categoryId = $data['artwork_category_id'];
             /** @var ArtworkCategory|null $category */
             $category = ArtworkCategory::query()->whereKey($categoryId)->lockForUpdate()->first();
             if (! $category) {
@@ -41,7 +51,8 @@ class CreateArtwork extends CreateRecord
             }
 
             unset($data['position']);
-            $data['position'] = ((int) ($category->artworks()->max('position') ?? -1)) + 1;
+            $maxPosition = $category->artworks()->max('position');
+            $data['position'] = $maxPosition === null ? 0 : ((int) $maxPosition) + 1;
             $artwork = new Artwork;
             $artwork->fill($data);
             $artwork->save();
