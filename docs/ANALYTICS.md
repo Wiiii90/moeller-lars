@@ -1,8 +1,8 @@
 # Analytics contract
 
 This is the operational and design contract for the privacy-conscious,
-self-hosted analytics system. It is implementation guidance, not an analytics
-code or deployment decision.
+self-hosted analytics system. It is application integration guidance against
+the authoritative `Wiiii90/server-platform` Matomo contract.
 
 ## Ownership and boundary
 
@@ -12,11 +12,14 @@ The Laravel editorial database must not duplicate raw human visitor, pageview,
 or event analytics. `daily_metrics` is limited to lightweight operational
 aggregates and optional disposable Matomo dashboard cache.
 
-Matomo is logically isolated from public rendering and normal admin operation;
-a separate physical server is not required. Co-hosting on the current baseline
-is acceptable if measured resources permit. Matomo failure must never break
-public rendering, contact handling, login, or normal admin editing. Exact
-process/container topology remains a platform decision.
+Matomo is provided as one independent Compose project under `/srv/stacks/matomo`:
+`matomo-web` and a dedicated `matomo-db` MariaDB share a private Compose
+network, with no public or host database port. Caddy exposes
+`analytics.moeller-lars.de`. The application receives the platform-assigned
+site ID and tracking base URL. A separate read-only Reporting API identity/token
+may be used for dashboard integration and remains outside Git. Matomo failure
+must never break public rendering, contact handling, login, or normal admin
+editing.
 
 ## Human collection and event taxonomy
 
@@ -53,7 +56,11 @@ URL/query handling must be verified during implementation.
 
 ## Operational and bot metrics
 
-Do not import full server logs into the same Matomo site merely to count bots.
+Do not import full server logs into the human analytics site merely to count
+bots. If enabled by server-platform #20, platform ingress/access logs may be
+imported into a separate Matomo site ID for log-derived bots, errors, and
+request-pattern analytics. `moeller-lars` does not own or import platform
+access logs.
 Use separate lightweight local aggregation for request counts, status/error
 counts (including 404s), response-time/p95-style metrics, admin request health,
 upload failures, storage/deployment health, bot-family/request aggregates, and
@@ -92,15 +99,17 @@ implementation work.
 
 ## Matomo operations and dashboard
 
-Schedule Matomo archiving through cron using `core:archive`; disable
-browser-triggered archiving in production. Use a restricted read-only API token
-for dashboard integration, stored outside Git and configuration management
-secrets. Dashboard reads are cached for approximately 5–15 minutes, with useful
+The platform owns Matomo production runtime, dedicated MariaDB, Caddy,
+persistence, secrets, archiving, health, resource limits, upgrade lifecycle,
+and backup integration. Use a restricted read-only API token for dashboard
+integration, stored outside Git and configuration management secrets. Dashboard reads are cached for approximately 5–15 minutes, with useful
 ranges of today, 7 days, 30 days, and 12 months. If Matomo is temporarily
 unavailable, stale cached analytics may be shown. Matomo, API, and log-parser
 failures are isolated and must not affect ordinary application behaviour.
 
-The future `/admin` dashboard answers artist-useful questions: visits and trend,
+The application owns tracking integration, consent/privacy decisions, event
+taxonomy, site ID/base URL configuration, reporting client/dashboard, and
+application-level operational aggregates. The future `/admin` dashboard answers artist-useful questions: visits and trend,
 most-viewed artworks, viewer interactions, exhibition interest,
 traffic/referrer summary, country/device summary, and contact conversion
 signal. A separate panel shows operational health and bot/error metrics.
@@ -109,11 +118,10 @@ signal. A separate panel shows operational health and bot/error metrics.
 
 Matomo Community/Core introduces no mandatory commercial software, plugin, or
 SaaS dependency. It does introduce real CPU, RAM, storage, backup, and
-maintenance requirements on the selected infrastructure. The initial plan is
-co-hosting on the current baseline if measured resources permit; resource
-pressure is a hosting review trigger. The provider comparison and hosting
-decision are recorded in [ADR-0002](adr/ADR-0002-HOSTING-COST-BASELINE.md),
-with hosting costs still accounted for.
+maintenance requirements on the selected infrastructure. The hosting and
+platform decision is recorded in [ADR-0002](adr/ADR-0002-HOSTING-COST-BASELINE.md);
+Matomo runtime placement follows server-platform and resource pressure remains
+a platform review trigger.
 
 ## Official implementation references
 

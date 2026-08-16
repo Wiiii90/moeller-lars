@@ -5,7 +5,7 @@
 1. Record live URLs, screenshots at desktop and mobile sizes, redirects, sitemap, robots settings, and external integrations.
 2. Export the legacy database and media only into encrypted, access-controlled backup storage; do not commit either to Git.
 3. Rotate any legacy credentials that have appeared in source control before creating a public archival repository.
-4. Use the verified [server and operations baseline](SERVER-OPERATIONS-BASELINE.md) for the current host, OS transition posture, firewall/TLS containment, recovery material, and deployment findings.
+4. Use the verified [server and operations baseline](SERVER-OPERATIONS-BASELINE.md) and authoritative [server-platform](https://github.com/Wiiii90/server-platform) contract for platform placement, ingress, recovery material, and deployment integration.
 5. Record the cost baseline, avoid mandatory paid third-party services and commercial runtime dependencies, and prefer self-hosted/open-source components where practical; server/hosting options remain allowed only when minimized and justified.
 
 ## 1. Characterise the visitor experience
@@ -33,7 +33,7 @@ No writable admin slice may precede or bypass the secure admin/authentication/se
 
 ## 4. Staging and cutover
 
-Deploy the selected application under temporary staging/release validation with TLS. Import a fresh content copy, deploy and validate self-hosted Matomo and its logical separation, rehearse backup/restore and rollback, obtain editorial sign-off, back up production, lower DNS TTL in advance, then switch traffic to the verified current production baseline. Keep the old deployment intact for a defined rollback window. There is no permanent staging requirement. If the current host or transition OS cannot satisfy the runtime, TLS, backup, cost, recovery, or deployment requirements, evaluate and document a server/runtime replacement before cutover. Confirm that mandatory commercial runtime dependencies are avoided where practical and that server/hosting spend is minimized and justified.
+Produce a deployable immutable application artifact/image, health/readiness contract, migrations and migration expectations, persistence declaration for PostgreSQL and authoritative media, and runtime/configuration contract. `server-platform` provides production placement, temporary validation environment, ingress, deployment orchestration, resource limits, backup/restore integration, and rollback/cutover. Temporary validation remains mandatory before final cutover; its physical implementation is server-platform #6. Final cutover is coordinated with server-platform #7/#11, backup/restore with #8/#9/#10, and platform readiness with #14. Import a fresh content copy, validate self-hosted Matomo and its logical separation, rehearse backup/restore and rollback, obtain editorial sign-off, and then switch traffic through the platform-owned path. There is no permanent staging requirement.
 
 ## Migration acceptance checklist
 
@@ -42,9 +42,9 @@ Deploy the selected application under temporary staging/release validation with 
 - Fresh target-database imports are repeatable and do not require the legacy schema at runtime.
 - Public routes, artwork viewer behaviour, metadata, and redirects pass the approved comparison suite.
 - Admin publication states, separate CV/exhibition editing, and blog-disabled defaults pass acceptance tests.
-- Temporary staging/release validation proves HTTPS, deployment, Matomo operation, isolated analytics failure, backups, restore, rollback, and monitoring before production is changed.
+- Temporary release validation proves HTTPS, application deployment contract, Matomo operation, isolated analytics failure, backups, restore, rollback, and monitoring before production is changed; physical orchestration is server-platform #6.
 - The deployment plan accounts for the verified non-Git production host and does not assume a historical Git hook or remote.
-- CI/CD, recurring offsite backups, and monitoring are explicitly tracked as target-platform work; Docker/Compose and common ingress remain undecided.
+- CI/CD, recurring offsite backups, monitoring, Docker/Compose placement, and ingress are provided through the server-platform contract rather than reimplemented here.
 - Analytics acceptance covers traffic sources, geography, devices, content interaction, and separate bot/error/performance/operational metrics without unnecessary raw identifiers.
 - The secure admin/authentication/session foundation is proven before any writable artwork, media, CV, exhibition, or blog slice is accepted.
 - Cost reconciliation documents recurring dependencies, confirms practical use of self-hosted/open-source components, and shows minimized and justified server/hosting cost.

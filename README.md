@@ -16,7 +16,8 @@ This repository is the future production codebase. It deliberately contains no c
 | --- | --- | --- |
 | `larsmoeller` | visual/behavioural reference, content inventory, deployment evidence | authentication, configuration, direct SQL/PHP admin code |
 | `glassygallery` | ideas for media handling, structured data, role concepts, and CI/CD | visual site builder, unfinished admin shell, current authorization/API implementation |
-| `moeller-lars` | clean target for implementation, tests, temporary release validation, and final deployment | — |
+| `moeller-lars` | application source, tests, Dockerfile/runtime build, migrations, application configuration templates, CI, immutable application artifact/image, health/readiness and persistence/migration contracts | — |
+| `server-platform` | production runtime/deployment manifests, Compose placement, shared networking, Caddy ingress, host ports, resource limits, platform monitoring, backup/restore automation, and production deployment/rollback orchestration | — |
 
 ## Start here
 
@@ -24,6 +25,8 @@ This repository is the future production codebase. It deliberately contains no c
 - [Target architecture](docs/ARCHITECTURE.md)
 - [Migration plan](docs/MIGRATION-PLAN.md)
 - [Source inventory](docs/SOURCE-INVENTORY.md)
+
+Development-only Compose remains allowed in `moeller-lars`; production placement and orchestration are owned by `server-platform`.
 
 ## Security rule
 

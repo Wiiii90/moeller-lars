@@ -1,6 +1,6 @@
 # Production server and operations baseline
 
-This document records the verified production-server audit. It contains no credentials, backup locations, hashes, or other secret values. It is the operational baseline for the `moeller-lars` system; future platform decisions must be recorded separately.
+This document records the verified production-server and platform baseline. It contains no credentials, backup locations, hashes, or other secret values. `Wiiii90/server-platform` is the authoritative platform reference; application-specific integration remains tracked in this repository.
 
 ## Production host
 
@@ -13,10 +13,9 @@ This document records the verified production-server audit. It contains no crede
 
 ## OS and runtime posture
 
-- Ubuntu 20.04.6 is retained as a transition host.
-- Ubuntu Pro/ESM is enabled.
+- Ubuntu 24.04.4 LTS.
 - Security updates were current at audit completion.
-- Moving to a current Ubuntu LTS remains an architecture/operations decision; this audit does not select the target OS or application runtime.
+- Docker Engine and Docker Compose are installed.
 
 ## Security containment verified at audit completion
 
@@ -40,24 +39,25 @@ These controls are the verified baseline, not a substitute for ongoing patching,
 
 Backup locations, credentials, hashes, and secret values are intentionally excluded from this repository.
 
-## Deployment findings
+## Platform deployment
 
 - Production is not a Git checkout.
-- No current Git hook or deployment script was found on the production host.
-- The historical live-remote IP is not the current production VM.
-- The future deployment model must therefore be newly designed and verified; it must not be copied from the historical remote.
+- Caddy is the public ingress on ports 80/443; legacy Apache listens only on `127.0.0.1:8080`.
+- MySQL is local-only.
+- `/srv/stacks` is platform workload placement, `/srv/data` is persistent data placement, and `/srv/releases/server-platform` is platform release staging.
+- GitHub Actions transports an exact `server-platform` commit through a restricted deploy user and forced-command dispatcher supporting stage, activate, status, exact releases, and rollback.
+- Production is not a Git checkout, does not use `git pull`, and intentionally has no GitHub account, token, or key.
 
 ## Architecture and operations constraints
 
 - `moeller-lars` has one permanent environment on this host: production; no permanent `moeller-lars` staging environment is required.
-- Temporary staging/release validation remains required before production cutover or high-risk maintenance.
+- Temporary isolated release validation remains required before production cutover or high-risk maintenance; it may share this physical host only when isolated and resource constrained.
 - Matomo belongs to the `moeller-lars` system but must be logically isolated from public rendering and normal admin operation. A separate physical server is not required.
-- Docker/Compose is a candidate only, not a decision.
-- Kubernetes is not selected.
-- A common ingress remains undecided.
-- CI/CD, automated recurring offsite backup, and monitoring are target-platform work.
+- Server-platform owns the generic production deployment, ingress, placement, resource limits, and runtime lifecycle.
+- Application-specific production deployment contract/integration remains future work through server-platform #4/#5.
+- Automated backup/restore remains server-platform #8/#9/#10; monitoring remains server-platform #3; temporary moeller-lars validation remains server-platform #6.
 - Server/hosting cost is allowed but must be minimized and justified; the project does not assume a new server unless the target requirements make it necessary.
 
 ## Audit acceptance and open work
 
-The facts above are verified baseline conditions and are safe to use in architecture planning without exposing secrets. Open work is limited to designing and testing the target deployment model, temporary release validation, recurring offsite backups, monitoring, CI/CD, Matomo isolation, and any future OS/runtime or server replacement decision.
+The facts above are verified baseline conditions and are safe to use in architecture planning without exposing secrets. Open work is limited to application/platform integration, temporary release validation, recurring backup/restore automation, monitoring, and Matomo workload integration through server-platform.
