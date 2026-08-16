@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\ArtworkCategory;
+use App\Models\BlogSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\View;
@@ -11,17 +12,11 @@ use LogicException;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         View::composer('layouts.app', function ($view): void {
@@ -46,6 +41,16 @@ class AppServiceProvider extends ServiceProvider
                     'label' => (string) $settings->getAttribute('cv_navigation_label'),
                     'url' => route('cv'),
                     'current' => request()->routeIs('cv'),
+                ]);
+            }
+
+            $blogSettings = BlogSetting::query()->findOrFail(1);
+            if ((bool) $blogSettings->getAttribute('public_enabled')) {
+                $navigationItems->push([
+                    'position' => (int) $blogSettings->getAttribute('navigation_position'),
+                    'label' => (string) $blogSettings->getAttribute('navigation_label'),
+                    'url' => route('blog.index'),
+                    'current' => request()->routeIs('blog.*'),
                 ]);
             }
 

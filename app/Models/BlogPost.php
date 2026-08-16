@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,5 +27,18 @@ class BlogPost extends Model
     public function coverMedia(): BelongsTo
     {
         return $this->belongsTo(MediaAsset::class, 'cover_media_asset_id');
+    }
+
+    public function scopePubliclyVisible(Builder $query): Builder
+    {
+        $now = now();
+
+        return $query->where(function (Builder $visibility) use ($now): void {
+            $visibility->where(function (Builder $published) use ($now): void {
+                $published->where('state', 'published')->where('published_at', '<=', $now);
+            })->orWhere(function (Builder $scheduled) use ($now): void {
+                $scheduled->where('state', 'scheduled')->where('scheduled_at', '<=', $now);
+            });
+        });
     }
 }

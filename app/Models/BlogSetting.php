@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['public_enabled', 'listing_title', 'listing_intro'])]
+#[Fillable(['public_enabled', 'listing_title', 'listing_intro', 'navigation_label', 'navigation_position'])]
 #[Guarded(['id'])]
 class BlogSetting extends Model
 {
@@ -17,7 +17,10 @@ class BlogSetting extends Model
 
     protected function casts(): array
     {
-        return ['public_enabled' => 'boolean'];
+        return [
+            'public_enabled' => 'boolean',
+            'navigation_position' => 'integer',
+        ];
     }
 
     protected static function booted(): void

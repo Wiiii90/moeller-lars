@@ -4,6 +4,8 @@ namespace App\Domain\Media;
 
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
+use App\Models\BlogPost;
+use App\Models\BlogSetting;
 use App\Models\CvEntry;
 use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
@@ -15,7 +17,6 @@ use LogicException;
 class PublicMedia
 {
     public const THUMBNAIL_KIND = 'thumbnail';
-
     public const PUBLIC_TRANSFORM_PROFILE = 'public-v1';
 
     public function isPublicAsset(MediaAsset $asset): bool
@@ -35,19 +36,24 @@ class PublicMedia
         }
 
         $settings = PublicContentSetting::query()->findOrFail(1);
-
         if ((bool) $settings->getAttribute('cv_enabled')
-            && CvEntry::query()
-                ->where('state', 'published')
-                ->where('image_media_asset_id', $asset->getKey())
+            && CvEntry::query()->where('state', 'published')->where('image_media_asset_id', $asset->getKey())->exists()) {
+            return true;
+        }
+
+        if ((bool) $settings->getAttribute('exhibitions_enabled')
+            && ExhibitionMedia::query()
+                ->where('media_asset_id', $asset->getKey())
+                ->whereHas('exhibition', fn ($query) => $query->where('state', 'published'))
                 ->exists()) {
             return true;
         }
 
-        return (bool) $settings->getAttribute('exhibitions_enabled')
-            && ExhibitionMedia::query()
-                ->where('media_asset_id', $asset->getKey())
-                ->whereHas('exhibition', fn ($query) => $query->where('state', 'published'))
+        $blogSettings = BlogSetting::query()->findOrFail(1);
+        return (bool) $blogSettings->getAttribute('public_enabled')
+            && BlogPost::query()
+                ->publiclyVisible()
+                ->where('cover_media_asset_id', $asset->getKey())
                 ->exists();
     }
 
@@ -85,10 +91,7 @@ class PublicMedia
     {
         $media = $this->primaryMedia($artwork);
 
-        return $this->altTextForAsset(
-            $this->primaryAsset($artwork),
-            $media->getAttribute('alt_text_override'),
-        );
+        return $this->altTextForAsset($this->primaryAsset($artwork), $media->getAttribute('alt_text_override'));
     }
 
     public function thumbnailUrl(Artwork $artwork): string
