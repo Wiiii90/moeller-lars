@@ -5,6 +5,7 @@
     $imageUrl = $media->originalUrl($artwork);
     $primaryMedia = $media->primaryMedia($artwork);
     $primaryAsset = $primaryMedia->getRelationValue('mediaAsset');
+    $category = $artwork->getRelationValue('category');
 @endphp
 
 @section('title', $artwork->title.' — Lars Möller')
@@ -13,6 +14,10 @@
 
 @section('content')
     <article class="artwork-detail" data-artwork-viewer-sequence>
+        <nav class="artwork-detail__context" aria-label="Artwork context">
+            <a href="{{ route('artworks.category', $category->slug) }}">← {{ $category->name }}</a>
+        </nav>
+
         <a class="artwork-detail__viewer-trigger" href="{{ $imageUrl }}" data-artwork-viewer-trigger data-viewer-key="{{ $artwork->slug }}">
             <img class="artwork-image artwork-detail__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
         </a>
