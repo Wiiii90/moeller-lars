@@ -1,5 +1,10 @@
 {
   "media_root": "/var/www/html",
+  "profile_media": {
+    "legacy_source": "legacy-public-vita",
+    "path": "res/lars-moeller.jpg",
+    "alt_text": "Lars M\u00f6ller"
+  },
   "categories": [
     {
       "table": "paintings",

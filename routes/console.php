@@ -6,17 +6,25 @@ use App\Domain\Migration\LegacyPublicCvImporter;
 use App\Domain\Migration\LegacyPublicProfileImporter;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Artisan::command('legacy:import-public-cv', function (LegacyPublicCvImporter $cvImporter, LegacyPublicProfileImporter $profileImporter) {
-    $count = $cvImporter->import();
-    $profileImporter->import();
+Artisan::command('legacy:import-public-cv {manifest} {media-root}', function (LegacyPublicCvImporter $cvImporter, LegacyPublicProfileImporter $profileImporter) {
+    $count = DB::transaction(function () use ($cvImporter, $profileImporter): int {
+        $count = $cvImporter->import();
+        $profileImporter->import(
+            (string) $this->argument('manifest'),
+            (string) $this->argument('media-root'),
+        );
 
-    $this->info("Imported {$count} verified legacy CV entries and public profile details.");
-})->purpose('Import verified public legacy CV and profile content into an empty target');
+        return $count;
+    });
+
+    $this->info("Imported {$count} verified legacy CV entries, public profile details and the verified Vita portrait.");
+})->purpose('Import verified public legacy CV/profile content and portrait after the artwork snapshot import');
 
 Artisan::command('legacy:import-artworks {manifest} {media-root}', function (LegacyArtworkManifestImporter $importer) {
     $result = $importer->import(

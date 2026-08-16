@@ -35,6 +35,48 @@ if ($mediaRoot === false || is_dir($mediaRoot) === false) {
     throw new RuntimeException('Configured media_root does not exist.');
 }
 
+$profileMediaConfig = $config['profile_media'] ?? null;
+if (is_array($profileMediaConfig) === false) {
+    throw new RuntimeException('Mapping must define profile_media.');
+}
+
+$profileMediaPath = str_replace('\\', '/', trim((string) ($profileMediaConfig['path'] ?? '')));
+if ($profileMediaPath === ''
+    || substr($profileMediaPath, 0, 1) === '/'
+    || strpos($profileMediaPath, '../') !== false
+    || preg_match('/^[A-Za-z]:[\\\\\/]/', $profileMediaPath) === 1) {
+    throw new RuntimeException('profile_media.path must be a safe relative path.');
+}
+
+$profileLegacySource = trim((string) ($profileMediaConfig['legacy_source'] ?? ''));
+$profileAltText = trim((string) ($profileMediaConfig['alt_text'] ?? ''));
+if ($profileLegacySource === '' || $profileAltText === '') {
+    throw new RuntimeException('profile_media requires explicit legacy_source and alt_text.');
+}
+
+$profileSourcePath = realpath($mediaRoot.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $profileMediaPath));
+if ($profileSourcePath === false || is_file($profileSourcePath) === false) {
+    throw new RuntimeException("Missing canonical profile media: {$profileMediaPath}");
+}
+$rootPrefix = rtrim($mediaRoot, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+if (strncmp($profileSourcePath, $rootPrefix, strlen($rootPrefix)) !== 0) {
+    throw new RuntimeException('Profile media path escapes configured media_root.');
+}
+
+$profileByteSize = filesize($profileSourcePath);
+$profileSha256 = hash_file('sha256', $profileSourcePath);
+if (is_int($profileByteSize) === false || is_string($profileSha256) === false) {
+    throw new RuntimeException('Could not fingerprint profile media.');
+}
+
+$manifestProfileMedia = [
+    'legacy_source' => $profileLegacySource,
+    'media_path' => $profileMediaPath,
+    'media_byte_size' => $profileByteSize,
+    'media_sha256' => $profileSha256,
+    'alt_text' => $profileAltText,
+];
+
 $categories = $config['categories'] ?? null;
 if (is_array($categories) === false || $categories === []) {
     throw new RuntimeException('Mapping must define at least one category.');
@@ -232,6 +274,7 @@ $pdo->rollBack();
 
 $manifest = [
     'batch' => 'legacy-'.gmdate('Ymd-His'),
+    'profile_media' => $manifestProfileMedia,
     'categories' => $manifestCategories,
 ];
 
@@ -241,7 +284,7 @@ if (file_put_contents($outputPath, $json."\n", LOCK_EX) === false) {
 }
 
 fwrite(STDOUT, sprintf(
-    "Exported %d categories / %d artworks to %s\n",
+    "Exported %d categories / %d artworks + profile media to %s\n",
     count($manifestCategories),
     array_sum(array_map(static fn (array $category): int => count($category['artworks']), $manifestCategories)),
     $outputPath,
