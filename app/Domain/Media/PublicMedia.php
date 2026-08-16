@@ -107,7 +107,7 @@ class PublicMedia
     public function altTextForAsset(MediaAsset $asset, mixed $override = null): string
     {
         if ($override !== null) {
-            if (! is_string($override) || trim($override) === '') {
+            if (is_string($override) === false || trim($override) === '') {
                 throw new LogicException('Media ALT override must be non-empty text when provided.');
             }
 
@@ -115,7 +115,7 @@ class PublicMedia
         }
 
         $altText = $asset->getAttribute('alt_text');
-        if (! is_string($altText) || trim($altText) === '') {
+        if (is_string($altText) === false || trim($altText) === '') {
             throw new LogicException('Public media requires explicit ALT text.');
         }
 
@@ -154,7 +154,7 @@ class PublicMedia
     private function primaryAsset(Artwork $artwork): MediaAsset
     {
         $asset = $this->primaryMedia($artwork)->getRelationValue('mediaAsset');
-        if (! $asset instanceof MediaAsset) {
+        if (($asset instanceof MediaAsset) === false) {
             throw new LogicException('Published artwork requires an available primary media asset.');
         }
 
