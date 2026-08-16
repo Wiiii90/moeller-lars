@@ -33,13 +33,13 @@ class PublicArtworkQuery
 
     public function latestForHome(): ?Artwork
     {
-        $latestDate = $this->homeQuery()->max('work_date');
-        if ($latestDate === null) {
+        $latestYear = $this->homeQuery()->max('work_year');
+        if ($latestYear === null) {
             return null;
         }
 
         /** @var Collection<int, Artwork> $candidates */
-        $candidates = $this->homeQuery()->whereDate('work_date', $latestDate)->get();
+        $candidates = $this->homeQuery()->where('work_year', $latestYear)->get();
         if ($candidates->count() !== 1) {
             throw new LogicException('The newest eligible home artwork is ambiguous.');
         }
@@ -69,7 +69,7 @@ class PublicArtworkQuery
             ->whereHas('category', fn (Builder $query) => $query
                 ->where('state', 'published')
                 ->where('show_on_home', true))
-            ->whereNotNull('work_date');
+            ->whereNotNull('work_year');
 
         return $result;
     }

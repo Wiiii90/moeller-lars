@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @php
-    $year = $artwork->work_date?->format('Y');
+    $year = $artwork->work_year;
     $imageUrl = $media->originalUrl($artwork);
     $primaryMedia = $media->primaryMedia($artwork);
     $primaryAsset = $primaryMedia->getRelationValue('mediaAsset');

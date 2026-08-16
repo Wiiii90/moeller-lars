@@ -1,5 +1,5 @@
 @php
-    $year = $artwork->work_date?->format('Y');
+    $year = $artwork->work_year;
     $imageUrl = $media->thumbnailUrl($artwork);
     $originalUrl = $media->originalUrl($artwork);
 @endphp
