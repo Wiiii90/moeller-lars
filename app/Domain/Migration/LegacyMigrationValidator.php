@@ -20,6 +20,7 @@ final class LegacyMigrationValidator
         private readonly LegacyPublicCvImporter $cvImporter,
         private readonly LegacyPublicProfileImporter $profileImporter,
     ) {
+        // Constructor property promotion initializes the validator dependencies.
     }
 
     /**
