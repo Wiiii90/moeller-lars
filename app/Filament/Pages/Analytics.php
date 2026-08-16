@@ -4,7 +4,10 @@ namespace App\Filament\Pages;
 
 use App\Domain\Analytics\MatomoReportingClient;
 use App\Domain\Analytics\OperationalMetricsQuery;
+use App\Models\DailyMetric;
+use Carbon\CarbonInterface;
 use Filament\Pages\Page;
+use LogicException;
 
 final class Analytics extends Page
 {
@@ -23,13 +26,22 @@ final class Analytics extends Page
         $this->matomo = app(MatomoReportingClient::class)->summary();
         $this->operational = app(OperationalMetricsQuery::class)
             ->recent()
-            ->map(static fn ($metric): array => [
-                'date' => $metric->metric_date->toDateString(),
-                'name' => (string) $metric->metric_name,
-                'value' => (string) $metric->value,
-                'unit' => (string) $metric->unit,
-                'sample_count' => $metric->sample_count === null ? null : (int) $metric->sample_count,
-            ])
+            ->map(static function (DailyMetric $metric): array {
+                $metricDate = $metric->getAttribute('metric_date');
+                if (! $metricDate instanceof CarbonInterface) {
+                    throw new LogicException('Operational metric date is invalid.');
+                }
+
+                $sampleCount = $metric->getAttribute('sample_count');
+
+                return [
+                    'date' => $metricDate->toDateString(),
+                    'name' => (string) $metric->getAttribute('metric_name'),
+                    'value' => (string) $metric->getAttribute('value'),
+                    'unit' => (string) $metric->getAttribute('unit'),
+                    'sample_count' => $sampleCount === null ? null : (int) $sampleCount,
+                ];
+            })
             ->all();
     }
 }

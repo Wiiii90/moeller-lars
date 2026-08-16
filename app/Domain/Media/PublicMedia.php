@@ -2,9 +2,9 @@
 
 namespace App\Domain\Media;
 
+use App\Domain\Blog\BlogEditorialService;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
-use App\Models\BlogPost;
 use App\Models\BlogSetting;
 use App\Models\CvEntry;
 use App\Models\ExhibitionMedia;
@@ -51,8 +51,7 @@ class PublicMedia
 
         $blogSettings = BlogSetting::query()->findOrFail(1);
         return (bool) $blogSettings->getAttribute('public_enabled')
-            && BlogPost::query()
-                ->publiclyVisible()
+            && BlogEditorialService::publicQuery()
                 ->where('cover_media_asset_id', $asset->getKey())
                 ->exists();
     }

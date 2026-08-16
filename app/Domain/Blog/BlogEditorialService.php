@@ -50,7 +50,10 @@ final class BlogEditorialService
         $validated = $this->validate($data, (int) $post->getKey());
 
         return DB::transaction(function () use ($post, $validated, $actor): BlogPost {
-            $fresh = BlogPost::query()->lockForUpdate()->findOrFail($post->getKey());
+            DB::table('blog_posts')->where('id', $post->getKey())->lockForUpdate()->first();
+            /** @var BlogPost $fresh */
+            $fresh = BlogPost::query()->findOrFail($post->getKey());
+
             if (($fresh->getAttribute('published_at') !== null || $fresh->getAttribute('scheduled_at') !== null)
                 && $validated['slug'] !== $fresh->getAttribute('slug')) {
                 throw ValidationException::withMessages(['slug' => 'A post slug cannot change after publication.']);
@@ -70,7 +73,15 @@ final class BlogEditorialService
     /** @return Builder<BlogPost> */
     public static function publicQuery(): Builder
     {
-        return BlogPost::query()->publiclyVisible();
+        $now = now();
+
+        return BlogPost::query()->where(function (Builder $visibility) use ($now): void {
+            $visibility->where(function (Builder $published) use ($now): void {
+                $published->where('state', 'published')->where('published_at', '<=', $now);
+            })->orWhere(function (Builder $scheduled) use ($now): void {
+                $scheduled->where('state', 'scheduled')->where('scheduled_at', '<=', $now);
+            });
+        });
     }
 
     private function prepareLifecycle(BlogPost $post): void

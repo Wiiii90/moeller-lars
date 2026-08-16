@@ -3,7 +3,7 @@
 namespace App\Domain\Analytics;
 
 use App\Models\DailyMetric;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 
 final class OperationalMetricsQuery
 {
@@ -14,7 +14,8 @@ final class OperationalMetricsQuery
             throw new \InvalidArgumentException('Operational metric range must be between 1 and 365 days.');
         }
 
-        return DailyMetric::query()
+        /** @var Collection<int, DailyMetric> $metrics */
+        $metrics = DailyMetric::query()
             ->where('metric_date', '>=', now()->subDays($days - 1)->toDateString())
             ->where('source', 'application')
             ->where(function ($query): void {
@@ -25,5 +26,7 @@ final class OperationalMetricsQuery
             ->orderBy('metric_date')
             ->orderBy('metric_name')
             ->get();
+
+        return $metrics;
     }
 }

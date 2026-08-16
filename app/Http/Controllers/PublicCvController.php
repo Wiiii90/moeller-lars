@@ -6,8 +6,10 @@ use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Media\PublicMedia;
 use App\Models\CvEntry;
 use App\Models\Exhibition;
+use App\Models\ExhibitionMedia;
 use App\Models\PublicContentSetting;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Collection;
 
 class PublicCvController extends Controller
 {
@@ -32,11 +34,21 @@ class PublicCvController extends Controller
 
         $exhibitions = collect();
         if ((bool) $settings->getAttribute('exhibitions_enabled')) {
+            /** @var Collection<int, Exhibition> $exhibitions */
             $exhibitions = Exhibition::query()
                 ->where('state', 'published')
                 ->with(['mediaUsages.mediaAsset.variants'])
                 ->orderBy('position')
                 ->get();
+
+            foreach ($exhibitions as $exhibition) {
+                /** @var Collection<int, ExhibitionMedia> $mediaUsages */
+                $mediaUsages = $exhibition->getRelationValue('mediaUsages');
+                $exhibition->setRelation(
+                    'mediaUsages',
+                    $mediaUsages->sortBy(static fn (ExhibitionMedia $usage): int => (int) $usage->getAttribute('position'))->values(),
+                );
+            }
         }
 
         return view('pages.cv', [

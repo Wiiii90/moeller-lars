@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\ArtworkCategory;
 use App\Models\BlogSetting;
 use App\Models\PublicContentSetting;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -20,19 +21,21 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         View::composer('layouts.app', function ($view): void {
-            /** @var Collection<int, array{position:int,label:string,url:string,current:bool}> $navigationItems */
-            $navigationItems = ArtworkCategory::query()
+            /** @var EloquentCollection<int, ArtworkCategory> $categories */
+            $categories = ArtworkCategory::query()
                 ->where('state', 'published')
                 ->where('show_in_navigation', true)
                 ->orderBy('position')
-                ->get(['name', 'slug', 'position'])
-                ->map(static fn (ArtworkCategory $category): array => [
-                    'position' => (int) $category->getAttribute('position'),
-                    'label' => (string) $category->getAttribute('name'),
-                    'url' => route('artworks.category', ['category' => $category->getAttribute('slug')]),
-                    'current' => request()->routeIs('artworks.category')
-                        && request()->route('category') === $category->getAttribute('slug'),
-                ]);
+                ->get(['name', 'slug', 'position']);
+
+            /** @var Collection<int, array{position:int,label:string,url:string,current:bool}> $navigationItems */
+            $navigationItems = $categories->map(static fn (ArtworkCategory $category): array => [
+                'position' => (int) $category->getAttribute('position'),
+                'label' => (string) $category->getAttribute('name'),
+                'url' => route('artworks.category', ['category' => $category->getAttribute('slug')]),
+                'current' => request()->routeIs('artworks.category')
+                    && request()->route('category') === $category->getAttribute('slug'),
+            ]);
 
             $settings = PublicContentSetting::query()->findOrFail(1);
             if ($settings->cvSurfaceEnabled()) {

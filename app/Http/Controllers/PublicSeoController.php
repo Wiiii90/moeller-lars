@@ -6,9 +6,11 @@ use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\CanonicalUrl;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use App\Models\BlogPost;
 use App\Models\BlogSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Response;
 
 final class PublicSeoController extends Controller
@@ -41,7 +43,9 @@ final class PublicSeoController extends Controller
         $blogSettings = BlogSetting::query()->findOrFail(1);
         if ((bool) $blogSettings->getAttribute('public_enabled')) {
             $urls[] = $this->canonical->forPath('/blog');
-            foreach (BlogEditorialService::publicQuery()->orderBy('position')->get(['slug']) as $post) {
+            /** @var Collection<int, BlogPost> $posts */
+            $posts = BlogEditorialService::publicQuery()->orderBy('position')->get(['slug']);
+            foreach ($posts as $post) {
                 $urls[] = $this->canonical->forPath('/blog/'.$post->getAttribute('slug'));
             }
         }

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Domain\Media\MediaIngestService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Validation\ValidationException;
@@ -29,7 +30,7 @@ class ExhibitionMedia extends Model
     {
         static::saving(function (self $usage): void {
             $assetId = $usage->getAttribute('media_asset_id');
-            $asset = MediaAsset::query()->with('variants')->find($assetId);
+            $asset = MediaAsset::query()->find($assetId);
             if (! $asset instanceof MediaAsset || $asset->getAttribute('state') !== 'available') {
                 throw ValidationException::withMessages(['media_asset_id' => 'Exhibition media must reference an available media asset.']);
             }
@@ -44,7 +45,9 @@ class ExhibitionMedia extends Model
                 throw ValidationException::withMessages(['media_asset_id' => 'Exhibition media requires canonical ALT text.']);
             }
 
-            $thumbnailCount = $asset->variants
+            /** @var Collection<int, MediaVariant> $variants */
+            $variants = $asset->variants()->get();
+            $thumbnailCount = $variants
                 ->filter(static fn (MediaVariant $variant): bool => $variant->getAttribute('variant_kind') === 'thumbnail'
                     && $variant->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
                     && $variant->getAttribute('state') === 'available')
