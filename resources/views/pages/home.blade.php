@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('title', 'Lars Möller')
+@section('meta_description', 'Official website of artist Lars Möller')
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/'))
 
 @section('content')
     @if ($artwork)

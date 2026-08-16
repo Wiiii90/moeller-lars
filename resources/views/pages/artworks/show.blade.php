@@ -8,6 +8,8 @@
 @endphp
 
 @section('title', $artwork->title.' — Lars Möller')
+@section('meta_description', $artwork->description ?: $artwork->title.' — Lars Möller')
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))
 
 @section('content')
     <article class="artwork-detail" data-artwork-viewer-sequence>

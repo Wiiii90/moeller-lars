@@ -5,6 +5,7 @@ use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\PublicContactController;
 use App\Http\Controllers\PublicCvController;
 use App\Http\Controllers\PublicMediaController;
+use App\Http\Controllers\PublicSeoController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicArtworkController::class, 'home'])->name('home');
@@ -15,6 +16,8 @@ Route::get('/blog', [PublicBlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [PublicBlogController::class, 'show'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('blog.show');
+Route::get('/sitemap.xml', [PublicSeoController::class, 'sitemap'])->name('seo.sitemap');
+Route::get('/robots.txt', [PublicSeoController::class, 'robots'])->name('seo.robots');
 
 Route::get('/artworks/{slug}', [PublicArtworkController::class, 'show'])->name('artworks.show');
 Route::get('/media/original/{mediaAsset}', [PublicMediaController::class, 'original'])->name('media.original');
