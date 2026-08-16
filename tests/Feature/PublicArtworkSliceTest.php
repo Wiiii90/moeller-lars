@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 function sliceCategory(string $slug, string $state = 'published'): ArtworkCategory
 {
     $category = ArtworkCategory::query()->firstOrNew(['slug' => $slug]);
-    $category->fill(['name' => ucfirst($slug), 'state' => $state, 'position' => 0]);
+    $category->fill(['name' => ucfirst($slug), 'state' => $state, 'position' => 0, 'show_in_navigation' => true, 'show_on_home' => true]);
     $category->save();
 
     return $category;
@@ -66,52 +66,53 @@ function publicReplacementJpeg(): UploadedFile
 }
 
 it('includes only published artwork in published categories', function () {
-    $published = sliceCategory('paintings');
-    $hidden = sliceCategory('prints', 'hidden');
+    $published = sliceCategory('sculptures');
+    $hidden = sliceCategory('works-a', 'hidden');
     sliceArtwork($published, ['slug' => 'published-work']);
     sliceArtwork($published, ['slug' => 'draft-work', 'state' => 'draft']);
     sliceArtwork($published, ['slug' => 'hidden-work', 'state' => 'hidden']);
     sliceArtwork($published, ['slug' => 'archived-work', 'state' => 'archived']);
     sliceArtwork($hidden, ['slug' => 'hidden-category-work']);
 
-    expect(app(PublicArtworkQuery::class)->category('paintings')->pluck('slug')->all())->toBe(['published-work']);
+    expect(app(PublicArtworkQuery::class)->category('sculptures')->pluck('slug')->all())->toBe(['published-work']);
     $this->get('/artworks/hidden-category-work')->assertNotFound();
     $this->get('/artworks/draft-work')->assertNotFound();
 });
 
 it('orders category artwork by curated position before work date', function () {
-    $category = sliceCategory('paintings');
+    $category = sliceCategory('sculptures');
     sliceArtwork($category, ['slug' => 'older-curated-first', 'work_date' => '2010-01-01', 'position' => 0]);
     sliceArtwork($category, ['slug' => 'newest-curated-last', 'work_date' => '2026-01-01', 'position' => 2]);
     sliceArtwork($category, ['slug' => 'middle-curated', 'work_date' => '2020-01-01', 'position' => 1]);
 
-    expect(app(PublicArtworkQuery::class)->category('paintings')->pluck('slug')->all())
+    expect(app(PublicArtworkQuery::class)->category('sculptures')->pluck('slug')->all())
         ->toBe(['older-curated-first', 'middle-curated', 'newest-curated-last']);
 });
 
 it('uses work date and slug as deterministic position tie-breakers', function () {
-    $category = sliceCategory('prints');
+    $category = sliceCategory('works-a');
     sliceArtwork($category, ['slug' => 'same-position-old', 'work_date' => '2020-01-01', 'position' => 4]);
     sliceArtwork($category, ['slug' => 'same-position-new', 'work_date' => '2025-01-01', 'position' => 4]);
     sliceArtwork($category, ['slug' => 'same-position-a', 'work_date' => '2025-01-01', 'position' => 5]);
     sliceArtwork($category, ['slug' => 'same-position-b', 'work_date' => '2025-01-01', 'position' => 5]);
 
-    expect(app(PublicArtworkQuery::class)->category('prints')->pluck('slug')->all())
+    expect(app(PublicArtworkQuery::class)->category('works-a')->pluck('slug')->all())
         ->toBe(['same-position-new', 'same-position-old', 'same-position-a', 'same-position-b']);
 });
 
 it('selects the newest eligible home artwork and has a usable empty state', function () {
-    $paintings = sliceCategory('paintings');
-    $drawings = sliceCategory('drawings');
-    $prints = sliceCategory('prints');
-    $photo = sliceCategory('photo');
-    sliceArtwork($paintings, ['slug' => 'painting-home', 'work_date' => '2026-01-01', 'position' => 9]);
-    sliceArtwork($drawings, ['slug' => 'drawing-home', 'work_date' => '2026-01-01', 'position' => 1]);
-    sliceArtwork($prints, ['slug' => 'print-home', 'work_date' => '2025-01-01']);
-    sliceArtwork($photo, ['slug' => 'photo-not-home', 'work_date' => '2030-01-01']);
+    $sculptures = sliceCategory('sculptures');
+    $worksA = sliceCategory('works-a');
+    $worksB = sliceCategory('works-b');
+    $excluded = sliceCategory('works-c');
+    $excluded->update(['show_on_home' => false]);
+    sliceArtwork($sculptures, ['slug' => 'sculpture-home', 'work_date' => '2026-01-01', 'position' => 9]);
+    sliceArtwork($worksA, ['slug' => 'works-a-home', 'work_date' => '2026-01-01', 'position' => 1]);
+    sliceArtwork($worksB, ['slug' => 'works-b-home', 'work_date' => '2025-01-01']);
+    sliceArtwork($excluded, ['slug' => 'excluded-home', 'work_date' => '2030-01-01']);
 
-    expect(app(PublicArtworkQuery::class)->latestForHome()?->slug)->toBe('drawing-home');
-    $this->get('/')->assertSuccessful()->assertSee('drawing-home')->assertDontSee('photo-not-home');
+    expect(app(PublicArtworkQuery::class)->latestForHome()?->slug)->toBe('works-a-home');
+    $this->get('/')->assertSuccessful()->assertSee('works-a-home')->assertDontSee('excluded-home');
 
     Artwork::query()->delete();
     ArtworkCategory::query()->delete();
@@ -119,33 +120,22 @@ it('selects the newest eligible home artwork and has a usable empty state', func
 });
 
 it('keeps homepage latest-work chronological despite curated positions', function () {
-    $paintings = sliceCategory('paintings');
-    $drawings = sliceCategory('drawings');
-    $prints = sliceCategory('prints');
-    sliceArtwork($paintings, ['slug' => 'home-curated-first-old', 'work_date' => '2010-01-01', 'position' => 0]);
-    sliceArtwork($drawings, ['slug' => 'home-newest-position-last', 'work_date' => '2026-01-01', 'position' => 9]);
-    sliceArtwork($prints, ['slug' => 'home-middle', 'work_date' => '2020-01-01', 'position' => 1]);
+    $sculptures = sliceCategory('sculptures');
+    $worksA = sliceCategory('works-a');
+    $worksB = sliceCategory('works-b');
+    sliceArtwork($sculptures, ['slug' => 'home-curated-first-old', 'work_date' => '2010-01-01', 'position' => 0]);
+    sliceArtwork($worksA, ['slug' => 'home-newest-position-last', 'work_date' => '2026-01-01', 'position' => 9]);
+    sliceArtwork($worksB, ['slug' => 'home-middle', 'work_date' => '2020-01-01', 'position' => 1]);
 
     expect(app(PublicArtworkQuery::class)->latestForHome()?->slug)->toBe('home-newest-position-last');
 });
 
-it('serves all canonical category routes and the direct published route', function () {
-    $paintings = sliceCategory('paintings');
-    sliceArtwork($paintings, ['slug' => 'direct-work']);
-    foreach ([
-        'paintings',
-        'prints',
-        'drawings',
-        'cyanotype',
-        'bichromate',
-        'litho',
-        'photo',
-        'ignis',
-        'other',
-    ] as $slug) {
-        if ($slug !== 'paintings') {
-            sliceCategory($slug);
-        }
+it('serves arbitrary published category routes and the direct published route', function () {
+    $sculptures = sliceCategory('sculptures');
+    sliceCategory('works-a');
+    sliceCategory('works-b');
+    sliceArtwork($sculptures, ['slug' => 'direct-work']);
+    foreach (['sculptures', 'works-a', 'works-b'] as $slug) {
         $this->get('/'.$slug)->assertSuccessful();
     }
 
@@ -155,7 +145,7 @@ it('serves all canonical category routes and the direct published route', functi
 
 it('resolves thumbnail, original fallback, missing media, and alt precedence', function () {
     Storage::fake(config('media.disk'));
-    $category = sliceCategory('drawings');
+    $category = sliceCategory('works-b');
     $artwork = sliceArtwork($category, ['slug' => 'media-work', 'title' => 'Title alt']);
     $asset = sliceAsset(['storage_key' => 'originals/media.jpg']);
     attachMedia($artwork, $asset, 'primary', 'Override alt');
@@ -179,8 +169,8 @@ it('resolves thumbnail, original fallback, missing media, and alt precedence', f
 
 it('delivers only media attached to a public primary artwork', function () {
     Storage::fake(config('media.disk'));
-    $publicCategory = sliceCategory('paintings');
-    $hiddenCategory = sliceCategory('prints', 'hidden');
+    $publicCategory = sliceCategory('sculptures');
+    $hiddenCategory = sliceCategory('works-a', 'hidden');
     $publicArtwork = sliceArtwork($publicCategory, ['slug' => 'public-media-work']);
     $draftArtwork = sliceArtwork($publicCategory, ['slug' => 'draft-media-work', 'state' => 'draft']);
     $hiddenArtwork = sliceArtwork($hiddenCategory, ['slug' => 'hidden-media-work']);
@@ -226,34 +216,31 @@ it('delivers only media attached to a public primary artwork', function () {
     $this->get(route('media.variant', $publicVariant))->assertNotFound();
 });
 
-it('handles every legacy redirect and rejects malformed values', function () {
-    $redirects = [
-        'paintings' => '/paintings', 'prints' => '/prints', 'drawings' => '/drawings',
-        'cyanotype' => '/cyanotype', 'bichromate' => '/bichromate', 'litho' => '/litho',
-        'photo' => '/photo', 'ignis' => '/ignis', 'other' => '/other', 'vita' => '/cv', 'contact' => '/contact',
-    ];
-    foreach ($redirects as $site => $target) {
-        $this->get('/index.php?site='.$site)->assertMovedPermanently()->assertRedirect($target);
-    }
-    $this->get('/index.php')->assertMovedPermanently()->assertRedirect('/');
-    $this->get('/index.php?site=links')->assertNotFound();
-    $this->get('/index.php?site=unknown')->assertNotFound();
-    $this->get('/index.php?site[]=paintings')->assertNotFound()->assertDontSee('Exception');
-    $this->get('/index.php?site[bad]=value')->assertNotFound()->assertDontSee('Exception');
+it('keeps the required shell navigation and excludes Blog, Admin, and Contact', function () {
+    sliceCategory('sculptures');
+    sliceCategory('works-a');
+    sliceCategory('works-b');
+    $html = $this->get('/')->assertSuccessful()->getContent();
+    expect($html)->toContain('Sculptures', 'Works-a', 'Works-b', 'CV &amp; Exhibitions')
+        ->and(strpos($html, 'Sculptures'))->toBeLessThan(strpos($html, 'Works-a'))
+        ->and(strpos($html, 'Works-a'))->toBeLessThan(strpos($html, 'Works-b'))
+        ->and(strpos($html, 'Works-b'))->toBeLessThan(strpos($html, 'CV &amp; Exhibitions'))
+        ->and($html)->not->toContain('Blog')->and($html)->not->toContain('Admin')->and($html)->not->toContain('Contact');
 });
 
-it('keeps the required shell navigation and excludes Blog, Admin, and Contact', function () {
+it('derives navigation from arbitrary category presentation data', function () {
+    sliceCategory('sculptures');
+    $hiddenFromNavigation = sliceCategory('works-a');
+    $hiddenFromNavigation->update(['show_in_navigation' => false]);
+
     $html = $this->get('/')->assertSuccessful()->getContent();
-    expect($html)->toContain('Paintings', 'Prints', 'Drawings', 'CV &amp; Exhibitions')
-        ->and(strpos($html, 'Paintings'))->toBeLessThan(strpos($html, 'Prints'))
-        ->and(strpos($html, 'Prints'))->toBeLessThan(strpos($html, 'Drawings'))
-        ->and(strpos($html, 'Drawings'))->toBeLessThan(strpos($html, 'CV &amp; Exhibitions'))
-        ->and($html)->not->toContain('Blog')->and($html)->not->toContain('Admin')->and($html)->not->toContain('Contact');
+
+    expect($html)->toContain('Sculptures')->not->toContain('Works-a');
 });
 
 it('renders public media metadata with escaped output and preserves ALT precedence', function () {
     Storage::fake(config('media.disk'));
-    $category = sliceCategory('paintings');
+    $category = sliceCategory('sculptures');
     $artwork = sliceArtwork($category, ['slug' => 'metadata-public-artwork', 'title' => 'Artwork title']);
     $asset = sliceAsset([
         'storage_key' => 'originals/metadata-public.jpg',
@@ -274,7 +261,7 @@ it('renders public media metadata with escaped output and preserves ALT preceden
 
 it('omits empty public media metadata and keeps deleted media unavailable', function () {
     Storage::fake(config('media.disk'));
-    $category = sliceCategory('prints');
+    $category = sliceCategory('works-a');
     $artwork = sliceArtwork($category, ['slug' => 'no-metadata-public']);
     $asset = sliceAsset(['storage_key' => 'originals/no-metadata.jpg', 'alt_text' => null, 'credit' => null, 'copyright_notice' => null]);
     attachMedia($artwork, $asset);
@@ -287,7 +274,7 @@ it('omits empty public media metadata and keeps deleted media unavailable', func
 
 it('switches public delivery to the replacement primary media atomically', function () {
     Storage::fake(config('media.disk'));
-    $category = sliceCategory('paintings');
+    $category = sliceCategory('sculptures');
     $artwork = sliceArtwork($category, ['slug' => 'replacement-public-artwork']);
     $oldAsset = sliceAsset(['storage_key' => 'originals/replacement-old.jpg']);
     $oldVariant = sliceVariant($oldAsset, ['storage_key' => 'variants/replacement-old.webp', 'mime_type' => 'image/webp']);

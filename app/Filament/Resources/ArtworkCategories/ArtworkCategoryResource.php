@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\ArtworkCategories;
 
-use App\Domain\Artwork\ArtworkCategoryPathPolicy;
 use App\Filament\Resources\ArtworkCategories\Pages\CreateArtworkCategory;
 use App\Filament\Resources\ArtworkCategories\Pages\EditArtworkCategory;
 use App\Filament\Resources\ArtworkCategories\Pages\ListArtworkCategories;
@@ -11,6 +10,7 @@ use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -50,6 +50,8 @@ class ArtworkCategoryResource extends Resource
                 ->dehydrated(fn (?Model $record): bool => $record === null),
             Textarea::make('description')->nullable()->maxLength(10000),
             TextInput::make('position')->integer()->required()->minValue(0)->default(0),
+            Toggle::make('show_in_navigation')->label('Show in navigation'),
+            Toggle::make('show_on_home')->label('Show on home'),
         ]);
     }
 
@@ -92,10 +94,5 @@ class ArtworkCategoryResource extends Resource
     public static function canDelete(Model $record): bool
     {
         return false;
-    }
-
-    public static function isLegacyStable(ArtworkCategory $category): bool
-    {
-        return app(ArtworkCategoryPathPolicy::class)->isLegacyStable((string) $category->getAttribute('slug'));
     }
 }

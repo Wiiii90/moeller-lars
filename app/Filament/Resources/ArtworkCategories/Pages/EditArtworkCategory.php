@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\ArtworkCategories\Pages;
 
 use App\Domain\Artwork\ArtworkCategoryEditorialService;
-use App\Domain\Artwork\ArtworkCategoryPathPolicy;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -41,7 +40,6 @@ class EditArtworkCategory extends EditRecord
                 ->action(fn (): ArtworkCategory => $this->runCategoryAction(fn () => app(ArtworkCategoryEditorialService::class)->hide($this->categoryRecord()), 'Category hidden')),
             Action::make('changeSlug')
                 ->label('Change public slug')
-                ->visible(fn (): bool => ! app(ArtworkCategoryPathPolicy::class)->isLegacyStable((string) $this->categoryRecord()->getAttribute('slug')))
                 ->schema([
                     TextInput::make('slug')
                         ->required()
@@ -54,7 +52,7 @@ class EditArtworkCategory extends EditRecord
                 }),
             Action::make('deleteCategory')
                 ->label('Delete category')
-                ->visible(fn (): bool => ! app(ArtworkCategoryPathPolicy::class)->isLegacyStable((string) $this->categoryRecord()->getAttribute('slug')) && $this->categoryRecord()->getAttribute('state') === 'hidden')
+                ->visible(fn (): bool => $this->categoryRecord()->getAttribute('state') === 'hidden')
                 ->requiresConfirmation()
                 ->action(function (): void {
                     $this->runCategoryAction(fn () => app(ArtworkCategoryEditorialService::class)->delete($this->categoryRecord()), 'Category deleted');

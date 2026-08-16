@@ -26,8 +26,8 @@ class PublicArtworkQuery
         /** @var Artwork|null $artwork */
         $artwork = $this->publicQuery()
             ->whereHas('category', fn (Builder $query) => $query
-                ->whereIn('slug', ['paintings', 'drawings', 'prints'])
-                ->where('state', 'published'))
+                ->where('state', 'published')
+                ->where('show_on_home', true))
             ->orderByRaw('work_date DESC NULLS LAST')
             ->orderBy('position')
             ->orderBy('slug')

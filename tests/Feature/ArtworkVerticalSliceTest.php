@@ -33,7 +33,14 @@ it('runs the complete canonical artwork admin and public vertical slice', functi
     $this->actingAs($admin, 'web');
     Storage::fake(config('media.disk'));
 
-    $category = ArtworkCategory::query()->where('slug', 'paintings')->firstOrFail();
+    $category = ArtworkCategory::create([
+        'slug' => 'sculptures',
+        'name' => 'Sculptures',
+        'state' => 'published',
+        'position' => 0,
+        'show_in_navigation' => true,
+        'show_on_home' => true,
+    ]);
 
     Livewire::test(CreateArtwork::class)
         ->fillForm([
@@ -54,7 +61,7 @@ it('runs the complete canonical artwork admin and public vertical slice', functi
         ->and($artwork->published_at)->toBeNull()
         ->and($artwork->date_precision)->toBe('day');
 
-    $this->get('/paintings')->assertSuccessful()->assertDontSee('Vertical Slice Artwork');
+    $this->get('/sculptures')->assertSuccessful()->assertDontSee('Vertical Slice Artwork');
     $this->get('/artworks/vertical-slice-artwork')->assertNotFound();
 
     Livewire::test(EditArtwork::class, ['record' => $artwork->getKey()])
@@ -81,7 +88,7 @@ it('runs the complete canonical artwork admin and public vertical slice', functi
     expect($artwork->state)->toBe('published')->and($artwork->published_at)->not->toBeNull();
 
     $this->get('/')->assertSuccessful()->assertSee('Vertical Slice Artwork');
-    $this->get('/paintings')->assertSuccessful()
+    $this->get('/sculptures')->assertSuccessful()
         ->assertSee('Vertical Slice Artwork')
         ->assertSee('Oil')
         ->assertSee('40 x 50 cm')
@@ -96,7 +103,7 @@ it('runs the complete canonical artwork admin and public vertical slice', functi
 
     $artwork->refresh();
     expect($artwork->state)->toBe('draft')->and($artwork->published_at)->not->toBeNull();
-    $this->get('/paintings')->assertSuccessful()->assertDontSee('Vertical Slice Artwork');
+    $this->get('/sculptures')->assertSuccessful()->assertDontSee('Vertical Slice Artwork');
     $this->get('/artworks/vertical-slice-artwork')->assertNotFound();
     $this->get(route('media.original', $asset))->assertNotFound();
     $this->get(route('media.variant', $variant))->assertNotFound();

@@ -6,10 +6,10 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use Illuminate\Support\Facades\Storage;
 
-function viewerCategory(string $slug = 'paintings'): ArtworkCategory
+function viewerCategory(string $slug = 'sculptures'): ArtworkCategory
 {
     $category = ArtworkCategory::query()->firstOrNew(['slug' => $slug]);
-    $category->fill(['name' => ucfirst($slug), 'state' => 'published', 'position' => 0]);
+    $category->fill(['name' => ucfirst($slug), 'state' => 'published', 'position' => 0, 'show_in_navigation' => true, 'show_on_home' => true]);
     $category->save();
 
     return $category;
@@ -56,7 +56,7 @@ it('renders ordered category and home viewer sequences with controlled URLs', fu
         viewerPrimary($artwork, $asset);
         Storage::disk(config('media.disk'))->put($asset->storage_key, 'image');
     }
-    $categoryContent = $this->get('/paintings')->assertSuccessful()->getContent();
+    $categoryContent = $this->get('/sculptures')->assertSuccessful()->getContent();
     $firstPosition = strpos($categoryContent, 'data-viewer-key="viewer-first"');
     $secondPosition = strpos($categoryContent, 'data-viewer-key="viewer-second"');
 
@@ -77,7 +77,7 @@ it('renders direct-view sequence data and preserves the no-JS original link', fu
     $current = viewerArtwork($category, 'viewer-current', ['work_date' => '2026-01-01', 'position' => 2]);
     $other = viewerArtwork($category, 'viewer-other', ['work_date' => '2025-01-01', 'position' => 1]);
     $third = viewerArtwork($category, 'viewer-third', ['work_date' => '2024-01-01', 'position' => 0]);
-    $outside = viewerArtwork(viewerCategory('prints'), 'viewer-outside');
+    $outside = viewerArtwork(viewerCategory('works-a'), 'viewer-outside');
     foreach ([$current, $other, $third, $outside] as $artwork) {
         $asset = viewerAsset('originals/'.$artwork->slug.'.jpg');
         viewerPrimary($artwork, $asset);
@@ -98,7 +98,7 @@ it('renders direct-view sequence data and preserves the no-JS original link', fu
 
 it('keeps missing primary media as a normal card link with empty viewer source', function () {
     $artwork = viewerArtwork(viewerCategory(), 'viewer-missing');
-    $content = $this->get('/paintings')->assertSuccessful()->getContent();
+    $content = $this->get('/sculptures')->assertSuccessful()->getContent();
 
     expect($content)->toContain('href="'.route('artworks.show', $artwork->slug).'"')
         ->and($content)->toContain('data-viewer-src=""')
@@ -111,7 +111,7 @@ it('escapes viewer data and keeps the viewer source free of unsafe DOM APIs', fu
     $asset = viewerAsset('originals/escaping.jpg');
     $asset->update(['alt_text' => '<script>" &']);
     viewerPrimary($artwork, $asset);
-    $content = $this->get('/paintings')->assertSuccessful()->getContent();
+    $content = $this->get('/sculptures')->assertSuccessful()->getContent();
     $source = file_get_contents(resource_path('js/artwork-viewer.js'));
 
     expect($content)->toContain('&lt;script&gt;')

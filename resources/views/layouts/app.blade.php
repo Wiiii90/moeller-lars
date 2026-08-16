@@ -13,9 +13,9 @@
         <header class="site-header">
             <h1><a href="{{ route('home') }}" class="site-title">Lars Möller</a></h1>
             <nav aria-label="Main navigation">
-                <a href="{{ route('artworks.category', ['category' => 'paintings']) }}" @if (request()->is('paintings')) aria-current="page" @endif>Paintings</a>
-                <a href="{{ route('artworks.category', ['category' => 'prints']) }}" @if (request()->is('prints')) aria-current="page" @endif>Prints</a>
-                <a href="{{ route('artworks.category', ['category' => 'drawings']) }}" @if (request()->is('drawings')) aria-current="page" @endif>Drawings</a>
+                @foreach ($navigationCategories as $navigationCategory)
+                    <a href="{{ route('artworks.category', ['category' => $navigationCategory->slug]) }}" @if (request()->route('category') === $navigationCategory->slug) aria-current="page" @endif>{{ $navigationCategory->name }}</a>
+                @endforeach
                 <a href="/cv">CV &amp; Exhibitions</a>
             </nav>
         </header>

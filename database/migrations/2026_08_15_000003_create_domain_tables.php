@@ -15,6 +15,8 @@ return new class extends Migration
             $table->string('name', 160);
             $table->string('state', 32)->default('hidden');
             $table->integer('position')->default(0);
+            $table->boolean('show_in_navigation')->default(false);
+            $table->boolean('show_on_home')->default(false);
             $table->text('description')->nullable();
             $table->bigInteger('legacy_id')->nullable();
             $table->string('legacy_source', 160)->nullable();

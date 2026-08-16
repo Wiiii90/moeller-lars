@@ -49,7 +49,7 @@ it('rejects reserved, invalid, and duplicate category slugs', function (string $
     $this->actingAs(categoryServiceAdmin(), 'web');
     expect(fn () => app(ArtworkCategoryEditorialService::class)->create(['name' => 'Bad', 'slug' => $slug, 'position' => 0]))
         ->toThrow(ValidationException::class);
-})->with(['admin', 'artworks', 'media', 'cv', 'contact', 'blog', 'api', 'up', 'storage', 'sitemap', 'robots', 'index', 'Bad Slug']);
+})->with(['admin', 'artworks', 'media', 'cv', 'contact', 'blog', 'api', 'up', 'storage', 'sitemap', 'robots', 'Bad Slug']);
 
 it('updates, publishes, and hides categories with the required audits and guards', function () {
     $this->actingAs(categoryServiceAdmin(), 'web');
@@ -88,17 +88,24 @@ it('changes custom slugs and collapses category redirect chains', function () {
         ->and(AuditEvent::query()->where('action', 'artwork_category.slug_changed')->count())->toBe(2);
 });
 
-it('does not change legacy stable slugs and safely deletes custom categories', function () {
+it('renames and safely deletes any hidden application category', function () {
     $this->actingAs(categoryServiceAdmin(), 'web');
-    $legacy = ArtworkCategory::query()->where('slug', 'paintings')->firstOrFail();
-    expect(fn () => app(ArtworkCategoryEditorialService::class)->changeSlug($legacy, 'paintings-new'))->toThrow(ValidationException::class);
-
     $category = customCategoryService('deletable');
     app(ArtworkCategoryEditorialService::class)->changeSlug($category, 'deletable-new');
     app(ArtworkCategoryEditorialService::class)->delete($category);
     expect(ArtworkCategory::query()->whereKey($category->id)->exists())->toBeFalse()
         ->and(AuditEvent::query()->where('action', 'artwork_category.deleted')->where('entity_id', $category->id)->exists())->toBeTrue()
         ->and(Redirect::query()->where('reason', 'artwork_category_slug_change')->where(fn ($q) => $q->where('source_path', '/deletable')->orWhere('target_path', '/deletable-new'))->exists())->toBeFalse();
+});
+
+it('persists generic presentation settings for created and updated categories', function () {
+    $this->actingAs(categoryServiceAdmin(), 'web');
+    $service = app(ArtworkCategoryEditorialService::class);
+    $category = $service->create(['name' => 'Sculptures', 'slug' => 'sculptures', 'position' => 0, 'show_in_navigation' => true, 'show_on_home' => true]);
+
+    expect($category->show_in_navigation)->toBeTrue()->and($category->show_on_home)->toBeTrue();
+    $service->update($category, ['name' => 'Works A', 'position' => 1, 'show_in_navigation' => false, 'show_on_home' => false]);
+    expect($category->fresh()->show_in_navigation)->toBeFalse()->and($category->fresh()->show_on_home)->toBeFalse();
 });
 
 it('reorders every artwork in a category and audits once', function () {

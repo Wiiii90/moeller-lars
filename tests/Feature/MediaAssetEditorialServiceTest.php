@@ -71,7 +71,7 @@ it('rejects unknown and oversized media metadata and deleted assets', function (
 it('updates only the primary artwork ALT override and audits its asset', function () {
     $admin = editorialMediaAdmin();
     $this->actingAs($admin, 'web');
-    $category = ArtworkCategory::query()->where('slug', 'paintings')->firstOrFail();
+    $category = ArtworkCategory::create(['slug' => 'sculptures', 'name' => 'Sculptures', 'state' => 'published', 'position' => 0]);
     $artwork = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'alt-editorial', 'title' => 'Artwork', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
     $asset = mediaEditorialAsset();
     $usage = ArtworkMedia::create(['artwork_id' => $artwork->id, 'media_asset_id' => $asset->id, 'role' => 'primary', 'position' => 0]);
@@ -86,7 +86,7 @@ it('updates only the primary artwork ALT override and audits its asset', functio
 
 it('blocks primary ALT updates without a primary or with deleted media', function () {
     $this->actingAs(editorialMediaAdmin(), 'web');
-    $category = ArtworkCategory::query()->where('slug', 'paintings')->firstOrFail();
+    $category = ArtworkCategory::create(['slug' => 'sculptures', 'name' => 'Sculptures', 'state' => 'published', 'position' => 0]);
     $artwork = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'no-alt-primary', 'title' => 'Artwork', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
     expect(fn () => app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($artwork, 'Alt'))->toThrow(ValidationException::class);
     $asset = mediaEditorialAsset('deleted');
@@ -118,7 +118,7 @@ it('blocks every approved media reference', function (string $type) {
     $this->actingAs(editorialMediaAdmin(), 'web');
     $asset = mediaEditorialAsset();
     match ($type) {
-        'artwork' => ArtworkMedia::create(['artwork_id' => Artwork::create(['artwork_category_id' => ArtworkCategory::query()->firstOrFail()->id, 'slug' => 'ref-'.uniqid(), 'title' => 'Ref', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown'])->id, 'media_asset_id' => $asset->id, 'role' => 'primary', 'position' => 0]),
+        'artwork' => ArtworkMedia::create(['artwork_id' => Artwork::create(['artwork_category_id' => ArtworkCategory::create(['slug' => 'sculptures', 'name' => 'Sculptures', 'state' => 'published', 'position' => 0])->id, 'slug' => 'ref-'.uniqid(), 'title' => 'Ref', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown'])->id, 'media_asset_id' => $asset->id, 'role' => 'primary', 'position' => 0]),
         'exhibition' => Exhibition::create(['slug' => 'ref-'.uniqid(), 'title' => 'Ref', 'state' => 'draft', 'position' => 0, 'hero_media_asset_id' => $asset->id]),
         'cv' => CvEntry::create(['section' => 'CV', 'title' => 'Ref', 'state' => 'draft', 'position' => 0, 'image_media_asset_id' => $asset->id]),
         default => BlogPost::create(['slug' => 'ref-'.uniqid(), 'title' => 'Ref', 'state' => 'draft', 'position' => 0, 'cover_media_asset_id' => $asset->id]),

@@ -104,9 +104,6 @@ class ArtworkCategoryEditorialService
         return DB::transaction(function () use ($category, $slug, $actor): ArtworkCategory {
             $category->refresh();
             $oldSlug = (string) $category->getAttribute('slug');
-            if ($this->pathPolicy->isLegacyStable($oldSlug)) {
-                throw ValidationException::withMessages(['slug' => 'Legacy stable category slugs cannot be changed.']);
-            }
 
             $newSlug = $this->validateSlug($slug, $category->getKey());
             if ($newSlug === $oldSlug) {
@@ -157,11 +154,7 @@ class ArtworkCategoryEditorialService
 
         DB::transaction(function () use ($category, $actor): void {
             $category->refresh();
-            if (
-                $this->pathPolicy->isLegacyStable((string) $category->getAttribute('slug'))
-                || (string) $category->getAttribute('state') !== 'hidden'
-                || $category->artworks()->exists()
-            ) {
+            if ((string) $category->getAttribute('state') !== 'hidden' || $category->artworks()->exists()) {
                 throw ValidationException::withMessages(['category' => 'This category cannot be deleted.']);
             }
 
@@ -230,7 +223,7 @@ class ArtworkCategoryEditorialService
         }
     }
 
-    /** @return array{name:string,slug:string,position:int,description:?string} */
+    /** @return array{name:string,slug:string,position:int,description:?string,show_in_navigation?:bool,show_on_home?:bool} */
     private function validateData(array $data, bool $update): array
     {
         $name = trim((string) ($data['name'] ?? ''));
@@ -253,6 +246,22 @@ class ArtworkCategoryEditorialService
             'position' => (int) $position,
             'description' => $description,
         ];
+
+        foreach (['show_in_navigation', 'show_on_home'] as $field) {
+            if (! array_key_exists($field, $data)) {
+                if (! $update) {
+                    $validated[$field] = false;
+                }
+
+                continue;
+            }
+
+            if (! is_bool($data[$field]) && ! in_array($data[$field], [0, 1, '0', '1'], true)) {
+                throw ValidationException::withMessages([$field => 'The category presentation setting is invalid.']);
+            }
+
+            $validated[$field] = (bool) $data[$field];
+        }
 
         if (! $update) {
             $validated['slug'] = $this->validateSlug($data['slug'] ?? null);

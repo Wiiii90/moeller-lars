@@ -21,8 +21,8 @@ use Illuminate\Support\Facades\Schema;
 function makeCategory(array $attributes = []): ArtworkCategory
 {
     return ArtworkCategory::create(array_merge([
-        'slug' => 'paintings-'.uniqid(),
-        'name' => 'Paintings',
+        'slug' => 'sculptures-'.uniqid(),
+        'name' => 'Sculptures',
         'state' => 'published',
         'position' => 0,
     ], $attributes));
@@ -68,7 +68,7 @@ it('applies the PostgreSQL domain schema with critical columns', function () {
 });
 
 it('connects artwork, original media, derivatives, and category relationships', function () {
-    $category = makeCategory(['slug' => 'schema-paintings']);
+    $category = makeCategory(['slug' => 'schema-sculptures']);
     $artwork = Artwork::create([
         'artwork_category_id' => $category->id,
         'slug' => 'work-one',
@@ -103,7 +103,7 @@ it('connects artwork, original media, derivatives, and category relationships', 
 });
 
 it('manages artwork media through normal Eloquent identity', function () {
-    $category = makeCategory(['slug' => 'schema-prints']);
+    $category = makeCategory(['slug' => 'schema-works-a']);
     $artwork = Artwork::create([
         'artwork_category_id' => $category->id,
         'slug' => 'identity-test',
@@ -130,7 +130,7 @@ it('manages artwork media through normal Eloquent identity', function () {
 });
 
 it('rejects duplicate artwork media pairs', function () {
-    $category = makeCategory(['slug' => 'schema-drawings']);
+    $category = makeCategory(['slug' => 'schema-works-b']);
     $artwork = Artwork::create([
         'artwork_category_id' => $category->id,
         'slug' => 'duplicate-pair',
@@ -149,7 +149,7 @@ it('rejects duplicate artwork media pairs', function () {
 });
 
 it('rejects a second primary artwork media row', function () {
-    $category = makeCategory(['slug' => 'schema-cyanotype']);
+    $category = makeCategory(['slug' => 'schema-works-c']);
     $artwork = Artwork::create([
         'artwork_category_id' => $category->id,
         'slug' => 'second-primary',

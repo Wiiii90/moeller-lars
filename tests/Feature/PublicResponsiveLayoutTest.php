@@ -6,10 +6,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-function responsiveArtwork(string $categorySlug = 'paintings', string $slug = 'responsive-work'): Artwork
+beforeEach(function () {
+    responsiveArtwork('sculptures', 'navigation-sculpture');
+    responsiveArtwork('works-a', 'navigation-work-a');
+    responsiveArtwork('works-b', 'navigation-work-b');
+});
+
+function responsiveArtwork(string $categorySlug = 'sculptures', string $slug = 'responsive-work'): Artwork
 {
     $category = ArtworkCategory::query()->firstOrNew(['slug' => $categorySlug]);
-    $category->fill(['name' => ucfirst($categorySlug), 'state' => 'published', 'position' => 0]);
+    $category->fill(['name' => ucfirst($categorySlug), 'state' => 'published', 'position' => 0, 'show_in_navigation' => true, 'show_on_home' => true]);
     $category->save();
 
     return Artwork::create([
@@ -27,9 +33,9 @@ it('renders the responsive shell and ordered main navigation', function () {
 
     expect($content)->toContain('name="viewport" content="width=device-width, initial-scale=1"')
         ->and($content)->toContain('aria-label="Main navigation"')
-        ->and(strpos($content, 'Paintings'))->toBeLessThan(strpos($content, 'Prints'))
-        ->and(strpos($content, 'Prints'))->toBeLessThan(strpos($content, 'Drawings'))
-        ->and(strpos($content, 'Drawings'))->toBeLessThan(strpos($content, 'CV &amp; Exhibitions'))
+        ->and(strpos($content, 'Sculptures'))->toBeLessThan(strpos($content, 'Works-a'))
+        ->and(strpos($content, 'Works-a'))->toBeLessThan(strpos($content, 'Works-b'))
+        ->and(strpos($content, 'Works-b'))->toBeLessThan(strpos($content, 'CV &amp; Exhibitions'))
         ->and($content)->not->toContain('Blog')->not->toContain('Admin')->not->toContain('Contact');
 });
 
@@ -37,27 +43,28 @@ it('marks only the active artwork navigation link', function (string $path, stri
     $content = $this->get($path)->assertSuccessful()->getContent();
 
     expect(preg_match('/href="[^\"]*\/'.$active.'"[^>]*aria-current="page"/', $content))->toBe(1);
-    foreach (['paintings', 'prints', 'drawings'] as $slug) {
+    foreach (['sculptures', 'works-a', 'works-b'] as $slug) {
         if ($slug !== $active) {
             expect($content)->not->toContain('href="'.url('/'.$slug).'" aria-current="page"');
         }
     }
 })->with([
-    'paintings' => ['/paintings', 'paintings'],
-    'prints' => ['/prints', 'prints'],
-    'drawings' => ['/drawings', 'drawings'],
+    'sculptures' => ['/sculptures', 'sculptures'],
+    'works-a' => ['/works-a', 'works-a'],
+    'works-b' => ['/works-b', 'works-b'],
 ]);
 
 it('does not mark artwork navigation active on a custom published category', function () {
     responsiveArtwork('etchings', 'custom-responsive-work');
+    ArtworkCategory::query()->where('slug', 'etchings')->update(['show_in_navigation' => false]);
     $content = $this->get('/etchings')->assertSuccessful()->getContent();
 
     expect($content)->not->toContain('aria-current="page"');
 });
 
 it('renders responsive artwork card and direct artwork markup', function () {
-    $artwork = responsiveArtwork('paintings', 'card-responsive-work');
-    $categoryContent = $this->get('/paintings')->assertSuccessful()->getContent();
+    $artwork = responsiveArtwork('sculptures', 'card-responsive-work');
+    $categoryContent = $this->get('/sculptures')->assertSuccessful()->getContent();
     $detailContent = $this->get('/artworks/'.$artwork->slug)->assertSuccessful()->getContent();
 
     expect($categoryContent)->toContain('class="artwork-card"', 'class="artwork-card__link"')
@@ -70,8 +77,8 @@ it('renders responsive artwork card and direct artwork markup', function () {
 });
 
 it('renders missing and empty public states accessibly', function () {
-    $artwork = responsiveArtwork('paintings', 'missing-responsive-work');
-    $categoryContent = $this->get('/paintings')->assertSuccessful()->getContent();
+    $artwork = responsiveArtwork('sculptures', 'missing-responsive-work');
+    $categoryContent = $this->get('/sculptures')->assertSuccessful()->getContent();
     $detailContent = $this->get('/artworks/'.$artwork->slug)->assertSuccessful()->getContent();
 
     expect($categoryContent)->toContain('role="img" aria-label="Media unavailable"');

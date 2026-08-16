@@ -29,11 +29,11 @@ it('shows category administration to admins and denies non-admins', function () 
 
 it('creates and edits a category through the real Filament pages', function () {
     Livewire::test(CreateArtworkCategory::class)
-        ->fillForm(['name' => 'Admin custom', 'slug' => 'admin-custom', 'position' => 3, 'description' => 'Desc'])
+        ->fillForm(['name' => 'Admin custom', 'slug' => 'admin-custom', 'position' => 3, 'description' => 'Desc', 'show_in_navigation' => true, 'show_on_home' => true])
         ->call('create')
         ->assertHasNoFormErrors();
     $category = ArtworkCategory::query()->where('slug', 'admin-custom')->firstOrFail();
-    expect($category->state)->toBe('hidden')->and(AuditEvent::query()->where('action', 'artwork_category.created')->where('entity_id', $category->id)->count())->toBe(1);
+    expect($category->state)->toBe('hidden')->and($category->show_in_navigation)->toBeTrue()->and($category->show_on_home)->toBeTrue()->and(AuditEvent::query()->where('action', 'artwork_category.created')->where('entity_id', $category->id)->count())->toBe(1);
 
     Livewire::test(EditArtworkCategory::class, ['record' => $category->id])
         ->fillForm(['name' => 'Admin changed', 'position' => 4, 'description' => 'Changed', 'slug' => 'other-slug'])
@@ -60,11 +60,11 @@ it('publishes, changes slug, and deletes a custom category through actions', fun
     expect(ArtworkCategory::query()->whereKey($category->id)->exists())->toBeFalse();
 });
 
-it('does not expose slug change or delete actions for legacy categories', function () {
-    $category = ArtworkCategory::query()->where('slug', 'paintings')->firstOrFail();
+it('exposes slug change and delete actions for any hidden category', function () {
+    $category = ArtworkCategory::create(['name' => 'Sculptures', 'slug' => 'sculptures', 'state' => 'hidden', 'position' => 0]);
     Livewire::test(EditArtworkCategory::class, ['record' => $category->id])
-        ->assertActionHidden('changeSlug')
-        ->assertActionHidden('deleteCategory');
+        ->assertActionVisible('changeSlug')
+        ->assertActionVisible('deleteCategory');
 });
 
 it('blocks hiding a category with published artwork', function () {
