@@ -12,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Throwable;
 
 class ArtworkEditorialService
@@ -72,7 +73,6 @@ class ArtworkEditorialService
     {
         $actor = $this->adminAuditService->requireActor();
         /** @var Artwork $fresh */
-        /** @var Artwork $fresh */
         $fresh = Artwork::query()->findOrFail($artwork->getKey());
         if ($fresh->artworkMedia()->where('role', 'primary')->exists()) {
             throw ValidationException::withMessages(['media' => 'This artwork already has primary media.']);
@@ -100,9 +100,7 @@ class ArtworkEditorialService
                 ]);
             });
         } catch (Throwable $exception) {
-            $this->removeIngestedAsset($asset);
-
-            throw $exception;
+            $this->cleanupFailedIngestAndRethrow($asset, $exception);
         }
 
         return $fresh->fresh(['category', 'artworkMedia.mediaAsset']);
@@ -116,8 +114,7 @@ class ArtworkEditorialService
         /** @var Collection<int, ArtworkMedia> $primaries */
         $primaries = $fresh->artworkMedia()->where('role', 'primary')->with('mediaAsset')->get();
         $primary = $primaries->count() === 1 ? $primaries->first() : null;
-        /** @var MediaAsset|null $oldAsset */
-        $oldAsset = $primary?->getRelation('mediaAsset');
+        $oldAsset = $primary instanceof ArtworkMedia ? $primary->getRelation('mediaAsset') : null;
 
         if (! $primary || ! $oldAsset instanceof MediaAsset) {
             throw ValidationException::withMessages(['media' => 'This artwork does not have valid primary media.']);
@@ -136,17 +133,17 @@ class ArtworkEditorialService
                 $lockedPrimary = $lockedPrimaries->count() === 1 ? $lockedPrimaries->first() : null;
 
                 if (! $lockedPrimary) {
-                    throw new \RuntimeException('The artwork primary media changed during replacement.');
+                    throw new RuntimeException('The artwork primary media changed during replacement.');
                 }
 
                 if ((int) $lockedPrimary->getAttribute('media_asset_id') !== (int) $oldAsset->getKey()) {
-                    throw new \RuntimeException('The artwork primary media changed during replacement.');
+                    throw new RuntimeException('The artwork primary media changed during replacement.');
                 }
 
                 /** @var MediaAsset|null $lockedOldAsset */
                 $lockedOldAsset = MediaAsset::query()->whereKey($oldAsset->getKey())->lockForUpdate()->first();
                 if (! $lockedOldAsset) {
-                    throw new \RuntimeException('The previous primary media no longer exists.');
+                    throw new RuntimeException('The previous primary media no longer exists.');
                 }
 
                 $lockedPrimary->forceFill([
@@ -172,13 +169,11 @@ class ArtworkEditorialService
                 return true;
             });
         } catch (Throwable $exception) {
-            $this->removeIngestedAsset($newAsset);
-
-            throw $exception;
+            $this->cleanupFailedIngestAndRethrow($newAsset, $exception);
         }
 
         if ($oldAssetDeleted) {
-            $this->deleteStorageKeysBestEffort($oldKeys);
+            $this->deleteStorageKeys($oldKeys);
         }
 
         return $fresh->fresh(['category', 'artworkMedia.mediaAsset']);
@@ -203,12 +198,27 @@ class ArtworkEditorialService
     }
 
     /** @param list<string> $keys */
-    private function deleteStorageKeysBestEffort(array $keys): void
+    private function deleteStorageKeys(array $keys): void
     {
-        try {
-            Storage::disk(config('media.disk'))->delete($keys);
-        } catch (Throwable) {
-            // Cleanup is best effort after the replacement has committed.
+        $disk = Storage::disk(config('media.disk'));
+        $failed = [];
+
+        foreach ($keys as $key) {
+            try {
+                if ($disk->exists($key) && ! $disk->delete($key)) {
+                    $failed[] = $key;
+                    continue;
+                }
+                if ($disk->exists($key)) {
+                    $failed[] = $key;
+                }
+            } catch (Throwable) {
+                $failed[] = $key;
+            }
+        }
+
+        if ($failed !== []) {
+            throw new RuntimeException('Media storage cleanup failed for: '.implode(', ', array_unique($failed)));
         }
     }
 
@@ -218,19 +228,26 @@ class ArtworkEditorialService
         $variantKeys = array_map(static fn (mixed $key): string => (string) $key, $variants->pluck('storage_key')->all());
         $keys = [(string) $asset->getAttribute('storage_key'), ...$variantKeys];
 
+        DB::transaction(function () use ($asset): void {
+            $asset->variants()->delete();
+            $asset->delete();
+        });
+
+        $this->deleteStorageKeys($keys);
+    }
+
+    private function cleanupFailedIngestAndRethrow(MediaAsset $asset, Throwable $original): never
+    {
         try {
-            DB::transaction(function () use ($asset): void {
-                $asset->variants()->delete();
-                $asset->delete();
-            });
-        } catch (Throwable) {
-            // Cleanup is best effort and must not mask the insert exception.
+            $this->removeIngestedAsset($asset);
+        } catch (Throwable $cleanupFailure) {
+            throw new RuntimeException(
+                'Media operation failed and cleanup also failed. Original failure: '.$original->getMessage(),
+                0,
+                $cleanupFailure,
+            );
         }
 
-        try {
-            Storage::disk(config('media.disk'))->delete($keys);
-        } catch (Throwable) {
-            // Storage cleanup is best effort and must not mask the insert exception.
-        }
+        throw $original;
     }
 }

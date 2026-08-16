@@ -9,6 +9,7 @@ use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Throwable;
 
 class MediaAssetEditorialService
@@ -112,7 +113,9 @@ class MediaAssetEditorialService
             });
         }
 
-        return $this->cleanup($keys);
+        $this->cleanup($keys);
+
+        return true;
     }
 
     /** @return array<string> */
@@ -143,24 +146,28 @@ class MediaAssetEditorialService
     }
 
     /** @param array<string> $keys */
-    private function cleanup(array $keys): bool
+    private function cleanup(array $keys): void
     {
         $disk = Storage::disk(config('media.disk'));
-        $complete = true;
+        $failed = [];
+
         foreach ($keys as $key) {
             try {
-                if ($disk->exists($key)) {
-                    $disk->delete($key);
+                if ($disk->exists($key) && ! $disk->delete($key)) {
+                    $failed[] = $key;
+                    continue;
                 }
                 if ($disk->exists($key)) {
-                    $complete = false;
+                    $failed[] = $key;
                 }
             } catch (Throwable) {
-                $complete = false;
+                $failed[] = $key;
             }
         }
 
-        return $complete;
+        if ($failed !== []) {
+            throw new RuntimeException('Media storage cleanup failed for: '.implode(', ', array_unique($failed)));
+        }
     }
 
     private function plainText(mixed $value, int $maxLength, bool $emptyToNull): ?string

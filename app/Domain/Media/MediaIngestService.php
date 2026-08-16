@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Throwable;
 
 class MediaIngestService
@@ -51,16 +52,16 @@ class MediaIngestService
             $thumbnailKey = 'variants/'.$uuid.'-'.self::THUMBNAIL_KIND.'.webp';
 
             if ($disk->exists($originalKey) || $disk->exists($thumbnailKey)) {
-                throw new \RuntimeException('Generated media storage key already exists.');
+                throw new RuntimeException('Generated media storage key already exists.');
             }
 
             try {
                 if (! $disk->put($originalKey, $originalBytes)) {
-                    throw new \RuntimeException('Unable to write canonical media.');
+                    throw new RuntimeException('Unable to write canonical media.');
                 }
 
                 if (! $disk->put($thumbnailKey, $thumbnailBytes)) {
-                    throw new \RuntimeException('Unable to write media thumbnail.');
+                    throw new RuntimeException('Unable to write media thumbnail.');
                 }
 
                 return DB::transaction(function () use ($originalKey, $upload, $mime, $originalBytes, $width, $height, $thumbnailKey, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight): MediaAsset {
@@ -92,12 +93,31 @@ class MediaIngestService
                     return $asset;
                 });
             } catch (Throwable $exception) {
-                $this->deleteBestEffort($disk, $originalKey, $thumbnailKey);
+                $failed = [];
+                foreach ([$originalKey, $thumbnailKey] as $key) {
+                    try {
+                        if ($disk->exists($key) && ! $disk->delete($key)) {
+                            $failed[] = $key;
+                            continue;
+                        }
+                        if ($disk->exists($key)) {
+                            $failed[] = $key;
+                        }
+                    } catch (Throwable) {
+                        $failed[] = $key;
+                    }
+                }
+
+                if ($failed !== []) {
+                    throw new RuntimeException(
+                        'Media ingest failed and storage cleanup also failed for: '.implode(', ', array_unique($failed)).'. Original failure: '.$exception->getMessage(),
+                        0,
+                        $exception,
+                    );
+                }
 
                 throw $exception;
             }
-        } catch (Throwable $exception) {
-            throw $exception;
         } finally {
             $this->destroyImage($originalImage);
             $this->destroyImage($thumbnailImage);
@@ -233,17 +253,6 @@ class MediaIngestService
     private function basename(string $filename): string
     {
         return basename(str_replace('\\', '/', $filename));
-    }
-
-    private function deleteBestEffort(mixed $disk, string $originalKey, string $thumbnailKey): void
-    {
-        foreach ([$originalKey, $thumbnailKey] as $key) {
-            try {
-                $disk->delete($key);
-            } catch (Throwable) {
-                // Cleanup is best effort and must not mask the original exception.
-            }
-        }
     }
 
     private function destroyImage(mixed &$image): void

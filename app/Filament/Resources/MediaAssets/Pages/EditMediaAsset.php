@@ -57,25 +57,19 @@ class EditMediaAsset extends EditRecord
                 ->requiresConfirmation()
                 ->action(function (): void {
                     try {
-                        $complete = app(MediaAssetEditorialService::class)->delete($this->mediaAssetRecord());
+                        app(MediaAssetEditorialService::class)->delete($this->mediaAssetRecord());
                     } catch (ValidationException) {
                         Notification::make()->title('Media cannot be deleted')->danger()->send();
 
                         return;
                     } catch (Throwable) {
-                        Notification::make()->title('Media cannot be deleted')->danger()->send();
+                        Notification::make()->title('Media deletion failed')->danger()->send();
 
                         return;
                     }
 
                     $this->mediaAssetRecord()->refresh();
-                    $notification = Notification::make()->title($complete ? 'Media deleted' : 'Media deleted; storage cleanup incomplete');
-                    if ($complete) {
-                        $notification->success();
-                    } else {
-                        $notification->warning();
-                    }
-                    $notification->send();
+                    Notification::make()->title('Media deleted')->success()->send();
                 }),
         ];
     }
