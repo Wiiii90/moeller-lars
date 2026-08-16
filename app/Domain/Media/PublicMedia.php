@@ -51,6 +51,7 @@ class PublicMedia
         }
 
         $blogSettings = BlogSetting::query()->findOrFail(1);
+
         return (bool) $blogSettings->getAttribute('public_enabled')
             && BlogEditorialService::publicQuery()
                 ->where('cover_media_asset_id', $asset->getKey())
