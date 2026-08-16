@@ -10,6 +10,7 @@ use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
 use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -211,6 +212,64 @@ it('uploads primary media through the real Filament action', function () {
         ->and($asset)->not->toBeNull()
         ->and($asset->variants()->where('transform_profile', 'public-v1')->exists())->toBeTrue();
     expect(AuditEvent::query()->whereIn('action', ['media.ingested', 'artwork.primary_media_attached'])->where('admin_user_id', auth()->id())->count())->toBe(2);
+});
+
+it('shows only the appropriate primary media action', function () {
+    $category = adminArtworkCategory();
+    $withoutPrimary = Artwork::create(['artwork_category_id' => $category->getKey(), 'slug' => 'action-without-primary', 'title' => 'Without primary', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
+    Livewire::test(EditArtwork::class, ['record' => $withoutPrimary->getKey()])
+        ->assertActionVisible('uploadPrimaryMedia')
+        ->assertActionHidden('replacePrimaryMedia');
+
+    $withPrimary = Artwork::create(['artwork_category_id' => $category->getKey(), 'slug' => 'action-with-primary', 'title' => 'With primary', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
+    $asset = MediaAsset::create(['storage_key' => 'originals/action-primary.jpg', 'original_filename' => 'action-primary.jpg', 'mime_type' => 'image/jpeg', 'byte_size' => 3, 'sha256' => str_repeat('d', 64), 'state' => 'available']);
+    ArtworkMedia::create(['artwork_id' => $withPrimary->getKey(), 'media_asset_id' => $asset->getKey(), 'role' => 'primary', 'position' => 0]);
+    Livewire::test(EditArtwork::class, ['record' => $withPrimary->getKey()])
+        ->assertActionHidden('uploadPrimaryMedia')
+        ->assertActionVisible('replacePrimaryMedia');
+});
+
+it('replaces primary media through the real Filament action and clears the ALT override', function () {
+    Storage::fake('local');
+    $category = adminArtworkCategory();
+    $artwork = Artwork::create(['artwork_category_id' => $category->getKey(), 'slug' => 'replace-action-artwork', 'title' => 'Replace artwork', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
+    $oldAsset = MediaAsset::create(['storage_key' => 'originals/replace-old.jpg', 'original_filename' => 'replace-old.jpg', 'mime_type' => 'image/jpeg', 'byte_size' => 3, 'sha256' => str_repeat('e', 64), 'state' => 'available']);
+    $oldVariant = MediaVariant::create(['media_asset_id' => $oldAsset->getKey(), 'variant_kind' => 'thumbnail', 'storage_key' => 'variants/replace-old.webp', 'mime_type' => 'image/webp', 'byte_size' => 3, 'sha256' => str_repeat('f', 64), 'transform_profile' => 'public-v1', 'state' => 'available', 'width' => 2, 'height' => 2]);
+    $primary = ArtworkMedia::create(['artwork_id' => $artwork->getKey(), 'media_asset_id' => $oldAsset->getKey(), 'role' => 'primary', 'position' => 3, 'alt_text_override' => 'Old ALT']);
+    Storage::disk('local')->put($oldAsset->storage_key, 'old');
+    Storage::disk('local')->put($oldVariant->storage_key, 'oldv');
+
+    Livewire::test(EditArtwork::class, ['record' => $artwork->getKey()])
+        ->call('mountAction', 'replacePrimaryMedia')
+        ->set('mountedActions.0.data.media', adminJpegUpload())
+        ->call('callMountedAction');
+
+    $newPrimary = $primary->fresh();
+    expect($newPrimary->getKey())->toBe($primary->getKey())
+        ->and($newPrimary->media_asset_id)->not->toBe($oldAsset->getKey())
+        ->and($newPrimary->position)->toBe(3)
+        ->and($newPrimary->alt_text_override)->toBeNull()
+        ->and($oldAsset->fresh()->state)->toBe('deleted')
+        ->and(AuditEvent::query()->where('action', 'artwork.primary_media_replaced')->where('admin_user_id', auth()->id())->count())->toBe(1);
+});
+
+it('replaces a published primary through the real action and keeps it public', function () {
+    Storage::fake('local');
+    $category = adminArtworkCategory();
+    $artwork = Artwork::create(['artwork_category_id' => $category->getKey(), 'slug' => 'replace-published-artwork', 'title' => 'Published replace', 'state' => 'published', 'published_at' => now(), 'position' => 0, 'date_precision' => 'unknown']);
+    $oldAsset = MediaAsset::create(['storage_key' => 'originals/replace-published-old.jpg', 'original_filename' => 'old.jpg', 'mime_type' => 'image/jpeg', 'byte_size' => 3, 'sha256' => str_repeat('a', 64), 'state' => 'available']);
+    ArtworkMedia::create(['artwork_id' => $artwork->getKey(), 'media_asset_id' => $oldAsset->getKey(), 'role' => 'primary', 'position' => 0]);
+    Storage::disk('local')->put($oldAsset->storage_key, 'old');
+
+    Livewire::test(EditArtwork::class, ['record' => $artwork->getKey()])
+        ->call('mountAction', 'replacePrimaryMedia')
+        ->set('mountedActions.0.data.media', adminJpegUpload())
+        ->call('callMountedAction');
+
+    $artwork->refresh();
+    expect($artwork->state)->toBe('published')
+        ->and($artwork->artworkMedia()->where('role', 'primary')->count())->toBe(1)
+        ->and($artwork->artworkMedia()->firstOrFail()->mediaAsset->state)->toBe('available');
 });
 
 it('edits the primary artwork ALT override without changing the asset default', function () {

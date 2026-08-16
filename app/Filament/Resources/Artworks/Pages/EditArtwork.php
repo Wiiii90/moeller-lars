@@ -99,6 +99,32 @@ class EditArtwork extends EditRecord
                     $this->artworkRecord()->refresh();
                     Notification::make()->title('Primary image uploaded')->success()->send();
                 }),
+            Action::make('replacePrimaryMedia')
+                ->label('Replace primary image')
+                ->visible(fn (): bool => $this->primaryArtworkMedia() !== null)
+                ->requiresConfirmation()
+                ->schema([
+                    FileUpload::make('media')
+                        ->required()
+                        ->storeFiles(false)
+                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                        ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024)),
+                ])
+                ->action(function (array $data): void {
+                    $upload = $data['media'];
+                    try {
+                        if ($upload instanceof TemporaryUploadedFile) {
+                            app(ArtworkEditorialService::class)->replacePrimaryMedia($this->artworkRecord(), $upload);
+                        }
+                    } catch (ValidationException) {
+                        Notification::make()->title('Primary image could not be replaced')->danger()->send();
+
+                        return;
+                    }
+
+                    $this->artworkRecord()->refresh();
+                    Notification::make()->title('Primary image replaced')->success()->send();
+                }),
             Action::make('publish')
                 ->label('Publish')
                 ->visible(fn (): bool => $this->artworkRecord()->getAttribute('state') !== 'published')

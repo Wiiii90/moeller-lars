@@ -177,7 +177,15 @@ transaction commits. Cleanup failure may leave private orphaned bytes, but it
 must never reactivate logically deleted media. Integrity verification compares
 stored bytes with persisted size, SHA-256, and content MIME and checks
 available derivative consistency. No hard delete is part of normal media
-editorial workflow.
+editorial workflow. Primary media replacement is an explicit atomic editorial
+operation: it switches an existing primary usage to a newly validated
+available asset without committing an intermediate media-less artwork state.
+The usage-specific ALT override is cleared when the underlying primary image
+changes. An old asset is logically deleted only when no artwork, exhibition,
+CV, or blog reference remains; shared old assets stay available. Physical
+cleanup of an unreferenced replaced asset occurs only after the durable
+database and audit commit. Cleanup failure may leave private orphan bytes but
+does not revert the logical replacement.
 
 ## media_variant
 
@@ -235,6 +243,8 @@ Constraints:
   selection is resolved from that original and never replaces it
 
 Deletion is restrictive. Removing a usage does not delete the asset.
+Replacement updates the existing primary usage row rather than deleting and
+recreating it.
 
 ## exhibition
 

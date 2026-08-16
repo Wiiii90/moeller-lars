@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Media\PublicMedia;
 use App\Models\Artwork;
@@ -7,6 +8,8 @@ use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 function sliceCategory(string $slug, string $state = 'published'): ArtworkCategory
@@ -50,6 +53,16 @@ function sliceVariant(MediaAsset $asset, array $attributes = []): MediaVariant
         'mime_type' => 'image/jpeg', 'byte_size' => 4, 'sha256' => str_repeat('b', 64),
         'transform_profile' => PublicMedia::PUBLIC_TRANSFORM_PROFILE, 'state' => 'available',
     ], $attributes));
+}
+
+function publicReplacementJpeg(): UploadedFile
+{
+    $path = tempnam(sys_get_temp_dir(), 'public-replacement-');
+    $image = imagecreatetruecolor(8, 6);
+    imagejpeg($image, $path, 90);
+    imagedestroy($image);
+
+    return UploadedFile::fake()->createWithContent('replacement.jpg', file_get_contents($path));
 }
 
 it('includes only published artwork in published categories', function () {
@@ -249,4 +262,30 @@ it('omits empty public media metadata and keeps deleted media unavailable', func
     expect($content)->not->toContain('artwork-credit')->and($content)->not->toContain('artwork-copyright');
     $asset->update(['state' => 'deleted']);
     $this->get(route('media.original', $asset))->assertNotFound();
+});
+
+it('switches public delivery to the replacement primary media atomically', function () {
+    Storage::fake(config('media.disk'));
+    $category = sliceCategory('paintings');
+    $artwork = sliceArtwork($category, ['slug' => 'replacement-public-artwork']);
+    $oldAsset = sliceAsset(['storage_key' => 'originals/replacement-old.jpg']);
+    $oldVariant = sliceVariant($oldAsset, ['storage_key' => 'variants/replacement-old.webp', 'mime_type' => 'image/webp']);
+    attachMedia($artwork, $oldAsset, 'primary', 'Old override');
+    Storage::disk(config('media.disk'))->put($oldAsset->storage_key, 'old');
+    Storage::disk(config('media.disk'))->put($oldVariant->storage_key, 'old-thumb');
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin, 'web');
+
+    app(ArtworkEditorialService::class)->replacePrimaryMedia($artwork, publicReplacementJpeg());
+    $artwork->refresh();
+    $newAsset = $artwork->artworkMedia()->where('role', 'primary')->firstOrFail()->mediaAsset;
+    $newVariant = $newAsset->variants()->where('transform_profile', 'public-v1')->firstOrFail();
+
+    $this->get('/artworks/replacement-public-artwork')->assertSuccessful();
+    $this->get(route('media.original', $oldAsset))->assertNotFound();
+    $this->get(route('media.variant', $oldVariant))->assertNotFound();
+    $this->get(route('media.original', $newAsset))->assertSuccessful();
+    $this->get(route('media.variant', $newVariant))->assertSuccessful();
+    expect(app(PublicMedia::class)->originalUrl($artwork))->toBe(route('media.original', $newAsset))
+        ->and(app(PublicMedia::class)->thumbnailUrl($artwork))->toBe(route('media.variant', $newVariant));
 });
