@@ -151,12 +151,12 @@ it('sanitizes the client basename and never uses it in storage keys', function (
         ->and($asset->storage_key)->toMatch('/^originals\/[0-9a-f-]+\.jpg$/');
 });
 
-it('stores a newly encoded canonical original', function () {
+it('preserves the canonical original byte-for-byte', function () {
     $upload = ingestImageUpload('image/jpeg');
     $uploadBytes = file_get_contents($upload->getRealPath());
     $asset = ingestService()->ingest($upload);
 
-    expect(Storage::disk(config('media.disk'))->get($asset->storage_key))->not->toBe($uploadBytes);
+    expect(Storage::disk(config('media.disk'))->get($asset->storage_key))->toBe($uploadBytes);
 });
 
 it('cleans both files when the database transaction fails', function () {
