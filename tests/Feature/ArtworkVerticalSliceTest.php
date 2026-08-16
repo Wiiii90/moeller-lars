@@ -73,6 +73,7 @@ it('runs the complete canonical artwork admin and public vertical slice', functi
     $media = ArtworkMedia::query()->where('artwork_id', $artwork->getKey())->where('role', 'primary')->firstOrFail();
     $asset = MediaAsset::query()->findOrFail($media->media_asset_id);
     $variant = $asset->variants()->where('variant_kind', 'thumbnail')->where('transform_profile', 'public-v1')->firstOrFail();
+    $asset->update(['alt_text' => 'Vertical Slice Artwork']);
 
     expect(ArtworkMedia::query()->where('artwork_id', $artwork->getKey())->where('role', 'primary')->count())->toBe(1)
         ->and($asset->state)->toBe('available')

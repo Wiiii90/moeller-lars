@@ -176,7 +176,7 @@ it('cleans both files when the database transaction fails', function () {
 
 it('cleans the first file when the thumbnail write fails', function () {
     $disk = Mockery::mock(FilesystemAdapter::class);
-    $disk->shouldReceive('exists')->twice()->andReturn(false);
+    $disk->shouldReceive('exists')->times(6)->andReturn(false, false, true, false, true, false);
     $disk->shouldReceive('put')->twice()->andReturn(true, false);
     $disk->shouldReceive('delete')->twice()->andReturn(true);
     Storage::shouldReceive('disk')->once()->andReturn($disk);

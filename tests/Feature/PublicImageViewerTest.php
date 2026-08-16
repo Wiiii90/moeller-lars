@@ -6,6 +6,7 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\ViewException;
 
 function viewerCategory(string $slug, int $position): ArtworkCategory
 {
@@ -120,7 +121,7 @@ it('fails explicitly when a gallery card has no canonical primary media', functi
     viewerArtwork(viewerCategory('sculptures', 0), 'viewer-missing');
     $this->withoutExceptionHandling();
 
-    expect(fn () => $this->get('/sculptures'))->toThrow(LogicException::class);
+    expect(fn () => $this->get('/sculptures'))->toThrow(ViewException::class);
 });
 
 it('escapes viewer data and keeps the viewer source free of unsafe DOM APIs', function () {

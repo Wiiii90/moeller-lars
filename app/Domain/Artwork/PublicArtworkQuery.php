@@ -12,6 +12,7 @@ class PublicArtworkQuery
     /** @return Collection<int, Artwork> */
     public function category(string $slug): Collection
     {
+        /** @var Collection<int, Artwork> $artworks */
         $artworks = $this->publicQuery()
             ->whereHas('category', fn (Builder $query) => $query
                 ->where('slug', $slug)
@@ -60,11 +61,17 @@ class PublicArtworkQuery
     /** @return Builder<Artwork> */
     private function homeQuery(): Builder
     {
-        return $this->publicQuery()
+        /** @var Builder<Artwork> $query */
+        $query = $this->publicQuery();
+
+        /** @var Builder<Artwork> $result */
+        $result = $query
             ->whereHas('category', fn (Builder $query) => $query
                 ->where('state', 'published')
                 ->where('show_on_home', true))
             ->whereNotNull('work_date');
+
+        return $result;
     }
 
     /** @return Builder<Artwork> */

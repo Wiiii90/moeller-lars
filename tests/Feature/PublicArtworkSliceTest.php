@@ -111,10 +111,14 @@ it('selects the uniquely newest eligible home artwork and has a usable empty sta
     sliceArtwork($worksA, ['slug' => 'works-a-home', 'work_date' => '2026-01-01', 'position' => 1]);
     sliceArtwork($worksB, ['slug' => 'works-b-home', 'work_date' => '2024-01-01']);
     sliceArtwork($excluded, ['slug' => 'excluded-home', 'work_date' => '2030-01-01']);
+    $asset = sliceAsset(['storage_key' => 'originals/works-a-home.jpg']);
+    attachMedia(Artwork::query()->where('slug', 'works-a-home')->firstOrFail(), $asset);
+    sliceVariant($asset);
 
     expect(app(PublicArtworkQuery::class)->latestForHome()?->slug)->toBe('works-a-home');
     $this->get('/')->assertSuccessful()->assertSee('works-a-home')->assertDontSee('excluded-home');
 
+    ArtworkMedia::query()->delete();
     Artwork::query()->delete();
     ArtworkCategory::query()->delete();
     $this->get('/')->assertSuccessful()->assertSee('No artwork is currently available.');

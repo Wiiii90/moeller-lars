@@ -6,6 +6,7 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\View\ViewException;
 
 uses(RefreshDatabase::class);
 
@@ -134,11 +135,12 @@ it('fails explicitly when required public media is missing', function () {
     ]);
     $this->withoutExceptionHandling();
 
-    expect(fn () => $this->get('/sculptures'))->toThrow(LogicException::class);
-    expect(fn () => $this->get('/artworks/'.$artwork->slug))->toThrow(LogicException::class);
+    expect(fn () => $this->get('/sculptures'))->toThrow(ViewException::class);
+    expect(fn () => $this->get('/artworks/'.$artwork->slug))->toThrow(ViewException::class);
 });
 
 it('renders the legitimate empty home state when no eligible dated artwork exists', function () {
+    ArtworkMedia::query()->delete();
     Artwork::query()->delete();
     ArtworkCategory::query()->delete();
 
