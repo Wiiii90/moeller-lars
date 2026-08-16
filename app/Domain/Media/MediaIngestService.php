@@ -164,11 +164,7 @@ class MediaIngestService
             throw $this->validationFailure('The uploaded image could not be decoded.');
         }
 
-        $originalQuality = match ($mime) {
-            'image/jpeg', 'image/webp' => 90,
-            'image/png' => 6,
-        };
-        $originalBytes = $this->encode($originalImage, $mime, $originalQuality);
+        $originalBytes = $bytes;
         $thumbnailImage = $this->makeThumbnail($originalImage, $width, $height);
         $thumbnailWidth = imagesx($thumbnailImage);
         $thumbnailHeight = imagesy($thumbnailImage);
@@ -207,7 +203,6 @@ class MediaIngestService
                 'image/jpeg' => imagejpeg($image, null, $quality),
                 'image/png' => imagepng($image, null, $quality),
                 'image/webp' => imagewebp($image, null, $quality),
-                default => false,
             };
             $bytes = ob_get_clean();
         } catch (Throwable $exception) {
