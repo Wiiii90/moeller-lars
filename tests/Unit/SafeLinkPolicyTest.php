@@ -2,24 +2,41 @@
 
 use App\Domain\Content\SafeLinkPolicy;
 
-it('allows explicitly approved link forms', function (string $url): void {
+it('allows only the approved absolute link schemes', function (string $url): void {
     expect((new SafeLinkPolicy)->isAllowed($url))->toBeTrue();
 })->with([
-    'https://example.test/path?q=1',
-    'http://example.test',
-    'mailto:artist@example.test',
-    '/artworks/example',
-    '#biography',
+    'https://example.com',
+    'http://example.com',
+    'https://example.com/path?q=1#part',
+    'mailto:lars@example.com',
 ]);
 
-it('rejects unsafe and malformed link forms', function (string $url): void {
+it('rejects disallowed, relative, malformed, and credential-bearing links', function (string $url): void {
     expect((new SafeLinkPolicy)->isAllowed($url))->toBeFalse();
 })->with([
+    '',
+    ' https://example.com',
+    'https://example.com ',
+    'https://example.com/a b',
+    "https://example.com/a\n b",
+    'https://example.com/a\\b',
+    '//example.com',
+    '/relative',
+    'relative/path',
+    '#fragment',
     'javascript:alert(1)',
-    'data:text/html,<script>alert(1)</script>',
+    'JAVASCRIPT:alert(1)',
+    'data:text/html,test',
     'file:///etc/passwd',
     'vbscript:msgbox(1)',
-    '//example.test/path',
+    'ftp://example.com',
+    'tel:+49123',
+    'custom:foo',
+    'https://user@example.com',
+    'https://user:pass@example.com',
     'https://',
-    "https://example.test/\njavascript:alert(1)",
+    'mailto:',
+    'mailto:not-an-email',
+    'mailto:lars@example.com?subject=test',
+    'mailto:lars@example.com#fragment',
 ]);

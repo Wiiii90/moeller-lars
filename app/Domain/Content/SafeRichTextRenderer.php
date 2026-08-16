@@ -3,134 +3,90 @@
 namespace App\Domain\Content;
 
 use Illuminate\Support\HtmlString;
+use League\CommonMark\Environment\Environment;
+use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
+use League\CommonMark\Extension\CommonMark\Node\Block\ListBlock;
+use League\CommonMark\Extension\CommonMark\Node\Block\ListItem;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Emphasis;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Strong;
+use League\CommonMark\Node\Block\Document;
+use League\CommonMark\Node\Block\Paragraph;
+use League\CommonMark\Node\Inline\Newline;
+use League\CommonMark\Node\Inline\Text;
+use League\CommonMark\Parser\MarkdownParser;
+use League\CommonMark\Renderer\HtmlRenderer;
+use Throwable;
 
 final class SafeRichTextRenderer
 {
-    private const MAX_NESTING = 8;
+    private readonly Environment $environment;
 
-    public function __construct(private readonly SafeLinkPolicy $links = new SafeLinkPolicy) {}
+    public function __construct(
+        private readonly SafeLinkPolicy $safeLinkPolicy,
+    ) {
+        $this->environment = new Environment([
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+            'max_nesting_level' => 10,
+            'max_delimiters_per_line' => 1000,
+            'renderer' => [
+                'soft_break' => "<br>\n",
+            ],
+        ]);
+        $this->environment->addExtension(new CommonMarkCoreExtension);
+    }
+
+    public function assertValid(string $source): void
+    {
+        $this->validate($this->parse($source));
+    }
 
     public function render(string $source): HtmlString
     {
-        if (preg_match('/<\/?[A-Za-z][^>]*>|<!--[\s\S]*?-->|<!DOCTYPE\b[^>]*>/i', $source) === 1) {
-            throw new UnsafeRichTextException('Raw HTML is not accepted by the rich-text boundary.');
-        }
+        $document = $this->parse($source);
+        $this->validate($document);
 
-        $blocks = preg_split("/\r?\n\r?\n/", trim($source));
-        if ($source === '' || trim($source) === '') {
+        if ($source === '') {
             return new HtmlString('');
         }
 
-        $html = [];
-        $list = null;
-
-        foreach ($blocks as $block) {
-            $lines = preg_split('/\r?\n/', $block) ?: [];
-            $first = $lines[0] ?? '';
-            $listType = preg_match('/^(?:[-*])\s+/', $first) === 1 ? 'ul'
-                : (preg_match('/^\d+\.\s+/', $first) === 1 ? 'ol' : null);
-
-            if ($listType !== null) {
-                if ($list !== $listType) {
-                    if ($list !== null) {
-                        $html[] = "</{$list}>";
-                    }
-                    $html[] = "<{$listType}>";
-                    $list = $listType;
-                }
-
-                foreach ($lines as $line) {
-                    $pattern = $listType === 'ul' ? '/^[-*]\s+(.+)$/' : '/^\d+\.\s+(.+)$/';
-                    if (preg_match($pattern, $line, $matches) !== 1) {
-                        throw new UnsafeRichTextException('Lists must contain supported list items.');
-                    }
-                    $html[] = '<li>'.$this->inline($matches[1]).'</li>';
-                }
-
-                continue;
-            }
-
-            if ($list !== null) {
-                $html[] = "</{$list}>";
-                $list = null;
-            }
-
-            if (preg_match('/^(?:#{1,6}\s|```|>\s)/', $first) === 1 || str_contains($block, '~~') || str_contains($block, '`')) {
-                throw new UnsafeRichTextException('Unsupported rich-text syntax.');
-            }
-
-            $html[] = '<p>'.$this->inline(implode("\n", $lines)).'</p>';
-        }
-
-        if ($list !== null) {
-            $html[] = "</{$list}>";
-        }
-
-        return new HtmlString(implode("\n", $html));
+        return new HtmlString((new HtmlRenderer($this->environment))->renderDocument($document));
     }
 
-    private function inline(string $text, int $depth = 0): string
+    private function parse(string $source): Document
     {
-        if ($depth > self::MAX_NESTING) {
-            throw new UnsafeRichTextException('Rich-text nesting limit exceeded.');
+        try {
+            return (new MarkdownParser($this->environment))->parse($source);
+        } catch (Throwable) {
+            throw UnsafeRichTextException::unsupportedSyntax();
         }
+    }
 
-        $output = '';
-        $offset = 0;
-        $length = strlen($text);
-
-        while ($offset < $length) {
-            if (substr($text, $offset, 2) === '![') {
-                throw new UnsafeRichTextException('Images are not supported in rich text.');
-            }
-
-            if ($text[$offset] === '[') {
-                $close = strpos($text, '](', $offset + 1);
-                if ($close === false) {
-                    throw new UnsafeRichTextException('Malformed rich-text link.');
-                }
-                $end = strpos($text, ')', $close + 2);
-                if ($end === false) {
-                    throw new UnsafeRichTextException('Malformed rich-text link.');
-                }
-                $label = substr($text, $offset + 1, $close - $offset - 1);
-                $url = substr($text, $close + 2, $end - $close - 2);
-                $safeUrl = $this->links->sanitize($url);
-                if ($safeUrl === null) {
-                    throw new UnsafeRichTextException('Unsafe link URL.');
-                }
-                $output .= '<a href="'.e($safeUrl).'">'.$this->inline($label, $depth + 1).'</a>';
-                $offset = $end + 1;
-
+    private function validate(Document $document): void
+    {
+        $walker = $document->walker();
+        while ($event = $walker->next()) {
+            if (! $event->isEntering()) {
                 continue;
             }
 
-            foreach (['**' => 'strong', '__' => 'strong', '*' => 'em', '_' => 'em'] as $marker => $tag) {
-                if (substr($text, $offset, strlen($marker)) === $marker) {
-                    $end = strpos($text, $marker, $offset + strlen($marker));
-                    if ($end === false) {
-                        throw new UnsafeRichTextException('Unbalanced rich-text formatting.');
-                    }
-                    $inner = substr($text, $offset + strlen($marker), $end - $offset - strlen($marker));
-                    $output .= "<{$tag}>".$this->inline($inner, $depth + 1)."</{$tag}>";
-                    $offset = $end + strlen($marker);
-
-                    continue 2;
-                }
+            $node = $event->getNode();
+            if (! $node instanceof Document
+                && ! $node instanceof Paragraph
+                && ! $node instanceof ListBlock
+                && ! $node instanceof ListItem
+                && ! $node instanceof Text
+                && ! $node instanceof Newline
+                && ! $node instanceof Emphasis
+                && ! $node instanceof Strong
+                && ! $node instanceof Link) {
+                throw UnsafeRichTextException::unsupportedSyntax();
             }
 
-            if ($text[$offset] === ']' || $text[$offset] === ')' || $text[$offset] === '`' || $text[$offset] === '~') {
-                throw new UnsafeRichTextException('Unsupported rich-text syntax.');
+            if ($node instanceof Link && ! $this->safeLinkPolicy->isAllowed($node->getUrl())) {
+                throw UnsafeRichTextException::unsafeLink();
             }
-
-            $next = $offset + 1;
-            while ($next < $length && in_array($text[$next], ['[', ']', '(', ')', '*', '_', '`', '~'], true) === false) {
-                $next++;
-            }
-            $output .= nl2br(e(substr($text, $offset, $next - $offset)), false);
-            $offset = $next;
         }
-
-        return $output;
     }
 }
