@@ -49,6 +49,7 @@ class ArtworkCategoryEditorialService
             $category->fill($validated);
 
             if ($category->isDirty()) {
+                $this->validateNavigationPosition($category);
                 $category->save();
                 $this->adminAuditService->record($actor, 'artwork_category.updated', 'artwork_category', $category->getKey());
             }
@@ -68,6 +69,7 @@ class ArtworkCategoryEditorialService
             }
 
             $category->setAttribute('state', 'published');
+            $this->validateNavigationPosition($category);
             $category->save();
             $this->adminAuditService->record($actor, 'artwork_category.published', 'artwork_category', $category->getKey());
 
@@ -297,5 +299,28 @@ class ArtworkCategoryEditorialService
         }
 
         return $slug;
+    }
+
+    private function validateNavigationPosition(ArtworkCategory $category): void
+    {
+        if (
+            (string) $category->getAttribute('state') !== 'published'
+            || ! (bool) $category->getAttribute('show_in_navigation')
+        ) {
+            return;
+        }
+
+        $conflict = ArtworkCategory::query()
+            ->where('state', 'published')
+            ->where('show_in_navigation', true)
+            ->where('position', $category->getAttribute('position'))
+            ->whereKeyNot($category->getKey())
+            ->exists();
+
+        if ($conflict) {
+            throw ValidationException::withMessages([
+                'position' => 'A visible navigation category already uses this position.',
+            ]);
+        }
     }
 }

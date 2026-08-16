@@ -264,6 +264,7 @@ return new class extends Migration
 
         DB::statement("ALTER TABLE artwork_categories ADD CONSTRAINT artwork_categories_state_check CHECK (state IN ('published', 'hidden'))");
         DB::statement('ALTER TABLE artwork_categories ADD CONSTRAINT artwork_categories_position_check CHECK (position >= 0)');
+        DB::statement("CREATE UNIQUE INDEX artwork_categories_navigation_position_unique ON artwork_categories (position) WHERE state = 'published' AND show_in_navigation = true");
         DB::statement("ALTER TABLE artworks ADD CONSTRAINT artworks_state_check CHECK (state IN ('draft', 'published', 'hidden', 'archived'))");
         DB::statement('ALTER TABLE artworks ADD CONSTRAINT artworks_position_check CHECK (position >= 0)');
         DB::statement("ALTER TABLE artworks ADD CONSTRAINT artworks_date_precision_check CHECK (date_precision IN ('unknown', 'year', 'month', 'day'))");

@@ -26,7 +26,6 @@ class AppServiceProvider extends ServiceProvider
                 ->where('state', 'published')
                 ->where('show_in_navigation', true)
                 ->orderBy('position')
-                ->orderBy('id')
                 ->get(['name', 'slug']));
         });
     }

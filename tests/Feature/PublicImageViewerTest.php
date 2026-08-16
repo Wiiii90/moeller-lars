@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Storage;
 function viewerCategory(string $slug = 'sculptures'): ArtworkCategory
 {
     $category = ArtworkCategory::query()->firstOrNew(['slug' => $slug]);
-    $category->fill(['name' => ucfirst($slug), 'state' => 'published', 'position' => 0, 'show_in_navigation' => true, 'show_on_home' => true]);
+    $position = $category->exists ? (int) $category->getAttribute('position') : ((int) ArtworkCategory::query()->max('position') + 1);
+    $category->fill(['name' => ucfirst($slug), 'state' => 'published', 'position' => $position, 'show_in_navigation' => true, 'show_on_home' => true]);
     $category->save();
 
     return $category;

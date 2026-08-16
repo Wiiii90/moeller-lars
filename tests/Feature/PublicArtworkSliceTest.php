@@ -12,10 +12,11 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-function sliceCategory(string $slug, string $state = 'published'): ArtworkCategory
+function sliceCategory(string $slug, string $state = 'published', ?int $position = null): ArtworkCategory
 {
     $category = ArtworkCategory::query()->firstOrNew(['slug' => $slug]);
-    $category->fill(['name' => ucfirst($slug), 'state' => $state, 'position' => 0, 'show_in_navigation' => true, 'show_on_home' => true]);
+    $position ??= $category->exists ? (int) $category->getAttribute('position') : ((int) ArtworkCategory::query()->max('position') + 1);
+    $category->fill(['name' => ucfirst($slug), 'state' => $state, 'position' => $position, 'show_in_navigation' => true, 'show_on_home' => true]);
     $category->save();
 
     return $category;

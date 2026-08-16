@@ -108,6 +108,22 @@ it('persists generic presentation settings for created and updated categories', 
     expect($category->fresh()->show_in_navigation)->toBeFalse()->and($category->fresh()->show_on_home)->toBeFalse();
 });
 
+it('rejects publishing a navigation category with a duplicate explicit position', function () {
+    $this->actingAs(categoryServiceAdmin(), 'web');
+    ArtworkCategory::create([
+        'name' => 'Sculptures', 'slug' => 'sculptures', 'state' => 'published', 'position' => 7,
+        'show_in_navigation' => true,
+    ]);
+    $pending = ArtworkCategory::create([
+        'name' => 'Works A', 'slug' => 'works-a', 'state' => 'hidden', 'position' => 7,
+        'show_in_navigation' => true,
+    ]);
+
+    expect(fn () => app(ArtworkCategoryEditorialService::class)->publish($pending))
+        ->toThrow(ValidationException::class);
+    expect($pending->fresh()->state)->toBe('hidden');
+});
+
 it('reorders every artwork in a category and audits once', function () {
     $admin = categoryServiceAdmin();
     $this->actingAs($admin, 'web');

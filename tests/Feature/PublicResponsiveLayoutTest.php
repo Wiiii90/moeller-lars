@@ -15,7 +15,8 @@ beforeEach(function () {
 function responsiveArtwork(string $categorySlug = 'sculptures', string $slug = 'responsive-work'): Artwork
 {
     $category = ArtworkCategory::query()->firstOrNew(['slug' => $categorySlug]);
-    $category->fill(['name' => ucfirst($categorySlug), 'state' => 'published', 'position' => 0, 'show_in_navigation' => true, 'show_on_home' => true]);
+    $position = $category->exists ? (int) $category->getAttribute('position') : ((int) ArtworkCategory::query()->max('position') + 1);
+    $category->fill(['name' => ucfirst($categorySlug), 'state' => 'published', 'position' => $position, 'show_in_navigation' => true, 'show_on_home' => true]);
     $category->save();
 
     return Artwork::create([
