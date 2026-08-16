@@ -31,6 +31,18 @@ export function zoomAroundPoint(state, nextScale, pointX, pointY) {
     };
 }
 
+export function pinchFromGestureStart(state, nextScale, startPointX, startPointY, currentPointX, currentPointY) {
+    const scale = clamp(nextScale, MIN_SCALE, MAX_SCALE);
+    const localX = (startPointX - state.x) / state.scale;
+    const localY = (startPointY - state.y) / state.scale;
+
+    return {
+        scale,
+        x: currentPointX - localX * scale,
+        y: currentPointY - localY * scale,
+    };
+}
+
 export function adjacentIndex(index, direction, length) {
     if (direction !== -1 && direction !== 1) {
         throw new RangeError('direction must be -1 or 1');
@@ -196,7 +208,15 @@ export function initializeArtworkViewer(root = document) {
         if (pointers.size === 1) dragStart = { x: event.clientX, y: event.clientY, panX: state.x, panY: state.y };
         if (pointers.size === 2) {
             const [a, b] = [...pointers.values()];
-            pinchStart = { distance: Math.hypot(b.x - a.x, b.y - a.y), midpoint: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, ...state };
+            const rect = stage.getBoundingClientRect();
+            const midpointX = (a.x + b.x) / 2;
+            const midpointY = (a.y + b.y) / 2;
+            pinchStart = {
+                distance: Math.hypot(b.x - a.x, b.y - a.y),
+                pointX: midpointX - (rect.left + rect.width / 2),
+                pointY: midpointY - (rect.top + rect.height / 2),
+                state: { scale: state.scale, x: state.x, y: state.y },
+            };
         }
     });
     stage.addEventListener('pointermove', (event) => {
@@ -210,9 +230,8 @@ export function initializeArtworkViewer(root = document) {
             const rect = stage.getBoundingClientRect();
             const pointX = midpoint.x - (rect.left + rect.width / 2);
             const pointY = midpoint.y - (rect.top + rect.height / 2);
-            state = zoomAroundPoint(pinchStart, pinchStart.scale * distance / Math.max(1, pinchStart.distance), pointX, pointY);
-            state.x += pointX - (pinchStart.midpoint.x - (rect.left + rect.width / 2));
-            state.y += pointY - (pinchStart.midpoint.y - (rect.top + rect.height / 2));
+            const nextScale = pinchStart.state.scale * distance / Math.max(1, pinchStart.distance);
+            state = pinchFromGestureStart(pinchStart.state, nextScale, pinchStart.pointX, pinchStart.pointY, pointX, pointY);
             updateTransform();
         } else if (values.length === 1 && dragStart && state.scale > 1) {
             state.x = dragStart.panX + event.clientX - dragStart.x;
@@ -223,7 +242,12 @@ export function initializeArtworkViewer(root = document) {
     const releasePointer = (event) => {
         pointers.delete(event.pointerId);
         stage.releasePointerCapture?.(event.pointerId);
-        dragStart = pointers.size === 1 ? { ...dragStart, ...[...pointers.values()][0] } : null;
+        if (pointers.size === 1) {
+            const remaining = [...pointers.values()][0];
+            dragStart = { x: remaining.x, y: remaining.y, panX: state.x, panY: state.y };
+        } else {
+            dragStart = null;
+        }
         pinchStart = null;
     };
     stage.addEventListener('pointerup', releasePointer);

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
     MIN_SCALE,
     MAX_SCALE,
@@ -7,6 +8,7 @@ import {
     calculatePanBounds,
     clamp,
     clampPan,
+    pinchFromGestureStart,
     zoomAroundPoint,
 } from '../../resources/js/artwork-viewer.js';
 
@@ -53,4 +55,63 @@ test('zoomAroundPoint clamps scales and remains finite under repetition', () => 
     for (let i = 0; i < 100; i += 1) state = zoomAroundPoint(state, state.scale * 1.25, 10, 10);
     for (let i = 0; i < 100; i += 1) state = zoomAroundPoint(state, state.scale / 1.25, -10, -10);
     assert.ok(Number.isFinite(state.scale) && Number.isFinite(state.x) && Number.isFinite(state.y));
+});
+
+test('pinchFromGestureStart preserves a fixed anchor while scaling', () => {
+    const state = { scale: 1, x: 0, y: 0 };
+    const result = pinchFromGestureStart(state, 2, 100, 40, 100, 40);
+    assert.ok(Math.abs(result.x + 100 * result.scale - 100) < 1e-10);
+    assert.ok(Math.abs(result.y + 40 * result.scale - 40) < 1e-10);
+});
+
+test('pinchFromGestureStart preserves a translated midpoint while scaling', () => {
+    const state = { scale: 1.5, x: 20, y: -10 };
+    const result = pinchFromGestureStart(state, 3, 80, 30, 110, 55);
+    const localX = (80 - state.x) / state.scale;
+    const localY = (30 - state.y) / state.scale;
+    assert.ok(Math.abs(result.x + localX * result.scale - 110) < 1e-10);
+    assert.ok(Math.abs(result.y + localY * result.scale - 55) < 1e-10);
+});
+
+test('pinchFromGestureStart clamps minimum and maximum scales', () => {
+    const state = { scale: 2, x: 12, y: -8 };
+    for (const nextScale of [0, MIN_SCALE - 1]) {
+        const result = pinchFromGestureStart(state, nextScale, 50, 20, 70, 45);
+        const localX = (50 - state.x) / state.scale;
+        const localY = (20 - state.y) / state.scale;
+        assert.equal(result.scale, MIN_SCALE);
+        assert.ok(Math.abs(result.x + localX * result.scale - 70) < 1e-10);
+        assert.ok(Math.abs(result.y + localY * result.scale - 45) < 1e-10);
+    }
+    const result = pinchFromGestureStart(state, MAX_SCALE + 1, 50, 20, 70, 45);
+    const localX = (50 - state.x) / state.scale;
+    const localY = (20 - state.y) / state.scale;
+    assert.equal(result.scale, MAX_SCALE);
+    assert.ok(Math.abs(result.x + localX * result.scale - 70) < 1e-10);
+    assert.ok(Math.abs(result.y + localY * result.scale - 45) < 1e-10);
+});
+
+test('pinchFromGestureStart translates a midpoint without changing scale', () => {
+    const state = { scale: 2, x: 10, y: -5 };
+    const result = pinchFromGestureStart(state, state.scale, 30, 25, 50, 70);
+    assert.equal(result.scale, state.scale);
+    assert.equal(result.x - state.x, 20);
+    assert.equal(result.y - state.y, 45);
+});
+
+test('pinchFromGestureStart returns finite values', () => {
+    const result = pinchFromGestureStart({ scale: 1.5, x: 2, y: -3 }, 2.5, 40, 20, 60, 50);
+    assert.ok(Number.isFinite(result.scale));
+    assert.ok(Number.isFinite(result.x));
+    assert.ok(Number.isFinite(result.y));
+});
+
+test('pointer continuation uses the current pan state after pinch', () => {
+    const source = readFileSync(new URL('../../resources/js/artwork-viewer.js', import.meta.url), 'utf8');
+    const releaseStart = source.indexOf('const releasePointer');
+    const releaseEnd = source.indexOf('stage.addEventListener(\'pointerup\'', releaseStart);
+    const releaseBlock = source.slice(releaseStart, releaseEnd);
+    assert.match(releaseBlock, /panX: state\.x/);
+    assert.match(releaseBlock, /panY: state\.y/);
+    assert.doesNotMatch(releaseBlock, /\.\.\.dragStart/);
 });
