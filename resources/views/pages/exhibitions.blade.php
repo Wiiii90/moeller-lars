@@ -1,0 +1,66 @@
+@extends('layouts.app')
+
+@section('title', 'Exhibitions · Lars Möller')
+@section('meta_description', 'Exhibitions by Lars Möller')
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/exhibitions'))
+
+@section('content')
+    <section class="exhibitions-page" aria-labelledby="exhibitions-heading">
+        <h2 id="exhibitions-heading" class="category-heading">exhibitions</h2>
+
+        @forelse ($exhibitions as $exhibition)
+            <article class="exhibition-entry">
+                <div class="exhibition-entry__date">{{ $exhibition->date_text }}</div>
+                <div class="exhibition-entry__content">
+                    <h3>{{ $exhibition->title }}</h3>
+
+                    @if ($exhibition->venue !== null)
+                        <div>{{ $exhibition->venue }}</div>
+                    @endif
+                    @if ($exhibition->location_text !== null)
+                        <div>{{ $exhibition->location_text }}</div>
+                    @elseif ($exhibition->city !== null || $exhibition->country !== null)
+                        <div>{{ collect([$exhibition->city, $exhibition->country])->filter(fn ($value) => $value !== null)->implode(', ') }}</div>
+                    @endif
+
+                    @if ($exhibition->description !== null)
+                        <div class="rich-text">{!! $richText->render($exhibition->description) !!}</div>
+                    @endif
+
+                    @if ($exhibition->external_url !== null || $exhibition->directions_url !== null)
+                        <p class="exhibition-entry__links">
+                            @if ($exhibition->external_url !== null)
+                                <a href="{{ $exhibition->external_url }}" rel="noopener noreferrer">More information</a>
+                            @endif
+                            @if ($exhibition->directions_url !== null)
+                                <a href="{{ $exhibition->directions_url }}" rel="noopener noreferrer">Directions</a>
+                            @endif
+                        </p>
+                    @endif
+
+                    @if ($exhibition->mediaUsages->isNotEmpty())
+                        <div class="exhibition-media">
+                            @foreach ($exhibition->mediaUsages as $usage)
+                                <figure class="exhibition-media__item" @if ($usage->role === 'hero') data-role="hero" @endif>
+                                    <img
+                                        src="{{ $media->thumbnailUrlForAsset($usage->mediaAsset) }}"
+                                        alt="{{ $media->altTextForAsset($usage->mediaAsset, $usage->alt_text_override) }}"
+                                        loading="lazy"
+                                    >
+                                    @if ($usage->mediaAsset->credit !== null || $usage->mediaAsset->copyright_notice !== null)
+                                        <figcaption>
+                                            @if ($usage->mediaAsset->credit !== null){{ $usage->mediaAsset->credit }}@endif
+                                            @if ($usage->mediaAsset->copyright_notice !== null){{ $usage->mediaAsset->copyright_notice }}@endif
+                                        </figcaption>
+                                    @endif
+                                </figure>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </article>
+        @empty
+            <p class="public-empty-state">No exhibitions are currently published.</p>
+        @endforelse
+    </section>
+@endsection
