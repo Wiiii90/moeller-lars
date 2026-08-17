@@ -28,9 +28,11 @@ class PublicContentSettingResource extends Resource
     {
         return $schema->components([
             Toggle::make('cv_enabled')->label('CV public'),
+            TextInput::make('cv_navigation_label')->label('CV navigation label')->required()->maxLength(120),
+            TextInput::make('cv_navigation_position')->label('CV navigation position')->integer()->required()->minValue(0),
             Toggle::make('exhibitions_enabled')->label('Exhibitions public'),
-            TextInput::make('cv_navigation_label')->required()->maxLength(120),
-            TextInput::make('cv_navigation_position')->integer()->required()->minValue(0),
+            TextInput::make('exhibitions_navigation_label')->label('Exhibitions navigation label')->required()->maxLength(120),
+            TextInput::make('exhibitions_navigation_position')->label('Exhibitions navigation position')->integer()->required()->minValue(0),
             TextInput::make('public_email')->label('Public email')->email()->maxLength(254)->nullable(),
             TextInput::make('instagram_handle')->label('Instagram handle')->maxLength(30)->regex('/^[A-Za-z0-9._]{1,30}$/')->nullable(),
             Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
