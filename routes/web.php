@@ -4,12 +4,14 @@ use App\Http\Controllers\PublicArtworkController;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\PublicContactController;
 use App\Http\Controllers\PublicCvController;
+use App\Http\Controllers\PublicExhibitionController;
 use App\Http\Controllers\PublicMediaController;
 use App\Http\Controllers\PublicSeoController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicArtworkController::class, 'home'])->name('home');
 Route::get('/cv', [PublicCvController::class, 'show'])->name('cv');
+Route::get('/exhibitions', [PublicExhibitionController::class, 'index'])->name('exhibitions.index');
 Route::get('/contact', [PublicContactController::class, 'show'])->name('contact');
 Route::post('/contact', [PublicContactController::class, 'submit'])->middleware('throttle:5,1')->name('contact.submit');
 Route::get('/blog', [PublicBlogController::class, 'index'])->name('blog.index');
