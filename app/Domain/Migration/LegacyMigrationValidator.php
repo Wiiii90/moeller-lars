@@ -28,7 +28,7 @@ final class LegacyMigrationValidator
      *   ok:bool,
      *   batch:string,
      *   source:array{categories:int,artworks:int,cv_entries:int},
-     *   target:array{categories:int,artworks:int,media:int,cv_entries:int},
+     *   target:array{categories:int,artworks:int,media:int,cv_entries:int,exhibitions:int},
      *   category_mapping:list<array{source:string,slug:string,source_count:int,target_count:int}>,
      *   same_date_groups:list<array{source:string,date:string,legacy_ids:list<int>}>,
      *   home:array{expected_slug:?string,target_slug:?string},
@@ -152,7 +152,7 @@ final class LegacyMigrationValidator
             $errors[] = "Home artwork mismatch: expected {$expectedHomeSlug}, got ".($targetHomeSlug ?? 'none').'.';
         }
 
-        $cvCount = $this->validateCv($errors);
+        [$cvCount, $exhibitionCount] = $this->validateVitaContent($errors);
         $this->validatePublicProfile($errors);
 
         return [
@@ -168,6 +168,7 @@ final class LegacyMigrationValidator
                 'artworks' => $targetArtworkCount,
                 'media' => $targetMediaCount,
                 'cv_entries' => $cvCount,
+                'exhibitions' => $exhibitionCount,
             ],
             'category_mapping' => $categoryMapping,
             'same_date_groups' => $sameDateGroups,
@@ -297,32 +298,49 @@ final class LegacyMigrationValidator
         }
     }
 
-    /** @param list<string> $errors */
-    private function validateCv(array &$errors): int
+    /** @param list<string> $errors @return array{int,int} */
+    private function validateVitaContent(array &$errors): array
     {
-        $expectedRows = $this->cvImporter->expectedRows();
-        $actualRows = DB::table('cv_entries')
+        $expectedCv = [];
+        $expectedExhibitions = [];
+        foreach ($this->cvImporter->expectedRows() as $sourceIndex => $expected) {
+            $expected['legacy_id'] = $sourceIndex + 1;
+            if ($expected['section'] === 'Biography') {
+                $expectedCv[] = $expected;
+            } else {
+                $expectedExhibitions[] = $expected;
+            }
+        }
+
+        $actualCv = DB::table('cv_entries')
+            ->where('legacy_source', LegacyPublicCvImporter::SOURCE)
+            ->where('migration_batch_id', LegacyPublicCvImporter::BATCH)
+            ->orderBy('position')
+            ->get();
+        $actualExhibitions = DB::table('exhibitions')
             ->where('legacy_source', LegacyPublicCvImporter::SOURCE)
             ->where('migration_batch_id', LegacyPublicCvImporter::BATCH)
             ->orderBy('position')
             ->get();
 
-        if ($actualRows->count() !== count($expectedRows)) {
-            $errors[] = 'Legacy CV entry count does not match the verified public Vita source.';
-
-            return $actualRows->count();
+        if ($actualCv->count() !== count($expectedCv)) {
+            $errors[] = 'Legacy biography count does not match the verified public Vita source.';
+        }
+        if ($actualExhibitions->count() !== count($expectedExhibitions)) {
+            $errors[] = 'Legacy exhibition count does not match the verified public Vita source.';
         }
 
-        foreach ($expectedRows as $position => $expected) {
-            $actual = $actualRows->get($position);
+        foreach ($expectedCv as $position => $expected) {
+            $actual = $actualCv->get($position);
             if (is_object($actual) === false) {
-                $errors[] = "Legacy CV entry {$position} is missing.";
+                $errors[] = "Legacy biography entry {$position} is missing.";
 
                 continue;
             }
 
             $checks = [
-                'section' => $expected['section'],
+                'legacy_id' => $expected['legacy_id'],
+                'section' => 'Biography',
                 'title' => $expected['title'],
                 'year_text' => $expected['year_text'],
                 'date_precision' => $expected['date_precision'],
@@ -335,14 +353,40 @@ final class LegacyMigrationValidator
                 'state' => 'published',
             ];
             foreach ($checks as $field => $value) {
-                $actualValue = $actual->{$field} ?? null;
-                if ($actualValue !== $value) {
-                    $errors[] = "Legacy CV entry {$position} field {$field} does not match the verified source.";
+                if (($actual->{$field} ?? null) !== $value) {
+                    $errors[] = "Legacy biography entry {$position} field {$field} does not match the verified source.";
                 }
             }
         }
 
-        return $actualRows->count();
+        foreach ($expectedExhibitions as $position => $expected) {
+            $actual = $actualExhibitions->get($position);
+            if (is_object($actual) === false) {
+                $errors[] = "Legacy exhibition entry {$position} is missing.";
+
+                continue;
+            }
+
+            $checks = [
+                'legacy_id' => $expected['legacy_id'],
+                'title' => $expected['title'],
+                'date_text' => $expected['year_text'],
+                'venue' => $expected['organisation'],
+                'location_text' => $expected['location'],
+                'description' => $expected['body'],
+                'starts_on' => $expected['starts_on'],
+                'ends_on' => $expected['ends_on'],
+                'position' => $position,
+                'state' => 'published',
+            ];
+            foreach ($checks as $field => $value) {
+                if (($actual->{$field} ?? null) !== $value) {
+                    $errors[] = "Legacy exhibition entry {$position} field {$field} does not match the verified source.";
+                }
+            }
+        }
+
+        return [$actualCv->count(), $actualExhibitions->count()];
     }
 
     /** @param list<string> $errors */
