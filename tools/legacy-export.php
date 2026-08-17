@@ -214,9 +214,10 @@ foreach ($categories as $category) {
         }
 
         $date = (string) $row['date'];
+        $categorySlug = $slugify((string) ($category['slug'] ?? $table));
         $artwork = [
             'legacy_id' => $legacyId,
-            'slug' => $slugify($title).'-'.$legacyId,
+            'slug' => $categorySlug.'-'.$slugify($title).'-'.$legacyId,
             'title' => $title,
             'position' => $position,
             'legacy_date_raw' => $date,
