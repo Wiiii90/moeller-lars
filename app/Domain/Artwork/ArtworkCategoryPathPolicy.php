@@ -9,6 +9,7 @@ class ArtworkCategoryPathPolicy
         'artworks',
         'media',
         'cv',
+        'exhibitions',
         'contact',
         'blog',
         'api',
