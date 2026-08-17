@@ -16,6 +16,7 @@
             >
         @endif
         @vite(['resources/css/app.css', 'resources/css/public-content.css', 'resources/js/app.js'])
+        <link rel="stylesheet" href="{{ asset('css/legacy-public.css') }}">
     </head>
     <body>
         <header class="site-header">
