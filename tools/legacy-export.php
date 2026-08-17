@@ -171,7 +171,7 @@ foreach ($categories as $category) {
         foreach ($sameDateRows as $row) {
             $rowsById[(string) $row['id']] = $row;
         }
-        $expectedIds = array_keys($rowsById);
+        $expectedIds = array_map('strval', array_keys($rowsById));
         $actualIds = array_map('strval', $reviewedIds);
         sort($expectedIds, SORT_STRING);
         $sortedActualIds = $actualIds;
