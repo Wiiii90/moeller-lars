@@ -53,6 +53,7 @@ class ExhibitionResource extends Resource
                 'group' => 'Group',
             ])->nullable(),
             TextInput::make('venue')->maxLength(240)->nullable(),
+            TextInput::make('location_text')->label('Location / address')->maxLength(500)->nullable(),
             TextInput::make('city')->maxLength(160)->nullable(),
             TextInput::make('country')->maxLength(160)->nullable(),
             Textarea::make('description')->maxLength(10000)->nullable(),
