@@ -4,6 +4,7 @@ namespace App\Domain\Media;
 
 use App\Models\MediaAsset;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -15,13 +16,15 @@ class MediaIngestService
 {
     public const MAX_BYTES = 20 * 1024 * 1024;
 
-    public const MAX_PIXELS = 40_000_000;
+    public const MAX_PIXELS = 16_000_000;
 
     public const THUMBNAIL_MAX_EDGE = 960;
 
     public const THUMBNAIL_KIND = 'thumbnail';
 
     public const TRANSFORM_PROFILE = 'public-v1';
+
+    private const INGEST_LOCK_SECONDS = 120;
 
     /**
      * @var array<string, string>
@@ -34,99 +37,114 @@ class MediaIngestService
 
     public function ingest(UploadedFile $upload): MediaAsset
     {
-        $originalImage = null;
-        $thumbnailImage = null;
+        $lock = Cache::lock('media-ingest', self::INGEST_LOCK_SECONDS);
+        if (! $lock->get()) {
+            throw $this->validationFailure('Another media upload is currently being processed. Try again shortly.');
+        }
 
         try {
-            [$mime, $width, $height, $originalBytes, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight] = $this->prepare($upload, $originalImage, $thumbnailImage);
+            return $this->ingestLocked($upload);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function ingestLocked(UploadedFile $upload): MediaAsset
+    {
+        try {
+            [$mime, $width, $height, $originalPath, $originalSize, $originalSha256, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight] = $this->prepare($upload);
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
             throw $this->validationFailure('The uploaded media could not be processed.', $exception);
         }
 
-        try {
-            $disk = Storage::disk(config('media.disk'));
-            $uuid = (string) Str::uuid();
-            $originalKey = 'originals/'.$uuid.'.'.self::MIME_EXTENSIONS[$mime];
-            $thumbnailKey = 'variants/'.$uuid.'-'.self::THUMBNAIL_KIND.'.webp';
+        $disk = Storage::disk(config('media.disk'));
+        $uuid = (string) Str::uuid();
+        $originalKey = 'originals/'.$uuid.'.'.self::MIME_EXTENSIONS[$mime];
+        $thumbnailKey = 'variants/'.$uuid.'-'.self::THUMBNAIL_KIND.'.webp';
 
-            if ($disk->exists($originalKey) || $disk->exists($thumbnailKey)) {
-                throw new RuntimeException('Generated media storage key already exists.');
+        if ($disk->exists($originalKey) || $disk->exists($thumbnailKey)) {
+            throw new RuntimeException('Generated media storage key already exists.');
+        }
+
+        try {
+            $originalStream = @fopen($originalPath, 'rb');
+            if (! is_resource($originalStream)) {
+                throw $this->validationFailure('The uploaded media could not be read completely.');
             }
 
             try {
-                if (! $disk->put($originalKey, $originalBytes)) {
+                if (! $disk->put($originalKey, $originalStream)) {
                     throw new RuntimeException('Unable to write canonical media.');
                 }
+            } finally {
+                fclose($originalStream);
+            }
 
-                if (! $disk->put($thumbnailKey, $thumbnailBytes)) {
-                    throw new RuntimeException('Unable to write media thumbnail.');
-                }
+            if (! $disk->put($thumbnailKey, $thumbnailBytes)) {
+                throw new RuntimeException('Unable to write media thumbnail.');
+            }
 
-                return DB::transaction(function () use ($originalKey, $upload, $mime, $originalBytes, $width, $height, $thumbnailKey, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight): MediaAsset {
-                    $asset = new MediaAsset;
-                    $asset->fill([
-                        'storage_key' => $originalKey,
-                        'original_filename' => $this->basename($upload->getClientOriginalName()),
-                        'mime_type' => $mime,
-                        'byte_size' => strlen($originalBytes),
-                        'sha256' => hash('sha256', $originalBytes),
-                        'state' => 'available',
-                        'width' => $width,
-                        'height' => $height,
-                    ]);
-                    $asset->save();
+            return DB::transaction(function () use ($originalKey, $upload, $mime, $originalSize, $originalSha256, $width, $height, $thumbnailKey, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight): MediaAsset {
+                $asset = new MediaAsset;
+                $asset->fill([
+                    'storage_key' => $originalKey,
+                    'original_filename' => $this->basename($upload->getClientOriginalName()),
+                    'mime_type' => $mime,
+                    'byte_size' => $originalSize,
+                    'sha256' => $originalSha256,
+                    'state' => 'available',
+                    'width' => $width,
+                    'height' => $height,
+                ]);
+                $asset->save();
 
-                    $asset->variants()->create([
-                        'variant_kind' => self::THUMBNAIL_KIND,
-                        'storage_key' => $thumbnailKey,
-                        'mime_type' => 'image/webp',
-                        'byte_size' => strlen($thumbnailBytes),
-                        'sha256' => hash('sha256', $thumbnailBytes),
-                        'transform_profile' => self::TRANSFORM_PROFILE,
-                        'state' => 'available',
-                        'width' => $thumbnailWidth,
-                        'height' => $thumbnailHeight,
-                    ]);
+                $asset->variants()->create([
+                    'variant_kind' => self::THUMBNAIL_KIND,
+                    'storage_key' => $thumbnailKey,
+                    'mime_type' => 'image/webp',
+                    'byte_size' => strlen($thumbnailBytes),
+                    'sha256' => hash('sha256', $thumbnailBytes),
+                    'transform_profile' => self::TRANSFORM_PROFILE,
+                    'state' => 'available',
+                    'width' => $thumbnailWidth,
+                    'height' => $thumbnailHeight,
+                ]);
 
-                    return $asset;
-                });
-            } catch (Throwable $exception) {
-                $failed = [];
-                foreach ([$originalKey, $thumbnailKey] as $key) {
-                    try {
-                        if ($disk->exists($key) && ! $disk->delete($key)) {
-                            $failed[] = $key;
+                return $asset;
+            });
+        } catch (Throwable $exception) {
+            $failed = [];
+            foreach ([$originalKey, $thumbnailKey] as $key) {
+                try {
+                    if ($disk->exists($key) && ! $disk->delete($key)) {
+                        $failed[] = $key;
 
-                            continue;
-                        }
-                        if ($disk->exists($key)) {
-                            $failed[] = $key;
-                        }
-                    } catch (Throwable) {
+                        continue;
+                    }
+                    if ($disk->exists($key)) {
                         $failed[] = $key;
                     }
+                } catch (Throwable) {
+                    $failed[] = $key;
                 }
-
-                if ($failed !== []) {
-                    throw new RuntimeException(
-                        'Media ingest failed and storage cleanup also failed for: '.implode(', ', array_unique($failed)).'. Original failure: '.$exception->getMessage(),
-                        0,
-                        $exception,
-                    );
-                }
-
-                throw $exception;
             }
-        } finally {
-            $this->destroyImage($originalImage);
-            $this->destroyImage($thumbnailImage);
+
+            if ($failed !== []) {
+                throw new RuntimeException(
+                    'Media ingest failed and storage cleanup also failed for: '.implode(', ', array_unique($failed)).'. Original failure: '.$exception->getMessage(),
+                    0,
+                    $exception,
+                );
+            }
+
+            throw $exception;
         }
     }
 
-    /** @return array{string, int, int, string, string, int, int} */
-    private function prepare(UploadedFile $upload, mixed &$originalImage, mixed &$thumbnailImage): array
+    /** @return array{string, int, int, string, int, string, string, int, int} */
+    private function prepare(UploadedFile $upload): array
     {
         if (! $upload->isValid()) {
             throw $this->validationFailure('The upload was not successful.');
@@ -138,17 +156,16 @@ class MediaIngestService
         }
 
         $path = $upload->getRealPath();
-        $bytes = is_string($path) ? @file_get_contents($path) : false;
-        if (! is_string($bytes) || strlen($bytes) !== $size) {
+        if (! is_string($path) || ! is_file($path) || ! is_readable($path)) {
             throw $this->validationFailure('The uploaded media could not be read completely.');
         }
 
-        $mime = $this->detectMime($bytes);
+        $mime = $this->detectMime($path);
         if (! isset(self::MIME_EXTENSIONS[$mime])) {
             throw $this->validationFailure('The uploaded media type is not allowed.');
         }
 
-        $dimensions = @getimagesizefromstring($bytes);
+        $dimensions = @getimagesize($path);
         if ($dimensions === false) {
             throw $this->validationFailure('The uploaded media is not a valid image.');
         }
@@ -159,21 +176,28 @@ class MediaIngestService
             throw $this->validationFailure('The uploaded image dimensions are not allowed.');
         }
 
-        $originalImage = @imagecreatefromstring($bytes);
-        if (! $originalImage instanceof \GdImage) {
-            throw $this->validationFailure('The uploaded image could not be decoded.');
+        $sha256 = @hash_file('sha256', $path);
+        if (! is_string($sha256) || strlen($sha256) !== 64) {
+            throw $this->validationFailure('The uploaded media could not be read completely.');
         }
 
-        $originalBytes = $bytes;
-        $thumbnailImage = $this->makeThumbnail($originalImage, $width, $height);
-        $thumbnailWidth = imagesx($thumbnailImage);
-        $thumbnailHeight = imagesy($thumbnailImage);
-        $thumbnailBytes = $this->encode($thumbnailImage, 'image/webp', 85);
+        $originalImage = $this->decode($path, $mime);
+        $thumbnailImage = null;
 
-        return [$mime, $width, $height, $originalBytes, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight];
+        try {
+            $thumbnailImage = $this->makeThumbnail($originalImage, $width, $height);
+            $thumbnailWidth = imagesx($thumbnailImage);
+            $thumbnailHeight = imagesy($thumbnailImage);
+            $thumbnailBytes = $this->encode($thumbnailImage, 'image/webp', 85);
+        } finally {
+            $this->destroyImage($thumbnailImage);
+            $this->destroyImage($originalImage);
+        }
+
+        return [$mime, $width, $height, $path, $size, $sha256, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight];
     }
 
-    private function detectMime(string $bytes): string
+    private function detectMime(string $path): string
     {
         $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
         if ($fileInfo === false) {
@@ -181,7 +205,7 @@ class MediaIngestService
         }
 
         try {
-            $mime = finfo_buffer($fileInfo, $bytes);
+            $mime = finfo_file($fileInfo, $path);
         } finally {
             finfo_close($fileInfo);
         }
@@ -191,6 +215,21 @@ class MediaIngestService
         }
 
         return $mime;
+    }
+
+    private function decode(string $path, string $mime): \GdImage
+    {
+        $image = match ($mime) {
+            'image/jpeg' => @imagecreatefromjpeg($path),
+            'image/png' => @imagecreatefrompng($path),
+            'image/webp' => @imagecreatefromwebp($path),
+        };
+
+        if (! $image instanceof \GdImage) {
+            throw $this->validationFailure('The uploaded image could not be decoded.');
+        }
+
+        return $image;
     }
 
     private function encode(\GdImage $image, string $mime, int $quality): string

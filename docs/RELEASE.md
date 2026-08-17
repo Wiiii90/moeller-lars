@@ -22,6 +22,14 @@ The image contains OCI revision metadata and `/app-release.json` with the build 
 - readiness: `GET /up` must return success
 - no production Caddy, host path, network name or public port mapping is owned here
 
+### Media-processing runtime envelope
+
+The application image pins the web/CLI PHP `memory_limit` to `128M`, `upload_max_filesize` to `20M`, and `post_max_size` to `24M`. `MediaIngestService` permits at most 20 MiB per file and 16,000,000 decoded pixels, rejects larger dimensions before GD decoding, streams canonical originals from the upload file instead of retaining a second in-memory copy, and serializes expensive media ingests through the configured cache lock.
+
+The Apache prefork pool is capped at four request workers. The platform must allocate at least 384 MiB to the application container for this runtime envelope. The platform owns the concrete container memory setting; the application owns the PHP/media/worker assumptions that make that setting meaningful.
+
+The frozen legacy corpus includes a 4499×3551 image (15,975,949 pixels), which remains inside the application limit. A bulk legacy import is an isolated one-shot operation, not concurrent web serving, and may be invoked as `php -d memory_limit=256M artisan ...` when required by the migration runbook. Changing the release candidate alone does not require repeating an already validated import.
+
 ## Database and migration
 
 - database: PostgreSQL

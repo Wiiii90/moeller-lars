@@ -24,6 +24,9 @@ RUN apt-get update \
     && sed -ri 's/^Listen 80$/Listen 8080/' /etc/apache2/ports.conf \
     && rm -rf /var/lib/apt/lists/*
 
+COPY docker/php-runtime.ini /usr/local/etc/php/conf.d/zz-moeller-lars-runtime.ini
+COPY docker/apache-mpm.conf /etc/apache2/mods-available/mpm_prefork.conf
+
 FROM php-base AS dependencies
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
