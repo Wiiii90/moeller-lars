@@ -22,7 +22,7 @@ class CvEntryResource extends Resource
 {
     protected static ?string $model = CvEntry::class;
 
-    protected static ?string $navigationLabel = 'CV';
+    protected static ?string $navigationLabel = 'Biography / CV';
 
     protected static ?int $navigationSort = 20;
 
