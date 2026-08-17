@@ -1,10 +1,12 @@
 <?php
 
+use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Migration\LegacyArtworkManifestImporter;
 use App\Domain\Migration\LegacyMigrationValidator;
 use App\Domain\Migration\LegacyPublicCvImporter;
 use App\Domain\Migration\LegacyPublicProfileImporter;
 use App\Domain\Migration\LegacyPublicProfileMediaValidator;
+use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -47,6 +49,32 @@ Artisan::command('admin:provision {--name=} {--email=}', function () {
 
     $this->info('Admin account created.');
 })->purpose('Create the first explicitly authorized administration account');
+
+Artisan::command('media:verify', function (MediaIntegrityService $integrity) {
+    $checked = 0;
+    $failures = [];
+
+    foreach (MediaAsset::query()->orderBy('id')->cursor() as $asset) {
+        $checked++;
+        $issues = $integrity->issues($asset);
+        if ($issues !== []) {
+            $failures[] = [
+                'media_asset_id' => (int) $asset->getKey(),
+                'issues' => $issues,
+            ];
+        }
+    }
+
+    $result = [
+        'ok' => $failures === [],
+        'checked' => $checked,
+        'failures' => $failures,
+    ];
+
+    $this->line(json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+
+    return $result['ok'] ? 0 : 1;
+})->purpose('Verify stored media files against database integrity metadata');
 
 Artisan::command('legacy:import-public-cv {manifest} {media-root}', function (LegacyPublicCvImporter $cvImporter, LegacyPublicProfileImporter $profileImporter) {
     $count = DB::transaction(function () use ($cvImporter, $profileImporter): int {
