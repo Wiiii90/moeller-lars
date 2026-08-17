@@ -54,6 +54,21 @@ Generated/rebuildable data:
 
 `server-platform` chooses concrete host volumes/paths and backup placement. It is acceptable to persist/backup the complete `storage/app/private` tree even though variants are rebuildable.
 
+### Restore validation order
+
+Backup automation, off-server storage, restore orchestration and the isolated recovery environment are owned by `server-platform`. Application recovery evidence must nevertheless follow this order so database records and media are never validated from different recovery points:
+
+1. Keep public traffic away from the recovery target and restore PostgreSQL from the selected recoverable state.
+2. Restore the canonical `storage/app/private/originals` set from the matching recovery state before application smoke checks. Restoring the complete `storage/app/private` tree, including generated variants, is allowed and is the current conservative recovery baseline.
+3. Attach the restored database and private media to the exact application release being evaluated. Do not run a legacy import as part of backup recovery.
+4. Run `php artisan migrate:status --no-interaction` first. A same-release restore is expected to have no unexpected pending migration. When intentionally recovering and then moving forward to a newer compatible release, establish the recoverable restore point before running that release's `php artisan migrate --force`.
+5. Run `php artisan media:verify`. It checks every media asset and recorded variant against the restored files, including existence/deletion state, byte size, SHA-256, MIME type and public-thumbnail constraints, and returns a non-zero exit status on any integrity failure.
+6. Run `./scripts/release-smoke.sh http://127.0.0.1:8080` and representative controlled media requests before any traffic switch. The restored application is not recovery-ready if either media integrity or application smoke fails.
+
+Variants remain non-authoritative because they derive from canonical originals. Their absence must never cause the original to be silently served as a thumbnail. Until a recovery run has regenerated any omitted derivative and `media:verify` is green, the recovered target must remain out of service. The platform may avoid that regeneration dependency by restoring the backed-up complete private media tree.
+
+For the frozen legacy migration snapshot specifically, `legacy:validate {manifest}` remains an additional migration reconciliation check. It is not a replacement for the general backup/recovery `media:verify` check and a normal backup restore must not rerun the legacy import merely to obtain validation data.
+
 ## Required production configuration
 
 Always required by the production image:
