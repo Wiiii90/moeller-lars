@@ -13,6 +13,8 @@ use LogicException;
     'exhibitions_enabled',
     'cv_navigation_label',
     'cv_navigation_position',
+    'exhibitions_navigation_label',
+    'exhibitions_navigation_position',
     'contact_state',
     'contact_status_text',
     'contact_icon',
@@ -33,12 +35,8 @@ class PublicContentSetting extends Model
             'cv_enabled' => 'boolean',
             'exhibitions_enabled' => 'boolean',
             'cv_navigation_position' => 'integer',
+            'exhibitions_navigation_position' => 'integer',
         ];
-    }
-
-    public function cvSurfaceEnabled(): bool
-    {
-        return (bool) $this->getAttribute('cv_enabled') || (bool) $this->getAttribute('exhibitions_enabled');
     }
 
     protected static function booted(): void
@@ -48,29 +46,51 @@ class PublicContentSetting extends Model
                 throw new LogicException('The public content setting singleton must use id 1.');
             }
 
-            if ($setting->cvSurfaceEnabled()) {
-                $label = $setting->getAttribute('cv_navigation_label');
-                $position = $setting->getAttribute('cv_navigation_position');
+            $navigationItems = [];
+            if ((bool) $setting->getAttribute('cv_enabled')) {
+                $navigationItems['cv'] = [
+                    'label' => $setting->getAttribute('cv_navigation_label'),
+                    'position' => $setting->getAttribute('cv_navigation_position'),
+                ];
+            }
+            if ((bool) $setting->getAttribute('exhibitions_enabled')) {
+                $navigationItems['exhibitions'] = [
+                    'label' => $setting->getAttribute('exhibitions_navigation_label'),
+                    'position' => $setting->getAttribute('exhibitions_navigation_position'),
+                ];
+            }
+
+            $usedPositions = [];
+            foreach ($navigationItems as $key => $item) {
+                $label = $item['label'];
+                $position = $item['position'];
 
                 if (! is_string($label) || trim($label) === '') {
                     throw ValidationException::withMessages([
-                        'cv_navigation_label' => 'The CV navigation label is required while CV or Exhibitions is public.',
+                        $key.'_navigation_label' => ucfirst($key).' navigation label is required while the section is public.',
+                    ]);
+                }
+                if (! is_int($position) && filter_var($position, FILTER_VALIDATE_INT) === false) {
+                    throw ValidationException::withMessages([
+                        $key.'_navigation_position' => ucfirst($key).' navigation position is invalid.',
                     ]);
                 }
 
-                if (! is_int($position) && filter_var($position, FILTER_VALIDATE_INT) === false) {
+                $position = (int) $position;
+                if (isset($usedPositions[$position])) {
                     throw ValidationException::withMessages([
-                        'cv_navigation_position' => 'The CV navigation position is invalid.',
+                        $key.'_navigation_position' => 'Public navigation positions must be unique.',
                     ]);
                 }
+                $usedPositions[$position] = true;
 
                 if (ArtworkCategory::query()
                     ->where('state', 'published')
                     ->where('show_in_navigation', true)
-                    ->where('position', (int) $position)
+                    ->where('position', $position)
                     ->exists()) {
                     throw ValidationException::withMessages([
-                        'cv_navigation_position' => 'A visible artwork category already uses this navigation position.',
+                        $key.'_navigation_position' => 'A visible artwork category already uses this navigation position.',
                     ]);
                 }
             }
