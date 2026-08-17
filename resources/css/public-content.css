@@ -3,6 +3,7 @@
 }
 
 .cv-page,
+.exhibitions-page,
 .blog-page,
 .blog-post,
 .contact-page {
@@ -11,44 +12,29 @@
 }
 
 .cv-section,
-.exhibitions-section,
+.exhibitions-page,
 .public-contact-details,
 .contact-section,
 .legal-disclaimer {
     min-width: 0;
 }
 
-.cv-section + .exhibitions-section,
 .cv-section + .public-contact-details,
-.exhibitions-section + .public-contact-details,
 .public-contact-details + .contact-section,
 .cv-section + .contact-section,
-.exhibitions-section + .contact-section,
 .contact-section + .legal-disclaimer,
 .public-contact-details + .legal-disclaimer {
     margin-top: 2.5rem;
 }
 
-.cv-section__heading {
-    margin: 1.8rem 0 .55rem;
-    padding: 0;
-    border: 0;
-    color: #555;
-    font-size: .92rem;
-    font-weight: 700;
-    letter-spacing: normal;
-    line-height: 1.3;
-    text-transform: none;
-}
-
-.cv-section__heading:first-of-type {
-    margin-top: 0;
+.cv-biography {
+    max-width: 42rem;
 }
 
 .cv-entry,
 .exhibition-entry {
     display: block;
-    margin: 0 0 .55rem;
+    margin: 0 0 .65rem;
     padding: 0;
     border: 0;
     color: #555;
@@ -63,6 +49,10 @@
     content: "";
 }
 
+.cv-entry__line {
+    margin-bottom: .08rem;
+}
+
 .cv-entry__date,
 .exhibition-entry__date {
     display: inline;
@@ -74,13 +64,15 @@
 
 .cv-entry__content,
 .exhibition-entry__content {
-    display: inline;
     color: inherit;
     font-size: inherit;
     line-height: inherit;
 }
 
-.cv-entry__content h4,
+.exhibition-entry__content {
+    display: inline;
+}
+
 .exhibition-entry__content h3,
 .blog-entry h3 {
     display: inline;
@@ -91,15 +83,9 @@
     line-height: inherit;
 }
 
-.cv-entry__content > div:not(.rich-text),
+.cv-entry__content > div:not(.rich-text):not(.cv-entry__line),
 .exhibition-entry__content > div:not(.rich-text) {
-    display: inline;
-    margin: 0 0 0 .25rem;
-}
-
-.cv-entry__content > div:not(.rich-text)::before,
-.exhibition-entry__content > div:not(.rich-text)::before {
-    content: " ";
+    margin: 0;
 }
 
 .cv-entry__image {
@@ -164,7 +150,7 @@
     margin: .3rem 0;
 }
 
-.public-contact-details .category-heading,
+.public-contact-details h2,
 .legal-disclaimer h2 {
     margin: 0 0 .55rem;
     color: #555;
@@ -184,13 +170,21 @@
 }
 
 .exhibition-media {
-    display: block;
+    display: flex;
+    max-width: 46rem;
     margin-top: .65rem;
+    flex-wrap: wrap;
+    gap: .65rem;
 }
 
 .exhibition-media__item {
-    width: min(100%, 34rem);
-    margin: 0 0 .8rem;
+    width: auto;
+    max-width: 15rem;
+    margin: 0;
+}
+
+.exhibition-media__item[data-role="hero"] {
+    max-width: 28rem;
 }
 
 .exhibition-media__item img {
@@ -374,30 +368,12 @@
 @media (max-width: 550px) {
     .cv-entry,
     .exhibition-entry {
-        margin-bottom: .7rem;
+        margin-bottom: .75rem;
     }
 
-    .cv-entry__date,
     .exhibition-entry__date,
-    .cv-entry__content,
     .exhibition-entry__content {
         display: block;
-    }
-
-    .cv-entry__date,
-    .exhibition-entry__date {
-        margin-right: 0;
-    }
-
-    .cv-entry__content > div:not(.rich-text),
-    .exhibition-entry__content > div:not(.rich-text) {
-        display: block;
-        margin-left: 0;
-    }
-
-    .cv-entry__content > div:not(.rich-text)::before,
-    .exhibition-entry__content > div:not(.rich-text)::before {
-        content: none;
     }
 
     .cv-entry__image {
@@ -405,6 +381,17 @@
         max-width: 170px;
         margin: .35rem 0 .7rem;
         float: none;
+    }
+
+    .exhibition-media {
+        display: block;
+    }
+
+    .exhibition-media__item,
+    .exhibition-media__item[data-role="hero"] {
+        width: min(100%, 22rem);
+        max-width: 100%;
+        margin-bottom: .7rem;
     }
 
     .contact-form,
