@@ -33,8 +33,11 @@ final class PublicSeoController extends Controller
         }
 
         $publicSettings = PublicContentSetting::query()->findOrFail(1);
-        if ($publicSettings->cvSurfaceEnabled()) {
+        if ((bool) $publicSettings->getAttribute('cv_enabled')) {
             $urls[] = $this->canonical->forPath('/cv');
+        }
+        if ((bool) $publicSettings->getAttribute('exhibitions_enabled')) {
+            $urls[] = $this->canonical->forPath('/exhibitions');
         }
         if ($publicSettings->getAttribute('contact_state') === 'enabled') {
             $urls[] = $this->canonical->forPath('/contact');
