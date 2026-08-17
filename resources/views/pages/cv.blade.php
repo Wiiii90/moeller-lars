@@ -16,6 +16,15 @@
                     @endif
 
                     <article class="cv-entry">
+                        @if ($entry->imageMediaAsset !== null)
+                            <img
+                                class="cv-entry__image"
+                                src="{{ $media->originalUrlForAsset($entry->imageMediaAsset) }}"
+                                alt="{{ $media->altTextForAsset($entry->imageMediaAsset) }}"
+                                loading="lazy"
+                            >
+                        @endif
+
                         <div class="cv-entry__date">{{ $entry->year_text }}</div>
                         <div class="cv-entry__content">
                             <h4>{{ $entry->title }}</h4>
@@ -31,14 +40,6 @@
                             @endif
                             @if ($entry->external_url !== null)
                                 <p><a href="{{ $entry->external_url }}" rel="noopener noreferrer">More information</a></p>
-                            @endif
-                            @if ($entry->imageMediaAsset !== null)
-                                <img
-                                    class="cv-entry__image"
-                                    src="{{ $media->originalUrlForAsset($entry->imageMediaAsset) }}"
-                                    alt="{{ $media->altTextForAsset($entry->imageMediaAsset) }}"
-                                    loading="lazy"
-                                >
                             @endif
                         </div>
                     </article>
