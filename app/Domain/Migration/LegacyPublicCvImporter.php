@@ -3,6 +3,7 @@
 namespace App\Domain\Migration;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 final class LegacyPublicCvImporter
@@ -17,38 +18,76 @@ final class LegacyPublicCvImporter
             if (DB::table('cv_entries')->exists()) {
                 throw new RuntimeException('Legacy CV import requires an empty cv_entries table.');
             }
-
+            if (DB::table('exhibitions')->exists()) {
+                throw new RuntimeException('Legacy Vita import requires an empty exhibitions table.');
+            }
             if (! DB::table('public_content_settings')->where('id', 1)->exists()) {
                 throw new RuntimeException('Public content settings singleton is missing.');
             }
 
-            if (DB::table('artwork_categories')
-                ->where('state', 'published')
-                ->where('show_in_navigation', true)
-                ->where('position', 3)
-                ->exists()) {
-                throw new RuntimeException('Navigation position 3 is already occupied; legacy CV navigation cannot be imported safely.');
+            foreach ([3, 4] as $position) {
+                if (DB::table('artwork_categories')
+                    ->where('state', 'published')
+                    ->where('show_in_navigation', true)
+                    ->where('position', $position)
+                    ->exists()) {
+                    throw new RuntimeException("Navigation position {$position} is already occupied; legacy Vita navigation cannot be imported safely.");
+                }
             }
 
             $now = now();
             $rows = $this->expectedRows();
+            $cvPosition = 0;
+            $exhibitionPosition = 0;
 
             foreach ($rows as $index => $row) {
-                DB::table('cv_entries')->insert([
-                    'section' => $row['section'],
+                $legacyId = $index + 1;
+
+                if ($row['section'] === 'Biography') {
+                    DB::table('cv_entries')->insert([
+                        'section' => 'Biography',
+                        'title' => $row['title'],
+                        'state' => 'published',
+                        'position' => $cvPosition++,
+                        'date_precision' => $row['date_precision'],
+                        'organisation' => $row['organisation'],
+                        'location' => $row['location'],
+                        'body' => $row['body'],
+                        'external_url' => null,
+                        'image_media_asset_id' => null,
+                        'year_text' => $row['year_text'],
+                        'starts_on' => $row['starts_on'],
+                        'ends_on' => $row['ends_on'],
+                        'legacy_id' => $legacyId,
+                        'legacy_source' => self::SOURCE,
+                        'migration_batch_id' => self::BATCH,
+                        'migrated_at' => $now,
+                        'published_at' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+
+                    continue;
+                }
+
+                $slugBase = Str::slug($row['title']);
+                DB::table('exhibitions')->insert([
+                    'slug' => ($slugBase !== '' ? $slugBase : 'exhibition').'-legacy-'.$legacyId,
                     'title' => $row['title'],
                     'state' => 'published',
-                    'position' => $index,
-                    'date_precision' => $row['date_precision'],
-                    'organisation' => $row['organisation'],
-                    'location' => $row['location'],
-                    'body' => $row['body'],
+                    'position' => $exhibitionPosition++,
+                    'kind' => null,
+                    'venue' => $row['organisation'],
+                    'city' => null,
+                    'country' => null,
+                    'location_text' => $row['location'],
+                    'description' => $row['body'],
                     'external_url' => null,
-                    'image_media_asset_id' => null,
-                    'year_text' => $row['year_text'],
+                    'directions_url' => null,
                     'starts_on' => $row['starts_on'],
                     'ends_on' => $row['ends_on'],
-                    'legacy_id' => $index + 1,
+                    'date_text' => $row['year_text'],
+                    'legacy_id' => $legacyId,
                     'legacy_source' => self::SOURCE,
                     'migration_batch_id' => self::BATCH,
                     'migrated_at' => $now,
@@ -62,8 +101,11 @@ final class LegacyPublicCvImporter
                 ->where('id', 1)
                 ->update([
                     'cv_enabled' => true,
-                    'cv_navigation_label' => 'CV & Exhibitions',
+                    'exhibitions_enabled' => true,
+                    'cv_navigation_label' => 'CV',
                     'cv_navigation_position' => 3,
+                    'exhibitions_navigation_label' => 'EXHIBITIONS',
+                    'exhibitions_navigation_position' => 4,
                     'updated_at' => $now,
                 ]);
 
@@ -73,7 +115,7 @@ final class LegacyPublicCvImporter
 
     /**
      * Verified factual content from the currently public legacy Vita surface.
-     * Exhibition lines remain CV entries; they are not promoted into Exhibition entities.
+     * Biography rows are imported to CV; exhibition rows are imported to Exhibition entities.
      *
      * @return list<array{section:string,title:string,year_text:string,date_precision:string,starts_on:?string,ends_on:?string,organisation:?string,location:?string,body:?string}>
      */
