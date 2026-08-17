@@ -38,12 +38,20 @@ class AppServiceProvider extends ServiceProvider
             ]);
 
             $settings = PublicContentSetting::query()->findOrFail(1);
-            if ($settings->cvSurfaceEnabled()) {
+            if ((bool) $settings->getAttribute('cv_enabled')) {
                 $navigationItems->push([
                     'position' => (int) $settings->getAttribute('cv_navigation_position'),
                     'label' => (string) $settings->getAttribute('cv_navigation_label'),
                     'url' => route('cv'),
                     'current' => request()->routeIs('cv'),
+                ]);
+            }
+            if ((bool) $settings->getAttribute('exhibitions_enabled')) {
+                $navigationItems->push([
+                    'position' => (int) $settings->getAttribute('exhibitions_navigation_position'),
+                    'label' => (string) $settings->getAttribute('exhibitions_navigation_label'),
+                    'url' => route('exhibitions.index'),
+                    'current' => request()->routeIs('exhibitions.*'),
                 ]);
             }
 
