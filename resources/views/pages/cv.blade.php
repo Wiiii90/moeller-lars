@@ -31,7 +31,7 @@
                             @if ($entry->organisation !== null)
                                 <div>{{ $entry->organisation }}</div>
                             @endif
-                            @if ($entry->location !== null && $entry->title !== 'Born in Hamburg')
+                            @if ($entry->location !== null && ($entry->organisation !== null || $entry->body !== null))
                                 <div>{{ $entry->location }}</div>
                             @endif
                             @if ($entry->body !== null)
