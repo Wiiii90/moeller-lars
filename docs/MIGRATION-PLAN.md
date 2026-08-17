@@ -10,7 +10,9 @@
 
 ## 1. Characterise the visitor experience
 
-Create a route-and-content checklist from `larsmoeller`. Treat it as acceptance criteria for the new templates, while recording broken legacy behaviours as defects to fix rather than compatibility requirements. Capture artwork categories, ordering, image sizes, artwork viewer interactions, CV rendering, contact form behaviour, and all non-empty public pages. Record subtle visual/UX improvements separately so they can be reviewed without obscuring the identity-preservation requirement.
+Create a route-and-content checklist from `larsmoeller`. Treat it as acceptance criteria for the new templates, while recording broken legacy behaviours as defects to fix rather than compatibility requirements. Capture artwork categories, ordering, image sizes, artwork viewer interactions, CV rendering, contact form behaviour, and all non-empty public pages that belong to the artist-site target. Record subtle visual/UX improvements separately so they can be reviewed without obscuring the identity-preservation requirement.
+
+The legacy `/workshop` subtree and `larsMoellerWorkshop` database are explicitly outside the rebuilt artist-site migration target. They must not create target categories, routes, navigation, CV/content records, or media imports. They remain preserved only as part of the legacy rollback/recovery boundary until `server-platform` completes the explicit legacy-retirement gate; removal from the live host is not part of migration or validation.
 
 ## 2. Design the clean model and importer
 
@@ -37,7 +39,7 @@ Produce a deployable immutable application artifact/image, health/readiness cont
 
 ## Migration acceptance checklist
 
-- Every legacy artwork and required content record has a target record or an explicitly documented exception.
+- Every in-scope legacy artwork and required content record has a target record or an explicitly documented exception; the legacy Workshop subtree/database is an explicit out-of-scope retirement-only exception.
 - Every original media file is present in target storage and passes checksum/count reconciliation; derivative generation never replaces the original.
 - Fresh target-database imports are repeatable and do not require the legacy schema at runtime.
 - Public routes, artwork viewer behaviour, metadata, and redirects pass the approved comparison suite.
