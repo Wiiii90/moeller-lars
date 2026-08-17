@@ -223,6 +223,7 @@ class MediaIngestService
             'image/jpeg' => @imagecreatefromjpeg($path),
             'image/png' => @imagecreatefrompng($path),
             'image/webp' => @imagecreatefromwebp($path),
+            default => false,
         };
 
         if (! $image instanceof \GdImage) {
