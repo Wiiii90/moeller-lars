@@ -47,11 +47,6 @@ jobs:
           extensions: gd, intl, mbstring, pdo_pgsql, zip
           coverage: none
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
       - name: Install PHP dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
@@ -60,6 +55,24 @@ jobs:
 
       - name: Generate test application key
         run: echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
+
+      - name: Run PHPStan
+        run: |
+          set -o pipefail
+          composer analyse 2>&1 | tee phpstan.log
+
+      - name: Upload PHPStan failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-rc-phpstan-failure
+          path: phpstan.log
+          retention-days: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
 
       - name: Install frontend dependencies
         run: npm ci --ignore-scripts
@@ -78,19 +91,6 @@ jobs:
         with:
           name: admin-rc-pest-failure
           path: pest.log
-          retention-days: 1
-
-      - name: Run PHPStan
-        run: |
-          set -o pipefail
-          composer analyse 2>&1 | tee phpstan.log
-
-      - name: Upload PHPStan failure log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: admin-rc-phpstan-failure
-          path: phpstan.log
           retention-days: 1
 
       - name: Apply canonical PHP formatting to admin RC
