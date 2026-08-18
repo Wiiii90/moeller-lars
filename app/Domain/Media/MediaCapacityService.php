@@ -50,12 +50,14 @@ final class MediaCapacityService
 
         $remaining = $quota === null ? null : max(0, $quota - $authoritativeBytes);
         $ratio = $quota === null ? null : $authoritativeBytes / $quota;
-        $status = match (true) {
-            $quota === null => 'unconfigured',
-            $authoritativeBytes >= $quota => 'full',
-            $ratio >= self::WARNING_RATIO => 'near_capacity',
-            default => 'healthy',
-        };
+        $status = 'healthy';
+        if ($quota === null) {
+            $status = 'unconfigured';
+        } elseif ($authoritativeBytes >= $quota) {
+            $status = 'full';
+        } elseif ($ratio >= self::WARNING_RATIO) {
+            $status = 'near_capacity';
+        }
 
         return [
             'configured' => $quota !== null,
@@ -86,7 +88,7 @@ final class MediaCapacityService
         }
 
         $snapshot = $this->snapshot();
-        if (! $snapshot['measurement_available'] || ! is_int($snapshot['authoritative_bytes'])) {
+        if ($snapshot['measurement_available'] === false || is_int($snapshot['authoritative_bytes']) === false) {
             throw ValidationException::withMessages([
                 'media' => 'Storage capacity could not be verified. Try the upload again later.',
             ]);
