@@ -17,7 +17,7 @@ final class CreateBlogPost extends CreateRecord
         return app(BlogEditorialService::class)->createDraft($data);
     }
 
-    protected function getCreatedNotification(): ?Notification
+    protected function getCreatedNotification(): Notification
     {
         return Notification::make()
             ->success()
