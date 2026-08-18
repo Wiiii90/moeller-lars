@@ -19,9 +19,10 @@ final class MediaAssetSelect
             ->relationship(
                 name: $relationship,
                 titleAttribute: 'original_filename',
-                modifyQueryUsing: fn (Builder $query): Builder => $query
-                    ->with('variants')
-                    ->orderBy('original_filename'),
+                modifyQueryUsing: function (Builder $query): void {
+                    $query->with('variants');
+                    $query->orderBy('original_filename');
+                },
             )
             ->getOptionLabelFromRecordUsing(function (Model $record): string {
                 if (! $record instanceof MediaAsset) {
