@@ -20,35 +20,12 @@
         </div>
     @endif
 
-    @if ($settings->contact_state === 'hidden' || $settings->contact_state === 'under_construction')
+    @if ($settings->contact_state === 'under_construction')
         @if ($showStatus)
             <p class="contact-status contact-status--quiet" role="status">
-                @if ($settings->contact_state === 'under_construction' && $settings->contact_status_text)
-                    {{ $settings->contact_status_text }}
-                @else
-                    Direct messages through the website are not active yet.
-                @endif
+                {{ $settings->contact_status_text }}
             </p>
         @endif
-
-        <div class="contact-form contact-form--preview" role="group" aria-disabled="true">
-            <div class="contact-form__field">
-                <label for="contact-name-preview">Name</label>
-                <input id="contact-name-preview" type="text" disabled>
-            </div>
-
-            <div class="contact-form__field">
-                <label for="contact-email-preview">E-Mail</label>
-                <input id="contact-email-preview" type="email" disabled>
-            </div>
-
-            <div class="contact-form__field">
-                <label for="contact-comment-preview">Nachricht</label>
-                <textarea id="contact-comment-preview" rows="6" disabled></textarea>
-            </div>
-
-            <button type="button" disabled>Nachricht senden</button>
-        </div>
     @elseif ($settings->contact_state === 'enabled')
         @if (session('contact_success'))
             <p class="contact-message" role="status">{{ session('contact_success') }}</p>
