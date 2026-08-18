@@ -1,8 +1,4 @@
-/*
- * Public presentation baseline for the legacy-compatible first release.
- * Keep the old artwork-first geometry here; later visual redesigns belong in a
- * separate pass after the legacy baseline has been accepted.
- */
+/* Public legacy-parity layer. Loaded after the application styles. */
 
 body {
     background: #777;
@@ -11,11 +7,6 @@ body {
     font-size: 14px;
 }
 
-/*
- * Legacy header composition: grey page, compact white menu strip above the
- * artist name, then the separator. Keep the header itself unconstrained so old
- * app.css shell limits cannot crop the top area.
- */
 .site-header {
     display: flex;
     width: 100%;
@@ -29,19 +20,69 @@ body {
     background: transparent;
 }
 
+/* On the measured legacy desktop capture the menu and content share the same
+ * centred 920px maximum-width box. */
+.site-header nav {
+    display: flex;
+    order: 1;
+    width: 58%;
+    max-width: 920px;
+    min-width: 540px;
+    margin: 0 auto;
+    padding: 0 0 0 2rem;
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 0;
+    background: #fff;
+}
+
+.site-header nav a {
+    display: block;
+    min-height: 0;
+    padding: 1rem .7rem;
+    color: #777;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.2;
+    text-decoration: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: opacity .14s ease;
+}
+
+.site-header nav a:hover,
+.site-header nav a:focus-visible {
+    color: inherit;
+    opacity: .58;
+}
+
+.site-header nav a[aria-current="page"] {
+    color: #555;
+}
+
+.site-header nav a:focus-visible {
+    outline: 1px dotted currentColor;
+    outline-offset: -4px;
+}
+
+/* The artist name is deliberately independent from the centred menu/content
+ * box. The screenshot places its left edge at roughly 15.6% of the viewport. */
 .site-header h1 {
     order: 2;
     width: auto;
     min-width: 0;
-    margin: 0 auto 0 9%;
-    padding: 12px 0 13px;
+    margin: 50px 0 0 15.625%;
+    padding: 0 0 21px;
     border: 0;
     color: #fff;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 30px;
+    font-size: 28px;
     font-weight: 400;
-    letter-spacing: normal;
-    line-height: 1;
+    letter-spacing: .16em;
+    line-height: 1.1;
+    text-transform: uppercase;
     white-space: nowrap;
 }
 
@@ -54,7 +95,7 @@ body {
 .site-title:hover,
 .site-title:focus-visible {
     color: inherit;
-    opacity: .72;
+    opacity: .62;
 }
 
 .site-title:focus-visible {
@@ -62,61 +103,11 @@ body {
     outline-offset: 3px;
 }
 
-.site-header nav {
-    display: inline-flex;
-    order: 1;
-    width: auto;
-    max-width: calc(100% - 18%);
-    min-width: 0;
-    margin: 0 auto 0 9%;
-    padding: 0;
-    align-self: flex-start;
-    align-items: stretch;
-    justify-content: flex-start;
-    flex-wrap: nowrap;
-    gap: 0;
-    background: #fff;
-}
-
-.site-header nav a {
-    display: block;
-    min-height: 0;
-    padding: 8px 14px;
-    color: #777;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 13px;
-    font-weight: 400;
-    line-height: 1.2;
-    text-decoration: none;
-    text-transform: uppercase;
-    white-space: nowrap;
-    transition: color .14s ease, opacity .14s ease;
-}
-
-.site-header nav a:hover,
-.site-header nav a:focus-visible {
-    background: transparent;
-    color: #222;
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 3px;
-}
-
-.site-header nav a[aria-current="page"] {
-    background: transparent;
-    color: #333;
-}
-
-.site-header nav a:focus-visible {
-    outline: 1px dotted currentColor;
-    outline-offset: -3px;
-}
-
 #content {
     width: 58%;
-    max-width: 980px;
+    max-width: 920px;
     min-width: 540px;
-    margin: 2.25rem auto 0;
+    margin: 10px auto 0;
     background: #fff;
 }
 
@@ -140,13 +131,9 @@ body {
     min-width: 0;
 }
 
-/*
- * Keep artwork entries close to the old listing width. The generated thumbnail
- * fills that box while preserving aspect ratio; it must not dictate layout size.
- */
 .artwork-card,
 .artwork-detail {
-    width: 64%;
+    width: 76%;
     max-width: 650px;
     min-width: 0;
     margin: 0 auto 5rem;
@@ -191,7 +178,7 @@ body {
     margin: .12rem 0;
 }
 
-/* CV keeps the legacy Vita rhythm while the new contact surface stays below. */
+/* CV: legacy Vita composition plus the new contact form below it. */
 .cv-legacy-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(170px, 30%);
@@ -232,7 +219,8 @@ body {
 
 .cv-inline-contact a:hover,
 .cv-inline-contact a:focus-visible {
-    color: #222;
+    color: inherit;
+    opacity: .65;
 }
 
 .cv-inline-label {
@@ -306,13 +294,12 @@ body {
     border-radius: 0;
     background: #fff;
     color: #444;
-    transition: border-color .14s ease;
 }
 
 .cv-contact-area .contact-form input:focus-visible,
 .cv-contact-area .contact-form textarea:focus-visible {
-    border-color: #555;
-    outline: 1px dotted #555;
+    border-color: #666;
+    outline: 1px dotted #666;
     outline-offset: 2px;
 }
 
@@ -331,13 +318,12 @@ body {
     border-radius: 0;
     background: transparent;
     color: #555;
-    transition: background-color .14s ease, color .14s ease;
 }
 
 .cv-contact-area .contact-form button:hover:not(:disabled),
 .cv-contact-area .contact-form button:focus-visible:not(:disabled) {
-    background: #efefef;
-    color: #222;
+    color: inherit;
+    opacity: .65;
 }
 
 .cv-contact-area .contact-form button:disabled {
@@ -348,55 +334,51 @@ body {
 }
 
 @media (min-width: 981px) and (max-width: 1400px) {
-    .site-header h1,
-    .site-header nav {
-        margin-left: 7%;
-    }
-
-    .site-header nav {
-        max-width: 86%;
-    }
-
+    .site-header nav,
     #content {
         width: 68%;
-    }
-
-    .artwork-card,
-    .artwork-detail {
-        width: 68%;
-    }
-}
-
-@media (min-width: 551px) and (max-width: 980px) {
-    .site-header h1,
-    .site-header nav {
-        margin-left: 4%;
     }
 
     .site-header h1 {
-        padding-top: 10px;
-        padding-bottom: 11px;
-        font-size: 26px;
-    }
-
-    .site-header nav {
-        max-width: 92%;
-    }
-
-    .site-header nav a {
-        padding: 8px 11px;
-        font-size: 12px;
-    }
-
-    #content {
-        width: 82%;
-        min-width: 0;
-        margin-top: 1.75rem;
+        margin-left: 12%;
     }
 
     .artwork-card,
     .artwork-detail {
         width: 78%;
+    }
+}
+
+@media (min-width: 551px) and (max-width: 980px) {
+    .site-header nav,
+    #content {
+        width: 82%;
+        min-width: 0;
+    }
+
+    .site-header nav {
+        padding-left: 1.25rem;
+    }
+
+    .site-header nav a {
+        padding: .8rem .6rem;
+        font-size: 12px;
+    }
+
+    .site-header h1 {
+        margin-top: 2.4rem;
+        margin-left: 7%;
+        padding-bottom: 1rem;
+        font-size: 24px;
+    }
+
+    #content {
+        margin-top: 8px;
+    }
+
+    .artwork-card,
+    .artwork-detail {
+        width: 82%;
     }
 
     .cv-legacy-layout {
@@ -406,32 +388,29 @@ body {
 }
 
 @media (max-width: 550px) {
-    .site-header {
-        border-bottom: 1px solid #aaa;
-    }
-
     .site-header nav {
         display: block;
         width: 100%;
         max-width: none;
+        min-width: 0;
         margin: 0;
-        align-self: stretch;
+        padding: 0;
         border-bottom: 1px solid #ddd;
     }
 
     .site-header nav a {
         width: 100%;
         padding: .9rem 1rem;
-        color: #777;
         line-height: 1.2;
         white-space: normal;
     }
 
     .site-header h1 {
         width: auto;
-        margin: 0;
-        padding: .85rem .8rem .7rem;
+        margin: 1rem 0 0;
+        padding: 0 .8rem .8rem;
         font-size: 1.45rem;
+        letter-spacing: .12em;
     }
 
     #content {
@@ -443,11 +422,6 @@ body {
 
     .site-content {
         padding: 1.5rem .8rem 2.4rem;
-    }
-
-    .category-heading {
-        margin-bottom: 1.4rem;
-        text-align: center;
     }
 
     .artwork-card,
