@@ -1,284 +1,211 @@
 # Public implementation contract
 
-This is the implementation contract for the first public-site slice. It is
-derived from the repository documentation and the reviewed legacy source in
-`P:/larsmoeller`. It defines public behavior and content semantics, not the
-application or presentation technology.
+This is the current target contract for the public Lars Möller site. The legacy source and [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md) provide evidence for content, visual identity and intended behaviour; they do not make legacy PHP/query routing or broken implementation details target requirements.
 
-## 1. Canonical public route map
+## Canonical public routes
 
-All canonical public URLs are HTTPS URLs on the approved canonical host. The
-new application uses modern path-based routes; legacy dispatcher/query syntax
-is historical evidence, not a required public interface.
+All canonical public URLs use HTTPS on the approved canonical host.
 
-| Public area | Canonical path | Content and behavior |
+| Public area | Canonical path | Availability |
 | --- | --- | --- |
-| Home | `/` | Home artwork selected from persisted category presentation data. |
-| Artwork category | `/{category-slug}` | Any published category, ordered by its persisted presentation data. |
-| Artwork direct view | `/artworks/{slug}` | Stable, shareable public artwork URL with the gallery viewer context. |
-| CV | `/cv` | Biography/Vita, portrait, public contact details, Contact surface and liability disclaimer. |
-| Exhibitions | `/exhibitions` | Independently managed exhibition history with optional media, links and directions. |
-| Contact | `/contact` | Optional direct route to the same public Contact feature when enabled. |
+| Home | `/` | public |
+| Artwork category | `/{category-slug}` | published category only |
+| Artwork detail | `/artworks/{slug}` | published artwork only |
+| CV / Vita / Contact surface | `/cv` | when CV is enabled |
+| Exhibitions | `/exhibitions` | when Exhibitions are enabled |
+| Contact direct route | `/contact` | according to Contact state |
+| Blog index | `/blog` | when Blog is enabled |
+| Blog post | `/blog/{slug}` | enabled Blog + publicly available post |
+| Sitemap | `/sitemap.xml` | generated from current public state |
+| Robots | `/robots.txt` | public discovery policy |
 
-Navigation is generated from published categories marked for navigation plus
-independently enabled CV, Exhibitions and later Blog destinations. Home
-eligibility is generated from persisted category presentation data. Imported
-data may initially reproduce familiar Paintings, Prints, and Drawings labels,
-but those are editorial records, not application route definitions. A category
-created and published in admin must use the same route, navigation and home
-pipeline without a code change.
+Artwork category routing is generic and data-driven. A category name or slug never requires a dedicated controller branch or route definition. Reserved application paths cannot be category slugs.
 
-There are no public blog routes while the blog is disabled. A disabled blog
-must not appear in navigation, generated metadata, or the sitemap.
+CV and Exhibitions are independent destinations. Contact belongs to the CV/biography experience and does not become another primary-navigation item. Blog is absent from navigation, public content and sitemap until explicitly enabled.
 
-The legacy artwork shell is the initial visual baseline rather than inspiration
-for a redesign. Desktop header/name/navigation geometry, the continuous header
-separator, artwork/content widths, typography, spacing, category headings and
-artwork metadata should first be restored as closely as practical to the
-reviewed legacy presentation. Subsequent nuance or modernization is a separate
-editorial decision. Reliability/accessibility improvements must not silently
-replace the legacy composition with cards, panels or a generic portfolio theme.
+Legacy `/index.php?site=...` forms are source evidence only. They are not preserved unless a separate, concrete SEO/external-link decision requires a redirect. Generic redirects remain valid for canonical URLs created by the new application when an editorial slug/path is deliberately changed.
 
-## 2. Legacy routes and new-application redirects
+## Public visual system
 
-Legacy dispatcher and query forms are historical source evidence. They do not
-need to remain reachable, and this contract contains no compatibility map for
-`/index.php?site=...`. Any redirect lifecycle in the new application is
-separate: when a canonical new-application category or artwork slug changes,
-generic redirect records may preserve that new-application URL.
+The reviewed legacy site is the visual baseline, not loose inspiration for a redesign.
 
-`/workshop/...` and administrative paths remain non-public and must not be
-exposed or redirected into public content.
+Initial acceptance requires close real-browser parity in:
 
-Unknown legacy selector values and malformed dispatcher requests are migration
-evidence, not new-application routes. Unknown new category slugs must produce
-a safe not-found response, never a PHP warning, directory include, database
-error, or debug output.
+- desktop header/name/navigation geometry;
+- continuous header separator;
+- artwork/content column widths and offsets;
+- typography and metadata hierarchy;
+- category headings and navigation spacing;
+- artwork image scale and vertical rhythm;
+- small-screen navigation and content behaviour around the reviewed legacy breakpoints.
 
-### Contact behavior
+Do not introduce generic portfolio cards, panels, dashboard styling, shadows or unrelated accent treatment. Accessibility, responsive and interaction improvements are allowed when they preserve the artistic composition.
 
-The reviewed `html/contact.html` defines the intended fields: required Name,
-required Email, optional Website, and required Comment, followed by a send
-action. The form points at `inc/contact.php`, which is not present in the
-reviewed root source, and no `site=contact` dispatcher case was found. The
-missing route/handler is therefore a known legacy defect. The target provides
-the intended contact outcome with server-side validation and a safe
-delivery/error result; it does not copy the legacy mail/configuration
-implementation. Contact belongs to the CV/biography public experience and does
-not require another primary-navigation item. Persisting submitted messages in
-an admin inbox is a separate privacy/retention product decision and is not
-implied by the delivery form.
+Browser comparison at representative desktop, tablet and mobile widths remains the authority for final visual acceptance.
 
-## 3. Public content ordering
+## Artwork ordering and home selection
 
-- Category gallery listings order published artwork by the explicit persisted
-  `artwork.position` value. For the migrated legacy baseline those positions
-  reproduce the reconciled legacy date-descending display sequence; later
-  editorial reordering may intentionally override chronology. `work_date`,
-  slug, IDs, timestamps, insertion order, and database order are never runtime
-  secondary ordering fallbacks.
-- Published artwork positions must be unique within a category. Legacy
-  duplicate positions are migration/reconciliation input and must be resolved
-  before the affected category is considered publish-ready. Gaps are harmless;
-  explicit editorial reorder normalizes a complete category to contiguous
-  positions.
-- The home page selects the newest eligible record by `work_date` from
-  categories whose persisted presentation data marks them for the home surface.
-  The imported data may initially reproduce the familiar legacy landing
-  selection, but the selection is not based on hardcoded category slugs.
-- If more than one eligible artwork has the same newest canonical `work_date`,
-  the home winner is ambiguous and the invariant must fail explicitly. Position,
-  slug, IDs, timestamps, insertion order, or database order must not silently
-  decide the winner.
-- The migration/reconciliation fixture must compare category counts, complete
-  ordered result sets, same-date groups, and the home-page winner.
-- Only published content is public. Draft/unpublished content is absent from
-  listings, direct views, navigation, sitemap, and viewer previous/next
-  sequences. Within a category, the viewer previous/next sequence follows the
-  same canonical `position` order and no secondary tie-break ordering.
+Category galleries use the persisted editorial `artwork.position` order. The migrated baseline positions reproduce the approved legacy sequence; later artist reordering may intentionally differ from chronology.
 
-## 4. Artwork presentation contract
+- published positions must be unambiguous within a category;
+- no slug, ID, timestamp, insertion order, database order or `work_date` fallback may hide an ordering invariant violation;
+- viewer previous/next uses the same canonical category sequence;
+- unpublished/draft/hidden artwork is absent from public listings, direct views, sitemap and viewer sequences.
 
-Each public gallery item renders:
+The Home surface selects the newest eligible artwork by canonical `work_date` across categories explicitly marked for Home eligibility. Category identity is persisted data, not a hard-coded slug set. If multiple eligible artworks share the newest date and no explicit accepted rule makes the winner unique, the ambiguity is an invariant failure rather than an invitation to use an accidental secondary sort key.
 
-- its required canonical thumbnail;
+## Shared artwork presentation
+
+Home, category galleries and artwork detail use one canonical artwork-label/placard presentation for factual artwork metadata:
+
 - title;
-- year when a normalized `work_date` exists;
+- year when represented by normalized artwork date data;
 - medium/material when authored;
-- dimensions when authored; and
-- optional description/comment.
+- dimensions when authored.
 
-The legacy source displays title and year on one line, medium followed by
-dimensions when dimensions are non-empty, and the optional comment below.
-Initial public acceptance targets a close visual reproduction of those entries,
-including their width, positioning, typography and spacing. Markup may be safer
-and more semantic internally, but the listing must not acquire a new card/grid
-visual language.
+Parenthetical title qualifiers may receive restrained typographic treatment without changing stored title data.
 
-Every meaningful public artwork image requires canonical ALT data. A
-usage-specific `artwork_media.alt_text_override`, when explicitly present,
-intentionally overrides the asset-level ALT value; otherwise the asset-level
-ALT value is required. This is an explicit editorial precedence rule, not a
-recovery fallback. Artwork title, filename, legacy metadata, or empty
-placeholder text must never be substituted for missing required ALT data.
+Gallery/Home presentation remains compact. Artwork detail may render additional editorial description/narrative separately from the shared compact label.
 
-The thumbnail and original are two required references derived from the same
-artwork asset relationship. The legacy source uses the same logical filename
-under a category thumbnail directory and a category original-media directory.
-The target retains the original/full-resolution asset and generates controlled
-derivatives; a derivative never replaces the original or becomes the only copy.
-Opening an artwork from a thumbnail loads the corresponding canonical original.
-A missing required derivative must not silently fall back to the original.
+Every meaningful public artwork image requires canonical ALT data. An explicit usage-specific ALT override takes precedence over the asset-level ALT value; otherwise the asset-level value is required. Title, filename, legacy metadata or placeholder text is never a silent substitute for missing required ALT.
 
-Missing, corrupt, unavailable, ambiguous, or otherwise invalid required public
-media is an invariant failure and must be surfaced explicitly rather than
-replaced with another media source, empty URL, placeholder content, or legacy
-value. Transient delivery failures after valid public data has been selected may
-still be represented by the viewer's explicit loading/error state; that error
-state is diagnostic behavior, not alternate successful content.
+Canonical originals remain authoritative. Listing thumbnails and other public derivatives are generated assets. A required missing/corrupt derivative must fail explicitly rather than silently serving the original as an alternate thumbnail.
 
-## 5. Viewer behavioral contract
+## Artwork detail
 
-The viewer is an artwork-first overlay/presentation with a loading state and
-an explicit close control.
+`/artworks/{slug}` is a first-class public page, not a fallback for the fullscreen viewer.
 
-### Required interactions
+It provides:
 
-- Open by activating an artwork thumbnail or artwork direct-view link.
-- Close with the visible close control and `Escape`; preserve the legacy
-  double-click close behavior only if it does not conflict with touch or
-  assistive input.
-- Zoom with mouse wheel and trackpad wheel gestures.
-- Provide visible `+` and `−` zoom controls. They must be operable by keyboard
-  and have accessible names.
-- Support pinch zoom and touch pan on touch devices.
-- Support pointer/mouse drag pan for an enlarged image. The legacy script
-  currently restricts dragging to one axis in places; two-dimensional panning
-  is an allowed usability improvement where needed to keep the full artwork
-  reachable.
-- Provide previous/next artwork navigation within the current published
-  ordered sequence, with disabled/clear boundary behavior. This is a tested
-  improvement over the legacy source, which has no verified previous/next
-  controls.
-- Support keyboard focus, activation, and `Escape`; do not require a mouse or
-  hover-only gesture.
-- Recalculate containment and usable zoom/pan bounds after viewport resize and
-  orientation changes.
+- the primary artwork image as a viewer trigger;
+- the same canonical artwork label used by Home/gallery;
+- optional richer artwork-specific narrative;
+- a data-driven return action to the owning category;
+- previous/next artwork navigation following the canonical category order.
 
-### Focus and accessibility
+The category return action must not hard-code a specific category identity. Home may use the same restrained action language as a category CTA.
 
-- Opening moves focus into the viewer and exposes it as a named modal/dialog or
-  equivalent application state.
-- Focus remains usable within the viewer controls while it is open and returns
-  to the activating thumbnail/link on close.
-- The close, zoom, previous, and next controls have visible focus styles and
-  accessible names. The image has the artwork ALT text and the current artwork
-  title is available to assistive technology.
-- Background page interaction and scroll are controlled while the viewer is
-  open, then restored on close.
-- The page remains usable without JavaScript: thumbnails/direct-view links must
-  still expose the artwork and metadata, even if enhanced zoom/pan is absent.
+## Fullscreen artwork viewer
 
-The legacy source verifies click-to-open, a loading indicator, wheel scaling,
-`+`/`−` key scaling, drag behavior, a close cross, and double-click close. It
-does not verify pinch zoom, touch navigation, `Escape`, focus management, or
-previous/next navigation; those are deliberate, subtle improvements.
+The enhanced viewer is an immersive artwork surface rather than a framed modal/card presentation.
 
-## 6. CV, Exhibitions and responsive public shell
+### Presentation
 
-`/cv` contains the biography/Vita only, with the verified portrait, biography
-content, public email/approved social links, Contact form/status when enabled,
-and the liability disclaimer. Historical exhibition rows from the legacy Vita
-must not remain duplicated as CV entries after normalization.
+- cover the entire visual viewport with a consistently black surface;
+- leave no exposed strip of the underlying page;
+- scale the artwork as large as practical within a small, even safety margin;
+- do not render a visible artwork title/footer inside the fullscreen surface;
+- keep controls neutral black/white/grey rather than introducing a blue/turquoise UI theme.
 
-`/exhibitions` is independently enabled and managed. Exhibition records support
-title, date/date range, kind, venue, location/address, description, external
-links, optional Directions URL, and multiple ordered media assets with at most
-one hero designation. Richer exhibition presentation must remain visually
-compatible with the site rather than becoming an unrelated card design.
+Top-right controls are compact and icon-only:
 
-The public shell preserves the legacy composition at desktop and mobile widths.
-The header is not constrained to the narrower artwork column: on desktop the
-artist name and navigation occupy the top header region and the separator spans
-the window width. At the reviewed small-screen breakpoint navigation stacks
-vertically and artwork content becomes full width. Browser comparison remains
-the authority for final spacing/position tuning.
+- Open artwork page;
+- Close.
 
-## 7. SEO and public metadata
+Bottom controls are compact:
 
-- Every indexable public page has one canonical HTTPS URL on the canonical
-  host. Canonical links must use the target path, never the legacy query form.
-- Artwork direct views use stable slugs. A deliberate published slug change
-  creates a permanent redirect from the old slug; a published artwork does not
-  silently lose its shareable URL.
-- Generate the sitemap from the target public route/content model. Include the
-  home, public category routes, independently enabled CV and Exhibitions,
-  Contact when available, and published artwork direct views. Exclude admin,
-  workshop/development, drafts, broken legacy routes, and disabled blog routes.
-- Preserve the intent of the legacy permissive `robots.txt`, but do not allow
-  it to advertise or expose admin, workshop/development, draft, or disabled
-  blog surfaces. The sitemap URL must be the canonical HTTPS sitemap URL.
-- Preserve verified page title, language, author, description, keywords/other
-  metadata intent, favicon, and artwork ALT metadata where semantically
-  applicable. The legacy metadata values are source material for the route
-  fixtures; unsafe or malformed legacy output is not a requirement to copy.
-- There are no public blog routes, blog navigation items, or blog sitemap URLs
-  while blog enablement is disabled.
+- Previous;
+- Zoom out;
+- Reset/current zoom level;
+- Zoom in;
+- Next.
 
-## 8. Preserve, improve, and do not preserve
+### Interaction
 
-### Behavior to preserve
+- open from artwork thumbnails/images while retaining usable no-JavaScript artwork links;
+- close through the visible control and `Escape`;
+- zoom using mouse/trackpad wheel, visible controls and keyboard;
+- support pinch zoom and touch pan;
+- support pointer/mouse drag pan when enlarged;
+- allow a small, consistent pan overshoot beyond the image edge on each side so edge inspection does not feel artificially clamped;
+- previous/next respects the current canonical published sequence and disables correctly at boundaries;
+- double-click may be a desktop zoom shortcut when it does not conflict with other input;
+- recalculate containment and pan/zoom geometry after resize/orientation changes;
+- expose explicit loading and missing-media/error states rather than fallback content.
 
-- The public root and artwork navigation identity.
-- The verified artwork categories and their public route meanings.
-- Artwork-first listings with title, displayed year, medium, dimensions, and
-  optional comment.
-- The reconciled legacy gallery sequence and the chronological home latest-work
-  behavior.
-- Thumbnail-to-original artwork relationship and image loading/viewer intent.
-- The CV/Vita portrait and biography meaning plus all verified historical
-  exhibition information, normalized into its separate Exhibition domain.
-- The intended Contact fields and successful-delivery outcome.
-- Page identity, language/ALT metadata, favicon, sitemap intent, and public
-  discoverability.
+### Accessibility and state
 
-### Subtle improvements allowed
+The fullscreen surface is a controlled application state with usable focus management. Opening moves focus into viewer controls, background interaction/scroll is controlled while open, and closing returns focus to the activating element where practical. Controls have accessible names and visible focus states. The current artwork remains available to assistive technology through the canonical image ALT/context even though no visible title footer is displayed.
 
-- Clean path-based canonical URLs; redirects are created only for deliberate
-  new-application slug/path changes or a separately evidenced external-link
-  need.
-- Explicit normalized positions for the complete curated category order after
-  legacy reconciliation.
-- Reliable viewer loading/error states, two-dimensional pan, touch/pinch,
-  keyboard/Escape support, focus management, and previous/next navigation.
-- Responsive handling that improves readability and touch operation without
-  changing the artistic composition.
-- Stable artwork slugs and direct sharing.
-- Separate CV and Exhibitions destinations, because they are independent target
-  editorial concepts even though the legacy Vita displayed them together.
+## CV, Contact and Exhibitions
 
-### Known bugs not to preserve
+### CV / Vita
 
-- The legacy HTTP-only redirect/asset behavior; HTTPS is canonical.
-- The sitemap's HTTP/query URLs and its `links` entry with no working route.
-- The unreachable Contact dispatcher path and missing `inc/contact.php`
-  handler; preserve the intended outcome, not the broken implementation.
-- Ambiguous or duplicate public ordering masked by dates, slugs, IDs,
-  insertion order, or database order.
-- Missing normalized dates or media metadata masked by legacy/raw values,
-  alternate media sources, generated placeholders, or unrelated fields.
-- PHP warnings, directory includes, database errors, debug output, or exposed
-  internal details for invalid routes or failed media.
-- Unsafe legacy SQL construction, upload handling, formatting/parser behavior,
-  authentication/session behavior, third-party asset assumptions, and legacy
-  credentials/configuration.
-- Public workshop/development or administrative surfaces.
-- Any public blog route while blog enablement is disabled.
+`/cv` contains the biography/Vita surface, portrait, approved public email/social links, Contact presentation when applicable and liability disclaimer.
 
-## Implementation readiness
+Historical legacy Exhibition rows are not duplicated as CV entries after normalization. Draft/unpublished biography data is never rendered publicly. CV has an independent public enabled state.
 
-The public implementation is not accepted merely because route/data tests pass.
-Cutover requires browser comparison against the legacy site for the artwork
-shell, header/navigation and representative gallery entries. CV and Exhibitions
-are deliberate target divergences and are reviewed against their explicitly
-separated product contracts rather than pixel-matched to the old combined Vita.
+### Contact
+
+The enabled form preserves the intended legacy fields:
+
+- Name — required;
+- Email — required;
+- Website — optional;
+- Comment — required.
+
+Server-side validation, CSRF protection, rate limiting, abuse controls, safe mail handling, failure handling and logging minimization are required. Contact supports enabled, under-construction and hidden presentation states. Contact does not make CV public when CV is disabled and does not create another main-navigation item.
+
+### Exhibitions
+
+`/exhibitions` is independently enabled and managed. Exhibition records may include title, date/date range, kind, venue, location/address text, description, validated external/directions links and ordered media with at most one hero presentation image.
+
+Exhibition presentation remains restrained and visually compatible with the public shell. Rich text uses the shared constrained safe-rendering boundary; arbitrary iframe/embed HTML is not accepted.
+
+## Blog
+
+Blog is a separately gated public feature.
+
+When disabled:
+
+- `/blog` and post routes are intentionally unavailable;
+- Blog is absent from navigation and sitemap;
+- draft/scheduled/editorial data remains intact in admin.
+
+When enabled, publicly eligible posts use stable slugs and the same legacy-derived visual system as the rest of the site. Draft, unpublished and not-yet-public scheduled posts are excluded from public rendering and discovery. Blog rich text and media use the shared safe-content and MediaAsset boundaries.
+
+## SEO and discovery
+
+- every indexable page has one canonical HTTPS URL;
+- canonical metadata never points to legacy query-form URLs;
+- sitemap content follows actual feature/category/publication state;
+- admin, workshop/development, draft, hidden and disabled-feature surfaces are excluded;
+- robots policy preserves public discoverability without advertising internal surfaces;
+- route-specific title/description/metadata and meaningful artwork ALT semantics are preserved or safely normalized from reviewed source evidence;
+- a deliberate canonical new-application slug change may create a permanent generic redirect;
+- unknown category/artwork/blog slugs return a safe not-found response without debug/database/internal disclosure.
+
+## Legacy evidence and deliberate divergences
+
+Preserve:
+
+- artistic identity and public composition;
+- verified content and factual artwork metadata;
+- reconciled artwork ordering;
+- original-media provenance;
+- biography/portrait meaning and complete historical Exhibition information;
+- intended Contact outcome;
+- metadata/discoverability intent.
+
+Deliberately improve or normalize:
+
+- clean path-based canonical routes;
+- generic data-driven categories;
+- separate CV and Exhibitions destinations;
+- reliable fullscreen artwork viewer with keyboard/touch/pointer navigation;
+- stable direct artwork pages and richer artwork-specific context;
+- safe rich text, links, media delivery and form handling.
+
+Do not preserve:
+
+- legacy insecure HTTP behaviour;
+- broken Contact/links routes;
+- unsafe SQL/auth/upload/parser behaviour;
+- debug/warning/internal-error disclosure;
+- public workshop/admin/development surfaces;
+- legacy PHP dispatcher/query routing merely for compatibility;
+- silent ordering/media/date fallbacks.
+
+## Acceptance rule
+
+Passing route/data tests is not sufficient public acceptance. Final acceptance requires real-browser comparison of the shell, representative galleries, artwork detail, fullscreen viewer, CV/Contact, Exhibitions and any enabled Blog surface, together with the release-candidate regression gate tracked in GitHub Issues.
