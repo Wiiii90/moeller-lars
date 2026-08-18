@@ -139,7 +139,7 @@ it('falls back to stale aggregate reporting when Matomo becomes unavailable', fu
     $live = app(MatomoReportingClient::class)->report('today');
     expect($live['status'])->toBe('available');
 
-    $this->travel(2)->seconds();
+    Cache::forget('analytics:matomo:v2:site:7:today:fresh');
     Http::fake([
         'https://analytics.example.test/index.php' => Http::response([], 503),
     ]);
