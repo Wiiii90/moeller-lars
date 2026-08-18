@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CvEntries\Pages;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\EditorialRichTextValidator;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Models\CvEntry;
 use Filament\Resources\Pages\CreateRecord;
@@ -15,6 +16,8 @@ class CreateCvEntry extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        app(EditorialRichTextValidator::class)->validate($data['body'] ?? null, 'body');
+
         foreach (['state', 'position', 'published_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at'] as $field) {
             unset($data[$field]);
         }
