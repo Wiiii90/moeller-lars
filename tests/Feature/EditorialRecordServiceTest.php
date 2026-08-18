@@ -7,6 +7,7 @@ use App\Models\Exhibition;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -47,6 +48,16 @@ it('publishes, unpublishes, archives and restores CV entries with audit events',
 
     expect(AuditEvent::query()->where('entity_type', 'cv_entry')->pluck('action')->all())
         ->toContain('cv_entry.published', 'cv_entry.unpublished', 'cv_entry.archived', 'cv_entry.restored_to_draft');
+});
+
+it('requires archived editorial records to return to draft before publishing', function () {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $entry = cvRecord('Archived entry', 0, 'archived');
+
+    expect(fn () => app(EditorialRecordService::class)->publish($entry))
+        ->toThrow(ValidationException::class)
+        ->and($entry->fresh()->state)->toBe('archived')
+        ->and(AuditEvent::query()->where('action', 'cv_entry.published')->count())->toBe(0);
 });
 
 it('reorders published exhibitions without tripping the partial unique position index', function () {
