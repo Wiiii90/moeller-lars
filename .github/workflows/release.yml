@@ -37,7 +37,8 @@ jobs:
       DB_DATABASE: moeller_lars_testing
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
-      MATOMO_ENABLED: false
+      MATOMO_TRACKING_ENABLED: false
+      MATOMO_REPORTING_ENABLED: false
     steps:
       - uses: actions/checkout@v4
 
