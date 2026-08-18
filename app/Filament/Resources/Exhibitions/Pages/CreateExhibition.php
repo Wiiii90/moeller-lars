@@ -30,8 +30,8 @@ class CreateExhibition extends CreateRecord
         $actor = app(AdminAuditService::class)->requireActor();
 
         return DB::transaction(function () use ($data, $actor): Model {
-            $last = Exhibition::query()->orderByDesc('position')->lockForUpdate()->first();
-            $data['position'] = $last === null ? 0 : ((int) $last->getAttribute('position')) + 1;
+            $lastPosition = Exhibition::query()->orderByDesc('position')->lockForUpdate()->value('position');
+            $data['position'] = $lastPosition === null ? 0 : ((int) $lastPosition) + 1;
 
             $exhibition = new Exhibition;
             $exhibition->fill($data);
