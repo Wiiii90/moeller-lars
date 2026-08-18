@@ -55,11 +55,52 @@ function bulkAnalyticsPayload(): array
             ['label' => 'https://artist.example/artworks/blue?private-query=1', 'nb_visits' => 5, 'nb_hits' => 12],
         ],
         [
+            ['label' => 'https://artist.example/', 'nb_visits' => 4, 'nb_entrances' => 4, 'bounce_rate' => '25%'],
+        ],
+        [
+            ['label' => 'https://artist.example/cv', 'nb_visits' => 3, 'nb_exits' => 3, 'exit_rate' => '40%'],
+        ],
+        [
+            ['label' => 'https://artist.example/files/catalogue.pdf?download=1', 'nb_visits' => 2, 'nb_hits' => 3],
+        ],
+        [
+            ['label' => 'https://instagram.com/larsmoeller_art?source=site', 'nb_visits' => 3, 'nb_hits' => 4],
+        ],
+        [
+            ['label' => 'reflexion', 'nb_visits' => 2],
+        ],
+        [],
+        [
             ['label' => 'artwork_open', 'nb_events' => 7, 'nb_visits' => 4, 'nb_uniq_visitors' => 4],
             ['label' => 'contact_submit_success', 'nb_events' => 2, 'nb_visits' => 2, 'nb_uniq_visitors' => 2],
         ],
         [
+            ['label' => 'Artwork', 'nb_events' => 9, 'nb_visits' => 5, 'nb_uniq_visitors' => 4],
+        ],
+        [
+            ['label' => 'Reflexion (2)', 'nb_events' => 5, 'nb_visits' => 4, 'nb_uniq_visitors' => 4],
+        ],
+        [
             ['label' => 'Direct Entry', 'nb_visits' => 6, 'nb_uniq_visitors' => 5],
+            ['label' => 'Websites', 'nb_visits' => 4, 'nb_uniq_visitors' => 3],
+        ],
+        [
+            ['label' => 'example.org', 'nb_visits' => 3, 'nb_uniq_visitors' => 3],
+        ],
+        [
+            ['label' => 'Instagram', 'nb_visits' => 2, 'nb_uniq_visitors' => 2],
+        ],
+        [
+            ['label' => 'Google', 'nb_visits' => 2, 'nb_uniq_visitors' => 2],
+        ],
+        [
+            ['label' => 'summer-show', 'nb_visits' => 1, 'nb_uniq_visitors' => 1],
+        ],
+        [
+            ['label' => 'ChatGPT', 'nb_visits' => 1, 'nb_uniq_visitors' => 1],
+        ],
+        [
+            ['label' => 'Europe', 'nb_visits' => 9, 'nb_uniq_visitors' => 7],
         ],
         [
             ['label' => 'Germany', 'nb_visits' => 7, 'nb_uniq_visitors' => 6],
@@ -72,6 +113,23 @@ function bulkAnalyticsPayload(): array
         ],
         [
             ['label' => 'Windows', 'nb_visits' => 6, 'nb_uniq_visitors' => 5],
+        ],
+        [
+            ['label' => '1-3 min', 'nb_visits' => 4],
+        ],
+        [
+            ['label' => '3-5 pages', 'nb_visits' => 5],
+        ],
+        [
+            ['label' => '20', 'nb_visits' => 3],
+        ],
+        [
+            ['label' => 'Tuesday', 'nb_visits' => 4],
+        ],
+        [
+            'nb_visits_returning' => 4,
+            'nb_actions_returning' => 11,
+            'avg_time_on_site_returning' => 120,
         ],
     ];
 }
@@ -109,8 +167,14 @@ it('builds the aggregate dashboard from one POST-authenticated Matomo bulk reque
         ->and($result['metrics']['bounce_rate'])->toBe(35.0)
         ->and($result['comparison']['nb_visits'])->toBe(25.0)
         ->and($result['content'][0]['label'])->toBe('/artworks/blue')
+        ->and($result['entry_pages'][0]['label'])->toBe('/')
+        ->and($result['downloads'][0]['label'])->toBe('artist.example/files/catalogue.pdf')
+        ->and($result['outlinks'][0]['label'])->toBe('instagram.com/larsmoeller_art')
         ->and($result['events'][0]['label'])->toBe('artwork_open')
+        ->and($result['event_names'][0]['label'])->toBe('Reflexion (2)')
+        ->and($result['ai_assistants'][0]['label'])->toBe('ChatGPT')
         ->and($result['countries'][0]['label'])->toBe('Germany')
+        ->and($result['returning']['nb_visits_returning'])->toBe(4.0)
         ->and($result['series'])->toHaveCount(2);
 
     Http::assertSent(function (Request $request): bool {
@@ -121,10 +185,12 @@ it('builds the aggregate dashboard from one POST-authenticated Matomo bulk reque
             && $request['method'] === 'API.getBulkRequest'
             && $request['token_auth'] === 'secret-reporting-token'
             && is_array($urls)
-            && count($urls) === 10
+            && count($urls) === 29
             && str_contains($urls[0], 'method=VisitsSummary.get')
             && str_contains($urls[3], 'method=Actions.getPageUrls')
-            && str_contains($urls[4], 'method=Events.getAction')
+            && str_contains($urls[10], 'method=Events.getAction')
+            && str_contains($urls[14], 'method=Referrers.getWebsites')
+            && str_contains($urls[18], 'method=Referrers.getAIAssistants')
             && collect($urls)->every(fn (string $url): bool => ! str_contains($url, 'token_auth'));
     });
 });
@@ -141,7 +207,7 @@ it('falls back to stale aggregate reporting when Matomo becomes unavailable', fu
     $live = app(MatomoReportingClient::class)->report('today');
     expect($live['status'])->toBe('available');
 
-    Cache::forget('analytics:matomo:v2:site:7:today:fresh');
+    Cache::forget('analytics:matomo:v3:site:7:today:fresh');
     $stale = app(MatomoReportingClient::class)->report('today');
 
     expect($stale['status'])->toBe('stale')
