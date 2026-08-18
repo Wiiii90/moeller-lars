@@ -196,6 +196,25 @@ it('builds the aggregate dashboard from one POST-authenticated Matomo bulk reque
     });
 });
 
+it('keeps range analytics available when Matomo omits range unique visitors', function () {
+    configureAnalyticsReporting();
+
+    $payload = bulkAnalyticsPayload();
+    unset($payload[0]['nb_uniq_visitors'], $payload[1]['nb_uniq_visitors']);
+
+    Http::fake([
+        'https://analytics.example.test/index.php' => Http::response($payload),
+    ]);
+
+    $result = app(MatomoReportingClient::class)->report('30d');
+
+    expect($result['status'])->toBe('available')
+        ->and($result['metrics']['nb_uniq_visitors'])->toBeNull()
+        ->and($result['warnings'])->toContain('Range-level unique visitors are not enabled in Matomo; the remaining aggregate reports are still available.')
+        ->and($result['countries'][0]['label'])->toBe('Germany')
+        ->and($result['series'])->toHaveCount(2);
+});
+
 it('falls back to stale aggregate reporting when Matomo becomes unavailable', function () {
     configureAnalyticsReporting();
 
@@ -208,7 +227,7 @@ it('falls back to stale aggregate reporting when Matomo becomes unavailable', fu
     $live = app(MatomoReportingClient::class)->report('today');
     expect($live['status'])->toBe('available');
 
-    Cache::forget('analytics:matomo:v3:site:7:today:fresh');
+    Cache::forget('analytics:matomo:v4:site:7:today:fresh');
     $stale = app(MatomoReportingClient::class)->report('today');
 
     expect($stale['status'])->toBe('stale')
@@ -234,6 +253,6 @@ it('aggregates 404 and admin request health without storing visitor identifiers'
     $this->get('/admin/login')->assertSuccessful();
 
     expect((float) DailyMetric::query()->where('metric_name', 'error:http_404')->value('value'))->toBeGreaterThanOrEqual(1.0)
-        ->and((float) DailyMetric::query()->where('metric_name', 'operation:admin_request')->value('value'))->toBeGreaterThanOrEqual(1.0)
+        ->and((float) DailyMetric::query()->where('operation:admin_request')->value('value'))->toBeGreaterThanOrEqual(1.0)
         ->and(DailyMetric::query()->whereNotNull('dimension_key')->count())->toBe(0);
 });
