@@ -29,7 +29,7 @@ final class RecordOperationalMetrics
                 $this->metrics->add('error:http_5xx', 1, 'count');
             }
             if ($isAdmin) {
-                $this->metrics->add('admin:request', 1, 'count');
+                $this->metrics->add('operation:admin_request', 1, 'count');
             }
 
             return $response;

@@ -228,7 +228,7 @@ final class Analytics extends Page
             if ($name === 'bot:request') {
                 $bots += (int) round($value);
             }
-            if ($name === 'admin:request') {
+            if ($name === 'operation:admin_request') {
                 $adminRequests += (int) round($value);
             }
             if ($name === 'performance:request_duration_ms') {
@@ -281,7 +281,7 @@ final class Analytics extends Page
             'error:http_5xx' => 'HTTP 5xx responses',
             'error:request_exception' => 'Request exceptions',
             'bot:request' => 'Bot requests',
-            'admin:request' => 'Admin requests',
+            'operation:admin_request' => 'Admin requests',
             'performance:request_duration_ms' => 'Average request duration',
             'performance:admin_request_duration_ms' => 'Average admin request duration',
             default => str_replace([':', '_'], [' · ', ' '], $metricName),

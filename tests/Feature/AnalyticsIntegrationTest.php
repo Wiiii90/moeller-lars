@@ -169,6 +169,6 @@ it('aggregates 404 and admin request health without storing visitor identifiers'
     $this->get('/admin/login')->assertSuccessful();
 
     expect((float) DailyMetric::query()->where('metric_name', 'error:http_404')->value('value'))->toBeGreaterThanOrEqual(1.0)
-        ->and((float) DailyMetric::query()->where('metric_name', 'admin:request')->value('value'))->toBeGreaterThanOrEqual(1.0)
+        ->and((float) DailyMetric::query()->where('metric_name', 'operation:admin_request')->value('value'))->toBeGreaterThanOrEqual(1.0)
         ->and(DailyMetric::query()->whereNotNull('dimension_key')->count())->toBe(0);
 });

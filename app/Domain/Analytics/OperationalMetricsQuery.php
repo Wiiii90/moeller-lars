@@ -22,8 +22,7 @@ final class OperationalMetricsQuery
                 $query->where('metric_name', 'like', 'bot:%')
                     ->orWhere('metric_name', 'like', 'error:%')
                     ->orWhere('metric_name', 'like', 'performance:%')
-                    ->orWhere('metric_name', 'like', 'admin:%')
-                    ->orWhere('metric_name', 'like', 'upload:%')
+                    ->orWhere('metric_name', 'like', 'operation:%')
                     ->orWhere('metric_name', 'like', 'storage:%')
                     ->orWhere('metric_name', 'like', 'deployment:%')
                     ->orWhere('metric_name', 'like', 'security:%');
