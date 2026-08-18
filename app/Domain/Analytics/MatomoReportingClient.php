@@ -38,8 +38,8 @@ final class MatomoReportingClient
         try {
             $siteId = $this->configuration->siteId();
             $range = $this->range($preset);
-            $freshKey = "analytics:matomo:v2:site:{$siteId}:{$preset}:fresh";
-            $staleKey = "analytics:matomo:v2:site:{$siteId}:{$preset}:stale";
+            $freshKey = "analytics:matomo:v3:site:{$siteId}:{$preset}:fresh";
+            $staleKey = "analytics:matomo:v3:site:{$siteId}:{$preset}:stale";
 
             $cached = Cache::get($freshKey);
             if (is_array($cached)) {
@@ -100,26 +100,36 @@ final class MatomoReportingClient
         $date = $range['start'].','.$range['end'];
         $previousDate = $range['previous_start'].','.$range['previous_end'];
 
-        $requests = [
-            $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $date),
-            $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $previousDate),
-            $this->nestedRequest('VisitsSummary.get', $siteId, 'day', $date),
-            $this->nestedRequest('Actions.getPageUrls', $siteId, 'range', $date, [
-                'flat' => 1,
-                'filter_limit' => 10,
-                'filter_sort_column' => 'nb_hits',
-                'filter_sort_order' => 'desc',
-            ]),
-            $this->nestedRequest('Events.getAction', $siteId, 'range', $date, [
-                'filter_limit' => 30,
-                'filter_sort_column' => 'nb_events',
-                'filter_sort_order' => 'desc',
-            ]),
-            $this->nestedRequest('Referrers.getReferrerType', $siteId, 'range', $date, ['filter_limit' => 10]),
-            $this->nestedRequest('UserCountry.getCountry', $siteId, 'range', $date, ['filter_limit' => 10]),
-            $this->nestedRequest('DevicesDetection.getType', $siteId, 'range', $date, ['filter_limit' => 10]),
-            $this->nestedRequest('DevicesDetection.getBrowsers', $siteId, 'range', $date, ['filter_limit' => 10]),
-            $this->nestedRequest('DevicesDetection.getOsFamilies', $siteId, 'range', $date, ['filter_limit' => 10]),
+        $definitions = [
+            'summary' => $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $date),
+            'previous_summary' => $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $previousDate),
+            'series' => $this->nestedRequest('VisitsSummary.get', $siteId, 'day', $date),
+            'content' => $this->nestedRequest('Actions.getPageUrls', $siteId, 'range', $date, $this->topRows(15, ['flat' => 1])),
+            'entry_pages' => $this->nestedRequest('Actions.getEntryPageUrls', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
+            'exit_pages' => $this->nestedRequest('Actions.getExitPageUrls', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
+            'downloads' => $this->nestedRequest('Actions.getDownloads', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
+            'outlinks' => $this->nestedRequest('Actions.getOutlinks', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
+            'site_searches' => $this->nestedRequest('Actions.getSiteSearchKeywords', $siteId, 'range', $date, $this->topRows(12)),
+            'site_search_no_results' => $this->nestedRequest('Actions.getSiteSearchNoResultKeywords', $siteId, 'range', $date, $this->topRows(8)),
+            'events' => $this->nestedRequest('Events.getAction', $siteId, 'range', $date, $this->topRows(30, ['filter_sort_column' => 'nb_events'])),
+            'event_categories' => $this->nestedRequest('Events.getCategory', $siteId, 'range', $date, $this->topRows(20, ['filter_sort_column' => 'nb_events'])),
+            'event_names' => $this->nestedRequest('Events.getName', $siteId, 'range', $date, $this->topRows(30, ['filter_sort_column' => 'nb_events'])),
+            'referrers' => $this->nestedRequest('Referrers.getReferrerType', $siteId, 'range', $date, $this->topRows(10)),
+            'referrer_websites' => $this->nestedRequest('Referrers.getWebsites', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
+            'socials' => $this->nestedRequest('Referrers.getSocials', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
+            'search_engines' => $this->nestedRequest('Referrers.getSearchEngines', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
+            'campaigns' => $this->nestedRequest('Referrers.getCampaigns', $siteId, 'range', $date, $this->topRows(12)),
+            'ai_assistants' => $this->nestedRequest('Referrers.getAIAssistants', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
+            'continents' => $this->nestedRequest('UserCountry.getContinent', $siteId, 'range', $date, $this->topRows(10)),
+            'countries' => $this->nestedRequest('UserCountry.getCountry', $siteId, 'range', $date, $this->topRows(15)),
+            'devices' => $this->nestedRequest('DevicesDetection.getType', $siteId, 'range', $date, $this->topRows(10)),
+            'browsers' => $this->nestedRequest('DevicesDetection.getBrowsers', $siteId, 'range', $date, $this->topRows(12)),
+            'operating_systems' => $this->nestedRequest('DevicesDetection.getOsFamilies', $siteId, 'range', $date, $this->topRows(12)),
+            'visit_duration' => $this->nestedRequest('VisitorInterest.getNumberOfVisitsPerVisitDuration', $siteId, 'range', $date),
+            'pages_per_visit' => $this->nestedRequest('VisitorInterest.getNumberOfVisitsPerPage', $siteId, 'range', $date),
+            'local_time' => $this->nestedRequest('VisitTime.getVisitInformationPerLocalTime', $siteId, 'range', $date),
+            'day_of_week' => $this->nestedRequest('VisitTime.getByDayOfWeek', $siteId, 'range', $date),
+            'returning' => $this->nestedRequest('VisitFrequency.get', $siteId, 'range', $date),
         ];
 
         $response = Http::asForm()
@@ -130,7 +140,7 @@ final class MatomoReportingClient
                 'method' => 'API.getBulkRequest',
                 'format' => 'JSON',
                 'token_auth' => $this->configuration->apiToken(),
-                'urls' => $requests,
+                'urls' => array_values($definitions),
             ]);
 
         if (! $response->successful()) {
@@ -142,40 +152,67 @@ final class MatomoReportingClient
             throw new RuntimeException('Matomo Reporting API returned malformed bulk JSON.');
         }
 
-        $summaryPayload = $this->reportPayload($payload, 0);
-        if ($summaryPayload === null) {
+        $reports = [];
+        foreach (array_keys($definitions) as $index => $name) {
+            $reports[$name] = $this->reportPayload($payload, $index);
+        }
+
+        if ($reports['summary'] === null) {
             throw new RuntimeException('Matomo Reporting API omitted the required visit summary.');
         }
 
-        $metrics = $this->normalizeSummary($summaryPayload);
-        $warnings = [];
+        $metrics = $this->normalizeSummary($reports['summary']);
+        $previousMetrics = $reports['previous_summary'] === null
+            ? null
+            : $this->normalizeSummary($reports['previous_summary'], false);
+        $series = $reports['series'] === null ? [] : $this->normalizeSeries($reports['series']);
 
-        $previousPayload = $this->reportPayload($payload, 1);
-        $previousMetrics = $previousPayload === null ? null : $this->normalizeSummary($previousPayload, false);
+        $rowMetrics = ['nb_visits', 'nb_uniq_visitors', 'nb_actions', 'nb_hits', 'nb_events', 'nb_entrances', 'nb_exits', 'bounce_rate', 'exit_rate', 'avg_time_on_page', 'avg_time_on_site'];
+        $eventMetrics = ['nb_events', 'nb_visits', 'nb_uniq_visitors'];
+        $visitMetrics = ['nb_visits', 'nb_uniq_visitors', 'nb_actions', 'bounce_rate', 'avg_time_on_site'];
+
+        $sections = [
+            'content' => $this->normalizeRows($reports['content'], $rowMetrics, 'content'),
+            'entry_pages' => $this->normalizeRows($reports['entry_pages'], $rowMetrics, 'content'),
+            'exit_pages' => $this->normalizeRows($reports['exit_pages'], $rowMetrics, 'content'),
+            'downloads' => $this->normalizeRows($reports['downloads'], $rowMetrics, 'external'),
+            'outlinks' => $this->normalizeRows($reports['outlinks'], $rowMetrics, 'external'),
+            'site_searches' => $this->normalizeRows($reports['site_searches'], $rowMetrics),
+            'site_search_no_results' => $this->normalizeRows($reports['site_search_no_results'], $rowMetrics),
+            'events' => $this->normalizeRows($reports['events'], $eventMetrics),
+            'event_categories' => $this->normalizeRows($reports['event_categories'], $eventMetrics),
+            'event_names' => $this->normalizeRows($reports['event_names'], $eventMetrics),
+            'referrers' => $this->normalizeRows($reports['referrers'], $visitMetrics),
+            'referrer_websites' => $this->normalizeRows($reports['referrer_websites'], $visitMetrics, 'external'),
+            'socials' => $this->normalizeRows($reports['socials'], $visitMetrics),
+            'search_engines' => $this->normalizeRows($reports['search_engines'], $visitMetrics),
+            'campaigns' => $this->normalizeRows($reports['campaigns'], $visitMetrics),
+            'ai_assistants' => $this->normalizeRows($reports['ai_assistants'], $visitMetrics),
+            'continents' => $this->normalizeRows($reports['continents'], $visitMetrics),
+            'countries' => $this->normalizeRows($reports['countries'], $visitMetrics),
+            'devices' => $this->normalizeRows($reports['devices'], $visitMetrics),
+            'browsers' => $this->normalizeRows($reports['browsers'], $visitMetrics),
+            'operating_systems' => $this->normalizeRows($reports['operating_systems'], $visitMetrics),
+            'visit_duration' => $this->normalizeRows($reports['visit_duration'], ['nb_visits', 'nb_uniq_visitors']),
+            'pages_per_visit' => $this->normalizeRows($reports['pages_per_visit'], ['nb_visits', 'nb_uniq_visitors']),
+            'local_time' => $this->normalizeRows($reports['local_time'], ['nb_visits', 'nb_uniq_visitors']),
+            'day_of_week' => $this->normalizeRows($reports['day_of_week'], ['nb_visits', 'nb_uniq_visitors']),
+        ];
+
+        $warnings = [];
         if ($previousMetrics === null) {
             $warnings[] = 'Previous-period comparison is unavailable.';
         }
-
-        $seriesPayload = $this->reportPayload($payload, 2);
-        $series = $seriesPayload === null ? [] : $this->normalizeSeries($seriesPayload);
         if ($series === []) {
             $warnings[] = 'Traffic time-series data is unavailable.';
         }
-
-        $sections = [
-            'content' => $this->normalizeRows($this->reportPayload($payload, 3), ['nb_visits', 'nb_hits', 'nb_actions']),
-            'events' => $this->normalizeRows($this->reportPayload($payload, 4), ['nb_events', 'nb_visits', 'nb_uniq_visitors']),
-            'referrers' => $this->normalizeRows($this->reportPayload($payload, 5), ['nb_visits', 'nb_uniq_visitors']),
-            'countries' => $this->normalizeRows($this->reportPayload($payload, 6), ['nb_visits', 'nb_uniq_visitors']),
-            'devices' => $this->normalizeRows($this->reportPayload($payload, 7), ['nb_visits', 'nb_uniq_visitors']),
-            'browsers' => $this->normalizeRows($this->reportPayload($payload, 8), ['nb_visits', 'nb_uniq_visitors']),
-            'operating_systems' => $this->normalizeRows($this->reportPayload($payload, 9), ['nb_visits', 'nb_uniq_visitors']),
-        ];
-
         foreach ($sections as $name => $rows) {
-            if ($this->reportPayload($payload, array_search($name, array_keys($sections), true) + 3) === null) {
+            if ($reports[$name] === null) {
                 $warnings[] = ucfirst(str_replace('_', ' ', $name)).' report is unavailable.';
             }
+        }
+        if ($reports['returning'] === null) {
+            $warnings[] = 'Returning-visitor report is unavailable.';
         }
 
         return [
@@ -186,7 +223,21 @@ final class MatomoReportingClient
             'comparison' => $this->comparison($metrics, $previousMetrics),
             'series' => $series,
             ...$sections,
+            'returning' => $this->normalizeNumericMap($reports['returning']),
             'warnings' => array_values(array_unique($warnings)),
+        ];
+    }
+
+    /** @param array<string, scalar> $extra
+     * @return array<string, scalar>
+     */
+    private function topRows(int $limit, array $extra = []): array
+    {
+        return [
+            'filter_limit' => $limit,
+            'filter_sort_column' => 'nb_visits',
+            'filter_sort_order' => 'desc',
+            ...$extra,
         ];
     }
 
@@ -274,7 +325,7 @@ final class MatomoReportingClient
     /** @param list<string> $metricNames
      * @return array<int, array<string, float|string>>
      */
-    private function normalizeRows(?array $payload, array $metricNames): array
+    private function normalizeRows(?array $payload, array $metricNames, string $labelMode = 'generic'): array
     {
         if ($payload === null) {
             return [];
@@ -286,7 +337,7 @@ final class MatomoReportingClient
                 continue;
             }
 
-            $normalized = ['label' => $this->sanitizeLabel($row['label'])];
+            $normalized = ['label' => $this->sanitizeLabel($row['label'], $labelMode)];
             foreach ($metricNames as $metric) {
                 $normalized[$metric] = $this->numericValue($row[$metric] ?? null) ?? 0.0;
             }
@@ -294,6 +345,27 @@ final class MatomoReportingClient
         }
 
         return $rows;
+    }
+
+    /** @return array<string, float> */
+    private function normalizeNumericMap(?array $payload): array
+    {
+        if ($payload === null) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($payload as $key => $value) {
+            if (! is_string($key)) {
+                continue;
+            }
+            $number = $this->numericValue($value);
+            if ($number !== null) {
+                $normalized[$key] = $number;
+            }
+        }
+
+        return $normalized;
     }
 
     /** @param array<string, float>|null $previous
@@ -366,7 +438,7 @@ final class MatomoReportingClient
         return is_numeric($normalized) ? (float) $normalized : null;
     }
 
-    private function sanitizeLabel(string $label): string
+    private function sanitizeLabel(string $label, string $mode = 'generic'): string
     {
         $label = trim($label);
         if ($label === '') {
@@ -374,9 +446,17 @@ final class MatomoReportingClient
         }
 
         if (filter_var($label, FILTER_VALIDATE_URL) !== false) {
+            $host = parse_url($label, PHP_URL_HOST);
             $path = parse_url($label, PHP_URL_PATH);
+            $path = is_string($path) && $path !== '' ? $path : '/';
 
-            return is_string($path) && $path !== '' ? $path : '/';
+            if ($mode === 'content') {
+                return $path;
+            }
+
+            if ($mode === 'external' && is_string($host) && $host !== '') {
+                return $host.($path === '/' ? '' : $path);
+            }
         }
 
         return preg_replace('/[?#].*$/', '', $label) ?: $label;
