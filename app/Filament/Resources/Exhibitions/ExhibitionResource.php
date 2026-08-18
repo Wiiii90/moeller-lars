@@ -6,14 +6,15 @@ use App\Domain\Admin\EditorialRecordService;
 use App\Filament\Resources\Exhibitions\Pages\CreateExhibition;
 use App\Filament\Resources\Exhibitions\Pages\EditExhibition;
 use App\Filament\Resources\Exhibitions\Pages\ListExhibitions;
+use App\Filament\Support\MediaAssetSelect;
 use App\Models\Exhibition;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -71,28 +72,37 @@ class ExhibitionResource extends Resource
                     TextInput::make('city')->maxLength(160)->nullable(),
                     TextInput::make('country')->maxLength(160)->nullable(),
                     TextInput::make('location_text')->label('Location / address')->maxLength(500)->nullable()->columnSpanFull(),
-                    Textarea::make('description')->maxLength(10000)->nullable()->columnSpanFull(),
+                    MarkdownEditor::make('description')
+                        ->label('Description')
+                        ->toolbarButtons([
+                            ['bold', 'italic', 'link'],
+                            ['bulletList', 'orderedList'],
+                            ['undo', 'redo'],
+                        ])
+                        ->helperText('Formatting is limited to emphasis, links and lists so it stays compatible with the public exhibition renderer.')
+                        ->maxLength(10000)
+                        ->nullable()
+                        ->columnSpanFull(),
                     TextInput::make('external_url')->url()->maxLength(2048)->nullable(),
                     TextInput::make('directions_url')->label('Directions URL')->url()->maxLength(2048)->nullable(),
                 ])
                 ->columns(2),
             Section::make('Media')
-                ->description('Media order is managed directly here. A published exhibition may have at most one hero image.')
+                ->description('Choose media visually and drag items into their public order. A published exhibition may have at most one hero image.')
                 ->schema([
                     Repeater::make('mediaUsages')
                         ->relationship()
                         ->schema([
-                            Select::make('media_asset_id')
-                                ->relationship('mediaAsset', 'original_filename')
+                            MediaAssetSelect::make('media_asset_id', 'mediaAsset', 'Image')
                                 ->required()
-                                ->searchable()
-                                ->preload(),
+                                ->columnSpanFull(),
                             Select::make('role')->options([
                                 'hero' => 'Hero',
                                 'additional' => 'Additional',
                             ])->required()->default('additional'),
-                            TextInput::make('alt_text_override')->maxLength(500)->nullable(),
+                            TextInput::make('alt_text_override')->label('ALT text override')->maxLength(500)->nullable(),
                         ])
+                        ->columns(2)
                         ->orderColumn('position'),
                 ]),
         ]);
