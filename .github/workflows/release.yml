@@ -57,17 +57,22 @@ jobs:
         run: echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
 
       - name: Run PHPStan
+        id: phpstan
+        continue-on-error: true
         run: |
           set -o pipefail
           composer analyse 2>&1 | tee phpstan.log
 
-      - name: Upload PHPStan failure log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: admin-rc-phpstan-failure
-          path: phpstan.log
-          retention-days: 1
+      - name: Persist PHPStan blocker
+        if: steps.phpstan.outcome == 'failure'
+        run: |
+          cp phpstan.log .phpstan-result
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .phpstan-result
+          git commit -m 'Record PHPStan blocker [skip ci]'
+          git push
+          exit 1
 
       - uses: actions/setup-node@v4
         with:
@@ -81,17 +86,7 @@ jobs:
         run: npm run build
 
       - name: Run Pest
-        run: |
-          set -o pipefail
-          composer test 2>&1 | tee pest.log
-
-      - name: Upload Pest failure log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: admin-rc-pest-failure
-          path: pest.log
-          retention-days: 1
+        run: composer test
 
       - name: Apply canonical PHP formatting to admin RC
         run: |
