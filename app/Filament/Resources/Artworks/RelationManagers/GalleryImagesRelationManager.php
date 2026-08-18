@@ -29,10 +29,13 @@ class GalleryImagesRelationManager extends RelationManager
         return $table
             ->heading('Gallery images')
             ->description('Additional images shown with this artwork. Upload a new image or reuse an available item from the media library.')
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                ->where('role', 'additional')
-                ->with('mediaAsset.variants')
-                ->orderBy('position'))
+            ->modifyQueryUsing(function (Builder $query): Builder {
+                $query->where('role', 'additional');
+                $query->with('mediaAsset.variants');
+                $query->orderBy('position');
+
+                return $query;
+            })
             ->columns([
                 ImageColumn::make('preview')
                     ->label('')
