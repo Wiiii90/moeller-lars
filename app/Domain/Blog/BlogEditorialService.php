@@ -81,8 +81,16 @@ final class BlogEditorialService
 
         return DB::transaction(function () use ($post, $actor): BlogPost {
             $fresh = $this->locked($post);
-            if ($fresh->getAttribute('state') === 'published') {
+            $state = (string) $fresh->getAttribute('state');
+
+            if ($state === 'published') {
                 return $fresh;
+            }
+
+            if (! in_array($state, ['draft', 'scheduled', 'unpublished'], true)) {
+                throw ValidationException::withMessages([
+                    'state' => 'Restore this post to draft before publishing it again.',
+                ]);
             }
 
             $fresh->setAttribute('state', 'published');
@@ -105,6 +113,14 @@ final class BlogEditorialService
 
         return DB::transaction(function () use ($post, $date, $actor): BlogPost {
             $fresh = $this->locked($post);
+            $state = (string) $fresh->getAttribute('state');
+
+            if (! in_array($state, ['draft', 'scheduled', 'unpublished'], true)) {
+                throw ValidationException::withMessages([
+                    'state' => 'Only draft, scheduled or unpublished posts can be scheduled.',
+                ]);
+            }
+
             $fresh->setAttribute('state', 'scheduled');
             $fresh->setAttribute('scheduled_at', $date);
             $this->prepareLifecycle($fresh);
