@@ -1,16 +1,37 @@
 <section class="contact-section" aria-labelledby="contact-heading">
     <h2 id="contact-heading" class="category-heading">Contact</h2>
 
-    @if ($settings->contact_state === 'under_construction')
-        <div class="contact-status" role="status">
-            <span class="contact-status__icon" aria-hidden="true">
-                @switch($settings->contact_icon)
-                    @case('mail') @ @break
-                    @case('info') i @break
-                    @default ×
-                @endswitch
-            </span>
-            <p>{{ $settings->contact_status_text }}</p>
+    @if ($settings->contact_state === 'hidden' || $settings->contact_state === 'under_construction')
+        <p class="contact-status contact-status--quiet" role="status">
+            @if ($settings->contact_state === 'under_construction' && $settings->contact_status_text)
+                {{ $settings->contact_status_text }}
+            @else
+                Direct messages through the website are not active yet.
+            @endif
+        </p>
+
+        <div class="contact-form contact-form--preview" role="group" aria-disabled="true">
+            <div class="contact-form__field">
+                <label for="contact-name-preview">Name</label>
+                <input id="contact-name-preview" type="text" disabled>
+            </div>
+
+            <div class="contact-form__field">
+                <label for="contact-email-preview">Email</label>
+                <input id="contact-email-preview" type="email" disabled>
+            </div>
+
+            <div class="contact-form__field">
+                <label for="contact-website-preview">Website</label>
+                <input id="contact-website-preview" type="url" disabled>
+            </div>
+
+            <div class="contact-form__field">
+                <label for="contact-comment-preview">Comment</label>
+                <textarea id="contact-comment-preview" rows="7" disabled></textarea>
+            </div>
+
+            <button type="button" disabled>Send</button>
         </div>
     @elseif ($settings->contact_state === 'enabled')
         @if (session('contact_success'))

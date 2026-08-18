@@ -5,68 +5,79 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/cv'))
 
 @section('content')
+    @php
+        $portraitEntry = $cvEntries->first(fn ($entry) => $entry->imageMediaAsset !== null);
+    @endphp
+
     <div class="cv-page">
         <section class="cv-section" aria-labelledby="cv-heading">
             <h2 id="cv-heading" class="category-heading">cv</h2>
 
-            <div class="cv-biography">
-                @foreach ($cvEntries as $entry)
-                    <article class="cv-entry">
-                        @if ($entry->imageMediaAsset !== null)
-                            <img
-                                class="cv-entry__image"
-                                src="{{ $media->originalUrlForAsset($entry->imageMediaAsset) }}"
-                                alt="{{ $media->altTextForAsset($entry->imageMediaAsset) }}"
-                                loading="lazy"
-                            >
-                        @endif
+            <div class="cv-legacy-layout">
+                <div class="cv-legacy-copy">
+                    <div class="cv-biography">
+                        @foreach ($cvEntries as $entry)
+                            <article class="cv-entry">
+                                <div class="cv-entry__content">
+                                    <div class="cv-entry__line">
+                                        @if ($entry->year_text !== null)
+                                            <span class="cv-entry__date">{{ $entry->year_text }}</span>
+                                        @endif
+                                        <span>{{ $entry->title }}</span>
+                                    </div>
+                                    @if ($entry->organisation !== null)
+                                        <div>{{ $entry->organisation }}</div>
+                                    @endif
+                                    @if ($entry->location !== null && ($entry->organisation !== null || $entry->body !== null))
+                                        <div>{{ $entry->location }}</div>
+                                    @endif
+                                    @if ($entry->body !== null)
+                                        <div class="rich-text">{!! $richText->render($entry->body) !!}</div>
+                                    @endif
+                                    @if ($entry->external_url !== null)
+                                        <p><a href="{{ $entry->external_url }}" rel="noopener noreferrer">More information</a></p>
+                                    @endif
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
 
-                        <div class="cv-entry__content">
-                            <div class="cv-entry__line">
-                                @if ($entry->year_text !== null)
-                                    <span class="cv-entry__date">{{ $entry->year_text }}</span>
-                                @endif
-                                <span>{{ $entry->title }}</span>
-                            </div>
-                            @if ($entry->organisation !== null)
-                                <div>{{ $entry->organisation }}</div>
+                    @if ($settings->public_email !== null || $settings->instagram_handle !== null)
+                        <div class="cv-inline-contact" aria-label="Contact details">
+                            <span class="cv-inline-label">contact</span>
+                            @if ($settings->public_email !== null)
+                                <a href="mailto:{{ $settings->public_email }}">{{ $settings->public_email }}</a>
                             @endif
-                            @if ($entry->location !== null && ($entry->organisation !== null || $entry->body !== null))
-                                <div>{{ $entry->location }}</div>
+                            @if ($settings->public_email !== null && $settings->instagram_handle !== null)
+                                <span class="cv-inline-separator" aria-hidden="true">·</span>
                             @endif
-                            @if ($entry->body !== null)
-                                <div class="rich-text">{!! $richText->render($entry->body) !!}</div>
-                            @endif
-                            @if ($entry->external_url !== null)
-                                <p><a href="{{ $entry->external_url }}" rel="noopener noreferrer">More information</a></p>
+                            @if ($settings->instagram_handle !== null)
+                                <a href="https://www.instagram.com/{{ $settings->instagram_handle }}/" rel="noopener noreferrer">Instagram: {{ $settings->instagram_handle }}</a>
                             @endif
                         </div>
-                    </article>
-                @endforeach
+                    @endif
+
+                    @if ($settings->legal_disclaimer !== null)
+                        <section class="legal-disclaimer cv-inline-disclaimer" aria-labelledby="legal-disclaimer-heading">
+                            <h2 id="legal-disclaimer-heading">Haftungsablehnung</h2>
+                            <p>{{ $settings->legal_disclaimer }}</p>
+                        </section>
+                    @endif
+                </div>
+
+                @if ($portraitEntry !== null)
+                    <img
+                        class="cv-portrait"
+                        src="{{ $media->originalUrlForAsset($portraitEntry->imageMediaAsset) }}"
+                        alt="{{ $media->altTextForAsset($portraitEntry->imageMediaAsset) }}"
+                        loading="lazy"
+                    >
+                @endif
             </div>
         </section>
 
-        @if ($settings->public_email !== null || $settings->instagram_handle !== null)
-            <section class="public-contact-details" aria-labelledby="public-contact-heading">
-                <h2 id="public-contact-heading">contact</h2>
-                @if ($settings->public_email !== null)
-                    <p><a href="mailto:{{ $settings->public_email }}">{{ $settings->public_email }}</a></p>
-                @endif
-                @if ($settings->instagram_handle !== null)
-                    <p><a href="https://www.instagram.com/{{ $settings->instagram_handle }}/" rel="noopener noreferrer">Instagram: {{ $settings->instagram_handle }}</a></p>
-                @endif
-            </section>
-        @endif
-
-        @if ($settings->contact_state !== 'hidden')
+        <div class="cv-contact-area">
             <x-contact :settings="$settings" />
-        @endif
-
-        @if ($settings->legal_disclaimer !== null)
-            <section class="legal-disclaimer" aria-labelledby="legal-disclaimer-heading">
-                <h2 id="legal-disclaimer-heading">Haftungsablehnung</h2>
-                <p>{{ $settings->legal_disclaimer }}</p>
-            </section>
-        @endif
+        </div>
     </div>
 @endsection
