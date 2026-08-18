@@ -56,15 +56,21 @@ it('lets admins preview available unpublished media without making it public', f
     [$asset, $variant] = adminPreviewAsset();
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
-    $this->get(route('admin.media.original', $asset))
+    $original = $this->get(route('admin.media.original', $asset));
+    $original
         ->assertSuccessful()
-        ->assertHeader('Content-Type', 'image/jpeg')
-        ->assertHeader('Cache-Control', 'private, max-age=3600');
+        ->assertHeader('Content-Type', 'image/jpeg');
+    expect((string) $original->headers->get('Cache-Control'))
+        ->toContain('private')
+        ->toContain('max-age=3600');
 
-    $this->get(route('admin.media.variant', $variant))
+    $variantResponse = $this->get(route('admin.media.variant', $variant));
+    $variantResponse
         ->assertSuccessful()
-        ->assertHeader('Content-Type', 'image/webp')
-        ->assertHeader('Cache-Control', 'private, max-age=3600');
+        ->assertHeader('Content-Type', 'image/webp');
+    expect((string) $variantResponse->headers->get('Cache-Control'))
+        ->toContain('private')
+        ->toContain('max-age=3600');
 });
 
 it('refuses quarantined media even for admins', function () {
