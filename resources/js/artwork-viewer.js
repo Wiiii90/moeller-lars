@@ -168,6 +168,7 @@ export function initializeArtworkViewer(root = document) {
         }
         trigger = source;
         items = normalized;
+        zoomTracked.clear();
         showItem(start);
         trackMatomoEvent('Artwork', 'artwork_open', normalized[start].title, null, root);
         dialog.showModal();
