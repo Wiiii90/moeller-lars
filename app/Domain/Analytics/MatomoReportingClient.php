@@ -31,8 +31,8 @@ final class MatomoReportingClient
             throw new \InvalidArgumentException('Unsupported analytics range.');
         }
 
-        if (! (bool) config('analytics.matomo.enabled')) {
-            return ['status' => 'disabled', 'message' => 'Matomo tracking is disabled.'];
+        if (! (bool) config('analytics.matomo.reporting_enabled')) {
+            return ['status' => 'disabled', 'message' => 'Matomo reporting is disabled.'];
         }
 
         try {
@@ -104,11 +104,11 @@ final class MatomoReportingClient
             'summary' => $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $date),
             'previous_summary' => $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $previousDate),
             'series' => $this->nestedRequest('VisitsSummary.get', $siteId, 'day', $date),
-            'content' => $this->nestedRequest('Actions.getPageUrls', $siteId, 'range', $date, $this->topRows(15, ['flat' => 1])),
-            'entry_pages' => $this->nestedRequest('Actions.getEntryPageUrls', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
-            'exit_pages' => $this->nestedRequest('Actions.getExitPageUrls', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
-            'downloads' => $this->nestedRequest('Actions.getDownloads', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
-            'outlinks' => $this->nestedRequest('Actions.getOutlinks', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
+            'content' => $this->nestedRequest('Actions.getPageUrls', $siteId, 'range', $date, $this->topRows(15, ['flat' => 1, 'filter_sort_column' => 'nb_hits'])),
+            'entry_pages' => $this->nestedRequest('Actions.getEntryPageUrls', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1, 'filter_sort_column' => 'nb_entrances'])),
+            'exit_pages' => $this->nestedRequest('Actions.getExitPageUrls', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1, 'filter_sort_column' => 'nb_exits'])),
+            'downloads' => $this->nestedRequest('Actions.getDownloads', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1, 'filter_sort_column' => 'nb_hits'])),
+            'outlinks' => $this->nestedRequest('Actions.getOutlinks', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1, 'filter_sort_column' => 'nb_hits'])),
             'site_searches' => $this->nestedRequest('Actions.getSiteSearchKeywords', $siteId, 'range', $date, $this->topRows(12)),
             'site_search_no_results' => $this->nestedRequest('Actions.getSiteSearchNoResultKeywords', $siteId, 'range', $date, $this->topRows(8)),
             'events' => $this->nestedRequest('Events.getAction', $siteId, 'range', $date, $this->topRows(30, ['filter_sort_column' => 'nb_events'])),
