@@ -12,9 +12,8 @@ body {
 }
 
 /*
- * The legacy header is a white top surface. The navigation is its own row at
- * the top; the artist name sits below it and the separator closes the header.
- * Do not distribute name and navigation to opposite viewport edges.
+ * The page remains grey around the header. Only the navigation itself forms
+ * the white legacy menu surface; the artist name stays on the grey page.
  */
 .site-header {
     display: flex;
@@ -26,15 +25,18 @@ body {
     padding: 0;
     flex-direction: column;
     border-bottom: 1px solid #aaa;
-    background: #fff;
+    background: transparent;
 }
 
 .site-header h1 {
     order: 2;
-    margin: 0;
-    padding: .45rem 4.5vw .8rem;
+    width: 58%;
+    max-width: 980px;
+    min-width: 540px;
+    margin: 0 auto;
+    padding: .45rem 0 .8rem;
     border: 0;
-    color: #555;
+    color: #fff;
     font-size: 2rem;
     font-weight: 300;
     line-height: 1.05;
@@ -49,9 +51,11 @@ body {
 .site-header nav {
     display: flex;
     order: 1;
-    width: 100%;
-    margin: 0;
-    padding: .7rem 4.5vw .35rem;
+    width: 58%;
+    max-width: 980px;
+    min-width: 540px;
+    margin: 0 auto;
+    padding: .7rem .95rem .35rem;
     align-items: center;
     justify-content: center;
     gap: 1.35rem;
@@ -147,11 +151,7 @@ body {
 
 @media (min-width: 981px) and (max-width: 1400px) {
     .site-header h1,
-    .site-header nav {
-        padding-left: 3.5vw;
-        padding-right: 3.5vw;
-    }
-
+    .site-header nav,
     #content {
         width: 68%;
     }
@@ -164,9 +164,10 @@ body {
 
 @media (min-width: 551px) and (max-width: 980px) {
     .site-header h1,
-    .site-header nav {
-        padding-left: 2.5vw;
-        padding-right: 2.5vw;
+    .site-header nav,
+    #content {
+        width: 82%;
+        min-width: 0;
     }
 
     .site-header h1 {
@@ -182,8 +183,6 @@ body {
     }
 
     #content {
-        width: 82%;
-        min-width: 0;
         margin-top: 1.75rem;
     }
 
@@ -198,9 +197,16 @@ body {
         border-bottom: 1px solid #aaa;
     }
 
+    .site-header h1,
+    .site-header nav,
+    #content {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
+
     .site-header nav {
         display: block;
-        width: 100%;
         padding: 0;
         border-bottom: 1px solid #ddd;
     }
@@ -219,9 +225,6 @@ body {
     }
 
     #content {
-        width: 100%;
-        min-width: 0;
-        max-width: none;
         margin-top: 0;
     }
 
