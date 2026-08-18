@@ -12,7 +12,6 @@ return new class extends Migration
         Schema::table('artwork_categories', function (Blueprint $table): void {
             $table->foreignId('parent_id')
                 ->nullable()
-                ->after('id')
                 ->constrained('artwork_categories')
                 ->restrictOnDelete();
         });
