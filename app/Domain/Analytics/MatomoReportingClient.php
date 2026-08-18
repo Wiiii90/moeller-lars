@@ -273,8 +273,8 @@ final class MatomoReportingClient
         return $report;
     }
 
-    /** @return array<string, float|null>|null */
-    private function normalizeSummary(array $payload, bool $required = true): ?array
+    /** @return array<string, float|null> */
+    private function normalizeSummary(array $payload, bool $required = true): array
     {
         $metrics = [];
         foreach (self::METRICS as $metric) {
