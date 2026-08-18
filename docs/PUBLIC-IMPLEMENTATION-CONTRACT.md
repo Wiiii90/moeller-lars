@@ -16,10 +16,12 @@ is historical evidence, not a required public interface.
 | Home | `/` | Home artwork selected from persisted category presentation data. |
 | Artwork category | `/{category-slug}` | Any published category, ordered by its persisted presentation data. |
 | Artwork direct view | `/artworks/{slug}` | Stable, shareable public artwork URL with the gallery viewer context. |
-| CV and exhibitions | `/cv` | Public CV and exhibition presentation with the intended authored meaning and order. |
-| Contact | `/contact` | Public contact form and its successful-delivery outcome. |
+| CV | `/cv` | Biography/Vita, portrait, public contact details, Contact surface and liability disclaimer. |
+| Exhibitions | `/exhibitions` | Independently managed exhibition history with optional media, links and directions. |
+| Contact | `/contact` | Optional direct route to the same public Contact feature when enabled. |
 
-Navigation is generated from published categories marked for navigation. Home
+Navigation is generated from published categories marked for navigation plus
+independently enabled CV, Exhibitions and later Blog destinations. Home
 eligibility is generated from persisted category presentation data. Imported
 data may initially reproduce familiar Paintings, Prints, and Drawings labels,
 but those are editorial records, not application route definitions. A category
@@ -28,6 +30,14 @@ pipeline without a code change.
 
 There are no public blog routes while the blog is disabled. A disabled blog
 must not appear in navigation, generated metadata, or the sitemap.
+
+The legacy artwork shell is the initial visual baseline rather than inspiration
+for a redesign. Desktop header/name/navigation geometry, the continuous header
+separator, artwork/content widths, typography, spacing, category headings and
+artwork metadata should first be restored as closely as practical to the
+reviewed legacy presentation. Subsequent nuance or modernization is a separate
+editorial decision. Reliability/accessibility improvements must not silently
+replace the legacy composition with cards, panels or a generic portfolio theme.
 
 ## 2. Legacy routes and new-application redirects
 
@@ -51,10 +61,13 @@ The reviewed `html/contact.html` defines the intended fields: required Name,
 required Email, optional Website, and required Comment, followed by a send
 action. The form points at `inc/contact.php`, which is not present in the
 reviewed root source, and no `site=contact` dispatcher case was found. The
-missing route/handler is therefore a known legacy defect. The target must
-provide the intended contact outcome with server-side validation and a safe
-delivery/error result; it must not copy the legacy mail/configuration
-implementation.
+missing route/handler is therefore a known legacy defect. The target provides
+the intended contact outcome with server-side validation and a safe
+delivery/error result; it does not copy the legacy mail/configuration
+implementation. Contact belongs to the CV/biography public experience and does
+not require another primary-navigation item. Persisting submitted messages in
+an admin inbox is a separate privacy/retention product decision and is not
+implied by the delivery form.
 
 ## 3. Public content ordering
 
@@ -95,8 +108,10 @@ Each public gallery item renders:
 
 The legacy source displays title and year on one line, medium followed by
 dimensions when dimensions are non-empty, and the optional comment below.
-The target may improve markup and spacing subtly, but must retain this
-information and its meaning.
+Initial public acceptance targets a close visual reproduction of those entries,
+including their width, positioning, typography and spacing. Markup may be safer
+and more semantic internally, but the listing must not acquire a new card/grid
+visual language.
 
 Every meaningful public artwork image requires canonical ALT data. A
 usage-specific `artwork_media.alt_text_override`, when explicitly present,
@@ -165,22 +180,27 @@ an explicit close control.
 The legacy source verifies click-to-open, a loading indicator, wheel scaling,
 `+`/`−` key scaling, drag behavior, a close cross, and double-click close. It
 does not verify pinch zoom, touch navigation, `Escape`, focus management, or
-previous/next navigation; those are deliberate, subtle improvements and
-must be covered by responsive and interaction tests.
+previous/next navigation; those are deliberate, subtle improvements.
 
-## 6. Responsive public shell
+## 6. CV, Exhibitions and responsive public shell
 
-- Preserve the established public composition, artwork-first presentation,
-  navigation labels/order, typography intent, and readable metadata at desktop
-  and mobile widths.
-- The shell must adapt without clipping artwork metadata or making the viewer
-  unusable. The legacy source has a distinct small-screen image sizing path;
-  mobile behavior must be tested rather than inferred from desktop layout.
-- Navigation, artwork listings, CV content, Contact, and viewer controls must
-  remain operable with touch and keyboard input.
-- Responsive improvements are allowed when they preserve the site's artistic
-  identity and information hierarchy. No generic site-builder or unrelated
-  public layout is implied by this contract.
+`/cv` contains the biography/Vita only, with the verified portrait, biography
+content, public email/approved social links, Contact form/status when enabled,
+and the liability disclaimer. Historical exhibition rows from the legacy Vita
+must not remain duplicated as CV entries after normalization.
+
+`/exhibitions` is independently enabled and managed. Exhibition records support
+title, date/date range, kind, venue, location/address, description, external
+links, optional Directions URL, and multiple ordered media assets with at most
+one hero designation. Richer exhibition presentation must remain visually
+compatible with the site rather than becoming an unrelated card design.
+
+The public shell preserves the legacy composition at desktop and mobile widths.
+The header is not constrained to the narrower artwork column: on desktop the
+artist name and navigation occupy the top header region and the separator spans
+the window width. At the reviewed small-screen breakpoint navigation stacks
+vertically and artwork content becomes full width. Browser comparison remains
+the authority for final spacing/position tuning.
 
 ## 7. SEO and public metadata
 
@@ -190,9 +210,9 @@ must be covered by responsive and interaction tests.
   creates a permanent redirect from the old slug; a published artwork does not
   silently lose its shareable URL.
 - Generate the sitemap from the target public route/content model. Include the
-  home, public category routes, CV, Contact when available, and published
-  artwork direct views. Exclude admin, workshop/development, drafts, broken
-  legacy routes, and disabled blog routes.
+  home, public category routes, independently enabled CV and Exhibitions,
+  Contact when available, and published artwork direct views. Exclude admin,
+  workshop/development, drafts, broken legacy routes, and disabled blog routes.
 - Preserve the intent of the legacy permissive `robots.txt`, but do not allow
   it to advertise or expose admin, workshop/development, draft, or disabled
   blog surfaces. The sitemap URL must be the canonical HTTPS sitemap URL.
@@ -207,14 +227,15 @@ must be covered by responsive and interaction tests.
 
 ### Behavior to preserve
 
-- The public root and artwork/CV navigation identity.
+- The public root and artwork navigation identity.
 - The verified artwork categories and their public route meanings.
 - Artwork-first listings with title, displayed year, medium, dimensions, and
   optional comment.
 - The artist-curated category order and the chronological home latest-work
   behavior.
 - Thumbnail-to-original artwork relationship and image loading/viewer intent.
-- The CV/Vita portrait, authored content meaning, links, and intended order.
+- The CV/Vita portrait and biography meaning plus all verified historical
+  exhibition information, normalized into its separate Exhibition domain.
 - The intended Contact fields and successful-delivery outcome.
 - Page identity, language/ALT metadata, favicon, sitemap intent, and public
   discoverability.
@@ -231,6 +252,8 @@ must be covered by responsive and interaction tests.
 - Responsive handling that improves readability and touch operation without
   changing the artistic composition.
 - Stable artwork slugs and direct sharing.
+- Separate CV and Exhibitions destinations, because they are independent target
+  editorial concepts even though the legacy Vita displayed them together.
 
 ### Known bugs not to preserve
 
@@ -252,13 +275,8 @@ must be covered by responsive and interaction tests.
 
 ## Implementation readiness
 
-This contract is sufficient to begin the public implementation slice for
-issues #9–#16: route/shell work, category and latest-work rendering, artwork
-metadata/media presentation, viewer behavior, CV/Contact surface, responsive
-behavior, and SEO/redirect fixtures. The local repository does not contain the
-issue titles, so this document intentionally maps the implementation scope
-without inventing issue-specific titles.
-
-The remaining browser crawl, screenshot comparison, and migration
-reconciliation are acceptance and cutover work, not blockers to implementing
-against these routes and behaviors.
+The public implementation is not accepted merely because route/data tests pass.
+Cutover requires browser comparison against the legacy site for the artwork
+shell, header/navigation and representative gallery entries. CV and Exhibitions
+are deliberate target divergences and are reviewed against their explicitly
+separated product contracts rather than pixel-matched to the old combined Vita.
