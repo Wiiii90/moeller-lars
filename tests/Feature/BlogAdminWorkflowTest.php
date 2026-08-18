@@ -73,6 +73,26 @@ it('rejects scheduling in the past', function () {
         ->toThrow(ValidationException::class);
 });
 
+it('requires archived posts to return to draft before publishing or scheduling', function () {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $post = blogWorkflowPost('Archived post', 0, 'archived');
+    $service = app(BlogEditorialService::class);
+
+    expect(fn () => $service->publish($post))->toThrow(ValidationException::class)
+        ->and(fn () => $service->schedule($post, now()->addDay()))->toThrow(ValidationException::class)
+        ->and($post->fresh()->state)->toBe('archived')
+        ->and(AuditEvent::query()->whereIn('action', ['blog_post.published', 'blog_post.scheduled'])->count())->toBe(0);
+});
+
+it('does not schedule an already published post directly', function () {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $post = blogWorkflowPost('Published post', 0, 'published');
+
+    expect(fn () => app(BlogEditorialService::class)->schedule($post, now()->addDay()))
+        ->toThrow(ValidationException::class)
+        ->and($post->fresh()->state)->toBe('published');
+});
+
 it('reorders public posts without violating the partial unique position index', function () {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $first = blogWorkflowPost('First public', 0, 'published');
