@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Artworks;
 
+use App\Domain\Media\MediaIngestService;
 use App\Filament\Resources\Artworks\Pages\CreateArtwork;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Resources\Artworks\Pages\ListArtworks;
@@ -15,6 +16,7 @@ use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -81,6 +83,18 @@ class ArtworkResource extends Resource
                     Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
                 ])
                 ->columns(2),
+            Section::make('Primary image')
+                ->description('Attach the primary artwork image while creating the draft. You can replace it and edit its ALT text from the artwork edit page later.')
+                ->schema([
+                    FileUpload::make('primary_media')
+                        ->label('Primary image')
+                        ->image()
+                        ->storeFiles(false)
+                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                        ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024))
+                        ->helperText('Optional while drafting, but required before publication.'),
+                ])
+                ->visible(fn (string $operation): bool => $operation === 'create'),
             Section::make('Date and homepage')
                 ->schema([
                     TextInput::make('work_year')
@@ -188,7 +202,7 @@ class ArtworkResource extends Resource
         /** @var MediaVariant|null $variant */
         $variant = $asset->getRelationValue('variants')
             ->first(fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === 'thumbnail'
-                && $candidate->getAttribute('transform_profile') === 'public-v1'
+                && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
                 && $candidate->getAttribute('state') === 'available');
 
         return $variant === null ? null : route('admin.media.variant', $variant);
