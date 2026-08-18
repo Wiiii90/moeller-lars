@@ -71,10 +71,12 @@ implied by the delivery form.
 
 ## 3. Public content ordering
 
-- Category gallery listings order published artwork solely by the persisted
-  `artwork.position` value. Explicit editorial ordering may intentionally place
-  an older artwork before a newer one. `work_date`, slug, IDs, timestamps,
-  insertion order, and database order are never secondary ordering fallbacks.
+- Category gallery listings order published artwork by the explicit persisted
+  `artwork.position` value. For the migrated legacy baseline those positions
+  reproduce the reconciled legacy date-descending display sequence; later
+  editorial reordering may intentionally override chronology. `work_date`,
+  slug, IDs, timestamps, insertion order, and database order are never runtime
+  secondary ordering fallbacks.
 - Published artwork positions must be unique within a category. Legacy
   duplicate positions are migration/reconciliation input and must be resolved
   before the affected category is considered publish-ready. Gaps are harmless;
@@ -231,7 +233,7 @@ the authority for final spacing/position tuning.
 - The verified artwork categories and their public route meanings.
 - Artwork-first listings with title, displayed year, medium, dimensions, and
   optional comment.
-- The artist-curated category order and the chronological home latest-work
+- The reconciled legacy gallery sequence and the chronological home latest-work
   behavior.
 - Thumbnail-to-original artwork relationship and image loading/viewer intent.
 - The CV/Vita portrait and biography meaning plus all verified historical
