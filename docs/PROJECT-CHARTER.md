@@ -2,51 +2,77 @@
 
 ## Goal
 
-Replace the public Lars Möller website while replacing its administration and operating model completely. The public result must preserve Lars Möller's artistic identity and overall appearance; subtle visual and UX improvements are allowed when they support clarity, accessibility, or reliability.
+Replace the legacy Lars Möller website with a secure, maintainable application while preserving the public site's artistic identity, content meaning and recognisable presentation. Administration and operations are rebuilt rather than modernised in place.
 
-## Non-negotiable public contract
+The target is a Laravel application with a purpose-built artist administration surface, a normalized PostgreSQL data model, controlled media handling, privacy-conscious self-hosted analytics and an immutable application release consumed by `Wiiii90/server-platform`.
 
-- Preserve public content, artistic identity, and meaningful public information architecture.
-- The rebuilt application uses clean, modern canonical URLs; legacy PHP/query URL syntax is not itself a compatibility requirement.
-- Add a redirect for a legacy URL only when later evidence establishes a concrete SEO or external-link need.
-- The artistic visual language, typography, layout, artwork presentation, and ordering remain recognisably unchanged, with room for reviewed subtle improvements.
-- Existing images, ALT text, page titles, SEO metadata, sitemap, and contact behaviour are inventoried before switching traffic.
-- HTTPS is canonical; HTTP redirects to HTTPS in one hop.
-- Broken legacy behaviour is not a compatibility requirement; intended behaviour is documented and tested explicitly.
-- The artwork viewer is rebuilt reliably, including tested image loading, close/open behaviour, and previous/next navigation. Keyboard and touch navigation may improve the experience without changing its character.
+## Public product contract
 
-## Editorial backend
+- Preserve Lars Möller's artistic identity, meaningful information architecture, artwork/content integrity and intended ordering.
+- Use clean modern canonical URLs. Legacy PHP/query URL syntax is source evidence, not a compatibility requirement by itself.
+- Preserve the legacy-derived visual language closely enough to pass real-browser comparison; accessibility and reliability improvements are allowed where they do not redesign the site.
+- Keep artwork categories data-driven. No category identity may require production-code branching.
+- Treat direct artwork pages and the fullscreen artwork viewer as first-class public experiences.
+- Keep CV/biography and Exhibitions as independent public/editorial domains.
+- Keep Contact inside the CV/biography experience rather than adding another primary-navigation destination.
+- Keep Blog publicly invisible until the artist explicitly enables it.
+- Preserve canonical originals and migration provenance; generated derivatives are rebuildable.
+- Broken legacy behaviour is not a compatibility requirement. Intended target behaviour is explicit and tested.
 
-`/admin` is a completely new, consistent artist-facing application. It should support:
+Detailed public behaviour belongs in [PUBLIC-IMPLEMENTATION-CONTRACT.md](PUBLIC-IMPLEMENTATION-CONTRACT.md).
 
-1. Artworks: image upload, title, year, medium, dimensions, description, category, visibility, ordering, and draft/publish state.
-2. Exhibitions: title, venue, location, dates, image, external links, text, and past/current/upcoming state. Exhibitions are a separate content type from CV entries.
-3. CV: structured entries with date ranges, sections, ordering, links, and rich text restricted to a safe editor.
-4. Blog: drafts, scheduled or immediate publishing, cover image, preview, and stable public slug. Blog content is publicly invisible by default and becomes visible only after Lars explicitly enables it.
-5. Media: deduplicated original asset, generated derivatives, ALT text, copyright/credit, and safe deletion checks.
-6. Statistics: visits, landing pages, referrers, device category, and top content, without storing unnecessary personal data.
+## Artist administration
 
-## Cost constraint
+`/admin` is an authenticated Filament workspace for the artist, not a generic site builder. It covers:
 
-Avoid mandatory paid third-party services and commercial runtime dependencies. Prefer self-hosted or open-source components where practical. Recurring hosting and operational cost is allowed, but must be minimized, documented, and justified against reliability, TLS, backup, analytics, and maintenance requirements.
+1. **Dashboard** — editorial overview, warnings, recent activity and common actions.
+2. **Artworks and categories** — content, media, publication, ordering and public visibility.
+3. **Exhibitions** — independent exhibition records, dates, venue/location, media and links.
+4. **Vita / CV / Contact** — biography content, portrait/profile data and configurable contact presentation/delivery.
+5. **Blog** — draft/scheduled/published lifecycle, stable slugs, media and explicit feature enablement.
+6. **Media** — validated originals, derivatives, ALT/credit/copyright metadata and safe deletion/reference handling.
+7. **Analytics** — artist-useful Matomo reports plus visually separate local operational aggregates.
+8. **Settings** — deliberate site-level settings rather than raw implementation rows.
 
-## Explicit exclusions for the first release
+Every mutation remains server-authorized and auditable. Rich text and external links pass through the shared safe rendering boundary.
+
+## Analytics contract
+
+Self-hosted Matomo Community/Core is the source of truth for human visitor analytics. Browser tracking and admin reporting are separate runtime capabilities. The application may maintain lightweight operational aggregates, but it does not duplicate raw human visitor analytics into the editorial database.
+
+Analytics failure must never break public rendering or normal administration. See [ANALYTICS.md](ANALYTICS.md).
+
+## Cost and ownership constraints
+
+- Avoid mandatory paid third-party services, commercial plugins and SaaS runtime dependencies where practical.
+- Hosting/resource cost is allowed but must be minimized and justified against reliability, backups, analytics and maintenance requirements.
+- `moeller-lars` owns application source, schema/migrations, importer/reconciliation logic, tests, application runtime/configuration contracts and the release image.
+- `Wiiii90/server-platform` owns production/validation orchestration, ingress, networks, host paths, secrets, Matomo runtime, backups, monitoring, deployment and rollback.
+- Production secrets, database dumps and private media archives never belong in public Git.
+
+## Explicit exclusions
 
 - No general-purpose website builder or free-form layout editor.
-- No public registration, customer accounts, marketplace, or social feed.
-- No migration of legacy authentication or database credentials.
-- No mandatory commercial analytics plugin or SaaS service; the analytics target is self-hosted Matomo Community/Core.
+- No public registration, customer accounts, marketplace or social feed.
+- No migration of legacy authentication/session/password material.
+- No requirement to preserve legacy PHP dispatcher/query URLs without a concrete SEO/external-link reason.
+- No mandatory commercial analytics plugin or hosted analytics SaaS.
+- No production Compose/Caddy/host-placement implementation in this repository.
 
 ## Definition of done
 
-The new site passes a route/content comparison against the live reference, reliable viewer and admin acceptance tests, a lossless migration reconciliation, and an editorial acceptance pass by Lars. It uses the verified [server and operations baseline](SERVER-OPERATIONS-BASELINE.md), with temporary HTTPS release validation, tested backups, restore, monitoring, rollback, and the Matomo deployment path before production cutover. Production deployment design, hosting cost, TLS, recurring backups, monitoring, and a possible future server/runtime replacement remain in scope; only after those are accepted does the new site replace production traffic.
+The rebuild is complete only when all of the following are accepted:
 
-## Acceptance and test requirements
+- public route/content/media/visual regression comparison;
+- reliable desktop/mobile/touch/keyboard artwork-viewer behaviour;
+- production-usable artist administration;
+- lossless artwork/media/CV/Exhibition migration reconciliation;
+- secure authentication, authorization, media and rich-text boundaries;
+- Matomo tracking/reporting integration and privacy review;
+- immutable application release with passing verification;
+- tested application persistence restore/rollback contract;
+- temporary HTTPS release validation through `server-platform`;
+- editorial approval by Lars;
+- production cutover and stabilization validation.
 
-- Public route, artwork, metadata, and media inventories are machine-checkable before and after migration.
-- Viewer tests cover loading, navigation, keyboard/touch input where implemented, missing media, and mobile layouts.
-- Admin tests cover authentication, authorization, drafts, publication state, separate exhibitions/CV editing, and the blog-disabled default.
-- Migration tests reconcile record counts, original-media checksums, required fields, and representative rendered content.
-- Deployment tests cover HTTPS, HTTP redirect, backup/restore, rollback, temporary HTTPS release validation, and a pre-cutover rehearsal on the verified production baseline.
-- Analytics tests confirm Matomo collection and dashboard visibility without introducing a paid service or storing unnecessary raw identifiers. They also cover traffic sources, geography, devices, content interaction, and separate bot/operational metrics.
-- The chosen deployment documents recurring costs, avoids mandatory commercial runtime dependencies, and demonstrates practical use of self-hosted/open-source components.
+Implementation alone is not production acceptance. GitHub Issues and milestones are authoritative for remaining gates; [PROJECT-STATUS.md](PROJECT-STATUS.md) provides a dated orientation snapshot.

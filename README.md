@@ -1,65 +1,84 @@
 # moeller-lars
 
-Secure rebuild of the Lars Möller artist website.
+Secure rebuild of the Lars Möller artist website and its editorial backend.
 
-## Product rule
+The project preserves the public site's artistic identity and meaningful content structure while replacing the legacy application, administration, data model, deployment model, and security boundary with a maintainable Laravel application.
 
-Visitors should experience the existing public website: its visual language,
-meaningful information architecture, artwork order, and core interactions are
-preserved. The rebuild uses clean modern canonical URLs and changes the
-operational layer, not the artistic presentation; legacy PHP/query URL syntax
-is not itself a compatibility requirement.
+## Current state
 
-The artist receives a purpose-built editorial backend for artworks, exhibitions, CV, blog posts, media, and privacy-conscious visitor statistics.
+As of 2026-08-18, the repository contains the active target implementation rather than an early scaffold. The application includes the core artwork/media domain, secure artist administration, Blog and Contact workflows, CV/Exhibition domain support, migration/reconciliation tooling, Matomo tracking/reporting integration, and an immutable release-image pipeline.
+
+The remaining work is primarily acceptance and release work: public visual parity and viewer refinement, completion/validation of the CV and Exhibitions split, final admin UX acceptance, production Matomo integration, migration validation, and the release/cutover gates tracked in GitHub Issues.
+
+See [Project status](docs/PROJECT-STATUS.md) for the current implementation snapshot. GitHub Issues and milestones remain the authoritative source for unfinished work.
+
+## Stack
+
+- PHP 8.3+
+- Laravel 13
+- Filament 5 for `/admin`
+- Blade + targeted vanilla JavaScript for the public site
+- PostgreSQL 17 for local/test development
+- Pest, PHPStan and Laravel Pint
+- Vite 8 / Node.js 22 toolchain
+- self-hosted Matomo Community/Core integration
+- Docker/OCI release image consumed by `Wiiii90/server-platform`
 
 ## Repository boundaries
 
-This repository is the future production codebase. It deliberately contains no copied credentials, database dumps, production media, or source files from the earlier projects.
+| Repository | Responsibility |
+| --- | --- |
+| `Wiiii90/moeller-lars` | application source, schema/migrations, importer and reconciliation logic, tests, application runtime contract, release image and app-specific configuration templates |
+| `Wiiii90/server-platform` | production/validation orchestration, Caddy ingress, networks, host placement, secrets, resource limits, Matomo runtime, backups, monitoring, deployment and rollback |
+| `larsmoeller` | legacy public/content/behaviour reference and migration source evidence only |
+| `glassygallery` | design/architecture reference only; not a production-code base |
 
-| Repository | Role in the rebuild | Not reused as production code |
-| --- | --- | --- |
-| `larsmoeller` | visual/behavioural reference, content inventory, deployment evidence | authentication, configuration, direct SQL/PHP admin code |
-| `glassygallery` | ideas for media handling, structured data, role concepts, and CI/CD | visual site builder, unfinished admin shell, current authorization/API implementation |
-| `moeller-lars` | application source, tests, Dockerfile/runtime build, migrations, application configuration templates, CI, immutable application artifact/image, health/readiness and persistence/migration contracts | — |
-| `server-platform` | production runtime/deployment manifests, Compose placement, shared networking, Caddy ingress, host ports, resource limits, platform monitoring, backup/restore automation, and production deployment/rollback orchestration | — |
+Production credentials, database dumps, private media archives and server-local paths do not belong in this repository.
 
-## Start here
+## Development
 
-- [Project charter](docs/PROJECT-CHARTER.md)
-- [Target architecture](docs/ARCHITECTURE.md)
-- [Migration plan](docs/MIGRATION-PLAN.md)
-- [Source inventory](docs/SOURCE-INVENTORY.md)
+The repository includes a Docker Compose development/test shell with PHP 8.3, Node.js and PostgreSQL 17.
 
-Development-only Compose remains allowed in `moeller-lars`; production placement and orchestration are owned by `server-platform`.
-
-## Security rule
-
-Do not place secrets in this repository, including in issues, screenshots, sample data, commits, or CI files. Real deployment configuration belongs in the hosting platform's secret store or a server-local `.env` file.
-
-## Local Docker development
-
-The minimal local environment uses one PHP 8.3 application container and one
-PostgreSQL 17 container. Its credentials are local development defaults only.
-
-Start:
-
-~~~sh
+```sh
 docker compose up -d --build
 docker compose exec app composer install
-docker compose exec app npm install --ignore-scripts
-~~~
+docker compose exec app npm ci --ignore-scripts
+```
 
-Test:
+Run the main verification suite with:
 
-~~~sh
+```sh
 docker compose exec app composer test
-docker compose exec app composer format
 docker compose exec app composer analyse
+docker compose exec app vendor/bin/pint --test
+docker compose exec app npm run test:js
 docker compose exec app npm run build
-~~~
+```
 
-Stop:
+See [Development](docs/DEVELOPMENT.md) for environment rules and targeted verification guidance.
 
-~~~sh
-docker compose down
-~~~
+## Documentation
+
+Start with the [documentation index](docs/README.md).
+
+Core current contracts:
+
+- [Project charter](docs/PROJECT-CHARTER.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Data model](docs/DATA-MODEL.md)
+- [Public implementation contract](docs/PUBLIC-IMPLEMENTATION-CONTRACT.md)
+- [Analytics](docs/ANALYTICS.md)
+- [Application release contract](docs/RELEASE.md)
+- [Migration plan](docs/MIGRATION-PLAN.md)
+
+Legacy/source evidence is intentionally kept separate from current target behaviour and is indexed in `docs/README.md`.
+
+## Release model
+
+GitHub Actions verifies PHP/JavaScript tests, static analysis, formatting and frontend build before producing an immutable GHCR image identified by the exact Git SHA and OCI digest. Production placement and rollout are owned by `server-platform`; this repository does not own production Compose or ingress.
+
+## Security
+
+Never commit secrets or production data. This includes credentials, API tokens, database dumps, production media archives, private server paths, recovery hashes, or screenshots containing sensitive values.
+
+Security-sensitive changes must preserve the existing server-side authorization, audit, media validation, safe-rich-text, CSRF/session and least-privilege boundaries described in the architecture and implementation contracts.

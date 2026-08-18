@@ -1,0 +1,68 @@
+name: Bug report
+description: Report a reproducible defect in the application or repository workflow
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report the observed behaviour without including credentials, production data, private media, tokens, or sensitive logs.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect instead?
+      placeholder: Describe the defect and its user/developer impact.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest reliable reproduction you can.
+      placeholder: Steps, route/workflow, test fixture, browser/runtime context, etc.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Public site
+        - Artist admin
+        - Artwork / categories
+        - CV / Contact
+        - Exhibitions
+        - Blog
+        - Media
+        - Analytics
+        - Migration / data
+        - Authentication / security
+        - CI / release
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add non-sensitive errors, screenshots, failing tests, or relevant commit information.
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What observable result would make this issue complete?
+      placeholder: Use concise, testable criteria where possible.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed secrets, production data, private media, tokens, and unnecessary personal information from this report.
+          required: true

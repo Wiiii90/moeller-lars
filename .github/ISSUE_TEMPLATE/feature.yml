@@ -1,0 +1,71 @@
+name: Feature or improvement
+description: Propose a product, UX, architecture, documentation, or maintenance improvement
+title: ""
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What user or project outcome should this change achieve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Describe the current behaviour, limitation, or reason for the change.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Public site
+        - Artist admin
+        - Artwork / categories
+        - CV / Contact
+        - Exhibitions
+        - Blog
+        - Media
+        - Analytics
+        - Migration / data
+        - Authentication / security
+        - CI / release
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Define observable completion criteria and important edge cases.
+      placeholder: Use concise bullets. Include browser/security/migration validation when relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and related work
+      description: Link relevant issues, contracts, ADRs, or server-platform work.
+
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: Explicitly state nearby work that should not be included when scope could be ambiguous.
+
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Boundary check
+      options:
+        - label: This proposal does not require production secrets/data to be added to the repository.
+          required: true
+        - label: I considered whether production-platform work belongs in `Wiiii90/server-platform` instead.
+          required: true

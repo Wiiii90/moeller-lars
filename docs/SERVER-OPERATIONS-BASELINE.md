@@ -1,63 +1,99 @@
 # Production server and operations baseline
 
-This document records the verified production-server and platform baseline. It contains no credentials, backup locations, hashes, or other secret values. `Wiiii90/server-platform` is the authoritative platform reference; application-specific integration remains tracked in this repository.
+This document records the verified production-server baseline relevant to `moeller-lars`. It contains no credentials, backup locations, hashes or secret values. `Wiiii90/server-platform` is authoritative for current platform implementation and operational procedures.
 
 ## Production host
 
-- Provider/plan: Scaleway `dev-play-1` / `DEV1-S`.
-- Region: `AMS1`.
-- Capacity: 2 vCPU, 2 GB RAM, and 50 GB block storage.
-- This current production host remains the working baseline for `moeller-lars`.
-- Current utilization is not a valid downsizing signal: future services may share the host, so capacity decisions must consider the target architecture and service set.
-- For `moeller-lars`, this host has one permanent environment: production. Independent services may share the host later; this does not create a permanent `moeller-lars` staging environment.
+- Provider/plan: Scaleway `dev-play-1` / `DEV1-S`
+- Region: `AMS1`
+- Capacity: 2 vCPU, 2 GB RAM, 50 GB block storage
+- OS: Ubuntu 24.04.4 LTS
+- Docker Engine and Docker Compose available
+- one permanent `moeller-lars` environment: production
 
-## OS and runtime posture
+The shared host may run additional services. Capacity decisions must use measured target-workload evidence rather than the old legacy workload alone.
 
-- Ubuntu 24.04.4 LTS.
-- Security updates were current at audit completion.
-- Docker Engine and Docker Compose are installed.
+## Verified containment baseline
 
-## Security containment verified at audit completion
+The legacy production environment has already been brought to the required containment baseline:
 
-- UFW defaults to deny inbound and allow outbound.
-- Publicly exposed ports are limited to 22, 80, and 443.
-- MySQL ports 3306 and 33060 are bound to localhost only.
-- Valid TLS is configured for the apex and `www` hostnames with automatic renewal.
-- HTTP redirects to HTTPS and the canonical host behaviour is working.
-- The public `phpinfo` endpoint has been removed.
-- Directory listing is disabled.
-- Sensitive source, vendor, and configuration paths are blocked from public access.
+- UFW default-deny inbound posture;
+- public ports limited to 22/80/443;
+- legacy MySQL listeners restricted to localhost;
+- valid TLS for apex and `www` with renewal in place;
+- HTTP to canonical HTTPS redirect behaviour;
+- public `phpinfo` removed;
+- directory listing disabled;
+- sensitive source/vendor/config paths blocked from public access.
 
-These controls are the verified baseline, not a substitute for ongoing patching, least-privilege review, application security testing, and monitoring.
+These are baseline controls, not a substitute for ongoing patching, monitoring, least privilege and application security testing.
 
-## Recovery material
+## Current platform model
 
-- A manual off-server recovery copy for the webroot and legacy databases was verified.
-- Additional pre-maintenance recovery material exists for configuration, packages, and firewall state.
-- Recovery copies were verified with SHA-256.
-- Automated recurring offsite backups remain future work and are required before treating operations as complete.
+Production is not a Git checkout and does not use `git pull` on the host.
 
-Backup locations, credentials, hashes, and secret values are intentionally excluded from this repository.
+The target platform model is owned by `Wiiii90/server-platform` and includes:
 
-## Platform deployment
+- Caddy as public ingress on 80/443;
+- platform-managed workload placement and private networking;
+- exact immutable application release references;
+- restricted deployment activation/rollback path;
+- production secret placement outside Git;
+- Matomo workload integration;
+- baseline platform monitoring;
+- temporary isolated `moeller-lars` release-validation capability;
+- prepared rebuilt-site cutover/rollback routing contract;
+- defined backup/restore contract.
 
-- Production is not a Git checkout.
-- Caddy is the public ingress on ports 80/443; legacy Apache listens only on `127.0.0.1:8080`.
-- MySQL is local-only.
-- `/srv/stacks` is platform workload placement, `/srv/data` is persistent data placement, and `/srv/releases/server-platform` is platform release staging.
-- GitHub Actions transports an exact `server-platform` commit through a restricted deploy user and forced-command dispatcher supporting stage, activate, status, exact releases, and rollback.
-- Production is not a Git checkout, does not use `git pull`, and intentionally has no GitHub account, token, or key.
+Application release-image production and app-specific runtime/persistence expectations are owned by this repository and documented in [RELEASE.md](RELEASE.md).
 
-## Architecture and operations constraints
+## Recovery posture
 
-- `moeller-lars` has one permanent environment on this host: production; no permanent `moeller-lars` staging environment is required.
-- Temporary isolated release validation remains required before production cutover or high-risk maintenance; it may share this physical host only when isolated and resource constrained.
-- Matomo belongs to the `moeller-lars` system but must be logically isolated from public rendering and normal admin operation. A separate physical server is not required.
-- Server-platform owns the generic production deployment, ingress, placement, resource limits, and runtime lifecycle.
-- Application-specific production deployment contract/integration remains future work through server-platform #4/#5.
-- Automated backup/restore remains server-platform #8/#9/#10; monitoring remains server-platform #3; temporary moeller-lars validation remains server-platform #6.
-- Server/hosting cost is allowed but must be minimized and justified; the project does not assume a new server unless the target requirements make it necessary.
+Manual off-server legacy recovery material was verified during containment work. The target production backup/recovery path is now governed by `server-platform` rather than by ad-hoc application-repository procedures.
 
-## Audit acceptance and open work
+As of 2026-08-18, the remaining platform recovery gates are:
 
-The facts above are verified baseline conditions and are safe to use in architecture planning without exposing secrets. Open work is limited to application/platform integration, temporary release validation, recurring backup/restore automation, monitoring, and Matomo workload integration through server-platform.
+- `server-platform#9` — automated encrypted off-server backups;
+- `server-platform#10` — proven isolated restore/full recovery.
+
+Both are required before final rebuilt-site cutover readiness can be accepted.
+
+Application-side restore/media validation remains defined in [RELEASE.md](RELEASE.md) and tracked by `moeller-lars#38`.
+
+## Remaining production gates
+
+The completed platform foundation must not be confused with cutover completion. The remaining open platform sequence is:
+
+1. automated backup implementation (`server-platform#9`);
+2. restore/recovery proof (`server-platform#10`);
+3. combined production readiness review (`server-platform#14`);
+4. production cutover (`server-platform#11`);
+5. stabilization/capacity review (`server-platform#12`);
+6. legacy runtime retirement only after stabilization (`server-platform#13`).
+
+The application has its own acceptance sequence in `moeller-lars`, including public regression, persistence validation, production-readiness review, editorial approval, cutover validation and stabilization.
+
+## Ownership constraints
+
+`moeller-lars` owns:
+
+- application code/tests and migrations;
+- application Dockerfile/release image;
+- application configuration variable contract;
+- health/readiness behaviour;
+- importer/reconciliation logic;
+- application persistence/migration/rollback expectations;
+- Matomo browser/reporting integration.
+
+`server-platform` owns:
+
+- production/validation Compose and placement;
+- Caddy/HTTPS/canonical-host ingress;
+- private networks and host ports;
+- secrets;
+- Matomo runtime/database/persistence;
+- monitoring;
+- recurring backup/restore automation;
+- release activation, rollback and production traffic switch.
+
+Do not copy platform topology or secret operational state into this application repository merely to make application documentation self-contained.

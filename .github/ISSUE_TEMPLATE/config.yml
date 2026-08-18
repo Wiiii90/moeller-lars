@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation index
+    url: https://github.com/Wiiii90/moeller-lars/blob/main/docs/README.md
+    about: Check the current contracts and repository boundaries before opening an issue.
