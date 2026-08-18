@@ -74,7 +74,7 @@ class PublicContentSettingResource extends Resource
                         ->email()
                         ->maxLength(254)
                         ->nullable()
-                        ->helperText('Messages are delivered here. If empty, the server-configured CONTACT_RECIPIENT is used as a fallback.'),
+                        ->helperText('Messages are delivered here. If empty, the server-configured fallback address is used.'),
                     Textarea::make('contact_status_text')
                         ->label('Under-construction message')
                         ->maxLength(500)
