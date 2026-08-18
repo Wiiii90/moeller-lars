@@ -133,17 +133,15 @@ it('falls back to stale aggregate reporting when Matomo becomes unavailable', fu
     configureAnalyticsReporting();
 
     Http::fake([
-        'https://analytics.example.test/index.php' => Http::response(bulkAnalyticsPayload()),
+        'https://analytics.example.test/index.php' => Http::sequence()
+            ->push(bulkAnalyticsPayload(), 200)
+            ->push([], 503),
     ]);
 
     $live = app(MatomoReportingClient::class)->report('today');
     expect($live['status'])->toBe('available');
 
     Cache::forget('analytics:matomo:v2:site:7:today:fresh');
-    Http::fake([
-        'https://analytics.example.test/index.php' => Http::response([], 503),
-    ]);
-
     $stale = app(MatomoReportingClient::class)->report('today');
 
     expect($stale['status'])->toBe('stale')
