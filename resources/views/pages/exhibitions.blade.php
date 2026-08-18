@@ -5,9 +5,7 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/exhibitions'))
 
 @section('content')
-    <section class="exhibitions-page" aria-labelledby="exhibitions-heading">
-        <h2 id="exhibitions-heading" class="category-heading">exhibitions</h2>
-
+    <section class="exhibitions-page" aria-label="Exhibitions">
         @forelse ($exhibitions as $exhibition)
             <article class="exhibition-entry">
                 <div class="exhibition-entry__date">{{ $exhibition->date_text }}</div>

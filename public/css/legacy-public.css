@@ -12,13 +12,14 @@ body {
 }
 
 /*
- * Legacy header composition: grey page, a compact white menu strip above the
- * artist name, then the full-width separator. The menu is deliberately only as
- * wide as its links; it is not a white page/header band.
+ * Legacy header composition: grey page, compact white menu strip above the
+ * artist name, then the separator. Keep the header itself unconstrained so old
+ * app.css shell limits cannot crop the top area.
  */
 .site-header {
     display: flex;
     width: 100%;
+    max-width: none;
     min-width: 0;
     min-height: 0;
     margin: 0;
@@ -47,12 +48,13 @@ body {
 .site-title {
     color: inherit;
     text-decoration: none;
-    transition: color .14s ease;
+    transition: opacity .14s ease;
 }
 
 .site-title:hover,
 .site-title:focus-visible {
-    color: #d8d8d8;
+    color: inherit;
+    opacity: .72;
 }
 
 .site-title:focus-visible {
@@ -61,13 +63,14 @@ body {
 }
 
 .site-header nav {
-    display: flex;
+    display: inline-flex;
     order: 1;
-    width: max-content;
-    max-width: 82%;
+    width: auto;
+    max-width: calc(100% - 18%);
     min-width: 0;
     margin: 0 auto 0 9%;
     padding: 0;
+    align-self: flex-start;
     align-items: stretch;
     justify-content: flex-start;
     flex-wrap: nowrap;
@@ -87,13 +90,21 @@ body {
     text-decoration: none;
     text-transform: uppercase;
     white-space: nowrap;
-    transition: color .14s ease, background-color .14s ease;
+    transition: color .14s ease, opacity .14s ease;
 }
 
 .site-header nav a:hover,
-.site-header nav a[aria-current="page"] {
-    background: #f3f3f3;
+.site-header nav a:focus-visible {
+    background: transparent;
     color: #222;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+.site-header nav a[aria-current="page"] {
+    background: transparent;
+    color: #333;
 }
 
 .site-header nav a:focus-visible {
@@ -101,13 +112,9 @@ body {
     outline-offset: -3px;
 }
 
-/*
- * The public content column follows the three legacy responsive bands. The
- * header stays independent from this narrower centred artwork surface.
- */
 #content {
     width: 58%;
-    max-width: none;
+    max-width: 980px;
     min-width: 540px;
     margin: 2.25rem auto 0;
     background: #fff;
@@ -134,15 +141,13 @@ body {
 }
 
 /*
- * The legacy entries fill a substantial part of the content column. Our
- * generated thumbnail is a delivery detail, not a sizing instruction: make it
- * fill the entry box and preserve its aspect ratio instead of shrinking the
- * card to the thumbnail's intrinsic pixel width.
+ * Keep artwork entries close to the old listing width. The generated thumbnail
+ * fills that box while preserving aspect ratio; it must not dictate layout size.
  */
 .artwork-card,
 .artwork-detail {
-    width: 78%;
-    max-width: none;
+    width: 64%;
+    max-width: 650px;
     min-width: 0;
     margin: 0 auto 5rem;
 }
@@ -166,7 +171,7 @@ body {
 .artwork-detail__image {
     display: block;
     width: 100%;
-    max-width: none;
+    max-width: 100%;
     height: auto;
     margin: 0;
     box-shadow: none;
@@ -213,7 +218,11 @@ body {
     margin-top: 1.15rem;
     color: #555;
     font-size: .78rem;
-    line-height: 1.4;
+    line-height: 1.45;
+}
+
+.cv-inline-contact__row + .cv-inline-contact__row {
+    margin-top: .12rem;
 }
 
 .cv-inline-contact a {
@@ -221,14 +230,16 @@ body {
     text-decoration: underline;
 }
 
-.cv-inline-label {
-    margin-right: .45rem;
-    font-weight: 700;
+.cv-inline-contact a:hover,
+.cv-inline-contact a:focus-visible {
+    color: #222;
 }
 
-.cv-inline-separator {
-    margin: 0 .45rem;
-    color: #999;
+.cv-inline-label {
+    display: inline-block;
+    min-width: 4.4rem;
+    margin-right: .35rem;
+    font-weight: 700;
 }
 
 .cv-inline-disclaimer {
@@ -251,9 +262,9 @@ body {
 }
 
 .cv-contact-area {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #ddd;
+    margin-top: 2.5rem;
+    padding-top: 0;
+    border-top: 0;
 }
 
 .cv-contact-area .contact-section {
@@ -261,35 +272,81 @@ body {
 }
 
 .cv-contact-area .category-heading {
-    margin: 0 0 .8rem;
+    margin: 0 0 1rem;
     color: #555;
-    font-size: .92rem;
-    font-weight: 700;
+    font-size: .9rem;
+    font-weight: 400;
     text-align: left;
-    text-transform: none;
+    text-transform: lowercase;
 }
 
-.contact-status--quiet {
-    margin-bottom: .8rem;
-    color: #777;
-    font-size: .78rem;
+.cv-contact-area .contact-status {
+    display: none;
 }
 
-.contact-form--preview input:disabled,
-.contact-form--preview textarea:disabled {
-    background: #fafafa;
+.cv-contact-area .contact-form {
+    width: min(100%, 36rem);
+    margin: 0;
+}
+
+.cv-contact-area .contact-form__field {
+    margin-bottom: .85rem;
+}
+
+.cv-contact-area .contact-form label {
+    margin-bottom: .22rem;
+    color: #666;
+    font-size: .76rem;
+}
+
+.cv-contact-area .contact-form input,
+.cv-contact-area .contact-form textarea {
+    width: 100%;
+    border: 1px solid #b9b9b9;
+    border-radius: 0;
+    background: #fff;
+    color: #444;
+    transition: border-color .14s ease;
+}
+
+.cv-contact-area .contact-form input:focus-visible,
+.cv-contact-area .contact-form textarea:focus-visible {
+    border-color: #555;
+    outline: 1px dotted #555;
+    outline-offset: 2px;
+}
+
+.cv-contact-area .contact-form--preview input:disabled,
+.cv-contact-area .contact-form--preview textarea:disabled {
+    background: #f8f8f8;
     color: #777;
-    cursor: not-allowed;
+    cursor: default;
     opacity: 1;
 }
 
-.contact-form--preview button:disabled {
-    color: #888;
-    cursor: not-allowed;
-    opacity: .75;
+.cv-contact-area .contact-form button {
+    min-width: 0;
+    padding: .42rem .8rem;
+    border: 1px solid #888;
+    border-radius: 0;
+    background: transparent;
+    color: #555;
+    transition: background-color .14s ease, color .14s ease;
 }
 
-/* Legacy intermediate desktop band. */
+.cv-contact-area .contact-form button:hover:not(:disabled),
+.cv-contact-area .contact-form button:focus-visible:not(:disabled) {
+    background: #efefef;
+    color: #222;
+}
+
+.cv-contact-area .contact-form button:disabled {
+    background: transparent;
+    color: #999;
+    cursor: default;
+    opacity: 1;
+}
+
 @media (min-width: 981px) and (max-width: 1400px) {
     .site-header h1,
     .site-header nav {
@@ -306,11 +363,10 @@ body {
 
     .artwork-card,
     .artwork-detail {
-        width: 82%;
+        width: 68%;
     }
 }
 
-/* Legacy tablet / narrow desktop band. */
 @media (min-width: 551px) and (max-width: 980px) {
     .site-header h1,
     .site-header nav {
@@ -340,7 +396,7 @@ body {
 
     .artwork-card,
     .artwork-detail {
-        width: 90%;
+        width: 78%;
     }
 
     .cv-legacy-layout {
@@ -359,6 +415,7 @@ body {
         width: 100%;
         max-width: none;
         margin: 0;
+        align-self: stretch;
         border-bottom: 1px solid #ddd;
     }
 
@@ -425,6 +482,9 @@ body {
 
     .cv-contact-area {
         margin-top: 2.2rem;
-        padding-top: 1.2rem;
+    }
+
+    .cv-inline-label {
+        min-width: 4rem;
     }
 }

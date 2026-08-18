@@ -10,9 +10,7 @@
     @endphp
 
     <div class="cv-page">
-        <section class="cv-section" aria-labelledby="cv-heading">
-            <h2 id="cv-heading" class="category-heading">cv</h2>
-
+        <section class="cv-section" aria-label="CV">
             <div class="cv-legacy-layout">
                 <div class="cv-legacy-copy">
                     <div class="cv-biography">
@@ -44,15 +42,17 @@
 
                     @if ($settings->public_email !== null || $settings->instagram_handle !== null)
                         <div class="cv-inline-contact" aria-label="Contact details">
-                            <span class="cv-inline-label">contact</span>
                             @if ($settings->public_email !== null)
-                                <a href="mailto:{{ $settings->public_email }}">{{ $settings->public_email }}</a>
-                            @endif
-                            @if ($settings->public_email !== null && $settings->instagram_handle !== null)
-                                <span class="cv-inline-separator" aria-hidden="true">·</span>
+                                <div class="cv-inline-contact__row">
+                                    <span class="cv-inline-label">Kontakt:</span>
+                                    <a href="mailto:{{ $settings->public_email }}">{{ $settings->public_email }}</a>
+                                </div>
                             @endif
                             @if ($settings->instagram_handle !== null)
-                                <a href="https://www.instagram.com/{{ $settings->instagram_handle }}/" rel="noopener noreferrer">Instagram: {{ $settings->instagram_handle }}</a>
+                                <div class="cv-inline-contact__row">
+                                    <span class="cv-inline-label">Instagram:</span>
+                                    <a href="https://www.instagram.com/{{ $settings->instagram_handle }}/" rel="noopener noreferrer">{{ $settings->instagram_handle }}</a>
+                                </div>
                             @endif
                         </div>
                     @endif
