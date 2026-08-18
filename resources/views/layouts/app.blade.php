@@ -21,27 +21,11 @@
     <body>
         <header class="site-header">
             <h1><a href="{{ route('home') }}" class="site-title">Lars Möller</a></h1>
-            <div class="site-navigation" data-site-navigation>
-                <button
-                    class="site-navigation__control"
-                    type="button"
-                    data-direction="previous"
-                    aria-label="Previous navigation items"
-                    hidden
-                >‹</button>
-                <nav aria-label="Main navigation" data-site-navigation-scroll>
-                    @foreach ($navigationItems as $navigationItem)
-                        <a href="{{ $navigationItem['url'] }}" @if ($navigationItem['current']) aria-current="page" @endif>{{ $navigationItem['label'] }}</a>
-                    @endforeach
-                </nav>
-                <button
-                    class="site-navigation__control"
-                    type="button"
-                    data-direction="next"
-                    aria-label="Next navigation items"
-                    hidden
-                >›</button>
-            </div>
+            <nav aria-label="Main navigation">
+                @foreach ($navigationItems as $navigationItem)
+                    <a href="{{ $navigationItem['url'] }}" @if ($navigationItem['current']) aria-current="page" @endif>{{ $navigationItem['label'] }}</a>
+                @endforeach
+            </nav>
         </header>
         <main id="content" class="site-content">
             @yield('content')

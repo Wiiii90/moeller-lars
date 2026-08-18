@@ -1,35 +1,14 @@
-@props(['settings', 'showStatus' => true])
-
 <section class="contact-section" aria-labelledby="contact-heading">
-    <h2 id="contact-heading" class="category-heading">Contact</h2>
-
-    @if ($settings->public_email !== null || $settings->instagram_handle !== null)
-        <div class="contact-details" aria-label="Contact details">
-            @if ($settings->public_email !== null)
-                <div class="contact-details__row">
-                    <span class="contact-details__label">E-Mail</span>
-                    <a href="mailto:{{ $settings->public_email }}">{{ $settings->public_email }}</a>
-                </div>
-            @endif
-            @if ($settings->instagram_handle !== null)
-                <div class="contact-details__row">
-                    <span class="contact-details__label">Instagram</span>
-                    <a href="https://www.instagram.com/{{ $settings->instagram_handle }}/" rel="noopener noreferrer">{{ $settings->instagram_handle }}</a>
-                </div>
-            @endif
-        </div>
-    @endif
+    <h2 id="contact-heading" class="category-heading">contact</h2>
 
     @if ($settings->contact_state === 'hidden' || $settings->contact_state === 'under_construction')
-        @if ($showStatus)
-            <p class="contact-status contact-status--quiet" role="status">
-                @if ($settings->contact_state === 'under_construction' && $settings->contact_status_text)
-                    {{ $settings->contact_status_text }}
-                @else
-                    Direct messages through the website are not active yet.
-                @endif
-            </p>
-        @endif
+        <p class="contact-status contact-status--quiet" role="status">
+            @if ($settings->contact_state === 'under_construction' && $settings->contact_status_text)
+                {{ $settings->contact_status_text }}
+            @else
+                Direct messages through the website are not active yet.
+            @endif
+        </p>
 
         <div class="contact-form contact-form--preview" role="group" aria-disabled="true">
             <div class="contact-form__field">
@@ -38,16 +17,21 @@
             </div>
 
             <div class="contact-form__field">
-                <label for="contact-email-preview">E-Mail</label>
+                <label for="contact-email-preview">Email</label>
                 <input id="contact-email-preview" type="email" disabled>
             </div>
 
             <div class="contact-form__field">
-                <label for="contact-comment-preview">Nachricht</label>
-                <textarea id="contact-comment-preview" rows="6" disabled></textarea>
+                <label for="contact-website-preview">Website</label>
+                <input id="contact-website-preview" type="url" disabled>
             </div>
 
-            <button type="button" disabled>Nachricht senden</button>
+            <div class="contact-form__field">
+                <label for="contact-comment-preview">Comment</label>
+                <textarea id="contact-comment-preview" rows="7" disabled></textarea>
+            </div>
+
+            <button type="button" disabled>send comment</button>
         </div>
     @elseif ($settings->contact_state === 'enabled')
         @if (session('contact_success'))
@@ -68,14 +52,20 @@
             </div>
 
             <div class="contact-form__field">
-                <label for="contact-email">E-Mail</label>
+                <label for="contact-email">Email</label>
                 <input id="contact-email" name="email" type="email" maxlength="320" required value="{{ old('email') }}">
                 @error('email')<p class="contact-form__error">{{ $message }}</p>@enderror
             </div>
 
             <div class="contact-form__field">
-                <label for="contact-comment">Nachricht</label>
-                <textarea id="contact-comment" name="comment" maxlength="5000" rows="6" required>{{ old('comment') }}</textarea>
+                <label for="contact-website">Website</label>
+                <input id="contact-website" name="website" type="url" maxlength="2048" value="{{ old('website') }}">
+                @error('website')<p class="contact-form__error">{{ $message }}</p>@enderror
+            </div>
+
+            <div class="contact-form__field">
+                <label for="contact-comment">Comment</label>
+                <textarea id="contact-comment" name="comment" maxlength="5000" rows="7" required>{{ old('comment') }}</textarea>
                 @error('comment')<p class="contact-form__error">{{ $message }}</p>@enderror
             </div>
 
@@ -84,7 +74,7 @@
                 <input id="contact-company" name="company" type="text" tabindex="-1" autocomplete="off">
             </div>
 
-            <button type="submit">Nachricht senden</button>
+            <button type="submit">send comment</button>
         </form>
     @endif
 </section>

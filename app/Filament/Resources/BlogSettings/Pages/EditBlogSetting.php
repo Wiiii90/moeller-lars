@@ -2,14 +2,22 @@
 
 namespace App\Filament\Resources\BlogSettings\Pages;
 
+use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Filament\Resources\BlogSettings\BlogSettingResource;
+use App\Models\BlogSetting;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 final class EditBlogSetting extends EditRecord
 {
     protected static string $resource = BlogSettingResource::class;
+
+    public function getBreadcrumbs(): array
+    {
+        return ['Blog settings'];
+    }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
@@ -21,5 +29,11 @@ final class EditBlogSetting extends EditRecord
         }
 
         return $data;
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        /** @var BlogSetting $record */
+        return app(AdminSettingsService::class)->updateBlog($record, $data);
     }
 }
