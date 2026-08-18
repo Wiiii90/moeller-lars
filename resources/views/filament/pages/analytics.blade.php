@@ -73,7 +73,33 @@
         ];
         $hasTechnology = collect($technologyGroups)->contains(static fn (array $rows): bool => $rows !== []);
 
-        $weekdayRows = $matomo['day_of_week'] ?? [];
+        // Matomo's dedicated day-of-week report has produced contradictory range aggregates in Validation.
+        // Derive this distribution from the already-authoritative daily series instead, so it must reconcile with
+        // the same selected range used by the headline visit metrics.
+        $weekdayBuckets = array_fill_keys(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], 0);
+        foreach (($matomo['series'] ?? []) as $point) {
+            $date = $point['date'] ?? null;
+            if (! is_string($date)) {
+                continue;
+            }
+
+            try {
+                $weekday = \Carbon\CarbonImmutable::createFromFormat('Y-m-d', $date)->format('l');
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if (array_key_exists($weekday, $weekdayBuckets)) {
+                $weekdayBuckets[$weekday] += (int) round((float) ($point['visits'] ?? 0));
+            }
+        }
+        $weekdayRows = [];
+        foreach ($weekdayBuckets as $label => $visits) {
+            if ($visits > 0) {
+                $weekdayRows[] = ['label' => $label, 'nb_visits' => $visits];
+            }
+        }
+
         $localTimeRows = $matomo['local_time'] ?? [];
         $weekdayMax = $maxMetric($weekdayRows);
         $localTimeMax = $maxMetric($localTimeRows);
@@ -446,15 +472,8 @@
             </div>
 
             <div class="analytics-operational-strip">
-                @foreach ([
-                    'Errors' => $operationalSummary['errors'] ?? 0,
-                    '404 responses' => $operationalSummary['not_found'] ?? 0,
-                    'Bot requests' => $operationalSummary['bots'] ?? 0,
-                    'Average response' => ($operationalSummary['average_response_ms'] ?? 0).' ms',
-                    'Admin requests' => $operationalSummary['admin_requests'] ?? 0,
-                    'Average admin response' => ($operationalSummary['average_admin_response_ms'] ?? 0).' ms',
-                ] as $label => $value)
-                    <div><span>{{ $label }}</span><strong>{{ is_numeric($value) ? number_format((float) $value, floor((float) $value) === (float) $value ? 0 : 1) : $value }}</strong></div>
+                @foreach ($operationalSummary as $label => $value)
+                    <div><span>{{ $label }}</span><strong>{{ $value }}</strong></div>
                 @endforeach
             </div>
 
