@@ -38,8 +38,8 @@ final class MatomoReportingClient
         try {
             $siteId = $this->configuration->siteId();
             $range = $this->range($preset);
-            $freshKey = "analytics:matomo:v3:site:{$siteId}:{$preset}:fresh";
-            $staleKey = "analytics:matomo:v3:site:{$siteId}:{$preset}:stale";
+            $freshKey = "analytics:matomo:v4:site:{$siteId}:{$preset}:fresh";
+            $staleKey = "analytics:matomo:v4:site:{$siteId}:{$preset}:stale";
 
             $cached = Cache::get($freshKey);
             if (is_array($cached)) {
@@ -99,10 +99,13 @@ final class MatomoReportingClient
     {
         $date = $range['start'].','.$range['end'];
         $previousDate = $range['previous_start'].','.$range['previous_end'];
+        $summaryPeriod = $range['preset'] === 'today' ? 'day' : 'range';
+        $summaryDate = $range['preset'] === 'today' ? $range['end'] : $date;
+        $previousSummaryDate = $range['preset'] === 'today' ? $range['previous_end'] : $previousDate;
 
         $definitions = [
-            'summary' => $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $date),
-            'previous_summary' => $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $previousDate),
+            'summary' => $this->nestedRequest('VisitsSummary.get', $siteId, $summaryPeriod, $summaryDate),
+            'previous_summary' => $this->nestedRequest('VisitsSummary.get', $siteId, $summaryPeriod, $previousSummaryDate),
             'series' => $this->nestedRequest('VisitsSummary.get', $siteId, 'day', $date),
             'content' => $this->nestedRequest('Actions.getPageUrls', $siteId, 'range', $date, $this->topRows(15, ['flat' => 1, 'filter_sort_column' => 'nb_hits'])),
             'entry_pages' => $this->nestedRequest('Actions.getEntryPageUrls', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1, 'filter_sort_column' => 'nb_entrances'])),
@@ -203,6 +206,9 @@ final class MatomoReportingClient
         if ($previousMetrics === null) {
             $warnings[] = 'Previous-period comparison is unavailable.';
         }
+        if (($metrics['nb_uniq_visitors'] ?? null) === null) {
+            $warnings[] = 'Range-level unique visitors are not enabled in Matomo; the remaining aggregate reports are still available.';
+        }
         if ($series === []) {
             $warnings[] = 'Traffic time-series data is unavailable.';
         }
@@ -267,26 +273,30 @@ final class MatomoReportingClient
         return $report;
     }
 
-    /** @return array<string, float>|null */
+    /** @return array<string, float|null>|null */
     private function normalizeSummary(array $payload, bool $required = true): ?array
     {
         $metrics = [];
         foreach (self::METRICS as $metric) {
             if (! array_key_exists($metric, $payload)) {
-                if ($required) {
-                    throw new RuntimeException('Matomo Reporting API omitted required aggregate metric '.$metric.'.');
+                if ($metric === 'nb_uniq_visitors' || ! $required) {
+                    $metrics[$metric] = null;
+
+                    continue;
                 }
 
-                return null;
+                throw new RuntimeException('Matomo Reporting API omitted required aggregate metric '.$metric.'.');
             }
 
             $value = $this->numericValue($payload[$metric]);
             if ($value === null) {
-                if ($required) {
-                    throw new RuntimeException('Matomo Reporting API returned an invalid aggregate metric '.$metric.'.');
+                if ($metric === 'nb_uniq_visitors' || ! $required) {
+                    $metrics[$metric] = null;
+
+                    continue;
                 }
 
-                return null;
+                throw new RuntimeException('Matomo Reporting API returned an invalid aggregate metric '.$metric.'.');
             }
             $metrics[$metric] = $value;
         }
@@ -368,27 +378,29 @@ final class MatomoReportingClient
         return $normalized;
     }
 
-    /** @param array<string, float>|null $previous
+    /** @param array<string, float|null> $current
+     * @param array<string, float|null>|null $previous
      * @return array<string, float|null>
      */
     private function comparison(array $current, ?array $previous): array
     {
         $comparison = [];
         foreach (self::METRICS as $metric) {
-            if ($previous === null) {
+            $currentValue = $current[$metric] ?? null;
+            $previousValue = $previous[$metric] ?? null;
+            if ($currentValue === null || $previousValue === null) {
                 $comparison[$metric] = null;
 
                 continue;
             }
 
-            $previousValue = $previous[$metric] ?? 0.0;
             if ($previousValue == 0.0) {
-                $comparison[$metric] = ($current[$metric] ?? 0.0) == 0.0 ? 0.0 : null;
+                $comparison[$metric] = $currentValue == 0.0 ? 0.0 : null;
 
                 continue;
             }
 
-            $comparison[$metric] = (($current[$metric] - $previousValue) / abs($previousValue)) * 100;
+            $comparison[$metric] = (($currentValue - $previousValue) / abs($previousValue)) * 100;
         }
 
         return $comparison;
