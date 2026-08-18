@@ -38,6 +38,9 @@ final class Analytics extends Page
     /** @var array<string, int|float|string> */
     public array $interactionSignals = [];
 
+    /** @var array<int, array{label:string,value:string,detail:string}> */
+    public array $audienceHighlights = [];
+
     /** @var array<int, array<string, mixed>> */
     public array $operational = [];
 
@@ -65,6 +68,7 @@ final class Analytics extends Page
         $this->kpis = $this->buildKpis($this->matomo);
         $this->trendChart = $this->buildTrendChart($this->matomo['series'] ?? []);
         $this->interactionSignals = $this->buildInteractionSignals($this->matomo['events'] ?? []);
+        $this->audienceHighlights = $this->buildAudienceHighlights($this->matomo);
 
         $days = match ($this->range) {
             'today' => 1,
@@ -113,9 +117,9 @@ final class Analytics extends Page
         $definitions = [
             'nb_visits' => 'Visits',
             'nb_uniq_visitors' => 'Unique visitors',
-            'nb_actions' => 'Page views / actions',
-            'nb_actions_per_visit' => 'Actions per visit',
-            'avg_time_on_site' => 'Average visit duration',
+            'nb_actions' => 'Tracked actions',
+            'nb_actions_per_visit' => 'Actions / visit',
+            'avg_time_on_site' => 'Average visit',
             'bounce_rate' => 'Bounce rate',
         ];
 
@@ -131,8 +135,9 @@ final class Analytics extends Page
                 'label' => $label,
                 'value' => $this->formatMetric($key, $value),
                 'comparison' => $delta === null
-                    ? 'No previous-period baseline'
+                    ? 'No comparable previous period'
                     : sprintf('%+.1f%% vs previous period', (float) $delta),
+                'delta' => $delta,
             ];
         }
 
@@ -149,8 +154,8 @@ final class Analytics extends Page
         }
 
         $width = 1000.0;
-        $height = 240.0;
-        $padding = 18.0;
+        $height = 260.0;
+        $padding = 22.0;
         $max = max(1.0, ...array_map(
             static fn (array $point): float => max((float) ($point['visits'] ?? 0), (float) ($point['actions'] ?? 0)),
             $series,
@@ -192,12 +197,75 @@ final class Analytics extends Page
 
         return [
             'Artwork opens' => $counts['artwork_open'] ?? 0,
-            'Zoom uses' => $counts['artwork_zoom_used'] ?? 0,
-            'Artwork next / previous' => ($counts['artwork_next'] ?? 0) + ($counts['artwork_previous'] ?? 0),
-            'Exhibition interest' => ($counts['exhibition_view'] ?? 0) + ($counts['exhibition_external_click'] ?? 0),
-            'Blog views' => $counts['blog_view'] ?? 0,
-            'Contact / outbound interest' => ($counts['contact_submit_success'] ?? 0) + ($counts['instagram_click'] ?? 0),
+            'Artwork zooms' => $counts['artwork_zoom_used'] ?? 0,
+            'Next / previous' => ($counts['artwork_next'] ?? 0) + ($counts['artwork_previous'] ?? 0),
+            'Exhibition views' => $counts['exhibition_view'] ?? 0,
+            'Exhibition outbound' => ($counts['exhibition_external_click'] ?? 0) + ($counts['exhibition_directions_click'] ?? 0),
+            'Blog reads' => $counts['blog_view'] ?? 0,
+            'Contact messages' => $counts['contact_submit_success'] ?? 0,
+            'Email / Instagram clicks' => ($counts['email_click'] ?? 0) + ($counts['instagram_click'] ?? 0),
         ];
+    }
+
+    /** @param array<string, mixed> $report
+     * @return array<int, array{label:string,value:string,detail:string}>
+     */
+    private function buildAudienceHighlights(array $report): array
+    {
+        if (! in_array($report['status'] ?? null, ['available', 'stale'], true)) {
+            return [];
+        }
+
+        $visits = (int) round((float) ($report['metrics']['nb_visits'] ?? 0));
+        $returning = (int) round((float) ($report['returning']['nb_visits_returning'] ?? 0));
+        $new = max(0, $visits - $returning);
+
+        $topSource = $this->topRow($report['referrers'] ?? []);
+        $topCountry = $this->topRow($report['countries'] ?? []);
+        $topContent = $this->topRow($report['content'] ?? [], 'nb_hits');
+        $topAi = $this->topRow($report['ai_assistants'] ?? []);
+
+        return [
+            [
+                'label' => 'New / returning',
+                'value' => number_format($new).' / '.number_format($returning),
+                'detail' => 'visits in selected period',
+            ],
+            [
+                'label' => 'Leading source',
+                'value' => $topSource['label'] ?? 'No data',
+                'detail' => isset($topSource['nb_visits']) ? number_format((int) $topSource['nb_visits']).' visits' : 'No referrer data',
+            ],
+            [
+                'label' => 'Leading country',
+                'value' => $topCountry['label'] ?? 'No data',
+                'detail' => isset($topCountry['nb_visits']) ? number_format((int) $topCountry['nb_visits']).' visits' : 'No geography data',
+            ],
+            [
+                'label' => 'Most viewed content',
+                'value' => $topContent['label'] ?? 'No data',
+                'detail' => isset($topContent['nb_hits']) ? number_format((int) $topContent['nb_hits']).' views/actions' : 'No content data',
+            ],
+            [
+                'label' => 'AI referrals',
+                'value' => $topAi['label'] ?? 'None detected',
+                'detail' => isset($topAi['nb_visits']) ? number_format((int) $topAi['nb_visits']).' visits' : 'No AI-assistant referrals in range',
+            ],
+        ];
+    }
+
+    /** @param array<int, array<string, mixed>> $rows
+     * @return array<string, mixed>|null
+     */
+    private function topRow(array $rows, string $metric = 'nb_visits'): ?array
+    {
+        if ($rows === []) {
+            return null;
+        }
+
+        usort($rows, static fn (array $a, array $b): int => ((float) ($b[$metric] ?? 0)) <=> ((float) ($a[$metric] ?? 0)));
+
+        return $rows[0] ?? null;
     }
 
     /** @param array<int, array<string, mixed>> $rows
