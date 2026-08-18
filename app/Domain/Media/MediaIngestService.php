@@ -53,6 +53,7 @@ class MediaIngestService
     {
         try {
             [$mime, $width, $height, $originalPath, $originalSize, $originalSha256, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight] = $this->prepare($upload);
+            app(MediaCapacityService::class)->assertCanStoreOriginal($originalSize);
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
