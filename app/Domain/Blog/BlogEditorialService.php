@@ -39,9 +39,9 @@ final class BlogEditorialService
         $actor = $this->audit->requireActor();
 
         return DB::transaction(function () use ($data, $actor): BlogPost {
-            $last = BlogPost::query()->orderByDesc('position')->lockForUpdate()->first();
+            $lastPosition = DB::table('blog_posts')->orderByDesc('position')->lockForUpdate()->value('position');
             $data['state'] = 'draft';
-            $data['position'] = $last === null ? 0 : ((int) $last->getAttribute('position')) + 1;
+            $data['position'] = $lastPosition === null ? 0 : ((int) $lastPosition) + 1;
             $data['published_at'] = null;
             $data['scheduled_at'] = null;
 
