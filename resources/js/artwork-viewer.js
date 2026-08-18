@@ -1,14 +1,17 @@
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 8;
+export const PAN_OVERSCROLL = 56;
 
 export function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
 }
 
-export function calculatePanBounds(imageWidth, imageHeight, stageWidth, stageHeight, scale) {
+export function calculatePanBounds(imageWidth, imageHeight, stageWidth, stageHeight, scale, overscroll = 0) {
+    const allowance = scale > MIN_SCALE ? Math.max(0, overscroll) : 0;
+
     return {
-        maxX: Math.max(0, (imageWidth * scale - stageWidth) / 2),
-        maxY: Math.max(0, (imageHeight * scale - stageHeight) / 2),
+        maxX: Math.max(0, (imageWidth * scale - stageWidth) / 2 + allowance),
+        maxY: Math.max(0, (imageHeight * scale - stageHeight) / 2 + allowance),
     };
 }
 
@@ -98,10 +101,18 @@ export function initializeArtworkViewer(root = document) {
     const updateTransform = () => {
         if (!image || image.hidden || !stage) return;
         if (state.scale === 1) state = { ...state, x: 0, y: 0 };
-        const bounds = calculatePanBounds(image.clientWidth, image.clientHeight, stage.clientWidth, stage.clientHeight, state.scale);
+        const bounds = calculatePanBounds(
+            image.clientWidth,
+            image.clientHeight,
+            stage.clientWidth,
+            stage.clientHeight,
+            state.scale,
+            PAN_OVERSCROLL,
+        );
         const pan = clampPan(state.x, state.y, bounds);
         state = { ...state, ...pan };
         image.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) scale(${state.scale})`;
+        stage.dataset.viewerZoomed = state.scale > MIN_SCALE ? 'true' : 'false';
         zoomOut.disabled = state.scale <= MIN_SCALE;
         zoomIn.disabled = state.scale >= MAX_SCALE;
         reset.disabled = state.scale === MIN_SCALE;
@@ -111,6 +122,7 @@ export function initializeArtworkViewer(root = document) {
     const resetState = () => {
         state = { scale: 1, x: 0, y: 0 };
         if (image) image.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
+        if (stage) stage.dataset.viewerZoomed = 'false';
         updateTransform();
     };
 
@@ -138,6 +150,7 @@ export function initializeArtworkViewer(root = document) {
         zoomIn.disabled = true;
         reset.disabled = true;
         reset.textContent = '100%';
+        stage.dataset.viewerZoomed = 'false';
         image.alt = item.alt;
         image.src = item.src;
     };
@@ -160,6 +173,14 @@ export function initializeArtworkViewer(root = document) {
         if (image.hidden || !expectedSrc) return;
         state = zoomAroundPoint(state, nextScale, pointX, pointY);
         updateTransform();
+    };
+
+    const stagePoint = (event) => {
+        const rect = stage.getBoundingClientRect();
+        return {
+            x: event.clientX - (rect.left + rect.width / 2),
+            y: event.clientY - (rect.top + rect.height / 2),
+        };
     };
 
     root.addEventListener('click', (event) => {
@@ -197,11 +218,20 @@ export function initializeArtworkViewer(root = document) {
     stage.addEventListener('wheel', (event) => {
         if (image.hidden || !expectedSrc) return;
         event.preventDefault();
-        const rect = stage.getBoundingClientRect();
-        const pointX = event.clientX - (rect.left + rect.width / 2);
-        const pointY = event.clientY - (rect.top + rect.height / 2);
-        changeZoom(state.scale * (event.deltaY < 0 ? 1.12 : 1 / 1.12), pointX, pointY);
+        const point = stagePoint(event);
+        changeZoom(state.scale * (event.deltaY < 0 ? 1.12 : 1 / 1.12), point.x, point.y);
     }, { passive: false });
+
+    stage.addEventListener('dblclick', (event) => {
+        if (image.hidden || !expectedSrc) return;
+        event.preventDefault();
+        if (state.scale > MIN_SCALE) {
+            resetState();
+            return;
+        }
+        const point = stagePoint(event);
+        changeZoom(2, point.x, point.y);
+    });
 
     stage.addEventListener('pointerdown', (event) => {
         pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -271,6 +301,7 @@ export function initializeArtworkViewer(root = document) {
         loading.hidden = true;
         image.hidden = true;
         missing.hidden = true;
+        stage.dataset.viewerZoomed = 'false';
         if (trigger?.isConnected && typeof trigger.focus === 'function') trigger.focus();
         trigger = null;
     });
