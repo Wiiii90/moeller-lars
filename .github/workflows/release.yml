@@ -81,7 +81,17 @@ jobs:
           retention-days: 1
 
       - name: Run PHPStan
-        run: composer analyse
+        run: |
+          set -o pipefail
+          composer analyse 2>&1 | tee phpstan.log
+
+      - name: Upload PHPStan failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-rc-phpstan-failure
+          path: phpstan.log
+          retention-days: 1
 
       - name: Apply canonical PHP formatting to admin RC
         run: |
