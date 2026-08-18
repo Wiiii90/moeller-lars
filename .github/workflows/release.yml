@@ -47,6 +47,11 @@ jobs:
           extensions: gd, intl, mbstring, pdo_pgsql, zip
           coverage: none
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
       - name: Install PHP dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
@@ -55,29 +60,6 @@ jobs:
 
       - name: Generate test application key
         run: echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
-
-      - name: Run PHPStan
-        id: phpstan
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          composer analyse 2>&1 | tee phpstan.log
-
-      - name: Persist PHPStan blocker
-        if: steps.phpstan.outcome == 'failure'
-        run: |
-          cp phpstan.log .phpstan-result
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .phpstan-result
-          git commit -m 'Record PHPStan blocker [skip ci]'
-          git push
-          exit 1
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
 
       - name: Install frontend dependencies
         run: npm ci --ignore-scripts
@@ -88,18 +70,11 @@ jobs:
       - name: Run Pest
         run: composer test
 
-      - name: Apply canonical PHP formatting to admin RC
-        run: |
-          vendor/bin/pint
-          if git diff --quiet; then
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -u
-          git commit -m 'Apply Pint formatting to admin RC'
-          git push
-          exit 1
+      - name: Run PHPStan
+        run: composer analyse
+
+      - name: Check PHP formatting
+        run: vendor/bin/pint --test
 
       - name: Run JavaScript tests
         run: npm run test:js
