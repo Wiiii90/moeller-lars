@@ -17,13 +17,7 @@
 
 @section('content')
     <article class="artwork-detail" data-artwork-viewer-sequence>
-        <a
-            class="artwork-detail__viewer-trigger"
-            href="{{ $imageUrl }}"
-            data-artwork-viewer-trigger
-            data-viewer-key="{{ $artwork->slug }}"
-            aria-label="Open {{ $artwork->title }} in image viewer"
-        >
+        <a class="artwork-detail__viewer-trigger" href="{{ $imageUrl }}" data-artwork-viewer-trigger data-viewer-key="{{ $artwork->slug }}" aria-label="Open {{ $artwork->title }} in image viewer">
             <img class="artwork-image artwork-detail__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
         </a>
 

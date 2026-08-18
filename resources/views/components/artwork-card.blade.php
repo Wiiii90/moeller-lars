@@ -8,7 +8,7 @@
 
 <article class="artwork-card">
     <a
-        class="artwork-card__link artwork-card__media-link"
+        class="artwork-card__link"
         href="{{ route('artworks.show', $artwork->slug) }}"
         data-artwork-viewer-item
         data-artwork-viewer-trigger
