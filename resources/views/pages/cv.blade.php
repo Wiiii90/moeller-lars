@@ -44,24 +44,17 @@
                         <div class="cv-inline-contact" aria-label="Contact details">
                             @if ($settings->public_email !== null)
                                 <div class="cv-inline-contact__row">
-                                    <span class="cv-inline-label">Kontakt:</span>
+                                    <span class="cv-inline-label">E-Mail</span>
                                     <a href="mailto:{{ $settings->public_email }}">{{ $settings->public_email }}</a>
                                 </div>
                             @endif
                             @if ($settings->instagram_handle !== null)
                                 <div class="cv-inline-contact__row">
-                                    <span class="cv-inline-label">Instagram:</span>
+                                    <span class="cv-inline-label">Instagram</span>
                                     <a href="https://www.instagram.com/{{ $settings->instagram_handle }}/" rel="noopener noreferrer">{{ $settings->instagram_handle }}</a>
                                 </div>
                             @endif
                         </div>
-                    @endif
-
-                    @if ($settings->legal_disclaimer !== null)
-                        <section class="legal-disclaimer cv-inline-disclaimer" aria-labelledby="legal-disclaimer-heading">
-                            <h2 id="legal-disclaimer-heading">Haftungsablehnung</h2>
-                            <p>{{ $settings->legal_disclaimer }}</p>
-                        </section>
                     @endif
                 </div>
 
@@ -77,7 +70,14 @@
         </section>
 
         <div class="cv-contact-area">
-            <x-contact :settings="$settings" />
+            <x-contact :settings="$settings" :show-status="false" />
         </div>
+
+        @if ($settings->legal_disclaimer !== null)
+            <section class="legal-disclaimer cv-bottom-disclaimer" aria-labelledby="legal-disclaimer-heading">
+                <h2 id="legal-disclaimer-heading">Haftungsablehnung</h2>
+                <p>{{ $settings->legal_disclaimer }}</p>
+            </section>
+        @endif
     </div>
 @endsection

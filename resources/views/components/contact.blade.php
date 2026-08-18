@@ -1,24 +1,30 @@
+@props(['settings', 'showStatus' => true])
+
 <section class="contact-section" aria-labelledby="contact-heading">
-    <h2 id="contact-heading" class="category-heading">contact</h2>
+    <h2 id="contact-heading" class="category-heading">Contact</h2>
 
     @if ($settings->contact_state === 'hidden' || $settings->contact_state === 'under_construction')
-        <p class="contact-status contact-status--quiet" role="status">
-            @if ($settings->contact_state === 'under_construction' && $settings->contact_status_text)
-                {{ $settings->contact_status_text }}
-            @else
-                Direct messages through the website are not active yet.
-            @endif
-        </p>
+        @if ($showStatus)
+            <p class="contact-status contact-status--quiet" role="status">
+                @if ($settings->contact_state === 'under_construction' && $settings->contact_status_text)
+                    {{ $settings->contact_status_text }}
+                @else
+                    Direct messages through the website are not active yet.
+                @endif
+            </p>
+        @endif
 
         <div class="contact-form contact-form--preview" role="group" aria-disabled="true">
-            <div class="contact-form__field">
-                <label for="contact-name-preview">Name</label>
-                <input id="contact-name-preview" type="text" disabled>
-            </div>
+            <div class="contact-form__row contact-form__row--two">
+                <div class="contact-form__field">
+                    <label for="contact-name-preview">Name</label>
+                    <input id="contact-name-preview" type="text" disabled>
+                </div>
 
-            <div class="contact-form__field">
-                <label for="contact-email-preview">Email</label>
-                <input id="contact-email-preview" type="email" disabled>
+                <div class="contact-form__field">
+                    <label for="contact-email-preview">Email</label>
+                    <input id="contact-email-preview" type="email" disabled>
+                </div>
             </div>
 
             <div class="contact-form__field">
@@ -45,16 +51,18 @@
         <form class="contact-form" method="post" action="{{ route('contact.submit') }}">
             @csrf
 
-            <div class="contact-form__field">
-                <label for="contact-name">Name</label>
-                <input id="contact-name" name="name" type="text" maxlength="160" required value="{{ old('name') }}">
-                @error('name')<p class="contact-form__error">{{ $message }}</p>@enderror
-            </div>
+            <div class="contact-form__row contact-form__row--two">
+                <div class="contact-form__field">
+                    <label for="contact-name">Name</label>
+                    <input id="contact-name" name="name" type="text" maxlength="160" required value="{{ old('name') }}">
+                    @error('name')<p class="contact-form__error">{{ $message }}</p>@enderror
+                </div>
 
-            <div class="contact-form__field">
-                <label for="contact-email">Email</label>
-                <input id="contact-email" name="email" type="email" maxlength="320" required value="{{ old('email') }}">
-                @error('email')<p class="contact-form__error">{{ $message }}</p>@enderror
+                <div class="contact-form__field">
+                    <label for="contact-email">Email</label>
+                    <input id="contact-email" name="email" type="email" maxlength="320" required value="{{ old('email') }}">
+                    @error('email')<p class="contact-form__error">{{ $message }}</p>@enderror
+                </div>
             </div>
 
             <div class="contact-form__field">

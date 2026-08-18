@@ -18,12 +18,12 @@
     >
         <img class="artwork-image artwork-card__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
         <div class="artwork-card__metadata">
-            <p>{{ $artwork->title }}@if ($year), {{ $year }}@endif</p>
+            <p class="artwork-card__title">{{ $artwork->title }}@if ($year), {{ $year }}@endif</p>
             @if ($artwork->medium || $artwork->dimensions)
-                <p>{{ $artwork->medium }}@if ($artwork->medium && $artwork->dimensions), @endif{{ $artwork->dimensions }}</p>
+                <p class="artwork-card__facts">{{ $artwork->medium }}@if ($artwork->medium && $artwork->dimensions), @endif{{ $artwork->dimensions }}</p>
             @endif
             @if ($artwork->description)
-                <p>{{ $artwork->description }}</p>
+                <p class="artwork-card__note">{{ $artwork->description }}</p>
             @endif
         </div>
     </a>
