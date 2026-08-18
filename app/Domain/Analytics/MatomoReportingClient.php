@@ -379,7 +379,7 @@ final class MatomoReportingClient
     }
 
     /** @param array<string, float|null> $current
-     * @param array<string, float|null>|null $previous
+     * @param  array<string, float|null>|null  $previous
      * @return array<string, float|null>
      */
     private function comparison(array $current, ?array $previous): array
