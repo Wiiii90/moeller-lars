@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 concurrency:
@@ -112,3 +112,16 @@ jobs:
           echo "### moeller-lars release image" >> "$GITHUB_STEP_SUMMARY"
           echo "Git SHA: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Image: \`ghcr.io/wiiii90/moeller-lars@${{ steps.build.outputs.digest }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record successful validation release on RC branch
+        if: github.ref == 'refs/heads/agent/admin-validation-rc'
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          printf 'source_sha=%s\nimage=ghcr.io/wiiii90/moeller-lars@%s\n' "$RELEASE_SHA" "$RELEASE_DIGEST" > .validation-release
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .validation-release
+          git commit -m 'Record admin validation release [skip ci]'
+          git push
