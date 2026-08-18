@@ -32,17 +32,17 @@ final class SecurityHeaders
         $connectSources = ["'self'"];
         $imageSources = ["'self'", 'data:'];
 
-        if ((bool) config('analytics.matomo.enabled')) {
+        if ((bool) config('analytics.matomo.tracking_enabled')) {
             $baseUrl = config('analytics.matomo.base_url');
             if (is_string($baseUrl) === false || trim($baseUrl) === '') {
-                throw new RuntimeException('Enabled Matomo analytics require an explicit base URL for the public CSP.');
+                throw new RuntimeException('Enabled Matomo tracking requires an explicit base URL for the public CSP.');
             }
 
             $parts = parse_url($baseUrl);
             if (is_array($parts) === false
                 || ($parts['scheme'] ?? null) !== 'https'
                 || is_string($parts['host'] ?? null) === false) {
-                throw new RuntimeException('Enabled Matomo analytics require a valid HTTPS base URL for the public CSP.');
+                throw new RuntimeException('Enabled Matomo tracking requires a valid HTTPS base URL for the public CSP.');
             }
 
             $origin = 'https://'.$parts['host'];
