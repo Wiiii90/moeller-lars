@@ -7,6 +7,7 @@ use App\Models\ArtworkCategory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use LogicException;
 
 final class ArtworkCategoryOrderService
 {
@@ -45,6 +46,15 @@ final class ArtworkCategoryOrderService
                 ->get();
 
             $ordered = $categories->values()->all();
+            $positionSlots = $categories
+                ->map(static fn (ArtworkCategory $candidate): int => (int) $candidate->getAttribute('position'))
+                ->values()
+                ->all();
+
+            if (count($positionSlots) !== count(array_unique($positionSlots))) {
+                throw new LogicException('Artwork category positions must be unique before reordering.');
+            }
+
             $index = null;
             foreach ($ordered as $candidateIndex => $candidate) {
                 if ((int) $candidate->getKey() === (int) $category->getKey()) {
@@ -64,7 +74,8 @@ final class ArtworkCategoryOrderService
 
             [$ordered[$index], $ordered[$targetIndex]] = [$ordered[$targetIndex], $ordered[$index]];
 
-            foreach ($ordered as $position => $candidate) {
+            foreach ($ordered as $slotIndex => $candidate) {
+                $position = $positionSlots[$slotIndex];
                 if ((int) $candidate->getAttribute('position') === $position) {
                     continue;
                 }

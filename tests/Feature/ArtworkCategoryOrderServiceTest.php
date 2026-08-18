@@ -19,7 +19,7 @@ function orderedCategory(string $name, int $position): ArtworkCategory
     ]);
 }
 
-it('moves categories directly and normalizes gapped positions atomically', function () {
+it('moves categories directly while preserving the existing public navigation slots', function () {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin, 'web');
 
@@ -33,9 +33,9 @@ it('moves categories directly and normalizes gapped positions atomically', funct
     expect(ArtworkCategory::query()->orderBy('position')->pluck('id')->all())
         ->toBe([$first->id, $third->id, $second->id])
         ->and(ArtworkCategory::query()->orderBy('position')->pluck('position')->all())
-        ->toBe([0, 1, 2])
+        ->toBe([10, 20, 40])
         ->and(AuditEvent::query()->where('action', 'artwork_category.updated')->where('admin_user_id', $admin->id)->count())
-        ->toBe(3);
+        ->toBe(2);
 });
 
 it('does not mutate or audit when moving beyond a list boundary', function () {
