@@ -45,14 +45,15 @@ function publicContentThumbnail(MediaAsset $asset, string $name = 'content'): Me
     ]);
 }
 
-it('keeps the combined CV surface unavailable until CV or exhibitions is enabled', function () {
+it('keeps CV and exhibitions unavailable until their own feature is enabled', function () {
     $this->get('/cv')->assertNotFound();
+    $this->get('/exhibitions')->assertNotFound();
 });
 
-it('renders published CV entries and the configured navigation item', function () {
+it('renders published biography entries and the configured CV navigation item', function () {
     publicContentSettings()->update([
         'cv_enabled' => true,
-        'cv_navigation_label' => 'CV & Exhibitions',
+        'cv_navigation_label' => 'CV',
         'cv_navigation_position' => 20,
     ]);
 
@@ -68,8 +69,7 @@ it('renders published CV entries and the configured navigation item', function (
 
     $this->get('/cv')
         ->assertSuccessful()
-        ->assertSee('CV &amp; Exhibitions', false)
-        ->assertSee('Biography')
+        ->assertSee('CV')
         ->assertSee('Artist in Hamburg')
         ->assertSee('<strong>Selected</strong> work', false);
 });
@@ -109,10 +109,11 @@ it('enforces a total published CV order', function () {
     ]))->toThrow(QueryException::class);
 });
 
-it('renders exhibition media through the existing controlled media routes', function () {
+it('renders exhibition media through the separate exhibitions surface and existing controlled media routes', function () {
     publicContentSettings()->update([
         'exhibitions_enabled' => true,
-        'cv_navigation_position' => 20,
+        'exhibitions_navigation_label' => 'EXHIBITIONS',
+        'exhibitions_navigation_position' => 20,
     ]);
 
     $asset = publicContentAsset('exhibition');
@@ -135,11 +136,13 @@ it('renders exhibition media through the existing controlled media routes', func
         'position' => 0,
     ]);
 
-    $this->get('/cv')
+    $this->get('/exhibitions')
         ->assertSuccessful()
         ->assertSee('Current Show')
         ->assertSee(route('media.variant', $variant), false)
         ->assertSee('Directions');
+
+    $this->get('/cv')->assertNotFound();
 });
 
 it('rejects exhibition media that cannot satisfy the public media contract', function () {
