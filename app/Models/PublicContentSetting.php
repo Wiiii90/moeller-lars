@@ -18,6 +18,7 @@ use LogicException;
     'contact_state',
     'contact_status_text',
     'contact_icon',
+    'contact_recipient_email',
     'public_email',
     'instagram_handle',
     'legal_disclaimer',
@@ -108,6 +109,13 @@ class PublicContentSetting extends Model
             if ($publicEmail !== null && (! is_string($publicEmail) || filter_var($publicEmail, FILTER_VALIDATE_EMAIL) === false)) {
                 throw ValidationException::withMessages([
                     'public_email' => 'The public email address is invalid.',
+                ]);
+            }
+
+            $contactRecipientEmail = $setting->getAttribute('contact_recipient_email');
+            if ($contactRecipientEmail !== null && (! is_string($contactRecipientEmail) || filter_var($contactRecipientEmail, FILTER_VALIDATE_EMAIL) === false)) {
+                throw ValidationException::withMessages([
+                    'contact_recipient_email' => 'The contact form recipient email address is invalid.',
                 ]);
             }
 
