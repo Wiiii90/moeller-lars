@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Exhibitions\Pages;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\EditorialRecordService;
+use App\Domain\Admin\EditorialRichTextValidator;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Models\Exhibition;
 use Filament\Actions\Action;
@@ -19,6 +20,8 @@ class EditExhibition extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        app(EditorialRichTextValidator::class)->validate($data['description'] ?? null, 'description');
+
         foreach (['state', 'position', 'published_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at'] as $field) {
             unset($data[$field]);
         }
