@@ -328,8 +328,7 @@ final class MatomoReportingClient
             'today' => $end->copy(),
             '7d' => $end->copy()->subDays(6),
             '30d' => $end->copy()->subDays(29),
-            '12m' => $end->copy()->subYear()->addDay(),
-            default => throw new \InvalidArgumentException('Unsupported analytics range.'),
+            default => $end->copy()->subYear()->addDay(),
         };
 
         $days = $start->diffInDays($end) + 1;
@@ -342,8 +341,7 @@ final class MatomoReportingClient
                 'today' => 'Today',
                 '7d' => 'Last 7 days',
                 '30d' => 'Last 30 days',
-                '12m' => 'Last 12 months',
-                default => throw new \InvalidArgumentException('Unsupported analytics range.'),
+                default => 'Last 12 months',
             },
             'start' => $start->toDateString(),
             'end' => $end->toDateString(),
