@@ -302,12 +302,9 @@ class ArtworkEditorialService
 
             $ordered = $additional->all();
             [$ordered[$index], $ordered[$target]] = [$ordered[$target], $ordered[$index]];
-            foreach ($ordered as $position => $item) {
-                $nextPosition = $position + 1;
-                if ((int) $item->getAttribute('position') !== $nextPosition) {
-                    $item->forceFill(['position' => $nextPosition])->save();
-                }
-            }
+            /** @var Collection<int, ArtworkMedia> $reordered */
+            $reordered = new Collection(array_values($ordered));
+            $this->normalizeAdditionalPositions($lockedArtwork, $reordered);
 
             $this->adminAuditService->record($actor, 'artwork.additional_media_reordered', 'artwork', $lockedArtwork->getKey(), [
                 'artwork_media_id' => $usage->getKey(),
@@ -356,21 +353,31 @@ class ArtworkEditorialService
         return $usage->fresh(['mediaAsset.variants']);
     }
 
-    private function normalizeAdditionalPositions(Artwork $artwork): void
+    /** @param Collection<int, ArtworkMedia>|null $ordered */
+    private function normalizeAdditionalPositions(Artwork $artwork, ?Collection $ordered = null): void
     {
         /** @var Collection<int, ArtworkMedia> $additional */
-        $additional = ArtworkMedia::query()
+        $additional = $ordered ?? ArtworkMedia::query()
             ->where('artwork_id', $artwork->getKey())
             ->where('role', 'additional')
             ->orderBy('position')
             ->lockForUpdate()
             ->get();
 
-        foreach ($additional as $index => $usage) {
-            $position = $index + 1;
-            if ((int) $usage->getAttribute('position') !== $position) {
-                $usage->forceFill(['position' => $position])->save();
-            }
+        if ($additional->isEmpty()) {
+            return;
+        }
+
+        $temporaryPosition = ((int) ArtworkMedia::query()
+            ->where('artwork_id', $artwork->getKey())
+            ->max('position')) + $additional->count() + 1;
+
+        foreach ($additional->values() as $index => $usage) {
+            $usage->forceFill(['position' => $temporaryPosition + $index])->save();
+        }
+
+        foreach ($additional->values() as $index => $usage) {
+            $usage->forceFill(['position' => $index + 1])->save();
         }
     }
 
