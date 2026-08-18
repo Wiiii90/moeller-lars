@@ -128,8 +128,23 @@ final class Analytics extends Page
         $kpis = [];
 
         foreach ($definitions as $key => $label) {
-            $value = (float) ($metrics[$key] ?? 0);
+            $rawValue = $metrics[$key] ?? null;
             $delta = $comparison[$key] ?? null;
+            if ($rawValue === null) {
+                $kpis[] = [
+                    'key' => $key,
+                    'label' => $label,
+                    'value' => '—',
+                    'comparison' => $key === 'nb_uniq_visitors'
+                        ? 'Not processed for this rolling range'
+                        : 'Metric unavailable',
+                    'delta' => null,
+                ];
+
+                continue;
+            }
+
+            $value = (float) $rawValue;
             $kpis[] = [
                 'key' => $key,
                 'label' => $label,
