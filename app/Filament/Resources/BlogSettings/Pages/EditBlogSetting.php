@@ -14,6 +14,11 @@ final class EditBlogSetting extends EditRecord
 {
     protected static string $resource = BlogSettingResource::class;
 
+    public function getBreadcrumbs(): array
+    {
+        return ['Blog settings'];
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         if (! array_key_exists('listing_intro', $data)) {
