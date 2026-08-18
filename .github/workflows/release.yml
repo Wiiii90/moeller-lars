@@ -68,7 +68,17 @@ jobs:
         run: npm run build
 
       - name: Run Pest
-        run: composer test
+        run: |
+          set -o pipefail
+          composer test 2>&1 | tee pest.log
+
+      - name: Upload Pest failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-rc-pest-failure
+          path: pest.log
+          retention-days: 1
 
       - name: Run PHPStan
         run: composer analyse
