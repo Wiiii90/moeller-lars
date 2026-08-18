@@ -12,6 +12,11 @@ class EditPublicContentSetting extends EditRecord
 {
     protected static string $resource = PublicContentSettingResource::class;
 
+    public function getBreadcrumbs(): array
+    {
+        return ['Website settings'];
+    }
+
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var PublicContentSetting $record */
