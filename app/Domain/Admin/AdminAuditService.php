@@ -17,7 +17,7 @@ class AdminAuditService
         'artwork.unpublished',
         'artwork.primary_media_attached',
         'artwork.primary_media_replaced',
-        'media.ingested',
+        'artwork.primary_media_alt_updated',
         'artwork_category.created',
         'artwork_category.updated',
         'artwork_category.published',
@@ -25,12 +25,45 @@ class AdminAuditService
         'artwork_category.slug_changed',
         'artwork_category.deleted',
         'artwork_category.gallery_reordered',
+        'media.ingested',
         'media.metadata_updated',
         'media.deleted',
-        'artwork.primary_media_alt_updated',
+        'cv_entry.created',
+        'cv_entry.updated',
+        'cv_entry.published',
+        'cv_entry.unpublished',
+        'cv_entry.archived',
+        'cv_entry.restored_to_draft',
+        'cv_entry.reordered',
+        'exhibition.created',
+        'exhibition.updated',
+        'exhibition.published',
+        'exhibition.unpublished',
+        'exhibition.archived',
+        'exhibition.restored_to_draft',
+        'exhibition.reordered',
+        'blog_post.created',
+        'blog_post.updated',
+        'blog_post.published',
+        'blog_post.scheduled',
+        'blog_post.unpublished',
+        'blog_post.archived',
+        'blog_post.restored_to_draft',
+        'blog_post.reordered',
+        'blog_setting.updated',
+        'public_content_setting.updated',
     ];
 
-    private const ENTITY_TYPES = ['artwork', 'media_asset', 'artwork_category'];
+    private const ENTITY_TYPES = [
+        'artwork',
+        'media_asset',
+        'artwork_category',
+        'cv_entry',
+        'exhibition',
+        'blog_post',
+        'blog_setting',
+        'public_content_setting',
+    ];
 
     public function requireActor(): User
     {
@@ -60,7 +93,14 @@ class AdminAuditService
 
         $metadata ??= [];
         foreach ($metadata as $key => $value) {
-            if (! in_array($key, ['artwork_id', 'media_asset_id'], true) || ! is_int($value) || $value <= 0) {
+            $validReference = in_array($key, ['artwork_id', 'media_asset_id'], true)
+                && is_int($value)
+                && $value > 0;
+            $validPosition = $key === 'position'
+                && is_int($value)
+                && $value >= 0;
+
+            if (! $validReference && ! $validPosition) {
                 throw new InvalidArgumentException('Invalid audit metadata.');
             }
         }

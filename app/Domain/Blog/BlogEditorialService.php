@@ -7,12 +7,15 @@ use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
 use App\Models\MediaAsset;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Throwable;
 
 final class BlogEditorialService
@@ -28,19 +31,22 @@ final class BlogEditorialService
         $validated = $this->validate($data);
 
         return DB::transaction(function () use ($validated, $actor): BlogPost {
-            $post = new BlogPost;
-            $post->fill([
-                ...$validated,
-                'legacy_id' => null,
-                'legacy_source' => null,
-                'migration_batch_id' => null,
-                'migrated_at' => null,
-            ]);
-            $this->prepareLifecycle($post);
-            $post->save();
-            $this->audit->record($actor, 'blog_post.created', 'blog_post', $post->getKey());
+            return $this->createValidated($validated, $actor);
+        });
+    }
 
-            return $post;
+    public function createDraft(array $data): BlogPost
+    {
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($data, $actor): BlogPost {
+            $lastPosition = DB::table('blog_posts')->orderByDesc('position')->lockForUpdate()->value('position');
+            $data['state'] = 'draft';
+            $data['position'] = $lastPosition === null ? 0 : ((int) $lastPosition) + 1;
+            $data['published_at'] = null;
+            $data['scheduled_at'] = null;
+
+            return $this->createValidated($this->validate($data), $actor);
         });
     }
 
@@ -56,7 +62,7 @@ final class BlogEditorialService
 
             if (($fresh->getAttribute('published_at') !== null || $fresh->getAttribute('scheduled_at') !== null)
                 && $validated['slug'] !== $fresh->getAttribute('slug')) {
-                throw ValidationException::withMessages(['slug' => 'A post slug cannot change after publication.']);
+                throw ValidationException::withMessages(['slug' => 'A post slug cannot change after publication or scheduling.']);
             }
 
             $fresh->fill($validated);
@@ -67,6 +73,160 @@ final class BlogEditorialService
             }
 
             return $fresh;
+        });
+    }
+
+    public function publish(BlogPost $post): BlogPost
+    {
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($post, $actor): BlogPost {
+            $fresh = $this->locked($post);
+            $state = (string) $fresh->getAttribute('state');
+
+            if ($state === 'published') {
+                return $fresh;
+            }
+
+            if (! in_array($state, ['draft', 'scheduled', 'unpublished'], true)) {
+                throw ValidationException::withMessages([
+                    'state' => 'Restore this post to draft before publishing it again.',
+                ]);
+            }
+
+            $fresh->setAttribute('state', 'published');
+            $fresh->setAttribute('scheduled_at', null);
+            $this->prepareLifecycle($fresh);
+            $fresh->save();
+            $this->audit->record($actor, 'blog_post.published', 'blog_post', $fresh->getKey());
+
+            return $fresh->fresh();
+        });
+    }
+
+    public function schedule(BlogPost $post, mixed $scheduledAt): BlogPost
+    {
+        $actor = $this->audit->requireActor();
+        $date = $this->dateTime($scheduledAt, 'scheduled_at');
+        if (! $date instanceof CarbonImmutable || ! $date->isFuture()) {
+            throw ValidationException::withMessages(['scheduled_at' => 'Scheduled publication must be in the future.']);
+        }
+
+        return DB::transaction(function () use ($post, $date, $actor): BlogPost {
+            $fresh = $this->locked($post);
+            $state = (string) $fresh->getAttribute('state');
+
+            if (! in_array($state, ['draft', 'scheduled', 'unpublished'], true)) {
+                throw ValidationException::withMessages([
+                    'state' => 'Only draft, scheduled or unpublished posts can be scheduled.',
+                ]);
+            }
+
+            $fresh->setAttribute('state', 'scheduled');
+            $fresh->setAttribute('scheduled_at', $date);
+            $this->prepareLifecycle($fresh);
+            $fresh->save();
+            $this->audit->record($actor, 'blog_post.scheduled', 'blog_post', $fresh->getKey());
+
+            return $fresh->fresh();
+        });
+    }
+
+    public function unpublish(BlogPost $post): BlogPost
+    {
+        return $this->transition($post, 'unpublished', 'unpublished', onlyFrom: 'published');
+    }
+
+    public function archive(BlogPost $post): BlogPost
+    {
+        return $this->transition($post, 'archived', 'archived');
+    }
+
+    public function restoreDraft(BlogPost $post): BlogPost
+    {
+        return $this->transition($post, 'draft', 'restored_to_draft', onlyFrom: ['scheduled', 'unpublished', 'archived']);
+    }
+
+    public function canMove(BlogPost $post, string $direction): bool
+    {
+        $this->validateDirection($direction);
+        $ids = BlogPost::query()
+            ->orderBy('position')
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+        $index = array_search((int) $post->getKey(), $ids, true);
+
+        if ($index === false) {
+            return false;
+        }
+
+        return $direction === 'up' ? $index > 0 : $index < count($ids) - 1;
+    }
+
+    public function move(BlogPost $post, string $direction): bool
+    {
+        $this->validateDirection($direction);
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($post, $direction, $actor): bool {
+            /** @var Collection<int, BlogPost> $posts */
+            $posts = BlogPost::query()->orderBy('position')->orderBy('id')->lockForUpdate()->get();
+            $ordered = $posts->values()->all();
+            $index = null;
+
+            foreach ($ordered as $candidateIndex => $candidate) {
+                if ((int) $candidate->getKey() === (int) $post->getKey()) {
+                    $index = $candidateIndex;
+                    break;
+                }
+            }
+
+            if ($index === null) {
+                return false;
+            }
+
+            $targetIndex = $direction === 'up' ? $index - 1 : $index + 1;
+            if (! array_key_exists($targetIndex, $ordered)) {
+                return false;
+            }
+
+            [$ordered[$index], $ordered[$targetIndex]] = [$ordered[$targetIndex], $ordered[$index]];
+
+            $changes = [];
+            foreach ($ordered as $position => $candidate) {
+                if ((int) $candidate->getAttribute('position') !== $position) {
+                    $changes[] = [$candidate, $position];
+                }
+            }
+
+            $maxPosition = (int) ($posts->max('position') ?? 0);
+            $temporaryBase = $maxPosition + count($posts) + 1;
+
+            foreach ($changes as $temporaryOffset => [$candidate]) {
+                DB::table('blog_posts')
+                    ->where('id', $candidate->getKey())
+                    ->update(['position' => $temporaryBase + $temporaryOffset]);
+            }
+
+            foreach ($changes as [$candidate, $position]) {
+                DB::table('blog_posts')
+                    ->where('id', $candidate->getKey())
+                    ->update([
+                        'position' => $position,
+                        'updated_at' => now(),
+                    ]);
+                $this->audit->record(
+                    $actor,
+                    'blog_post.reordered',
+                    'blog_post',
+                    $candidate->getKey(),
+                    ['position' => $position],
+                );
+            }
+
+            return true;
         });
     }
 
@@ -82,6 +242,56 @@ final class BlogEditorialService
                 $scheduled->where('state', 'scheduled')->where('scheduled_at', '<=', $now);
             });
         });
+    }
+
+    /** @param array<string, mixed> $validated */
+    private function createValidated(array $validated, User $actor): BlogPost
+    {
+        $post = new BlogPost;
+        $post->fill([
+            ...$validated,
+            'legacy_id' => null,
+            'legacy_source' => null,
+            'migration_batch_id' => null,
+            'migrated_at' => null,
+        ]);
+        $this->prepareLifecycle($post);
+        $post->save();
+        $this->audit->record($actor, 'blog_post.created', 'blog_post', $post->getKey());
+
+        return $post;
+    }
+
+    private function transition(BlogPost $post, string $state, string $action, string|array|null $onlyFrom = null): BlogPost
+    {
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($post, $state, $action, $onlyFrom, $actor): BlogPost {
+            $fresh = $this->locked($post);
+            $current = (string) $fresh->getAttribute('state');
+            $allowed = $onlyFrom === null ? null : (array) $onlyFrom;
+
+            if ($current === $state || ($allowed !== null && ! in_array($current, $allowed, true))) {
+                return $fresh;
+            }
+
+            $fresh->setAttribute('state', $state);
+            if ($state !== 'scheduled') {
+                $fresh->setAttribute('scheduled_at', null);
+            }
+            $fresh->save();
+            $this->audit->record($actor, 'blog_post.'.$action, 'blog_post', $fresh->getKey());
+
+            return $fresh->fresh();
+        });
+    }
+
+    private function locked(BlogPost $post): BlogPost
+    {
+        /** @var BlogPost $fresh */
+        $fresh = BlogPost::query()->whereKey($post->getKey())->lockForUpdate()->firstOrFail();
+
+        return $fresh;
     }
 
     private function prepareLifecycle(BlogPost $post): void
@@ -219,6 +429,13 @@ final class BlogEditorialService
             return CarbonImmutable::parse($value);
         } catch (Throwable) {
             throw ValidationException::withMessages([$field => 'The publication time is invalid.']);
+        }
+    }
+
+    private function validateDirection(string $direction): void
+    {
+        if (! in_array($direction, ['up', 'down'], true)) {
+            throw new InvalidArgumentException('Blog order direction must be up or down.');
         }
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminMediaController;
 use App\Http\Controllers\PublicArtworkController;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\PublicContactController;
@@ -20,6 +21,11 @@ Route::get('/blog/{slug}', [PublicBlogController::class, 'show'])
     ->name('blog.show');
 Route::get('/sitemap.xml', [PublicSeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/robots.txt', [PublicSeoController::class, 'robots'])->name('seo.robots');
+
+Route::get('/admin/media-preview/original/{mediaAsset}', [AdminMediaController::class, 'original'])
+    ->name('admin.media.original');
+Route::get('/admin/media-preview/variant/{mediaVariant}', [AdminMediaController::class, 'variant'])
+    ->name('admin.media.variant');
 
 Route::get('/artworks/{slug}', [PublicArtworkController::class, 'show'])->name('artworks.show');
 Route::get('/media/original/{mediaAsset}', [PublicMediaController::class, 'original'])->name('media.original');

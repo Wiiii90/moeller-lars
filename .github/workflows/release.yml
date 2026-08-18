@@ -2,11 +2,11 @@ name: Verify and build release image
 
 on:
   push:
-    branches: [main]
+    branches: [main, agent/admin-validation-rc]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 concurrency:
@@ -82,6 +82,8 @@ jobs:
   release-image:
     runs-on: ubuntu-latest
     needs: verify
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
 
@@ -112,3 +114,33 @@ jobs:
           echo "### moeller-lars release image" >> "$GITHUB_STEP_SUMMARY"
           echo "Git SHA: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Image: \`ghcr.io/wiiii90/moeller-lars@${{ steps.build.outputs.digest }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  report-validation-rc:
+    if: always() && github.ref == 'refs/heads/agent/admin-validation-rc'
+    runs-on: ubuntu-latest
+    needs: [verify, release-image]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Record validation pipeline result
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          VERIFY_RESULT: ${{ needs.verify.result }}
+          IMAGE_RESULT: ${{ needs.release-image.result }}
+          RELEASE_DIGEST: ${{ needs.release-image.outputs.digest }}
+        run: |
+          {
+            printf 'source_sha=%s\n' "$SOURCE_SHA"
+            printf 'run_id=%s\n' "$RUN_ID"
+            printf 'verify=%s\n' "$VERIFY_RESULT"
+            printf 'release_image=%s\n' "$IMAGE_RESULT"
+            if [ -n "$RELEASE_DIGEST" ]; then
+              printf 'image=ghcr.io/wiiii90/moeller-lars@%s\n' "$RELEASE_DIGEST"
+            fi
+          } > .validation-release
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .validation-release
+          git commit -m 'Record admin validation pipeline result [skip ci]'
+          git push

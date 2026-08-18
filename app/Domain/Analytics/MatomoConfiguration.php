@@ -68,4 +68,24 @@ final class MatomoConfiguration
 
         return $value;
     }
+
+    public function reportCacheSeconds(): int
+    {
+        $value = (int) config('analytics.matomo.report_cache_seconds');
+        if ($value < 1 || $value > 3600) {
+            throw new LogicException('MATOMO_REPORT_CACHE_SECONDS must be between 1 and 3600.');
+        }
+
+        return $value;
+    }
+
+    public function reportStaleSeconds(): int
+    {
+        $value = (int) config('analytics.matomo.report_stale_seconds');
+        if ($value < 60 || $value > 604800) {
+            throw new LogicException('MATOMO_REPORT_STALE_SECONDS must be between 60 and 604800.');
+        }
+
+        return $value;
+    }
 }

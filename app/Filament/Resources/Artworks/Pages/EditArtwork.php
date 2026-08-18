@@ -10,6 +10,7 @@ use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
+use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\FileUpload;
@@ -126,7 +127,7 @@ class EditArtwork extends EditRecord
                     }
 
                     $this->artworkRecord()->refresh();
-                    Notification::make()->title('Primary image uploaded')->success()->send();
+                    Notification::make()->title('Primary image uploaded')->body('Add canonical ALT text before publishing.')->success()->send();
                 }),
             Action::make('replacePrimaryMedia')
                 ->label('Replace primary image')
@@ -152,7 +153,7 @@ class EditArtwork extends EditRecord
                     }
 
                     $this->artworkRecord()->refresh();
-                    Notification::make()->title('Primary image replaced')->success()->send();
+                    Notification::make()->title('Primary image replaced')->body('Add canonical ALT text for the new image before publishing.')->success()->send();
                 }),
             Action::make('publish')
                 ->label('Publish')
@@ -182,8 +183,15 @@ class EditArtwork extends EditRecord
                 ->label('Edit image ALT text')
                 ->visible(fn (): bool => $this->primaryArtworkMedia() !== null)
                 ->schema([
+                    TextInput::make('alt_text')
+                        ->label('Canonical media ALT text')
+                        ->helperText('Required for publication. This description follows the media asset wherever it is reused.')
+                        ->required()
+                        ->maxLength(500)
+                        ->default(fn (): ?string => $this->primaryMediaAsset()->getAttribute('alt_text')),
                     TextInput::make('alt_text_override')
-                        ->label('Artwork ALT override')
+                        ->label('Artwork-specific ALT override')
+                        ->helperText('Optional. Use only when this artwork needs a more specific description than the canonical media ALT text.')
                         ->maxLength(500)
                         ->nullable()
                         ->default(function (): ?string {
@@ -197,10 +205,13 @@ class EditArtwork extends EditRecord
                 ])
                 ->action(function (array $data): void {
                     try {
-                        if (! array_key_exists('alt_text_override', $data)) {
-                            throw ValidationException::withMessages(['alt_text_override' => 'ALT override form data is missing.']);
+                        if (! array_key_exists('alt_text', $data) || ! array_key_exists('alt_text_override', $data)) {
+                            throw ValidationException::withMessages(['alt_text' => 'ALT text form data is incomplete.']);
                         }
-                        app(MediaAssetEditorialService::class)->updatePrimaryAltOverride($this->artworkRecord(), $data['alt_text_override']);
+
+                        $service = app(MediaAssetEditorialService::class);
+                        $service->updateMetadata($this->primaryMediaAsset(), ['alt_text' => $data['alt_text']]);
+                        $service->updatePrimaryAltOverride($this->artworkRecord(), $data['alt_text_override']);
                     } catch (ValidationException) {
                         Notification::make()->title('Image ALT text could not be updated')->danger()->send();
 
@@ -232,5 +243,20 @@ class EditArtwork extends EditRecord
         $primary = $media->first();
 
         return $primary;
+    }
+
+    private function primaryMediaAsset(): MediaAsset
+    {
+        $primary = $this->primaryArtworkMedia();
+        if (! $primary instanceof ArtworkMedia) {
+            throw new LogicException('Artwork has no primary media usage.');
+        }
+
+        $asset = $primary->mediaAsset()->first();
+        if (! $asset instanceof MediaAsset) {
+            throw new LogicException('Artwork primary media asset is unavailable.');
+        }
+
+        return $asset;
     }
 }
