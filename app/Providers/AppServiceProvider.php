@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Models\ArtworkCategory;
 use App\Models\BlogSetting;
 use App\Models\PublicContentSetting;
+use Filament\Support\Assets\Css;
+use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +22,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        FilamentAsset::register([
+            Css::make('analytics-dashboard', asset('css/filament-analytics.css')),
+        ]);
+
         View::composer('layouts.app', function ($view): void {
             /** @var EloquentCollection<int, ArtworkCategory> $categories */
             $categories = ArtworkCategory::query()
