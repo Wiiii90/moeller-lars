@@ -108,13 +108,34 @@ final class EditorialRecordService
 
             [$ordered[$index], $ordered[$targetIndex]] = [$ordered[$targetIndex], $ordered[$index]];
 
+            $changes = [];
             foreach ($ordered as $position => $candidate) {
-                if ((int) $candidate->getAttribute('position') === $position) {
-                    continue;
+                if ((int) $candidate->getAttribute('position') !== $position) {
+                    $changes[] = [$candidate, $position];
                 }
+            }
 
-                $candidate->setAttribute('position', $position);
-                $candidate->save();
+            if ($changes === []) {
+                return false;
+            }
+
+            $maxPosition = (int) ($records->max('position') ?? 0);
+            $temporaryBase = $maxPosition + count($records) + 1;
+            $table = $record->getTable();
+
+            foreach ($changes as $temporaryOffset => [$candidate]) {
+                DB::table($table)
+                    ->where('id', $candidate->getKey())
+                    ->update(['position' => $temporaryBase + $temporaryOffset]);
+            }
+
+            foreach ($changes as [$candidate, $position]) {
+                DB::table($table)
+                    ->where('id', $candidate->getKey())
+                    ->update([
+                        'position' => $position,
+                        'updated_at' => now(),
+                    ]);
                 $this->audit->record(
                     $actor,
                     $this->prefix($candidate).'.reordered',

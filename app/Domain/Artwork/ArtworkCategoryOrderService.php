@@ -74,14 +74,30 @@ final class ArtworkCategoryOrderService
 
             [$ordered[$index], $ordered[$targetIndex]] = [$ordered[$targetIndex], $ordered[$index]];
 
+            $changes = [];
             foreach ($ordered as $slotIndex => $candidate) {
                 $position = $positionSlots[$slotIndex];
-                if ((int) $candidate->getAttribute('position') === $position) {
-                    continue;
+                if ((int) $candidate->getAttribute('position') !== $position) {
+                    $changes[] = [$candidate, $position];
                 }
+            }
 
-                $candidate->setAttribute('position', $position);
-                $candidate->save();
+            $maxPosition = max($positionSlots);
+            $temporaryBase = $maxPosition + count($categories) + 1;
+
+            foreach ($changes as $temporaryOffset => [$candidate]) {
+                DB::table($candidate->getTable())
+                    ->where('id', $candidate->getKey())
+                    ->update(['position' => $temporaryBase + $temporaryOffset]);
+            }
+
+            foreach ($changes as [$candidate, $position]) {
+                DB::table($candidate->getTable())
+                    ->where('id', $candidate->getKey())
+                    ->update([
+                        'position' => $position,
+                        'updated_at' => now(),
+                    ]);
                 $this->adminAuditService->record(
                     $actor,
                     'artwork_category.updated',

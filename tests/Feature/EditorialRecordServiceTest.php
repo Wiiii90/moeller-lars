@@ -49,11 +49,11 @@ it('publishes, unpublishes, archives and restores CV entries with audit events',
         ->toContain('cv_entry.published', 'cv_entry.unpublished', 'cv_entry.archived', 'cv_entry.restored_to_draft');
 });
 
-it('reorders exhibitions directly and normalizes legacy position gaps', function () {
+it('reorders published exhibitions without tripping the partial unique position index', function () {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    $first = exhibitionRecord('First exhibition', 10);
-    $second = exhibitionRecord('Second exhibition', 30);
-    $third = exhibitionRecord('Third exhibition', 90);
+    $first = exhibitionRecord('First exhibition', 0, 'published');
+    $second = exhibitionRecord('Second exhibition', 1, 'published');
+    $third = exhibitionRecord('Third exhibition', 2, 'published');
     $service = app(EditorialRecordService::class);
 
     expect($service->move($third, 'up'))->toBeTrue()
@@ -62,7 +62,7 @@ it('reorders exhibitions directly and normalizes legacy position gaps', function
         ->and(Exhibition::query()->orderBy('position')->pluck('position')->all())
         ->toBe([0, 1, 2])
         ->and(AuditEvent::query()->where('action', 'exhibition.reordered')->count())
-        ->toBe(3);
+        ->toBe(2);
 });
 
 it('does not mutate ordering beyond list boundaries', function () {
