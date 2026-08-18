@@ -22,8 +22,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $analyticsStylesheet = app()->environment('production')
+            ? secure_asset('css/filament-analytics.css')
+            : asset('css/filament-analytics.css');
+
         FilamentAsset::register([
-            Css::make('analytics-dashboard', asset('css/filament-analytics.css')),
+            Css::make('analytics-dashboard', $analyticsStylesheet),
         ]);
 
         View::composer('layouts.app', function ($view): void {
