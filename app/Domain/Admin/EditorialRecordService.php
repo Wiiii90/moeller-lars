@@ -19,6 +19,18 @@ final class EditorialRecordService
 
         return DB::transaction(function () use ($record, $actor): CvEntry|Exhibition {
             $fresh = $this->locked($record);
+            $state = (string) $fresh->getAttribute('state');
+
+            if ($state === 'published') {
+                return $fresh;
+            }
+
+            if ($state !== 'draft') {
+                throw ValidationException::withMessages([
+                    'state' => 'Restore this record to draft before publishing it again.',
+                ]);
+            }
+
             if ($fresh instanceof Exhibition) {
                 $heroCount = $fresh->mediaUsages()->where('role', 'hero')->count();
                 if ($heroCount > 1) {
@@ -26,10 +38,6 @@ final class EditorialRecordService
                         'mediaUsages' => 'Published exhibitions may have at most one hero image.',
                     ]);
                 }
-            }
-
-            if ($fresh->getAttribute('state') === 'published') {
-                return $fresh;
             }
 
             $fresh->setAttribute('state', 'published');
