@@ -8,13 +8,24 @@
             @if ($settings->public_email !== null)
                 <div class="contact-details__row">
                     <span class="contact-details__label">E-Mail</span>
-                    <a href="mailto:{{ $settings->public_email }}">{{ $settings->public_email }}</a>
+                    <a
+                        href="mailto:{{ $settings->public_email }}"
+                        data-matomo-event-category="Contact"
+                        data-matomo-event-action="email_click"
+                        data-matomo-event-name="Public email"
+                    >{{ $settings->public_email }}</a>
                 </div>
             @endif
             @if ($settings->instagram_handle !== null)
                 <div class="contact-details__row">
                     <span class="contact-details__label">Instagram</span>
-                    <a href="https://www.instagram.com/{{ $settings->instagram_handle }}/" rel="noopener noreferrer">{{ $settings->instagram_handle }}</a>
+                    <a
+                        href="https://www.instagram.com/{{ $settings->instagram_handle }}/"
+                        rel="noopener noreferrer"
+                        data-matomo-event-category="Outbound"
+                        data-matomo-event-action="instagram_click"
+                        data-matomo-event-name="{{ $settings->instagram_handle }}"
+                    >{{ $settings->instagram_handle }}</a>
                 </div>
             @endif
         </div>
@@ -28,7 +39,13 @@
         @endif
     @elseif ($settings->contact_state === 'enabled')
         @if (session('contact_success'))
-            <p class="contact-message" role="status">{{ session('contact_success') }}</p>
+            <p
+                class="contact-message"
+                role="status"
+                data-matomo-event-category="Contact"
+                data-matomo-event-on-load="contact_submit_success"
+                data-matomo-event-name="CV contact form"
+            >{{ session('contact_success') }}</p>
         @endif
 
         @if ($errors->has('contact'))
