@@ -6,11 +6,13 @@ use App\Domain\Blog\BlogEditorialService;
 use App\Filament\Resources\BlogPosts\Pages\CreateBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\ListBlogPosts;
+use App\Filament\Support\MediaAssetSelect;
 use App\Models\BlogPost;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -63,12 +65,17 @@ final class BlogPostResource extends Resource
                         ->disabled(fn (?Model $record): bool => $record?->getAttribute('published_at') !== null || $record?->getAttribute('scheduled_at') !== null)
                         ->dehydrated(),
                     Textarea::make('excerpt')->maxLength(1000)->nullable()->columnSpanFull(),
-                    Textarea::make('body')->rows(18)->nullable()->columnSpanFull(),
-                    Select::make('cover_media_asset_id')
-                        ->label('Cover image')
-                        ->relationship('coverMedia', 'original_filename')
-                        ->searchable()
-                        ->preload()
+                    MarkdownEditor::make('body')
+                        ->label('Post content')
+                        ->toolbarButtons([
+                            ['bold', 'italic', 'link'],
+                            ['bulletList', 'orderedList'],
+                            ['undo', 'redo'],
+                        ])
+                        ->helperText('Formatting is deliberately limited to the Markdown supported by the public site. Images are managed through the media library, not embedded in post text.')
+                        ->nullable()
+                        ->columnSpanFull(),
+                    MediaAssetSelect::make('cover_media_asset_id', 'coverMedia', 'Cover image')
                         ->nullable()
                         ->columnSpanFull(),
                 ])
