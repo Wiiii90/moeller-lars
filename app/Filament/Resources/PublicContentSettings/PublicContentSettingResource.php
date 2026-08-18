@@ -54,26 +54,37 @@ class PublicContentSettingResource extends Resource
                     TextInput::make('exhibitions_navigation_label')->label('Navigation label')->required()->maxLength(120),
                 ])
                 ->columns(2),
-            Section::make('Contact and profile')
-                ->description('Contact belongs to the Vita / CV public surface and does not create its own main-navigation item.')
+            Section::make('Public contact details')
+                ->description('These details are shown in the Contact area of the public Vita / CV page.')
                 ->schema([
                     TextInput::make('public_email')->label('Public email')->email()->maxLength(254)->nullable(),
                     TextInput::make('instagram_handle')->label('Instagram handle')->maxLength(30)->regex('/^[A-Za-z0-9._]{1,30}$/')->nullable(),
-                    Select::make('contact_state')->label('Contact section')->options([
+                ])
+                ->columns(2),
+            Section::make('Contact form')
+                ->description('Controls the message form embedded in Vita / CV. The delivery address is private and is never rendered on the public site. Mail transport credentials remain server configuration.')
+                ->schema([
+                    Select::make('contact_state')->label('Form state')->options([
                         'enabled' => 'Enabled',
                         'under_construction' => 'Under construction',
                         'hidden' => 'Hidden',
                     ])->required(),
-                    Select::make('contact_icon')->label('Contact status icon')->options([
-                        'construction' => 'Construction',
-                        'mail' => 'Mail',
-                        'info' => 'Info',
-                    ])->required(),
-                    Textarea::make('contact_status_text')->label('Contact status text')->maxLength(500)->nullable()->columnSpanFull(),
+                    TextInput::make('contact_recipient_email')
+                        ->label('Delivery recipient')
+                        ->email()
+                        ->maxLength(254)
+                        ->nullable()
+                        ->helperText('Messages are delivered here. If empty, the server-configured CONTACT_RECIPIENT is used as a fallback.'),
+                    Textarea::make('contact_status_text')
+                        ->label('Under-construction message')
+                        ->maxLength(500)
+                        ->nullable()
+                        ->helperText('Used only while the form state is “Under construction”.')
+                        ->columnSpanFull(),
                 ])
                 ->columns(2),
             Section::make('Legal')
-                ->description('Public legal/disclaimer text displayed with the Vita / CV surface where configured.')
+                ->description('Public legal/disclaimer text displayed at the bottom of the Vita / CV surface where configured.')
                 ->schema([
                     Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
                 ])
