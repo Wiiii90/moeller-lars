@@ -137,7 +137,7 @@ final class BlogPostResource extends Resource
                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                 ->url(fn (BlogPost $record): string => route('blog.show', ['slug' => $record->getAttribute('slug')]))
                 ->openUrlInNewTab()
-                ->visible(fn (BlogPost $record): bool => BlogPost::query()->publiclyVisible()->whereKey($record->getKey())->exists()),
+                ->visible(fn (BlogPost $record): bool => BlogEditorialService::publicQuery()->whereKey($record->getKey())->exists()),
             EditAction::make(),
         ])->toolbarActions([])
             ->emptyStateHeading('No blog posts yet')
