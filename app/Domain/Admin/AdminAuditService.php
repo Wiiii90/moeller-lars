@@ -18,6 +18,9 @@ class AdminAuditService
         'artwork.primary_media_attached',
         'artwork.primary_media_replaced',
         'artwork.primary_media_alt_updated',
+        'artwork.additional_media_attached',
+        'artwork.additional_media_detached',
+        'artwork.additional_media_reordered',
         'artwork_category.created',
         'artwork_category.updated',
         'artwork_category.published',
@@ -93,14 +96,16 @@ class AdminAuditService
 
         $metadata ??= [];
         foreach ($metadata as $key => $value) {
-            $validReference = in_array($key, ['artwork_id', 'media_asset_id'], true)
+            $validReference = in_array($key, ['artwork_id', 'media_asset_id', 'artwork_media_id'], true)
                 && is_int($value)
                 && $value > 0;
             $validPosition = $key === 'position'
                 && is_int($value)
                 && $value >= 0;
+            $validDirection = $key === 'direction'
+                && in_array($value, ['up', 'down'], true);
 
-            if (! $validReference && ! $validPosition) {
+            if (! $validReference && ! $validPosition && ! $validDirection) {
                 throw new InvalidArgumentException('Invalid audit metadata.');
             }
         }
