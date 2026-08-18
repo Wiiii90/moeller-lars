@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\BlogPosts;
 
+use App\Domain\Blog\BlogEditorialService;
 use App\Filament\Resources\BlogPosts\Pages\CreateBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\ListBlogPosts;
@@ -13,6 +14,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -34,12 +36,17 @@ final class BlogPostResource extends Resource
 
     protected static ?string $navigationLabel = 'Blog';
 
+    protected static ?string $modelLabel = 'blog post';
+
+    protected static ?string $pluralModelLabel = 'Blog';
+
     protected static ?int $navigationSort = 22;
 
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
             Section::make('Post')
+                ->description('Write and save the post here. Publication is controlled with the page actions rather than a raw state field.')
                 ->schema([
                     TextInput::make('title')->required()->maxLength(240)->live(onBlur: true)
                         ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
@@ -66,7 +73,8 @@ final class BlogPostResource extends Resource
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
-            Section::make('Publication')
+            Section::make('Publication status')
+                ->description('Use Publish now, Schedule, Unpublish, Archive or Restore to draft in the page header. Listing order is managed directly from the Blog list.')
                 ->schema([
                     Select::make('state')->options([
                         'draft' => 'Draft',
@@ -74,17 +82,17 @@ final class BlogPostResource extends Resource
                         'published' => 'Published',
                         'unpublished' => 'Unpublished',
                         'archived' => 'Archived',
-                    ])->required()->default('draft'),
-                    DateTimePicker::make('scheduled_at')->nullable(),
-                    DateTimePicker::make('published_at')->nullable()->disabled()->dehydrated(),
-                    TextInput::make('position')
-                        ->label('Listing order')
-                        ->integer()
-                        ->required()
-                        ->minValue(0)
-                        ->default(0),
+                    ])->disabled()->dehydrated(false),
+                    DateTimePicker::make('scheduled_at')
+                        ->label('Scheduled for')
+                        ->disabled()
+                        ->dehydrated(false),
+                    DateTimePicker::make('published_at')
+                        ->label('First published')
+                        ->disabled()
+                        ->dehydrated(false),
                 ])
-                ->columns(2),
+                ->columns(3),
         ]);
     }
 
@@ -108,16 +116,32 @@ final class BlogPostResource extends Resource
                 'archived' => 'Archived',
             ]),
         ])->recordActions([
+            Action::make('moveUp')
+                ->label('Move up')
+                ->icon('heroicon-o-chevron-up')
+                ->visible(fn (BlogPost $record): bool => app(BlogEditorialService::class)->canMove($record, 'up'))
+                ->action(function (BlogPost $record): void {
+                    app(BlogEditorialService::class)->move($record, 'up');
+                    Notification::make()->title('Blog post moved up')->success()->send();
+                }),
+            Action::make('moveDown')
+                ->label('Move down')
+                ->icon('heroicon-o-chevron-down')
+                ->visible(fn (BlogPost $record): bool => app(BlogEditorialService::class)->canMove($record, 'down'))
+                ->action(function (BlogPost $record): void {
+                    app(BlogEditorialService::class)->move($record, 'down');
+                    Notification::make()->title('Blog post moved down')->success()->send();
+                }),
             Action::make('viewPublic')
                 ->label('View on site')
                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                 ->url(fn (BlogPost $record): string => route('blog.show', ['slug' => $record->getAttribute('slug')]))
                 ->openUrlInNewTab()
-                ->visible(fn (BlogPost $record): bool => $record->getAttribute('state') === 'published'),
+                ->visible(fn (BlogPost $record): bool => BlogPost::query()->publiclyVisible()->whereKey($record->getKey())->exists()),
             EditAction::make(),
         ])->toolbarActions([])
             ->emptyStateHeading('No blog posts yet')
-            ->emptyStateDescription('Create a draft first. The blog remains private until it is explicitly enabled in Blog settings.');
+            ->emptyStateDescription('Create a draft first. The Blog remains private until it is explicitly enabled in Blog settings.');
     }
 
     public static function getPages(): array
