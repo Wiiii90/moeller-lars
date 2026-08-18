@@ -29,7 +29,7 @@ body {
 
 .site-header h1 {
     order: 2;
-    width: 68%;
+    width: 82%;
     min-width: 540px;
     margin: 0 auto;
     padding: .72rem 0 .78rem;
@@ -62,7 +62,7 @@ body {
 .site-header nav {
     display: flex;
     order: 1;
-    width: 68%;
+    width: 82%;
     min-width: 540px;
     margin: 0 auto;
     padding: 0;
@@ -279,7 +279,11 @@ body {
 
 @media (min-width: 551px) and (max-width: 980px) {
     .site-header h1,
-    .site-header nav,
+    .site-header nav {
+        width: 92%;
+        min-width: 0;
+    }
+
     #content {
         width: 82%;
         min-width: 0;
