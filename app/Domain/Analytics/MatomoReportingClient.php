@@ -93,7 +93,7 @@ final class MatomoReportingClient
     }
 
     /** @param array{preset:string,label:string,start:string,end:string,previous_start:string,previous_end:string} $range
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     private function fetchReport(int $siteId, array $range): array
     {
@@ -272,7 +272,7 @@ final class MatomoReportingClient
     }
 
     /** @param list<string> $metricNames
-     *  @return array<int, array<string, float|string>>
+     * @return array<int, array<string, float|string>>
      */
     private function normalizeRows(?array $payload, array $metricNames): array
     {
@@ -297,7 +297,7 @@ final class MatomoReportingClient
     }
 
     /** @param array<string, float>|null $previous
-     *  @return array<string, float|null>
+     * @return array<string, float|null>
      */
     private function comparison(array $current, ?array $previous): array
     {
@@ -305,12 +305,14 @@ final class MatomoReportingClient
         foreach (self::METRICS as $metric) {
             if ($previous === null) {
                 $comparison[$metric] = null;
+
                 continue;
             }
 
             $previousValue = $previous[$metric] ?? 0.0;
             if ($previousValue == 0.0) {
                 $comparison[$metric] = ($current[$metric] ?? 0.0) == 0.0 ? 0.0 : null;
+
                 continue;
             }
 

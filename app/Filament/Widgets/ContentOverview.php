@@ -10,6 +10,7 @@ use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Database\Eloquent\Model;
 
 final class ContentOverview extends StatsOverviewWidget
 {
@@ -42,8 +43,8 @@ final class ContentOverview extends StatsOverviewWidget
     }
 
     /**
-     * @param class-string<\Illuminate\Database\Eloquent\Model> $model
-     * @param list<string> $states
+     * @param  class-string<Model>  $model
+     * @param  list<string>  $states
      */
     private function stateSummary(string $model, array $states): string
     {

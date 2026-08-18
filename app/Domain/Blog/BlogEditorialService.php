@@ -7,6 +7,7 @@ use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
 use App\Models\MediaAsset;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
@@ -244,7 +245,7 @@ final class BlogEditorialService
     }
 
     /** @param array<string, mixed> $validated */
-    private function createValidated(array $validated, \App\Models\User $actor): BlogPost
+    private function createValidated(array $validated, User $actor): BlogPost
     {
         $post = new BlogPost;
         $post->fill([

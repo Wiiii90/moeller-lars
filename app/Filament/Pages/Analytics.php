@@ -102,7 +102,7 @@ final class Analytics extends Page
     }
 
     /** @param array<string, mixed> $report
-     *  @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>>
      */
     private function buildKpis(array $report): array
     {
@@ -140,7 +140,7 @@ final class Analytics extends Page
     }
 
     /** @param array<int, array<string, mixed>> $series
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     private function buildTrendChart(array $series): array
     {
@@ -180,7 +180,7 @@ final class Analytics extends Page
     }
 
     /** @param array<int, array<string, mixed>> $events
-     *  @return array<string, int|float|string>
+     * @return array<string, int|float|string>
      */
     private function buildInteractionSignals(array $events): array
     {
@@ -201,7 +201,7 @@ final class Analytics extends Page
     }
 
     /** @param array<int, array<string, mixed>> $rows
-     *  @return array<string, int|float|string>
+     * @return array<string, int|float|string>
      */
     private function buildOperationalSummary(array $rows): array
     {
