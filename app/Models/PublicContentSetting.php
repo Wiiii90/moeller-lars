@@ -86,12 +86,13 @@ class PublicContentSetting extends Model
                 $usedPositions[$position] = true;
 
                 if (ArtworkCategory::query()
+                    ->whereNull('parent_id')
                     ->where('state', 'published')
                     ->where('show_in_navigation', true)
                     ->where('position', $position)
                     ->exists()) {
                     throw ValidationException::withMessages([
-                        $key.'_navigation_position' => 'A visible artwork category already uses this navigation position.',
+                        $key.'_navigation_position' => 'A visible top-level artwork category already uses this navigation position.',
                     ]);
                 }
             }
