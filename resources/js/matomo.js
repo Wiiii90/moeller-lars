@@ -51,7 +51,7 @@ function initializeDeclarativeEvents(root = document) {
 
     const observer = new IntersectionObserver((entries) => {
         for (const entry of entries) {
-            if (!entry.isIntersecting || entry.intersectionRatio < 0.5) continue;
+            if (!entry.isIntersecting || entry.intersectionRatio < 0.25) continue;
             const target = entry.target;
             trackMatomoEvent(
                 target.dataset.matomoEventCategory || 'Interaction',
@@ -62,7 +62,7 @@ function initializeDeclarativeEvents(root = document) {
             );
             observer.unobserve(target);
         }
-    }, { threshold: [0.5] });
+    }, { threshold: [0.25] });
 
     viewTargets.forEach((target) => observer.observe(target));
 }
