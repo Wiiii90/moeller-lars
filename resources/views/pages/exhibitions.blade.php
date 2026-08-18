@@ -9,31 +9,50 @@
         @forelse ($exhibitions as $exhibition)
             <article class="exhibition-entry">
                 <div class="exhibition-entry__date">{{ $exhibition->date_text }}</div>
+
                 <div class="exhibition-entry__content">
+                    @if ($exhibition->kind !== null)
+                        <p class="exhibition-entry__eyebrow">{{ $exhibition->kind }}</p>
+                    @endif
+
                     <h3>{{ $exhibition->title }}</h3>
 
-                    @if ($exhibition->venue !== null)
-                        <div>{{ $exhibition->venue }}</div>
-                    @endif
-                    @if ($exhibition->location_text !== null)
-                        <div>{{ $exhibition->location_text }}</div>
-                    @elseif ($exhibition->city !== null || $exhibition->country !== null)
-                        <div>{{ collect([$exhibition->city, $exhibition->country])->filter(fn ($value) => $value !== null)->implode(', ') }}</div>
+                    @if ($exhibition->venue !== null || $exhibition->location_text !== null || $exhibition->city !== null || $exhibition->country !== null)
+                        <div class="exhibition-entry__facts">
+                            @if ($exhibition->venue !== null)
+                                <div class="exhibition-entry__fact">
+                                    <span class="exhibition-entry__fact-label">Venue</span>
+                                    <span class="exhibition-entry__fact-value">{{ $exhibition->venue }}</span>
+                                </div>
+                            @endif
+
+                            @if ($exhibition->location_text !== null)
+                                <div class="exhibition-entry__fact">
+                                    <span class="exhibition-entry__fact-label">Location</span>
+                                    <span class="exhibition-entry__fact-value">{{ $exhibition->location_text }}</span>
+                                </div>
+                            @elseif ($exhibition->city !== null || $exhibition->country !== null)
+                                <div class="exhibition-entry__fact">
+                                    <span class="exhibition-entry__fact-label">Location</span>
+                                    <span class="exhibition-entry__fact-value">{{ collect([$exhibition->city, $exhibition->country])->filter(fn ($value) => $value !== null)->implode(', ') }}</span>
+                                </div>
+                            @endif
+                        </div>
                     @endif
 
                     @if ($exhibition->description !== null)
-                        <div class="rich-text">{!! $richText->render($exhibition->description) !!}</div>
+                        <div class="rich-text exhibition-entry__description">{!! $richText->render($exhibition->description) !!}</div>
                     @endif
 
                     @if ($exhibition->external_url !== null || $exhibition->directions_url !== null)
-                        <p class="exhibition-entry__links">
+                        <div class="exhibition-entry__links">
                             @if ($exhibition->external_url !== null)
                                 <a href="{{ $exhibition->external_url }}" rel="noopener noreferrer">More information</a>
                             @endif
                             @if ($exhibition->directions_url !== null)
                                 <a href="{{ $exhibition->directions_url }}" rel="noopener noreferrer">Directions</a>
                             @endif
-                        </p>
+                        </div>
                     @endif
 
                     @if ($exhibition->mediaUsages->isNotEmpty())
