@@ -48,7 +48,10 @@ class PublicContactController extends Controller
             }
         }
 
-        $recipient = config('contact.recipient');
+        $recipient = $settings->getAttribute('contact_recipient_email');
+        if (! is_string($recipient) || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
+            $recipient = config('contact.recipient');
+        }
         if (! is_string($recipient) || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
             return back()->withErrors(['contact' => 'Message delivery is currently unavailable.'])->withInput();
         }
