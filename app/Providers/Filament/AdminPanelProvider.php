@@ -29,6 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->authGuard('web')
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
+            ->brandName('Lars Möller')
             ->colors([
                 'primary' => Color::Amber,
             ])

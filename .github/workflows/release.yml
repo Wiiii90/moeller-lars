@@ -3,6 +3,8 @@ name: Verify and build release image
 on:
   push:
     branches: [main, agent/admin-validation-rc]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -82,6 +84,7 @@ jobs:
         run: npm run test:js
 
   release-image:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     needs: verify
     outputs:

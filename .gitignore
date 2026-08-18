@@ -15,6 +15,7 @@ credentials.json
 /dist
 /build
 /.cache
+/resources/views/filament/generated/analytics-world-map.blade.php
 
 # Logs and local tooling
 *.log

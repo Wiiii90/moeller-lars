@@ -13,45 +13,8 @@
         };
         $percent = static fn (array $row, float $max, string $metric = 'nb_visits'): float => min(100, max(0, ((float) ($row[$metric] ?? 0) / $max) * 100));
 
-        $donutPalette = ['#92400e', '#d97706', '#f59e0b', '#fbbf24', '#fed7aa', '#d1d5db'];
-        $buildDonut = static function (array $rows, string $metric = 'nb_visits') use ($donutPalette): array {
-            $rows = array_values(array_filter($rows, static fn (array $row): bool => (float) ($row[$metric] ?? 0) > 0));
-            $rows = array_slice($rows, 0, 6);
-            $total = array_sum(array_map(static fn (array $row): float => (float) ($row[$metric] ?? 0), $rows));
-            if ($total <= 0) {
-                return ['gradient' => 'conic-gradient(#e5e7eb 0 100%)', 'total' => 0, 'rows' => []];
-            }
-
-            $cursor = 0.0;
-            $segments = [];
-            $legend = [];
-            foreach ($rows as $index => $row) {
-                $share = ((float) ($row[$metric] ?? 0) / $total) * 100;
-                $end = $cursor + $share;
-                $color = $donutPalette[$index] ?? end($donutPalette);
-                $segments[] = sprintf('%s %.3f%% %.3f%%', $color, $cursor, $end);
-                $legend[] = [
-                    'label' => (string) ($row['label'] ?? 'Unknown'),
-                    'value' => (int) round((float) ($row[$metric] ?? 0)),
-                    'share' => $share,
-                    'color' => $color,
-                ];
-                $cursor = $end;
-            }
-
-            return [
-                'gradient' => 'conic-gradient('.implode(', ', $segments).')',
-                'total' => (int) round($total),
-                'rows' => $legend,
-            ];
-        };
-
-        $sourceRows = $matomo['referrers'] ?? [];
-        $deviceRows = $matomo['devices'] ?? [];
-        $sourceDonut = $buildDonut($sourceRows);
-        $deviceDonut = $buildDonut($deviceRows);
-
         $countryRows = $matomo['countries'] ?? [];
+        $continentRows = $matomo['continents'] ?? [];
         $countryMax = $maxMetric($countryRows);
         $centroids = config('analytics-country-centroids', []);
         $mapPoints = [];
@@ -63,26 +26,94 @@
             }
 
             $visits = max(0, $metricValue($row));
+            if ($visits === 0) {
+                continue;
+            }
+
             $lat = (float) $coords[0];
             $lon = (float) $coords[1];
             $mapPoints[] = [
                 'label' => $label,
                 'visits' => $visits,
-                'x' => min(98, max(2, (($lon + 180.0) / 360.0) * 100.0)),
-                'y' => min(96, max(4, ((90.0 - $lat) / 180.0) * 100.0)),
-                'size' => 10.0 + (24.0 * sqrt($visits / $countryMax)),
+                'x' => min(99, max(1, (($lon + 180.0) / 360.0) * 100.0)),
+                'y' => min(98, max(2, ((90.0 - $lat) / 180.0) * 100.0)),
+                'size' => 9.0 + (22.0 * sqrt($visits / $countryMax)),
             ];
         }
+
+        $acquisitionGroups = [
+            'Referring websites' => $matomo['referrer_websites'] ?? [],
+            'Social networks' => $matomo['socials'] ?? [],
+            'Search engines' => $matomo['search_engines'] ?? [],
+            'AI assistants' => $matomo['ai_assistants'] ?? [],
+            'Campaigns' => $matomo['campaigns'] ?? [],
+        ];
+        $hasAcquisition = collect($acquisitionGroups)->contains(static fn (array $rows): bool => $rows !== []);
+
+        $contentRows = $matomo['content'] ?? [];
+        $entryRows = $matomo['entry_pages'] ?? [];
+        $exitRows = $matomo['exit_pages'] ?? [];
+        $downloadRows = $matomo['downloads'] ?? [];
+        $outlinkRows = $matomo['outlinks'] ?? [];
+        $searchRows = $matomo['site_searches'] ?? [];
+        $hasJourneys = $contentRows !== [] || $entryRows !== [] || $exitRows !== [] || $downloadRows !== [] || $outlinkRows !== [] || $searchRows !== [];
+
+        $eventRows = $matomo['events'] ?? [];
+        $eventCategoryRows = $matomo['event_categories'] ?? [];
+        $eventNameRows = $matomo['event_names'] ?? [];
+        $hasInteractions = collect($interactionSignals)->contains(static fn ($value): bool => (float) $value > 0)
+            || $eventRows !== [] || $eventCategoryRows !== [] || $eventNameRows !== [];
+
+        $technologyGroups = [
+            'Devices' => $matomo['devices'] ?? [],
+            'Browsers' => $matomo['browsers'] ?? [],
+            'Operating systems' => $matomo['operating_systems'] ?? [],
+            'Visit duration' => $matomo['visit_duration'] ?? [],
+            'Pages / actions per visit' => $matomo['pages_per_visit'] ?? [],
+        ];
+        $hasTechnology = collect($technologyGroups)->contains(static fn (array $rows): bool => $rows !== []);
+
+        // Matomo's dedicated day-of-week report has produced contradictory range aggregates in Validation.
+        // Derive this distribution from the already-authoritative daily series instead, so it must reconcile with
+        // the same selected range used by the headline visit metrics.
+        $weekdayBuckets = array_fill_keys(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], 0);
+        foreach (($matomo['series'] ?? []) as $point) {
+            $date = $point['date'] ?? null;
+            if (! is_string($date)) {
+                continue;
+            }
+
+            try {
+                $weekday = \Carbon\CarbonImmutable::createFromFormat('Y-m-d', $date)->format('l');
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if (array_key_exists($weekday, $weekdayBuckets)) {
+                $weekdayBuckets[$weekday] += (int) round((float) ($point['visits'] ?? 0));
+            }
+        }
+        $weekdayRows = [];
+        foreach ($weekdayBuckets as $label => $visits) {
+            if ($visits > 0) {
+                $weekdayRows[] = ['label' => $label, 'nb_visits' => $visits];
+            }
+        }
+
+        $localTimeRows = $matomo['local_time'] ?? [];
+        $weekdayMax = $maxMetric($weekdayRows);
+        $localTimeMax = $maxMetric($localTimeRows);
     @endphp
 
     <div class="analytics-dashboard">
-        <header class="analytics-hero">
-            <div>
-                <div class="analytics-hero__eyebrow">Self-hosted artist intelligence</div>
-                <h2 class="analytics-hero__title">Human analytics</h2>
-                <p class="analytics-hero__copy">
-                    Audience, acquisition, content, behaviour and artist-specific interactions from Matomo Core. Human analytics stay aggregate and separate from local bot, error and performance telemetry.
-                </p>
+        <header class="analytics-head">
+            <div class="analytics-head__intro">
+                <p class="analytics-kicker">Site intelligence</p>
+                <h2>Human analytics</h2>
+                <p>Aggregate Matomo reporting for audience, content and meaningful interactions. Operational telemetry is kept separate below.</p>
+            </div>
+
+            <div class="analytics-head__controls">
                 <span @class([
                     'analytics-status',
                     'is-live' => $status === 'available',
@@ -95,458 +126,371 @@
                     @else Reporting unavailable
                     @endif
                 </span>
-            </div>
 
-            <div class="analytics-range" role="group" aria-label="Analytics date range">
-                @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', '12m' => '12 months'] as $preset => $label)
-                    <button
-                        type="button"
-                        wire:click="setRange('{{ $preset }}')"
-                        class="analytics-range__button {{ $range === $preset ? 'is-active' : '' }}"
-                    >{{ $label }}</button>
-                @endforeach
+                <div class="analytics-range" role="group" aria-label="Analytics date range">
+                    @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', '12m' => '12 months'] as $preset => $label)
+                        <button
+                            type="button"
+                            wire:click="setRange('{{ $preset }}')"
+                            class="analytics-range__button {{ $range === $preset ? 'is-active' : '' }}"
+                        >{{ $label }}</button>
+                    @endforeach
+                </div>
             </div>
         </header>
 
-        <div wire:loading.flex wire:target="setRange" class="analytics-loading">
-            Updating Matomo reports…
-        </div>
+        <div wire:loading.flex wire:target="setRange" class="analytics-loading">Updating reports…</div>
 
         @if ($status === 'disabled')
             <div class="analytics-notice is-warning">
-                <strong>Matomo reporting is not enabled for this application runtime.</strong>
-                <div>{{ $matomo['message'] ?? 'Matomo reporting is disabled.' }}</div>
-                <div>Browser tracking can remain disabled here while the read-only Reporting API is enabled for validation.</div>
+                <strong>Matomo reporting is disabled.</strong>
+                <span>{{ $matomo['message'] ?? 'The read-only Reporting API is not enabled for this runtime.' }}</span>
             </div>
         @elseif ($status === 'unavailable')
             <div class="analytics-notice is-danger">
-                <strong>Matomo reporting is temporarily unavailable.</strong>
-                <div>{{ $matomo['message'] ?? 'The Reporting API could not be read.' }}</div>
+                <strong>Matomo reporting is unavailable.</strong>
+                <span>{{ $matomo['message'] ?? 'The Reporting API could not be read.' }}</span>
             </div>
         @elseif ($status === 'stale')
             <div class="analytics-notice is-warning">
-                <strong>Live Matomo is unavailable.</strong> {{ $matomo['message'] ?? 'Showing cached aggregate analytics.' }}
+                <strong>Showing cached Matomo aggregates.</strong>
+                <span>{{ $matomo['message'] ?? 'Live reporting is temporarily unavailable.' }}</span>
             </div>
         @endif
 
         @if ($available)
-            <div class="analytics-meta">
+            <div class="analytics-context">
                 <strong>{{ $matomo['range']['label'] ?? 'Selected range' }}</strong>
                 @if (filled($matomo['range']['start'] ?? null) && filled($matomo['range']['end'] ?? null))
                     <span>{{ $matomo['range']['start'] }} – {{ $matomo['range']['end'] }}</span>
                 @endif
-                <span>Source: Matomo Reporting API</span>
+                <span>Matomo Reporting API</span>
                 @if (filled($matomo['generated_at'] ?? null))
-                    <span>Generated {{ $matomo['generated_at'] }}</span>
+                    <span>Updated {{ $matomo['generated_at'] }}</span>
                 @endif
             </div>
 
-            <div class="analytics-kpis">
+            <section class="analytics-kpi-strip" aria-label="Traffic summary">
                 @foreach ($kpis as $kpi)
-                    <article class="analytics-card">
-                        <div class="analytics-card__label">{{ $kpi['label'] }}</div>
-                        <div class="analytics-card__value">{{ $kpi['value'] }}</div>
-                        <div @class([
-                            'analytics-card__delta',
+                    <div class="analytics-kpi">
+                        <span>{{ $kpi['label'] }}</span>
+                        <strong>{{ $kpi['value'] }}</strong>
+                        <small @class([
                             'is-up' => is_numeric($kpi['delta']) && $kpi['delta'] > 0,
                             'is-down' => is_numeric($kpi['delta']) && $kpi['delta'] < 0,
-                        ])>{{ $kpi['comparison'] }}</div>
-                    </article>
+                        ])>{{ $kpi['comparison'] }}</small>
+                    </div>
                 @endforeach
-            </div>
+            </section>
 
-            <section class="analytics-section" id="overview">
-                <div class="analytics-section__header">
+            <section class="analytics-section analytics-overview">
+                <div class="analytics-section__head">
                     <div>
-                        <h3 class="analytics-section__title">Traffic & engagement</h3>
-                        <p class="analytics-section__copy">Visits and tracked actions over time, with acquisition and device mix at a glance.</p>
+                        <p class="analytics-kicker">Traffic</p>
+                        <h3>Visits over time</h3>
+                    </div>
+                    <div class="analytics-legend" aria-label="Chart legend">
+                        <span><i class="is-visits"></i>Visits</span>
+                        <span><i class="is-actions"></i>Tracked actions</span>
                     </div>
                 </div>
 
-                <div class="analytics-grid-wide">
-                    <article class="analytics-panel">
-                        <div class="analytics-panel__heading-row">
-                            <div>
-                                <h4 class="analytics-panel__title">Visits over time</h4>
-                                <p class="analytics-panel__copy">Human visits versus tracked public actions.</p>
-                            </div>
-                        </div>
-
+                <div class="analytics-overview__grid">
+                    <div class="analytics-trend">
                         @if ($trendChart === [])
-                            <div class="analytics-empty">No time-series data is available for this period.</div>
+                            <p class="analytics-empty">No time-series data is available for this period.</p>
                         @else
-                            <div class="analytics-chart">
-                                <svg viewBox="0 0 1000 260" role="img" aria-label="Visits and tracked actions trend">
-                                    <line x1="22" y1="238" x2="978" y2="238" class="analytics-chart__grid" stroke-width="1" />
-                                    <line x1="22" y1="130" x2="978" y2="130" class="analytics-chart__grid" stroke-width="1" />
-                                    <polyline points="{{ $trendChart['actions_points'] }}" fill="none" stroke="currentColor" class="analytics-chart__actions" stroke-width="3" vector-effect="non-scaling-stroke" />
-                                    <polyline points="{{ $trendChart['visits_points'] }}" fill="none" stroke="currentColor" class="analytics-chart__visits" stroke-width="4" vector-effect="non-scaling-stroke" />
-                                </svg>
-                            </div>
-                            <div class="analytics-chart__legend">
-                                <span><i class="analytics-legend__dot" style="background:#d97706"></i>Visits</span>
-                                <span><i class="analytics-legend__dot" style="background:#9ca3af"></i>Tracked actions</span>
-                                <span>{{ $trendChart['start'] }} → {{ $trendChart['end'] }}</span>
-                            </div>
+                            <svg viewBox="0 0 1000 260" role="img" aria-label="Visits and tracked actions trend">
+                                <line x1="22" y1="238" x2="978" y2="238" class="analytics-chart__grid" />
+                                <line x1="22" y1="130" x2="978" y2="130" class="analytics-chart__grid" />
+                                <line x1="22" y1="22" x2="978" y2="22" class="analytics-chart__grid" />
+                                <polyline points="{{ $trendChart['actions_points'] }}" class="analytics-chart__line is-actions" />
+                                <polyline points="{{ $trendChart['visits_points'] }}" class="analytics-chart__line is-visits" />
+                            </svg>
+                            <div class="analytics-axis"><span>{{ $trendChart['start'] }}</span><span>{{ $trendChart['end'] }}</span></div>
                         @endif
-                    </article>
-
-                    <div class="analytics-grid-2">
-                        <article class="analytics-panel">
-                            <h4 class="analytics-panel__title">Acquisition mix</h4>
-                            <div class="analytics-donut-wrap">
-                                <div class="analytics-donut" style="--donut: {{ $sourceDonut['gradient'] }}" data-total="{{ number_format($sourceDonut['total']) }}&#10;visits"></div>
-                                <div class="analytics-list">
-                                    @forelse ($sourceDonut['rows'] as $row)
-                                        <div class="analytics-list__row">
-                                            <span class="analytics-list__label"><i class="analytics-legend__dot" style="background:{{ $row['color'] }}"></i>{{ $row['label'] }}</span>
-                                            <span class="analytics-list__value">{{ number_format($row['value']) }}</span>
-                                        </div>
-                                    @empty
-                                        <div class="analytics-empty">No acquisition data.</div>
-                                    @endforelse
-                                </div>
-                            </div>
-                        </article>
-
-                        <article class="analytics-panel">
-                            <h4 class="analytics-panel__title">Device mix</h4>
-                            <div class="analytics-donut-wrap">
-                                <div class="analytics-donut" style="--donut: {{ $deviceDonut['gradient'] }}" data-total="{{ number_format($deviceDonut['total']) }}&#10;visits"></div>
-                                <div class="analytics-list">
-                                    @forelse ($deviceDonut['rows'] as $row)
-                                        <div class="analytics-list__row">
-                                            <span class="analytics-list__label"><i class="analytics-legend__dot" style="background:{{ $row['color'] }}"></i>{{ $row['label'] }}</span>
-                                            <span class="analytics-list__value">{{ number_format($row['value']) }}</span>
-                                        </div>
-                                    @empty
-                                        <div class="analytics-empty">No device data.</div>
-                                    @endforelse
-                                </div>
-                            </div>
-                        </article>
                     </div>
-                </div>
 
-                <div class="analytics-grid-4">
-                    @foreach ($audienceHighlights as $highlight)
-                        <article class="analytics-card">
-                            <div class="analytics-card__label">{{ $highlight['label'] }}</div>
-                            <div class="analytics-card__value" style="font-size:1rem">{{ $highlight['value'] }}</div>
-                            <div class="analytics-card__detail">{{ $highlight['detail'] }}</div>
-                        </article>
-                    @endforeach
+                    <dl class="analytics-highlights">
+                        @foreach ($audienceHighlights as $highlight)
+                            <div>
+                                <dt>{{ $highlight['label'] }}</dt>
+                                <dd>{{ $highlight['value'] }}</dd>
+                                <small>{{ $highlight['detail'] }}</small>
+                            </div>
+                        @endforeach
+                    </dl>
                 </div>
             </section>
 
-            <section class="analytics-section" id="geography">
-                <div class="analytics-section__header">
+            <section class="analytics-section analytics-geography">
+                <div class="analytics-section__head">
                     <div>
-                        <h3 class="analytics-section__title">Audience & geography</h3>
-                        <p class="analytics-section__copy">Country-level visitor origins only. No raw visitor identity, precise address or city list is mirrored into the application.</p>
+                        <p class="analytics-kicker">Audience</p>
+                        <h3>Geography</h3>
                     </div>
+                    <p>Country-level aggregates only.</p>
                 </div>
 
-                <div class="analytics-grid-wide">
-                    <article class="analytics-panel">
-                        <h4 class="analytics-panel__title">Visitor origin map</h4>
-                        <p class="analytics-panel__copy">Bubble size represents aggregate visits for the selected period.</p>
-                        <div class="analytics-world" role="img" aria-label="World map of aggregate visitor origins">
-                            <svg class="analytics-world__svg" viewBox="0 0 1000 500" preserveAspectRatio="none" aria-hidden="true">
-                                <path class="analytics-world__grid" d="M0 125H1000M0 250H1000M0 375H1000M250 0V500M500 0V500M750 0V500" />
-                                <path class="analytics-world__land" d="M61 129L111 83L198 61L285 77L337 119L310 164L266 184L237 224L188 220L162 194L119 180L84 157Z" />
-                                <path class="analytics-world__land" d="M259 225L306 237L340 279L329 333L306 392L276 449L253 400L247 339L232 286Z" />
-                                <path class="analytics-world__land" d="M455 106L492 82L548 88L578 112L619 110L657 124L715 115L778 132L846 121L912 151L899 187L841 194L815 225L760 220L717 198L675 206L633 185L598 188L561 168L520 175L489 152L458 149Z" />
-                                <path class="analytics-world__land" d="M488 181L548 180L589 206L607 258L583 320L548 371L508 348L482 301L467 244Z" />
-                                <path class="analytics-world__land" d="M783 330L830 311L881 323L915 356L894 394L845 404L802 383Z" />
-                                <path class="analytics-world__land" d="M418 92L435 63L468 55L483 78L461 105Z" />
-                            </svg>
-                            @forelse ($mapPoints as $point)
+                <div class="analytics-geography__grid">
+                    <figure class="analytics-world">
+                        <div class="analytics-world__canvas">
+                            @if (view()->exists('filament.generated.analytics-world-map'))
+                                @include('filament.generated.analytics-world-map')
+                            @else
+                                <div class="analytics-map-build-warning">Map geometry is generated by the frontend build.</div>
+                            @endif
+
+                            @foreach ($mapPoints as $point)
                                 <span
                                     class="analytics-world__marker"
+                                    style="left: {{ number_format($point['x'], 3, '.', '') }}%; top: {{ number_format($point['y'], 3, '.', '') }}%; width: {{ number_format($point['size'], 2, '.', '') }}px; height: {{ number_format($point['size'], 2, '.', '') }}px;"
                                     tabindex="0"
-                                    title="{{ $point['label'] }}: {{ number_format($point['visits']) }} visits"
-                                    style="--x:{{ number_format($point['x'], 3, '.', '') }}%;--y:{{ number_format($point['y'], 3, '.', '') }}%;--size:{{ number_format($point['size'], 2, '.', '') }}px"
+                                    aria-label="{{ $point['label'] }}: {{ number_format($point['visits']) }} visits"
+                                    title="{{ $point['label'] }} · {{ number_format($point['visits']) }} visits"
                                 ></span>
+                            @endforeach
+                        </div>
+                        <figcaption>
+                            @if ($countryRows === [])
+                                No country-level visits in this period.
+                            @else
+                                Marker area follows aggregate visit volume. Natural Earth country geometry is generated at build time.
+                            @endif
+                        </figcaption>
+                    </figure>
+
+                    <div class="analytics-ranking">
+                        <div>
+                            <h4>Top countries</h4>
+                            @forelse (array_slice($countryRows, 0, 8) as $row)
+                                <div class="analytics-rank-row">
+                                    <span>{{ $row['label'] }}</span>
+                                    <i><b style="width: {{ number_format($percent($row, $countryMax), 2, '.', '') }}%"></b></i>
+                                    <strong>{{ number_format($metricValue($row)) }}</strong>
+                                </div>
                             @empty
-                                <div class="analytics-empty" style="position:absolute;left:1rem;right:1rem;bottom:1rem">No country-level Matomo data is available for this period.</div>
+                                <p class="analytics-empty">No country report.</p>
                             @endforelse
                         </div>
-                    </article>
 
-                    <div class="analytics-grid-2">
-                        <article class="analytics-panel">
-                            <h4 class="analytics-panel__title">Top countries</h4>
-                            @php($countryBarMax = $maxMetric($countryRows))
-                            <div class="analytics-list">
-                                @forelse (array_slice($countryRows, 0, 12) as $row)
-                                    <div>
-                                        <div class="analytics-list__row"><span class="analytics-list__label">{{ $row['label'] }}</span><span class="analytics-list__value">{{ number_format($metricValue($row)) }}</span></div>
-                                        <div class="analytics-bar"><div class="analytics-bar__fill" style="width:{{ $percent($row, $countryBarMax) }}%"></div></div>
-                                    </div>
-                                @empty
-                                    <div class="analytics-empty">No country report.</div>
-                                @endforelse
+                        @if ($continentRows !== [])
+                            <div>
+                                <h4>Continents</h4>
+                                @foreach ($continentRows as $row)
+                                    <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ number_format($metricValue($row)) }}</strong></div>
+                                @endforeach
                             </div>
-                        </article>
-
-                        <article class="analytics-panel">
-                            <h4 class="analytics-panel__title">Continents</h4>
-                            @php($continentRows = $matomo['continents'] ?? [])
-                            @php($continentMax = $maxMetric($continentRows))
-                            <div class="analytics-list">
-                                @forelse ($continentRows as $row)
-                                    <div>
-                                        <div class="analytics-list__row"><span class="analytics-list__label">{{ $row['label'] }}</span><span class="analytics-list__value">{{ number_format($metricValue($row)) }}</span></div>
-                                        <div class="analytics-bar"><div class="analytics-bar__fill" style="width:{{ $percent($row, $continentMax) }}%"></div></div>
-                                    </div>
-                                @empty
-                                    <div class="analytics-empty">No continent report.</div>
-                                @endforelse
-                            </div>
-                        </article>
+                        @endif
                     </div>
                 </div>
 
-                <div class="analytics-grid-2">
-                    @foreach (['day_of_week' => 'Visits by weekday', 'local_time' => 'Visits by local hour'] as $key => $title)
-                        @php($rows = $matomo[$key] ?? [])
-                        @php($rowMax = $maxMetric($rows))
-                        <article class="analytics-panel">
-                            <h4 class="analytics-panel__title">{{ $title }}</h4>
-                            <div class="analytics-list">
-                                @forelse ($rows as $row)
-                                    <div>
-                                        <div class="analytics-list__row"><span class="analytics-list__label">{{ $row['label'] }}</span><span class="analytics-list__value">{{ number_format($metricValue($row)) }}</span></div>
-                                        <div class="analytics-bar"><div class="analytics-bar__fill" style="width:{{ $percent($row, $rowMax) }}%"></div></div>
+                @if ($weekdayRows !== [] || $localTimeRows !== [])
+                    <div class="analytics-time-grid">
+                        @if ($weekdayRows !== [])
+                            <div>
+                                <h4>Visits by weekday</h4>
+                                @foreach ($weekdayRows as $row)
+                                    <div class="analytics-rank-row is-compact">
+                                        <span>{{ $row['label'] }}</span>
+                                        <i><b style="width: {{ number_format($percent($row, $weekdayMax), 2, '.', '') }}%"></b></i>
+                                        <strong>{{ number_format($metricValue($row)) }}</strong>
                                     </div>
-                                @empty
-                                    <div class="analytics-empty">No timing data.</div>
-                                @endforelse
+                                @endforeach
                             </div>
-                        </article>
-                    @endforeach
-                </div>
+                        @endif
+
+                        @if ($localTimeRows !== [])
+                            <div>
+                                <h4>Visits by local hour</h4>
+                                @foreach ($localTimeRows as $row)
+                                    <div class="analytics-rank-row is-compact">
+                                        <span>{{ $row['label'] }}</span>
+                                        <i><b style="width: {{ number_format($percent($row, $localTimeMax), 2, '.', '') }}%"></b></i>
+                                        <strong>{{ number_format($metricValue($row)) }}</strong>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endif
             </section>
 
-            <section class="analytics-section" id="acquisition">
-                <div class="analytics-section__header">
+            <section class="analytics-section">
+                <div class="analytics-section__head">
                     <div>
-                        <h3 class="analytics-section__title">Acquisition</h3>
-                        <p class="analytics-section__copy">Where visitors came from: referring sites, social networks, search engines, campaigns and AI assistants.</p>
+                        <p class="analytics-kicker">Discovery</p>
+                        <h3>Acquisition</h3>
                     </div>
+                    <p>How visitors reached the site.</p>
                 </div>
 
-                <div class="analytics-grid-3">
-                    @foreach ([
-                        'referrer_websites' => ['Referring websites', 'No referring websites.'],
-                        'socials' => ['Social networks', 'No social referrals.'],
-                        'search_engines' => ['Search engines', 'No search referrals.'],
-                        'ai_assistants' => ['AI assistants', 'No AI-assistant referrals.'],
-                        'campaigns' => ['Campaigns', 'No tracked campaigns.'],
-                    ] as $key => [$title, $empty])
-                        <article class="analytics-panel">
-                            <h4 class="analytics-panel__title">{{ $title }}</h4>
-                            <div class="analytics-list">
-                                @forelse (($matomo[$key] ?? []) as $row)
-                                    <div class="analytics-list__row"><span class="analytics-list__label">{{ $row['label'] }}</span><span class="analytics-list__value">{{ number_format($metricValue($row)) }}</span></div>
-                                @empty
-                                    <div class="analytics-empty">{{ $empty }}</div>
-                                @endforelse
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
+                @if ($hasAcquisition)
+                    <div class="analytics-data-columns">
+                        @foreach ($acquisitionGroups as $label => $rows)
+                            @if ($rows !== [])
+                                <div>
+                                    <h4>{{ $label }}</h4>
+                                    @foreach (array_slice($rows, 0, 8) as $row)
+                                        <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ number_format($metricValue($row)) }}</strong></div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                @else
+                    <p class="analytics-empty analytics-empty--section">No acquisition activity in this period.</p>
+                @endif
             </section>
 
-            <section class="analytics-section" id="content">
-                <div class="analytics-section__header">
+            <section class="analytics-section">
+                <div class="analytics-section__head">
                     <div>
-                        <h3 class="analytics-section__title">Content & journeys</h3>
-                        <p class="analytics-section__copy">What visitors viewed, where sessions began and ended, and which downloads or external destinations followed.</p>
+                        <p class="analytics-kicker">Editorial</p>
+                        <h3>Content & journeys</h3>
                     </div>
+                    <p>What was viewed and where sessions moved.</p>
                 </div>
 
-                <div class="analytics-grid-wide">
-                    <article class="analytics-panel">
-                        <h4 class="analytics-panel__title">Most-viewed content</h4>
+                @if ($hasJourneys)
+                    <div class="analytics-journey-grid">
                         <div class="analytics-table-wrap">
+                            <h4>Most-viewed content</h4>
                             <table class="analytics-table">
                                 <thead><tr><th>Content</th><th>Views</th><th>Visits</th></tr></thead>
                                 <tbody>
-                                @forelse (($matomo['content'] ?? []) as $row)
-                                    <tr><td>{{ $row['label'] }}</td><td>{{ number_format((int) (($row['nb_hits'] ?? 0) ?: ($row['nb_actions'] ?? 0))) }}</td><td>{{ number_format($metricValue($row)) }}</td></tr>
-                                @empty
-                                    <tr><td colspan="3">No content report.</td></tr>
-                                @endforelse
+                                @foreach (array_slice($contentRows, 0, 12) as $row)
+                                    <tr><td>{{ $row['label'] }}</td><td>{{ number_format($metricValue($row, 'nb_hits')) }}</td><td>{{ number_format($metricValue($row)) }}</td></tr>
+                                @endforeach
                                 </tbody>
                             </table>
                         </div>
-                    </article>
 
-                    <div class="analytics-grid-2">
-                        @foreach (['downloads' => 'Downloads', 'outlinks' => 'Outbound destinations'] as $key => $title)
-                            <article class="analytics-panel">
-                                <h4 class="analytics-panel__title">{{ $title }}</h4>
-                                <div class="analytics-list">
-                                    @forelse (($matomo[$key] ?? []) as $row)
-                                        <div class="analytics-list__row"><span class="analytics-list__label">{{ $row['label'] }}</span><span class="analytics-list__value">{{ number_format((int) (($row['nb_hits'] ?? 0) ?: ($row['nb_visits'] ?? 0))) }}</span></div>
-                                    @empty
-                                        <div class="analytics-empty">No activity.</div>
-                                    @endforelse
+                        <div class="analytics-journey-side">
+                            @foreach (['Entry pages' => $entryRows, 'Exit pages' => $exitRows, 'Downloads' => $downloadRows, 'Outbound destinations' => $outlinkRows, 'Site search' => $searchRows] as $label => $rows)
+                                @if ($rows !== [])
+                                    <div>
+                                        <h4>{{ $label }}</h4>
+                                        @foreach (array_slice($rows, 0, 6) as $row)
+                                            <div class="analytics-plain-row">
+                                                <span>{{ $row['label'] }}</span>
+                                                <strong>{{ number_format($metricValue($row, in_array($label, ['Downloads', 'Outbound destinations'], true) ? 'nb_hits' : ($label === 'Exit pages' ? 'nb_exits' : ($label === 'Entry pages' ? 'nb_entrances' : 'nb_visits')))) }}</strong>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <p class="analytics-empty analytics-empty--section">No content or journey activity in this period.</p>
+                @endif
+            </section>
+
+            <section class="analytics-section">
+                <div class="analytics-section__head">
+                    <div>
+                        <p class="analytics-kicker">Artwork</p>
+                        <h3>Artist interactions</h3>
+                    </div>
+                    <p>Events that describe meaningful public engagement.</p>
+                </div>
+
+                <div class="analytics-interaction-strip">
+                    @foreach ($interactionSignals as $label => $value)
+                        <div><span>{{ $label }}</span><strong>{{ number_format((int) $value) }}</strong></div>
+                    @endforeach
+                </div>
+
+                @if ($hasInteractions)
+                    <div class="analytics-data-columns analytics-data-columns--events">
+                        @foreach (['Event actions' => $eventRows, 'Event categories' => $eventCategoryRows, 'Works / subjects engaged' => $eventNameRows] as $label => $rows)
+                            @if ($rows !== [])
+                                <div>
+                                    <h4>{{ $label }}</h4>
+                                    @foreach (array_slice($rows, 0, 10) as $row)
+                                        <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ number_format($metricValue($row, 'nb_events')) }}</strong></div>
+                                    @endforeach
                                 </div>
-                            </article>
+                            @endif
                         @endforeach
                     </div>
-                </div>
-
-                <div class="analytics-grid-2">
-                    @foreach (['entry_pages' => ['Entry pages', 'nb_entrances'], 'exit_pages' => ['Exit pages', 'nb_exits']] as $key => [$title, $metric])
-                        <article class="analytics-panel">
-                            <h4 class="analytics-panel__title">{{ $title }}</h4>
-                            <div class="analytics-table-wrap">
-                                <table class="analytics-table">
-                                    <thead><tr><th>Path</th><th>Count</th></tr></thead>
-                                    <tbody>
-                                    @forelse (($matomo[$key] ?? []) as $row)
-                                        <tr><td>{{ $row['label'] }}</td><td>{{ number_format((int) (($row[$metric] ?? 0) ?: ($row['nb_visits'] ?? 0))) }}</td></tr>
-                                    @empty
-                                        <tr><td colspan="2">No data.</td></tr>
-                                    @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
+                @elseif (collect($interactionSignals)->every(static fn ($value): bool => (float) $value === 0.0))
+                    <p class="analytics-empty analytics-empty--section">No artist interaction events in this period.</p>
+                @endif
             </section>
 
-            <section class="analytics-section" id="interactions">
-                <div class="analytics-section__header">
+            <section class="analytics-section">
+                <div class="analytics-section__head">
                     <div>
-                        <h3 class="analytics-section__title">Artist interaction analytics</h3>
-                        <p class="analytics-section__copy">Meaningful public interactions such as artwork opens, zooms, navigation, exhibition interest, blog reads and contact conversions.</p>
+                        <p class="analytics-kicker">Context</p>
+                        <h3>Engagement & technology</h3>
                     </div>
+                    <p>Aggregate compatibility and session-depth context.</p>
                 </div>
 
-                <div class="analytics-signal-grid">
-                    @foreach ($interactionSignals as $label => $value)
-                        <article class="analytics-card">
-                            <div class="analytics-card__label">{{ $label }}</div>
-                            <div class="analytics-card__value">{{ number_format((int) $value) }}</div>
-                        </article>
-                    @endforeach
-                </div>
-
-                <div class="analytics-grid-3">
-                    @foreach (['events' => 'Event actions', 'event_categories' => 'Event categories', 'event_names' => 'Works / subjects engaged'] as $key => $title)
-                        <article class="analytics-panel">
-                            <h4 class="analytics-panel__title">{{ $title }}</h4>
-                            <div class="analytics-list">
-                                @forelse (($matomo[$key] ?? []) as $row)
-                                    <div class="analytics-list__row"><span class="analytics-list__label">{{ $row['label'] }}</span><span class="analytics-list__value">{{ number_format((int) ($row['nb_events'] ?? 0)) }}</span></div>
-                                @empty
-                                    <div class="analytics-empty">No matching events yet.</div>
-                                @endforelse
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
-            </section>
-
-            <section class="analytics-section" id="engagement-technology">
-                <div class="analytics-section__header">
-                    <div>
-                        <h3 class="analytics-section__title">Engagement & technology</h3>
-                        <p class="analytics-section__copy">Visit depth and aggregate compatibility context without visitor-level fingerprinting.</p>
+                @if ($hasTechnology)
+                    <div class="analytics-data-columns">
+                        @foreach ($technologyGroups as $label => $rows)
+                            @if ($rows !== [])
+                                @php($groupMax = $maxMetric($rows))
+                                <div>
+                                    <h4>{{ $label }}</h4>
+                                    @foreach (array_slice($rows, 0, 8) as $row)
+                                        <div class="analytics-rank-row is-compact">
+                                            <span>{{ $row['label'] }}</span>
+                                            <i><b style="width: {{ number_format($percent($row, $groupMax), 2, '.', '') }}%"></b></i>
+                                            <strong>{{ number_format($metricValue($row)) }}</strong>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        @endforeach
                     </div>
-                </div>
-
-                <div class="analytics-grid-2">
-                    @foreach (['visit_duration' => 'Visit duration', 'pages_per_visit' => 'Pages / actions per visit'] as $key => $title)
-                        @php($rows = $matomo[$key] ?? [])
-                        @php($rowMax = $maxMetric($rows))
-                        <article class="analytics-panel">
-                            <h4 class="analytics-panel__title">{{ $title }}</h4>
-                            <div class="analytics-list">
-                                @forelse ($rows as $row)
-                                    <div>
-                                        <div class="analytics-list__row"><span class="analytics-list__label">{{ $row['label'] }}</span><span class="analytics-list__value">{{ number_format($metricValue($row)) }}</span></div>
-                                        <div class="analytics-bar"><div class="analytics-bar__fill" style="width:{{ $percent($row, $rowMax) }}%"></div></div>
-                                    </div>
-                                @empty
-                                    <div class="analytics-empty">No engagement distribution.</div>
-                                @endforelse
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
-
-                <div class="analytics-grid-3">
-                    @foreach (['devices' => 'Device classes', 'browsers' => 'Browsers', 'operating_systems' => 'Operating systems'] as $key => $title)
-                        @php($rows = $matomo[$key] ?? [])
-                        @php($rowMax = $maxMetric($rows))
-                        <article class="analytics-panel">
-                            <h4 class="analytics-panel__title">{{ $title }}</h4>
-                            <div class="analytics-list">
-                                @forelse ($rows as $row)
-                                    <div>
-                                        <div class="analytics-list__row"><span class="analytics-list__label">{{ $row['label'] }}</span><span class="analytics-list__value">{{ number_format($metricValue($row)) }}</span></div>
-                                        <div class="analytics-bar"><div class="analytics-bar__fill" style="width:{{ $percent($row, $rowMax) }}%"></div></div>
-                                    </div>
-                                @empty
-                                    <div class="analytics-empty">No aggregate data.</div>
-                                @endforelse
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
+                @else
+                    <p class="analytics-empty analytics-empty--section">No engagement or technology distribution is available for this period.</p>
+                @endif
             </section>
 
             @if (($matomo['warnings'] ?? []) !== [])
-                <div class="analytics-notice is-warning">
-                    <strong>Partial Matomo reporting</strong>
-                    <ul class="analytics-warning-list">
-                        @foreach ($matomo['warnings'] as $warning)
-                            <li>{{ $warning }}</li>
-                        @endforeach
+                <aside class="analytics-warning-line">
+                    <strong>Partial reporting</strong>
+                    <ul>
+                        @foreach ($matomo['warnings'] as $warning)<li>{{ $warning }}</li>@endforeach
                     </ul>
-                </div>
+                </aside>
             @endif
         @endif
 
-        <section class="analytics-section" id="operational-health">
-            <div class="analytics-section__header">
+        <section class="analytics-section analytics-operations">
+            <div class="analytics-section__head">
                 <div>
-                    <h3 class="analytics-section__title">Operational health</h3>
-                    <p class="analytics-section__copy">Application-owned aggregates for errors, bots, request performance and admin traffic. These remain intentionally separate from human Matomo analytics.</p>
+                    <p class="analytics-kicker">Application</p>
+                    <h3>Operational health</h3>
                 </div>
+                <p>Local aggregate errors, bots, request performance and admin traffic.</p>
             </div>
 
-            <div class="analytics-summary-grid">
+            <div class="analytics-operational-strip">
                 @foreach ($operationalSummary as $label => $value)
-                    <article class="analytics-card">
-                        <div class="analytics-card__label">{{ $label }}</div>
-                        <div class="analytics-card__value">{{ $value }}</div>
-                    </article>
+                    <div><span>{{ $label }}</span><strong>{{ $value }}</strong></div>
                 @endforeach
             </div>
 
-            <article class="analytics-panel">
-                <h4 class="analytics-panel__title">Recent operational aggregates</h4>
-                <div class="analytics-table-wrap">
+            @if ($operational !== [])
+                <div class="analytics-table-wrap analytics-table-wrap--operations">
                     <table class="analytics-table">
                         <thead><tr><th>Date</th><th>Metric</th><th>Value</th></tr></thead>
                         <tbody>
-                        @forelse ($operational as $row)
-                            <tr><td>{{ $row['date'] }}</td><td>{{ $row['label'] }}</td><td>{{ $row['display_value'] }}</td></tr>
-                        @empty
-                            <tr><td colspan="3">No operational aggregates recorded for this period.</td></tr>
-                        @endforelse
+                            @foreach ($operational as $row)
+                                <tr><td>{{ $row['date'] }}</td><td>{{ $row['label'] }}</td><td>{{ $row['display_value'] }}</td></tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
-            </article>
+            @else
+                <p class="analytics-empty analytics-empty--section">No local operational aggregates yet.</p>
+            @endif
         </section>
     </div>
 </x-filament-panels::page>

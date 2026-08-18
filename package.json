@@ -3,8 +3,9 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
-        "dev": "vite",
+        "generate:analytics-map": "node resources/scripts/generate-analytics-map.mjs",
+        "build": "npm run generate:analytics-map && vite build",
+        "dev": "npm run generate:analytics-map && vite",
         "test:js": "node --test tests/js/*.test.mjs"
     },
     "devDependencies": {
