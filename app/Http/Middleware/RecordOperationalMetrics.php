@@ -16,11 +16,20 @@ final class RecordOperationalMetrics
     {
         $startedAt = hrtime(true);
         $isBot = $this->isBot($request->userAgent());
+        $isAdmin = $request->is('admin', 'admin/*');
 
         try {
             $response = $next($request);
-            if ($response->getStatusCode() >= 500) {
+            $status = $response->getStatusCode();
+
+            if ($status === 404) {
+                $this->metrics->add('error:http_404', 1, 'count');
+            }
+            if ($status >= 500) {
                 $this->metrics->add('error:http_5xx', 1, 'count');
+            }
+            if ($isAdmin) {
+                $this->metrics->add('operation:admin_request', 1, 'count');
             }
 
             return $response;
@@ -31,6 +40,9 @@ final class RecordOperationalMetrics
             if (! $request->is('up')) {
                 $durationMilliseconds = (hrtime(true) - $startedAt) / 1_000_000;
                 $this->metrics->add('performance:request_duration_ms', $durationMilliseconds, 'ms');
+                if ($isAdmin) {
+                    $this->metrics->add('performance:admin_request_duration_ms', $durationMilliseconds, 'ms');
+                }
                 if ($isBot) {
                     $this->metrics->add('bot:request', 1, 'count');
                 }
