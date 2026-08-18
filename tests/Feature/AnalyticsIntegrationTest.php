@@ -18,7 +18,8 @@ beforeEach(function () {
 
 function configureAnalyticsReporting(): void
 {
-    Config::set('analytics.matomo.enabled', true);
+    Config::set('analytics.matomo.reporting_enabled', true);
+    Config::set('analytics.matomo.tracking_enabled', false);
     Config::set('analytics.matomo.base_url', 'https://analytics.example.test');
     Config::set('analytics.matomo.site_id', 7);
     Config::set('analytics.matomo.api_token', 'secret-reporting-token');
@@ -135,20 +136,20 @@ function bulkAnalyticsPayload(): array
 }
 
 it('keeps Matomo browser tracking absent when disabled', function () {
-    Config::set('analytics.matomo.enabled', false);
+    Config::set('analytics.matomo.tracking_enabled', false);
 
     $this->get('/')->assertSuccessful()->assertDontSee('data-matomo-tracking', false);
 });
 
 it('renders the artist analytics workspace without requiring live Matomo', function () {
-    Config::set('analytics.matomo.enabled', false);
+    Config::set('analytics.matomo.reporting_enabled', false);
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
     $this->get('/admin/analytics')
         ->assertSuccessful()
         ->assertSee('Human analytics')
         ->assertSee('Operational health')
-        ->assertSee('Matomo tracking is disabled.');
+        ->assertSee('Matomo reporting is disabled.');
 });
 
 it('builds the aggregate dashboard from one POST-authenticated Matomo bulk request', function () {
