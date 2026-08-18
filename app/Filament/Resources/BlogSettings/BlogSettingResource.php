@@ -10,6 +10,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -19,6 +20,8 @@ final class BlogSettingResource extends Resource
 {
     protected static ?string $model = BlogSetting::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $navigationLabel = 'Blog settings';
 
     protected static ?int $navigationSort = 23;
@@ -26,11 +29,19 @@ final class BlogSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Toggle::make('public_enabled')->label('Blog public'),
-            TextInput::make('navigation_label')->required()->maxLength(120),
-            TextInput::make('navigation_position')->integer()->required()->minValue(0),
-            TextInput::make('listing_title')->maxLength(240)->nullable(),
-            Textarea::make('listing_intro')->maxLength(10000)->nullable(),
+            Section::make('Blog visibility')
+                ->description('The public blog is opt-in. Posts can be prepared while the whole section stays private.')
+                ->schema([
+                    Toggle::make('public_enabled')->label('Publish blog section'),
+                    TextInput::make('navigation_label')->required()->maxLength(120),
+                    TextInput::make('navigation_position')->integer()->required()->minValue(0),
+                ])
+                ->columns(2),
+            Section::make('Listing page')
+                ->schema([
+                    TextInput::make('listing_title')->maxLength(240)->nullable(),
+                    Textarea::make('listing_intro')->maxLength(10000)->nullable()->columnSpanFull(),
+                ]),
         ]);
     }
 
