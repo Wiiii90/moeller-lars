@@ -2,6 +2,14 @@
     <h2 id="contact-heading" class="category-heading">contact</h2>
 
     @if ($settings->contact_state === 'hidden' || $settings->contact_state === 'under_construction')
+        <p class="contact-status contact-status--quiet" role="status">
+            @if ($settings->contact_state === 'under_construction' && $settings->contact_status_text)
+                {{ $settings->contact_status_text }}
+            @else
+                Direct messages through the website are not active yet.
+            @endif
+        </p>
+
         <div class="contact-form contact-form--preview" role="group" aria-disabled="true">
             <div class="contact-form__field">
                 <label for="contact-name-preview">Name</label>
