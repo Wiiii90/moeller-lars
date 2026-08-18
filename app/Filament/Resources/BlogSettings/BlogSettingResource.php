@@ -4,7 +4,7 @@ namespace App\Filament\Resources\BlogSettings;
 
 use App\Filament\Resources\BlogSettings\Pages\EditBlogSetting;
 use App\Models\BlogSetting;
-use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
@@ -38,7 +38,17 @@ final class BlogSettingResource extends Resource
                 ->description('Public heading and introductory text for the Blog index.')
                 ->schema([
                     TextInput::make('listing_title')->maxLength(240)->nullable(),
-                    Textarea::make('listing_intro')->maxLength(10000)->nullable()->columnSpanFull(),
+                    MarkdownEditor::make('listing_intro')
+                        ->label('Introduction')
+                        ->toolbarButtons([
+                            ['bold', 'italic', 'link'],
+                            ['bulletList', 'orderedList'],
+                            ['undo', 'redo'],
+                        ])
+                        ->helperText('Formatting is limited to the Markdown supported by the public Blog renderer.')
+                        ->maxLength(10000)
+                        ->nullable()
+                        ->columnSpanFull(),
                 ]),
         ]);
     }
