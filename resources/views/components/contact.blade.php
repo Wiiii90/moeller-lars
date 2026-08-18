@@ -31,7 +31,7 @@
                 <textarea id="contact-comment-preview" rows="7" disabled></textarea>
             </div>
 
-            <button type="button" disabled>Send</button>
+            <button type="button" disabled>send comment</button>
         </div>
     @elseif ($settings->contact_state === 'enabled')
         @if (session('contact_success'))
@@ -74,7 +74,7 @@
                 <input id="contact-company" name="company" type="text" tabindex="-1" autocomplete="off">
             </div>
 
-            <button type="submit">Send</button>
+            <button type="submit">send comment</button>
         </form>
     @endif
 </section>
