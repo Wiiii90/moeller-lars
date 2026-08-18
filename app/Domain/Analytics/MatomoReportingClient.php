@@ -279,7 +279,7 @@ final class MatomoReportingClient
         $metrics = [];
         foreach (self::METRICS as $metric) {
             if (! array_key_exists($metric, $payload)) {
-                if ($metric === 'nb_uniq_visitors' || ! $required) {
+                if ($metric === 'nb_uniq_visitors' || $required === false) {
                     $metrics[$metric] = null;
 
                     continue;
@@ -290,7 +290,7 @@ final class MatomoReportingClient
 
             $value = $this->numericValue($payload[$metric]);
             if ($value === null) {
-                if ($metric === 'nb_uniq_visitors' || ! $required) {
+                if ($metric === 'nb_uniq_visitors' || $required === false) {
                     $metrics[$metric] = null;
 
                     continue;
