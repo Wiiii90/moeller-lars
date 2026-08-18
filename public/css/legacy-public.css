@@ -11,27 +11,33 @@ body {
     font-size: 14px;
 }
 
+/*
+ * The legacy header is a white top surface. The navigation is its own row at
+ * the top; the artist name sits below it and the separator closes the header.
+ * Do not distribute name and navigation to opposite viewport edges.
+ */
 .site-header {
     display: flex;
     width: 100%;
     max-width: none;
     min-width: 0;
-    min-height: 74px;
+    min-height: 0;
     margin: 0;
-    padding: 0 4.5vw;
-    align-items: flex-end;
+    padding: 0;
+    flex-direction: column;
     border-bottom: 1px solid #aaa;
-    background: transparent;
+    background: #fff;
 }
 
 .site-header h1 {
-    flex: 0 0 auto;
+    order: 2;
     margin: 0;
-    padding: 0 0 14px;
-    color: #fff;
+    padding: .45rem 4.5vw .8rem;
+    border: 0;
+    color: #555;
     font-size: 2rem;
     font-weight: 300;
-    line-height: 1;
+    line-height: 1.05;
     white-space: nowrap;
 }
 
@@ -42,33 +48,32 @@ body {
 
 .site-header nav {
     display: flex;
-    width: auto;
-    margin: 0 0 0 auto;
-    padding: 0;
-    align-items: flex-end;
-    background: transparent;
+    order: 1;
+    width: 100%;
+    margin: 0;
+    padding: .7rem 4.5vw .35rem;
+    align-items: center;
+    justify-content: center;
+    gap: 1.35rem;
+    background: #fff;
 }
 
 .site-header nav a {
     display: block;
     min-height: 0;
-    padding: 0 .8rem 15px;
-    color: #ddd;
+    padding: 0;
+    color: #777;
     font-size: .78rem;
     font-weight: 400;
-    line-height: 1;
+    line-height: 1.15;
     text-decoration: none;
     text-transform: uppercase;
     white-space: nowrap;
 }
 
-.site-header nav a:last-child {
-    padding-right: 0;
-}
-
 .site-header nav a:hover,
 .site-header nav a[aria-current="page"] {
-    color: #fff;
+    color: #222;
 }
 
 #content {
@@ -90,7 +95,7 @@ body {
     font-size: 1rem;
     font-weight: 400;
     line-height: 1.25;
-    text-align: left;
+    text-align: center;
     text-transform: lowercase;
 }
 
@@ -141,8 +146,10 @@ body {
 }
 
 @media (min-width: 981px) and (max-width: 1400px) {
-    .site-header {
-        padding-inline: 3.5vw;
+    .site-header h1,
+    .site-header nav {
+        padding-left: 3.5vw;
+        padding-right: 3.5vw;
     }
 
     #content {
@@ -156,19 +163,21 @@ body {
 }
 
 @media (min-width: 551px) and (max-width: 980px) {
-    .site-header {
-        min-height: 66px;
-        padding-inline: 2.5vw;
+    .site-header h1,
+    .site-header nav {
+        padding-left: 2.5vw;
+        padding-right: 2.5vw;
     }
 
     .site-header h1 {
-        padding-bottom: 13px;
         font-size: 1.7rem;
     }
 
+    .site-header nav {
+        gap: .9rem;
+    }
+
     .site-header nav a {
-        padding-inline: .55rem;
-        padding-bottom: 14px;
         font-size: .72rem;
     }
 
@@ -186,32 +195,27 @@ body {
 
 @media (max-width: 550px) {
     .site-header {
-        display: block;
-        min-height: 0;
-        padding: 0;
-        border-bottom: 0;
-    }
-
-    .site-header h1 {
-        padding: 1rem .8rem .65rem;
         border-bottom: 1px solid #aaa;
-        font-size: 1.45rem;
     }
 
     .site-header nav {
         display: block;
         width: 100%;
-        margin: 0;
-        border-bottom: 1px solid #aaa;
+        padding: 0;
+        border-bottom: 1px solid #ddd;
     }
 
-    .site-header nav a,
-    .site-header nav a:last-child {
+    .site-header nav a {
         width: 100%;
-        padding: .9rem 1rem;
-        color: #eee;
+        padding: .75rem 1rem;
+        color: #777;
         line-height: 1.2;
         white-space: normal;
+    }
+
+    .site-header h1 {
+        padding: .85rem .8rem .7rem;
+        font-size: 1.45rem;
     }
 
     #content {
@@ -227,6 +231,7 @@ body {
 
     .category-heading {
         margin-bottom: 1.4rem;
+        text-align: center;
     }
 
     .artwork-card,
