@@ -82,9 +82,14 @@ The dashboard includes:
   application response performance.
 
 Individual optional Matomo reports may fail or be unavailable without taking
-down the dashboard. The visit summary remains the required baseline. Fresh
-results are cached briefly and a bounded stale aggregate can be displayed when
-Matomo is temporarily unavailable.
+down the dashboard. The visit summary remains the required baseline. Matomo
+On-Premise may omit `nb_uniq_visitors` for custom rolling `period=range`
+reports unless range-level unique-visitor processing is enabled. That optional,
+potentially expensive metric must not make the dashboard unavailable: the
+affected KPI is shown as unavailable while the remaining aggregate reports,
+charts and geography continue to render. The `Today` preset uses a native
+`period=day` summary. Fresh results are cached briefly and a bounded stale
+aggregate can be displayed when Matomo is temporarily unavailable.
 
 ## Referrers, queries, device and geography
 
