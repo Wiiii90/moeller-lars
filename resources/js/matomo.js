@@ -45,6 +45,26 @@ function initializeDeclarativeEvents(root = document) {
             root,
         );
     });
+
+    const viewTargets = Array.from(root.querySelectorAll?.('[data-matomo-event-view]') ?? []);
+    if (viewTargets.length === 0 || typeof IntersectionObserver !== 'function') return;
+
+    const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            if (!entry.isIntersecting || entry.intersectionRatio < 0.5) continue;
+            const target = entry.target;
+            trackMatomoEvent(
+                target.dataset.matomoEventCategory || 'Interaction',
+                target.dataset.matomoEventView,
+                target.dataset.matomoEventName || null,
+                null,
+                root,
+            );
+            observer.unobserve(target);
+        }
+    }, { threshold: [0.5] });
+
+    viewTargets.forEach((target) => observer.observe(target));
 }
 
 export function initializeMatomoTracking(root = document) {
