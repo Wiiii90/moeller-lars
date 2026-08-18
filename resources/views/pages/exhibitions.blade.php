@@ -7,7 +7,12 @@
 @section('content')
     <section class="exhibitions-page" aria-label="Exhibitions">
         @forelse ($exhibitions as $exhibition)
-            <article class="exhibition-entry">
+            <article
+                class="exhibition-entry"
+                data-matomo-event-view="exhibition_view"
+                data-matomo-event-category="Exhibition"
+                data-matomo-event-name="{{ $exhibition->title }}"
+            >
                 <div class="exhibition-entry__date">{{ $exhibition->date_text }}</div>
 
                 <div class="exhibition-entry__content">
@@ -47,10 +52,22 @@
                     @if ($exhibition->external_url !== null || $exhibition->directions_url !== null)
                         <div class="exhibition-entry__links">
                             @if ($exhibition->external_url !== null)
-                                <a href="{{ $exhibition->external_url }}" rel="noopener noreferrer">More information</a>
+                                <a
+                                    href="{{ $exhibition->external_url }}"
+                                    rel="noopener noreferrer"
+                                    data-matomo-event-category="Exhibition"
+                                    data-matomo-event-action="exhibition_external_click"
+                                    data-matomo-event-name="{{ $exhibition->title }}"
+                                >More information</a>
                             @endif
                             @if ($exhibition->directions_url !== null)
-                                <a href="{{ $exhibition->directions_url }}" rel="noopener noreferrer">Directions</a>
+                                <a
+                                    href="{{ $exhibition->directions_url }}"
+                                    rel="noopener noreferrer"
+                                    data-matomo-event-category="Exhibition"
+                                    data-matomo-event-action="exhibition_directions_click"
+                                    data-matomo-event-name="{{ $exhibition->title }}"
+                                >Directions</a>
                             @endif
                         </div>
                     @endif
