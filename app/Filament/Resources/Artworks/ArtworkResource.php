@@ -7,6 +7,7 @@ use App\Filament\Resources\Artworks\Pages\CreateArtwork;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Resources\Artworks\Pages\ListArtworks;
 use App\Filament\Resources\Artworks\Pages\ViewArtwork;
+use App\Filament\Resources\Artworks\RelationManagers\GalleryImagesRelationManager;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
@@ -168,7 +169,7 @@ class ArtworkResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            'gallery-images' => GalleryImagesRelationManager::class,
         ];
     }
 
