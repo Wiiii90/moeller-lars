@@ -57,7 +57,14 @@ final class EditorialStatus extends StatsOverviewWidget
             ->count();
 
         $mediaWarnings = $missingAlt + $missingThumbnail;
-        $analyticsEnabled = (bool) config('analytics.matomo.enabled');
+        $trackingEnabled = (bool) config('analytics.matomo.tracking_enabled');
+        $reportingEnabled = (bool) config('analytics.matomo.reporting_enabled');
+        $analyticsState = match (true) {
+            $trackingEnabled && $reportingEnabled => 'Tracking + reporting',
+            $reportingEnabled => 'Reporting only',
+            $trackingEnabled => 'Tracking only',
+            default => 'Disabled',
+        };
 
         return [
             Stat::make('Public features', $publicFeatures.'/4')
@@ -69,9 +76,9 @@ final class EditorialStatus extends StatsOverviewWidget
             Stat::make('Publication blockers', $publishedWithoutPrimary)
                 ->description('Published artworks without primary media')
                 ->color($publishedWithoutPrimary === 0 ? 'success' : 'danger'),
-            Stat::make('Analytics', $analyticsEnabled ? 'Enabled' : 'Disabled')
-                ->description($analyticsEnabled ? 'Matomo collection is configured' : 'Matomo collection is currently disabled')
-                ->color($analyticsEnabled ? 'success' : 'warning'),
+            Stat::make('Analytics', $analyticsState)
+                ->description($reportingEnabled ? 'Matomo dashboard can read reports' : 'Matomo Reporting API is disabled')
+                ->color($reportingEnabled ? 'success' : 'warning'),
         ];
     }
 }
