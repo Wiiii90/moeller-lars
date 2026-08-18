@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   packages: write
+  statuses: write
 
 concurrency:
   group: release-${{ github.ref }}
@@ -115,6 +116,40 @@ jobs:
           echo "### moeller-lars release image" >> "$GITHUB_STEP_SUMMARY"
           echo "Git SHA: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Image: \`ghcr.io/wiiii90/moeller-lars@${{ steps.build.outputs.digest }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  publish-release-status:
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [verify, release-image]
+    steps:
+      - name: Publish release/image commit status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERIFY_RESULT: ${{ needs.verify.result }}
+          IMAGE_RESULT: ${{ needs.release-image.result }}
+        run: |
+          set -euo pipefail
+          if [[ "$VERIFY_RESULT" == success && "$IMAGE_RESULT" == success ]]; then
+            state=success
+            description='Verification passed and immutable GHCR image published'
+          else
+            state=failure
+            description="verify=${VERIFY_RESULT}, image=${IMAGE_RESULT}"
+          fi
+
+          jq -n \
+            --arg state "$state" \
+            --arg context 'release/image' \
+            --arg description "$description" \
+            --arg target_url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            '{state:$state, context:$context, description:$description, target_url:$target_url}' \
+            | curl --fail-with-body --silent --show-error \
+                --request POST \
+                --header "Authorization: Bearer ${GH_TOKEN}" \
+                --header 'Accept: application/vnd.github+json' \
+                --header 'X-GitHub-Api-Version: 2022-11-28' \
+                --data-binary @- \
+                "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" >/dev/null
 
   report-validation-rc:
     if: always() && github.ref == 'refs/heads/agent/admin-validation-rc'
