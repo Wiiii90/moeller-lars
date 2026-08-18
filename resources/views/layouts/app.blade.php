@@ -31,7 +31,34 @@
                 >‹</button>
                 <nav aria-label="Main navigation" data-site-navigation-scroll>
                     @foreach ($navigationItems as $navigationItem)
-                        <a href="{{ $navigationItem['url'] }}" @if ($navigationItem['current']) aria-current="page" @endif>{{ $navigationItem['label'] }}</a>
+                        @php($submenuId = 'site-navigation-submenu-'.$navigationItem['tie_breaker'])
+                        <div class="site-navigation__item @if ($navigationItem['active']) is-active @endif" data-navigation-item>
+                            <div class="site-navigation__primary">
+                                <a href="{{ $navigationItem['url'] }}" @if ($navigationItem['current']) aria-current="page" @endif>{{ $navigationItem['label'] }}</a>
+                                @if ($navigationItem['children'] !== [])
+                                    <button
+                                        class="site-navigation__submenu-toggle"
+                                        type="button"
+                                        aria-label="Open {{ $navigationItem['label'] }} categories"
+                                        aria-expanded="false"
+                                        aria-controls="{{ $submenuId }}"
+                                        data-navigation-submenu-toggle
+                                    ><span aria-hidden="true">⌄</span></button>
+                                @endif
+                            </div>
+                            @if ($navigationItem['children'] !== [])
+                                <div
+                                    id="{{ $submenuId }}"
+                                    class="site-navigation__submenu"
+                                    data-navigation-submenu
+                                    hidden
+                                >
+                                    @foreach ($navigationItem['children'] as $child)
+                                        <a href="{{ $child['url'] }}" @if ($child['current']) aria-current="page" @endif>{{ $child['label'] }}</a>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
                     @endforeach
                 </nav>
                 <button
