@@ -9,7 +9,7 @@ final class MatomoConfiguration
     /** @return array{base_url:string,site_id:int}|null */
     public function browserTracking(): ?array
     {
-        if (! (bool) config('analytics.matomo.enabled')) {
+        if (! (bool) config('analytics.matomo.tracking_enabled')) {
             return null;
         }
 
