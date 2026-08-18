@@ -1,7 +1,7 @@
 /*
- * Public presentation baseline: intentionally mirrors the geometry and restraint
- * of the legacy Lars Möller site. Product-specific additions live below this
- * baseline instead of redesigning the artwork shell.
+ * Public presentation baseline for the legacy-compatible first release.
+ * Keep the old artwork-first geometry here; later visual redesigns belong in a
+ * separate pass after the legacy baseline has been accepted.
  */
 
 body {
@@ -12,8 +12,9 @@ body {
 }
 
 /*
- * The page remains grey around the header. Only the navigation forms the white
- * legacy menu surface; the artist name stays on the grey page underneath it.
+ * Legacy header composition: grey page, a compact white menu strip above the
+ * artist name, then the full-width separator. The menu is deliberately only as
+ * wide as its links; it is not a white page/header band.
  */
 .site-header {
     display: flex;
@@ -29,17 +30,17 @@ body {
 
 .site-header h1 {
     order: 2;
-    width: 82%;
-    min-width: 540px;
-    margin: 0 auto;
-    padding: .72rem 0 .78rem;
+    width: auto;
+    min-width: 0;
+    margin: 0 auto 0 9%;
+    padding: 12px 0 13px;
     border: 0;
     color: #fff;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 2rem;
-    font-weight: 300;
+    font-size: 30px;
+    font-weight: 400;
     letter-spacing: normal;
-    line-height: 1.1;
+    line-height: 1;
     white-space: nowrap;
 }
 
@@ -51,7 +52,7 @@ body {
 
 .site-title:hover,
 .site-title:focus-visible {
-    color: #ddd;
+    color: #d8d8d8;
 }
 
 .site-title:focus-visible {
@@ -62,12 +63,14 @@ body {
 .site-header nav {
     display: flex;
     order: 1;
-    width: 82%;
-    min-width: 540px;
-    margin: 0 auto;
+    width: max-content;
+    max-width: 82%;
+    min-width: 0;
+    margin: 0 auto 0 9%;
     padding: 0;
-    align-items: center;
+    align-items: stretch;
     justify-content: flex-start;
+    flex-wrap: nowrap;
     gap: 0;
     background: #fff;
 }
@@ -75,10 +78,10 @@ body {
 .site-header nav a {
     display: block;
     min-height: 0;
-    padding: .72rem .95rem;
+    padding: 8px 14px;
     color: #777;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: .82rem;
+    font-size: 13px;
     font-weight: 400;
     line-height: 1.2;
     text-decoration: none;
@@ -89,7 +92,7 @@ body {
 
 .site-header nav a:hover,
 .site-header nav a[aria-current="page"] {
-    background: #f5f5f5;
+    background: #f3f3f3;
     color: #222;
 }
 
@@ -98,8 +101,13 @@ body {
     outline-offset: -3px;
 }
 
+/*
+ * The public content column follows the three legacy responsive bands. The
+ * header stays independent from this narrower centred artwork surface.
+ */
 #content {
-    width: 68%;
+    width: 58%;
+    max-width: none;
     min-width: 540px;
     margin: 2.25rem auto 0;
     background: #fff;
@@ -126,13 +134,15 @@ body {
 }
 
 /*
- * Legacy listing images were emitted at their natural thumbnail size. Do not
- * shrink them a second time inside the already constrained public content area.
+ * The legacy entries fill a substantial part of the content column. Our
+ * generated thumbnail is a delivery detail, not a sizing instruction: make it
+ * fill the entry box and preserve its aspect ratio instead of shrinking the
+ * card to the thumbnail's intrinsic pixel width.
  */
 .artwork-card,
 .artwork-detail {
-    width: fit-content;
-    max-width: 100%;
+    width: 78%;
+    max-width: none;
     min-width: 0;
     margin: 0 auto 5rem;
 }
@@ -145,6 +155,7 @@ body {
 .artwork-card__link,
 .artwork-detail__viewer-trigger {
     display: block;
+    width: 100%;
     min-width: 0;
     color: #555;
     text-decoration: none;
@@ -154,15 +165,16 @@ body {
 .artwork-card__image,
 .artwork-detail__image {
     display: block;
-    width: auto;
-    max-width: 100%;
+    width: 100%;
+    max-width: none;
     height: auto;
-    margin: 0 auto;
+    margin: 0;
     box-shadow: none;
 }
 
 .artwork-card__metadata,
 .artwork-detail__metadata {
+    width: 100%;
     margin-top: .55rem;
     color: #555;
     font-size: .82rem;
@@ -277,29 +289,58 @@ body {
     opacity: .75;
 }
 
+/* Legacy intermediate desktop band. */
+@media (min-width: 981px) and (max-width: 1400px) {
+    .site-header h1,
+    .site-header nav {
+        margin-left: 7%;
+    }
+
+    .site-header nav {
+        max-width: 86%;
+    }
+
+    #content {
+        width: 68%;
+    }
+
+    .artwork-card,
+    .artwork-detail {
+        width: 82%;
+    }
+}
+
+/* Legacy tablet / narrow desktop band. */
 @media (min-width: 551px) and (max-width: 980px) {
     .site-header h1,
     .site-header nav {
-        width: 92%;
-        min-width: 0;
+        margin-left: 4%;
+    }
+
+    .site-header h1 {
+        padding-top: 10px;
+        padding-bottom: 11px;
+        font-size: 26px;
+    }
+
+    .site-header nav {
+        max-width: 92%;
+    }
+
+    .site-header nav a {
+        padding: 8px 11px;
+        font-size: 12px;
     }
 
     #content {
         width: 82%;
         min-width: 0;
-    }
-
-    .site-header h1 {
-        font-size: 1.7rem;
-    }
-
-    .site-header nav a {
-        padding: .7rem .78rem;
-        font-size: .76rem;
-    }
-
-    #content {
         margin-top: 1.75rem;
+    }
+
+    .artwork-card,
+    .artwork-detail {
+        width: 90%;
     }
 
     .cv-legacy-layout {
@@ -313,16 +354,11 @@ body {
         border-bottom: 1px solid #aaa;
     }
 
-    .site-header h1,
-    .site-header nav,
-    #content {
-        width: 100%;
-        min-width: 0;
-        max-width: none;
-    }
-
     .site-header nav {
         display: block;
+        width: 100%;
+        max-width: none;
+        margin: 0;
         border-bottom: 1px solid #ddd;
     }
 
@@ -335,11 +371,16 @@ body {
     }
 
     .site-header h1 {
+        width: auto;
+        margin: 0;
         padding: .85rem .8rem .7rem;
         font-size: 1.45rem;
     }
 
     #content {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
         margin-top: 0;
     }
 
