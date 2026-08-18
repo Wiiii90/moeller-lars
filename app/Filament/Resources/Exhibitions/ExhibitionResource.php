@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Exhibitions;
 
+use App\Domain\Admin\EditorialRecordService;
 use App\Filament\Resources\Exhibitions\Pages\CreateExhibition;
 use App\Filament\Resources\Exhibitions\Pages\EditExhibition;
 use App\Filament\Resources\Exhibitions\Pages\ListExhibitions;
@@ -14,6 +15,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -41,6 +43,7 @@ class ExhibitionResource extends Resource
     {
         return $schema->components([
             Section::make('Exhibition')
+                ->description('Content edits are saved independently from publication. Use the page actions to publish, unpublish or archive.')
                 ->schema([
                     TextInput::make('title')
                         ->required()
@@ -74,6 +77,7 @@ class ExhibitionResource extends Resource
                 ])
                 ->columns(2),
             Section::make('Media')
+                ->description('Media order is managed directly here. A published exhibition may have at most one hero image.')
                 ->schema([
                     Repeater::make('mediaUsages')
                         ->relationship()
@@ -87,27 +91,10 @@ class ExhibitionResource extends Resource
                                 'hero' => 'Hero',
                                 'additional' => 'Additional',
                             ])->required()->default('additional'),
-                            TextInput::make('position')->integer()->required()->minValue(0)->default(0),
                             TextInput::make('alt_text_override')->maxLength(500)->nullable(),
                         ])
                         ->orderColumn('position'),
                 ]),
-            Section::make('Publication')
-                ->schema([
-                    TextInput::make('position')
-                        ->label('Display order')
-                        ->integer()
-                        ->required()
-                        ->minValue(0)
-                        ->default(0),
-                    Select::make('state')->options([
-                        'draft' => 'Draft',
-                        'published' => 'Published',
-                        'hidden' => 'Hidden',
-                        'archived' => 'Archived',
-                    ])->required()->default('draft'),
-                ])
-                ->columns(2),
         ]);
     }
 
@@ -133,11 +120,27 @@ class ExhibitionResource extends Resource
                 SelectFilter::make('state')->options([
                     'draft' => 'Draft',
                     'published' => 'Published',
-                    'hidden' => 'Hidden',
+                    'hidden' => 'Hidden (legacy)',
                     'archived' => 'Archived',
                 ]),
             ])
             ->recordActions([
+                Action::make('moveUp')
+                    ->label('Move up')
+                    ->icon('heroicon-o-chevron-up')
+                    ->visible(fn (Exhibition $record): bool => app(EditorialRecordService::class)->canMove($record, 'up'))
+                    ->action(function (Exhibition $record): void {
+                        app(EditorialRecordService::class)->move($record, 'up');
+                        Notification::make()->title('Exhibition moved up')->success()->send();
+                    }),
+                Action::make('moveDown')
+                    ->label('Move down')
+                    ->icon('heroicon-o-chevron-down')
+                    ->visible(fn (Exhibition $record): bool => app(EditorialRecordService::class)->canMove($record, 'down'))
+                    ->action(function (Exhibition $record): void {
+                        app(EditorialRecordService::class)->move($record, 'down');
+                        Notification::make()->title('Exhibition moved down')->success()->send();
+                    }),
                 Action::make('viewPublic')
                     ->label('View on site')
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
@@ -148,7 +151,7 @@ class ExhibitionResource extends Resource
             ])
             ->toolbarActions([])
             ->emptyStateHeading('No exhibitions yet')
-            ->emptyStateDescription('Add the first exhibition and publish it when the public entry is ready.');
+            ->emptyStateDescription('Add the first exhibition. New exhibitions start as drafts and are published explicitly.');
     }
 
     public static function getPages(): array

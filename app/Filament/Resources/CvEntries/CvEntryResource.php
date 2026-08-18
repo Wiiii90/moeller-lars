@@ -2,16 +2,19 @@
 
 namespace App\Filament\Resources\CvEntries;
 
+use App\Domain\Admin\EditorialRecordService;
 use App\Filament\Resources\CvEntries\Pages\CreateCvEntry;
 use App\Filament\Resources\CvEntries\Pages\EditCvEntry;
 use App\Filament\Resources\CvEntries\Pages\ListCvEntries;
 use App\Models\CvEntry;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -38,6 +41,7 @@ class CvEntryResource extends Resource
     {
         return $schema->components([
             Section::make('Vita / CV entry')
+                ->description('Content edits are saved independently from publication. Use the page actions to publish, unpublish or archive.')
                 ->schema([
                     TextInput::make('section')->required()->maxLength(120),
                     TextInput::make('title')->required()->maxLength(240),
@@ -57,6 +61,7 @@ class CvEntryResource extends Resource
                 ])
                 ->columns(2),
             Section::make('Presentation')
+                ->description('Ordering is managed directly from the Vita / CV list.')
                 ->schema([
                     Select::make('image_media_asset_id')
                         ->label('Image')
@@ -64,20 +69,7 @@ class CvEntryResource extends Resource
                         ->searchable()
                         ->preload()
                         ->nullable(),
-                    TextInput::make('position')
-                        ->label('Display order')
-                        ->integer()
-                        ->required()
-                        ->minValue(0)
-                        ->default(0),
-                    Select::make('state')->options([
-                        'draft' => 'Draft',
-                        'published' => 'Published',
-                        'hidden' => 'Hidden',
-                        'archived' => 'Archived',
-                    ])->required()->default('draft'),
-                ])
-                ->columns(2),
+                ]),
         ]);
     }
 
@@ -103,14 +95,32 @@ class CvEntryResource extends Resource
                 SelectFilter::make('state')->options([
                     'draft' => 'Draft',
                     'published' => 'Published',
-                    'hidden' => 'Hidden',
+                    'hidden' => 'Hidden (legacy)',
                     'archived' => 'Archived',
                 ]),
             ])
-            ->recordActions([EditAction::make()])
+            ->recordActions([
+                Action::make('moveUp')
+                    ->label('Move up')
+                    ->icon('heroicon-o-chevron-up')
+                    ->visible(fn (CvEntry $record): bool => app(EditorialRecordService::class)->canMove($record, 'up'))
+                    ->action(function (CvEntry $record): void {
+                        app(EditorialRecordService::class)->move($record, 'up');
+                        Notification::make()->title('Vita / CV entry moved up')->success()->send();
+                    }),
+                Action::make('moveDown')
+                    ->label('Move down')
+                    ->icon('heroicon-o-chevron-down')
+                    ->visible(fn (CvEntry $record): bool => app(EditorialRecordService::class)->canMove($record, 'down'))
+                    ->action(function (CvEntry $record): void {
+                        app(EditorialRecordService::class)->move($record, 'down');
+                        Notification::make()->title('Vita / CV entry moved down')->success()->send();
+                    }),
+                EditAction::make(),
+            ])
             ->toolbarActions([])
             ->emptyStateHeading('No Vita / CV entries yet')
-            ->emptyStateDescription('Add biography, education, awards or other Vita entries here.');
+            ->emptyStateDescription('Add biography, education, awards or other Vita entries here. New entries start as drafts.');
     }
 
     public static function getPages(): array
