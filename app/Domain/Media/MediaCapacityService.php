@@ -88,17 +88,26 @@ final class MediaCapacityService
         }
 
         $snapshot = $this->snapshot();
-        if ($snapshot['measurement_available'] === false || is_int($snapshot['authoritative_bytes']) === false) {
+        if (empty($snapshot['measurement_available'])) {
             throw ValidationException::withMessages([
                 'media' => 'Storage capacity could not be verified. Try the upload again later.',
             ]);
         }
 
-        if ($snapshot['authoritative_bytes'] + $bytes > $quota) {
-            throw ValidationException::withMessages([
-                'media' => 'The media storage allowance is full. Remove unused original media or ask the operator to increase the allowance before uploading.',
-            ]);
+        $authoritativeBytes = $snapshot['authoritative_bytes'];
+        if (is_int($authoritativeBytes)) {
+            if ($authoritativeBytes + $bytes > $quota) {
+                throw ValidationException::withMessages([
+                    'media' => 'The media storage allowance is full. Remove unused original media or ask the operator to increase the allowance before uploading.',
+                ]);
+            }
+
+            return;
         }
+
+        throw ValidationException::withMessages([
+            'media' => 'Storage capacity could not be verified. Try the upload again later.',
+        ]);
     }
 
     private function quotaBytes(): ?int
