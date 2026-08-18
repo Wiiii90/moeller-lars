@@ -9,6 +9,8 @@ use App\Models\Exhibition;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class EditExhibition extends EditRecord
@@ -24,10 +26,22 @@ class EditExhibition extends EditRecord
         return $data;
     }
 
-    protected function afterSave(): void
+    protected function handleRecordUpdate(Model $record, array $data): Model
     {
         $actor = app(AdminAuditService::class)->requireActor();
-        app(AdminAuditService::class)->record($actor, 'exhibition.updated', 'exhibition', $this->exhibition()->getKey());
+
+        return DB::transaction(function () use ($record, $data, $actor): Model {
+            /** @var Exhibition $exhibition */
+            $exhibition = $record;
+            $exhibition->fill($data);
+
+            if ($exhibition->isDirty()) {
+                $exhibition->save();
+                app(AdminAuditService::class)->record($actor, 'exhibition.updated', 'exhibition', $exhibition->getKey());
+            }
+
+            return $exhibition;
+        });
     }
 
     protected function getHeaderActions(): array
@@ -35,7 +49,7 @@ class EditExhibition extends EditRecord
         return [
             Action::make('publish')
                 ->label('Publish')
-                ->visible(fn (): bool => $this->exhibition()->getAttribute('state') !== 'published')
+                ->visible(fn (): bool => $this->exhibition()->getAttribute('state') === 'draft')
                 ->action(function (): void {
                     try {
                         app(EditorialRecordService::class)->publish($this->exhibition());

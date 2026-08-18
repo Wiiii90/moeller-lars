@@ -38,14 +38,14 @@ final class EditBlogPost extends EditRecord
         return [
             Action::make('publish')
                 ->label(fn (): string => $this->post()->getAttribute('state') === 'scheduled' ? 'Publish now' : 'Publish')
-                ->visible(fn (): bool => $this->post()->getAttribute('state') !== 'published')
+                ->visible(fn (): bool => in_array($this->post()->getAttribute('state'), ['draft', 'scheduled', 'unpublished'], true))
                 ->action(fn () => $this->runPostAction(
                     fn (): BlogPost => app(BlogEditorialService::class)->publish($this->post()),
                     'Blog post published',
                 )),
             Action::make('schedule')
                 ->label(fn (): string => $this->post()->getAttribute('state') === 'scheduled' ? 'Reschedule' : 'Schedule')
-                ->visible(fn (): bool => ! in_array($this->post()->getAttribute('state'), ['published', 'archived'], true))
+                ->visible(fn (): bool => in_array($this->post()->getAttribute('state'), ['draft', 'scheduled', 'unpublished'], true))
                 ->schema([
                     DateTimePicker::make('scheduled_at')
                         ->label('Publish at')

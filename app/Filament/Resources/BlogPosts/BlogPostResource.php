@@ -82,7 +82,7 @@ final class BlogPostResource extends Resource
                         'published' => 'Published',
                         'unpublished' => 'Unpublished',
                         'archived' => 'Archived',
-                    ])->disabled()->dehydrated(false),
+                    ])->default('draft')->disabled()->dehydrated(false),
                     DateTimePicker::make('scheduled_at')
                         ->label('Scheduled for')
                         ->disabled()

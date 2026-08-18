@@ -49,7 +49,7 @@ class EditCvEntry extends EditRecord
         return [
             Action::make('publish')
                 ->label('Publish')
-                ->visible(fn (): bool => $this->entry()->getAttribute('state') !== 'published')
+                ->visible(fn (): bool => $this->entry()->getAttribute('state') === 'draft')
                 ->action(function (): void {
                     try {
                         app(EditorialRecordService::class)->publish($this->entry());
