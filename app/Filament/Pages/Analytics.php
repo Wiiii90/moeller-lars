@@ -265,7 +265,7 @@ final class Analytics extends Page
 
         usort($rows, static fn (array $a, array $b): int => ((float) ($b[$metric] ?? 0)) <=> ((float) ($a[$metric] ?? 0)));
 
-        return $rows[0] ?? null;
+        return $rows[0];
     }
 
     /** @param array<int, array<string, mixed>> $rows
