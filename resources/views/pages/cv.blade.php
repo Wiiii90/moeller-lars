@@ -39,23 +39,6 @@
                             </article>
                         @endforeach
                     </div>
-
-                    @if ($settings->public_email !== null || $settings->instagram_handle !== null)
-                        <div class="cv-inline-contact" aria-label="Contact details">
-                            @if ($settings->public_email !== null)
-                                <div class="cv-inline-contact__row">
-                                    <span class="cv-inline-label">E-Mail</span>
-                                    <a href="mailto:{{ $settings->public_email }}">{{ $settings->public_email }}</a>
-                                </div>
-                            @endif
-                            @if ($settings->instagram_handle !== null)
-                                <div class="cv-inline-contact__row">
-                                    <span class="cv-inline-label">Instagram</span>
-                                    <a href="https://www.instagram.com/{{ $settings->instagram_handle }}/" rel="noopener noreferrer">{{ $settings->instagram_handle }}</a>
-                                </div>
-                            @endif
-                        </div>
-                    @endif
                 </div>
 
                 @if ($portraitEntry !== null)
