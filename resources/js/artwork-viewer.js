@@ -1,3 +1,5 @@
+import { trackMatomoEvent } from './matomo.js';
+
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 8;
 export const PAN_OVERSCROLL = 56;
@@ -94,9 +96,12 @@ export function initializeArtworkViewer(root = document) {
     let trigger = null;
     let expectedSrc = '';
     const pointers = new Map();
+    const zoomTracked = new Set();
     let dragStart = null;
     let pinchStart = null;
     let resizeFrame = null;
+
+    const currentItem = () => items[index] ?? null;
 
     const updateTransform = () => {
         if (!image || image.hidden || !stage) return;
@@ -164,15 +169,32 @@ export function initializeArtworkViewer(root = document) {
         trigger = source;
         items = normalized;
         showItem(start);
+        trackMatomoEvent('Artwork', 'artwork_open', normalized[start].title, null, root);
         dialog.showModal();
         close.focus();
         return true;
+    };
+
+    const trackZoomIfNeeded = () => {
+        const item = currentItem();
+        if (!item || state.scale <= MIN_SCALE || zoomTracked.has(item.key)) return;
+        zoomTracked.add(item.key);
+        trackMatomoEvent('Artwork', 'artwork_zoom_used', item.title, null, root);
     };
 
     const changeZoom = (nextScale, pointX = 0, pointY = 0) => {
         if (image.hidden || !expectedSrc) return;
         state = zoomAroundPoint(state, nextScale, pointX, pointY);
         updateTransform();
+        trackZoomIfNeeded();
+    };
+
+    const navigate = (direction, action) => {
+        const destination = adjacentIndex(index, direction, items.length);
+        if (destination === null) return;
+        showItem(destination);
+        const item = currentItem();
+        trackMatomoEvent('Artwork', action, item?.title ?? null, null, root);
     };
 
     const stagePoint = (event) => {
@@ -192,8 +214,8 @@ export function initializeArtworkViewer(root = document) {
     });
 
     close.addEventListener('click', () => dialog.close());
-    previous.addEventListener('click', () => showItem(adjacentIndex(index, -1, items.length)));
-    next.addEventListener('click', () => showItem(adjacentIndex(index, 1, items.length)));
+    previous.addEventListener('click', () => navigate(-1, 'artwork_previous'));
+    next.addEventListener('click', () => navigate(1, 'artwork_next'));
     zoomOut.addEventListener('click', () => changeZoom(state.scale / 1.25));
     zoomIn.addEventListener('click', () => changeZoom(state.scale * 1.25));
     reset.addEventListener('click', resetState);
@@ -264,6 +286,7 @@ export function initializeArtworkViewer(root = document) {
             const nextScale = pinchStart.state.scale * distance / Math.max(1, pinchStart.distance);
             state = pinchFromGestureStart(pinchStart.state, nextScale, pinchStart.pointX, pinchStart.pointY, pointX, pointY);
             updateTransform();
+            trackZoomIfNeeded();
         } else if (values.length === 1 && dragStart && state.scale > 1) {
             state.x = dragStart.panX + event.clientX - dragStart.x;
             state.y = dragStart.panY + event.clientY - dragStart.y;
