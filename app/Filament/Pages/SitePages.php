@@ -128,9 +128,12 @@ final class SitePages extends Page
 
     private function loadSections(): void
     {
+        /** @var Builder<SiteSection> $topLevelQuery */
+        $topLevelQuery = SiteSection::query();
+        $topLevelQuery->whereNull('parent_id');
+
         /** @var EloquentCollection<int, SiteSection> $topLevel */
-        $topLevel = SiteSection::query()
-            ->whereNull('parent_id')
+        $topLevel = $topLevelQuery
             ->with(['children' => static function (Relation $relation): void {
                 $query = $relation->getQuery();
                 $query->orderBy('position');
