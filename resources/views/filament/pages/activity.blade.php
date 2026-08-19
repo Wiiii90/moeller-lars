@@ -4,7 +4,7 @@
             <div>
                 <p class="artist-workspace__kicker">Editorial history</p>
                 <h2>Activity</h2>
-                <p>A readable record of administrative and editorial changes. Visitor analytics remain separate in Analytics.</p>
+                <p>A readable record of administrative and editorial changes from the last 180 days. The immutable security audit remains separate, and visitor analytics remain in Analytics.</p>
             </div>
         </header>
 

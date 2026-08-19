@@ -8,6 +8,21 @@
             </div>
         </header>
 
+        <section class="artist-dashboard__content" aria-label="Personalized quick actions">
+            <div class="artist-dashboard__section-head"><span>For you</span><span>Based on repeated admin work</span></div>
+            @forelse ($quickActions as $action)
+                <a class="artist-dashboard__row" href="{{ $action['url'] }}">
+                    <span class="artist-dashboard__identity">
+                        <strong>{{ $action['label'] }}</strong>
+                        <small>{{ $action['description'] }} · {{ $action['reason'] }}</small>
+                    </span>
+                    <span class="artist-action">Open</span>
+                </a>
+            @empty
+                <p class="artist-dashboard__quiet">Personalized shortcuts appear after an admin action is used repeatedly. The stable actions in the page header stay available.</p>
+            @endforelse
+        </section>
+
         <div class="artist-dashboard__layout">
             <section class="artist-dashboard__content" aria-label="Content overview">
                 <div class="artist-dashboard__section-head"><span>Content</span><span>State</span></div>
