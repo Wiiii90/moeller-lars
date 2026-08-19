@@ -3,6 +3,8 @@
 namespace App\Filament\Widgets;
 
 use App\Domain\Admin\AdminActivityFeed;
+use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminQuickActionService;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
 use App\Filament\Pages\SitePages;
@@ -70,8 +72,10 @@ final class ArtistDashboard extends Widget
 
         $activity = app(AdminActivityFeed::class)->recent(7);
         $activityUrl = Activity::getUrl();
+        $actor = app(AdminAuditService::class)->requireActor();
+        $quickActions = app(AdminQuickActionService::class)->forUser($actor);
 
-        return compact('sections', 'attention', 'activity', 'activityUrl');
+        return compact('sections', 'attention', 'activity', 'activityUrl', 'quickActions');
     }
 
     /**
