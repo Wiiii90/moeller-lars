@@ -90,8 +90,8 @@ final class ArtistDashboard extends Widget
     }
 
     /**
-     * @param class-string<Model> $model
-     * @param list<string> $states
+     * @param  class-string<Model>  $model
+     * @param  list<string>  $states
      * @return array{label:string,total:int,detail:string,url:string}
      */
     private function summary(string $label, string $model, array $states, string $url): array
