@@ -88,14 +88,45 @@ final class AdminUndoService
     private function lockedTarget(AdminActionReceipt $receipt): Artwork|CvEntry|Exhibition
     {
         $entityId = (int) $receipt->getAttribute('entity_id');
-        $target = match ((string) $receipt->getAttribute('entity_type')) {
-            'artwork' => Artwork::query()->whereKey($entityId)->lockForUpdate()->first(),
-            'cv_entry' => CvEntry::query()->whereKey($entityId)->lockForUpdate()->first(),
-            'exhibition' => Exhibition::query()->whereKey($entityId)->lockForUpdate()->first(),
-            default => null,
-        };
 
-        if (! $target instanceof Artwork && ! $target instanceof CvEntry && ! $target instanceof Exhibition) {
+        return match ((string) $receipt->getAttribute('entity_type')) {
+            'artwork' => $this->lockedArtwork($entityId),
+            'cv_entry' => $this->lockedCvEntry($entityId),
+            'exhibition' => $this->lockedExhibition($entityId),
+            default => throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists.']),
+        };
+    }
+
+    private function lockedArtwork(int $entityId): Artwork
+    {
+        /** @var Artwork|null $target */
+        $target = Artwork::query()->whereKey($entityId)->lockForUpdate()->first();
+
+        if (! $target) {
+            throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists.']);
+        }
+
+        return $target;
+    }
+
+    private function lockedCvEntry(int $entityId): CvEntry
+    {
+        /** @var CvEntry|null $target */
+        $target = CvEntry::query()->whereKey($entityId)->lockForUpdate()->first();
+
+        if (! $target) {
+            throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists.']);
+        }
+
+        return $target;
+    }
+
+    private function lockedExhibition(int $entityId): Exhibition
+    {
+        /** @var Exhibition|null $target */
+        $target = Exhibition::query()->whereKey($entityId)->lockForUpdate()->first();
+
+        if (! $target) {
             throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists.']);
         }
 
