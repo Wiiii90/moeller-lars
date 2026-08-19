@@ -9,6 +9,7 @@ use App\Models\SiteSection;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -107,4 +108,82 @@ it('reorders gallery children only inside their submenu and mirrors category pos
         ->and((int) $second->fresh()->position)->toBe(10)
         ->and((int) $first->fresh()->position)->toBe(20)
         ->and((int) $parent->fresh()->position)->toBe(200);
+});
+
+it('edits Gallery publication and hierarchy from Pages while keeping legacy category fields aligned', function (): void {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin, 'web');
+
+    $parent = ArtworkCategory::create([
+        'name' => 'Visible Parent',
+        'slug' => 'visible-parent',
+        'state' => 'published',
+        'position' => 200,
+        'show_in_navigation' => true,
+        'show_on_home' => false,
+    ]);
+    $gallery = ArtworkCategory::create([
+        'name' => 'Movable Gallery',
+        'slug' => 'movable-gallery',
+        'state' => 'hidden',
+        'position' => 210,
+        'show_in_navigation' => false,
+        'show_on_home' => false,
+    ]);
+
+    /** @var SiteSection $parentSection */
+    $parentSection = SiteSection::query()->where('artwork_category_id', $parent->id)->firstOrFail();
+    /** @var SiteSection $section */
+    $section = SiteSection::query()->where('artwork_category_id', $gallery->id)->firstOrFail();
+
+    Livewire::test(SitePages::class)
+        ->call('moveGallery', $section->id, $parentSection->id)
+        ->call('toggleGalleryState', $section->id)
+        ->call('toggleGalleryNavigation', $section->id)
+        ->assertHasNoErrors();
+
+    $freshSection = $section->fresh();
+    $freshCategory = $gallery->fresh();
+
+    expect((int) $freshSection->parent_id)->toBe($parentSection->id)
+        ->and($freshSection->state)->toBe('published')
+        ->and((bool) $freshSection->show_in_navigation)->toBeTrue()
+        ->and((int) $freshCategory->parent_id)->toBe($parent->id)
+        ->and($freshCategory->state)->toBe('published')
+        ->and((bool) $freshCategory->show_in_navigation)->toBeTrue()
+        ->and((int) $freshCategory->position)->toBe((int) $freshSection->position)
+        ->and(AuditEvent::query()->where('action', 'site_section.updated')->where('entity_id', $section->id)->count())->toBe(3);
+});
+
+it('does not hide a navigation parent while it still has a visible submenu Gallery', function (): void {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin, 'web');
+
+    $parent = ArtworkCategory::create([
+        'name' => 'Required Parent',
+        'slug' => 'required-parent',
+        'state' => 'published',
+        'position' => 220,
+        'show_in_navigation' => true,
+        'show_on_home' => false,
+    ]);
+    ArtworkCategory::create([
+        'name' => 'Visible Child',
+        'slug' => 'visible-child',
+        'state' => 'published',
+        'position' => 10,
+        'parent_id' => $parent->id,
+        'show_in_navigation' => true,
+        'show_on_home' => false,
+    ]);
+
+    /** @var SiteSection $parentSection */
+    $parentSection = SiteSection::query()->where('artwork_category_id', $parent->id)->firstOrFail();
+
+    Livewire::test(SitePages::class)
+        ->call('toggleGalleryState', $parentSection->id)
+        ->assertHasNoErrors();
+
+    expect($parentSection->fresh()->state)->toBe('published')
+        ->and($parent->fresh()->state)->toBe('published');
 });
