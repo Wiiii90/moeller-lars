@@ -44,21 +44,19 @@ final class OperationalMetricRecorder
             $names[] = $metric['name'];
         }
 
+        $sql = <<<'SQL'
+            INSERT INTO daily_metrics
+                (metric_date, metric_name, source, value, unit, calculated_at, dimension_key, sample_count)
+            VALUES __ROWS__
+            ON CONFLICT (metric_date, metric_name, source, dimension_key)
+            DO UPDATE SET
+                value = daily_metrics.value + EXCLUDED.value,
+                calculated_at = EXCLUDED.calculated_at,
+                sample_count = COALESCE(daily_metrics.sample_count, 0) + EXCLUDED.sample_count
+            SQL;
+
         try {
-            DB::statement(
-                <<<'SQL'
-                INSERT INTO daily_metrics
-                    (metric_date, metric_name, source, value, unit, calculated_at, dimension_key, sample_count)
-                VALUES
-                SQL.implode(', ', $rows).<<<'SQL'
-                ON CONFLICT (metric_date, metric_name, source, dimension_key)
-                DO UPDATE SET
-                    value = daily_metrics.value + EXCLUDED.value,
-                    calculated_at = EXCLUDED.calculated_at,
-                    sample_count = COALESCE(daily_metrics.sample_count, 0) + EXCLUDED.sample_count
-                SQL,
-                $bindings,
-            );
+            DB::statement(str_replace('__ROWS__', implode(', ', $rows), $sql), $bindings);
         } catch (Throwable $exception) {
             Log::warning('Operational metric aggregation failed.', [
                 'metrics' => $names,
