@@ -1,14 +1,15 @@
 <?php
 
-use App\Domain\Artwork\ArtworkOrderService;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
+use App\Filament\Resources\Artworks\Pages\ManageGalleryArtworks;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -69,7 +70,7 @@ it('opens a Gallery-scoped artwork workspace from Pages', function (): void {
         ->assertSee($galleryUrl, false);
 });
 
-it('reorders artworks only inside their Gallery and audits the change', function (): void {
+it('reorders artworks through the Gallery workspace without affecting another Gallery', function (): void {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin, 'web');
 
@@ -114,15 +115,16 @@ it('reorders artworks only inside their Gallery and audits the change', function
         'date_precision' => 'unknown',
     ]);
 
-    $order = app(ArtworkOrderService::class);
+    Livewire::test(ManageGalleryArtworks::class, ['gallery' => $gallery->id])
+        ->call('moveArtwork', $second->id, 'up')
+        ->assertHasNoErrors();
 
-    expect($order->canMove($second, 'up'))->toBeTrue()
-        ->and($order->move($second, 'up'))->toBeTrue()
-        ->and((int) $second->fresh()->position)->toBe(10)
-        ->and((int) $first->fresh()->position)->toBe(20)
+    expect((int) $second->fresh()->position)->toBe(0)
+        ->and((int) $first->fresh()->position)->toBe(1)
         ->and((int) $outside->fresh()->position)->toBe(10)
         ->and(AuditEvent::query()
-            ->where('action', 'artwork.reordered')
-            ->where('entity_id', $second->id)
+            ->where('action', 'artwork_category.gallery_reordered')
+            ->where('entity_type', 'artwork_category')
+            ->where('entity_id', $gallery->id)
             ->exists())->toBeTrue();
 });

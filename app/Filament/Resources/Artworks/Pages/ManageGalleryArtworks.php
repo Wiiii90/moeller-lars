@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Artworks\Pages;
 
-use App\Domain\Artwork\ArtworkOrderService;
+use App\Domain\Artwork\ArtworkCategoryEditorialService;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
@@ -11,6 +11,7 @@ use App\Models\ArtworkCategory;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use InvalidArgumentException;
 
 final class ManageGalleryArtworks extends Page
 {
@@ -21,7 +22,7 @@ final class ManageGalleryArtworks extends Page
     protected string $view = 'filament.resources.artworks.pages.manage-gallery-artworks';
 
     /** @var array<string, mixed> */
-    public array $gallery = [];
+    public array $galleryContext = [];
 
     /** @var list<array<string, mixed>> */
     public array $artworks = [];
@@ -36,19 +37,39 @@ final class ManageGalleryArtworks extends Page
 
     public function moveArtwork(int $artworkId, string $direction): void
     {
-        /** @var Artwork $artwork */
-        $artwork = Artwork::query()
-            ->whereKey($artworkId)
-            ->where('artwork_category_id', $this->gallery['id'])
-            ->firstOrFail();
-
-        if (app(ArtworkOrderService::class)->move($artwork, $direction)) {
-            Notification::make()
-                ->title('Gallery order updated')
-                ->success()
-                ->send();
-            $this->loadArtworks();
+        if (! in_array($direction, ['up', 'down'], true)) {
+            throw new InvalidArgumentException('Artwork order direction must be up or down.');
         }
+
+        $galleryId = (int) $this->galleryContext['id'];
+        /** @var ArtworkCategory $category */
+        $category = ArtworkCategory::query()->findOrFail($galleryId);
+        $orderedIds = Artwork::query()
+            ->where('artwork_category_id', $galleryId)
+            ->orderBy('position')
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        $index = array_search($artworkId, $orderedIds, true);
+        if ($index === false) {
+            return;
+        }
+
+        $targetIndex = $direction === 'up' ? $index - 1 : $index + 1;
+        if (! array_key_exists($targetIndex, $orderedIds)) {
+            return;
+        }
+
+        [$orderedIds[$index], $orderedIds[$targetIndex]] = [$orderedIds[$targetIndex], $orderedIds[$index]];
+        app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, $orderedIds);
+
+        Notification::make()
+            ->title('Gallery order updated')
+            ->success()
+            ->send();
+        $this->loadArtworks();
     }
 
     private function loadGallery(int $galleryId): void
@@ -59,7 +80,7 @@ final class ManageGalleryArtworks extends Page
         $parent = $category->getRelationValue('parent');
         $isPublished = $category->getAttribute('state') === 'published';
 
-        $this->gallery = [
+        $this->galleryContext = [
             'id' => (int) $category->getKey(),
             'name' => (string) $category->getAttribute('name'),
             'slug' => (string) $category->getAttribute('slug'),
@@ -80,13 +101,13 @@ final class ManageGalleryArtworks extends Page
     {
         /** @var EloquentCollection<int, Artwork> $records */
         $records = Artwork::query()
-            ->where('artwork_category_id', $this->gallery['id'])
+            ->where('artwork_category_id', $this->galleryContext['id'])
             ->with('artworkMedia.mediaAsset.variants')
             ->orderBy('position')
             ->orderBy('id')
             ->get();
 
-        $galleryPublished = $this->gallery['state'] === 'published';
+        $galleryPublished = $this->galleryContext['state'] === 'published';
         $this->publishedCount = $records
             ->filter(static fn (Artwork $artwork): bool => $artwork->getAttribute('state') === 'published')
             ->count();

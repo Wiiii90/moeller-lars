@@ -3,29 +3,29 @@
         <header class="artist-workspace__head artist-gallery-workspace__head">
             <div>
                 <p class="artist-workspace__kicker">
-                    Gallery@if ($gallery['parent_name']) · {{ $gallery['parent_name'] }}@endif
+                    Gallery@if ($galleryContext['parent_name']) · {{ $galleryContext['parent_name'] }}@endif
                 </p>
-                <h2>{{ $gallery['name'] }}</h2>
+                <h2>{{ $galleryContext['name'] }}</h2>
                 <p>
                     {{ count($artworks) }} {{ count($artworks) === 1 ? 'artwork' : 'artworks' }}
                     · {{ $publishedCount }} published
-                    · {{ $gallery['path'] }}
+                    · {{ $galleryContext['path'] }}
                 </p>
             </div>
 
             <nav class="artist-gallery-tools" aria-label="Gallery management">
-                <a class="artist-action" href="{{ $gallery['pages_url'] }}">Pages</a>
-                <a class="artist-action" href="{{ $gallery['all_artworks_url'] }}">All artworks</a>
-                <a class="artist-action" href="{{ $gallery['settings_url'] }}">Settings</a>
-                @if ($gallery['public_url'])
-                    <a class="artist-action" href="{{ $gallery['public_url'] }}" target="_blank" rel="noopener">View gallery</a>
+                <a class="artist-action" href="{{ $galleryContext['pages_url'] }}">Pages</a>
+                <a class="artist-action" href="{{ $galleryContext['all_artworks_url'] }}">All artworks</a>
+                <a class="artist-action" href="{{ $galleryContext['settings_url'] }}">Settings</a>
+                @if ($galleryContext['public_url'])
+                    <a class="artist-action" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener">View gallery</a>
                 @endif
-                <a class="artist-action is-primary" href="{{ $gallery['create_url'] }}">Add artwork</a>
+                <a class="artist-action is-primary" href="{{ $galleryContext['create_url'] }}">Add artwork</a>
             </nav>
         </header>
 
         @if ($artworks !== [])
-            <section class="artist-contact-sheet" aria-label="Artwork sequence for {{ $gallery['name'] }}">
+            <section class="artist-contact-sheet" aria-label="Artwork sequence for {{ $galleryContext['name'] }}">
                 @foreach ($artworks as $artwork)
                     <article class="artist-contact-sheet__item" wire:key="gallery-artwork-{{ $artwork['id'] }}">
                         <div class="artist-contact-sheet__image">
@@ -87,7 +87,7 @@
                 <p class="artist-workspace__kicker">Empty Gallery</p>
                 <h3>Add the first artwork</h3>
                 <p>This Gallery is ready. Add an artwork draft and its primary image before publishing it.</p>
-                <a class="artist-action is-primary" href="{{ $gallery['create_url'] }}">Add artwork</a>
+                <a class="artist-action is-primary" href="{{ $galleryContext['create_url'] }}">Add artwork</a>
             </section>
         @endif
 
