@@ -2,6 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use App\Domain\Admin\AdminActivityFeed;
+use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
@@ -10,16 +12,13 @@ use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\Artwork;
-use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
-use DateTimeInterface;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 
 final class ArtistDashboard extends Widget
@@ -69,24 +68,10 @@ final class ArtistDashboard extends Widget
             $analyticsReportingDisabled ? ['label' => 'Analytics reporting disabled', 'value' => null, 'url' => Analytics::getUrl()] : null,
         ]));
 
-        /** @var EloquentCollection<int, AuditEvent> $events */
-        $events = AuditEvent::query()
-            ->orderByDesc('occurred_at')
-            ->limit(7)
-            ->get();
-        $activity = $events
-            ->map(static function (AuditEvent $event): array {
-                $occurredAt = $event->getAttribute('occurred_at');
+        $activity = app(AdminActivityFeed::class)->recent(7);
+        $activityUrl = Activity::getUrl();
 
-                return [
-                    'action' => str_replace(['.', '_'], [' · ', ' '], (string) $event->getAttribute('action')),
-                    'area' => str_replace('_', ' ', (string) $event->getAttribute('entity_type')),
-                    'when' => $occurredAt instanceof DateTimeInterface ? $occurredAt->format('M j, H:i') : '—',
-                ];
-            })
-            ->all();
-
-        return compact('sections', 'attention', 'activity');
+        return compact('sections', 'attention', 'activity', 'activityUrl');
     }
 
     /**
