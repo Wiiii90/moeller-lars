@@ -6,8 +6,11 @@ use App\Domain\Artwork\ArtworkCategoryEditorialService;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
+use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use App\Models\ArtworkMedia;
+use App\Models\MediaAsset;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -65,10 +68,7 @@ final class ManageGalleryArtworks extends Page
         [$orderedIds[$index], $orderedIds[$targetIndex]] = [$orderedIds[$targetIndex], $orderedIds[$index]];
         app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, $orderedIds);
 
-        Notification::make()
-            ->title('Gallery order updated')
-            ->success()
-            ->send();
+        Notification::make()->title('Gallery order updated')->success()->send();
         $this->loadArtworks();
     }
 
@@ -117,6 +117,12 @@ final class ManageGalleryArtworks extends Page
             ->values()
             ->map(static function (Artwork $artwork, int $index) use ($galleryPublished, $count): array {
                 $isPublished = $artwork->getAttribute('state') === 'published';
+                /** @var EloquentCollection<int, ArtworkMedia> $mediaUsages */
+                $mediaUsages = $artwork->getRelation('artworkMedia');
+                /** @var ArtworkMedia|null $primary */
+                $primary = $mediaUsages->firstWhere('role', 'primary');
+                /** @var MediaAsset|null $primaryAsset */
+                $primaryAsset = $primary?->getRelationValue('mediaAsset');
 
                 return [
                     'id' => (int) $artwork->getKey(),
@@ -129,6 +135,9 @@ final class ManageGalleryArtworks extends Page
                     'dimensions' => $artwork->getAttribute('dimensions'),
                     'thumbnail_url' => ArtworkResource::thumbnailUrl($artwork),
                     'edit_url' => ArtworkResource::getUrl('edit', ['record' => $artwork->getKey()]),
+                    'media_preview_url' => $primaryAsset instanceof MediaAsset && $primaryAsset->getAttribute('state') === 'available'
+                        ? MediaAssetResource::getUrl('view', ['record' => $primaryAsset->getKey(), 'artwork' => $artwork->getKey()])
+                        : null,
                     'public_url' => $galleryPublished && $isPublished
                         ? route('artworks.show', ['slug' => $artwork->getAttribute('slug')])
                         : null,

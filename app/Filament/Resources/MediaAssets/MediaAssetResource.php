@@ -4,6 +4,7 @@ namespace App\Filament\Resources\MediaAssets;
 
 use App\Filament\Resources\MediaAssets\Pages\EditMediaAsset;
 use App\Filament\Resources\MediaAssets\Pages\ListMediaAssets;
+use App\Filament\Resources\MediaAssets\Pages\ViewMediaAsset;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use BackedEnum;
@@ -67,7 +68,7 @@ class MediaAssetResource extends Resource
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query
                 ->with('variants')
-                ->withCount(['artworks', 'exhibitions', 'cvEntries']))
+                ->withCount(['artworks', 'exhibitions', 'cvEntries', 'blogPosts']))
             ->columns([
                 ImageColumn::make('thumbnail')
                     ->label('')
@@ -87,10 +88,11 @@ class MediaAssetResource extends Resource
                 TextColumn::make('usage')
                     ->label('Used by')
                     ->state(fn (MediaAsset $record): string => sprintf(
-                        '%d artworks · %d exhibitions · %d Vita/CV',
+                        '%d artworks · %d exhibitions · %d Vita/CV · %d blog',
                         (int) $record->getAttribute('artworks_count'),
                         (int) $record->getAttribute('exhibitions_count'),
                         (int) $record->getAttribute('cv_entries_count'),
+                        (int) $record->getAttribute('blog_posts_count'),
                     )),
                 TextColumn::make('dimensions')
                     ->label('Dimensions')
@@ -126,11 +128,9 @@ class MediaAssetResource extends Resource
             ])
             ->recordActions([
                 Action::make('preview')
-                    ->label('Open original')
-                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
-                    ->url(fn (MediaAsset $record): string => route('admin.media.original', $record))
-                    ->openUrlInNewTab()
-                    ->visible(fn (MediaAsset $record): bool => $record->getAttribute('state') === 'available'),
+                    ->label('Inspect media')
+                    ->icon(Heroicon::OutlinedMagnifyingGlassPlus)
+                    ->url(fn (MediaAsset $record): string => self::getUrl('view', ['record' => $record])),
                 EditAction::make(),
             ])
             ->toolbarActions([])
@@ -147,6 +147,7 @@ class MediaAssetResource extends Resource
     {
         return [
             'index' => ListMediaAssets::route('/'),
+            'view' => ViewMediaAsset::route('/{record}'),
             'edit' => EditMediaAsset::route('/{record}/edit'),
         ];
     }

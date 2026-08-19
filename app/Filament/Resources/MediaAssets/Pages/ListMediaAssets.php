@@ -179,7 +179,7 @@ final class ListMediaAssets extends Page
                 'thumbnail_width' => $thumbnail?->getAttribute('width'),
                 'thumbnail_height' => $thumbnail?->getAttribute('height'),
                 'edit_url' => MediaAssetResource::getUrl('edit', ['record' => $asset->getKey()]),
-                'preview_url' => $asset->getAttribute('state') === 'available' ? route('admin.media.original', $asset) : null,
+                'preview_url' => MediaAssetResource::getUrl('view', ['record' => $asset->getKey()]),
             ];
         })->all();
     }
