@@ -52,53 +52,6 @@ final class AdminActionReceiptService
         );
     }
 
-    public function recordStateTransition(
-        AuditEvent $event,
-        User $actor,
-        Artwork|CvEntry|Exhibition $target,
-        string $beforeState,
-        string $afterState,
-        string $inverseActionKey,
-    ): ?AdminActionReceipt {
-        if ($beforeState === $afterState) {
-            return null;
-        }
-
-        if (! AdminActionCatalog::has($inverseActionKey)) {
-            throw new InvalidArgumentException('Undo inverse action key is not part of the admin action catalog.');
-        }
-
-        $entityType = $this->entityType($target);
-        if (
-            (int) $event->getAttribute('admin_user_id') !== (int) $actor->getKey()
-            || (string) $event->getAttribute('entity_type') !== $entityType
-            || (int) $event->getAttribute('entity_id') !== (int) $target->getKey()
-        ) {
-            throw new InvalidArgumentException('Undo receipt does not match its immutable audit event.');
-        }
-
-        $receipt = new AdminActionReceipt;
-        $receipt->fill([
-            'audit_event_id' => $event->getKey(),
-            'admin_user_id' => $actor->getKey(),
-            'action_key' => (string) $event->getAttribute('action'),
-            'inverse_action_key' => $inverseActionKey,
-            'entity_type' => $entityType,
-            'entity_id' => $target->getKey(),
-            'before_state' => $beforeState,
-            'after_state' => $afterState,
-            'receipt_version' => self::RECEIPT_VERSION,
-            'expires_at' => now()->addDays(self::RETENTION_DAYS),
-            'undone_at' => null,
-            'created_at' => now(),
-        ]);
-        $receipt->save();
-
-        $this->prune($actor);
-
-        return $receipt;
-    }
-
     /**
      * @param  Collection<int, AuditEvent>  $events
      * @return array<int, array{id:int,action_key:string,inverse_action_key:string,inverse_label:string}>
@@ -169,6 +122,53 @@ final class AdminActionReceiptService
         if ($excessIds->isNotEmpty()) {
             AdminActionReceipt::query()->whereIn('id', $excessIds)->delete();
         }
+    }
+
+    private function recordStateTransition(
+        AuditEvent $event,
+        User $actor,
+        Artwork|CvEntry|Exhibition $target,
+        string $beforeState,
+        string $afterState,
+        string $inverseActionKey,
+    ): ?AdminActionReceipt {
+        if ($beforeState === $afterState) {
+            return null;
+        }
+
+        if (! AdminActionCatalog::has($inverseActionKey)) {
+            throw new InvalidArgumentException('Undo inverse action key is not part of the admin action catalog.');
+        }
+
+        $entityType = $this->entityType($target);
+        if (
+            (int) $event->getAttribute('admin_user_id') !== (int) $actor->getKey()
+            || (string) $event->getAttribute('entity_type') !== $entityType
+            || (int) $event->getAttribute('entity_id') !== (int) $target->getKey()
+        ) {
+            throw new InvalidArgumentException('Undo receipt does not match its immutable audit event.');
+        }
+
+        $receipt = new AdminActionReceipt;
+        $receipt->fill([
+            'audit_event_id' => $event->getKey(),
+            'admin_user_id' => $actor->getKey(),
+            'action_key' => (string) $event->getAttribute('action'),
+            'inverse_action_key' => $inverseActionKey,
+            'entity_type' => $entityType,
+            'entity_id' => $target->getKey(),
+            'before_state' => $beforeState,
+            'after_state' => $afterState,
+            'receipt_version' => self::RECEIPT_VERSION,
+            'expires_at' => now()->addDays(self::RETENTION_DAYS),
+            'undone_at' => null,
+            'created_at' => now(),
+        ]);
+        $receipt->save();
+
+        $this->prune($actor);
+
+        return $receipt;
     }
 
     /**
