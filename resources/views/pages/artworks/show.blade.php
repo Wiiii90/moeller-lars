@@ -16,7 +16,11 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))
 
 @section('content')
-    <article class="artwork-detail" data-artwork-viewer-sequence>
+    <article class="artwork-detail" data-artwork-viewer-sequence
+        data-matomo-event-on-load="artwork_detail_view"
+        data-matomo-event-category="Artwork"
+        data-matomo-event-name="{{ $artwork->analytics_key }}"
+    >
         <a class="artwork-detail__viewer-trigger" href="{{ $imageUrl }}" data-artwork-viewer-trigger data-viewer-key="{{ $artwork->slug }}" aria-label="Open {{ $artwork->title }} in image viewer">
             <img class="artwork-image artwork-detail__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
         </a>
@@ -72,6 +76,7 @@
                 <span
                     data-artwork-viewer-item
                     data-viewer-key="{{ $viewerArtwork->slug }}"
+                    data-viewer-analytics-key="{{ $viewerArtwork->analytics_key }}"
                     data-viewer-src="{{ $viewerMediaUrl }}"
                     data-viewer-alt="{{ $media->altText($viewerArtwork) }}"
                     data-viewer-title="{{ $viewerArtwork->title }}"

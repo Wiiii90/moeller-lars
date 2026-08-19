@@ -17,6 +17,7 @@
         data-artwork-viewer-item
         data-artwork-viewer-trigger
         data-viewer-key="{{ $artwork->slug }}"
+        data-viewer-analytics-key="{{ $artwork->analytics_key }}"
         data-viewer-src="{{ $originalUrl }}"
         data-viewer-alt="{{ $altText }}"
         data-viewer-title="{{ $artwork->title }}"
