@@ -26,37 +26,46 @@ final class ContentOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
+        $artworks = $this->summary(Artwork::class, ['published', 'draft', 'archived']);
+        $categories = $this->summary(ArtworkCategory::class, ['published', 'hidden']);
+        $exhibitions = $this->summary(Exhibition::class, ['published', 'draft', 'hidden']);
+        $cvEntries = $this->summary(CvEntry::class, ['published', 'draft', 'hidden']);
+        $blogPosts = $this->summary(BlogPost::class, ['published', 'scheduled', 'draft']);
+        $media = $this->summary(MediaAsset::class, ['available', 'quarantined', 'deleted']);
+
         return [
-            Stat::make('Artworks', Artwork::query()->count())
-                ->description($this->stateSummary(Artwork::class, ['published', 'draft', 'archived'])),
-            Stat::make('Categories', ArtworkCategory::query()->count())
-                ->description($this->stateSummary(ArtworkCategory::class, ['published', 'hidden'])),
-            Stat::make('Exhibitions', Exhibition::query()->count())
-                ->description($this->stateSummary(Exhibition::class, ['published', 'draft', 'hidden'])),
-            Stat::make('Vita / CV', CvEntry::query()->count())
-                ->description($this->stateSummary(CvEntry::class, ['published', 'draft', 'hidden'])),
-            Stat::make('Blog posts', BlogPost::query()->count())
-                ->description($this->stateSummary(BlogPost::class, ['published', 'scheduled', 'draft'])),
-            Stat::make('Media', MediaAsset::query()->count())
-                ->description($this->stateSummary(MediaAsset::class, ['available', 'quarantined', 'deleted'])),
+            Stat::make('Artworks', $artworks['total'])->description($artworks['description']),
+            Stat::make('Categories', $categories['total'])->description($categories['description']),
+            Stat::make('Exhibitions', $exhibitions['total'])->description($exhibitions['description']),
+            Stat::make('Vita / CV', $cvEntries['total'])->description($cvEntries['description']),
+            Stat::make('Blog posts', $blogPosts['total'])->description($blogPosts['description']),
+            Stat::make('Media', $media['total'])->description($media['description']),
         ];
     }
 
     /**
      * @param  class-string<Model>  $model
      * @param  list<string>  $states
+     * @return array{total:int,description:string}
      */
-    private function stateSummary(string $model, array $states): string
+    private function summary(string $model, array $states): array
     {
-        $parts = [];
+        $counts = $model::query()
+            ->selectRaw('state, COUNT(*) AS aggregate')
+            ->groupBy('state')
+            ->pluck('aggregate', 'state');
 
+        $parts = [];
         foreach ($states as $state) {
-            $count = $model::query()->where('state', $state)->count();
+            $count = (int) ($counts->get($state) ?? 0);
             if ($count > 0) {
                 $parts[] = $count.' '.$state;
             }
         }
 
-        return $parts === [] ? 'No records yet' : implode(' · ', $parts);
+        return [
+            'total' => (int) $counts->sum(),
+            'description' => $parts === [] ? 'No records yet' : implode(' · ', $parts),
+        ];
     }
 }

@@ -248,6 +248,24 @@ it('stores only cumulative operational aggregates locally', function () {
         ->and(DailyMetric::query()->where('source', 'application')->whereNotIn('metric_name', ['performance:request_duration_ms', 'bot:request'])->count())->toBe(0);
 });
 
+it('collapses a request metric batch before the cumulative upsert', function () {
+    $recorder = app(OperationalMetricRecorder::class);
+    $recorder->addMany([
+        ['name' => 'performance:request_duration_ms', 'value' => 10.5, 'unit' => 'ms'],
+        ['name' => 'performance:request_duration_ms', 'value' => 4.5, 'unit' => 'ms'],
+        ['name' => 'operation:admin_request', 'value' => 1.0, 'unit' => 'count'],
+    ]);
+
+    $performance = DailyMetric::query()->where('metric_name', 'performance:request_duration_ms')->sole();
+    $admin = DailyMetric::query()->where('metric_name', 'operation:admin_request')->sole();
+
+    expect((float) $performance->value)->toBe(15.0)
+        ->and($performance->sample_count)->toBe(2)
+        ->and((float) $admin->value)->toBe(1.0)
+        ->and($admin->sample_count)->toBe(1)
+        ->and(DailyMetric::query()->where('source', 'application')->count())->toBe(2);
+});
+
 it('aggregates 404 and admin request health without storing visitor identifiers', function () {
     $this->get('/definitely-missing')->assertNotFound();
     $this->get('/admin/login')->assertSuccessful();

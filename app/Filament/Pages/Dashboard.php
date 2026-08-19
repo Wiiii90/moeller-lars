@@ -7,6 +7,7 @@ use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
+use App\Filament\Widgets\ContentOverview;
 use Filament\Actions\Action;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Support\Icons\Heroicon;
@@ -22,6 +23,13 @@ final class Dashboard extends BaseDashboard
         return [
             'md' => 2,
             'xl' => 3,
+        ];
+    }
+
+    public function getWidgets(): array
+    {
+        return [
+            ContentOverview::class,
         ];
     }
 
