@@ -19,6 +19,7 @@ use App\Models\SiteSection;
 use DateTimeInterface;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 
 final class ArtistDashboard extends Widget
@@ -67,10 +68,12 @@ final class ArtistDashboard extends Widget
             ! (bool) config('analytics.matomo.reporting_enabled') ? ['label' => 'Analytics reporting disabled', 'value' => null, 'url' => Analytics::getUrl()] : null,
         ]));
 
-        $activity = AuditEvent::query()
+        /** @var EloquentCollection<int, AuditEvent> $events */
+        $events = AuditEvent::query()
             ->orderByDesc('occurred_at')
             ->limit(7)
-            ->get()
+            ->get();
+        $activity = $events
             ->map(static function (AuditEvent $event): array {
                 $occurredAt = $event->getAttribute('occurred_at');
 
