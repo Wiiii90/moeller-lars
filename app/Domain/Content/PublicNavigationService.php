@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Models\SiteSection;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
@@ -22,21 +23,23 @@ final class PublicNavigationService
      */
     public function items(): Collection
     {
+        /** @var Builder<SiteSection> $query */
+        $query = SiteSection::query();
+        $query->whereNull('parent_id');
+        $query->where('state', 'published');
+        $query->where('show_in_navigation', true);
+        $query->with(['children' => static function (Relation $relation): void {
+            $childQuery = $relation->getQuery();
+            $childQuery->where('state', 'published');
+            $childQuery->where('show_in_navigation', true);
+            $childQuery->orderBy('position');
+            $childQuery->orderBy('id');
+        }]);
+        $query->orderBy('position');
+        $query->orderBy('id');
+
         /** @var EloquentCollection<int, SiteSection> $sections */
-        $sections = SiteSection::query()
-            ->whereNull('parent_id')
-            ->where('state', 'published')
-            ->where('show_in_navigation', true)
-            ->with(['children' => static function (Relation $relation): void {
-                $query = $relation->getQuery();
-                $query->where('state', 'published');
-                $query->where('show_in_navigation', true);
-                $query->orderBy('position');
-                $query->orderBy('id');
-            }])
-            ->orderBy('position')
-            ->orderBy('id')
-            ->get();
+        $sections = $query->get();
 
         return $sections->map(static function (SiteSection $section): array {
             /** @var EloquentCollection<int, SiteSection> $childSections */
