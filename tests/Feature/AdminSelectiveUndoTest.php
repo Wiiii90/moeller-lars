@@ -10,6 +10,7 @@ use App\Models\AdminActionStat;
 use App\Models\AuditEvent;
 use App\Models\CvEntry;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -38,6 +39,8 @@ it('creates a bounded receipt for a supported lifecycle transition and undoes it
 
     /** @var AdminActionReceipt $receipt */
     $receipt = AdminActionReceipt::query()->where('action_key', 'cv_entry.published')->firstOrFail();
+    /** @var CarbonInterface $expiresAt */
+    $expiresAt = $receipt->getAttribute('expires_at');
 
     expect($receipt->getAttribute('admin_user_id'))->toBe($admin->getKey())
         ->and($receipt->getAttribute('entity_type'))->toBe('cv_entry')
@@ -45,7 +48,7 @@ it('creates a bounded receipt for a supported lifecycle transition and undoes it
         ->and($receipt->getAttribute('before_state'))->toBe('draft')
         ->and($receipt->getAttribute('after_state'))->toBe('published')
         ->and($receipt->getAttribute('inverse_action_key'))->toBe('cv_entry.unpublished')
-        ->and($receipt->getAttribute('expires_at')->isFuture())->toBeTrue();
+        ->and($expiresAt->isFuture())->toBeTrue();
 
     $result = app(AdminUndoService::class)->undo((int) $receipt->getKey());
 
@@ -147,6 +150,7 @@ it('caps reversible receipts per admin without deleting immutable audit events',
     $admin = User::factory()->admin()->create();
     $service = app(AdminActionReceiptService::class);
     $entry = selectiveUndoCvEntry('Receipt retention');
+    $entry->forceFill(['state' => 'published'])->save();
 
     for ($index = 0; $index <= AdminActionReceiptService::MAX_RECEIPTS_PER_USER; $index++) {
         $event = AuditEvent::create([
@@ -157,14 +161,7 @@ it('caps reversible receipts per admin without deleting immutable audit events',
             'occurred_at' => now()->subSeconds(AdminActionReceiptService::MAX_RECEIPTS_PER_USER - $index),
         ]);
 
-        $service->recordStateTransition(
-            $event,
-            $admin,
-            $entry,
-            'draft',
-            'published',
-            'cv_entry.unpublished',
-        );
+        $service->recordForAuditEvent($event, $admin);
     }
 
     expect(AdminActionReceipt::query()->where('admin_user_id', $admin->getKey())->count())
