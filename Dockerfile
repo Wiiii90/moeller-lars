@@ -10,6 +10,7 @@ FROM php:8.3-apache-bookworm AS php-base
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
+        libapache2-mod-xsendfile \
         libfreetype6-dev \
         libicu-dev \
         libjpeg62-turbo-dev \
@@ -20,7 +21,7 @@ RUN apt-get update \
         unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" gd intl opcache pdo_pgsql zip \
-    && a2enmod rewrite headers \
+    && a2enmod rewrite headers xsendfile \
     && sed -ri 's/^Listen 80$/Listen 8080/' /etc/apache2/ports.conf \
     && rm -rf /var/lib/apt/lists/*
 

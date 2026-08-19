@@ -14,6 +14,10 @@ final class RecordOperationalMetrics
 
     public function handle(Request $request, Closure $next): Response
     {
+        if ($this->isMediaDeliveryRequest($request)) {
+            return $next($request);
+        }
+
         $startedAt = hrtime(true);
         $isBot = $this->isBot($request->userAgent());
         $isAdmin = $request->is('admin', 'admin/*');
@@ -61,6 +65,11 @@ final class RecordOperationalMetrics
             'value' => $value,
             'unit' => $unit,
         ];
+    }
+
+    private function isMediaDeliveryRequest(Request $request): bool
+    {
+        return $request->is('media/*', 'admin/media-preview/*');
     }
 
     private function isBot(?string $userAgent): bool

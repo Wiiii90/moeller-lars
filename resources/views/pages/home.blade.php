@@ -7,7 +7,7 @@
 @section('content')
     @if ($artwork)
         <div class="home-artwork" data-artwork-viewer-sequence>
-            <x-artwork-card :artwork="$artwork" :media="$media" :show-category-link="true" />
+            <x-artwork-card :artwork="$artwork" :media="$media" :show-category-link="true" :eager="true" />
         </div>
     @else
         <p class="missing-media public-empty-state">No artwork is currently available.</p>

@@ -28,6 +28,8 @@ function publicContentAsset(string $name = 'content'): MediaAsset
         'sha256' => hash('sha256', $name),
         'state' => 'available',
         'alt_text' => ucfirst($name).' image',
+        'width' => 1600,
+        'height' => 1200,
     ]);
 }
 
@@ -42,6 +44,8 @@ function publicContentThumbnail(MediaAsset $asset, string $name = 'content'): Me
         'sha256' => hash('sha256', $name.'-thumb'),
         'transform_profile' => 'public-v1',
         'state' => 'available',
+        'width' => 960,
+        'height' => 720,
     ]);
 }
 
@@ -72,6 +76,34 @@ it('renders published biography entries and the configured CV navigation item', 
         ->assertSee('CV')
         ->assertSee('Artist in Hamburg')
         ->assertSee('<strong>Selected</strong> work', false);
+});
+
+it('renders the CV portrait from the canonical thumbnail instead of the original', function () {
+    publicContentSettings()->update([
+        'cv_enabled' => true,
+        'cv_navigation_label' => 'CV',
+        'cv_navigation_position' => 20,
+    ]);
+
+    $asset = publicContentAsset('portrait');
+    $variant = publicContentThumbnail($asset, 'portrait');
+    CvEntry::create([
+        'section' => 'Biography',
+        'title' => 'Portrait entry',
+        'state' => 'published',
+        'position' => 0,
+        'date_precision' => 'year',
+        'year_text' => '2026',
+        'image_media_asset_id' => $asset->getKey(),
+    ]);
+
+    $this->get('/cv')
+        ->assertSuccessful()
+        ->assertSee(route('media.variant', $variant), false)
+        ->assertDontSee(route('media.original', $asset), false)
+        ->assertSee('width="960"', false)
+        ->assertSee('height="720"', false)
+        ->assertSee('fetchpriority="high"', false);
 });
 
 it('rejects a navigation position collision instead of inventing a tie breaker', function () {

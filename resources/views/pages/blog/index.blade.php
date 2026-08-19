@@ -16,8 +16,23 @@
             <article class="blog-entry">
                 <h3><a href="{{ route('blog.show', ['slug' => $post->slug]) }}">{{ $post->title }}</a></h3>
                 @if ($post->coverMedia !== null)
+                    @php
+                        $variant = $media->thumbnailVariantForAsset($post->coverMedia);
+                        $variantWidth = (int) ($variant->getAttribute('width') ?? 0);
+                        $variantHeight = (int) ($variant->getAttribute('height') ?? 0);
+                    @endphp
                     <a href="{{ route('blog.show', ['slug' => $post->slug]) }}" class="blog-entry__cover">
-                        <img src="{{ $media->thumbnailUrlForAsset($post->coverMedia) }}" alt="{{ $media->altTextForAsset($post->coverMedia) }}" loading="lazy">
+                        <img
+                            src="{{ route('media.variant', $variant) }}"
+                            alt="{{ $media->altTextForAsset($post->coverMedia) }}"
+                            @if ($variantWidth > 0 && $variantHeight > 0)
+                                width="{{ $variantWidth }}"
+                                height="{{ $variantHeight }}"
+                            @endif
+                            loading="{{ $loop->first ? 'eager' : 'lazy' }}"
+                            decoding="async"
+                            fetchpriority="{{ $loop->first ? 'high' : 'auto' }}"
+                        >
                     </a>
                 @endif
                 @if ($post->excerpt !== null)

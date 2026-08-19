@@ -1,9 +1,13 @@
-@props(['artwork', 'media', 'showCategoryLink' => false])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'eager' => false])
 
 @php
-    $imageUrl = $media->thumbnailUrl($artwork);
+    $thumbnail = $media->thumbnailVariant($artwork);
+    $imageUrl = route('media.variant', $thumbnail);
     $originalUrl = $media->originalUrl($artwork);
+    $altText = $media->altText($artwork);
     $category = $artwork->getRelationValue('category');
+    $thumbnailWidth = (int) ($thumbnail->getAttribute('width') ?? 0);
+    $thumbnailHeight = (int) ($thumbnail->getAttribute('height') ?? 0);
 @endphp
 
 <article class="artwork-card">
@@ -14,12 +18,23 @@
         data-artwork-viewer-trigger
         data-viewer-key="{{ $artwork->slug }}"
         data-viewer-src="{{ $originalUrl }}"
-        data-viewer-alt="{{ $media->altText($artwork) }}"
+        data-viewer-alt="{{ $altText }}"
         data-viewer-title="{{ $artwork->title }}"
         data-viewer-page="{{ route('artworks.show', $artwork->slug) }}"
         aria-label="Open {{ $artwork->title }} in image viewer"
     >
-        <img class="artwork-image artwork-card__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
+        <img
+            class="artwork-image artwork-card__image"
+            src="{{ $imageUrl }}"
+            alt="{{ $altText }}"
+            @if ($thumbnailWidth > 0 && $thumbnailHeight > 0)
+                width="{{ $thumbnailWidth }}"
+                height="{{ $thumbnailHeight }}"
+            @endif
+            loading="{{ $eager ? 'eager' : 'lazy' }}"
+            decoding="async"
+            fetchpriority="{{ $eager ? 'high' : 'auto' }}"
+        >
     </a>
 
     <div class="artwork-card__footer">
