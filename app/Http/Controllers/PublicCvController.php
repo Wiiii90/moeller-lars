@@ -6,6 +6,7 @@ use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Media\PublicMedia;
 use App\Models\CvEntry;
 use App\Models\PublicContentSetting;
+use App\Models\SiteSection;
 use Illuminate\Contracts\View\View;
 
 class PublicCvController extends Controller
@@ -17,9 +18,12 @@ class PublicCvController extends Controller
 
     public function show(): View
     {
-        $settings = PublicContentSetting::query()->findOrFail(1);
-        abort_unless((bool) $settings->getAttribute('cv_enabled'), 404);
+        abort_unless(
+            SiteSection::query()->where('type', SiteSection::TYPE_VITA)->where('state', 'published')->exists(),
+            404,
+        );
 
+        $settings = PublicContentSetting::query()->findOrFail(1);
         $cvEntries = CvEntry::query()
             ->where('state', 'published')
             ->where('section', 'Biography')
