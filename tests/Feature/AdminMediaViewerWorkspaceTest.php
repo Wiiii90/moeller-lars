@@ -18,7 +18,7 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
-function viewerAsset(string $filename, string $suffix): MediaAsset
+function adminViewerAsset(string $filename, string $suffix): MediaAsset
 {
     return MediaAsset::create([
         'storage_key' => 'originals/'.$filename,
@@ -34,7 +34,7 @@ function viewerAsset(string $filename, string $suffix): MediaAsset
 }
 
 it('renders media metadata and typed usage from the library', function (): void {
-    $asset = viewerAsset('library-viewer.jpg', 'library-viewer');
+    $asset = adminViewerAsset('library-viewer.jpg', 'library-viewer');
     $category = ArtworkCategory::create([
         'name' => 'Viewer Gallery',
         'slug' => 'viewer-gallery',
@@ -68,8 +68,8 @@ it('renders media metadata and typed usage from the library', function (): void 
 });
 
 it('navigates primary and additional media as one artwork inspection sequence', function (): void {
-    $primary = viewerAsset('primary-viewer.jpg', 'primary');
-    $additional = viewerAsset('additional-viewer.jpg', 'additional');
+    $primary = adminViewerAsset('primary-viewer.jpg', 'primary');
+    $additional = adminViewerAsset('additional-viewer.jpg', 'additional');
     $category = ArtworkCategory::create([
         'name' => 'Sequence Gallery',
         'slug' => 'sequence-gallery',
