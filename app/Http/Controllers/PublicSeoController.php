@@ -5,10 +5,9 @@ namespace App\Http\Controllers;
 use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\CanonicalUrl;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
-use App\Models\BlogSetting;
 use App\Models\PublicContentSetting;
+use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Response;
@@ -21,30 +20,34 @@ final class PublicSeoController extends Controller
     {
         $urls = [$this->canonical->forPath('/')];
 
-        foreach (ArtworkCategory::query()->where('state', 'published')->get(['slug']) as $category) {
-            $urls[] = $this->canonical->forPath('/'.$category->getAttribute('slug'));
+        foreach (SiteSection::query()
+            ->where('type', SiteSection::TYPE_GALLERY)
+            ->where('state', 'published')
+            ->orderBy('position')
+            ->get(['slug']) as $section) {
+            $urls[] = $this->canonical->forPath('/'.$section->getAttribute('slug'));
         }
 
         foreach (Artwork::query()
             ->where('state', 'published')
-            ->whereHas('category', fn (Builder $query) => $query->where('state', 'published'))
+            ->whereHas('category.siteSection', static fn (Builder $query): Builder => $query->where('state', 'published'))
             ->get(['slug']) as $artwork) {
             $urls[] = $this->canonical->forPath('/artworks/'.$artwork->getAttribute('slug'));
         }
 
-        $publicSettings = PublicContentSetting::query()->findOrFail(1);
-        if ((bool) $publicSettings->getAttribute('cv_enabled')) {
+        if (SiteSection::query()->where('type', SiteSection::TYPE_VITA)->where('state', 'published')->exists()) {
             $urls[] = $this->canonical->forPath('/cv');
         }
-        if ((bool) $publicSettings->getAttribute('exhibitions_enabled')) {
+        if (SiteSection::query()->where('type', SiteSection::TYPE_EXHIBITIONS)->where('state', 'published')->exists()) {
             $urls[] = $this->canonical->forPath('/exhibitions');
         }
+
+        $publicSettings = PublicContentSetting::query()->findOrFail(1);
         if ($publicSettings->getAttribute('contact_state') === 'enabled') {
             $urls[] = $this->canonical->forPath('/contact');
         }
 
-        $blogSettings = BlogSetting::query()->findOrFail(1);
-        if ((bool) $blogSettings->getAttribute('public_enabled')) {
+        if (SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->where('state', 'published')->exists()) {
             $urls[] = $this->canonical->forPath('/blog');
             /** @var Collection<int, BlogPost> $posts */
             $posts = BlogEditorialService::publicQuery()->orderBy('position')->get(['slug']);
