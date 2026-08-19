@@ -91,7 +91,7 @@ final class ArtworkAttentionReport
                 'category' => (string) ($category?->getAttribute('name') ?? 'No Gallery'),
                 'state' => (string) $artwork->getAttribute('state'),
                 'thumbnail_url' => $this->thumbnailUrl($artwork),
-                'public_url' => $isPublic ? route('artworks.show', ['slug' => $artwork->getAttribute('slug')]) : null,
+                'public_url' => $isPublic ? route('artworks.show', ['artwork' => $artwork]) : null,
                 'detail_views' => $metrics['detail_views'],
                 'viewer_opens' => $metrics['viewer_opens'],
                 'zooms' => $metrics['zooms'],
