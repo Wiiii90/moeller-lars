@@ -26,9 +26,13 @@ class AppServiceProvider extends ServiceProvider
         $analyticsStylesheet = app()->environment('production')
             ? secure_asset('css/filament-analytics.css')
             : asset('css/filament-analytics.css');
+        $editorialStylesheet = app()->environment('production')
+            ? secure_asset('css/filament-editorial.css')
+            : asset('css/filament-editorial.css');
 
         FilamentAsset::register([
             Css::make('analytics-dashboard', $analyticsStylesheet),
+            Css::make('artist-editorial', $editorialStylesheet),
         ]);
 
         ArtworkCategory::observe(ArtworkCategorySiteSectionObserver::class);

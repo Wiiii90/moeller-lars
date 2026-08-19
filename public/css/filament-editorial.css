@@ -1,0 +1,291 @@
+.artist-workspace {
+    --artist-line: rgba(120, 113, 108, .22);
+    --artist-muted: #78716c;
+    --artist-ink: #292524;
+    --artist-soft: #f7f6f4;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.artist-workspace__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2rem;
+    align-items: end;
+    padding: .25rem 0 1.5rem;
+    border-bottom: 1px solid var(--artist-line);
+}
+
+.artist-workspace__kicker {
+    margin: 0 0 .4rem;
+    color: #a16207;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+}
+
+.artist-workspace__head h2 {
+    margin: 0;
+    color: var(--artist-ink);
+    font-size: clamp(1.65rem, 3vw, 2.55rem);
+    font-weight: 500;
+    letter-spacing: -.035em;
+    line-height: 1.02;
+}
+
+.artist-workspace__head p:not(.artist-workspace__kicker) {
+    max-width: 50rem;
+    margin: .65rem 0 0;
+    color: var(--artist-muted);
+    font-size: .94rem;
+    line-height: 1.6;
+}
+
+.artist-workspace__summary {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 1.5rem;
+    align-items: end;
+}
+
+.artist-workspace__summary div {
+    display: grid;
+    gap: .18rem;
+    min-width: 5.2rem;
+}
+
+.artist-workspace__summary strong {
+    color: var(--artist-ink);
+    font-size: 1.35rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.artist-workspace__summary span {
+    color: var(--artist-muted);
+    font-size: .7rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.artist-section-list {
+    border-top: 1px solid var(--artist-line);
+}
+
+.artist-section {
+    display: grid;
+    grid-template-columns: minmax(13rem, 1.65fr) minmax(9rem, .9fr) minmax(7rem, .65fr) auto;
+    gap: 1rem;
+    min-height: 5.5rem;
+    padding: 1rem .2rem;
+    align-items: center;
+    border-bottom: 1px solid var(--artist-line);
+}
+
+.artist-section[data-depth="1"] {
+    position: relative;
+    margin-left: 2.2rem;
+    grid-template-columns: minmax(11rem, 1.65fr) minmax(9rem, .9fr) minmax(7rem, .65fr) auto;
+}
+
+.artist-section[data-depth="1"]::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -1.2rem;
+    width: 1px;
+    background: var(--artist-line);
+    content: "";
+}
+
+.artist-section__identity {
+    min-width: 0;
+}
+
+.artist-section__type {
+    display: block;
+    margin-bottom: .28rem;
+    color: #a16207;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.artist-section__identity strong {
+    display: block;
+    overflow: hidden;
+    color: var(--artist-ink);
+    font-size: 1rem;
+    font-weight: 550;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.artist-section__path {
+    display: block;
+    margin-top: .2rem;
+    overflow: hidden;
+    color: var(--artist-muted);
+    font-size: .78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.artist-section__state {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.artist-section__state span {
+    display: inline-flex;
+    gap: .35rem;
+    align-items: center;
+    color: var(--artist-muted);
+    font-size: .78rem;
+}
+
+.artist-section__state span::before {
+    width: .42rem;
+    height: .42rem;
+    border: 1px solid #a8a29e;
+    border-radius: 50%;
+    content: "";
+}
+
+.artist-section__state .is-published::before,
+.artist-section__state .is-visible::before {
+    border-color: #a16207;
+    background: #a16207;
+}
+
+.artist-section__count {
+    display: grid;
+    gap: .12rem;
+}
+
+.artist-section__count strong {
+    color: var(--artist-ink);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.artist-section__count span {
+    color: var(--artist-muted);
+    font-size: .72rem;
+    text-transform: lowercase;
+}
+
+.artist-section__actions {
+    display: flex;
+    gap: .35rem;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.artist-section__actions a,
+.artist-section__actions button {
+    display: inline-flex;
+    min-height: 2rem;
+    padding: .38rem .58rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: #57534e;
+    font: inherit;
+    font-size: .76rem;
+    font-weight: 550;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.artist-section__actions a:hover,
+.artist-section__actions a:focus-visible,
+.artist-section__actions button:hover:not(:disabled),
+.artist-section__actions button:focus-visible:not(:disabled) {
+    border-color: var(--artist-line);
+    background: var(--artist-soft);
+    color: var(--artist-ink);
+}
+
+.artist-section__actions button:disabled {
+    color: #d6d3d1;
+    cursor: default;
+}
+
+.artist-section__actions .is-primary {
+    border-color: #d6d3d1;
+    background: #fff;
+    color: var(--artist-ink);
+}
+
+.artist-section__order {
+    display: inline-flex;
+    border-left: 1px solid var(--artist-line);
+    margin-left: .25rem;
+    padding-left: .25rem;
+}
+
+.artist-workspace__footnote {
+    display: flex;
+    gap: .75rem 1.5rem;
+    padding-top: .25rem;
+    color: var(--artist-muted);
+    font-size: .76rem;
+    line-height: 1.5;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 1050px) {
+    .artist-section {
+        grid-template-columns: minmax(12rem, 1.5fr) minmax(8rem, .8fr) auto;
+    }
+
+    .artist-section__count {
+        display: none;
+    }
+}
+
+@media (max-width: 760px) {
+    .artist-workspace__head {
+        grid-template-columns: 1fr;
+    }
+
+    .artist-workspace__summary {
+        justify-content: start;
+    }
+
+    .artist-section,
+    .artist-section[data-depth="1"] {
+        grid-template-columns: 1fr auto;
+        gap: .75rem;
+        margin-left: 0;
+        padding: 1rem 0;
+    }
+
+    .artist-section[data-depth="1"] {
+        padding-left: 1.2rem;
+    }
+
+    .artist-section[data-depth="1"]::before {
+        left: .35rem;
+    }
+
+    .artist-section__state {
+        grid-column: 1;
+    }
+
+    .artist-section__actions {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        max-width: 9rem;
+    }
+}
