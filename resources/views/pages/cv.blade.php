@@ -7,6 +7,11 @@
 @section('content')
     @php
         $portraitEntry = $cvEntries->first(fn ($entry) => $entry->imageMediaAsset !== null);
+        $portraitVariant = $portraitEntry !== null
+            ? $media->thumbnailVariantForAsset($portraitEntry->imageMediaAsset)
+            : null;
+        $portraitWidth = $portraitVariant !== null ? (int) ($portraitVariant->getAttribute('width') ?? 0) : 0;
+        $portraitHeight = $portraitVariant !== null ? (int) ($portraitVariant->getAttribute('height') ?? 0) : 0;
     @endphp
 
     <div class="cv-page">
@@ -41,12 +46,18 @@
                     </div>
                 </div>
 
-                @if ($portraitEntry !== null)
+                @if ($portraitEntry !== null && $portraitVariant !== null)
                     <img
                         class="cv-portrait"
-                        src="{{ $media->originalUrlForAsset($portraitEntry->imageMediaAsset) }}"
+                        src="{{ route('media.variant', $portraitVariant) }}"
                         alt="{{ $media->altTextForAsset($portraitEntry->imageMediaAsset) }}"
-                        loading="lazy"
+                        @if ($portraitWidth > 0 && $portraitHeight > 0)
+                            width="{{ $portraitWidth }}"
+                            height="{{ $portraitHeight }}"
+                        @endif
+                        loading="eager"
+                        decoding="async"
+                        fetchpriority="high"
                     >
                 @endif
             </div>
