@@ -60,7 +60,7 @@ final class SiteSection extends Model
 
     protected static function booted(): void
     {
-        static::saving(function (self $section): void {
+        self::saving(function (self $section): void {
             $type = (string) $section->getAttribute('type');
             if (in_array($type, self::TYPES, true) === false) {
                 throw ValidationException::withMessages(['type' => 'The site section type is invalid.']);
