@@ -35,7 +35,7 @@
                         @php($submenuId = 'site-navigation-submenu-'.$navigationItem['tie_breaker'])
                         <div class="site-navigation__item @if ($navigationItem['active']) is-active @endif" data-navigation-item>
                             <div class="site-navigation__primary">
-                                <a href="{{ $navigationItem['url'] }}" @if ($navigationItem['current']) aria-current="page" @endif>{{ $navigationItem['label'] }}</a>
+                                <a href="{{ $navigationItem['url'] }}"@if ($navigationItem['current']) aria-current="page"@endif>{{ $navigationItem['label'] }}</a>
                                 @if ($navigationItem['children'] !== [])
                                     <button
                                         class="site-navigation__submenu-toggle"
@@ -55,7 +55,7 @@
                                     hidden
                                 >
                                     @foreach ($navigationItem['children'] as $child)
-                                        <a href="{{ $child['url'] }}" @if ($child['current']) aria-current="page" @endif>{{ $child['label'] }}</a>
+                                        <a href="{{ $child['url'] }}"@if ($child['current']) aria-current="page"@endif>{{ $child['label'] }}</a>
                                     @endforeach
                                 </div>
                             @endif
