@@ -96,7 +96,7 @@ it('navigates primary and additional media as one artwork inspection sequence', 
         'artwork_id' => $artwork->getKey(),
         'media_asset_id' => $additional->getKey(),
         'role' => 'additional',
-        'position' => 0,
+        'position' => 1,
     ]);
 
     $primaryPage = $this->get(MediaAssetResource::getUrl('view', ['record' => $primary, 'artwork' => $artwork->getKey()]));
