@@ -60,12 +60,13 @@ final class ArtistDashboard extends Widget
             ->where('state', 'published')
             ->whereDoesntHave('artworkMedia', fn (Builder $query): Builder => $query->where('role', 'primary'))
             ->count();
+        $analyticsReportingDisabled = (bool) config('analytics.matomo.reporting_enabled') === false;
 
         $attention = array_values(array_filter([
             $missingAlt > 0 ? ['label' => 'Media missing ALT text', 'value' => $missingAlt, 'url' => MediaAssetResource::getUrl('index')] : null,
             $missingThumbnail > 0 ? ['label' => 'Media missing current preview', 'value' => $missingThumbnail, 'url' => MediaAssetResource::getUrl('index')] : null,
             $publishedWithoutPrimary > 0 ? ['label' => 'Published artworks without primary image', 'value' => $publishedWithoutPrimary, 'url' => ArtworkResource::getUrl('index')] : null,
-            ! (bool) config('analytics.matomo.reporting_enabled') ? ['label' => 'Analytics reporting disabled', 'value' => null, 'url' => Analytics::getUrl()] : null,
+            $analyticsReportingDisabled ? ['label' => 'Analytics reporting disabled', 'value' => null, 'url' => Analytics::getUrl()] : null,
         ]));
 
         /** @var EloquentCollection<int, AuditEvent> $events */
