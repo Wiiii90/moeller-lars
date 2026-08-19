@@ -2,8 +2,8 @@ function navigationCanOverflow() {
     return !window.matchMedia('(max-width: 550px)').matches;
 }
 
-function submenuFor(toggle) {
-    const id = toggle.getAttribute('aria-controls');
+function submenuFor(control) {
+    const id = control.getAttribute('aria-controls');
     if (!id) {
         return null;
     }
@@ -12,21 +12,32 @@ function submenuFor(toggle) {
     return submenu instanceof HTMLElement ? submenu : null;
 }
 
-function positionSubmenu(toggle, submenu) {
+function submenuControls(item) {
+    const parentLink = item.querySelector('[data-navigation-parent-link]');
+    const toggle = item.querySelector('[data-navigation-submenu-toggle]');
+    const submenu = item.querySelector('[data-navigation-submenu]');
+
+    if (!(parentLink instanceof HTMLAnchorElement)
+        || !(toggle instanceof HTMLButtonElement)
+        || !(submenu instanceof HTMLElement)) {
+        return null;
+    }
+
+    return { parentLink, toggle, submenu };
+}
+
+function positionSubmenu(item, submenu) {
     if (!navigationCanOverflow()) {
         submenu.style.removeProperty('--navigation-submenu-top');
         submenu.style.removeProperty('--navigation-submenu-left');
-        return;
-    }
-
-    const item = toggle.closest('[data-navigation-item]');
-    if (!(item instanceof HTMLElement)) {
+        submenu.style.removeProperty('--navigation-submenu-width');
         return;
     }
 
     const rect = item.getBoundingClientRect();
     const viewportPadding = 8;
-    const width = submenu.offsetWidth;
+    const naturalWidth = Math.max(rect.width, submenu.scrollWidth);
+    const width = Math.min(naturalWidth, window.innerWidth - viewportPadding * 2);
     const left = Math.min(
         Math.max(viewportPadding, rect.left),
         Math.max(viewportPadding, window.innerWidth - width - viewportPadding),
@@ -34,78 +45,141 @@ function positionSubmenu(toggle, submenu) {
 
     submenu.style.setProperty('--navigation-submenu-top', `${Math.round(rect.bottom)}px`);
     submenu.style.setProperty('--navigation-submenu-left', `${Math.round(left)}px`);
+    submenu.style.setProperty('--navigation-submenu-width', `${Math.round(width)}px`);
 }
 
-function closeSubmenu(toggle, restoreFocus = false) {
-    const submenu = submenuFor(toggle);
-    if (!submenu) {
-        return;
-    }
+function setExpanded(controls, expanded) {
+    controls.parentLink.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    controls.toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+}
 
-    toggle.setAttribute('aria-expanded', 'false');
-    submenu.hidden = true;
-    submenu.style.removeProperty('--navigation-submenu-top');
-    submenu.style.removeProperty('--navigation-submenu-left');
+function closeSubmenu(item, controls, restoreFocus = false) {
+    setExpanded(controls, false);
+    item.dataset.submenuOpen = 'false';
+    controls.submenu.hidden = true;
+    controls.submenu.style.removeProperty('--navigation-submenu-top');
+    controls.submenu.style.removeProperty('--navigation-submenu-left');
+    controls.submenu.style.removeProperty('--navigation-submenu-width');
 
     if (restoreFocus) {
-        toggle.focus();
+        controls.parentLink.focus();
     }
 }
 
-function openSubmenu(toggle) {
-    const submenu = submenuFor(toggle);
-    if (!submenu) {
-        return;
-    }
-
-    toggle.setAttribute('aria-expanded', 'true');
-    submenu.hidden = false;
-    positionSubmenu(toggle, submenu);
+function openSubmenu(item, controls) {
+    setExpanded(controls, true);
+    item.dataset.submenuOpen = 'true';
+    controls.submenu.hidden = false;
+    positionSubmenu(item, controls.submenu);
 }
 
 function initializeSubmenus(container) {
-    const toggles = Array.from(container.querySelectorAll('[data-navigation-submenu-toggle]'))
-        .filter((toggle) => toggle instanceof HTMLButtonElement);
+    const entries = Array.from(container.querySelectorAll('[data-navigation-item]'))
+        .filter((item) => item instanceof HTMLElement)
+        .map((item) => ({ item, controls: submenuControls(item) }))
+        .filter((entry) => entry.controls !== null);
+    let closeTimer = null;
+
+    const clearCloseTimer = () => {
+        if (closeTimer !== null) {
+            window.clearTimeout(closeTimer);
+            closeTimer = null;
+        }
+    };
 
     const closeOthers = (current = null) => {
-        toggles.forEach((toggle) => {
-            if (toggle !== current) {
-                closeSubmenu(toggle);
+        clearCloseTimer();
+        entries.forEach(({ item, controls }) => {
+            if (item !== current) {
+                closeSubmenu(item, controls);
             }
         });
     };
 
-    toggles.forEach((toggle) => {
-        const submenu = submenuFor(toggle);
-        if (!submenu) {
-            return;
-        }
+    const openEntry = (entry) => {
+        clearCloseTimer();
+        closeOthers(entry.item);
+        openSubmenu(entry.item, entry.controls);
+    };
 
-        toggle.addEventListener('click', () => {
-            const open = toggle.getAttribute('aria-expanded') === 'true';
-            closeOthers(toggle);
-            open ? closeSubmenu(toggle) : openSubmenu(toggle);
+    const scheduleDesktopClose = (entry) => {
+        clearCloseTimer();
+        closeTimer = window.setTimeout(() => {
+            if (!entry.item.matches(':hover') && !entry.item.contains(document.activeElement)) {
+                closeSubmenu(entry.item, entry.controls);
+            }
+            closeTimer = null;
+        }, 140);
+    };
+
+    entries.forEach((entry) => {
+        const { item, controls } = entry;
+        const { parentLink, toggle, submenu } = controls;
+
+        item.addEventListener('pointerenter', (event) => {
+            if (event.pointerType === 'mouse' && navigationCanOverflow()) {
+                openEntry(entry);
+            }
         });
 
-        toggle.addEventListener('keydown', (event) => {
+        item.addEventListener('pointerleave', (event) => {
+            if (event.pointerType === 'mouse' && navigationCanOverflow()) {
+                scheduleDesktopClose(entry);
+            }
+        });
+
+        item.addEventListener('focusin', () => {
+            if (navigationCanOverflow()) {
+                openEntry(entry);
+            }
+        });
+
+        item.addEventListener('focusout', () => {
+            window.setTimeout(() => {
+                if (!item.contains(document.activeElement)) {
+                    closeSubmenu(item, controls);
+                }
+            }, 0);
+        });
+
+        parentLink.addEventListener('keydown', (event) => {
             if (event.key === 'ArrowDown') {
                 event.preventDefault();
-                closeOthers(toggle);
-                openSubmenu(toggle);
+                openEntry(entry);
                 const firstLink = submenu.querySelector('a');
                 if (firstLink instanceof HTMLAnchorElement) {
                     firstLink.focus();
                 }
             } else if (event.key === 'Escape') {
                 event.preventDefault();
-                closeSubmenu(toggle, true);
+                closeSubmenu(item, controls, true);
+            }
+        });
+
+        toggle.addEventListener('click', () => {
+            const expanded = toggle.getAttribute('aria-expanded') === 'true';
+            closeOthers(item);
+            expanded ? closeSubmenu(item, controls) : openSubmenu(item, controls);
+        });
+
+        toggle.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                openEntry(entry);
+                const firstLink = submenu.querySelector('a');
+                if (firstLink instanceof HTMLAnchorElement) {
+                    firstLink.focus();
+                }
+            } else if (event.key === 'Escape') {
+                event.preventDefault();
+                closeSubmenu(item, controls, true);
             }
         });
 
         submenu.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 event.preventDefault();
-                closeSubmenu(toggle, true);
+                closeSubmenu(item, controls, true);
                 return;
             }
 
@@ -124,17 +198,6 @@ function initializeSubmenus(container) {
             const offset = event.key === 'ArrowDown' ? 1 : -1;
             links[(current + offset + links.length) % links.length].focus();
         });
-
-        const item = toggle.closest('[data-navigation-item]');
-        if (item instanceof HTMLElement) {
-            item.addEventListener('focusout', () => {
-                window.setTimeout(() => {
-                    if (!item.contains(document.activeElement)) {
-                        closeSubmenu(toggle);
-                    }
-                }, 0);
-            });
-        }
     });
 
     document.addEventListener('pointerdown', (event) => {
@@ -145,10 +208,9 @@ function initializeSubmenus(container) {
     });
 
     window.addEventListener('resize', () => {
-        toggles.forEach((toggle) => {
-            const submenu = submenuFor(toggle);
-            if (submenu && toggle.getAttribute('aria-expanded') === 'true') {
-                positionSubmenu(toggle, submenu);
+        entries.forEach(({ item, controls }) => {
+            if (controls.parentLink.getAttribute('aria-expanded') === 'true') {
+                positionSubmenu(item, controls.submenu);
             }
         });
     }, { passive: true });
