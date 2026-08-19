@@ -62,7 +62,7 @@ final class SiteSection extends Model
     {
         static::saving(function (self $section): void {
             $type = (string) $section->getAttribute('type');
-            if (! in_array($type, self::TYPES, true)) {
+            if (in_array($type, self::TYPES, true) === false) {
                 throw ValidationException::withMessages(['type' => 'The site section type is invalid.']);
             }
 
@@ -80,7 +80,7 @@ final class SiteSection extends Model
 
             if ((bool) $section->getAttribute('show_in_navigation')) {
                 $label = $section->getAttribute('navigation_label');
-                if (! is_string($label) || trim($label) === '') {
+                if (is_string($label) === false || trim($label) === '') {
                     throw ValidationException::withMessages(['navigation_label' => 'A navigation label is required while this section is shown in navigation.']);
                 }
             }
