@@ -2,17 +2,13 @@
 
 namespace App\Domain\Admin;
 
-use App\Domain\Content\SiteSectionSyncService;
 use App\Models\BlogSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Support\Facades\DB;
 
 final class AdminSettingsService
 {
-    public function __construct(
-        private readonly AdminAuditService $audit,
-        private readonly SiteSectionSyncService $siteSections,
-    ) {}
+    public function __construct(private readonly AdminAuditService $audit) {}
 
     public function updatePublicContent(PublicContentSetting $setting, array $data): PublicContentSetting
     {
@@ -46,13 +42,6 @@ final class AdminSettingsService
 
             if ($fresh->isDirty()) {
                 $fresh->save();
-
-                if ($fresh instanceof PublicContentSetting) {
-                    $this->siteSections->syncPublicContent($fresh);
-                } else {
-                    $this->siteSections->syncBlog($fresh);
-                }
-
                 $this->audit->record($actor, $action, $entityType, (int) $fresh->getKey());
             }
 
