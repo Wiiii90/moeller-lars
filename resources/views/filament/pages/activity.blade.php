@@ -33,6 +33,14 @@
                     </span>
                     <div class="artist-section__actions">
                         <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
+                        @if ($event['undo'] !== null)
+                            <button
+                                class="artist-action"
+                                type="button"
+                                wire:click="undo({{ $event['undo']['id'] }})"
+                                wire:confirm="{{ $event['undo']['confirmation'] }}"
+                            >Undo</button>
+                        @endif
                         @if ($event['url'] !== null)
                             <a class="artist-action" href="{{ $event['url'] }}">Open</a>
                         @endif
