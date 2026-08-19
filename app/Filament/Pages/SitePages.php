@@ -171,8 +171,8 @@ final class SitePages extends Page
     }
 
     /**
-     * @param array<string, int> $counts
-     * @param array<int, int> $galleryCounts
+     * @param  array<string, int>  $counts
+     * @param  array<int, int>  $galleryCounts
      * @return array<string, mixed>
      */
     private function row(SiteSection $section, int $depth, array $counts, array $galleryCounts): array
