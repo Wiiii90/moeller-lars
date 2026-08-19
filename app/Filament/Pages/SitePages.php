@@ -11,6 +11,7 @@ use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\CvEntry;
 use App\Models\Exhibition;
@@ -20,6 +21,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use UnitEnum;
 
 final class SitePages extends Page
@@ -31,6 +33,8 @@ final class SitePages extends Page
     protected static ?string $navigationLabel = 'Pages';
 
     protected static ?string $title = 'Pages';
+
+    protected static ?string $slug = 'pages';
 
     protected static ?int $navigationSort = 5;
 
@@ -64,13 +68,11 @@ final class SitePages extends Page
         /** @var EloquentCollection<int, SiteSection> $topLevel */
         $topLevel = SiteSection::query()
             ->whereNull('parent_id')
-            ->with([
-                'artworkCategory.artworks',
-                'children' => static fn ($query) => $query
-                    ->with('artworkCategory.artworks')
-                    ->orderBy('position')
-                    ->orderBy('id'),
-            ])
+            ->with(['children' => static function (Relation $relation): void {
+                $query = $relation->getQuery();
+                $query->orderBy('position');
+                $query->orderBy('id');
+            }])
             ->orderBy('position')
             ->orderBy('id')
             ->get();
@@ -82,13 +84,20 @@ final class SitePages extends Page
             SiteSection::TYPE_EXHIBITIONS => Exhibition::query()->count(),
         ];
 
+        $galleryCounts = [];
+        /** @var EloquentCollection<int, ArtworkCategory> $categories */
+        $categories = ArtworkCategory::query()->withCount('artworks')->get(['id']);
+        foreach ($categories as $category) {
+            $galleryCounts[(int) $category->getKey()] = (int) $category->getAttribute('artworks_count');
+        }
+
         $rows = [];
         foreach ($topLevel as $section) {
-            $rows[] = $this->row($section, 0, $counts);
+            $rows[] = $this->row($section, 0, $counts, $galleryCounts);
             /** @var EloquentCollection<int, SiteSection> $children */
             $children = $section->getRelation('children');
             foreach ($children as $child) {
-                $rows[] = $this->row($child, 1, $counts);
+                $rows[] = $this->row($child, 1, $counts, $galleryCounts);
             }
         }
 
@@ -97,14 +106,15 @@ final class SitePages extends Page
 
     /**
      * @param array<string, int> $counts
+     * @param array<int, int> $galleryCounts
      * @return array<string, mixed>
      */
-    private function row(SiteSection $section, int $depth, array $counts): array
+    private function row(SiteSection $section, int $depth, array $counts, array $galleryCounts): array
     {
         $type = (string) $section->getAttribute('type');
-        $category = $section->getRelation('artworkCategory');
-        $contentCount = $type === SiteSection::TYPE_GALLERY
-            ? ($category?->artworks?->count() ?? 0)
+        $categoryId = $section->getAttribute('artwork_category_id');
+        $contentCount = $type === SiteSection::TYPE_GALLERY && is_int($categoryId)
+            ? ($galleryCounts[$categoryId] ?? 0)
             : ($counts[$type] ?? 0);
 
         return [
