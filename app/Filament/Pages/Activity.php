@@ -4,9 +4,13 @@ namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminActivityFeed;
+use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminUndoService;
 use BackedEnum;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Validation\ValidationException;
 use UnitEnum;
 
 final class Activity extends Page
@@ -21,6 +25,29 @@ final class Activity extends Page
 
     protected string $view = 'filament.pages.activity';
 
+    public function undo(int $receiptId): void
+    {
+        try {
+            $result = app(AdminUndoService::class)->undo($receiptId);
+        } catch (ValidationException $exception) {
+            $message = $exception->errors()['undo'][0] ?? 'This change can no longer be undone safely.';
+
+            Notification::make()
+                ->warning()
+                ->title('Undo unavailable')
+                ->body($message)
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->success()
+            ->title('Change undone')
+            ->body($result['inverse'].' was applied as a new editorial action.')
+            ->send();
+    }
+
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
@@ -28,7 +55,8 @@ final class Activity extends Page
         $family = request()->query('family');
         $area = is_string($area) && array_key_exists($area, AdminActionCatalog::areaOptions()) ? $area : null;
         $family = is_string($family) && array_key_exists($family, AdminActionCatalog::familyOptions()) ? $family : null;
-        $feed = app(AdminActivityFeed::class)->page($area, $family);
+        $actor = app(AdminAuditService::class)->requireActor();
+        $feed = app(AdminActivityFeed::class)->page($area, $family, actor: $actor);
 
         return [
             ...$feed,
