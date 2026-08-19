@@ -10,55 +10,6 @@ use InvalidArgumentException;
 
 class AdminAuditService
 {
-    private const ACTIONS = [
-        'artwork.created',
-        'artwork.updated',
-        'artwork.published',
-        'artwork.unpublished',
-        'artwork.primary_media_attached',
-        'artwork.primary_media_replaced',
-        'artwork.primary_media_alt_updated',
-        'artwork.additional_media_attached',
-        'artwork.additional_media_detached',
-        'artwork.additional_media_reordered',
-        'artwork_category.created',
-        'artwork_category.updated',
-        'artwork_category.published',
-        'artwork_category.hidden',
-        'artwork_category.slug_changed',
-        'artwork_category.deleted',
-        'artwork_category.gallery_reordered',
-        'site_section.updated',
-        'site_section.reordered',
-        'media.ingested',
-        'media.metadata_updated',
-        'media.deleted',
-        'cv_entry.created',
-        'cv_entry.updated',
-        'cv_entry.published',
-        'cv_entry.unpublished',
-        'cv_entry.archived',
-        'cv_entry.restored_to_draft',
-        'cv_entry.reordered',
-        'exhibition.created',
-        'exhibition.updated',
-        'exhibition.published',
-        'exhibition.unpublished',
-        'exhibition.archived',
-        'exhibition.restored_to_draft',
-        'exhibition.reordered',
-        'blog_post.created',
-        'blog_post.updated',
-        'blog_post.published',
-        'blog_post.scheduled',
-        'blog_post.unpublished',
-        'blog_post.archived',
-        'blog_post.restored_to_draft',
-        'blog_post.reordered',
-        'blog_setting.updated',
-        'public_content_setting.updated',
-    ];
-
     private const ENTITY_TYPES = [
         'artwork',
         'media_asset',
@@ -70,6 +21,8 @@ class AdminAuditService
         'blog_setting',
         'public_content_setting',
     ];
+
+    public function __construct(private readonly AdminActionStatsService $actionStats) {}
 
     public function requireActor(): User
     {
@@ -89,7 +42,7 @@ class AdminAuditService
         int $entityId,
         ?array $metadata = null,
     ): AuditEvent {
-        if (! in_array($action, self::ACTIONS, true)) {
+        if (! AdminActionCatalog::has($action)) {
             throw new InvalidArgumentException('Invalid audit action.');
         }
 
@@ -113,17 +66,20 @@ class AdminAuditService
             }
         }
 
+        $occurredAt = now();
         $event = new AuditEvent;
         $event->fill([
             'admin_user_id' => $actor->getKey(),
             'action' => $action,
             'entity_type' => $entityType,
             'entity_id' => $entityId,
-            'occurred_at' => now(),
+            'occurred_at' => $occurredAt,
             'request_id' => null,
             'metadata' => $metadata === [] ? null : $metadata,
         ]);
         $event->save();
+
+        $this->actionStats->record($actor, $action, $occurredAt);
 
         return $event;
     }
