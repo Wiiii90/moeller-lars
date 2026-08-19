@@ -26,6 +26,8 @@ use Illuminate\Support\Collection;
 
 final class AdminActivityFeed
 {
+    public const ACTIVITY_WINDOW_DAYS = 180;
+
     /**
      * @return array{activity: array<int, array<string, mixed>>, paginator: LengthAwarePaginator<int, AuditEvent>}
      */
@@ -33,6 +35,7 @@ final class AdminActivityFeed
     {
         $query = AuditEvent::query()
             ->with('adminUser:id,name')
+            ->where('occurred_at', '>=', now()->subDays(self::ACTIVITY_WINDOW_DAYS))
             ->orderByDesc('occurred_at')
             ->orderByDesc('id');
 
@@ -56,6 +59,7 @@ final class AdminActivityFeed
         /** @var EloquentCollection<int, AuditEvent> $events */
         $events = AuditEvent::query()
             ->with('adminUser:id,name')
+            ->where('occurred_at', '>=', now()->subDays(self::ACTIVITY_WINDOW_DAYS))
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
             ->limit($limit)
