@@ -20,18 +20,24 @@ final class PublicSeoController extends Controller
     {
         $urls = [$this->canonical->forPath('/')];
 
-        foreach (SiteSection::query()
+        /** @var Collection<int, SiteSection> $gallerySections */
+        $gallerySections = SiteSection::query()
             ->where('type', SiteSection::TYPE_GALLERY)
             ->where('state', 'published')
             ->orderBy('position')
-            ->get(['slug']) as $section) {
+            ->get(['slug']);
+
+        foreach ($gallerySections as $section) {
             $urls[] = $this->canonical->forPath('/'.$section->getAttribute('slug'));
         }
 
-        foreach (Artwork::query()
+        /** @var Collection<int, Artwork> $artworks */
+        $artworks = Artwork::query()
             ->where('state', 'published')
             ->whereHas('category.siteSection', static fn (Builder $query): Builder => $query->where('state', 'published'))
-            ->get(['slug']) as $artwork) {
+            ->get(['slug']);
+
+        foreach ($artworks as $artwork) {
             $urls[] = $this->canonical->forPath('/artworks/'.$artwork->getAttribute('slug'));
         }
 
