@@ -16,9 +16,7 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/artworks/'.$artwork->slug))
 
 @section('content')
-    <article
-        class="artwork-detail"
-        data-artwork-viewer-sequence
+    <article class="artwork-detail" data-artwork-viewer-sequence
         data-matomo-event-on-load="artwork_detail_view"
         data-matomo-event-category="Artwork"
         data-matomo-event-name="{{ $artwork->analytics_key }}"
