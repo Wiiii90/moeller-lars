@@ -95,9 +95,14 @@ class PublicMedia
         return $this->altTextForAsset($this->primaryAsset($artwork), $media->getAttribute('alt_text_override'));
     }
 
+    public function thumbnailVariant(Artwork $artwork): MediaVariant
+    {
+        return $this->thumbnailVariantForAsset($this->primaryAsset($artwork));
+    }
+
     public function thumbnailUrl(Artwork $artwork): string
     {
-        return $this->thumbnailUrlForAsset($this->primaryAsset($artwork));
+        return route('media.variant', $this->thumbnailVariant($artwork));
     }
 
     public function originalUrl(Artwork $artwork): string
@@ -123,7 +128,7 @@ class PublicMedia
         return $altText;
     }
 
-    public function thumbnailUrlForAsset(MediaAsset $asset): string
+    public function thumbnailVariantForAsset(MediaAsset $asset): MediaVariant
     {
         $this->assertAvailable($asset);
         $asset->loadMissing('variants');
@@ -142,7 +147,12 @@ class PublicMedia
         /** @var MediaVariant $variant */
         $variant = $matching->first();
 
-        return route('media.variant', $variant);
+        return $variant;
+    }
+
+    public function thumbnailUrlForAsset(MediaAsset $asset): string
+    {
+        return route('media.variant', $this->thumbnailVariantForAsset($asset));
     }
 
     public function originalUrlForAsset(MediaAsset $asset): string
