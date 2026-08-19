@@ -9,7 +9,7 @@ use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -38,7 +38,8 @@ class AppServiceProvider extends ServiceProvider
             $categoryQuery->whereNull('parent_id');
             $categoryQuery->where('state', 'published');
             $categoryQuery->where('show_in_navigation', true);
-            $categoryQuery->with(['children' => static function (HasMany $query): void {
+            $categoryQuery->with(['children' => static function (Relation $relation): void {
+                $query = $relation->getQuery();
                 $query->where('state', 'published');
                 $query->where('show_in_navigation', true);
                 $query->orderBy('position');
