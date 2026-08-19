@@ -38,8 +38,8 @@ final class MatomoReportingClient
         try {
             $siteId = $this->configuration->siteId();
             $range = $this->range($preset);
-            $freshKey = "analytics:matomo:v4:site:{$siteId}:{$preset}:fresh";
-            $staleKey = "analytics:matomo:v4:site:{$siteId}:{$preset}:stale";
+            $freshKey = "analytics:matomo:v5:site:{$siteId}:{$preset}:fresh";
+            $staleKey = "analytics:matomo:v5:site:{$siteId}:{$preset}:stale";
 
             $cached = Cache::get($freshKey);
             if (is_array($cached)) {
@@ -102,6 +102,15 @@ final class MatomoReportingClient
         $summaryPeriod = $range['preset'] === 'today' ? 'day' : 'range';
         $summaryDate = $range['preset'] === 'today' ? $range['end'] : $date;
         $previousSummaryDate = $range['preset'] === 'today' ? $range['previous_end'] : $previousDate;
+        $artworkEventOptions = [
+            'expanded' => 1,
+            'secondaryDimension' => 'eventName',
+            'filter_pattern' => '^artwork_',
+            'filter_column' => 'label',
+            'filter_limit' => 100,
+            'filter_sort_column' => 'nb_events',
+            'filter_sort_order' => 'desc',
+        ];
 
         $definitions = [
             'summary' => $this->nestedRequest('VisitsSummary.get', $siteId, $summaryPeriod, $summaryDate),
@@ -133,6 +142,8 @@ final class MatomoReportingClient
             'local_time' => $this->nestedRequest('VisitTime.getVisitInformationPerLocalTime', $siteId, 'range', $date),
             'day_of_week' => $this->nestedRequest('VisitTime.getByDayOfWeek', $siteId, 'range', $date),
             'returning' => $this->nestedRequest('VisitFrequency.get', $siteId, 'range', $date),
+            'artwork_events' => $this->nestedRequest('Events.getAction', $siteId, 'range', $date, $artworkEventOptions),
+            'artwork_event_series' => $this->nestedRequest('Events.getAction', $siteId, 'day', $date, $artworkEventOptions),
         ];
 
         $response = Http::asForm()
@@ -169,6 +180,8 @@ final class MatomoReportingClient
             ? null
             : $this->normalizeSummary($reports['previous_summary'], false);
         $series = $reports['series'] === null ? [] : $this->normalizeSeries($reports['series']);
+        $artworkEvents = $this->normalizeArtworkEvents($reports['artwork_events']);
+        $artworkEventSeries = $this->normalizeArtworkEventSeries($reports['artwork_event_series'], $range['end']);
 
         $rowMetrics = ['nb_visits', 'nb_uniq_visitors', 'nb_actions', 'nb_hits', 'nb_events', 'nb_entrances', 'nb_exits', 'bounce_rate', 'exit_rate', 'avg_time_on_page', 'avg_time_on_site'];
         $eventMetrics = ['nb_events', 'nb_visits', 'nb_uniq_visitors'];
@@ -217,6 +230,12 @@ final class MatomoReportingClient
                 $warnings[] = ucfirst(str_replace('_', ' ', $name)).' report is unavailable.';
             }
         }
+        if ($reports['artwork_events'] === null) {
+            $warnings[] = 'Per-artwork interaction report is unavailable.';
+        }
+        if ($reports['artwork_event_series'] === null) {
+            $warnings[] = 'Per-artwork interaction trend is unavailable.';
+        }
         if ($reports['returning'] === null) {
             $warnings[] = 'Returning-visitor report is unavailable.';
         }
@@ -229,6 +248,8 @@ final class MatomoReportingClient
             'comparison' => $this->comparison($metrics, $previousMetrics),
             'series' => $series,
             ...$sections,
+            'artwork_events' => $artworkEvents,
+            'artwork_event_series' => $artworkEventSeries,
             'returning' => $this->normalizeNumericMap($reports['returning']),
             'warnings' => array_values(array_unique($warnings)),
         ];
@@ -328,6 +349,86 @@ final class MatomoReportingClient
         }
 
         usort($series, static fn (array $a, array $b): int => strcmp($a['date'], $b['date']));
+
+        return $series;
+    }
+
+    /** @return list<array<string, float|string>> */
+    private function normalizeArtworkEvents(?array $payload): array
+    {
+        if ($payload === null) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($payload as $actionRow) {
+            if (! is_array($actionRow) || ! is_string($actionRow['label'] ?? null)) {
+                continue;
+            }
+
+            $action = trim($actionRow['label']);
+            if (! str_starts_with($action, 'artwork_')) {
+                continue;
+            }
+
+            $subtable = $actionRow['subtable'] ?? null;
+            if (! is_array($subtable)) {
+                continue;
+            }
+
+            foreach ($subtable as $nameRow) {
+                if (! is_array($nameRow) || ! is_string($nameRow['label'] ?? null)) {
+                    continue;
+                }
+
+                $analyticsKey = trim($nameRow['label']);
+                if ($analyticsKey === '') {
+                    continue;
+                }
+
+                $rows[] = [
+                    'action' => $action,
+                    'analytics_key' => $analyticsKey,
+                    'nb_events' => $this->numericValue($nameRow['nb_events'] ?? null) ?? 0.0,
+                    'nb_visits' => $this->numericValue($nameRow['nb_visits'] ?? null) ?? 0.0,
+                    'nb_uniq_visitors' => $this->numericValue($nameRow['nb_uniq_visitors'] ?? null) ?? 0.0,
+                    'nb_events_with_value' => $this->numericValue($nameRow['nb_events_with_value'] ?? null) ?? 0.0,
+                    'sum_event_value' => $this->numericValue($nameRow['sum_event_value'] ?? null) ?? 0.0,
+                    'avg_event_value' => $this->numericValue($nameRow['avg_event_value'] ?? null) ?? 0.0,
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    /** @return list<array<string, float|string>> */
+    private function normalizeArtworkEventSeries(?array $payload, string $fallbackDate): array
+    {
+        if ($payload === null || $payload === []) {
+            return [];
+        }
+
+        $series = [];
+        if (array_is_list($payload)) {
+            foreach ($this->normalizeArtworkEvents($payload) as $row) {
+                $series[] = ['date' => $fallbackDate, ...$row];
+            }
+
+            return $series;
+        }
+
+        foreach ($payload as $date => $dayPayload) {
+            if (! is_string($date) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1 || ! is_array($dayPayload)) {
+                continue;
+            }
+
+            foreach ($this->normalizeArtworkEvents($dayPayload) as $row) {
+                $series[] = ['date' => $date, ...$row];
+            }
+        }
+
+        usort($series, static fn (array $a, array $b): int => strcmp((string) $a['date'], (string) $b['date']));
 
         return $series;
     }

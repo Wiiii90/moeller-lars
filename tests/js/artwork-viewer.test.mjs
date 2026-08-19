@@ -4,10 +4,12 @@ import { readFileSync } from 'node:fs';
 import {
     MIN_SCALE,
     MAX_SCALE,
+    MIN_ATTENTION_MS,
     adjacentIndex,
     calculatePanBounds,
     clamp,
     clampPan,
+    meaningfulAttentionSeconds,
     pinchFromGestureStart,
     zoomAroundPoint,
 } from '../../resources/js/artwork-viewer.js';
@@ -35,6 +37,14 @@ test('adjacentIndex has bounded non-wrapping navigation', () => {
     assert.equal(adjacentIndex(0, -1, 3), null);
     assert.equal(adjacentIndex(2, 1, 3), null);
     assert.throws(() => adjacentIndex(0, 0, 3), RangeError);
+});
+
+test('meaningfulAttentionSeconds ignores flashes and rounds meaningful active time', () => {
+    assert.equal(meaningfulAttentionSeconds(MIN_ATTENTION_MS - 1), null);
+    assert.equal(meaningfulAttentionSeconds(MIN_ATTENTION_MS), 3);
+    assert.equal(meaningfulAttentionSeconds(4499), 4);
+    assert.equal(meaningfulAttentionSeconds(4500), 5);
+    assert.equal(meaningfulAttentionSeconds(Number.NaN), null);
 });
 
 test('zoomAroundPoint preserves center and off-center image points', () => {
@@ -114,4 +124,16 @@ test('pointer continuation uses the current pan state after pinch', () => {
     assert.match(releaseBlock, /panX: state\.x/);
     assert.match(releaseBlock, /panY: state\.y/);
     assert.doesNotMatch(releaseBlock, /\.\.\.dragStart/);
+});
+
+test('viewer analytics use stable artwork keys and one bounded attention event', () => {
+    const source = readFileSync(new URL('../../resources/js/artwork-viewer.js', import.meta.url), 'utf8');
+
+    assert.match(source, /artwork_open', normalized\[start\]\.analyticsKey/);
+    assert.match(source, /artwork_zoom_used', item\.analyticsKey/);
+    assert.match(source, /artwork_attention', attentionKey, seconds/);
+    assert.match(source, /visibilitychange/);
+    assert.match(source, /pagehide/);
+    assert.doesNotMatch(source, /artwork_open', normalized\[start\]\.title/);
+    assert.doesNotMatch(source, /setInterval/);
 });

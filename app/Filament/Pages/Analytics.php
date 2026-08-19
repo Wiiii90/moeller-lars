@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Analytics\ArtworkAttentionReport;
 use App\Domain\Analytics\MatomoReportingClient;
 use App\Domain\Analytics\OperationalMetricsQuery;
 use App\Models\DailyMetric;
@@ -38,6 +39,11 @@ final class Analytics extends Page
     /** @var array<string, int|float|string> */
     public array $interactionSignals = [];
 
+    /** @var array<int, array<string, mixed>> */
+    public array $artworkAttention = [];
+
+    public ?string $selectedArtworkAnalyticsKey = null;
+
     /** @var array<int, array{label:string,value:string,detail:string}> */
     public array $audienceHighlights = [];
 
@@ -62,13 +68,38 @@ final class Analytics extends Page
         $this->loadRange();
     }
 
+    public function selectArtwork(string $analyticsKey): void
+    {
+        $exists = collect($this->artworkAttention)
+            ->contains(static fn (array $row): bool => ($row['analytics_key'] ?? null) === $analyticsKey);
+
+        $this->selectedArtworkAnalyticsKey = $exists ? $analyticsKey : null;
+    }
+
+    public function clearArtworkSelection(): void
+    {
+        $this->selectedArtworkAnalyticsKey = null;
+    }
+
     private function loadRange(): void
     {
         $this->matomo = app(MatomoReportingClient::class)->report($this->range);
         $this->kpis = $this->buildKpis($this->matomo);
         $this->trendChart = $this->buildTrendChart($this->matomo['series'] ?? []);
-        $this->interactionSignals = $this->buildInteractionSignals($this->matomo['events'] ?? []);
+        $this->artworkAttention = app(ArtworkAttentionReport::class)->build(
+            $this->matomo['artwork_events'] ?? [],
+            $this->matomo['artwork_event_series'] ?? [],
+        );
+        $this->interactionSignals = $this->buildInteractionSignals($this->matomo['events'] ?? [], $this->artworkAttention);
         $this->audienceHighlights = $this->buildAudienceHighlights($this->matomo);
+
+        if ($this->selectedArtworkAnalyticsKey !== null) {
+            $selectedStillExists = collect($this->artworkAttention)
+                ->contains(fn (array $row): bool => ($row['analytics_key'] ?? null) === $this->selectedArtworkAnalyticsKey);
+            if (! $selectedStillExists) {
+                $this->selectedArtworkAnalyticsKey = null;
+            }
+        }
 
         $days = match ($this->range) {
             'today' => 1,
@@ -200,9 +231,10 @@ final class Analytics extends Page
     }
 
     /** @param array<int, array<string, mixed>> $events
+     * @param  array<int, array<string, mixed>>  $artworkAttention
      * @return array<string, int|float|string>
      */
-    private function buildInteractionSignals(array $events): array
+    private function buildInteractionSignals(array $events, array $artworkAttention): array
     {
         $counts = [];
         foreach ($events as $event) {
@@ -210,9 +242,14 @@ final class Analytics extends Page
             $counts[$label] = (int) round((float) ($event['nb_events'] ?? 0));
         }
 
+        $detailViews = array_sum(array_map(static fn (array $row): int => (int) ($row['detail_views'] ?? 0), $artworkAttention));
+        $attentionEvents = array_sum(array_map(static fn (array $row): int => (int) ($row['attention_events'] ?? 0), $artworkAttention));
+
         return [
+            'Artwork detail views' => $detailViews,
             'Artwork opens' => $counts['artwork_open'] ?? 0,
             'Artwork zooms' => $counts['artwork_zoom_used'] ?? 0,
+            'Active artwork views' => $attentionEvents,
             'Next / previous' => ($counts['artwork_next'] ?? 0) + ($counts['artwork_previous'] ?? 0),
             'Exhibition views' => $counts['exhibition_view'] ?? 0,
             'Exhibition outbound' => ($counts['exhibition_external_click'] ?? 0) + ($counts['exhibition_directions_click'] ?? 0),

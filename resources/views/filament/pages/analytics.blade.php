@@ -60,9 +60,8 @@
 
         $eventRows = $matomo['events'] ?? [];
         $eventCategoryRows = $matomo['event_categories'] ?? [];
-        $eventNameRows = $matomo['event_names'] ?? [];
         $hasInteractions = collect($interactionSignals)->contains(static fn ($value): bool => (float) $value > 0)
-            || $eventRows !== [] || $eventCategoryRows !== [] || $eventNameRows !== [];
+            || $eventRows !== [] || $eventCategoryRows !== [] || $artworkAttention !== [];
 
         $technologyGroups = [
             'Devices' => $matomo['devices'] ?? [],
@@ -402,9 +401,11 @@
                     @endforeach
                 </div>
 
+                @include('filament.pages.partials.artwork-attention')
+
                 @if ($hasInteractions)
                     <div class="analytics-data-columns analytics-data-columns--events">
-                        @foreach (['Event actions' => $eventRows, 'Event categories' => $eventCategoryRows, 'Works / subjects engaged' => $eventNameRows] as $label => $rows)
+                        @foreach (['Event actions' => $eventRows, 'Event categories' => $eventCategoryRows] as $label => $rows)
                             @if ($rows !== [])
                                 <div>
                                     <h4>{{ $label }}</h4>

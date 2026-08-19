@@ -30,6 +30,8 @@ function configureAnalyticsReporting(): void
 
 function bulkAnalyticsPayload(): array
 {
+    $artworkKey = '11111111-1111-4111-8111-111111111111';
+
     return [
         [
             'nb_visits' => 10,
@@ -132,6 +134,48 @@ function bulkAnalyticsPayload(): array
             'nb_actions_returning' => 11,
             'avg_time_on_site_returning' => 120,
         ],
+        [
+            [
+                'label' => 'artwork_open',
+                'nb_events' => 3,
+                'subtable' => [
+                    ['label' => $artworkKey, 'nb_events' => 3, 'nb_visits' => 2, 'nb_uniq_visitors' => 2],
+                ],
+            ],
+            [
+                'label' => 'artwork_attention',
+                'nb_events' => 2,
+                'subtable' => [
+                    [
+                        'label' => $artworkKey,
+                        'nb_events' => 2,
+                        'nb_visits' => 2,
+                        'nb_uniq_visitors' => 2,
+                        'nb_events_with_value' => 2,
+                        'sum_event_value' => 18,
+                        'avg_event_value' => 9,
+                    ],
+                ],
+            ],
+        ],
+        [
+            '2026-08-17' => [
+                [
+                    'label' => 'artwork_attention',
+                    'subtable' => [
+                        ['label' => $artworkKey, 'nb_events' => 1, 'nb_events_with_value' => 1, 'sum_event_value' => 7, 'avg_event_value' => 7],
+                    ],
+                ],
+            ],
+            '2026-08-18' => [
+                [
+                    'label' => 'artwork_attention',
+                    'subtable' => [
+                        ['label' => $artworkKey, 'nb_events' => 1, 'nb_events_with_value' => 1, 'sum_event_value' => 11, 'avg_event_value' => 11],
+                    ],
+                ],
+            ],
+        ],
     ];
 }
 
@@ -176,6 +220,11 @@ it('builds the aggregate dashboard from one POST-authenticated Matomo bulk reque
         ->and($result['ai_assistants'][0]['label'])->toBe('ChatGPT')
         ->and($result['countries'][0]['label'])->toBe('Germany')
         ->and($result['returning']['nb_visits_returning'])->toBe(4.0)
+        ->and($result['artwork_events'])->toHaveCount(2)
+        ->and($result['artwork_events'][0]['analytics_key'])->toBe('11111111-1111-4111-8111-111111111111')
+        ->and($result['artwork_events'][1]['sum_event_value'])->toBe(18.0)
+        ->and($result['artwork_event_series'])->toHaveCount(2)
+        ->and($result['artwork_event_series'][0]['date'])->toBe('2026-08-17')
         ->and($result['series'])->toHaveCount(2);
 
     Http::assertSent(function (Request $request): bool {
@@ -186,12 +235,15 @@ it('builds the aggregate dashboard from one POST-authenticated Matomo bulk reque
             && $request['method'] === 'API.getBulkRequest'
             && $request['token_auth'] === 'secret-reporting-token'
             && is_array($urls)
-            && count($urls) === 29
+            && count($urls) === 31
             && str_contains($urls[0], 'method=VisitsSummary.get')
             && str_contains($urls[3], 'method=Actions.getPageUrls')
             && str_contains($urls[10], 'method=Events.getAction')
             && str_contains($urls[14], 'method=Referrers.getWebsites')
             && str_contains($urls[18], 'method=Referrers.getAIAssistants')
+            && str_contains($urls[29], 'method=Events.getAction')
+            && str_contains($urls[29], 'secondaryDimension=eventName')
+            && str_contains($urls[30], 'period=day')
             && collect($urls)->every(fn (string $url): bool => ! str_contains($url, 'token_auth'));
     });
 });
@@ -227,7 +279,7 @@ it('falls back to stale aggregate reporting when Matomo becomes unavailable', fu
     $live = app(MatomoReportingClient::class)->report('today');
     expect($live['status'])->toBe('available');
 
-    Cache::forget('analytics:matomo:v4:site:7:today:fresh');
+    Cache::forget('analytics:matomo:v5:site:7:today:fresh');
     $stale = app(MatomoReportingClient::class)->report('today');
 
     expect($stale['status'])->toBe('stale')

@@ -3,9 +3,17 @@ import { trackMatomoEvent } from './matomo.js';
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 8;
 export const PAN_OVERSCROLL = 56;
+export const MIN_ATTENTION_MS = 3000;
 
 export function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
+}
+
+export function meaningfulAttentionSeconds(milliseconds, minimum = MIN_ATTENTION_MS) {
+    const duration = Number(milliseconds);
+    if (!Number.isFinite(duration) || duration < minimum) return null;
+
+    return Math.max(1, Math.round(duration / 1000));
 }
 
 export function calculatePanBounds(imageWidth, imageHeight, stageWidth, stageHeight, scale, overscroll = 0) {
@@ -59,16 +67,17 @@ export function adjacentIndex(index, direction, length) {
 
 function normalizeItem(element) {
     const key = element.dataset.viewerKey;
+    const analyticsKey = element.dataset.viewerAnalyticsKey;
     const src = element.dataset.viewerSrc;
     const alt = element.dataset.viewerAlt;
     const title = element.dataset.viewerTitle;
     const page = element.dataset.viewerPage;
 
-    if (!key || !src || alt === undefined || !title || !page) {
+    if (!key || !analyticsKey || !src || alt === undefined || !title || !page) {
         throw new Error('Artwork viewer item is missing required canonical data.');
     }
 
-    return { key, src, alt, title, page };
+    return { key, analyticsKey, src, alt, title, page };
 }
 
 export function initializeArtworkViewer(root = document) {
@@ -100,8 +109,43 @@ export function initializeArtworkViewer(root = document) {
     let dragStart = null;
     let pinchStart = null;
     let resizeFrame = null;
+    let attentionKey = null;
+    let attentionStartedAt = null;
+    let attentionAccumulatedMs = 0;
 
     const currentItem = () => items[index] ?? null;
+    const now = () => window.performance?.now?.() ?? Date.now();
+
+    const resetAttention = () => {
+        attentionKey = null;
+        attentionStartedAt = null;
+        attentionAccumulatedMs = 0;
+    };
+
+    const pauseAttention = () => {
+        if (attentionStartedAt === null) return;
+        attentionAccumulatedMs += Math.max(0, now() - attentionStartedAt);
+        attentionStartedAt = null;
+    };
+
+    const resumeAttention = () => {
+        const item = currentItem();
+        if (!item || image.hidden || !dialog.open || document.visibilityState === 'hidden') return;
+        if (attentionKey !== item.analyticsKey) {
+            resetAttention();
+            attentionKey = item.analyticsKey;
+        }
+        if (attentionStartedAt === null) attentionStartedAt = now();
+    };
+
+    const flushAttention = () => {
+        pauseAttention();
+        const seconds = meaningfulAttentionSeconds(attentionAccumulatedMs);
+        if (attentionKey && seconds !== null) {
+            trackMatomoEvent('Artwork', 'artwork_attention', attentionKey, seconds, root);
+        }
+        resetAttention();
+    };
 
     const updateTransform = () => {
         if (!image || image.hidden || !stage) return;
@@ -169,8 +213,9 @@ export function initializeArtworkViewer(root = document) {
         trigger = source;
         items = normalized;
         zoomTracked.clear();
+        resetAttention();
         showItem(start);
-        trackMatomoEvent('Artwork', 'artwork_open', normalized[start].title, null, root);
+        trackMatomoEvent('Artwork', 'artwork_open', normalized[start].analyticsKey, null, root);
         dialog.showModal();
         close.focus();
         return true;
@@ -178,9 +223,9 @@ export function initializeArtworkViewer(root = document) {
 
     const trackZoomIfNeeded = () => {
         const item = currentItem();
-        if (!item || state.scale <= MIN_SCALE || zoomTracked.has(item.key)) return;
-        zoomTracked.add(item.key);
-        trackMatomoEvent('Artwork', 'artwork_zoom_used', item.title, null, root);
+        if (!item || state.scale <= MIN_SCALE || zoomTracked.has(item.analyticsKey)) return;
+        zoomTracked.add(item.analyticsKey);
+        trackMatomoEvent('Artwork', 'artwork_zoom_used', item.analyticsKey, null, root);
     };
 
     const changeZoom = (nextScale, pointX = 0, pointY = 0) => {
@@ -193,9 +238,10 @@ export function initializeArtworkViewer(root = document) {
     const navigate = (direction, action) => {
         const destination = adjacentIndex(index, direction, items.length);
         if (destination === null) return;
+        flushAttention();
         showItem(destination);
         const item = currentItem();
-        trackMatomoEvent('Artwork', action, item?.title ?? null, null, root);
+        trackMatomoEvent('Artwork', action, item?.analyticsKey ?? null, null, root);
     };
 
     const stagePoint = (event) => {
@@ -227,9 +273,11 @@ export function initializeArtworkViewer(root = document) {
         missing.hidden = true;
         image.hidden = false;
         resetState();
+        resumeAttention();
     });
     image.addEventListener('error', () => {
         if (image.src !== expectedSrc) return;
+        resetAttention();
         loading.hidden = true;
         image.hidden = true;
         missing.hidden = false;
@@ -317,7 +365,14 @@ export function initializeArtworkViewer(root = document) {
         if (event.key === '0') { event.preventDefault(); resetState(); }
     });
 
+    document.addEventListener('visibilitychange', () => {
+        if (!dialog.open) return;
+        if (document.visibilityState === 'hidden') pauseAttention();
+        else resumeAttention();
+    });
+
     dialog.addEventListener('close', () => {
+        flushAttention();
         image.removeAttribute('src');
         expectedSrc = '';
         pointers.clear();
@@ -328,6 +383,10 @@ export function initializeArtworkViewer(root = document) {
         stage.dataset.viewerZoomed = 'false';
         if (trigger?.isConnected && typeof trigger.focus === 'function') trigger.focus();
         trigger = null;
+    });
+
+    window.addEventListener('pagehide', () => {
+        if (dialog.open) flushAttention();
     });
 
     const recalculate = () => {
