@@ -7,6 +7,7 @@ use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
 use App\Models\BlogSetting;
+use App\Models\SiteSection;
 use Illuminate\Contracts\View\View;
 
 final class PublicBlogController extends Controller
@@ -18,9 +19,12 @@ final class PublicBlogController extends Controller
 
     public function index(): View
     {
-        $settings = BlogSetting::query()->findOrFail(1);
-        abort_unless((bool) $settings->getAttribute('public_enabled'), 404);
+        abort_unless(
+            SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->where('state', 'published')->exists(),
+            404,
+        );
 
+        $settings = BlogSetting::query()->findOrFail(1);
         $posts = BlogEditorialService::publicQuery()
             ->with('coverMedia.variants')
             ->orderBy('position')
@@ -36,8 +40,10 @@ final class PublicBlogController extends Controller
 
     public function show(string $slug): View
     {
-        $settings = BlogSetting::query()->findOrFail(1);
-        abort_unless((bool) $settings->getAttribute('public_enabled'), 404);
+        abort_unless(
+            SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->where('state', 'published')->exists(),
+            404,
+        );
 
         /** @var BlogPost|null $post */
         $post = BlogEditorialService::publicQuery()

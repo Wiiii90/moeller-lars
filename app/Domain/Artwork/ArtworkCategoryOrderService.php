@@ -3,6 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Content\SiteSectionSyncService;
 use App\Models\ArtworkCategory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,7 +13,10 @@ use LogicException;
 
 final class ArtworkCategoryOrderService
 {
-    public function __construct(private readonly AdminAuditService $adminAuditService) {}
+    public function __construct(
+        private readonly AdminAuditService $adminAuditService,
+        private readonly SiteSectionSyncService $siteSections,
+    ) {}
 
     public function canMove(ArtworkCategory $category, string $direction): bool
     {
@@ -89,9 +93,13 @@ final class ArtworkCategoryOrderService
             $temporaryBase = $maxPosition + count($categories) + 1;
 
             foreach ($changes as $temporaryOffset => [$candidate]) {
+                $temporaryPosition = $temporaryBase + $temporaryOffset;
                 DB::table($candidate->getTable())
                     ->where('id', $candidate->getKey())
-                    ->update(['position' => $temporaryBase + $temporaryOffset]);
+                    ->update(['position' => $temporaryPosition]);
+                DB::table('site_sections')
+                    ->where('artwork_category_id', $candidate->getKey())
+                    ->update(['position' => $temporaryPosition]);
             }
 
             foreach ($changes as [$candidate, $position]) {
@@ -101,6 +109,8 @@ final class ArtworkCategoryOrderService
                         'position' => $position,
                         'updated_at' => now(),
                     ]);
+                $candidate->setAttribute('position', $position);
+                $this->siteSections->syncGallery($candidate);
                 $this->adminAuditService->record(
                     $actor,
                     'artwork_category.updated',

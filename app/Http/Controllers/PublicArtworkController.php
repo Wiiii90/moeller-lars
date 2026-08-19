@@ -7,6 +7,7 @@ use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Media\PublicMedia;
 use App\Models\ArtworkCategory;
 use App\Models\Redirect;
+use App\Models\SiteSection;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -27,12 +28,15 @@ class PublicArtworkController extends Controller
 
     public function category(string $category): View|RedirectResponse
     {
-        $categoryRecord = ArtworkCategory::query()
+        /** @var SiteSection|null $section */
+        $section = SiteSection::query()
+            ->where('type', SiteSection::TYPE_GALLERY)
             ->where('slug', $category)
             ->where('state', 'published')
+            ->with('artworkCategory')
             ->first();
 
-        if ($categoryRecord === null) {
+        if ($section === null) {
             $redirect = Redirect::query()
                 ->where('source_path', '/'.$category)
                 ->where('enabled', true)
@@ -43,6 +47,10 @@ class PublicArtworkController extends Controller
 
             return redirect($redirect->getAttribute('target_path'), (int) $redirect->getAttribute('status_code'));
         }
+
+        /** @var ArtworkCategory|null $categoryRecord */
+        $categoryRecord = $section->getRelation('artworkCategory');
+        abort_unless($categoryRecord !== null, 404);
 
         return view('pages.artworks.index', [
             'category' => $categoryRecord,
@@ -58,6 +66,14 @@ class PublicArtworkController extends Controller
 
         /** @var ArtworkCategory $categoryRecord */
         $categoryRecord = $artwork->getRelationValue('category');
+        abort_unless(
+            SiteSection::query()
+                ->where('type', SiteSection::TYPE_GALLERY)
+                ->where('artwork_category_id', $categoryRecord->getKey())
+                ->where('state', 'published')
+                ->exists(),
+            404,
+        );
 
         return view('pages.artworks.show', [
             'artwork' => $artwork,
