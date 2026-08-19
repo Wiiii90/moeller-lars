@@ -6,6 +6,7 @@ use App\Filament\Pages\Activity;
 use App\Models\AdminActionStat;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -85,6 +86,25 @@ it('keeps deleted targets readable without exposing raw ids as the primary label
         ->and($feed[0]['action'])->toBe('Deleted media')
         ->and($feed[0]['target'])->toBe('Media no longer available')
         ->and($feed[0]['url'])->toBeNull();
+});
+
+it('keeps the normal artist Activity projection bounded without deleting immutable audit history', function (): void {
+    $admin = activityAdmin('activity-retention@example.test');
+
+    AuditEvent::create([
+        'admin_user_id' => $admin->getKey(),
+        'action' => 'site_section.updated',
+        'entity_type' => 'site_section',
+        'entity_id' => 1,
+        'occurred_at' => now()->subDays(AdminActivityFeed::ACTIVITY_WINDOW_DAYS + 1),
+    ]);
+    app(AdminAuditService::class)->record($admin, 'site_section.updated', 'site_section', 1);
+
+    $feed = app(AdminActivityFeed::class)->page();
+
+    expect(AuditEvent::query()->count())->toBe(2)
+        ->and($feed['paginator']->total())->toBe(1)
+        ->and($feed['activity'])->toHaveCount(1);
 });
 
 it('serves the Activity manager to admins with editorial filters', function (): void {
