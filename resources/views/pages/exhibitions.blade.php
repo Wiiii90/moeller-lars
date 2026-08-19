@@ -75,11 +75,21 @@
                     @if ($exhibition->mediaUsages->isNotEmpty())
                         <div class="exhibition-media">
                             @foreach ($exhibition->mediaUsages as $usage)
+                                @php
+                                    $variant = $media->thumbnailVariantForAsset($usage->mediaAsset);
+                                    $variantWidth = (int) ($variant->getAttribute('width') ?? 0);
+                                    $variantHeight = (int) ($variant->getAttribute('height') ?? 0);
+                                @endphp
                                 <figure class="exhibition-media__item" @if ($usage->role === 'hero') data-role="hero" @endif>
                                     <img
-                                        src="{{ $media->thumbnailUrlForAsset($usage->mediaAsset) }}"
+                                        src="{{ route('media.variant', $variant) }}"
                                         alt="{{ $media->altTextForAsset($usage->mediaAsset, $usage->alt_text_override) }}"
+                                        @if ($variantWidth > 0 && $variantHeight > 0)
+                                            width="{{ $variantWidth }}"
+                                            height="{{ $variantHeight }}"
+                                        @endif
                                         loading="lazy"
+                                        decoding="async"
                                     >
                                     @if ($usage->mediaAsset->credit !== null || $usage->mediaAsset->copyright_notice !== null)
                                         <figcaption>
