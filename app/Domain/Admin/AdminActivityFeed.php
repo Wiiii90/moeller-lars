@@ -18,6 +18,7 @@ use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
+use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
@@ -28,10 +29,12 @@ final class AdminActivityFeed
 {
     public const ACTIVITY_WINDOW_DAYS = 180;
 
+    public function __construct(private readonly AdminActionReceiptService $receipts) {}
+
     /**
      * @return array{activity: array<int, array<string, mixed>>, paginator: LengthAwarePaginator<int, AuditEvent>}
      */
-    public function page(?string $area = null, ?string $family = null, int $perPage = 30): array
+    public function page(?string $area = null, ?string $family = null, int $perPage = 30, ?User $actor = null): array
     {
         $query = AuditEvent::query()
             ->with('adminUser:id,name')
@@ -48,7 +51,7 @@ final class AdminActivityFeed
         $paginator = $query->paginate($perPage)->withQueryString();
 
         return [
-            'activity' => $this->project($paginator->getCollection()),
+            'activity' => $this->project($paginator->getCollection(), $actor),
             'paginator' => $paginator,
         ];
     }
@@ -93,11 +96,12 @@ final class AdminActivityFeed
      * @param  Collection<int, AuditEvent>  $events
      * @return array<int, array<string, mixed>>
      */
-    private function project(Collection $events): array
+    private function project(Collection $events, ?User $actor = null): array
     {
         $labels = $this->targetLabels($events);
+        $undoReceipts = $actor instanceof User ? $this->receipts->availableForEvents($events, $actor) : [];
 
-        return $events->map(function (AuditEvent $event) use ($labels): array {
+        return $events->map(function (AuditEvent $event) use ($labels, $undoReceipts): array {
             $actionKey = (string) $event->getAttribute('action');
             $entityType = (string) $event->getAttribute('entity_type');
             $entityId = (int) $event->getAttribute('entity_id');
@@ -106,6 +110,17 @@ final class AdminActivityFeed
             /** @var CarbonInterface $occurredAt */
             $occurredAt = $event->getAttribute('occurred_at');
             $adminUser = $event->getRelationValue('adminUser');
+            $receipt = $undoReceipts[(int) $event->getKey()] ?? null;
+            $undo = null;
+
+            if (is_array($receipt)) {
+                $inverseLabel = (string) $receipt['inverse_label'];
+                $undo = [
+                    'id' => (int) $receipt['id'],
+                    'inverse_label' => $inverseLabel,
+                    'confirmation' => 'Undo “'.$definition['label'].'” for “'.$target.'”? This will apply “'.$inverseLabel.'”.',
+                ];
+            }
 
             return [
                 'id' => (int) $event->getKey(),
@@ -118,6 +133,7 @@ final class AdminActivityFeed
                 'actor' => $adminUser?->getAttribute('name') ?? 'Admin',
                 'when' => $occurredAt->diffForHumans(),
                 'timestamp' => $occurredAt->format('Y-m-d H:i'),
+                'undo' => $undo,
             ];
         })->values()->all();
     }
