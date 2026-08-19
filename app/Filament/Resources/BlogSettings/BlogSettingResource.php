@@ -6,7 +6,6 @@ use App\Filament\Resources\BlogSettings\Pages\EditBlogSetting;
 use App\Models\BlogSetting;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -27,15 +26,8 @@ final class BlogSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Blog visibility')
-                ->description('The public blog is opt-in. Posts can be prepared while the whole section stays private.')
-                ->schema([
-                    Toggle::make('public_enabled')->label('Publish blog section'),
-                    TextInput::make('navigation_label')->label('Navigation label')->required()->maxLength(120),
-                ])
-                ->columns(2),
-            Section::make('Listing page')
-                ->description('Public heading and introductory text for the Blog index.')
+            Section::make('Blog listing page')
+                ->description('Public visibility, navigation and site order are managed from Pages. These fields control only the Blog index content.')
                 ->schema([
                     TextInput::make('listing_title')->maxLength(240)->nullable(),
                     MarkdownEditor::make('listing_intro')

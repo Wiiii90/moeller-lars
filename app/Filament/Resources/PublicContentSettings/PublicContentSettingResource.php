@@ -8,7 +8,6 @@ use BackedEnum;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -40,22 +39,8 @@ class PublicContentSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Vita / CV')
-                ->description('Controls whether the Vita / CV section is visible on the public site. Navigation order is managed by the site structure rather than a raw position number.')
-                ->schema([
-                    Toggle::make('cv_enabled')->label('Publish Vita / CV section'),
-                    TextInput::make('cv_navigation_label')->label('Navigation label')->required()->maxLength(120),
-                ])
-                ->columns(2),
-            Section::make('Exhibitions')
-                ->description('Controls whether the exhibitions section is visible on the public site. Editorial exhibition ordering is managed from the Exhibitions list.')
-                ->schema([
-                    Toggle::make('exhibitions_enabled')->label('Publish exhibitions section'),
-                    TextInput::make('exhibitions_navigation_label')->label('Navigation label')->required()->maxLength(120),
-                ])
-                ->columns(2),
             Section::make('Public contact details')
-                ->description('These details are shown in the Contact area of the public Vita / CV page.')
+                ->description('These details are shown in the Contact area of the public Vita / CV page. Vita and Exhibitions publication/navigation are managed from Pages.')
                 ->schema([
                     TextInput::make('public_email')->label('Public email')->email()->maxLength(254)->nullable(),
                     TextInput::make('instagram_handle')->label('Instagram handle')->maxLength(30)->regex('/^[A-Za-z0-9._]{1,30}$/')->nullable(),
