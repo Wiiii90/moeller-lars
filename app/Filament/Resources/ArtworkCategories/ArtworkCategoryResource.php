@@ -24,6 +24,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use UnitEnum;
@@ -67,13 +68,18 @@ class ArtworkCategoryResource extends Resource
                         ->label('Parent category')
                         ->placeholder('Top-level category')
                         ->helperText('Optional. Child categories appear below this parent in the public navigation. Only one child level is supported.')
-                        ->options(fn (?Model $record): array => ArtworkCategory::query()
-                            ->whereNull('parent_id')
-                            ->when($record !== null, fn ($query) => $query->whereKeyNot($record->getKey()))
-                            ->orderBy('position')
-                            ->orderBy('name')
-                            ->pluck('name', 'id')
-                            ->all())
+                        ->options(function (?Model $record): array {
+                            /** @var Builder<ArtworkCategory> $query */
+                            $query = ArtworkCategory::query();
+                            $query->whereNull('parent_id');
+                            if ($record !== null) {
+                                $query->where('id', '<>', $record->getKey());
+                            }
+                            $query->orderBy('position');
+                            $query->orderBy('name');
+
+                            return $query->pluck('name', 'id')->all();
+                        })
                         ->searchable()
                         ->nullable()
                         ->disabled(fn (?Model $record): bool => $record instanceof ArtworkCategory && $record->children()->exists()),

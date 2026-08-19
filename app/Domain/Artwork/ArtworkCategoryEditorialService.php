@@ -403,19 +403,19 @@ class ArtworkCategoryEditorialService
             }
         }
 
-        $conflict = ArtworkCategory::query()
-            ->where('state', 'published')
-            ->where('show_in_navigation', true)
-            ->where('position', $category->getAttribute('position'))
-            ->whereKeyNot($category->getKey())
-            ->when(
-                $parentId === null,
-                static fn (Builder $query): Builder => $query->whereNull('parent_id'),
-                static fn (Builder $query): Builder => $query->where('parent_id', $parentId),
-            )
-            ->exists();
+        /** @var Builder<ArtworkCategory> $conflictQuery */
+        $conflictQuery = ArtworkCategory::query();
+        $conflictQuery->where('state', 'published');
+        $conflictQuery->where('show_in_navigation', true);
+        $conflictQuery->where('position', $category->getAttribute('position'));
+        $conflictQuery->whereKeyNot($category->getKey());
+        if ($parentId === null) {
+            $conflictQuery->whereNull('parent_id');
+        } else {
+            $conflictQuery->where('parent_id', $parentId);
+        }
 
-        if ($conflict) {
+        if ($conflictQuery->exists()) {
             throw ValidationException::withMessages([
                 'position' => $parentId === null
                     ? 'A visible top-level navigation category already uses this position.'

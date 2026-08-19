@@ -7,6 +7,7 @@ use App\Models\BlogSetting;
 use App\Models\PublicContentSetting;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -32,27 +33,30 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         View::composer('layouts.app', function ($view): void {
+            /** @var Builder<ArtworkCategory> $categoryQuery */
+            $categoryQuery = ArtworkCategory::query();
+            $categoryQuery->whereNull('parent_id');
+            $categoryQuery->where('state', 'published');
+            $categoryQuery->where('show_in_navigation', true);
+            $categoryQuery->with(['children' => static function (HasMany $query): void {
+                $query->where('state', 'published');
+                $query->where('show_in_navigation', true);
+                $query->orderBy('position');
+                $query->orderBy('id');
+            }]);
+            $categoryQuery->orderBy('position');
+            $categoryQuery->orderBy('id');
+
             /** @var EloquentCollection<int, ArtworkCategory> $categories */
-            $categories = ArtworkCategory::query()
-                ->whereNull('parent_id')
-                ->where('state', 'published')
-                ->where('show_in_navigation', true)
-                ->with(['children' => static function (HasMany $query): void {
-                    $query
-                        ->where('state', 'published')
-                        ->where('show_in_navigation', true)
-                        ->orderBy('position')
-                        ->orderBy('id');
-                }])
-                ->orderBy('position')
-                ->orderBy('id')
-                ->get(['id', 'name', 'slug', 'position']);
+            $categories = $categoryQuery->get(['id', 'name', 'slug', 'position']);
 
             /** @var Collection<int, array{position:int,tie_breaker:int,label:string,url:string,current:bool,active:bool,children:list<array{label:string,url:string,current:bool}>}> $navigationItems */
             $navigationItems = $categories->map(static function (ArtworkCategory $category): array {
                 $current = request()->routeIs('artworks.category')
                     && request()->route('category') === $category->getAttribute('slug');
-                $children = $category->children->map(static fn (ArtworkCategory $child): array => [
+                /** @var EloquentCollection<int, ArtworkCategory> $childCategories */
+                $childCategories = $category->getRelation('children');
+                $children = $childCategories->map(static fn (ArtworkCategory $child): array => [
                     'label' => (string) $child->getAttribute('name'),
                     'url' => route('artworks.category', ['category' => $child->getAttribute('slug')]),
                     'current' => request()->routeIs('artworks.category')

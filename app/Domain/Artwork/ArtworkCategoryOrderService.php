@@ -116,12 +116,16 @@ final class ArtworkCategoryOrderService
     private function siblings(ArtworkCategory $category): Builder
     {
         $parentId = $category->getAttribute('parent_id');
+        /** @var Builder<ArtworkCategory> $query */
+        $query = ArtworkCategory::query();
 
-        return ArtworkCategory::query()->when(
-            $parentId === null,
-            static fn (Builder $query): Builder => $query->whereNull('parent_id'),
-            static fn (Builder $query): Builder => $query->where('parent_id', $parentId),
-        );
+        if ($parentId === null) {
+            $query->whereNull('parent_id');
+        } else {
+            $query->where('parent_id', $parentId);
+        }
+
+        return $query;
     }
 
     private function validateDirection(string $direction): void
