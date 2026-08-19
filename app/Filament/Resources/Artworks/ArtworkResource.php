@@ -41,6 +41,8 @@ class ArtworkResource extends Resource
 {
     protected static ?string $model = Artwork::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|UnitEnum|null $navigationGroup = 'Artwork';

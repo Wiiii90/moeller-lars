@@ -35,7 +35,7 @@ final class SitePages extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Content';
+    protected static string|UnitEnum|null $navigationGroup = 'Website';
 
     protected static ?string $navigationLabel = 'Pages';
 
@@ -283,7 +283,7 @@ final class SitePages extends Page
     {
         return match ($section->getAttribute('type')) {
             SiteSection::TYPE_GALLERY => ArtworkCategoryResource::getUrl('edit', ['record' => $section->getAttribute('artwork_category_id')]),
-            SiteSection::TYPE_VITA, SiteSection::TYPE_EXHIBITIONS => PublicContentSettingResource::getUrl('edit', ['record' => 1]),
+            SiteSection::TYPE_VITA => PublicContentSettingResource::getUrl('edit', ['record' => 1]),
             SiteSection::TYPE_BLOG => BlogSettingResource::getUrl('edit', ['record' => 1]),
             default => null,
         };

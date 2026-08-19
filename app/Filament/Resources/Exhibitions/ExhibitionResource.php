@@ -32,6 +32,8 @@ class ExhibitionResource extends Resource
 {
     protected static ?string $model = Exhibition::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendar;
 
     protected static string|UnitEnum|null $navigationGroup = 'Content';

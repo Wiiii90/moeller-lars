@@ -32,6 +32,8 @@ final class BlogPostResource extends Resource
 {
     protected static ?string $model = BlogPost::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPencilSquare;
 
     protected static string|UnitEnum|null $navigationGroup = 'Content';
@@ -148,7 +150,7 @@ final class BlogPostResource extends Resource
             EditAction::make(),
         ])->toolbarActions([])
             ->emptyStateHeading('No blog posts yet')
-            ->emptyStateDescription('Create a draft first. The Blog remains private until it is explicitly enabled in Blog settings.');
+            ->emptyStateDescription('Create a draft first. Blog publication and navigation are managed from Pages.');
     }
 
     public static function getPages(): array

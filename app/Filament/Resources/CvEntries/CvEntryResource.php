@@ -30,6 +30,8 @@ class CvEntryResource extends Resource
 {
     protected static ?string $model = CvEntry::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
     protected static string|UnitEnum|null $navigationGroup = 'Content';

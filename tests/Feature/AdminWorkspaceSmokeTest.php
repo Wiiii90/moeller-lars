@@ -59,6 +59,36 @@ it('renders the lazy artist dashboard overview when the widget loads', function 
         ->assertSee('Recent activity');
 });
 
+it('keeps public placement controls in Pages instead of legacy settings editors', function () {
+    $category = ArtworkCategory::create([
+        'name' => 'Placement category',
+        'slug' => 'placement-category',
+        'state' => 'hidden',
+        'position' => 0,
+        'show_in_navigation' => false,
+        'show_on_home' => false,
+    ]);
+
+    $this->get(ArtworkCategoryResource::getUrl('edit', ['record' => $category]))
+        ->assertSuccessful()
+        ->assertSee('Publication, menu placement, submenu parent and site order are managed from Pages.')
+        ->assertSee('Eligible for homepage')
+        ->assertDontSee('Parent category')
+        ->assertDontSee('Show in public navigation');
+
+    $this->get(BlogSettingResource::getUrl('edit', ['record' => 1]))
+        ->assertSuccessful()
+        ->assertSee('Public visibility, navigation and site order are managed from Pages.')
+        ->assertDontSee('Publish blog section')
+        ->assertDontSee('Navigation label');
+
+    $this->get(PublicContentSettingResource::getUrl('edit', ['record' => 1]))
+        ->assertSuccessful()
+        ->assertSee('Vita and Exhibitions publication/navigation are managed from Pages.')
+        ->assertDontSee('Publish Vita / CV section')
+        ->assertDontSee('Publish exhibitions section');
+});
+
 it('renders representative edit surfaces with their editorial form schemas', function () {
     $category = ArtworkCategory::create([
         'name' => 'Smoke category',

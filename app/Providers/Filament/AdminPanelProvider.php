@@ -41,8 +41,7 @@ class AdminPanelProvider extends PanelProvider
                 ArtistDashboard::class,
             ])
             ->navigationGroups([
-                NavigationGroup::make()->label('Artwork'),
-                NavigationGroup::make()->label('Content'),
+                NavigationGroup::make()->label('Website'),
                 NavigationGroup::make()->label('Library'),
                 NavigationGroup::make()->label('Insights'),
                 NavigationGroup::make()->label('Settings'),
