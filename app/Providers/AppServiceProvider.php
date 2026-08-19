@@ -7,8 +7,8 @@ use App\Models\BlogSetting;
 use App\Models\PublicContentSetting;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -37,11 +37,13 @@ class AppServiceProvider extends ServiceProvider
                 ->whereNull('parent_id')
                 ->where('state', 'published')
                 ->where('show_in_navigation', true)
-                ->with(['children' => static fn (Builder $query): Builder => $query
-                    ->where('state', 'published')
-                    ->where('show_in_navigation', true)
-                    ->orderBy('position')
-                    ->orderBy('id')])
+                ->with(['children' => static function (HasMany $query): void {
+                    $query
+                        ->where('state', 'published')
+                        ->where('show_in_navigation', true)
+                        ->orderBy('position')
+                        ->orderBy('id');
+                }])
                 ->orderBy('position')
                 ->orderBy('id')
                 ->get(['id', 'name', 'slug', 'position']);
