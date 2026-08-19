@@ -173,22 +173,23 @@ final class SiteSectionSyncService
         }
 
         $parentId = $section->getAttribute('parent_id');
-        $conflict = SiteSection::query()
-            ->where('state', 'published')
-            ->where('show_in_navigation', true)
-            ->where('position', $section->getAttribute('position'))
-            ->when(
-                $parentId === null,
-                static fn (Builder $query): Builder => $query->whereNull('parent_id'),
-                static fn (Builder $query): Builder => $query->where('parent_id', $parentId),
-            )
-            ->when(
-                $section->exists,
-                static fn (Builder $query): Builder => $query->whereKeyNot($section->getKey()),
-            )
-            ->exists();
+        /** @var Builder<SiteSection> $query */
+        $query = SiteSection::query();
+        $query->where('state', 'published');
+        $query->where('show_in_navigation', true);
+        $query->where('position', $section->getAttribute('position'));
 
-        if ($conflict) {
+        if ($parentId === null) {
+            $query->whereNull('parent_id');
+        } else {
+            $query->where('parent_id', $parentId);
+        }
+
+        if ($section->exists) {
+            $query->whereKeyNot($section->getKey());
+        }
+
+        if ($query->exists()) {
             throw ValidationException::withMessages([
                 'position' => $parentId === null
                     ? 'Another visible top-level site section already uses this navigation position.'
