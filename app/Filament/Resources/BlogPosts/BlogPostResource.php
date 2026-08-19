@@ -32,6 +32,8 @@ final class BlogPostResource extends Resource
 {
     protected static ?string $model = BlogPost::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPencilSquare;
 
     protected static string|UnitEnum|null $navigationGroup = 'Content';
@@ -75,9 +77,7 @@ final class BlogPostResource extends Resource
                         ->helperText('Formatting is deliberately limited to the Markdown supported by the public site. Images are managed through the media library, not embedded in post text.')
                         ->nullable()
                         ->columnSpanFull(),
-                    MediaAssetSelect::make('cover_media_asset_id', 'coverMedia', 'Cover image')
-                        ->nullable()
-                        ->columnSpanFull(),
+                    MediaAssetSelect::make('cover_media_asset_id', 'coverMedia', 'Cover image')->nullable()->columnSpanFull(),
                 ])
                 ->columns(2),
             Section::make('Publication status')
@@ -90,14 +90,8 @@ final class BlogPostResource extends Resource
                         'unpublished' => 'Unpublished',
                         'archived' => 'Archived',
                     ])->default('draft')->disabled()->dehydrated(false),
-                    DateTimePicker::make('scheduled_at')
-                        ->label('Scheduled for')
-                        ->disabled()
-                        ->dehydrated(false),
-                    DateTimePicker::make('published_at')
-                        ->label('First published')
-                        ->disabled()
-                        ->dehydrated(false),
+                    DateTimePicker::make('scheduled_at')->label('Scheduled for')->disabled()->dehydrated(false),
+                    DateTimePicker::make('published_at')->label('First published')->disabled()->dehydrated(false),
                 ])
                 ->columns(3),
         ]);
@@ -110,10 +104,7 @@ final class BlogPostResource extends Resource
             TextColumn::make('state')->badge()->sortable(),
             TextColumn::make('scheduled_at')->dateTime()->sortable(),
             TextColumn::make('published_at')->dateTime()->sortable(),
-            TextColumn::make('position')
-                ->label('Listing order')
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('position')->label('Listing order')->sortable()->toggleable(isToggledHiddenByDefault: true),
         ])->defaultSort('position')->filters([
             SelectFilter::make('state')->options([
                 'draft' => 'Draft',
@@ -123,32 +114,19 @@ final class BlogPostResource extends Resource
                 'archived' => 'Archived',
             ]),
         ])->recordActions([
-            Action::make('moveUp')
-                ->label('Move up')
-                ->icon('heroicon-o-chevron-up')
-                ->visible(fn (BlogPost $record): bool => app(BlogEditorialService::class)->canMove($record, 'up'))
-                ->action(function (BlogPost $record): void {
-                    app(BlogEditorialService::class)->move($record, 'up');
-                    Notification::make()->title('Blog post moved up')->success()->send();
-                }),
-            Action::make('moveDown')
-                ->label('Move down')
-                ->icon('heroicon-o-chevron-down')
-                ->visible(fn (BlogPost $record): bool => app(BlogEditorialService::class)->canMove($record, 'down'))
-                ->action(function (BlogPost $record): void {
-                    app(BlogEditorialService::class)->move($record, 'down');
-                    Notification::make()->title('Blog post moved down')->success()->send();
-                }),
-            Action::make('viewPublic')
-                ->label('View on site')
-                ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
-                ->url(fn (BlogPost $record): string => route('blog.show', ['slug' => $record->getAttribute('slug')]))
-                ->openUrlInNewTab()
-                ->visible(fn (BlogPost $record): bool => BlogEditorialService::publicQuery()->whereKey($record->getKey())->exists()),
+            Action::make('moveUp')->label('Move up')->icon('heroicon-o-chevron-up')->visible(fn (BlogPost $record): bool => app(BlogEditorialService::class)->canMove($record, 'up'))->action(function (BlogPost $record): void {
+                app(BlogEditorialService::class)->move($record, 'up');
+                Notification::make()->title('Blog post moved up')->success()->send();
+            }),
+            Action::make('moveDown')->label('Move down')->icon('heroicon-o-chevron-down')->visible(fn (BlogPost $record): bool => app(BlogEditorialService::class)->canMove($record, 'down'))->action(function (BlogPost $record): void {
+                app(BlogEditorialService::class)->move($record, 'down');
+                Notification::make()->title('Blog post moved down')->success()->send();
+            }),
+            Action::make('viewPublic')->label('View on site')->icon(Heroicon::OutlinedArrowTopRightOnSquare)->url(fn (BlogPost $record): string => route('blog.show', ['slug' => $record->getAttribute('slug')]))->openUrlInNewTab()->visible(fn (BlogPost $record): bool => BlogEditorialService::publicQuery()->whereKey($record->getKey())->exists()),
             EditAction::make(),
         ])->toolbarActions([])
             ->emptyStateHeading('No blog posts yet')
-            ->emptyStateDescription('Create a draft first. The Blog remains private until it is explicitly enabled in Blog settings.');
+            ->emptyStateDescription('Create a draft first. Blog publication and navigation are managed from Pages.');
     }
 
     public static function getPages(): array
