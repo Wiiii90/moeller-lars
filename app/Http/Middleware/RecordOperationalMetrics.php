@@ -17,37 +17,50 @@ final class RecordOperationalMetrics
         $startedAt = hrtime(true);
         $isBot = $this->isBot($request->userAgent());
         $isAdmin = $request->is('admin', 'admin/*');
+        $pending = [];
 
         try {
             $response = $next($request);
             $status = $response->getStatusCode();
 
             if ($status === 404) {
-                $this->metrics->add('error:http_404', 1, 'count');
+                $pending[] = $this->metric('error:http_404', 1.0, 'count');
             }
             if ($status >= 500) {
-                $this->metrics->add('error:http_5xx', 1, 'count');
+                $pending[] = $this->metric('error:http_5xx', 1.0, 'count');
             }
             if ($isAdmin) {
-                $this->metrics->add('operation:admin_request', 1, 'count');
+                $pending[] = $this->metric('operation:admin_request', 1.0, 'count');
             }
 
             return $response;
         } catch (Throwable $exception) {
-            $this->metrics->add('error:request_exception', 1, 'count');
+            $pending[] = $this->metric('error:request_exception', 1.0, 'count');
             throw $exception;
         } finally {
             if (! $request->is('up')) {
                 $durationMilliseconds = (hrtime(true) - $startedAt) / 1_000_000;
-                $this->metrics->add('performance:request_duration_ms', $durationMilliseconds, 'ms');
+                $pending[] = $this->metric('performance:request_duration_ms', $durationMilliseconds, 'ms');
                 if ($isAdmin) {
-                    $this->metrics->add('performance:admin_request_duration_ms', $durationMilliseconds, 'ms');
+                    $pending[] = $this->metric('performance:admin_request_duration_ms', $durationMilliseconds, 'ms');
                 }
                 if ($isBot) {
-                    $this->metrics->add('bot:request', 1, 'count');
+                    $pending[] = $this->metric('bot:request', 1.0, 'count');
                 }
             }
+
+            $this->metrics->addMany($pending);
         }
+    }
+
+    /** @return array{name:string,value:float,unit:string} */
+    private function metric(string $name, float $value, string $unit): array
+    {
+        return [
+            'name' => $name,
+            'value' => $value,
+            'unit' => $unit,
+        ];
     }
 
     private function isBot(?string $userAgent): bool
