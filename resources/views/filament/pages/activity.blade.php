@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div class="artist-workspace artist-activity">
+    <div class="artist-workspace">
         <header class="artist-workspace__head">
             <div>
                 <p class="artist-workspace__kicker">Editorial history</p>
@@ -8,52 +8,33 @@
             </div>
         </header>
 
-        <form class="artist-activity__filters" method="get" action="{{ request()->url() }}">
-            <label>
-                <span>Area</span>
-                <x-filament::input.wrapper>
-                    <x-filament::input.select name="area">
-                        <option value="">All areas</option>
-                        @foreach ($areaOptions as $value => $label)
-                            <option value="{{ $value }}" @selected($area === $value)>{{ $label }}</option>
-                        @endforeach
-                    </x-filament::input.select>
-                </x-filament::input.wrapper>
-            </label>
-
-            <label>
-                <span>Change</span>
-                <x-filament::input.wrapper>
-                    <x-filament::input.select name="family">
-                        <option value="">All changes</option>
-                        @foreach ($familyOptions as $value => $label)
-                            <option value="{{ $value }}" @selected($family === $value)>{{ $label }}</option>
-                        @endforeach
-                    </x-filament::input.select>
-                </x-filament::input.wrapper>
-            </label>
-
-            <div class="artist-activity__filter-actions">
-                <x-filament::button type="submit" size="sm">Apply</x-filament::button>
-                @if ($area !== null || $family !== null)
-                    <x-filament::button tag="a" href="{{ request()->url() }}" color="gray" size="sm">Clear</x-filament::button>
-                @endif
+        <div class="artist-workspace__footnote" aria-label="Activity filters">
+            <div class="artist-media-library__filters">
+                <a class="artist-action {{ $area === null ? 'is-primary' : '' }}" href="{{ request()->url().($family !== null ? '?'.http_build_query(['family' => $family]) : '') }}">All areas</a>
+                @foreach ($areaOptions as $value => $label)
+                    <a class="artist-action {{ $area === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['area' => $value, 'family' => $family])) }}">{{ $label }}</a>
+                @endforeach
             </div>
-        </form>
+            <div class="artist-media-library__filters">
+                <a class="artist-action {{ $family === null ? 'is-primary' : '' }}" href="{{ request()->url().($area !== null ? '?'.http_build_query(['area' => $area]) : '') }}">All changes</a>
+                @foreach ($familyOptions as $value => $label)
+                    <a class="artist-action {{ $family === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['area' => $area, 'family' => $value])) }}">{{ $label }}</a>
+                @endforeach
+            </div>
+        </div>
 
-        <section class="artist-activity__list" aria-label="Administrative activity">
+        <section class="artist-dashboard__activity" aria-label="Administrative activity">
             <div class="artist-dashboard__section-head"><span>Change</span><span>When</span></div>
             @forelse ($activity as $event)
-                <article class="artist-activity__row">
-                    <div class="artist-activity__identity">
-                        <span class="artist-activity__area">{{ $event['area'] }}</span>
-                        <strong>{{ $event['action'] }}</strong>
-                        <small>{{ $event['target'] }} · {{ $event['actor'] }}</small>
-                    </div>
-                    <div class="artist-activity__meta">
+                <article class="artist-dashboard__activity-row">
+                    <span>
+                        <strong>{{ $event['area'] }}</strong>
+                        <small>{{ $event['action'] }} — {{ $event['target'] }} · {{ $event['actor'] }}</small>
+                    </span>
+                    <div class="artist-section__actions">
                         <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
                         @if ($event['url'] !== null)
-                            <a href="{{ $event['url'] }}">Open</a>
+                            <a class="artist-action" href="{{ $event['url'] }}">Open</a>
                         @endif
                     </div>
                 </article>
@@ -63,7 +44,7 @@
         </section>
 
         @if ($paginator->hasPages())
-            <div class="artist-activity__pagination">
+            <div class="artist-workspace__footnote">
                 {{ $paginator->links() }}
             </div>
         @endif
