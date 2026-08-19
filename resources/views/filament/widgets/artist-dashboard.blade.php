@@ -33,11 +33,11 @@
                 </section>
 
                 <section class="artist-dashboard__activity" aria-label="Recent editorial activity">
-                    <div class="artist-dashboard__section-head"><span>Recent activity</span><span>When</span></div>
+                    <div class="artist-dashboard__section-head"><span>Recent activity</span><a class="artist-action" href="{{ $activityUrl }}">All activity</a></div>
                     @forelse ($activity as $event)
                         <div class="artist-dashboard__activity-row">
-                            <span><strong>{{ $event['area'] }}</strong><small>{{ $event['action'] }}</small></span>
-                            <time>{{ $event['when'] }}</time>
+                            <span><strong>{{ $event['area'] }}</strong><small>{{ $event['action'] }} — {{ $event['target'] }}</small></span>
+                            <time title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
                         </div>
                     @empty
                         <p class="artist-dashboard__quiet">No editorial activity recorded yet.</p>
