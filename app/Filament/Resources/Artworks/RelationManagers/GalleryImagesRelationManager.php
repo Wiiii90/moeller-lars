@@ -10,21 +10,16 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Filament\Actions\Action;
-use Filament\Actions\ActionGroup;
-use Filament\Actions\DetachAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Validation\ValidationException;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
-final class GalleryImagesRelationManager extends RelationManager
+class GalleryImagesRelationManager extends RelationManager
 {
     protected static string $relationship = 'artworkMedia';
 
@@ -33,164 +28,118 @@ final class GalleryImagesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                ->where('role', 'additional')
-                ->with('mediaAsset.variants'))
+            ->heading('Gallery images')
+            ->description('Additional images shown with this artwork. Upload a new image or reuse an available item from the media library.')
+            ->modifyQueryUsing(function (Builder $query): Builder {
+                $query->where('role', 'additional');
+                $query->with('mediaAsset.variants');
+                $query->orderBy('position');
+
+                return $query;
+            })
             ->columns([
                 ImageColumn::make('preview')
-                    ->label('Preview')
+                    ->label('')
                     ->state(fn (ArtworkMedia $record): ?string => $this->thumbnailUrl($record))
-                    ->imageHeight(180),
+                    ->imageHeight(72),
                 TextColumn::make('mediaAsset.original_filename')
-                    ->label('File')
-                    ->wrap(),
-                TextColumn::make('alt_status')
-                    ->label('ALT')
-                    ->state(function (ArtworkMedia $record): string {
-                        $override = trim((string) ($record->getAttribute('alt_text_override') ?? ''));
-                        if ($override !== '') {
-                            return 'Override set';
-                        }
-
-                        $asset = $this->asset($record);
-
-                        return $asset !== null && filled($asset->getAttribute('alt_text')) ? 'Canonical set' : 'Missing';
-                    }),
-                TextColumn::make('position')->label('Order'),
+                    ->label('Image')
+                    ->searchable()
+                    ->description(fn (ArtworkMedia $record): ?string => $record->getRelationValue('mediaAsset')?->getAttribute('alt_text')),
+                TextColumn::make('mediaAsset.width')
+                    ->label('Dimensions')
+                    ->formatStateUsing(fn (mixed $state, ArtworkMedia $record): string => $this->dimensions($record))
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('position')
             ->headerActions([
-                Action::make('attachExisting')
-                    ->label('Attach from Media')
-                    ->schema([
-                        Select::make('media_asset_id')
-                            ->label('Media asset')
-                            ->options(fn (): array => MediaAsset::query()
-                                ->where('state', 'available')
-                                ->orderByDesc('created_at')
-                                ->pluck('original_filename', 'id')
-                                ->all())
-                            ->searchable()
-                            ->required(),
-                        TextInput::make('alt_text_override')
-                            ->label('ALT text override')
-                            ->maxLength(500)
-                            ->nullable()
-                            ->helperText('Optional. Leave empty to use the canonical media ALT text.'),
-                    ])
-                    ->action(function (array $data): void {
-                        $asset = MediaAsset::query()->findOrFail($data['media_asset_id']);
-                        try {
-                            app(ArtworkEditorialService::class)->attachAdditionalMedia(
-                                $this->artwork(),
-                                $asset,
-                                $data['alt_text_override'] ?? null,
-                            );
-                        } catch (ValidationException $exception) {
-                            Notification::make()
-                                ->title('Image could not be attached')
-                                ->body(collect($exception->errors())->flatten()->first())
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        Notification::make()->title('Image attached to artwork gallery')->success()->send();
-                    }),
-                Action::make('uploadAdditional')
+                Action::make('uploadImage')
                     ->label('Upload image')
+                    ->icon(Heroicon::OutlinedArrowUpTray)
                     ->schema([
-                        FileUpload::make('media')
-                            ->required()
+                        FileUpload::make('upload')
+                            ->label('Image')
+                            ->image()
                             ->storeFiles(false)
                             ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                            ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024)),
-                        TextInput::make('alt_text')
-                            ->label('Canonical ALT text')
-                            ->required()
-                            ->maxLength(500),
+                            ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024))
+                            ->required(),
                     ])
                     ->action(function (array $data): void {
-                        if (! array_key_exists('media', $data) || ! $data['media'] instanceof TemporaryUploadedFile) {
-                            throw ValidationException::withMessages(['media' => 'A valid uploaded image is required.']);
-                        }
-
-                        try {
-                            app(ArtworkEditorialService::class)->uploadAdditionalMedia(
-                                $this->artwork(),
-                                $data['media'],
-                                $data['alt_text'] ?? null,
-                            );
-                        } catch (ValidationException $exception) {
-                            Notification::make()
-                                ->title('Image upload failed')
-                                ->body(collect($exception->errors())->flatten()->first())
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-
-                        Notification::make()->title('Image uploaded and attached')->success()->send();
+                        /** @var Artwork $artwork */
+                        $artwork = $this->getOwnerRecord();
+                        app(ArtworkEditorialService::class)->ingestAdditionalMedia($artwork, $data['upload']);
+                    }),
+                Action::make('addFromLibrary')
+                    ->label('Add from library')
+                    ->icon(Heroicon::OutlinedPhoto)
+                    ->schema([
+                        Select::make('media_asset_id')
+                            ->label('Available media')
+                            ->options(fn (): array => $this->availableMediaOptions())
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->action(function (array $data): void {
+                        /** @var Artwork $artwork */
+                        $artwork = $this->getOwnerRecord();
+                        /** @var MediaAsset $asset */
+                        $asset = MediaAsset::query()->findOrFail((int) $data['media_asset_id']);
+                        app(ArtworkEditorialService::class)->attachAdditionalMedia($artwork, $asset);
                     }),
             ])
             ->recordActions([
                 Action::make('preview')
                     ->label('Inspect')
+                    ->icon(Heroicon::OutlinedArrowsPointingOut)
                     ->url(fn (ArtworkMedia $record): string => $this->viewerUrl($record))
                     ->visible(fn (ArtworkMedia $record): bool => $this->asset($record)?->getAttribute('state') === 'available'),
                 Action::make('moveUp')
                     ->label('Move up')
-                    ->visible(fn (ArtworkMedia $record): bool => app(ArtworkEditorialService::class)->canMoveAdditionalMedia($this->artwork(), $record, 'up'))
+                    ->icon(Heroicon::OutlinedArrowUp)
                     ->action(function (ArtworkMedia $record): void {
-                        app(ArtworkEditorialService::class)->moveAdditionalMedia($this->artwork(), $record, 'up');
-                        Notification::make()->title('Gallery image moved up')->success()->send();
+                        /** @var Artwork $artwork */
+                        $artwork = $this->getOwnerRecord();
+                        app(ArtworkEditorialService::class)->moveAdditionalMedia($artwork, $record, 'up');
                     }),
                 Action::make('moveDown')
                     ->label('Move down')
-                    ->visible(fn (ArtworkMedia $record): bool => app(ArtworkEditorialService::class)->canMoveAdditionalMedia($this->artwork(), $record, 'down'))
+                    ->icon(Heroicon::OutlinedArrowDown)
                     ->action(function (ArtworkMedia $record): void {
-                        app(ArtworkEditorialService::class)->moveAdditionalMedia($this->artwork(), $record, 'down');
-                        Notification::make()->title('Gallery image moved down')->success()->send();
+                        /** @var Artwork $artwork */
+                        $artwork = $this->getOwnerRecord();
+                        app(ArtworkEditorialService::class)->moveAdditionalMedia($artwork, $record, 'down');
                     }),
-                ActionGroup::make([
-                    Action::make('editAltOverride')
-                        ->label('Edit ALT override')
-                        ->schema([
-                            TextInput::make('alt_text_override')
-                                ->label('ALT text override')
-                                ->maxLength(500)
-                                ->nullable()
-                                ->default(fn (ArtworkMedia $record): ?string => $record->getAttribute('alt_text_override')),
-                        ])
-                        ->action(function (ArtworkMedia $record, array $data): void {
-                            app(ArtworkEditorialService::class)->updateAdditionalMediaAltOverride(
-                                $this->artwork(),
-                                $record,
-                                $data['alt_text_override'] ?? null,
-                            );
-                            Notification::make()->title('Gallery image ALT override updated')->success()->send();
-                        }),
-                    DetachAction::make()
-                        ->label('Detach from artwork')
-                        ->requiresConfirmation()
-                        ->action(function (ArtworkMedia $record): void {
-                            app(ArtworkEditorialService::class)->detachAdditionalMedia($this->artwork(), $record);
-                            Notification::make()->title('Image detached; Media asset kept')->success()->send();
-                        }),
-                ]),
+                Action::make('detach')
+                    ->label('Detach')
+                    ->icon(Heroicon::OutlinedLinkSlash)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription('Remove this image from the artwork gallery. The media asset stays in the library and is not deleted.')
+                    ->action(function (ArtworkMedia $record): void {
+                        /** @var Artwork $artwork */
+                        $artwork = $this->getOwnerRecord();
+                        app(ArtworkEditorialService::class)->detachAdditionalMedia($artwork, $record);
+                    }),
             ])
+            ->paginated(false)
             ->emptyStateHeading('No additional gallery images')
-            ->emptyStateDescription('Attach an existing Media asset or upload another image. The primary artwork image remains separate.');
+            ->emptyStateDescription('The primary artwork image remains separate. Add secondary views, details or installation images here.');
     }
 
-    private function artwork(): Artwork
+    /** @return array<int, string> */
+    private function availableMediaOptions(): array
     {
-        /** @var Artwork $owner */
-        $owner = $this->getOwnerRecord();
+        /** @var Artwork $artwork */
+        $artwork = $this->getOwnerRecord();
+        $usedIds = $artwork->artworkMedia()->pluck('media_asset_id');
 
-        return $owner;
+        return MediaAsset::query()
+            ->where('state', 'available')
+            ->whereNotIn('id', $usedIds)
+            ->orderByDesc('created_at')
+            ->limit(250)
+            ->pluck('original_filename', 'id')
+            ->all();
     }
 
     private function asset(ArtworkMedia $usage): ?MediaAsset
@@ -203,18 +152,21 @@ final class GalleryImagesRelationManager extends RelationManager
 
     private function thumbnailUrl(ArtworkMedia $usage): ?string
     {
-        $asset = $this->asset($usage);
-        if ($asset === null || $asset->getAttribute('state') !== 'available') {
+        $usage->loadMissing('mediaAsset.variants');
+        /** @var MediaAsset|null $asset */
+        $asset = $usage->getRelationValue('mediaAsset');
+        if (! $asset instanceof MediaAsset || $asset->getAttribute('state') !== 'available') {
             return null;
         }
 
-        $asset->loadMissing('variants');
         /** @var MediaVariant|null $variant */
-        $variant = $asset->getRelationValue('variants')->first(fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === 'thumbnail'
-            && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-            && $candidate->getAttribute('state') === 'available');
+        $variant = $asset->getRelationValue('variants')->first(
+            fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === 'thumbnail'
+                && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
+                && $candidate->getAttribute('state') === 'available',
+        );
 
-        return $variant === null ? null : route('admin.media.variant', $variant);
+        return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
     }
 
     private function viewerUrl(ArtworkMedia $usage): string
@@ -222,7 +174,18 @@ final class GalleryImagesRelationManager extends RelationManager
         $asset = $this->asset($usage);
 
         return $asset instanceof MediaAsset
-            ? MediaAssetResource::getUrl('view', ['record' => $asset->getKey(), 'artwork' => $this->artwork()->getKey()])
+            ? MediaAssetResource::getUrl('view', ['record' => $asset->getKey(), 'artwork' => $this->getOwnerRecord()->getKey()])
             : MediaAssetResource::getUrl('index');
+    }
+
+    private function dimensions(ArtworkMedia $usage): string
+    {
+        $usage->loadMissing('mediaAsset');
+        $asset = $usage->getRelationValue('mediaAsset');
+        if (! $asset instanceof MediaAsset) {
+            return '—';
+        }
+
+        return sprintf('%s × %s px', $asset->getAttribute('width') ?? '—', $asset->getAttribute('height') ?? '—');
     }
 }
