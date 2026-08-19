@@ -11,6 +11,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
@@ -109,6 +110,7 @@ final class ListMediaAssets extends Page
         $this->inUse = $this->usageQuery(true)->count();
         $this->unused = $this->usageQuery(false)->count();
 
+        /** @var Builder<MediaAsset> $query */
         $query = MediaAsset::query()
             ->with('variants')
             ->withCount(['artworks', 'exhibitions', 'cvEntries', 'blogPosts']);
@@ -132,6 +134,7 @@ final class ListMediaAssets extends Page
         $this->pages = max(1, (int) ceil($this->total / self::PER_PAGE));
         $this->page = min($this->page, $this->pages);
 
+        /** @var EloquentCollection<int, MediaAsset> $records */
         $records = $query
             ->orderByDesc('created_at')
             ->orderByDesc('id')
