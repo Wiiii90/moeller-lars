@@ -20,6 +20,7 @@ final class MediaAssetSelect
                 name: $relationship,
                 titleAttribute: 'original_filename',
                 modifyQueryUsing: function (Builder $query): void {
+                    $query->where('state', 'available');
                     $query->with('variants');
                     $query->orderBy('original_filename');
                 },
@@ -32,7 +33,6 @@ final class MediaAssetSelect
                 return self::optionLabel($record);
             })
             ->searchable(['original_filename'])
-            ->preload()
             ->allowHtml();
     }
 
@@ -41,35 +41,24 @@ final class MediaAssetSelect
         $asset->loadMissing('variants');
 
         $filename = e((string) $asset->getAttribute('original_filename'));
-        $state = (string) $asset->getAttribute('state');
-        $stateLabel = e(ucfirst($state));
-        $previewUrl = null;
+        $dimensions = $asset->getAttribute('width') && $asset->getAttribute('height')
+            ? e($asset->getAttribute('width').'×'.$asset->getAttribute('height'))
+            : 'Dimensions unavailable';
 
-        if ($state === 'available') {
-            /** @var Collection<int, MediaVariant> $variants */
-            $variants = $asset->getRelation('variants');
-            $variant = $variants->first(
-                fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === 'thumbnail'
-                    && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
-                    && $candidate->getAttribute('state') === 'available',
-            );
+        /** @var Collection<int, MediaVariant> $variants */
+        $variants = $asset->getRelation('variants');
+        $variant = $variants->first(
+            fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === 'thumbnail'
+                && $candidate->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
+                && $candidate->getAttribute('state') === 'available',
+        );
 
-            if ($variant instanceof MediaVariant) {
-                $previewUrl = route('admin.media.variant', $variant);
-            } elseif (str_starts_with((string) $asset->getAttribute('mime_type'), 'image/')) {
-                $previewUrl = route('admin.media.original', $asset);
-            }
-        }
+        $preview = $variant instanceof MediaVariant
+            ? '<img src="'.e(route('admin.media.variant', $variant)).'" alt="" width="44" height="44" loading="lazy" decoding="async">'
+            : '<span aria-hidden="true">[preview pending]</span>';
 
-        $preview = $previewUrl === null
-            ? '<span aria-hidden="true" style="display:inline-flex;width:40px;height:40px;align-items:center;justify-content:center;border:1px solid currentColor;border-radius:4px;opacity:.35">—</span>'
-            : '<img src="'.e($previewUrl).'" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:4px">';
-
-        return '<span style="display:flex;align-items:center;gap:.65rem">'
-            .$preview
-            .'<span style="display:flex;flex-direction:column;min-width:0">'
-            .'<span style="overflow:hidden;text-overflow:ellipsis">'.$filename.'</span>'
-            .'<small style="opacity:.65">'.$stateLabel.'</small>'
-            .'</span></span>';
+        return $preview
+            .' <strong>'.$filename.'</strong>'
+            .' <small>· '.$dimensions.'</small>';
     }
 }
