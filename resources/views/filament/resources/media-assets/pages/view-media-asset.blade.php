@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div class="artist-workspace artist-media-viewer">
+    <div class="artist-workspace">
         <header class="artist-workspace__head">
             <div>
                 <p class="artist-workspace__kicker">Media inspection</p>
@@ -14,15 +14,17 @@
             @endif
         </header>
 
-        <section class="artist-media-viewer__stage" aria-label="Media preview">
-            @if ($media['original_url'])
-                <img src="{{ $media['original_url'] }}" alt="{{ $media['alt'] }}">
-            @else
-                <p>Preview unavailable for {{ $media['state'] }} media.</p>
-            @endif
+        <section aria-label="Media preview">
+            <div class="artist-contact-sheet__image">
+                @if ($media['original_url'])
+                    <img src="{{ $media['original_url'] }}" alt="{{ $media['alt'] }}">
+                @else
+                    <span>Preview unavailable for {{ $media['state'] }} media</span>
+                @endif
+            </div>
 
             @if ($sequence)
-                <nav class="artist-media-viewer__sequence" aria-label="Artwork image sequence">
+                <nav class="artist-workspace__footnote" aria-label="Artwork image sequence">
                     @if ($sequence['previous_url'])
                         <a class="artist-action" href="{{ $sequence['previous_url'] }}">← Previous</a>
                     @else
@@ -38,40 +40,41 @@
             @endif
         </section>
 
-        <div class="artist-media-viewer__details">
-            <section aria-label="Media metadata">
-                <p class="artist-workspace__kicker">Metadata</p>
-                <dl class="artist-media-viewer__facts">
-                    <div><dt>State</dt><dd>{{ ucfirst($media['state']) }}</dd></div>
-                    <div><dt>Dimensions</dt><dd>{{ $media['dimensions'] }}</dd></div>
-                    <div><dt>File size</dt><dd>{{ $media['size'] }}</dd></div>
-                    <div><dt>ALT text</dt><dd>{{ $media['alt_label'] }}</dd></div>
-                    <div><dt>Credit</dt><dd>{{ $media['credit'] }}</dd></div>
-                    <div><dt>Copyright</dt><dd>{{ $media['copyright'] }}</dd></div>
-                </dl>
-            </section>
+        <section class="artist-storage__breakdown" aria-label="Media details">
+            <div>
+                <span>Metadata</span>
+                <div class="artist-storage__numbers">
+                    <dl>
+                        <div><dt>State</dt><dd>{{ ucfirst($media['state']) }}</dd></div>
+                        <div><dt>Dimensions</dt><dd>{{ $media['dimensions'] }}</dd></div>
+                        <div><dt>File size</dt><dd>{{ $media['size'] }}</dd></div>
+                        <div><dt>ALT text</dt><dd>{{ $media['alt_label'] }}</dd></div>
+                        <div><dt>Credit</dt><dd>{{ $media['credit'] }}</dd></div>
+                        <div><dt>Copyright</dt><dd>{{ $media['copyright'] }}</dd></div>
+                    </dl>
+                </div>
+            </div>
 
-            <section aria-label="Media usage">
-                <p class="artist-workspace__kicker">Used by</p>
+            <div>
+                <span>Used by</span>
                 @if ($usages !== [])
-                    <div class="artist-media-viewer__usages">
+                    <nav class="artist-gallery-tools" aria-label="Media usage links">
                         @foreach ($usages as $usage)
-                            <a href="{{ $usage['url'] }}">
-                                <span>{{ $usage['type'] }}</span>
-                                <strong>{{ $usage['label'] }}</strong>
-                            </a>
+                            <a class="artist-action" href="{{ $usage['url'] }}">{{ $usage['type'] }} · {{ $usage['label'] }}</a>
                         @endforeach
-                    </div>
+                    </nav>
                 @else
-                    <p class="artist-media-viewer__unused">This asset is currently unused and may be reviewed for deletion.</p>
+                    <small>This asset is currently unused and may be reviewed for deletion.</small>
                 @endif
-            </section>
-        </div>
+            </div>
+        </section>
 
         @if ($sequence)
             <footer class="artist-workspace__footnote">
                 <a class="artist-action" href="{{ $sequence['artwork_url'] }}">Edit artwork</a>
-                @if ($sequence['gallery_url'])<a class="artist-action" href="{{ $sequence['gallery_url'] }}">Back to Gallery workspace</a>@endif
+                @if ($sequence['gallery_url'])
+                    <a class="artist-action" href="{{ $sequence['gallery_url'] }}">Back to Gallery workspace</a>
+                @endif
                 <span>Primary and additional images share one inspection sequence; ordering remains managed from the Artwork editor.</span>
             </footer>
         @endif
