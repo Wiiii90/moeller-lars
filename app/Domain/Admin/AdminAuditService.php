@@ -28,6 +28,7 @@ class AdminAuditService
         'artwork_category.slug_changed',
         'artwork_category.deleted',
         'artwork_category.gallery_reordered',
+        'site_section.updated',
         'site_section.reordered',
         'media.ingested',
         'media.metadata_updated',

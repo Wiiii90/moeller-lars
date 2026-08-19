@@ -14,22 +14,10 @@
             </div>
 
             <div class="artist-workspace__summary" aria-label="Site structure summary">
-                <div>
-                    <strong>{{ count($sections) }}</strong>
-                    <span>Sections</span>
-                </div>
-                <div>
-                    <strong>{{ $galleries }}</strong>
-                    <span>Galleries</span>
-                </div>
-                <div>
-                    <strong>{{ $published }}</strong>
-                    <span>Published</span>
-                </div>
-                <div>
-                    <strong>{{ $visible }}</strong>
-                    <span>In menu</span>
-                </div>
+                <div><strong>{{ count($sections) }}</strong><span>Sections</span></div>
+                <div><strong>{{ $galleries }}</strong><span>Galleries</span></div>
+                <div><strong>{{ $published }}</strong><span>Published</span></div>
+                <div><strong>{{ $visible }}</strong><span>In menu</span></div>
             </div>
         </header>
 
@@ -45,42 +33,44 @@
                         </div>
 
                         <div class="artist-section__state" aria-label="Publication status">
-                            <span class="{{ $section['state'] === 'published' ? 'is-published' : '' }}">
-                                {{ $section['state'] === 'published' ? 'Published' : 'Hidden' }}
-                            </span>
+                            <span class="{{ $section['state'] === 'published' ? 'is-published' : '' }}">{{ $section['state'] === 'published' ? 'Published' : 'Hidden' }}</span>
                             @if ($section['type'] !== 'home')
-                                <span class="{{ $section['visible'] ? 'is-visible' : '' }}">
-                                    {{ $section['visible'] ? 'In navigation' : 'Not in navigation' }}
-                                </span>
+                                <span class="{{ $section['visible'] ? 'is-visible' : '' }}">{{ $section['visible'] ? 'In navigation' : 'Not in navigation' }}</span>
                             @endif
                         </div>
 
-                        <div class="artist-section__count">
-                            <strong>{{ $section['count'] }}</strong>
-                            <span>{{ $section['count_label'] }}</span>
-                        </div>
+                        <div class="artist-section__count"><strong>{{ $section['count'] }}</strong><span>{{ $section['count_label'] }}</span></div>
 
                         <div class="artist-section__actions">
+                            @if ($section['type'] === 'gallery')
+                                <button class="artist-action" type="button" wire:click="toggleGalleryState({{ $section['id'] }})">
+                                    {{ $section['state'] === 'published' ? 'Hide' : 'Publish' }}
+                                </button>
+                                <button class="artist-action" type="button" wire:click="toggleGalleryNavigation({{ $section['id'] }})">
+                                    {{ $section['visible'] ? 'Remove menu' : 'Add menu' }}
+                                </button>
+                                <select
+                                    class="artist-action"
+                                    aria-label="Parent Gallery for {{ $section['navigation_label'] ?: $section['title'] }}"
+                                    wire:change="moveGallery({{ $section['id'] }}, $event.target.value)"
+                                    @disabled($section['has_children'])
+                                >
+                                    <option value="" @selected($section['parent_id'] === null)>Top level</option>
+                                    @foreach ($galleryParents as $parent)
+                                        @if ($parent['id'] !== $section['id'])
+                                            <option value="{{ $parent['id'] }}" @selected($section['parent_id'] === $parent['id'])>{{ $parent['label'] }}</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            @endif
                             <a class="artist-action is-primary" href="{{ $section['content_url'] }}">Content</a>
                             @if ($section['editor_url'])
                                 <a class="artist-action" href="{{ $section['editor_url'] }}">Settings</a>
                             @endif
                             <a class="artist-action" href="{{ $section['public_url'] }}" target="_blank" rel="noopener">View</a>
                             <span class="artist-section__order" aria-label="Reorder {{ $section['navigation_label'] ?: $section['title'] }}">
-                                <button
-                                    class="artist-action"
-                                    type="button"
-                                    wire:click="moveSection({{ $section['id'] }}, 'up')"
-                                    aria-label="Move {{ $section['navigation_label'] ?: $section['title'] }} earlier"
-                                    @disabled(! $section['can_move_up'])
-                                >↑</button>
-                                <button
-                                    class="artist-action"
-                                    type="button"
-                                    wire:click="moveSection({{ $section['id'] }}, 'down')"
-                                    aria-label="Move {{ $section['navigation_label'] ?: $section['title'] }} later"
-                                    @disabled(! $section['can_move_down'])
-                                >↓</button>
+                                <button class="artist-action" type="button" wire:click="moveSection({{ $section['id'] }}, 'up')" aria-label="Move {{ $section['navigation_label'] ?: $section['title'] }} earlier" @disabled(! $section['can_move_up'])>↑</button>
+                                <button class="artist-action" type="button" wire:click="moveSection({{ $section['id'] }}, 'down')" aria-label="Move {{ $section['navigation_label'] ?: $section['title'] }} later" @disabled(! $section['can_move_down'])>↓</button>
                             </span>
                         </div>
                     </article>
@@ -89,7 +79,7 @@
         </section>
 
         <footer class="artist-workspace__footnote">
-            <span>Order controls operate within the current level. Child Galleries remain inside their parent submenu.</span>
+            <span>Gallery publication, menu placement and submenu parent are controlled here; order controls remain scoped to the current level.</span>
             <span>Media, Analytics and Storage are global tools and intentionally do not appear as public pages.</span>
         </footer>
     </div>

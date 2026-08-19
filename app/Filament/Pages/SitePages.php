@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Artwork\ArtworkCategoryEditorialService;
+use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
@@ -27,6 +28,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Validation\ValidationException;
 use UnitEnum;
 
 final class SitePages extends Page
@@ -48,6 +50,9 @@ final class SitePages extends Page
     /** @var list<array<string, mixed>> */
     public array $sections = [];
 
+    /** @var list<array{id: int, label: string}> */
+    public array $galleryParents = [];
+
     public function mount(): void
     {
         $this->loadSections();
@@ -60,12 +65,42 @@ final class SitePages extends Page
         $moved = app(SiteSectionOrderService::class)->move($section, $direction);
 
         if ($moved) {
-            Notification::make()
-                ->title('Site order updated')
-                ->success()
-                ->send();
+            Notification::make()->title('Site order updated')->success()->send();
             $this->loadSections();
         }
+    }
+
+    public function toggleGalleryState(int $sectionId): void
+    {
+        /** @var SiteSection $section */
+        $section = SiteSection::query()->findOrFail($sectionId);
+        $state = (string) $section->getAttribute('state') === 'published' ? 'hidden' : 'published';
+        $this->updateGallery($section, $state, (bool) $section->getAttribute('show_in_navigation'), $section->getAttribute('parent_id'));
+    }
+
+    public function toggleGalleryNavigation(int $sectionId): void
+    {
+        /** @var SiteSection $section */
+        $section = SiteSection::query()->findOrFail($sectionId);
+        $this->updateGallery(
+            $section,
+            (string) $section->getAttribute('state'),
+            ! (bool) $section->getAttribute('show_in_navigation'),
+            $section->getAttribute('parent_id'),
+        );
+    }
+
+    public function moveGallery(int $sectionId, int|string|null $parentSectionId): void
+    {
+        /** @var SiteSection $section */
+        $section = SiteSection::query()->findOrFail($sectionId);
+        $parentId = filled($parentSectionId) ? (int) $parentSectionId : null;
+        $this->updateGallery(
+            $section,
+            (string) $section->getAttribute('state'),
+            (bool) $section->getAttribute('show_in_navigation'),
+            $parentId,
+        );
     }
 
     protected function getHeaderActions(): array
@@ -75,10 +110,7 @@ final class SitePages extends Page
                 ->label('Add Gallery')
                 ->icon(Heroicon::OutlinedPlus)
                 ->schema([
-                    TextInput::make('name')
-                        ->label('Gallery name')
-                        ->required()
-                        ->maxLength(160),
+                    TextInput::make('name')->label('Gallery name')->required()->maxLength(160),
                     TextInput::make('slug')
                         ->label('Public URL slug')
                         ->required()
@@ -101,9 +133,7 @@ final class SitePages extends Page
                     $parentId = filled($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null;
                     /** @var Builder<ArtworkCategory> $siblings */
                     $siblings = ArtworkCategory::query();
-                    $parentId === null
-                        ? $siblings->whereNull('parent_id')
-                        : $siblings->where('parent_id', $parentId);
+                    $parentId === null ? $siblings->whereNull('parent_id') : $siblings->where('parent_id', $parentId);
                     $position = ((int) ($siblings->max('position') ?? -10)) + 10;
 
                     app(ArtworkCategoryEditorialService::class)->create([
@@ -142,6 +172,15 @@ final class SitePages extends Page
             ->orderBy('position')
             ->orderBy('id')
             ->get();
+
+        $this->galleryParents = $topLevel
+            ->filter(static fn (SiteSection $section): bool => $section->getAttribute('type') === SiteSection::TYPE_GALLERY)
+            ->map(static fn (SiteSection $section): array => [
+                'id' => (int) $section->getKey(),
+                'label' => (string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')),
+            ])
+            ->values()
+            ->all();
 
         $counts = [
             SiteSection::TYPE_HOME => Artwork::query()->where('featured_on_home', true)->count(),
@@ -199,6 +238,8 @@ final class SitePages extends Page
             'state' => (string) $section->getAttribute('state'),
             'visible' => (bool) $section->getAttribute('show_in_navigation'),
             'position' => (int) $section->getAttribute('position'),
+            'parent_id' => $section->getAttribute('parent_id'),
+            'has_children' => $section->relationLoaded('children') && $section->getRelation('children')->isNotEmpty(),
             'depth' => $depth,
             'count' => $contentCount,
             'count_label' => match ($type) {
@@ -216,12 +257,32 @@ final class SitePages extends Page
         ];
     }
 
+    private function updateGallery(SiteSection $section, string $state, bool $visible, mixed $parentId): void
+    {
+        try {
+            app(SiteSectionEditorialService::class)->updateGallery(
+                $section,
+                $state,
+                $visible,
+                $parentId === null ? null : (int) $parentId,
+            );
+            Notification::make()->title('Gallery placement updated')->success()->send();
+        } catch (ValidationException $exception) {
+            $message = collect($exception->errors())->flatten()->first();
+            Notification::make()
+                ->title('Gallery placement unchanged')
+                ->body(is_string($message) ? $message : 'The requested Gallery placement is invalid.')
+                ->danger()
+                ->send();
+        }
+
+        $this->loadSections();
+    }
+
     private function editorUrl(SiteSection $section): ?string
     {
         return match ($section->getAttribute('type')) {
-            SiteSection::TYPE_GALLERY => ArtworkCategoryResource::getUrl('edit', [
-                'record' => $section->getAttribute('artwork_category_id'),
-            ]),
+            SiteSection::TYPE_GALLERY => ArtworkCategoryResource::getUrl('edit', ['record' => $section->getAttribute('artwork_category_id')]),
             SiteSection::TYPE_VITA, SiteSection::TYPE_EXHIBITIONS => PublicContentSettingResource::getUrl('edit', ['record' => 1]),
             SiteSection::TYPE_BLOG => BlogSettingResource::getUrl('edit', ['record' => 1]),
             default => null,
@@ -232,9 +293,7 @@ final class SitePages extends Page
     {
         return match ($section->getAttribute('type')) {
             SiteSection::TYPE_HOME => ArtworkResource::getUrl('index'),
-            SiteSection::TYPE_GALLERY => ArtworkResource::getUrl('gallery', [
-                'gallery' => $section->getAttribute('artwork_category_id'),
-            ]),
+            SiteSection::TYPE_GALLERY => ArtworkResource::getUrl('gallery', ['gallery' => $section->getAttribute('artwork_category_id')]),
             SiteSection::TYPE_VITA => CvEntryResource::getUrl('index'),
             SiteSection::TYPE_BLOG => BlogPostResource::getUrl('index'),
             SiteSection::TYPE_EXHIBITIONS => ExhibitionResource::getUrl('index'),
