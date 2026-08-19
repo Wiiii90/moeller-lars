@@ -108,17 +108,15 @@ final class AdminUndoService
     ): Artwork|CvEntry|Exhibition {
         if ($target instanceof Artwork) {
             return match ($inverseActionKey) {
-                'artwork.published' => $this->artworkEditorial->publish($target, recordReceipt: false),
-                'artwork.unpublished' => $this->artworkEditorial->unpublish($target, recordReceipt: false),
+                'artwork.published' => $this->artworkEditorial->publish($target),
+                'artwork.unpublished' => $this->artworkEditorial->unpublish($target),
                 default => throw ValidationException::withMessages(['undo' => 'This artwork change has no reversible contract.']),
             };
         }
 
         return match ($inverseActionKey) {
-            'cv_entry.published', 'exhibition.published' => $this->editorialRecords->publish($target, recordReceipt: false),
-            'cv_entry.unpublished', 'exhibition.unpublished' => $this->editorialRecords->unpublish($target, recordReceipt: false),
-            'cv_entry.archived', 'exhibition.archived' => $this->editorialRecords->archive($target, recordReceipt: false),
-            'cv_entry.restored_to_draft', 'exhibition.restored_to_draft' => $this->editorialRecords->restoreDraft($target, recordReceipt: false),
+            'cv_entry.published', 'exhibition.published' => $this->editorialRecords->publish($target),
+            'cv_entry.unpublished', 'exhibition.unpublished' => $this->editorialRecords->unpublish($target),
             default => throw ValidationException::withMessages(['undo' => 'This editorial change has no reversible contract.']),
         };
     }
