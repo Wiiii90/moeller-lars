@@ -8,6 +8,7 @@ use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 final class ArtworkAttentionReport
@@ -30,8 +31,10 @@ final class ArtworkAttentionReport
             return [];
         }
 
+        /** @var Builder<Artwork> $artworkQuery */
+        $artworkQuery = Artwork::query();
         /** @var EloquentCollection<int, Artwork> $artworks */
-        $artworks = Artwork::query()
+        $artworks = $artworkQuery
             ->whereIn('analytics_key', $keys)
             ->with(['category', 'artworkMedia.mediaAsset.variants'])
             ->get();
@@ -53,10 +56,6 @@ final class ArtworkAttentionReport
             ];
 
             foreach ($eventsByKey->get($analyticsKey, collect()) as $event) {
-                if (! is_array($event)) {
-                    continue;
-                }
-
                 $action = (string) ($event['action'] ?? '');
                 $count = (int) round((float) ($event['nb_events'] ?? 0));
 
@@ -72,7 +71,6 @@ final class ArtworkAttentionReport
             }
 
             $trendRows = $seriesByKey->get($analyticsKey, collect())
-                ->filter(static fn (mixed $row): bool => is_array($row))
                 ->values()
                 ->all();
             $trend = $this->trend($trendRows);
@@ -82,16 +80,17 @@ final class ArtworkAttentionReport
             $category = $artwork->getRelationValue('category');
             $isPublic = $artwork->getAttribute('state') === 'published'
                 && $category?->getAttribute('state') === 'published';
+            $slug = (string) $artwork->getAttribute('slug');
 
             $rows[] = [
                 'id' => (int) $artwork->getKey(),
                 'analytics_key' => $analyticsKey,
                 'title' => (string) $artwork->getAttribute('title'),
-                'slug' => (string) $artwork->getAttribute('slug'),
+                'slug' => $slug,
                 'category' => (string) ($category?->getAttribute('name') ?? 'No Gallery'),
                 'state' => (string) $artwork->getAttribute('state'),
                 'thumbnail_url' => $this->thumbnailUrl($artwork),
-                'public_url' => $isPublic ? route('artworks.show', ['slug' => $artwork->slug]) : null,
+                'public_url' => $isPublic ? route('artworks.show', ['slug' => $slug]) : null,
                 'detail_views' => $metrics['detail_views'],
                 'viewer_opens' => $metrics['viewer_opens'],
                 'zooms' => $metrics['zooms'],
