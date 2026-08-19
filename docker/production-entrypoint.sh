@@ -55,4 +55,9 @@ for path in /var/www/html/storage/framework /var/www/html/storage/logs /var/www/
     fi
 done
 
+# Build Laravel's production caches only after the runtime environment has been
+# injected. This keeps configuration secrets out of the image build while
+# avoiding route/config/view discovery on every web request.
+php artisan optimize --no-interaction
+
 exec "$@"
