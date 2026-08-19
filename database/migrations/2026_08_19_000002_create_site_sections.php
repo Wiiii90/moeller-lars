@@ -33,8 +33,8 @@ return new class extends Migration
         DB::statement("ALTER TABLE site_sections ADD CONSTRAINT site_sections_slug_check CHECK ((type = 'home' AND slug IS NULL) OR (type <> 'home' AND slug IS NOT NULL AND slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'))");
         DB::statement("ALTER TABLE site_sections ADD CONSTRAINT site_sections_navigation_label_check CHECK (NOT show_in_navigation OR (navigation_label IS NOT NULL AND btrim(navigation_label) <> ''))");
         DB::statement("CREATE UNIQUE INDEX site_sections_singleton_type_unique ON site_sections (type) WHERE type IN ('home', 'vita', 'blog', 'exhibitions')");
-        DB::statement('CREATE UNIQUE INDEX site_sections_top_level_position_unique ON site_sections (position) WHERE parent_id IS NULL');
-        DB::statement('CREATE UNIQUE INDEX site_sections_child_position_unique ON site_sections (parent_id, position) WHERE parent_id IS NOT NULL');
+        DB::statement("CREATE UNIQUE INDEX site_sections_top_level_navigation_position_unique ON site_sections (position) WHERE parent_id IS NULL AND state = 'published' AND show_in_navigation = true");
+        DB::statement("CREATE UNIQUE INDEX site_sections_child_navigation_position_unique ON site_sections (parent_id, position) WHERE parent_id IS NOT NULL AND state = 'published' AND show_in_navigation = true");
 
         $now = now();
         $public = DB::table('public_content_settings')->where('id', 1)->first();
