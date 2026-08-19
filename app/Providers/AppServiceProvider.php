@@ -7,7 +7,9 @@ use App\Models\BlogSetting;
 use App\Models\PublicContentSetting;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -31,52 +33,86 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         View::composer('layouts.app', function ($view): void {
-            /** @var EloquentCollection<int, ArtworkCategory> $categories */
-            $categories = ArtworkCategory::query()
-                ->where('state', 'published')
-                ->where('show_in_navigation', true)
-                ->orderBy('position')
-                ->orderBy('id')
-                ->get(['id', 'name', 'slug', 'position']);
+            /** @var Builder<ArtworkCategory> $categoryQuery */
+            $categoryQuery = ArtworkCategory::query();
+            $categoryQuery->whereNull('parent_id');
+            $categoryQuery->where('state', 'published');
+            $categoryQuery->where('show_in_navigation', true);
+            $categoryQuery->with(['children' => static function (Relation $relation): void {
+                $query = $relation->getQuery();
+                $query->where('state', 'published');
+                $query->where('show_in_navigation', true);
+                $query->orderBy('position');
+                $query->orderBy('id');
+            }]);
+            $categoryQuery->orderBy('position');
+            $categoryQuery->orderBy('id');
 
-            /** @var Collection<int, array{position:int,tie_breaker:int,label:string,url:string,current:bool}> $navigationItems */
-            $navigationItems = $categories->map(static fn (ArtworkCategory $category): array => [
-                'position' => (int) $category->getAttribute('position'),
-                'tie_breaker' => (int) $category->getKey(),
-                'label' => (string) $category->getAttribute('name'),
-                'url' => route('artworks.category', ['category' => $category->getAttribute('slug')]),
-                'current' => request()->routeIs('artworks.category')
-                    && request()->route('category') === $category->getAttribute('slug'),
-            ]);
+            /** @var EloquentCollection<int, ArtworkCategory> $categories */
+            $categories = $categoryQuery->get(['id', 'name', 'slug', 'position']);
+
+            /** @var Collection<int, array{position:int,tie_breaker:int,label:string,url:string,current:bool,active:bool,children:list<array{label:string,url:string,current:bool}>}> $navigationItems */
+            $navigationItems = $categories->map(static function (ArtworkCategory $category): array {
+                $current = request()->routeIs('artworks.category')
+                    && request()->route('category') === $category->getAttribute('slug');
+                /** @var EloquentCollection<int, ArtworkCategory> $childCategories */
+                $childCategories = $category->getRelation('children');
+                $children = $childCategories->map(static fn (ArtworkCategory $child): array => [
+                    'label' => (string) $child->getAttribute('name'),
+                    'url' => route('artworks.category', ['category' => $child->getAttribute('slug')]),
+                    'current' => request()->routeIs('artworks.category')
+                        && request()->route('category') === $child->getAttribute('slug'),
+                ])->values()->all();
+                $childCurrent = collect($children)->contains(static fn (array $child): bool => $child['current']);
+
+                return [
+                    'position' => (int) $category->getAttribute('position'),
+                    'tie_breaker' => (int) $category->getKey(),
+                    'label' => (string) $category->getAttribute('name'),
+                    'url' => route('artworks.category', ['category' => $category->getAttribute('slug')]),
+                    'current' => $current,
+                    'active' => $current || $childCurrent,
+                    'children' => $children,
+                ];
+            });
 
             $settings = PublicContentSetting::query()->findOrFail(1);
             if ((bool) $settings->getAttribute('cv_enabled')) {
+                $current = request()->routeIs('cv');
                 $navigationItems->push([
                     'position' => (int) $settings->getAttribute('cv_navigation_position'),
                     'tie_breaker' => 900001,
                     'label' => (string) $settings->getAttribute('cv_navigation_label'),
                     'url' => route('cv'),
-                    'current' => request()->routeIs('cv'),
+                    'current' => $current,
+                    'active' => $current,
+                    'children' => [],
                 ]);
             }
             if ((bool) $settings->getAttribute('exhibitions_enabled')) {
+                $current = request()->routeIs('exhibitions.*');
                 $navigationItems->push([
                     'position' => (int) $settings->getAttribute('exhibitions_navigation_position'),
                     'tie_breaker' => 900002,
                     'label' => (string) $settings->getAttribute('exhibitions_navigation_label'),
                     'url' => route('exhibitions.index'),
-                    'current' => request()->routeIs('exhibitions.*'),
+                    'current' => $current,
+                    'active' => $current,
+                    'children' => [],
                 ]);
             }
 
             $blogSettings = BlogSetting::query()->findOrFail(1);
             if ((bool) $blogSettings->getAttribute('public_enabled')) {
+                $current = request()->routeIs('blog.*');
                 $navigationItems->push([
                     'position' => (int) $blogSettings->getAttribute('navigation_position'),
                     'tie_breaker' => 900003,
                     'label' => (string) $blogSettings->getAttribute('navigation_label'),
                     'url' => route('blog.index'),
-                    'current' => request()->routeIs('blog.*'),
+                    'current' => $current,
+                    'active' => $current,
+                    'children' => [],
                 ]);
             }
 

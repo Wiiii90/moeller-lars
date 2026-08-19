@@ -22,6 +22,7 @@ class ArtworkCategoryEditorialService
     {
         $actor = $this->adminAuditService->requireActor();
         $validated = $this->validateData($data, false);
+        $validated['parent_id'] = $this->validateParentId($data['parent_id'] ?? null);
 
         return DB::transaction(function () use ($validated, $actor): ArtworkCategory {
             $category = new ArtworkCategory;
@@ -44,17 +45,30 @@ class ArtworkCategoryEditorialService
     {
         $actor = $this->adminAuditService->requireActor();
         $validated = $this->validateData($data, true);
+        $requestedParentId = array_key_exists('parent_id', $data)
+            ? $this->validateParentId($data['parent_id'], $category)
+            : $category->getAttribute('parent_id');
 
-        return DB::transaction(function () use ($category, $validated, $actor): ArtworkCategory {
-            $category->fill($validated);
+        return DB::transaction(function () use ($category, $validated, $requestedParentId, $actor): ArtworkCategory {
+            /** @var ArtworkCategory $fresh */
+            $fresh = ArtworkCategory::query()->whereKey($category->getKey())->lockForUpdate()->firstOrFail();
+            $currentParentId = $fresh->getAttribute('parent_id');
 
-            if ($category->isDirty()) {
-                $this->validateNavigationPosition($category);
-                $category->save();
-                $this->adminAuditService->record($actor, 'artwork_category.updated', 'artwork_category', $category->getKey());
+            $fresh->fill($validated);
+            if ($requestedParentId !== $currentParentId) {
+                $this->assertCanReparent($fresh, $requestedParentId);
+                $fresh->setAttribute('parent_id', $requestedParentId);
+                $fresh->setAttribute('position', $this->nextSiblingPosition($requestedParentId, (int) $fresh->getKey()));
             }
 
-            return $category;
+            if ($fresh->isDirty()) {
+                $this->validateVisibleChildren($fresh);
+                $this->validateNavigationPosition($fresh);
+                $fresh->save();
+                $this->adminAuditService->record($actor, 'artwork_category.updated', 'artwork_category', $fresh->getKey());
+            }
+
+            return $fresh;
         });
     }
 
@@ -89,6 +103,9 @@ class ArtworkCategoryEditorialService
 
             if ($category->artworks()->where('state', 'published')->exists()) {
                 throw ValidationException::withMessages(['state' => 'A category with published artwork cannot be hidden.']);
+            }
+            if ($category->children()->where('state', 'published')->exists()) {
+                throw ValidationException::withMessages(['state' => 'A parent category with published child categories cannot be hidden.']);
             }
 
             $category->setAttribute('state', 'hidden');
@@ -156,8 +173,12 @@ class ArtworkCategoryEditorialService
 
         DB::transaction(function () use ($category, $actor): void {
             $category->refresh();
-            if ((string) $category->getAttribute('state') !== 'hidden' || $category->artworks()->exists()) {
-                throw ValidationException::withMessages(['category' => 'This category cannot be deleted.']);
+            if (
+                (string) $category->getAttribute('state') !== 'hidden'
+                || $category->artworks()->exists()
+                || $category->children()->exists()
+            ) {
+                throw ValidationException::withMessages(['category' => 'This category cannot be deleted while it owns artwork or child categories.']);
             }
 
             $path = '/'.$category->getAttribute('slug');
@@ -225,7 +246,7 @@ class ArtworkCategoryEditorialService
         }
     }
 
-    /** @return array{name:string,slug:string,position:int,description:?string,show_in_navigation?:bool,show_on_home?:bool} */
+    /** @return array{name:string,slug?:string,position:int,description:?string,show_in_navigation?:bool,show_on_home?:bool} */
     private function validateData(array $data, bool $update): array
     {
         $name = trim((string) ($data['name'] ?? ''));
@@ -301,6 +322,63 @@ class ArtworkCategoryEditorialService
         return $slug;
     }
 
+    private function validateParentId(mixed $parentId, ?ArtworkCategory $category = null): ?int
+    {
+        if ($parentId === null || $parentId === '') {
+            return null;
+        }
+        if (filter_var($parentId, FILTER_VALIDATE_INT) === false || (int) $parentId <= 0) {
+            throw ValidationException::withMessages(['parent_id' => 'The parent category is invalid.']);
+        }
+
+        $parentId = (int) $parentId;
+        if ($category !== null && $parentId === (int) $category->getKey()) {
+            throw ValidationException::withMessages(['parent_id' => 'A category cannot be its own parent.']);
+        }
+
+        /** @var ArtworkCategory|null $parent */
+        $parent = ArtworkCategory::query()->find($parentId);
+        if ($parent === null) {
+            throw ValidationException::withMessages(['parent_id' => 'The parent category no longer exists.']);
+        }
+        if ($parent->getAttribute('parent_id') !== null) {
+            throw ValidationException::withMessages(['parent_id' => 'Only one level of child categories is supported. Choose a top-level category.']);
+        }
+
+        return $parentId;
+    }
+
+    private function assertCanReparent(ArtworkCategory $category, ?int $parentId): void
+    {
+        if ($parentId !== null && $category->children()->exists()) {
+            throw ValidationException::withMessages(['parent_id' => 'A category that already has child categories must remain top-level.']);
+        }
+    }
+
+    private function nextSiblingPosition(?int $parentId, int $ignoreId): int
+    {
+        $query = ArtworkCategory::query()->whereKeyNot($ignoreId);
+        $parentId === null ? $query->whereNull('parent_id') : $query->where('parent_id', $parentId);
+
+        return ((int) ($query->max('position') ?? -1)) + 1;
+    }
+
+    private function validateVisibleChildren(ArtworkCategory $category): void
+    {
+        if (
+            (string) $category->getAttribute('state') !== 'published'
+            || (bool) $category->getAttribute('show_in_navigation')
+        ) {
+            return;
+        }
+
+        if ($category->children()->where('state', 'published')->where('show_in_navigation', true)->exists()) {
+            throw ValidationException::withMessages([
+                'show_in_navigation' => 'Keep this parent in public navigation while it has visible child categories.',
+            ]);
+        }
+    }
+
     private function validateNavigationPosition(ArtworkCategory $category): void
     {
         if (
@@ -310,16 +388,38 @@ class ArtworkCategoryEditorialService
             return;
         }
 
-        $conflict = ArtworkCategory::query()
-            ->where('state', 'published')
-            ->where('show_in_navigation', true)
-            ->where('position', $category->getAttribute('position'))
-            ->whereKeyNot($category->getKey())
-            ->exists();
+        $parentId = $category->getAttribute('parent_id');
+        if ($parentId !== null) {
+            /** @var ArtworkCategory|null $parent */
+            $parent = ArtworkCategory::query()->find($parentId);
+            if (
+                $parent === null
+                || (string) $parent->getAttribute('state') !== 'published'
+                || ! (bool) $parent->getAttribute('show_in_navigation')
+            ) {
+                throw ValidationException::withMessages([
+                    'parent_id' => 'A visible child category requires a published parent that is also shown in public navigation.',
+                ]);
+            }
+        }
 
-        if ($conflict) {
+        /** @var Builder<ArtworkCategory> $conflictQuery */
+        $conflictQuery = ArtworkCategory::query();
+        $conflictQuery->where('state', 'published');
+        $conflictQuery->where('show_in_navigation', true);
+        $conflictQuery->where('position', $category->getAttribute('position'));
+        $conflictQuery->whereKeyNot($category->getKey());
+        if ($parentId === null) {
+            $conflictQuery->whereNull('parent_id');
+        } else {
+            $conflictQuery->where('parent_id', $parentId);
+        }
+
+        if ($conflictQuery->exists()) {
             throw ValidationException::withMessages([
-                'position' => 'A visible navigation category already uses this position.',
+                'position' => $parentId === null
+                    ? 'A visible top-level navigation category already uses this position.'
+                    : 'A visible child category under this parent already uses this position.',
             ]);
         }
     }

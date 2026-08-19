@@ -4,6 +4,7 @@ namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Models\ArtworkCategory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -17,7 +18,7 @@ final class ArtworkCategoryOrderService
     {
         $this->validateDirection($direction);
 
-        $ids = ArtworkCategory::query()
+        $ids = $this->siblings($category)
             ->orderBy('position')
             ->orderBy('id')
             ->pluck('id')
@@ -38,8 +39,10 @@ final class ArtworkCategoryOrderService
         $actor = $this->adminAuditService->requireActor();
 
         return DB::transaction(function () use ($category, $direction, $actor): bool {
+            /** @var ArtworkCategory $fresh */
+            $fresh = ArtworkCategory::query()->whereKey($category->getKey())->lockForUpdate()->firstOrFail();
             /** @var Collection<int, ArtworkCategory> $categories */
-            $categories = ArtworkCategory::query()
+            $categories = $this->siblings($fresh)
                 ->orderBy('position')
                 ->orderBy('id')
                 ->lockForUpdate()
@@ -52,12 +55,12 @@ final class ArtworkCategoryOrderService
                 ->all();
 
             if (count($positionSlots) !== count(array_unique($positionSlots))) {
-                throw new LogicException('Artwork category positions must be unique before reordering.');
+                throw new LogicException('Sibling artwork category positions must be unique before reordering.');
             }
 
             $index = null;
             foreach ($ordered as $candidateIndex => $candidate) {
-                if ((int) $candidate->getKey() === (int) $category->getKey()) {
+                if ((int) $candidate->getKey() === (int) $fresh->getKey()) {
                     $index = $candidateIndex;
                     break;
                 }
@@ -108,6 +111,21 @@ final class ArtworkCategoryOrderService
 
             return true;
         });
+    }
+
+    private function siblings(ArtworkCategory $category): Builder
+    {
+        $parentId = $category->getAttribute('parent_id');
+        /** @var Builder<ArtworkCategory> $query */
+        $query = ArtworkCategory::query();
+
+        if ($parentId === null) {
+            $query->whereNull('parent_id');
+        } else {
+            $query->where('parent_id', $parentId);
+        }
+
+        return $query;
     }
 
     private function validateDirection(string $direction): void
