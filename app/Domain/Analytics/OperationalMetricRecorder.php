@@ -27,21 +27,46 @@ final class OperationalMetricRecorder
             return;
         }
 
+        $collapsed = [];
+        foreach ($metrics as $metric) {
+            $name = $metric['name'];
+            $sampleCount = $metric['sample_count'] ?? 1;
+
+            if (isset($collapsed[$name])) {
+                if ($collapsed[$name]['unit'] !== $metric['unit']) {
+                    Log::warning('Operational metric batch contains conflicting units.', [
+                        'metric' => $name,
+                    ]);
+
+                    return;
+                }
+
+                $collapsed[$name]['value'] += $metric['value'];
+                $collapsed[$name]['sample_count'] += $sampleCount;
+
+                continue;
+            }
+
+            $collapsed[$name] = [
+                'value' => $metric['value'],
+                'unit' => $metric['unit'],
+                'sample_count' => $sampleCount,
+            ];
+        }
+
         $metricDate = now()->toDateString();
         $calculatedAt = now();
         $rows = [];
         $bindings = [];
-        $names = [];
 
-        foreach ($metrics as $metric) {
+        foreach ($collapsed as $name => $metric) {
             $rows[] = "(?, ?, 'application', ?, ?, ?, NULL, ?)";
             $bindings[] = $metricDate;
-            $bindings[] = $metric['name'];
+            $bindings[] = $name;
             $bindings[] = $metric['value'];
             $bindings[] = $metric['unit'];
             $bindings[] = $calculatedAt;
-            $bindings[] = $metric['sample_count'] ?? 1;
-            $names[] = $metric['name'];
+            $bindings[] = $metric['sample_count'];
         }
 
         $sql = <<<'SQL'
@@ -59,7 +84,7 @@ final class OperationalMetricRecorder
             DB::statement(str_replace('__ROWS__', implode(', ', $rows), $sql), $bindings);
         } catch (Throwable $exception) {
             Log::warning('Operational metric aggregation failed.', [
-                'metrics' => $names,
+                'metrics' => array_keys($collapsed),
                 'exception' => $exception::class,
             ]);
         }
