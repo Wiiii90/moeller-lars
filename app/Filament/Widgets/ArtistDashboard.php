@@ -27,6 +27,8 @@ final class ArtistDashboard extends Widget
 
     protected static ?int $sort = 1;
 
+    protected static bool $isLazy = true;
+
     protected int|string|array $columnSpan = 'full';
 
     protected function getViewData(): array
