@@ -7,11 +7,11 @@ use App\Models\MediaVariant;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 final class AdminMediaController extends Controller
 {
-    public function original(MediaAsset $mediaAsset): StreamedResponse
+    public function original(MediaAsset $mediaAsset): Response
     {
         $this->authorizeAdmin();
         abort_unless($mediaAsset->getAttribute('state') === 'available', 404);
@@ -20,10 +20,16 @@ final class AdminMediaController extends Controller
         $storageKey = (string) $mediaAsset->getAttribute('storage_key');
         abort_unless($disk->exists($storageKey), 404);
 
-        return $this->stream($disk, $storageKey, (string) $mediaAsset->getAttribute('mime_type'));
+        return $this->sendfile(
+            $disk,
+            $storageKey,
+            (string) $mediaAsset->getAttribute('mime_type'),
+            (int) $mediaAsset->getAttribute('byte_size'),
+            (string) $mediaAsset->getAttribute('sha256'),
+        );
     }
 
-    public function variant(MediaVariant $mediaVariant): StreamedResponse
+    public function variant(MediaVariant $mediaVariant): Response
     {
         $this->authorizeAdmin();
         $mediaVariant->loadMissing('mediaAsset');
@@ -41,7 +47,13 @@ final class AdminMediaController extends Controller
         $storageKey = (string) $mediaVariant->getAttribute('storage_key');
         abort_unless($disk->exists($storageKey), 404);
 
-        return $this->stream($disk, $storageKey, (string) $mediaVariant->getAttribute('mime_type'));
+        return $this->sendfile(
+            $disk,
+            $storageKey,
+            (string) $mediaVariant->getAttribute('mime_type'),
+            (int) $mediaVariant->getAttribute('byte_size'),
+            (string) $mediaVariant->getAttribute('sha256'),
+        );
     }
 
     private function authorizeAdmin(): void
@@ -51,18 +63,20 @@ final class AdminMediaController extends Controller
         abort_unless($user instanceof User && (bool) $user->getAttribute('is_admin'), 403);
     }
 
-    private function stream($disk, string $key, string $mimeType): StreamedResponse
+    private function sendfile($disk, string $key, string $mimeType, int $byteSize, string $sha256): Response
     {
-        $stream = $disk->readStream($key);
-        abort_unless(is_resource($stream), 404);
+        $path = $disk->path($key);
+        abort_unless(is_file($path) && is_readable($path), 404);
 
-        return response()->stream(function () use ($stream): void {
-            fpassthru($stream);
-            fclose($stream);
-        }, 200, [
+        return response('', 200, [
             'Content-Type' => $mimeType,
+            'Content-Length' => (string) max(0, $byteSize),
+            'ETag' => '"'.$sha256.'"',
+            'Accept-Ranges' => 'bytes',
+            'Content-Disposition' => 'inline',
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, max-age=3600',
+            'X-Sendfile' => $path,
         ]);
     }
 }
