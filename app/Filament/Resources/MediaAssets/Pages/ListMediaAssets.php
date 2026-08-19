@@ -143,10 +143,11 @@ final class ListMediaAssets extends Page
 
         $this->assets = $records->map(static function (MediaAsset $asset): array {
             /** @var MediaVariant|null $thumbnail */
-            $thumbnail = $asset->getRelationValue('variants')->first(static fn (MediaVariant $variant): bool =>
-                $variant->getAttribute('variant_kind') === 'thumbnail'
-                && $variant->getAttribute('transform_profile') === 'public-v1'
-                && $variant->getAttribute('state') === 'available');
+            $thumbnail = $asset->getRelationValue('variants')->first(static function (MediaVariant $variant): bool {
+                return $variant->getAttribute('variant_kind') === 'thumbnail'
+                    && $variant->getAttribute('transform_profile') === 'public-v1'
+                    && $variant->getAttribute('state') === 'available';
+            });
             $usage = (int) $asset->getAttribute('artworks_count')
                 + (int) $asset->getAttribute('exhibitions_count')
                 + (int) $asset->getAttribute('cv_entries_count')
