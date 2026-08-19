@@ -33,12 +33,7 @@
                     <article class="artist-contact-sheet__item" wire:key="gallery-artwork-{{ $artwork['id'] }}">
                         <div class="artist-contact-sheet__image">
                             @if ($artwork['thumbnail_url'])
-                                <img
-                                    src="{{ $artwork['thumbnail_url'] }}"
-                                    alt=""
-                                    loading="lazy"
-                                    decoding="async"
-                                >
+                                <img src="{{ $artwork['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
                             @else
                                 <span>No image</span>
                             @endif
@@ -54,32 +49,16 @@
                                     @if ($artwork['dimensions']){{ ($artwork['year'] || $artwork['medium']) ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
                                 </span>
                             </div>
-
-                            <span class="artist-contact-sheet__state {{ $artwork['state'] === 'published' ? 'is-published' : '' }}">
-                                {{ $artwork['state_label'] }}
-                            </span>
+                            <span class="artist-contact-sheet__state {{ $artwork['state'] === 'published' ? 'is-published' : '' }}">{{ $artwork['state_label'] }}</span>
                         </div>
 
                         <div class="artist-contact-sheet__actions">
                             <a class="artist-action is-primary" href="{{ $artwork['edit_url'] }}">Edit</a>
-                            @if ($artwork['public_url'])
-                                <a class="artist-action" href="{{ $artwork['public_url'] }}" target="_blank" rel="noopener">View</a>
-                            @endif
+                            @if ($artwork['media_preview_url'])<a class="artist-action" href="{{ $artwork['media_preview_url'] }}">Images</a>@endif
+                            @if ($artwork['public_url'])<a class="artist-action" href="{{ $artwork['public_url'] }}" target="_blank" rel="noopener">View</a>@endif
                             <span class="artist-contact-sheet__order" aria-label="Reorder {{ $artwork['title'] }}">
-                                <button
-                                    class="artist-action"
-                                    type="button"
-                                    wire:click="moveArtwork({{ $artwork['id'] }}, 'up')"
-                                    aria-label="Move {{ $artwork['title'] }} earlier"
-                                    @disabled(! $artwork['can_move_up'])
-                                >↑</button>
-                                <button
-                                    class="artist-action"
-                                    type="button"
-                                    wire:click="moveArtwork({{ $artwork['id'] }}, 'down')"
-                                    aria-label="Move {{ $artwork['title'] }} later"
-                                    @disabled(! $artwork['can_move_down'])
-                                >↓</button>
+                                <button class="artist-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'up')" aria-label="Move {{ $artwork['title'] }} earlier" @disabled(! $artwork['can_move_up'])>↑</button>
+                                <button class="artist-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'down')" aria-label="Move {{ $artwork['title'] }} later" @disabled(! $artwork['can_move_down'])>↓</button>
                             </span>
                         </div>
                     </article>

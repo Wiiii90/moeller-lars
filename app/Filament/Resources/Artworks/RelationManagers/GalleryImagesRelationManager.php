@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Artworks\RelationManagers;
 
 use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Media\MediaIngestService;
+use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
@@ -88,15 +89,10 @@ class GalleryImagesRelationManager extends RelationManager
             ])
             ->recordActions([
                 Action::make('preview')
-                    ->label('Preview')
+                    ->label('Inspect')
                     ->icon(Heroicon::OutlinedArrowsPointingOut)
-                    ->modalHeading(fn (ArtworkMedia $record): string => (string) ($record->getRelationValue('mediaAsset')?->getAttribute('original_filename') ?? 'Artwork image'))
-                    ->modalContent(fn (ArtworkMedia $record) => view('filament.media.gallery-preview', [
-                        'imageUrl' => $this->originalUrl($record),
-                        'alt' => (string) ($record->getAttribute('alt_text_override') ?: $record->getRelationValue('mediaAsset')?->getAttribute('alt_text') ?: ''),
-                    ]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Close'),
+                    ->url(fn (ArtworkMedia $record): string => $this->viewerUrl($record))
+                    ->visible(fn (ArtworkMedia $record): bool => $this->asset($record)?->getAttribute('state') === 'available'),
                 Action::make('moveUp')
                     ->label('Move up')
                     ->icon(Heroicon::OutlinedArrowUp)
@@ -146,6 +142,14 @@ class GalleryImagesRelationManager extends RelationManager
             ->all();
     }
 
+    private function asset(ArtworkMedia $usage): ?MediaAsset
+    {
+        $usage->loadMissing('mediaAsset');
+        $asset = $usage->getRelationValue('mediaAsset');
+
+        return $asset instanceof MediaAsset ? $asset : null;
+    }
+
     private function thumbnailUrl(ArtworkMedia $usage): ?string
     {
         $usage->loadMissing('mediaAsset.variants');
@@ -165,14 +169,13 @@ class GalleryImagesRelationManager extends RelationManager
         return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
     }
 
-    private function originalUrl(ArtworkMedia $usage): ?string
+    private function viewerUrl(ArtworkMedia $usage): string
     {
-        $usage->loadMissing('mediaAsset');
-        $asset = $usage->getRelationValue('mediaAsset');
+        $asset = $this->asset($usage);
 
-        return $asset instanceof MediaAsset && $asset->getAttribute('state') === 'available'
-            ? route('admin.media.original', $asset)
-            : null;
+        return $asset instanceof MediaAsset
+            ? MediaAssetResource::getUrl('view', ['record' => $asset->getKey(), 'artwork' => $this->getOwnerRecord()->getKey()])
+            : MediaAssetResource::getUrl('index');
     }
 
     private function dimensions(ArtworkMedia $usage): string
