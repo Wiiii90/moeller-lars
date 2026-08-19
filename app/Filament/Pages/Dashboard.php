@@ -2,12 +2,11 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
-use App\Filament\Widgets\ContentOverview;
+use App\Filament\Widgets\ArtistDashboard;
 use Filament\Actions\Action;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Support\Icons\Heroicon;
@@ -20,17 +19,12 @@ final class Dashboard extends BaseDashboard
 
     public function getColumns(): array
     {
-        return [
-            'md' => 2,
-            'xl' => 3,
-        ];
+        return ['md' => 1];
     }
 
     public function getWidgets(): array
     {
-        return [
-            ContentOverview::class,
-        ];
+        return [ArtistDashboard::class];
     }
 
     protected function getHeaderActions(): array
@@ -52,10 +46,10 @@ final class Dashboard extends BaseDashboard
                 ->label('Add blog post')
                 ->icon(Heroicon::OutlinedPlus)
                 ->url(BlogPostResource::getUrl('create')),
-            Action::make('manageCategories')
-                ->label('Manage categories')
-                ->icon(Heroicon::OutlinedTag)
-                ->url(ArtworkCategoryResource::getUrl('index')),
+            Action::make('managePages')
+                ->label('Manage pages')
+                ->icon(Heroicon::OutlinedRectangleStack)
+                ->url(SitePages::getUrl()),
             Action::make('openSite')
                 ->label('Open public site')
                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
