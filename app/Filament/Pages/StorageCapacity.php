@@ -48,7 +48,9 @@ final class StorageCapacity extends Page
             Action::make('refresh')
                 ->label('Refresh measurement')
                 ->icon(Heroicon::OutlinedArrowPath)
-                ->action(fn (): null => tap(null, fn () => $this->refreshCapacity())),
+                ->action(function (): void {
+                    $this->refreshCapacity();
+                }),
         ];
     }
 
