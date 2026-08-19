@@ -91,8 +91,14 @@ class CvEntryResource extends Resource
                 TextColumn::make('year_text')->label('Date')->sortable(),
                 TextColumn::make('title')->searchable(),
                 TextColumn::make('state')->badge()->sortable(),
-                TextColumn::make('position')->label('Display order')->sortable()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('position')
+                    ->label('Display order')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('position')
             ->filters([

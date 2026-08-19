@@ -57,9 +57,17 @@ class ExhibitionResource extends Resource
                                 $set('slug', Str::slug($state));
                             }
                         }),
-                    TextInput::make('slug')->label('Public URL slug')->required()->maxLength(180)->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')->unique('exhibitions', 'slug', ignoreRecord: true),
+                    TextInput::make('slug')
+                        ->label('Public URL slug')
+                        ->required()
+                        ->maxLength(180)
+                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                        ->unique('exhibitions', 'slug', ignoreRecord: true),
                     TextInput::make('date_text')->label('Displayed date')->required()->maxLength(160),
-                    Select::make('kind')->options(['solo' => 'Solo', 'group' => 'Group'])->nullable(),
+                    Select::make('kind')->options([
+                        'solo' => 'Solo',
+                        'group' => 'Group',
+                    ])->nullable(),
                     DatePicker::make('starts_on')->nullable(),
                     DatePicker::make('ends_on')->nullable(),
                     TextInput::make('venue')->maxLength(240)->nullable(),
@@ -87,8 +95,13 @@ class ExhibitionResource extends Resource
                     Repeater::make('mediaUsages')
                         ->relationship()
                         ->schema([
-                            MediaAssetSelect::make('media_asset_id', 'mediaAsset', 'Image')->required()->columnSpanFull(),
-                            Select::make('role')->options(['hero' => 'Hero', 'additional' => 'Additional'])->required()->default('additional'),
+                            MediaAssetSelect::make('media_asset_id', 'mediaAsset', 'Image')
+                                ->required()
+                                ->columnSpanFull(),
+                            Select::make('role')->options([
+                                'hero' => 'Hero',
+                                'additional' => 'Additional',
+                            ])->required()->default('additional'),
                             TextInput::make('alt_text_override')->label('ALT text override')->maxLength(500)->nullable(),
                         ])
                         ->columns(2)
@@ -105,8 +118,14 @@ class ExhibitionResource extends Resource
                 TextColumn::make('title')->searchable(),
                 TextColumn::make('venue')->searchable(),
                 TextColumn::make('state')->badge()->sortable(),
-                TextColumn::make('position')->label('Display order')->sortable()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('position')
+                    ->label('Display order')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('position')
             ->filters([
@@ -118,15 +137,28 @@ class ExhibitionResource extends Resource
                 ]),
             ])
             ->recordActions([
-                Action::make('moveUp')->label('Move up')->icon('heroicon-o-chevron-up')->visible(fn (Exhibition $record): bool => app(EditorialRecordService::class)->canMove($record, 'up'))->action(function (Exhibition $record): void {
-                    app(EditorialRecordService::class)->move($record, 'up');
-                    Notification::make()->title('Exhibition moved up')->success()->send();
-                }),
-                Action::make('moveDown')->label('Move down')->icon('heroicon-o-chevron-down')->visible(fn (Exhibition $record): bool => app(EditorialRecordService::class)->canMove($record, 'down'))->action(function (Exhibition $record): void {
-                    app(EditorialRecordService::class)->move($record, 'down');
-                    Notification::make()->title('Exhibition moved down')->success()->send();
-                }),
-                Action::make('viewPublic')->label('View on site')->icon(Heroicon::OutlinedArrowTopRightOnSquare)->url(fn (Exhibition $record): string => route('exhibitions.index'))->openUrlInNewTab()->visible(fn (Exhibition $record): bool => $record->getAttribute('state') === 'published'),
+                Action::make('moveUp')
+                    ->label('Move up')
+                    ->icon('heroicon-o-chevron-up')
+                    ->visible(fn (Exhibition $record): bool => app(EditorialRecordService::class)->canMove($record, 'up'))
+                    ->action(function (Exhibition $record): void {
+                        app(EditorialRecordService::class)->move($record, 'up');
+                        Notification::make()->title('Exhibition moved up')->success()->send();
+                    }),
+                Action::make('moveDown')
+                    ->label('Move down')
+                    ->icon('heroicon-o-chevron-down')
+                    ->visible(fn (Exhibition $record): bool => app(EditorialRecordService::class)->canMove($record, 'down'))
+                    ->action(function (Exhibition $record): void {
+                        app(EditorialRecordService::class)->move($record, 'down');
+                        Notification::make()->title('Exhibition moved down')->success()->send();
+                    }),
+                Action::make('viewPublic')
+                    ->label('View on site')
+                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                    ->url(fn (Exhibition $record): string => route('exhibitions.index'))
+                    ->openUrlInNewTab()
+                    ->visible(fn (Exhibition $record): bool => $record->getAttribute('state') === 'published'),
                 EditAction::make(),
             ])
             ->toolbarActions([])
