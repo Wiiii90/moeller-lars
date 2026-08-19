@@ -30,6 +30,19 @@ it('serves the typed Pages workspace to an admin', function (): void {
         ->assertSee('Exhibitions');
 });
 
+it('keeps Home pinned outside normal navigation reordering', function (): void {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin, 'web');
+
+    /** @var SiteSection $home */
+    $home = SiteSection::query()->where('type', SiteSection::TYPE_HOME)->firstOrFail();
+    $order = app(SiteSectionOrderService::class);
+
+    expect($order->canMove($home, 'up'))->toBeFalse()
+        ->and($order->canMove($home, 'down'))->toBeFalse()
+        ->and($order->move($home, 'down'))->toBeFalse();
+});
+
 it('reorders top-level sections and keeps transitional legacy positions aligned', function (): void {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin, 'web');
@@ -39,6 +52,7 @@ it('reorders top-level sections and keeps transitional legacy positions aligned'
     /** @var SiteSection $previous */
     $previous = SiteSection::query()
         ->whereNull('parent_id')
+        ->where('type', '<>', SiteSection::TYPE_HOME)
         ->where('position', '<', $blog->position)
         ->orderByDesc('position')
         ->firstOrFail();
