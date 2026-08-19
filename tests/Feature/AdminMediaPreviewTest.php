@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\DailyMetric;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\User;
@@ -59,18 +60,34 @@ it('lets admins preview available unpublished media without making it public', f
     $original = $this->get(route('admin.media.original', $asset));
     $original
         ->assertSuccessful()
-        ->assertHeader('Content-Type', 'image/jpeg');
+        ->assertHeader('Content-Type', 'image/jpeg')
+        ->assertHeader('Content-Length', '8')
+        ->assertHeader('ETag', '"'.hash('sha256', 'original').'"')
+        ->assertHeader('Accept-Ranges', 'bytes');
     expect((string) $original->headers->get('Cache-Control'))
         ->toContain('private')
         ->toContain('max-age=3600');
+    expect((string) $original->headers->get('X-Sendfile'))->not->toBe('');
 
     $variantResponse = $this->get(route('admin.media.variant', $variant));
     $variantResponse
         ->assertSuccessful()
-        ->assertHeader('Content-Type', 'image/webp');
+        ->assertHeader('Content-Type', 'image/webp')
+        ->assertHeader('Content-Length', '9')
+        ->assertHeader('Accept-Ranges', 'bytes');
     expect((string) $variantResponse->headers->get('Cache-Control'))
         ->toContain('private')
         ->toContain('max-age=3600');
+    expect((string) $variantResponse->headers->get('X-Sendfile'))->not->toBe('');
+});
+
+it('does not synchronously aggregate operational telemetry for media delivery', function () {
+    [, $variant] = adminPreviewAsset();
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+
+    $this->get(route('admin.media.variant', $variant))->assertSuccessful();
+
+    expect(DailyMetric::query()->count())->toBe(0);
 });
 
 it('refuses quarantined media even for admins', function () {
