@@ -2,6 +2,7 @@
 
 namespace App\Domain\Media;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -10,20 +11,10 @@ final class MediaCapacityService
 {
     private const WARNING_RATIO = 0.85;
 
+    private const DISPLAY_CACHE_SECONDS = 300;
+
     /**
-     * @return array{
-     *     configured: bool,
-     *     measurement_available: bool,
-     *     status: 'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',
-     *     quota_bytes: int|null,
-     *     authoritative_bytes: int|null,
-     *     generated_bytes: int|null,
-     *     managed_bytes: int|null,
-     *     remaining_bytes: int|null,
-     *     authoritative_ratio: float|null,
-     *     original_files: int|null,
-     *     generated_files: int|null
-     * }
+     * @return array{configured:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null}
      */
     public function snapshot(): array
     {
@@ -74,12 +65,21 @@ final class MediaCapacityService
         ];
     }
 
+    /** @return array{configured:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null} */
+    public function cachedSnapshot(): array
+    {
+        return Cache::remember($this->displayCacheKey(), self::DISPLAY_CACHE_SECONDS, fn (): array => $this->snapshot());
+    }
+
+    public function forgetCachedSnapshot(): void
+    {
+        Cache::forget($this->displayCacheKey());
+    }
+
     public function assertCanStoreOriginal(int $bytes): void
     {
         if ($bytes <= 0) {
-            throw ValidationException::withMessages([
-                'media' => 'The uploaded media has an invalid size.',
-            ]);
+            throw ValidationException::withMessages(['media' => 'The uploaded media has an invalid size.']);
         }
 
         $quota = $this->quotaBytes();
@@ -89,25 +89,19 @@ final class MediaCapacityService
 
         $snapshot = $this->snapshot();
         if (empty($snapshot['measurement_available'])) {
-            throw ValidationException::withMessages([
-                'media' => 'Storage capacity could not be verified. Try the upload again later.',
-            ]);
+            throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
         }
 
         $authoritativeBytes = $snapshot['authoritative_bytes'];
         if (is_int($authoritativeBytes)) {
             if ($authoritativeBytes + $bytes > $quota) {
-                throw ValidationException::withMessages([
-                    'media' => 'The media storage allowance is full. Remove unused original media or ask the operator to increase the allowance before uploading.',
-                ]);
+                throw ValidationException::withMessages(['media' => 'The media storage allowance is full. Remove unused original media or ask the operator to increase the allowance before uploading.']);
             }
 
             return;
         }
 
-        throw ValidationException::withMessages([
-            'media' => 'Storage capacity could not be verified. Try the upload again later.',
-        ]);
+        throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
     }
 
     private function quotaBytes(): ?int
@@ -116,7 +110,6 @@ final class MediaCapacityService
         if (is_int($configured)) {
             return $configured > 0 ? $configured : null;
         }
-
         if (is_string($configured) && ctype_digit($configured)) {
             $quota = (int) $configured;
 
@@ -124,6 +117,11 @@ final class MediaCapacityService
         }
 
         return null;
+    }
+
+    private function displayCacheKey(): string
+    {
+        return 'media-capacity:display:'.sha1((string) config('media.disk').'|'.(string) ($this->quotaBytes() ?? 'none'));
     }
 
     /** @return array{int, int} */

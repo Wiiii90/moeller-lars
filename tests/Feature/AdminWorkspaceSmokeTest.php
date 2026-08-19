@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
@@ -23,7 +24,7 @@ beforeEach(function () {
 });
 
 it('renders the dashboard and central admin index and create surfaces', function () {
-    $this->get('/admin')->assertSuccessful()->assertSee('Dashboard');
+    $this->get('/admin')->assertSuccessful()->assertSee('Website at a glance');
 
     foreach ([
         ArtworkResource::getUrl('index'),
@@ -37,6 +38,7 @@ it('renders the dashboard and central admin index and create surfaces', function
         BlogPostResource::getUrl('index'),
         BlogPostResource::getUrl('create'),
         MediaAssetResource::getUrl('index'),
+        StorageCapacity::getUrl(),
         BlogSettingResource::getUrl('edit', ['record' => 1]),
         PublicContentSettingResource::getUrl('edit', ['record' => 1]),
     ] as $url) {

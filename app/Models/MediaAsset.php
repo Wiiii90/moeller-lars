@@ -35,6 +35,11 @@ class MediaAsset extends Model
         return $this->hasMany(CvEntry::class, 'image_media_asset_id');
     }
 
+    public function blogPosts(): HasMany
+    {
+        return $this->hasMany(BlogPost::class, 'cover_media_asset_id');
+    }
+
     public function artworks(): BelongsToMany
     {
         return $this->belongsToMany(Artwork::class, 'artwork_media')
