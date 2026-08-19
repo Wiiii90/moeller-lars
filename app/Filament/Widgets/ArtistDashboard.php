@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Model;
 
 final class ArtistDashboard extends Widget
 {
-    protected static string $view = 'filament.widgets.artist-dashboard';
+    protected string $view = 'filament.widgets.artist-dashboard';
 
     protected static ?int $sort = 1;
 
