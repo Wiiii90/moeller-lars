@@ -20,6 +20,38 @@ final class AdminActionReceiptService
 
     public const MAX_RECEIPTS_PER_USER = 100;
 
+    public function recordForAuditEvent(AuditEvent $event, User $actor): ?AdminActionReceipt
+    {
+        $action = (string) $event->getAttribute('action');
+        $transition = match ($action) {
+            'artwork.published' => ['entity' => 'artwork', 'before' => 'draft', 'after' => 'published', 'inverse' => 'artwork.unpublished'],
+            'artwork.unpublished' => ['entity' => 'artwork', 'before' => 'published', 'after' => 'draft', 'inverse' => 'artwork.published'],
+            'cv_entry.published' => ['entity' => 'cv_entry', 'before' => 'draft', 'after' => 'published', 'inverse' => 'cv_entry.unpublished'],
+            'cv_entry.unpublished' => ['entity' => 'cv_entry', 'before' => 'published', 'after' => 'draft', 'inverse' => 'cv_entry.published'],
+            'exhibition.published' => ['entity' => 'exhibition', 'before' => 'draft', 'after' => 'published', 'inverse' => 'exhibition.unpublished'],
+            'exhibition.unpublished' => ['entity' => 'exhibition', 'before' => 'published', 'after' => 'draft', 'inverse' => 'exhibition.published'],
+            default => null,
+        };
+
+        if ($transition === null || (string) $event->getAttribute('entity_type') !== $transition['entity']) {
+            return null;
+        }
+
+        $target = $this->findTarget($transition['entity'], (int) $event->getAttribute('entity_id'));
+        if ($target === null || (string) $target->getAttribute('state') !== $transition['after']) {
+            return null;
+        }
+
+        return $this->recordStateTransition(
+            $event,
+            $actor,
+            $target,
+            $transition['before'],
+            $transition['after'],
+            $transition['inverse'],
+        );
+    }
+
     public function recordStateTransition(
         AuditEvent $event,
         User $actor,
@@ -178,6 +210,16 @@ final class AdminActionReceiptService
             ->pluck('state', 'id')
             ->map(static fn (mixed $state): string => (string) $state)
             ->all();
+    }
+
+    private function findTarget(string $entityType, int $entityId): Artwork|CvEntry|Exhibition|null
+    {
+        return match ($entityType) {
+            'artwork' => Artwork::query()->find($entityId),
+            'cv_entry' => CvEntry::query()->find($entityId),
+            'exhibition' => Exhibition::query()->find($entityId),
+            default => null,
+        };
     }
 
     private function entityType(Artwork|CvEntry|Exhibition $target): string
