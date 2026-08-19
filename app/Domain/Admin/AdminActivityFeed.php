@@ -20,6 +20,7 @@ use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -148,7 +149,7 @@ final class AdminActivityFeed
     }
 
     /**
-     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
+     * @param  class-string<Model>  $model
      * @param  array<int, int>  $ids
      * @return array<int, string>
      */
