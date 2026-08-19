@@ -3,7 +3,10 @@
         <header class="artist-workspace__head artist-gallery-workspace__head">
             <div>
                 <p class="artist-workspace__kicker">
-                    Gallery@if ($galleryContext['parent_name']) · {{ $galleryContext['parent_name'] }}@endif
+                    Gallery
+                    @if ($galleryContext['parent_name'])
+                        · {{ $galleryContext['parent_name'] }}
+                    @endif
                 </p>
                 <h2>{{ $galleryContext['name'] }}</h2>
                 <p>
