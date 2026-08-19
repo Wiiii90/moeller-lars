@@ -15,6 +15,7 @@ class AdminAuditService
         'artwork.updated',
         'artwork.published',
         'artwork.unpublished',
+        'artwork.reordered',
         'artwork.primary_media_attached',
         'artwork.primary_media_replaced',
         'artwork.primary_media_alt_updated',

@@ -85,6 +85,13 @@ class CreateArtwork extends CreateRecord
         return $artwork;
     }
 
+    protected function getRedirectUrl(): string
+    {
+        $galleryId = (int) $this->getRecord()->getAttribute('artwork_category_id');
+
+        return ArtworkResource::getUrl('gallery', ['gallery' => $galleryId]);
+    }
+
     protected function getCreatedNotification(): Notification
     {
         return match ($this->primaryMediaResult) {

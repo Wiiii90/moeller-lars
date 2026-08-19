@@ -61,19 +61,21 @@
                         </div>
 
                         <div class="artist-section__actions">
-                            <a class="is-primary" href="{{ $section['content_url'] }}">Content</a>
+                            <a class="artist-action is-primary" href="{{ $section['content_url'] }}">Content</a>
                             @if ($section['editor_url'])
-                                <a href="{{ $section['editor_url'] }}">Settings</a>
+                                <a class="artist-action" href="{{ $section['editor_url'] }}">Settings</a>
                             @endif
-                            <a href="{{ $section['public_url'] }}" target="_blank" rel="noopener">View</a>
+                            <a class="artist-action" href="{{ $section['public_url'] }}" target="_blank" rel="noopener">View</a>
                             <span class="artist-section__order" aria-label="Reorder {{ $section['navigation_label'] ?: $section['title'] }}">
                                 <button
+                                    class="artist-action"
                                     type="button"
                                     wire:click="moveSection({{ $section['id'] }}, 'up')"
                                     aria-label="Move {{ $section['navigation_label'] ?: $section['title'] }} earlier"
                                     @disabled(! $section['can_move_up'])
                                 >↑</button>
                                 <button
+                                    class="artist-action"
                                     type="button"
                                     wire:click="moveSection({{ $section['id'] }}, 'down')"
                                     aria-label="Move {{ $section['navigation_label'] ?: $section['title'] }} later"
