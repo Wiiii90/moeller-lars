@@ -35,8 +35,8 @@ final class ArtworkAttentionReport
         $artworkQuery = Artwork::query();
         /** @var EloquentCollection<int, Artwork> $artworks */
         $artworks = $artworkQuery
-            ->whereIn('analytics_key', $keys)
             ->with(['category', 'artworkMedia.mediaAsset.variants'])
+            ->whereIn('analytics_key', $keys)
             ->get();
 
         $eventsByKey = collect($events)->groupBy('analytics_key');
