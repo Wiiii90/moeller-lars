@@ -231,7 +231,10 @@ final class SitePages extends Page
     private function contentUrl(SiteSection $section): string
     {
         return match ($section->getAttribute('type')) {
-            SiteSection::TYPE_HOME, SiteSection::TYPE_GALLERY => ArtworkResource::getUrl('index'),
+            SiteSection::TYPE_HOME => ArtworkResource::getUrl('index'),
+            SiteSection::TYPE_GALLERY => ArtworkResource::getUrl('gallery', [
+                'gallery' => $section->getAttribute('artwork_category_id'),
+            ]),
             SiteSection::TYPE_VITA => CvEntryResource::getUrl('index'),
             SiteSection::TYPE_BLOG => BlogPostResource::getUrl('index'),
             SiteSection::TYPE_EXHIBITIONS => ExhibitionResource::getUrl('index'),

@@ -6,9 +6,11 @@ use App\Domain\Media\MediaIngestService;
 use App\Filament\Resources\Artworks\Pages\CreateArtwork;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Resources\Artworks\Pages\ListArtworks;
+use App\Filament\Resources\Artworks\Pages\ManageGalleryArtworks;
 use App\Filament\Resources\Artworks\Pages\ViewArtwork;
 use App\Filament\Resources\Artworks\RelationManagers\GalleryImagesRelationManager;
 use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -43,7 +45,7 @@ class ArtworkResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Artwork';
 
-    protected static ?string $navigationLabel = 'Artworks';
+    protected static ?string $navigationLabel = 'All artworks';
 
     protected static ?int $navigationSort = 10;
 
@@ -74,11 +76,19 @@ class ArtworkResource extends Resource
                         ->unique('artworks', 'slug', ignoreRecord: true)
                         ->disabled(fn (?Model $record): bool => $record?->getAttribute('published_at') !== null),
                     Select::make('artwork_category_id')
-                        ->label('Category')
+                        ->label('Gallery')
                         ->relationship('category', 'name')
                         ->required()
                         ->searchable()
-                        ->preload(),
+                        ->preload()
+                        ->default(function (): ?int {
+                            $galleryId = request()->integer('gallery');
+                            if ($galleryId <= 0) {
+                                return null;
+                            }
+
+                            return ArtworkCategory::query()->whereKey($galleryId)->exists() ? $galleryId : null;
+                        }),
                     TextInput::make('medium')->nullable()->maxLength(240),
                     TextInput::make('dimensions')->nullable()->maxLength(240),
                     Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
@@ -129,7 +139,7 @@ class ArtworkResource extends Resource
                     ->state(fn (Artwork $record): ?string => self::thumbnailUrl($record))
                     ->imageHeight(56),
                 TextColumn::make('title')->searchable()->sortable(),
-                TextColumn::make('category.name')->label('Category')->sortable(),
+                TextColumn::make('category.name')->label('Gallery')->sortable(),
                 TextColumn::make('state')->badge()->sortable(),
                 TextColumn::make('work_year')->label('Year')->sortable(),
                 TextColumn::make('position')
@@ -148,7 +158,7 @@ class ArtworkResource extends Resource
                     'published' => 'Published',
                     'archived' => 'Archived',
                 ]),
-                SelectFilter::make('category')->relationship('category', 'name'),
+                SelectFilter::make('category')->label('Gallery')->relationship('category', 'name'),
             ])
             ->recordActions([
                 Action::make('viewPublic')
@@ -178,12 +188,13 @@ class ArtworkResource extends Resource
         return [
             'index' => ListArtworks::route('/'),
             'create' => CreateArtwork::route('/create'),
+            'gallery' => ManageGalleryArtworks::route('/gallery/{gallery}'),
             'view' => ViewArtwork::route('/{record}'),
             'edit' => EditArtwork::route('/{record}/edit'),
         ];
     }
 
-    private static function thumbnailUrl(Artwork $artwork): ?string
+    public static function thumbnailUrl(Artwork $artwork): ?string
     {
         $artwork->loadMissing('artworkMedia.mediaAsset.variants');
 
