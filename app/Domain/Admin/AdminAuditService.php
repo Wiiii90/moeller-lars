@@ -22,7 +22,10 @@ class AdminAuditService
         'public_content_setting',
     ];
 
-    public function __construct(private readonly AdminActionStatsService $actionStats) {}
+    public function __construct(
+        private readonly AdminActionStatsService $actionStats,
+        private readonly AdminActionReceiptService $receipts,
+    ) {}
 
     public function requireActor(): User
     {
@@ -80,6 +83,7 @@ class AdminAuditService
         $event->save();
 
         $this->actionStats->record($actor, $action, $occurredAt);
+        $this->receipts->recordForAuditEvent($event, $actor);
 
         return $event;
     }
