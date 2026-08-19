@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Artwork\ArtworkCategoryEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
@@ -17,9 +18,13 @@ use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\SiteSection;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use UnitEnum;
@@ -61,6 +66,64 @@ final class SitePages extends Page
                 ->send();
             $this->loadSections();
         }
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('addGallery')
+                ->label('Add Gallery')
+                ->icon(Heroicon::OutlinedPlus)
+                ->schema([
+                    TextInput::make('name')
+                        ->label('Gallery name')
+                        ->required()
+                        ->maxLength(160),
+                    TextInput::make('slug')
+                        ->label('Public URL slug')
+                        ->required()
+                        ->maxLength(80)
+                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                        ->helperText('Lowercase letters, numbers and hyphens. The public URL stays stable when the Gallery later moves into or out of a submenu.'),
+                    Select::make('parent_id')
+                        ->label('Parent Gallery')
+                        ->placeholder('Top level')
+                        ->options(fn (): array => ArtworkCategory::query()
+                            ->whereNull('parent_id')
+                            ->orderBy('position')
+                            ->orderBy('name')
+                            ->pluck('name', 'id')
+                            ->all())
+                        ->searchable()
+                        ->nullable(),
+                ])
+                ->action(function (array $data): void {
+                    $parentId = filled($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null;
+                    /** @var Builder<ArtworkCategory> $siblings */
+                    $siblings = ArtworkCategory::query();
+                    $parentId === null
+                        ? $siblings->whereNull('parent_id')
+                        : $siblings->where('parent_id', $parentId);
+                    $position = ((int) ($siblings->max('position') ?? -10)) + 10;
+
+                    app(ArtworkCategoryEditorialService::class)->create([
+                        'name' => $data['name'],
+                        'slug' => $data['slug'],
+                        'parent_id' => $parentId,
+                        'position' => $position,
+                        'description' => null,
+                        'show_in_navigation' => false,
+                        'show_on_home' => false,
+                    ]);
+
+                    $this->loadSections();
+                    Notification::make()
+                        ->title('Gallery created as hidden')
+                        ->body('Add artwork and review its settings before publishing it.')
+                        ->success()
+                        ->send();
+                }),
+        ];
     }
 
     private function loadSections(): void
