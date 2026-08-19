@@ -100,5 +100,5 @@ it('resolves Matomo artwork events back to current editorial context', function 
         ->and($rows[0]['average_attention_seconds'])->toBe(9.0)
         ->and($rows[0]['trend'])->toHaveCount(2)
         ->and($rows[0]['trend'][1]['attention_seconds'])->toBe(11.0)
-        ->and($rows[0]['public_url'])->toBe(route('artworks.show', ['slug' => 'attention-work']));
+        ->and($rows[0]['public_url'])->toBe(route('artworks.show', ['artwork' => $artwork]));
 });
