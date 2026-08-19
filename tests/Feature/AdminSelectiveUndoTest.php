@@ -1,7 +1,7 @@
 <?php
 
-use App\Domain\Admin\AdminActivityFeed;
 use App\Domain\Admin\AdminActionReceiptService;
+use App\Domain\Admin\AdminActivityFeed;
 use App\Domain\Admin\AdminUndoService;
 use App\Domain\Admin\EditorialRecordService;
 use App\Filament\Pages\Activity;
