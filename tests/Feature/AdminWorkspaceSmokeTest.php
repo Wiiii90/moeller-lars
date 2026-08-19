@@ -9,22 +9,27 @@ use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
+use App\Filament\Widgets\ArtistDashboard;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->actingAs(User::factory()->admin()->create(), 'web');
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
 });
 
-it('renders the dashboard and central admin index and create surfaces', function () {
-    $this->get('/admin')->assertSuccessful()->assertSee('Website at a glance');
+it('renders the dashboard shell and central admin index and create surfaces', function () {
+    $this->get('/admin')->assertSuccessful();
 
     foreach ([
         ArtworkResource::getUrl('index'),
@@ -44,6 +49,14 @@ it('renders the dashboard and central admin index and create surfaces', function
     ] as $url) {
         $this->get($url)->assertSuccessful();
     }
+});
+
+it('renders the lazy artist dashboard overview when the widget loads', function () {
+    Livewire::test(ArtistDashboard::class)
+        ->assertSee('Website at a glance')
+        ->assertSee('Content')
+        ->assertSee('Needs attention')
+        ->assertSee('Recent activity');
 });
 
 it('renders representative edit surfaces with their editorial form schemas', function () {
