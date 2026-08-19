@@ -35,16 +35,25 @@
                         @php($submenuId = 'site-navigation-submenu-'.$navigationItem['tie_breaker'])
                         <div class="site-navigation__item @if ($navigationItem['active']) is-active @endif" data-navigation-item>
                             <div class="site-navigation__primary">
-                                <a href="{{ $navigationItem['url'] }}"@if ($navigationItem['current']) aria-current="page"@endif>{{ $navigationItem['label'] }}</a>
+                                <a
+                                    href="{{ $navigationItem['url'] }}"
+                                    @if ($navigationItem['current']) aria-current="page" @endif
+                                    @if ($navigationItem['children'] !== [])
+                                        aria-haspopup="true"
+                                        aria-expanded="false"
+                                        aria-controls="{{ $submenuId }}"
+                                        data-navigation-parent-link
+                                    @endif
+                                >{{ $navigationItem['label'] }}</a>
                                 @if ($navigationItem['children'] !== [])
                                     <button
                                         class="site-navigation__submenu-toggle"
                                         type="button"
-                                        aria-label="Open {{ $navigationItem['label'] }} categories"
+                                        aria-label="Show {{ $navigationItem['label'] }} subcategories"
                                         aria-expanded="false"
                                         aria-controls="{{ $submenuId }}"
                                         data-navigation-submenu-toggle
-                                    ><span aria-hidden="true">⌄</span></button>
+                                    ><span aria-hidden="true"></span></button>
                                 @endif
                             </div>
                             @if ($navigationItem['children'] !== [])
