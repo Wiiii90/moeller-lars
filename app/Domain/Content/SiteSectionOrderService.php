@@ -119,10 +119,15 @@ final class SiteSectionOrderService
         $query = SiteSection::query();
         $parentId = $section->getAttribute('parent_id');
 
-        if ($parentId === null) {
-            $query->whereNull('parent_id');
+        if ($parentId !== null) {
+            return $query->where('parent_id', $parentId);
+        }
+
+        $query->whereNull('parent_id');
+        if ((string) $section->getAttribute('type') === SiteSection::TYPE_HOME) {
+            $query->where('type', SiteSection::TYPE_HOME);
         } else {
-            $query->where('parent_id', $parentId);
+            $query->where('type', '<>', SiteSection::TYPE_HOME);
         }
 
         return $query;
