@@ -18,8 +18,12 @@
                 data-matomo-site-id="{{ $matomoTracking['site_id'] }}"
             >
         @endif
-        @vite(['resources/css/app.css', 'resources/css/public-content.css', 'resources/js/app.js'])
-        <link rel="stylesheet" href="{{ asset('css/public-presentation.css') }}">
+        @vite([
+            'resources/css/app.css',
+            'resources/css/public-content.css',
+            'resources/css/public-presentation.css',
+            'resources/js/app.js',
+        ])
     </head>
     <body class="public-site">
         <header class="site-header">
