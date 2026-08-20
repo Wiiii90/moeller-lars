@@ -19,7 +19,7 @@ class PublicContactController extends Controller
 
     public function show(): View
     {
-        $settings = PublicContentSetting::query()->findOrFail(1);
+        $settings = PublicContentSetting::current();
         abort_if($settings->getAttribute('contact_state') === 'hidden', 404);
 
         return view('pages.contact', ['settings' => $settings]);
@@ -27,7 +27,7 @@ class PublicContactController extends Controller
 
     public function submit(Request $request): RedirectResponse
     {
-        $settings = PublicContentSetting::query()->findOrFail(1);
+        $settings = PublicContentSetting::current();
         abort_unless($settings->getAttribute('contact_state') === 'enabled', 404);
 
         $data = $request->validate([
