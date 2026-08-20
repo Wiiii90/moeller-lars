@@ -491,7 +491,6 @@ final class Analytics extends Page
             'bot:request' => 'Bot requests',
             'operation:admin_request' => 'Admin requests',
             'performance:request_duration_ms' => 'Average request duration',
-            'performance:admin_request_request_duration_ms' => 'Average admin request duration',
             'performance:admin_request_duration_ms' => 'Average admin request duration',
             default => str_replace([':', '_'], [' · ', ' '], $metricName),
         };
