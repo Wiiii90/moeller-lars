@@ -160,6 +160,10 @@ body {
     transition: color .14s ease, opacity .14s ease;
 }
 
+.site-navigation__primary > a {
+    width: 100%;
+}
+
 .site-navigation__item.is-active > .site-navigation__primary > a,
 .site-header nav a[aria-current="page"] {
     color: #393532;
