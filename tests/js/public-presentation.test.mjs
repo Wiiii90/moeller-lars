@@ -21,13 +21,12 @@ test('public submenus use the shared expanding navigation region and item-step o
     assert.doesNotMatch(source, /toggle\.addEventListener/);
 });
 
-test('the full primary navigation cell activates its canonical link without a separate submenu button', () => {
+test('the canonical link itself owns the full primary navigation cell', () => {
     const source = readFileSync(new URL('../../resources/js/public-navigation.js', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../resources/css/public-presentation.css', import.meta.url), 'utf8');
 
-    assert.match(source, /function initializeFullCellTargets\(scroller\)/);
-    assert.match(source, /primary\.style\.cursor = 'pointer'/);
-    assert.match(source, /event\.target\.closest\('a'\)/);
-    assert.match(source, /link\.click\(\)/);
-    assert.match(source, /initializeFullCellTargets\(scroller\)/);
-    assert.doesNotMatch(source, /closest\('a, button'\)/);
+    assert.match(css, /\.site-navigation__primary > a\s*\{[^}]*width:\s*100%;/s);
+    assert.doesNotMatch(source, /initializeFullCellTargets/);
+    assert.doesNotMatch(source, /primary\.style\.cursor/);
+    assert.doesNotMatch(source, /link\.click\(\)/);
 });
