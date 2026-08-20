@@ -313,9 +313,18 @@ final class LegacyArtworkManifestImporter
             }
         }
 
-        $settings = DB::table('public_content_settings')->where('id', 1)->first();
-        if ($settings !== null && (bool) $settings->cv_enabled && $settings->cv_navigation_position !== null && isset($navigationPositions[(int) $settings->cv_navigation_position])) {
-            throw new RuntimeException('Artwork navigation collides with the enabled CV navigation position.');
+        $occupiedNavigationPositions = SiteSection::query()
+            ->whereNull('parent_id')
+            ->published()
+            ->visibleInNavigation()
+            ->pluck('position')
+            ->map(static fn ($position): int => (int) $position)
+            ->all();
+
+        foreach (array_keys($navigationPositions) as $position) {
+            if (in_array((int) $position, $occupiedNavigationPositions, true)) {
+                throw new RuntimeException("Artwork navigation position {$position} collides with an existing public site section.");
+            }
         }
 
         return [$batch, $validated];
