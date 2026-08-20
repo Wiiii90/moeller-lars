@@ -87,9 +87,9 @@ final class SiteSectionOrderService
 
             $temporaryBase = max($slots) + count($siblings) + 100;
             foreach ($changes as $offset => [$candidate]) {
-                $temporary = $temporaryBase + $offset;
-                DB::table('site_sections')->where('id', $candidate->getKey())->update(['position' => $temporary]);
-                $this->syncLegacyPosition($candidate, $temporary);
+                DB::table('site_sections')->where('id', $candidate->getKey())->update([
+                    'position' => $temporaryBase + $offset,
+                ]);
             }
 
             foreach ($changes as [$candidate, $position]) {
@@ -97,7 +97,6 @@ final class SiteSectionOrderService
                     'position' => $position,
                     'updated_at' => now(),
                 ]);
-                $this->syncLegacyPosition($candidate, $position);
             }
 
             $this->audit->record(
@@ -131,44 +130,6 @@ final class SiteSectionOrderService
         }
 
         return $query;
-    }
-
-    private function syncLegacyPosition(SiteSection $section, int $position): void
-    {
-        $type = (string) $section->getAttribute('type');
-
-        if ($type === SiteSection::TYPE_GALLERY) {
-            DB::table('artwork_categories')
-                ->where('id', $section->getAttribute('artwork_category_id'))
-                ->update(['position' => $position, 'updated_at' => now()]);
-
-            return;
-        }
-
-        if ($type === SiteSection::TYPE_VITA) {
-            DB::table('public_content_settings')->where('id', 1)->update([
-                'cv_navigation_position' => $position,
-                'updated_at' => now(),
-            ]);
-
-            return;
-        }
-
-        if ($type === SiteSection::TYPE_EXHIBITIONS) {
-            DB::table('public_content_settings')->where('id', 1)->update([
-                'exhibitions_navigation_position' => $position,
-                'updated_at' => now(),
-            ]);
-
-            return;
-        }
-
-        if ($type === SiteSection::TYPE_BLOG) {
-            DB::table('blog_settings')->where('id', 1)->update([
-                'navigation_position' => $position,
-                'updated_at' => now(),
-            ]);
-        }
     }
 
     private function validateDirection(string $direction): void

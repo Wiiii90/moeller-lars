@@ -2,8 +2,7 @@
 
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
-use App\Models\BlogSetting;
-use App\Models\PublicContentSetting;
+use App\Models\SiteSection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -24,7 +23,7 @@ it('keeps the blog completely unavailable until enabled', function () {
 });
 
 it('publishes enabled blog routes and excludes future scheduled posts', function () {
-    BlogSetting::query()->findOrFail(1)->update(['public_enabled' => true]);
+    testSingletonSection(SiteSection::TYPE_BLOG, ['state' => 'published', 'show_in_navigation' => true]);
     BlogPost::create([
         'slug' => 'published-post', 'title' => 'Published post', 'body' => 'Safe **body**',
         'state' => 'published', 'position' => 0, 'published_at' => now(),
@@ -40,9 +39,10 @@ it('publishes enabled blog routes and excludes future scheduled posts', function
 });
 
 it('builds sitemap from public feature state only', function () {
-    ArtworkCategory::create(['slug' => 'sculptures', 'name' => 'Sculptures', 'state' => 'published', 'position' => 0]);
-    PublicContentSetting::query()->findOrFail(1)->update(['cv_enabled' => true]);
-    BlogSetting::query()->findOrFail(1)->update(['public_enabled' => true]);
+    $category = ArtworkCategory::create(['slug' => 'sculptures', 'name' => 'Sculptures', 'show_on_home' => false]);
+    testGallerySection($category, ['state' => 'published']);
+    testSingletonSection(SiteSection::TYPE_VITA, ['state' => 'published']);
+    testSingletonSection(SiteSection::TYPE_BLOG, ['state' => 'published']);
 
     $response = $this->get('/sitemap.xml')->assertSuccessful();
     $response->assertSee('/sculptures')->assertSee('/cv')->assertSee('/blog')->assertDontSee('/contact');

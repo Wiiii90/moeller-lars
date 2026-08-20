@@ -41,6 +41,7 @@ it('runs the complete canonical artwork admin and public vertical slice', functi
         'show_in_navigation' => true,
         'show_on_home' => true,
     ]);
+    testGallerySection($category, ['state' => 'published', 'show_in_navigation' => true]);
 
     Livewire::test(CreateArtwork::class)
         ->fillForm([

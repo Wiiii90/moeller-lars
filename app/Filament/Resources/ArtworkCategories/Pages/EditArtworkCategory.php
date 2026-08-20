@@ -46,7 +46,7 @@ class EditArtworkCategory extends EditRecord
                 }),
             Action::make('deleteCategory')
                 ->label('Delete Gallery')
-                ->visible(fn (): bool => $this->categoryRecord()->getAttribute('state') === 'hidden')
+                ->visible(fn (): bool => $this->categoryRecord()->siteSection()->where('state', 'hidden')->exists())
                 ->requiresConfirmation()
                 ->action(function (): void {
                     $this->runCategoryAction(fn () => app(ArtworkCategoryEditorialService::class)->delete($this->categoryRecord()), 'Gallery deleted');

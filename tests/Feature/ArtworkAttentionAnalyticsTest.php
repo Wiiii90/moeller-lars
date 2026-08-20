@@ -12,11 +12,9 @@ it('assigns a stable public analytics identity that survives editorial renames',
     $category = ArtworkCategory::create([
         'name' => 'Analytics Gallery',
         'slug' => 'analytics-gallery',
-        'state' => 'published',
-        'position' => 0,
-        'show_in_navigation' => true,
         'show_on_home' => false,
     ]);
+    testGallerySection($category);
 
     $artwork = Artwork::create([
         'artwork_category_id' => $category->getKey(),
@@ -50,11 +48,9 @@ it('resolves Matomo artwork events back to current editorial context', function 
     $category = ArtworkCategory::create([
         'name' => 'Attention Gallery',
         'slug' => 'attention-gallery',
-        'state' => 'published',
-        'position' => 0,
-        'show_in_navigation' => true,
         'show_on_home' => false,
     ]);
+    testGallerySection($category);
 
     $artwork = Artwork::create([
         'artwork_category_id' => $category->getKey(),

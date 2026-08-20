@@ -11,6 +11,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
+use App\Models\SiteSection;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -75,17 +76,19 @@ final class ManageGalleryArtworks extends Page
     private function loadGallery(int $galleryId): void
     {
         /** @var ArtworkCategory $category */
-        $category = ArtworkCategory::query()->with('parent')->findOrFail($galleryId);
-        /** @var ArtworkCategory|null $parent */
-        $parent = $category->getRelationValue('parent');
-        $isPublished = $category->getAttribute('state') === 'published';
+        $category = ArtworkCategory::query()->findOrFail($galleryId);
+        /** @var SiteSection $section */
+        $section = $category->siteSection()->with('parent')->firstOrFail();
+        /** @var SiteSection|null $parent */
+        $parent = $section->getRelationValue('parent');
+        $isPublished = $section->getAttribute('state') === 'published';
 
         $this->galleryContext = [
             'id' => (int) $category->getKey(),
             'name' => (string) $category->getAttribute('name'),
             'slug' => (string) $category->getAttribute('slug'),
-            'state' => (string) $category->getAttribute('state'),
-            'parent_name' => $parent?->getAttribute('name'),
+            'state' => (string) $section->getAttribute('state'),
+            'parent_name' => $parent?->getAttribute('title'),
             'path' => '/'.ltrim((string) $category->getAttribute('slug'), '/'),
             'pages_url' => SitePages::getUrl(),
             'all_artworks_url' => ArtworkResource::getUrl('index'),

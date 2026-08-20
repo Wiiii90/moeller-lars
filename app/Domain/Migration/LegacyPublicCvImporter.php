@@ -2,6 +2,7 @@
 
 namespace App\Domain\Migration;
 
+use App\Models\SiteSection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -26,7 +27,8 @@ final class LegacyPublicCvImporter
             }
 
             foreach ([3, 4] as $position) {
-                if (DB::table('artwork_categories')
+                if (DB::table('site_sections')
+                    ->whereNull('parent_id')
                     ->where('state', 'published')
                     ->where('show_in_navigation', true)
                     ->where('position', $position)
@@ -108,6 +110,28 @@ final class LegacyPublicCvImporter
                     'exhibitions_navigation_position' => 4,
                     'updated_at' => $now,
                 ]);
+
+            $vitaUpdated = DB::table('site_sections')
+                ->where('type', SiteSection::TYPE_VITA)
+                ->update([
+                    'navigation_label' => 'CV',
+                    'state' => 'published',
+                    'position' => 3,
+                    'show_in_navigation' => true,
+                    'updated_at' => $now,
+                ]);
+            $exhibitionsUpdated = DB::table('site_sections')
+                ->where('type', SiteSection::TYPE_EXHIBITIONS)
+                ->update([
+                    'navigation_label' => 'EXHIBITIONS',
+                    'state' => 'published',
+                    'position' => 4,
+                    'show_in_navigation' => true,
+                    'updated_at' => $now,
+                ]);
+            if ($vitaUpdated !== 1 || $exhibitionsUpdated !== 1) {
+                throw new RuntimeException('Canonical Vita or Exhibitions site section is missing.');
+            }
 
             return count($rows);
         });

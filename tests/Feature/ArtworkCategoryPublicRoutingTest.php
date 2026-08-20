@@ -1,18 +1,22 @@
 <?php
 
+use App\Domain\Artwork\ArtworkCategoryEditorialService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\Redirect;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('serves custom published categories and rejects hidden or unknown categories', function () {
-    $hidden = ArtworkCategory::create(['name' => 'Hidden custom', 'slug' => 'hidden-custom', 'state' => 'hidden', 'position' => 0]);
-    $published = ArtworkCategory::create(['name' => 'Published custom', 'slug' => 'published-custom', 'state' => 'published', 'position' => 0]);
+it('serves custom published Galleries and rejects hidden or unknown Galleries', function () {
+    $hidden = ArtworkCategory::create(['name' => 'Hidden custom', 'slug' => 'hidden-custom', 'show_on_home' => false]);
+    testGallerySection($hidden, ['state' => 'hidden']);
+    $published = ArtworkCategory::create(['name' => 'Published custom', 'slug' => 'published-custom', 'show_on_home' => false]);
+    testGallerySection($published, ['state' => 'published']);
     $artwork = Artwork::create(['artwork_category_id' => $published->id, 'slug' => 'custom-public-work', 'title' => 'Custom public work', 'state' => 'published', 'position' => 0, 'date_precision' => 'unknown']);
     $asset = MediaAsset::create(['storage_key' => 'originals/custom.jpg', 'original_filename' => 'custom.jpg', 'mime_type' => 'image/jpeg', 'byte_size' => 4, 'sha256' => str_repeat('a', 64), 'state' => 'available', 'alt_text' => 'Custom public work']);
     ArtworkMedia::create(['artwork_id' => $artwork->id, 'media_asset_id' => $asset->id, 'role' => 'primary', 'position' => 0]);
@@ -27,11 +31,14 @@ it('serves custom published categories and rejects hidden or unknown categories'
     $this->get('/index.php')->assertNotFound();
 });
 
-it('redirects renamed application categories through the generic category lifecycle', function () {
-    $category = ArtworkCategory::create(['name' => 'Sculptures', 'slug' => 'sculptures', 'state' => 'published', 'position' => 0]);
-    $category->update(['slug' => 'works-a']);
-    Redirect::create(['source_path' => '/sculptures', 'target_path' => '/works-a', 'status_code' => 301, 'enabled' => true, 'reason' => 'artwork_category_slug_change']);
+it('redirects renamed Galleries through the canonical content lifecycle', function () {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $category = ArtworkCategory::create(['name' => 'Sculptures', 'slug' => 'sculptures', 'show_on_home' => false]);
+    testGallerySection($category, ['state' => 'published']);
 
+    app(ArtworkCategoryEditorialService::class)->changeSlug($category, 'works-a');
+
+    expect(Redirect::query()->where('source_path', '/sculptures')->value('target_path'))->toBe('/works-a');
     $this->get('/sculptures')->assertRedirect('/works-a')->assertStatus(301);
     $this->get('/works-a')->assertSuccessful();
 });

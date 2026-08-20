@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 final class SiteSectionMigrationValidator
 {
     /**
-     * Validate the canonical SiteSection projection without mutating migrated data.
+     * Validate the canonical SiteSection ownership boundary without mutating data.
      *
      * @return array{
      *     ok: bool,
@@ -42,6 +42,23 @@ final class SiteSectionMigrationValidator
             if ($categoryId === null || $categories->firstWhere('id', $categoryId) === null) {
                 $errors[] = 'Gallery SiteSection '.(int) $section->getKey().' references a missing artwork category.';
             }
+
+            $parentId = $this->nullableIntAttribute($section, 'parent_id');
+            if ($parentId === null) {
+                continue;
+            }
+
+            /** @var SiteSection|null $parent */
+            $parent = $gallerySections->firstWhere('id', $parentId);
+            if ($parent === null) {
+                $errors[] = 'Gallery SiteSection '.(int) $section->getKey()." references missing parent SiteSection {$parentId}.";
+
+                continue;
+            }
+
+            if ($parent->getAttribute('parent_id') !== null) {
+                $errors[] = 'Gallery SiteSection '.(int) $section->getKey().' exceeds the supported one-level Gallery hierarchy.';
+            }
         }
 
         foreach ($categories as $category) {
@@ -49,43 +66,6 @@ final class SiteSectionMigrationValidator
             $matches = $gallerySections->where('artwork_category_id', $categoryId)->values();
             if ($matches->count() !== 1) {
                 $errors[] = "Artwork category {$categoryId} must map to exactly one Gallery SiteSection; found {$matches->count()}.";
-
-                continue;
-            }
-
-            $section = $matches->first();
-            if (($section instanceof SiteSection) === false) {
-                $errors[] = "Artwork category {$categoryId} does not have a readable Gallery SiteSection mapping.";
-
-                continue;
-            }
-
-            $expectedParentSectionId = null;
-            $categoryParentId = $this->nullableIntAttribute($category, 'parent_id');
-
-            if ($categoryParentId !== null) {
-                $parentMatches = $gallerySections->where('artwork_category_id', $categoryParentId)->values();
-                if ($parentMatches->count() !== 1) {
-                    $errors[] = "Artwork category {$categoryId} has parent {$categoryParentId}, but that parent does not map to exactly one Gallery SiteSection.";
-
-                    continue;
-                }
-
-                $parentSection = $parentMatches->first();
-                if (($parentSection instanceof SiteSection) === false) {
-                    $errors[] = "Artwork category {$categoryId} has parent {$categoryParentId}, but that parent mapping is unreadable.";
-
-                    continue;
-                }
-
-                $expectedParentSectionId = (int) $parentSection->getKey();
-            }
-
-            $actualParentSectionId = $this->nullableIntAttribute($section, 'parent_id');
-            if ($actualParentSectionId !== $expectedParentSectionId) {
-                $actual = $actualParentSectionId === null ? 'null' : (string) $actualParentSectionId;
-                $expected = $expectedParentSectionId === null ? 'null' : (string) $expectedParentSectionId;
-                $errors[] = 'Gallery SiteSection '.(int) $section->getKey()." has parent_id {$actual}; expected {$expected} from artwork-category hierarchy.";
             }
         }
 
@@ -103,7 +83,7 @@ final class SiteSectionMigrationValidator
         ];
     }
 
-    private function nullableIntAttribute(ArtworkCategory|SiteSection $model, string $attribute): ?int
+    private function nullableIntAttribute(SiteSection $model, string $attribute): ?int
     {
         $value = $model->getAttribute($attribute);
 

@@ -117,32 +117,25 @@ final class SitePages extends Page
                         ->maxLength(80)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                         ->helperText('Lowercase letters, numbers and hyphens. The public URL stays stable when the Gallery later moves into or out of a submenu.'),
-                    Select::make('parent_id')
+                    Select::make('parent_section_id')
                         ->label('Parent Gallery')
                         ->placeholder('Top level')
-                        ->options(fn (): array => ArtworkCategory::query()
+                        ->options(fn (): array => SiteSection::query()
+                            ->where('type', SiteSection::TYPE_GALLERY)
                             ->whereNull('parent_id')
                             ->orderBy('position')
-                            ->orderBy('name')
-                            ->pluck('name', 'id')
+                            ->orderBy('title')
+                            ->pluck('title', 'id')
                             ->all())
                         ->searchable()
                         ->nullable(),
                 ])
                 ->action(function (array $data): void {
-                    $parentId = filled($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null;
-                    /** @var Builder<ArtworkCategory> $siblings */
-                    $siblings = ArtworkCategory::query();
-                    $parentId === null ? $siblings->whereNull('parent_id') : $siblings->where('parent_id', $parentId);
-                    $position = ((int) ($siblings->max('position') ?? -10)) + 10;
-
                     app(ArtworkCategoryEditorialService::class)->create([
                         'name' => $data['name'],
                         'slug' => $data['slug'],
-                        'parent_id' => $parentId,
-                        'position' => $position,
+                        'parent_section_id' => filled($data['parent_section_id'] ?? null) ? (int) $data['parent_section_id'] : null,
                         'description' => null,
-                        'show_in_navigation' => false,
                         'show_on_home' => false,
                     ]);
 

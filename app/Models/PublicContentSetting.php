@@ -9,12 +9,6 @@ use Illuminate\Validation\ValidationException;
 use LogicException;
 
 #[Fillable([
-    'cv_enabled',
-    'exhibitions_enabled',
-    'cv_navigation_label',
-    'cv_navigation_position',
-    'exhibitions_navigation_label',
-    'exhibitions_navigation_position',
     'contact_state',
     'contact_status_text',
     'contact_icon',
@@ -30,71 +24,11 @@ class PublicContentSetting extends Model
 
     public $incrementing = false;
 
-    protected function casts(): array
-    {
-        return [
-            'cv_enabled' => 'boolean',
-            'exhibitions_enabled' => 'boolean',
-            'cv_navigation_position' => 'integer',
-            'exhibitions_navigation_position' => 'integer',
-        ];
-    }
-
     protected static function booted(): void
     {
         static::saving(function (self $setting): void {
             if ((int) $setting->getAttribute('id') !== 1) {
                 throw new LogicException('The public content setting singleton must use id 1.');
-            }
-
-            $navigationItems = [];
-            if ((bool) $setting->getAttribute('cv_enabled')) {
-                $navigationItems['cv'] = [
-                    'label' => $setting->getAttribute('cv_navigation_label'),
-                    'position' => $setting->getAttribute('cv_navigation_position'),
-                ];
-            }
-            if ((bool) $setting->getAttribute('exhibitions_enabled')) {
-                $navigationItems['exhibitions'] = [
-                    'label' => $setting->getAttribute('exhibitions_navigation_label'),
-                    'position' => $setting->getAttribute('exhibitions_navigation_position'),
-                ];
-            }
-
-            $usedPositions = [];
-            foreach ($navigationItems as $key => $item) {
-                $label = $item['label'];
-                $position = $item['position'];
-
-                if (! is_string($label) || trim($label) === '') {
-                    throw ValidationException::withMessages([
-                        $key.'_navigation_label' => ucfirst($key).' navigation label is required while the section is public.',
-                    ]);
-                }
-                if (! is_int($position) && filter_var($position, FILTER_VALIDATE_INT) === false) {
-                    throw ValidationException::withMessages([
-                        $key.'_navigation_position' => ucfirst($key).' navigation position is invalid.',
-                    ]);
-                }
-
-                $position = (int) $position;
-                if (isset($usedPositions[$position])) {
-                    throw ValidationException::withMessages([
-                        $key.'_navigation_position' => 'Public navigation positions must be unique.',
-                    ]);
-                }
-                $usedPositions[$position] = true;
-
-                if (ArtworkCategory::query()
-                    ->whereNull('parent_id')
-                    ->where('state', 'published')
-                    ->where('show_in_navigation', true)
-                    ->where('position', $position)
-                    ->exists()) {
-                    throw ValidationException::withMessages([
-                        $key.'_navigation_position' => 'A visible top-level artwork category already uses this navigation position.',
-                    ]);
-                }
             }
 
             if ($setting->getAttribute('contact_state') === 'under_construction') {

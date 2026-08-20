@@ -8,6 +8,7 @@ use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
@@ -35,7 +36,7 @@ final class ArtworkAttentionReport
         $artworkQuery = Artwork::query();
         /** @var EloquentCollection<int, Artwork> $artworks */
         $artworks = $artworkQuery
-            ->with(['category', 'artworkMedia.mediaAsset.variants'])
+            ->with(['category.siteSection', 'artworkMedia.mediaAsset.variants'])
             ->whereIn('analytics_key', $keys)
             ->get();
 
@@ -78,8 +79,10 @@ final class ArtworkAttentionReport
             $attentionSeconds = (float) $metrics['attention_seconds'];
             /** @var ArtworkCategory|null $category */
             $category = $artwork->getRelationValue('category');
+            $siteSection = $category?->getRelationValue('siteSection');
             $isPublic = $artwork->getAttribute('state') === 'published'
-                && $category?->getAttribute('state') === 'published';
+                && $siteSection instanceof SiteSection
+                && $siteSection->getAttribute('state') === 'published';
             $slug = (string) $artwork->getAttribute('slug');
 
             $rows[] = [

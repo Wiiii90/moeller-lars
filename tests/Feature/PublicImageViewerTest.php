@@ -10,14 +10,18 @@ use Illuminate\View\ViewException;
 
 function viewerCategory(string $slug, int $position): ArtworkCategory
 {
-    return ArtworkCategory::create([
+    $category = ArtworkCategory::create([
         'name' => ucfirst($slug),
         'slug' => $slug,
-        'state' => 'published',
-        'position' => $position,
-        'show_in_navigation' => true,
         'show_on_home' => true,
     ]);
+    testGallerySection($category, [
+        'state' => 'published',
+        'show_in_navigation' => false,
+        'position' => 200 + ($position * 10),
+    ]);
+
+    return $category;
 }
 
 function viewerArtwork(ArtworkCategory $category, string $slug, array $attributes = []): Artwork

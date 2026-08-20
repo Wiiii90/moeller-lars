@@ -4,27 +4,25 @@ use App\Domain\Migration\SiteSectionMigrationValidator;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
-it('reconciles canonical singleton and gallery site sections', function (): void {
+it('reconciles canonical singleton and Gallery SiteSections', function (): void {
     $parent = ArtworkCategory::create([
         'name' => 'Paintings',
         'slug' => 'paintings',
-        'state' => 'published',
-        'position' => 10,
-        'show_in_navigation' => true,
         'show_on_home' => true,
     ]);
-    ArtworkCategory::create([
+    $parentSection = testGallerySection($parent, ['state' => 'published', 'position' => 200]);
+    $child = ArtworkCategory::create([
         'name' => 'Works on paper',
         'slug' => 'works-on-paper',
-        'state' => 'published',
-        'position' => 20,
-        'parent_id' => $parent->id,
-        'show_in_navigation' => true,
         'show_on_home' => false,
+    ]);
+    testGallerySection($child, [
+        'state' => 'published',
+        'parent_id' => $parentSection->id,
+        'position' => 10,
     ]);
 
     $result = app(SiteSectionMigrationValidator::class)->validate();
@@ -37,32 +35,30 @@ it('reconciles canonical singleton and gallery site sections', function (): void
         ->and($result['target']['site_sections'])->toBe(count(SiteSection::SINGLETON_TYPES) + 2);
 });
 
-it('fails when the persisted gallery hierarchy no longer matches artwork categories', function (): void {
-    $parent = ArtworkCategory::create([
-        'name' => 'Paintings',
-        'slug' => 'paintings',
-        'state' => 'published',
-        'position' => 10,
-        'show_in_navigation' => true,
-        'show_on_home' => true,
-    ]);
-    $child = ArtworkCategory::create([
-        'name' => 'Works on paper',
-        'slug' => 'works-on-paper',
-        'state' => 'published',
-        'position' => 20,
-        'parent_id' => $parent->id,
-        'show_in_navigation' => true,
+it('fails when an artwork category has no canonical Gallery SiteSection', function (): void {
+    $category = ArtworkCategory::create([
+        'name' => 'Unmapped',
+        'slug' => 'unmapped',
         'show_on_home' => false,
     ]);
-
-    DB::table('site_sections')
-        ->where('artwork_category_id', $child->id)
-        ->update(['parent_id' => null]);
 
     $result = app(SiteSectionMigrationValidator::class)->validate();
 
     expect($result['ok'])->toBeFalse()
-        ->and($result['errors'])->toHaveCount(1)
-        ->and($result['errors'][0])->toContain('artwork-category hierarchy');
+        ->and($result['errors'])->toContain("Artwork category {$category->id} must map to exactly one Gallery SiteSection; found 0.");
+});
+
+it('fails when the canonical Gallery hierarchy exceeds one submenu level', function (): void {
+    $parent = ArtworkCategory::create(['name' => 'Parent', 'slug' => 'validator-parent', 'show_on_home' => false]);
+    $parentSection = testGallerySection($parent, ['state' => 'hidden', 'position' => 200]);
+    $child = ArtworkCategory::create(['name' => 'Child', 'slug' => 'validator-child', 'show_on_home' => false]);
+    $childSection = testGallerySection($child, ['state' => 'hidden', 'parent_id' => $parentSection->id, 'position' => 10]);
+    $grandchild = ArtworkCategory::create(['name' => 'Grandchild', 'slug' => 'validator-grandchild', 'show_on_home' => false]);
+    $grandchildSection = testGallerySection($grandchild, ['state' => 'hidden', 'position' => 210]);
+    $grandchildSection->forceFill(['parent_id' => $childSection->id])->save();
+
+    $result = app(SiteSectionMigrationValidator::class)->validate();
+
+    expect($result['ok'])->toBeFalse()
+        ->and($result['errors'])->toContain('Gallery SiteSection '.(int) $grandchildSection->id.' exceeds the supported one-level Gallery hierarchy.');
 });

@@ -1,127 +1,125 @@
 <?php
 
 use App\Domain\Artwork\ArtworkCategoryEditorialService;
-use App\Domain\Artwork\ArtworkCategoryOrderService;
+use App\Domain\Content\PublicNavigationService;
+use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Content\SiteSectionOrderService;
 use App\Models\ArtworkCategory;
-use App\Models\PublicContentSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-function hierarchyCategory(string $name, int $position, ?int $parentId = null, string $state = 'hidden', bool $navigation = false): ArtworkCategory
-{
-    return ArtworkCategory::create([
-        'name' => $name,
-        'slug' => strtolower(str_replace(' ', '-', $name)),
-        'state' => $state,
-        'position' => $position,
-        'parent_id' => $parentId,
-        'show_in_navigation' => $navigation,
-    ]);
-}
-
-it('assigns an optional top-level parent and rejects deeper nesting', function () {
+beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    $parent = hierarchyCategory('Hierarchy parent', 10);
-    $child = hierarchyCategory('Hierarchy child', 20);
-    $service = app(ArtworkCategoryEditorialService::class);
-
-    $service->update($child, [
-        'name' => 'Hierarchy child',
-        'position' => 20,
-        'parent_id' => $parent->id,
-        'description' => null,
-        'show_in_navigation' => false,
-        'show_on_home' => false,
-    ]);
-
-    expect($child->fresh()->parent_id)->toBe($parent->id);
-
-    $grandchild = hierarchyCategory('Hierarchy grandchild', 30);
-    expect(fn () => $service->update($grandchild, [
-        'name' => 'Hierarchy grandchild',
-        'position' => 30,
-        'parent_id' => $child->id,
-        'description' => null,
-        'show_in_navigation' => false,
-        'show_on_home' => false,
-    ]))->toThrow(ValidationException::class, 'Only one level of child categories is supported.');
-
-    expect(fn () => $service->update($parent, [
-        'name' => 'Hierarchy parent',
-        'position' => 10,
-        'parent_id' => $parent->id,
-        'description' => null,
-        'show_in_navigation' => false,
-        'show_on_home' => false,
-    ]))->toThrow(ValidationException::class, 'A category cannot be its own parent.');
 });
 
-it('requires visible published children to have a visible published parent', function () {
-    $this->actingAs(User::factory()->admin()->create(), 'web');
-    $parent = hierarchyCategory('Hidden nav parent', 10, null, 'hidden', false);
-    $child = hierarchyCategory('Visible nav child', 10, $parent->id, 'hidden', true);
+it('creates one-level Gallery hierarchy while keeping content and placement ownership separate', function (): void {
     $service = app(ArtworkCategoryEditorialService::class);
+    $parent = $service->create(['name' => 'Paintings', 'slug' => 'paintings']);
+    $parentSection = $parent->siteSection()->firstOrFail();
+    $child = $service->create([
+        'name' => 'Works on paper',
+        'slug' => 'works-on-paper',
+        'parent_section_id' => $parentSection->id,
+    ]);
+    $childSection = $child->siteSection()->firstOrFail();
 
-    expect(fn () => $service->publish($child))
-        ->toThrow(ValidationException::class, 'A visible child category requires a published parent');
+    expect($parent->getAttribute('parent_id'))->toBeNull()
+        ->and($child->getAttribute('parent_id'))->toBeNull()
+        ->and($parentSection->parent_id)->toBeNull()
+        ->and((int) $childSection->parent_id)->toBe($parentSection->id)
+        ->and($childSection->slug)->toBe('works-on-paper');
+});
 
-    $service->update($parent, [
-        'name' => 'Hidden nav parent',
-        'position' => 10,
-        'description' => null,
+it('publishes and hides Gallery placement through SiteSectionEditorialService only', function (): void {
+    $category = app(ArtworkCategoryEditorialService::class)->create(['name' => 'Sculptures', 'slug' => 'sculptures']);
+    $section = $category->siteSection()->firstOrFail();
+    $legacyState = $category->fresh()->getRawOriginal('state');
+
+    $published = app(SiteSectionEditorialService::class)->updateGallery($section, 'published', true, null);
+    expect($published->state)->toBe('published')
+        ->and($published->show_in_navigation)->toBeTrue()
+        ->and($category->fresh()->getRawOriginal('state'))->toBe($legacyState);
+
+    $hidden = app(SiteSectionEditorialService::class)->updateGallery($published, 'hidden', false, null);
+    expect($hidden->state)->toBe('hidden')
+        ->and($hidden->show_in_navigation)->toBeFalse()
+        ->and($category->fresh()->getRawOriginal('state'))->toBe($legacyState);
+});
+
+it('rejects hiding a visible parent while a visible submenu Gallery still depends on it', function (): void {
+    $parent = ArtworkCategory::create(['name' => 'Parent', 'slug' => 'parent-gallery', 'show_on_home' => false]);
+    $parentSection = testGallerySection($parent, ['state' => 'published', 'show_in_navigation' => true]);
+    $child = ArtworkCategory::create(['name' => 'Child', 'slug' => 'child-gallery', 'show_on_home' => false]);
+    testGallerySection($child, [
+        'state' => 'published',
         'show_in_navigation' => true,
-        'show_on_home' => false,
-    ]);
-    $service->publish($parent);
-    $service->publish($child);
-
-    expect($child->fresh()->state)->toBe('published')
-        ->and(fn () => $service->hide($parent))
-        ->toThrow(ValidationException::class, 'published child categories cannot be hidden');
-});
-
-it('orders child categories independently from top-level categories', function () {
-    $this->actingAs(User::factory()->admin()->create(), 'web');
-    $topFirst = hierarchyCategory('Top first', 10);
-    $topSecond = hierarchyCategory('Top second', 20);
-    $parent = hierarchyCategory('Child parent', 30);
-    $childFirst = hierarchyCategory('Child first', 10, $parent->id);
-    $childSecond = hierarchyCategory('Child second', 20, $parent->id);
-
-    expect(app(ArtworkCategoryOrderService::class)->move($childSecond, 'up'))->toBeTrue()
-        ->and($childSecond->fresh()->position)->toBe(10)
-        ->and($childFirst->fresh()->position)->toBe(20)
-        ->and($topFirst->fresh()->position)->toBe(10)
-        ->and($topSecond->fresh()->position)->toBe(20)
-        ->and($parent->fresh()->position)->toBe(30);
-});
-
-it('keeps child positions out of the global navigation collision space', function () {
-    $parent = hierarchyCategory('Public parent', 5, null, 'published', true);
-    hierarchyCategory('Public child', 7, $parent->id, 'published', true);
-
-    $settings = PublicContentSetting::query()->findOrFail(1);
-    $settings->update([
-        'cv_enabled' => true,
-        'cv_navigation_label' => 'CV',
-        'cv_navigation_position' => 7,
+        'parent_id' => $parentSection->id,
+        'position' => 10,
     ]);
 
-    expect($settings->fresh()->cv_navigation_position)->toBe(7);
+    expect(fn () => app(SiteSectionEditorialService::class)->updateGallery($parentSection, 'hidden', false, null))
+        ->toThrow(ValidationException::class);
+    expect($parentSection->fresh()->state)->toBe('published');
 });
 
-it('renders child categories as an accessible dropdown without changing category URLs', function () {
-    $parent = hierarchyCategory('Navigation parent', 5, null, 'published', true);
-    $child = hierarchyCategory('Navigation child', 1, $parent->id, 'published', true);
+it('reorders top-level and child Galleries through SiteSectionOrderService without mutating category placement columns', function (): void {
+    $first = ArtworkCategory::create(['name' => 'First', 'slug' => 'first-gallery', 'show_on_home' => false]);
+    $second = ArtworkCategory::create(['name' => 'Second', 'slug' => 'second-gallery', 'show_on_home' => false]);
+    $firstSection = testGallerySection($first, ['state' => 'hidden', 'position' => 200]);
+    $secondSection = testGallerySection($second, ['state' => 'hidden', 'position' => 210]);
 
-    $this->get('/navigation-child')
-        ->assertSuccessful()
-        ->assertSee('Navigation parent')
-        ->assertSee('Navigation child')
-        ->assertSee('data-navigation-submenu-toggle', false)
-        ->assertSee('aria-expanded="false"', false)
-        ->assertSee('href="'.route('artworks.category', ['category' => $child->slug]).'" aria-current="page"', false);
+    expect(app(SiteSectionOrderService::class)->move($secondSection, 'up'))->toBeTrue()
+        ->and((int) $secondSection->fresh()->position)->toBe(200)
+        ->and((int) $firstSection->fresh()->position)->toBe(210)
+        ->and((int) $second->fresh()->getAttribute('position'))->toBe(0)
+        ->and((int) $first->fresh()->getAttribute('position'))->toBe(0);
+
+    $childA = ArtworkCategory::create(['name' => 'A', 'slug' => 'child-a', 'show_on_home' => false]);
+    $childB = ArtworkCategory::create(['name' => 'B', 'slug' => 'child-b', 'show_on_home' => false]);
+    $childASection = testGallerySection($childA, ['state' => 'hidden', 'parent_id' => $secondSection->id, 'position' => 10]);
+    $childBSection = testGallerySection($childB, ['state' => 'hidden', 'parent_id' => $secondSection->id, 'position' => 20]);
+
+    expect(app(SiteSectionOrderService::class)->move($childBSection, 'up'))->toBeTrue()
+        ->and((int) $childBSection->fresh()->position)->toBe(10)
+        ->and((int) $childASection->fresh()->position)->toBe(20);
+});
+
+it('builds public navigation hierarchy exclusively from canonical SiteSections', function (): void {
+    $parent = ArtworkCategory::create(['name' => 'Paintings', 'slug' => 'nav-paintings', 'show_on_home' => false]);
+    $parentSection = testGallerySection($parent, [
+        'navigation_label' => 'PAINTINGS',
+        'state' => 'published',
+        'show_in_navigation' => true,
+        'position' => 200,
+    ]);
+    $child = ArtworkCategory::create(['name' => 'Paper', 'slug' => 'nav-paper', 'show_on_home' => false]);
+    testGallerySection($child, [
+        'navigation_label' => 'PAPER',
+        'state' => 'published',
+        'show_in_navigation' => true,
+        'parent_id' => $parentSection->id,
+        'position' => 10,
+    ]);
+
+    $items = app(PublicNavigationService::class)->items();
+    $gallery = $items->firstWhere('label', 'PAINTINGS');
+
+    expect($gallery)->not->toBeNull()
+        ->and($gallery['children'])->toHaveCount(1)
+        ->and($gallery['children'][0]['label'])->toBe('PAPER');
+});
+
+it('rejects a second hierarchy level', function (): void {
+    $parent = ArtworkCategory::create(['name' => 'Parent', 'slug' => 'level-parent', 'show_on_home' => false]);
+    $parentSection = testGallerySection($parent, ['state' => 'hidden']);
+    $child = ArtworkCategory::create(['name' => 'Child', 'slug' => 'level-child', 'show_on_home' => false]);
+    $childSection = testGallerySection($child, ['state' => 'hidden', 'parent_id' => $parentSection->id, 'position' => 10]);
+    $grandchild = ArtworkCategory::create(['name' => 'Grandchild', 'slug' => 'level-grandchild', 'show_on_home' => false]);
+    $grandchildSection = testGallerySection($grandchild, ['state' => 'hidden']);
+
+    expect(fn () => app(SiteSectionEditorialService::class)->updateGallery($grandchildSection, 'hidden', false, $childSection->id))
+        ->toThrow(ValidationException::class);
 });

@@ -5,12 +5,11 @@ namespace App\Domain\Media;
 use App\Domain\Blog\BlogEditorialService;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
-use App\Models\BlogSetting;
 use App\Models\CvEntry;
 use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
-use App\Models\PublicContentSetting;
+use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Collection;
 use LogicException;
 
@@ -31,18 +30,17 @@ class PublicMedia
             ->where('role', 'primary')
             ->whereHas('artwork', fn ($query) => $query
                 ->where('state', 'published')
-                ->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('state', 'published')))
+                ->whereHas('category.siteSection', fn ($section) => $section->where('state', 'published')))
             ->exists()) {
             return true;
         }
 
-        $settings = PublicContentSetting::query()->findOrFail(1);
-        if ((bool) $settings->getAttribute('cv_enabled')
+        if ($this->sectionIsPublished(SiteSection::TYPE_VITA)
             && CvEntry::query()->where('state', 'published')->where('image_media_asset_id', $asset->getKey())->exists()) {
             return true;
         }
 
-        if ((bool) $settings->getAttribute('exhibitions_enabled')
+        if ($this->sectionIsPublished(SiteSection::TYPE_EXHIBITIONS)
             && ExhibitionMedia::query()
                 ->where('media_asset_id', $asset->getKey())
                 ->whereHas('exhibition', fn ($query) => $query->where('state', 'published'))
@@ -50,9 +48,7 @@ class PublicMedia
             return true;
         }
 
-        $blogSettings = BlogSetting::query()->findOrFail(1);
-
-        return (bool) $blogSettings->getAttribute('public_enabled')
+        return $this->sectionIsPublished(SiteSection::TYPE_BLOG)
             && BlogEditorialService::publicQuery()
                 ->where('cover_media_asset_id', $asset->getKey())
                 ->exists();
@@ -179,5 +175,13 @@ class PublicMedia
         if ($asset->getAttribute('state') !== 'available') {
             throw new LogicException('Public media requires an available media asset.');
         }
+    }
+
+    private function sectionIsPublished(string $type): bool
+    {
+        return SiteSection::query()
+            ->where('type', $type)
+            ->where('state', 'published')
+            ->exists();
     }
 }
