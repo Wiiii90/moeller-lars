@@ -53,7 +53,7 @@ final class SiteSectionMigrationValidator
             }
 
             $section = $matches->first();
-            if (!$section instanceof SiteSection) {
+            if (! $section instanceof SiteSection) {
                 $errors[] = "Artwork category {$categoryId} does not have a readable Gallery SiteSection mapping.";
                 continue;
             }
@@ -69,7 +69,7 @@ final class SiteSectionMigrationValidator
                 }
 
                 $parentSection = $parentMatches->first();
-                if (!$parentSection instanceof SiteSection) {
+                if (! $parentSection instanceof SiteSection) {
                     $errors[] = "Artwork category {$categoryId} has parent {$categoryParentId}, but that parent mapping is unreadable.";
                     continue;
                 }
