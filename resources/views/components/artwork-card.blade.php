@@ -42,9 +42,7 @@
         <a
             class="artwork-label-trigger"
             href="{{ route('artworks.show', $artwork->slug) }}"
-            data-artwork-viewer-trigger
-            data-viewer-key="{{ $artwork->slug }}"
-            aria-label="Open {{ $artwork->title }} in image viewer"
+            aria-label="View details for {{ $artwork->title }}"
         >
             <x-artwork-label :artwork="$artwork" />
         </a>
