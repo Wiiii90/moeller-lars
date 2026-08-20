@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Media\MediaCapacityService;
+use App\Domain\Media\MediaStorageBreakdown;
 use App\Models\MediaAsset;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -25,6 +26,9 @@ final class StorageCapacity extends Page
 
     /** @var array<string, mixed> */
     public array $capacity = [];
+
+    /** @var list<array<string, mixed>> */
+    public array $breakdown = [];
 
     public int $availableAssets = 0;
 
@@ -70,6 +74,11 @@ final class StorageCapacity extends Page
                 'unavailable' => 'Measurement unavailable',
                 default => 'Allowance not configured',
             },
+            'action' => match ($snapshot['status']) {
+                'full' => 'New media uploads are blocked until unused originals are removed or the operator raises the allowance.',
+                'near_capacity' => 'Capacity is approaching the configured ceiling. Review unused media before the next larger upload.',
+                default => null,
+            },
             'percent' => $ratio === null ? 0 : (int) round(min(1, $ratio) * 100),
             'authoritative' => $this->formatBytes($snapshot['authoritative_bytes']),
             'generated' => $this->formatBytes($snapshot['generated_bytes']),
@@ -78,6 +87,13 @@ final class StorageCapacity extends Page
             'original_files' => $snapshot['original_files'] ?? 0,
             'generated_files' => $snapshot['generated_files'] ?? 0,
         ];
+
+        $breakdown = app(MediaStorageBreakdown::class)->build($snapshot['authoritative_file_bytes'] ?? []);
+        $this->breakdown = array_map(function (array $row): array {
+            $row['display_bytes'] = $this->formatBytes((int) $row['bytes']);
+
+            return $row;
+        }, $breakdown);
 
         $this->availableAssets = MediaAsset::query()->where('state', 'available')->count();
         $this->unusedAssets = MediaAsset::query()

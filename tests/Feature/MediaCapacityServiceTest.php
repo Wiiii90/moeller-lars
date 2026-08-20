@@ -27,7 +27,8 @@ it('measures authoritative originals separately from rebuildable variants', func
         ->managed_bytes->toBe(340)
         ->remaining_bytes->toBe(10)
         ->original_files->toBe(1)
-        ->generated_files->toBe(1);
+        ->generated_files->toBe(1)
+        ->authoritative_file_bytes->toBe(['originals/one.jpg' => 90]);
 });
 
 it('caches presentation measurements without weakening fresh upload admission', function (): void {
