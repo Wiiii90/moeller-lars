@@ -325,7 +325,7 @@ class ArtworkEditorialService
             $ordered = $additional->all();
             [$ordered[$index], $ordered[$target]] = [$ordered[$target], $ordered[$index]];
             /** @var Collection<int, ArtworkMedia> $reordered */
-            $reordered = new Collection(array_values($ordered));
+            $reordered = new Collection($ordered);
             $this->normalizeAdditionalPositions($lockedArtwork, $reordered);
 
             $this->adminAuditService->record($actor, 'artwork.additional_media_reordered', 'artwork', $lockedArtwork->getKey(), [
@@ -427,7 +427,7 @@ class ArtworkEditorialService
         $ordered = $additional->values()->all();
         array_splice($ordered, $targetPosition - 1, 0, [$usage]);
         /** @var Collection<int, ArtworkMedia> $reordered */
-        $reordered = new Collection(array_values($ordered));
+        $reordered = new Collection($ordered);
         $this->normalizeAdditionalPositions($lockedArtwork, $reordered);
 
         return $usage->fresh(['mediaAsset.variants']);
