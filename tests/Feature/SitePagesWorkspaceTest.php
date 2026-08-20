@@ -97,7 +97,7 @@ it('edits Gallery publication and hierarchy from Pages without writing legacy ca
     ]);
     $gallery = ArtworkCategory::create(['name' => 'Movable Gallery', 'slug' => 'movable-gallery', 'show_on_home' => false]);
     $section = testGallerySection($gallery, ['state' => 'hidden', 'position' => 210]);
-    $legacyGalleryState = $gallery->getRawOriginal('state');
+    $legacyGalleryState = $gallery->fresh()->getRawOriginal('state');
 
     Livewire::test(SitePages::class)
         ->call('moveGallery', $section->id, $parentSection->id)
@@ -135,7 +135,7 @@ it('does not hide a navigation parent while it still has a visible submenu Galle
         'parent_id' => $parentSection->id,
         'position' => 10,
     ]);
-    $legacyParentState = $parent->getRawOriginal('state');
+    $legacyParentState = $parent->fresh()->getRawOriginal('state');
 
     Livewire::test(SitePages::class)
         ->call('toggleGalleryState', $parentSection->id)

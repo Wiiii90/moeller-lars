@@ -37,7 +37,7 @@ it('creates one-level Gallery hierarchy while keeping content and placement owne
 it('publishes and hides Gallery placement through SiteSectionEditorialService only', function (): void {
     $category = app(ArtworkCategoryEditorialService::class)->create(['name' => 'Sculptures', 'slug' => 'sculptures']);
     $section = $category->siteSection()->firstOrFail();
-    $legacyState = $category->getRawOriginal('state');
+    $legacyState = $category->fresh()->getRawOriginal('state');
 
     $published = app(SiteSectionEditorialService::class)->updateGallery($section, 'published', true, null);
     expect($published->state)->toBe('published')
