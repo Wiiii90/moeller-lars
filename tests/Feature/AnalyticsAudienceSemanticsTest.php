@@ -66,6 +66,65 @@ it('does not invent a returning visitor split or ranking leaders from unavailabl
         ]);
 });
 
+it('marks whole unavailable audience reports separately from successful empty reports', function () {
+    $highlights = audienceHighlights([
+        'status' => 'available',
+        'metrics' => ['nb_visits' => 10.0],
+        'returning' => ['nb_visits_returning' => 2.0],
+        'referrers' => [],
+        'countries' => [],
+        'content' => [],
+        'ai_assistants' => [],
+        'warnings' => [
+            'Referrers report is unavailable.',
+            'Countries report is unavailable.',
+            'Content report is unavailable.',
+            'Ai assistants report is unavailable.',
+        ],
+    ]);
+
+    expect($highlights[1])
+        ->toMatchArray([
+            'label' => 'Leading source',
+            'value' => '—',
+            'detail' => 'Referrer report unavailable',
+        ])
+        ->and($highlights[2])
+        ->toMatchArray([
+            'label' => 'Leading country',
+            'value' => '—',
+            'detail' => 'Country report unavailable',
+        ])
+        ->and($highlights[3])
+        ->toMatchArray([
+            'label' => 'Most viewed content',
+            'value' => '—',
+            'detail' => 'Content report unavailable',
+        ])
+        ->and($highlights[4])
+        ->toMatchArray([
+            'label' => 'AI referrals',
+            'value' => '—',
+            'detail' => 'AI-assistant report unavailable',
+        ]);
+
+    $empty = audienceHighlights([
+        'status' => 'available',
+        'metrics' => ['nb_visits' => 10.0],
+        'returning' => ['nb_visits_returning' => 2.0],
+        'referrers' => [],
+        'countries' => [],
+        'content' => [],
+        'ai_assistants' => [],
+        'warnings' => [],
+    ]);
+
+    expect($empty[1]['value'])->toBe('No data')
+        ->and($empty[2]['value'])->toBe('No data')
+        ->and($empty[3]['value'])->toBe('No data')
+        ->and($empty[4]['value'])->toBe('None detected');
+});
+
 it('keeps a genuine zero returning visitor metric distinct from unavailable', function () {
     $highlights = audienceHighlights([
         'status' => 'available',
