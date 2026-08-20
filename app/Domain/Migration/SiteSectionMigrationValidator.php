@@ -21,7 +21,11 @@ final class SiteSectionMigrationValidator
     public function validate(): array
     {
         $errors = [];
+
+        /** @var Collection<int, ArtworkCategory> $categories */
         $categories = ArtworkCategory::query()->orderBy('id')->get();
+
+        /** @var Collection<int, SiteSection> $sections */
         $sections = SiteSection::query()->orderBy('id')->get();
 
         foreach (SiteSection::SINGLETON_TYPES as $type) {
