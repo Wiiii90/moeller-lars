@@ -36,7 +36,7 @@ class PublicContentSettingResource extends Resource
 
     public static function getNavigationUrl(): string
     {
-        return static::getUrl('edit', ['record' => PublicContentSetting::current()]);
+        return static::getUrl('edit', ['record' => PublicContentSetting::query()->sole()]);
     }
 
     public static function form(Schema $schema): Schema
