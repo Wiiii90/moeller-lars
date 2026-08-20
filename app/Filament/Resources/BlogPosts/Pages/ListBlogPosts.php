@@ -51,7 +51,7 @@ final class ListBlogPosts extends Page
             Action::make('blogSettings')
                 ->label('Blog page settings')
                 ->icon(Heroicon::OutlinedCog6Tooth)
-                ->url(fn (): string => BlogSettingResource::getUrl('edit', ['record' => BlogSetting::current()])),
+                ->url(fn (): string => BlogSettingResource::getUrl('edit', ['record' => BlogSetting::query()->sole()])),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
