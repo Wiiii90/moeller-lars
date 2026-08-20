@@ -37,16 +37,17 @@ it('creates one-level Gallery hierarchy while keeping content and placement owne
 it('publishes and hides Gallery placement through SiteSectionEditorialService only', function (): void {
     $category = app(ArtworkCategoryEditorialService::class)->create(['name' => 'Sculptures', 'slug' => 'sculptures']);
     $section = $category->siteSection()->firstOrFail();
+    $legacyState = $category->getRawOriginal('state');
 
     $published = app(SiteSectionEditorialService::class)->updateGallery($section, 'published', true, null);
     expect($published->state)->toBe('published')
         ->and($published->show_in_navigation)->toBeTrue()
-        ->and($category->fresh()->getAttribute('state'))->toBe('draft');
+        ->and($category->fresh()->getRawOriginal('state'))->toBe($legacyState);
 
     $hidden = app(SiteSectionEditorialService::class)->updateGallery($published, 'hidden', false, null);
     expect($hidden->state)->toBe('hidden')
         ->and($hidden->show_in_navigation)->toBeFalse()
-        ->and($category->fresh()->getAttribute('state'))->toBe('draft');
+        ->and($category->fresh()->getRawOriginal('state'))->toBe($legacyState);
 });
 
 it('rejects hiding a visible parent while a visible submenu Gallery still depends on it', function (): void {
