@@ -55,10 +55,10 @@ it('keeps CV and exhibitions unavailable until their own feature is enabled', fu
 });
 
 it('renders published biography entries and the configured CV navigation item', function () {
-    publicContentSettings()->update([
-        'cv_enabled' => true,
-        'cv_navigation_label' => 'CV',
-        'cv_navigation_position' => 20,
+    testSingletonSection(\App\Models\SiteSection::TYPE_VITA, [
+        'navigation_label' => 'CV',
+        'state' => 'published',
+        'show_in_navigation' => true,
     ]);
 
     CvEntry::create([
@@ -79,10 +79,10 @@ it('renders published biography entries and the configured CV navigation item', 
 });
 
 it('renders the CV portrait from the canonical thumbnail instead of the original', function () {
-    publicContentSettings()->update([
-        'cv_enabled' => true,
-        'cv_navigation_label' => 'CV',
-        'cv_navigation_position' => 20,
+    testSingletonSection(\App\Models\SiteSection::TYPE_VITA, [
+        'navigation_label' => 'CV',
+        'state' => 'published',
+        'show_in_navigation' => true,
     ]);
 
     $asset = publicContentAsset('portrait');
@@ -107,18 +107,14 @@ it('renders the CV portrait from the canonical thumbnail instead of the original
 });
 
 it('rejects a navigation position collision instead of inventing a tie breaker', function () {
-    ArtworkCategory::create([
-        'slug' => 'works',
-        'name' => 'Works',
-        'state' => 'published',
-        'position' => 7,
-        'show_in_navigation' => true,
-    ]);
+    $category = ArtworkCategory::create(['slug' => 'works', 'name' => 'Works', 'show_on_home' => false]);
+    testGallerySection($category, ['state' => 'published', 'show_in_navigation' => true, 'position' => 200]);
 
-    expect(fn () => publicContentSettings()->update([
-        'cv_enabled' => true,
-        'cv_navigation_position' => 7,
-    ]))->toThrow(ValidationException::class);
+    expect(fn () => testSingletonSection(\App\Models\SiteSection::TYPE_VITA, [
+        'state' => 'published',
+        'show_in_navigation' => true,
+        'position' => 200,
+    ]))->toThrow(\Illuminate\Database\QueryException::class);
 });
 
 it('enforces a total published CV order', function () {
@@ -142,10 +138,10 @@ it('enforces a total published CV order', function () {
 });
 
 it('renders exhibition media through the separate exhibitions surface and existing controlled media routes', function () {
-    publicContentSettings()->update([
-        'exhibitions_enabled' => true,
-        'exhibitions_navigation_label' => 'EXHIBITIONS',
-        'exhibitions_navigation_position' => 20,
+    testSingletonSection(\App\Models\SiteSection::TYPE_EXHIBITIONS, [
+        'navigation_label' => 'EXHIBITIONS',
+        'state' => 'published',
+        'show_in_navigation' => true,
     ]);
 
     $asset = publicContentAsset('exhibition');

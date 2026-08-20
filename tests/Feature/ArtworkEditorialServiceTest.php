@@ -25,8 +25,9 @@ beforeEach(function () {
 function editorialCategory(string $state = 'published'): ArtworkCategory
 {
     $category = new ArtworkCategory;
-    $category->fill(['slug' => 'test-category-'.fake()->unique()->uuid(), 'name' => 'Test category', 'state' => $state, 'position' => 0]);
+    $category->fill(['slug' => 'test-category-'.fake()->unique()->uuid(), 'name' => 'Test category', 'show_on_home' => false]);
     $category->save();
+    testGallerySection($category, ['state' => $state === 'published' ? 'published' : 'hidden']);
 
     return $category;
 }

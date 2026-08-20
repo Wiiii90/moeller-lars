@@ -40,13 +40,15 @@ function invariantAsset(): MediaAsset
     return $asset;
 }
 
-it('enforces unique visible navigation positions', function () {
-    ArtworkCategory::create([
-        'slug' => 'first', 'name' => 'First', 'state' => 'published', 'position' => 4, 'show_in_navigation' => true,
-    ]);
+it('enforces unique visible top-level SiteSection navigation positions', function () {
+    $first = ArtworkCategory::create(['slug' => 'first', 'name' => 'First', 'show_on_home' => false]);
+    testGallerySection($first, ['state' => 'published', 'show_in_navigation' => true, 'position' => 200]);
+    $second = ArtworkCategory::create(['slug' => 'second', 'name' => 'Second', 'show_on_home' => false]);
 
-    expect(fn () => ArtworkCategory::create([
-        'slug' => 'second', 'name' => 'Second', 'state' => 'published', 'position' => 4, 'show_in_navigation' => true,
+    expect(fn () => testGallerySection($second, [
+        'state' => 'published',
+        'show_in_navigation' => true,
+        'position' => 200,
     ]))->toThrow(QueryException::class);
 });
 

@@ -28,6 +28,7 @@ it('opens a Gallery-scoped artwork workspace from Pages', function (): void {
         'show_in_navigation' => false,
         'show_on_home' => false,
     ]);
+    testGallerySection($gallery, ['state' => 'published', 'show_in_navigation' => false, 'position' => 210]);
     $otherGallery = ArtworkCategory::create([
         'name' => 'Sculptures',
         'slug' => 'sculptures-workspace',
@@ -36,6 +37,7 @@ it('opens a Gallery-scoped artwork workspace from Pages', function (): void {
         'show_in_navigation' => false,
         'show_on_home' => false,
     ]);
+    testGallerySection($otherGallery, ['state' => 'hidden', 'show_in_navigation' => false, 'position' => 220]);
     Artwork::create([
         'artwork_category_id' => $gallery->id,
         'slug' => 'workspace-painting',
@@ -82,6 +84,7 @@ it('reorders artworks through the Gallery workspace without affecting another Ga
         'show_in_navigation' => false,
         'show_on_home' => false,
     ]);
+    testGallerySection($gallery, ['state' => 'hidden', 'show_in_navigation' => false, 'position' => 230]);
     $otherGallery = ArtworkCategory::create([
         'name' => 'Other Gallery',
         'slug' => 'other-gallery-order',
@@ -90,6 +93,7 @@ it('reorders artworks through the Gallery workspace without affecting another Ga
         'show_in_navigation' => false,
         'show_on_home' => false,
     ]);
+    testGallerySection($otherGallery, ['state' => 'hidden', 'show_in_navigation' => false, 'position' => 240]);
     $first = Artwork::create([
         'artwork_category_id' => $gallery->id,
         'slug' => 'order-first',
