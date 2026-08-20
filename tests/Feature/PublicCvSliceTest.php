@@ -56,7 +56,7 @@ it('keeps CV and exhibitions unavailable until their canonical SiteSections are 
 });
 
 it('renders every published Vita entry regardless of its editorial section label', function () {
-    testSingletonSection(SiteSection::TYPE_VITA, [
+    testUniqueSection(SiteSection::TYPE_VITA, [
         'navigation_label' => 'CV',
         'state' => 'published',
         'show_in_navigation' => true,
@@ -89,7 +89,7 @@ it('renders every published Vita entry regardless of its editorial section label
 });
 
 it('renders the CV portrait from the canonical thumbnail instead of the original', function () {
-    testSingletonSection(SiteSection::TYPE_VITA, [
+    testUniqueSection(SiteSection::TYPE_VITA, [
         'navigation_label' => 'CV',
         'state' => 'published',
         'show_in_navigation' => true,
@@ -120,7 +120,7 @@ it('rejects a navigation position collision instead of inventing a tie breaker',
     $category = ArtworkCategory::create(['slug' => 'works', 'name' => 'Works', 'show_on_home' => false]);
     testGallerySection($category, ['state' => 'published', 'show_in_navigation' => true, 'position' => 200]);
 
-    expect(fn () => testSingletonSection(SiteSection::TYPE_VITA, [
+    expect(fn () => testUniqueSection(SiteSection::TYPE_VITA, [
         'state' => 'published',
         'show_in_navigation' => true,
         'position' => 200,
@@ -148,7 +148,7 @@ it('enforces a total published CV order', function () {
 });
 
 it('renders structured exhibition schedule and media through controlled public routes', function () {
-    testSingletonSection(SiteSection::TYPE_EXHIBITIONS, [
+    testUniqueSection(SiteSection::TYPE_EXHIBITIONS, [
         'navigation_label' => 'EXHIBITIONS',
         'state' => 'published',
         'show_in_navigation' => true,
