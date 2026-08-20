@@ -51,16 +51,6 @@
                                         data-navigation-parent-link
                                     @endif
                                 >{{ $navigationItem['label'] }}</a>
-                                @if ($navigationItem['children'] !== [])
-                                    <button
-                                        class="site-navigation__submenu-toggle"
-                                        type="button"
-                                        aria-label="Show {{ $navigationItem['label'] }} subcategories"
-                                        aria-expanded="false"
-                                        aria-controls="{{ $submenuId }}"
-                                        data-navigation-submenu-toggle
-                                    ><span aria-hidden="true"></span></button>
-                                @endif
                             </div>
                             @if ($navigationItem['children'] !== [])
                                 <div
