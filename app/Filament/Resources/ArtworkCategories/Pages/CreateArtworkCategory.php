@@ -21,7 +21,7 @@ class CreateArtworkCategory extends CreateRecord
     {
         return Notification::make()
             ->success()
-            ->title('Category created — not public yet')
-            ->body('The new category starts hidden. Enable “Show in public navigation”, save, then use Publish when it is ready for visitors.');
+            ->title('Gallery created as hidden')
+            ->body('Publication, navigation and site order are managed from Pages.');
     }
 }
