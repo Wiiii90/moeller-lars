@@ -19,6 +19,7 @@ credentials.json
 
 # Logs and local tooling
 *.log
+.validation-release
 .DS_Store
 Thumbs.db
 .idea/
