@@ -97,6 +97,7 @@ it('edits Gallery publication and hierarchy from Pages without writing legacy ca
     ]);
     $gallery = ArtworkCategory::create(['name' => 'Movable Gallery', 'slug' => 'movable-gallery', 'show_on_home' => false]);
     $section = testGallerySection($gallery, ['state' => 'hidden', 'position' => 210]);
+    $legacyGalleryState = $gallery->getRawOriginal('state');
 
     Livewire::test(SitePages::class)
         ->call('moveGallery', $section->id, $parentSection->id)
@@ -111,7 +112,7 @@ it('edits Gallery publication and hierarchy from Pages without writing legacy ca
         ->and($freshSection->state)->toBe('published')
         ->and((bool) $freshSection->show_in_navigation)->toBeTrue()
         ->and($freshCategory->getRawOriginal('parent_id'))->toBeNull()
-        ->and($freshCategory->getRawOriginal('state'))->toBe('draft')
+        ->and($freshCategory->getRawOriginal('state'))->toBe($legacyGalleryState)
         ->and((bool) $freshCategory->getRawOriginal('show_in_navigation'))->toBeTrue()
         ->and((int) $freshCategory->getRawOriginal('position'))->toBe(0)
         ->and(AuditEvent::query()->where('action', 'site_section.updated')->where('entity_id', $section->id)->count())->toBe(3);
@@ -134,11 +135,12 @@ it('does not hide a navigation parent while it still has a visible submenu Galle
         'parent_id' => $parentSection->id,
         'position' => 10,
     ]);
+    $legacyParentState = $parent->getRawOriginal('state');
 
     Livewire::test(SitePages::class)
         ->call('toggleGalleryState', $parentSection->id)
         ->assertHasNoErrors();
 
     expect($parentSection->fresh()->state)->toBe('published')
-        ->and($parent->fresh()->getRawOriginal('state'))->toBe('draft');
+        ->and($parent->fresh()->getRawOriginal('state'))->toBe($legacyParentState);
 });

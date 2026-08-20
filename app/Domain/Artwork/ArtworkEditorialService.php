@@ -7,6 +7,7 @@ use App\Domain\Media\MediaIngestService;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
+use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -26,11 +27,12 @@ class ArtworkEditorialService
     {
         $actor = $this->adminAuditService->requireActor();
         /** @var Artwork $fresh */
-        $fresh = Artwork::query()->with(['category', 'artworkMedia.mediaAsset'])->findOrFail($artwork->getKey());
+        $fresh = Artwork::query()->with(['category.siteSection', 'artworkMedia.mediaAsset'])->findOrFail($artwork->getKey());
         /** @var Collection<int, ArtworkMedia> $primaries */
         $primaries = $fresh->artworkMedia()->where('role', 'primary')->with('mediaAsset')->get();
         $primary = $primaries->count() === 1 ? $primaries->first() : null;
-        $category = $fresh->category()->first();
+        $category = $fresh->getRelationValue('category');
+        $siteSection = $category?->getRelationValue('siteSection');
         $mediaAsset = $primary?->getRelation('mediaAsset');
         $altText = $mediaAsset?->getAttribute('alt_text');
         $publicThumbnails = $mediaAsset?->variants()
@@ -41,7 +43,8 @@ class ArtworkEditorialService
 
         if (
             ! $category
-            || $category->getAttribute('state') !== 'published'
+            || ! $siteSection instanceof SiteSection
+            || $siteSection->getAttribute('state') !== 'published'
             || ! $primary
             || ! $mediaAsset
             || $mediaAsset->getAttribute('state') !== 'available'
