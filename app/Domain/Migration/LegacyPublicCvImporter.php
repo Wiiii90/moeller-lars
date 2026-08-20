@@ -2,6 +2,7 @@
 
 namespace App\Domain\Migration;
 
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,9 +23,8 @@ final class LegacyPublicCvImporter
             if (DB::table('exhibitions')->exists()) {
                 throw new RuntimeException('Legacy Vita import requires an empty exhibitions table.');
             }
-            if (! DB::table('public_content_settings')->where('id', 1)->exists()) {
-                throw new RuntimeException('Public content settings singleton is missing.');
-            }
+
+            PublicContentSetting::query()->sole();
 
             $now = now();
             $rows = $this->expectedRows();
@@ -107,8 +107,8 @@ final class LegacyPublicCvImporter
     }
 
     /**
-     * Verified factual content from the currently public legacy Vita surface.
-     * Biography rows are imported to CV; exhibition rows are imported to Exhibition entities.
+     * Verified factual snapshot from the legacy public Vita surface. This is migration source data,
+     * not runtime navigation or presentation logic.
      *
      * @return list<array{section:string,title:string,year_text:string,date_precision:string,starts_on:?string,ends_on:?string,organisation:?string,location:?string,body:?string,opening_text:?string}>
      */
