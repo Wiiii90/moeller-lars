@@ -45,8 +45,20 @@ These invariants define what must remain true when legacy content is moved into 
 ## CV/Vita source
 
 - The legacy Vita/CV source is the text file `txt/vita.txt`, rendered with the legacy page's formatting interpretation and alongside the artist portrait.
-- The target may transform this into structured CV entries and safe rich text, but the source text, section meaning, links, and intended order must be preserved losslessly and reviewed by Lars.
-- Exhibitions are not inferred from the CV source unless a separate, explicit editorial mapping is approved.
+- The reviewed source inventory contains exactly **31** Vita source rows. The approved canonical mapping is exactly **2 Biography rows** in `cv_entries` and **29 Exhibition rows** in `exhibitions`; this is a partition of the 31 source rows, not two independent imports.
+- Every canonical Biography/Exhibition row retains `legacy_source=legacy-public-vita`, the reviewed migration batch identity, source identity and intended order so the validator can account for every source row exactly once.
+- The artist portrait is part of the same reviewed Vita source: the first Biography row references the migrated portrait asset and that asset retains legacy source path/name, byte-size and SHA-256 provenance.
+- Existing protected Validation data is transformed forward by the application migration that splits legacy exhibition rows out of `cv_entries`. Re-running the destructive source import against non-empty Validation/Production tables is not an accepted reconciliation strategy.
+- Reconciliation must fail if Biography/Exhibition counts differ from 2/29, if a Vita row exists in both canonical targets, if portrait provenance/integrity differs, or if any of the 31 source rows is unaccounted for.
+- The source text, section meaning, links, and intended order must remain lossless and are still subject to artist/browser acceptance even after database reconciliation is green.
+
+## Canonical SiteSection projection
+
+- `SiteSection` is the canonical public-navigation/availability projection introduced during the rebuild; its migration must be reconciled independently from visual browser acceptance.
+- Exactly one singleton section must exist for each of `home`, `vita`, `blog`, and `exhibitions`.
+- Every `artwork_categories` row maps to exactly one `gallery` SiteSection and no Gallery SiteSection may reference a missing category.
+- Gallery section parentage must match the artwork-category hierarchy exactly. A child category must point at the SiteSection belonging to its category parent; a root category must have no SiteSection parent.
+- `php artisan legacy:validate <manifest>` performs this read-only structural check together with the legacy content/media reconciliation. A failure is a migration blocker and must not be repaired by deleting Validation evidence.
 
 ## Fresh target database and losslessness
 
@@ -64,10 +76,11 @@ These invariants define what must remain true when legacy content is moved into 
 ## Validation and acceptance
 
 - The migration report makes unexplained count, mapping, media, ALT, text,
-  ordering, and redirect differences visible.
+  ordering, SiteSection, and redirect differences visible.
 - Validation fails migration acceptance until each difference is resolved or
   recorded as an explicit exception with reason, owner, and review decision;
   differences are never silently normalized.
+- Database/media reconciliation is necessary but not sufficient for production acceptance: release-candidate browser comparison and explicit artist approval remain separate gates.
 
 ## Explicit exclusions
 
