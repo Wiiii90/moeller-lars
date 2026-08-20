@@ -407,12 +407,12 @@
 
 /*
  * Public acceptance grid.
- * One visible shell (800px) and one inner measure (760px) own navigation,
- * gallery, CV, exhibitions and the title axis. Keep geometry here together.
+ * The visible shell stays 800px. The actual menu/content measure is the
+ * existing 650px artwork width, leaving the same calm white gutter around it.
  */
 html:root {
     --public-shell-max: 800px;
-    --public-art-max: 760px;
+    --public-art-max: 650px;
     --public-content-inset: 20px;
     --public-gutter: clamp(.65rem, 2vw, 1.5rem);
 }
@@ -426,7 +426,7 @@ body .site-header .site-navigation__submenu {
     width: min(calc(100% - (2 * var(--public-content-inset))), var(--public-art-max));
 }
 
-/* Stretch the actual menu cells across the complete 760px artwork measure. */
+/* The first and last dividers are the exact left/right artwork edges. */
 body .site-header .site-navigation__item {
     min-width: max-content;
     flex: 1 0 max-content;
@@ -450,10 +450,11 @@ body #content.site-content {
     width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
     max-width: var(--public-shell-max);
     min-height: 0;
-    padding: 24px var(--public-content-inset) 22px;
+    padding-right: var(--public-content-inset);
+    padding-left: var(--public-content-inset);
 }
 
-/* Every public content surface uses exactly the same inner edges as gallery art. */
+/* Gallery, CV and Exhibitions share the same exact 650px visible measure. */
 body #content.site-content > .artwork-list,
 body #content.site-content > .cv-page,
 body #content.site-content > .exhibitions-page,
@@ -494,10 +495,5 @@ body .site-header .site-title {
     html:root {
         --public-content-inset: .65rem;
         --public-gutter: .65rem;
-    }
-
-    body #content.site-content {
-        padding-top: 1.25rem;
-        padding-bottom: 1.2rem;
     }
 }
