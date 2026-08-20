@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 #[Fillable([
     'type',
@@ -62,7 +64,7 @@ final class SiteSection extends Model
     {
         self::saving(function (self $section): void {
             $type = (string) $section->getAttribute('type');
-            if (in_array($type, self::TYPES, true) === false) {
+            if (! in_array($type, self::TYPES, true)) {
                 throw ValidationException::withMessages(['type' => 'The site section type is invalid.']);
             }
 
@@ -80,11 +82,34 @@ final class SiteSection extends Model
 
             if ((bool) $section->getAttribute('show_in_navigation')) {
                 $label = $section->getAttribute('navigation_label');
-                if (is_string($label) === false || trim($label) === '') {
+                if (! is_string($label) || trim($label) === '') {
                     throw ValidationException::withMessages(['navigation_label' => 'A navigation label is required while this section is shown in navigation.']);
                 }
             }
         });
+    }
+
+    /** @param Builder<self> $query */
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('state', 'published');
+    }
+
+    /** @param Builder<self> $query */
+    public function scopeOfType(Builder $query, string $type): Builder
+    {
+        return $query->where('type', $type);
+    }
+
+    /** @param Builder<self> $query */
+    public function scopeVisibleInNavigation(Builder $query): Builder
+    {
+        return $query->published()->where('show_in_navigation', true);
+    }
+
+    public static function isPublished(string $type): bool
+    {
+        return static::query()->ofType($type)->published()->exists();
     }
 
     public function parent(): BelongsTo
@@ -102,6 +127,18 @@ final class SiteSection extends Model
         return $this->belongsTo(ArtworkCategory::class);
     }
 
+    public function publicPath(): string
+    {
+        return match ($this->getAttribute('type')) {
+            self::TYPE_HOME => '/',
+            self::TYPE_GALLERY => '/'.$this->getAttribute('slug'),
+            self::TYPE_VITA => '/cv',
+            self::TYPE_BLOG => '/blog',
+            self::TYPE_EXHIBITIONS => '/exhibitions',
+            default => throw new LogicException('Unsupported site section type.'),
+        };
+    }
+
     public function publicUrl(): string
     {
         return match ($this->getAttribute('type')) {
@@ -110,7 +147,7 @@ final class SiteSection extends Model
             self::TYPE_VITA => route('cv'),
             self::TYPE_BLOG => route('blog.index'),
             self::TYPE_EXHIBITIONS => route('exhibitions.index'),
-            default => throw new \LogicException('Unsupported site section type.'),
+            default => throw new LogicException('Unsupported site section type.'),
         };
     }
 
