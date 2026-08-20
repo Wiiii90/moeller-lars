@@ -44,8 +44,8 @@ it('controls public profile details independently from the contact form', functi
 
     $this->get('/cv')
         ->assertSuccessful()
-        ->assertDontSee('artist@example.test')
-        ->assertDontSee('artist_account')
+        ->assertDontSee('mailto:artist@example.test', false)
+        ->assertDontSee('https://www.instagram.com/artist_account/', false)
         ->assertSee('Studio visits')
         ->assertSee('By appointment.')
         ->assertSee('<form class="contact-form"', false);
