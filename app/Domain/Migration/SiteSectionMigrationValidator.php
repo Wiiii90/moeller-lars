@@ -49,12 +49,14 @@ final class SiteSectionMigrationValidator
             $matches = $gallerySections->where('artwork_category_id', $categoryId)->values();
             if ($matches->count() !== 1) {
                 $errors[] = "Artwork category {$categoryId} must map to exactly one Gallery SiteSection; found {$matches->count()}.";
+
                 continue;
             }
 
             $section = $matches->first();
             if (($section instanceof SiteSection) === false) {
                 $errors[] = "Artwork category {$categoryId} does not have a readable Gallery SiteSection mapping.";
+
                 continue;
             }
 
@@ -65,12 +67,14 @@ final class SiteSectionMigrationValidator
                 $parentMatches = $gallerySections->where('artwork_category_id', $categoryParentId)->values();
                 if ($parentMatches->count() !== 1) {
                     $errors[] = "Artwork category {$categoryId} has parent {$categoryParentId}, but that parent does not map to exactly one Gallery SiteSection.";
+
                     continue;
                 }
 
                 $parentSection = $parentMatches->first();
                 if (($parentSection instanceof SiteSection) === false) {
                     $errors[] = "Artwork category {$categoryId} has parent {$categoryParentId}, but that parent mapping is unreadable.";
+
                     continue;
                 }
 
