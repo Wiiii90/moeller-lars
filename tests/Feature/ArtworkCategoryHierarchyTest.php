@@ -5,7 +5,6 @@ use App\Domain\Content\PublicNavigationService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Models\ArtworkCategory;
-use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
