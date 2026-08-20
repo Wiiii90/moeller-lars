@@ -35,37 +35,50 @@ final class SiteSectionMigrationValidator
         $gallerySections = $sections->where('type', SiteSection::TYPE_GALLERY)->values();
 
         foreach ($gallerySections as $section) {
-            $categoryId = $section->artwork_category_id;
+            $categoryId = $this->nullableIntAttribute($section, 'artwork_category_id');
             if ($categoryId === null || $categories->firstWhere('id', $categoryId) === null) {
-                $errors[] = "Gallery SiteSection {$section->id} references a missing artwork category.";
+                $errors[] = 'Gallery SiteSection '.(int) $section->getKey().' references a missing artwork category.';
             }
         }
 
         foreach ($categories as $category) {
-            $matches = $gallerySections->where('artwork_category_id', $category->id)->values();
+            $categoryId = (int) $category->getKey();
+            $matches = $gallerySections->where('artwork_category_id', $categoryId)->values();
             if ($matches->count() !== 1) {
-                $errors[] = "Artwork category {$category->id} must map to exactly one Gallery SiteSection; found {$matches->count()}.";
+                $errors[] = "Artwork category {$categoryId} must map to exactly one Gallery SiteSection; found {$matches->count()}.";
                 continue;
             }
 
-            /** @var SiteSection $section */
             $section = $matches->first();
-            $expectedParentSectionId = null;
+            if (! $section instanceof SiteSection) {
+                $errors[] = "Artwork category {$categoryId} does not have a readable Gallery SiteSection mapping.";
+                continue;
+            }
 
-            if ($category->parent_id !== null) {
-                $parentMatches = $gallerySections->where('artwork_category_id', $category->parent_id)->values();
+            $expectedParentSectionId = null;
+            $categoryParentId = $this->nullableIntAttribute($category, 'parent_id');
+
+            if ($categoryParentId !== null) {
+                $parentMatches = $gallerySections->where('artwork_category_id', $categoryParentId)->values();
                 if ($parentMatches->count() !== 1) {
-                    $errors[] = "Artwork category {$category->id} has parent {$category->parent_id}, but that parent does not map to exactly one Gallery SiteSection.";
+                    $errors[] = "Artwork category {$categoryId} has parent {$categoryParentId}, but that parent does not map to exactly one Gallery SiteSection.";
                     continue;
                 }
 
-                $expectedParentSectionId = $parentMatches->first()->id;
+                $parentSection = $parentMatches->first();
+                if (! $parentSection instanceof SiteSection) {
+                    $errors[] = "Artwork category {$categoryId} has parent {$categoryParentId}, but that parent mapping is unreadable.";
+                    continue;
+                }
+
+                $expectedParentSectionId = (int) $parentSection->getKey();
             }
 
-            if ($section->parent_id !== $expectedParentSectionId) {
-                $actual = $section->parent_id === null ? 'null' : (string) $section->parent_id;
+            $actualParentSectionId = $this->nullableIntAttribute($section, 'parent_id');
+            if ($actualParentSectionId !== $expectedParentSectionId) {
+                $actual = $actualParentSectionId === null ? 'null' : (string) $actualParentSectionId;
                 $expected = $expectedParentSectionId === null ? 'null' : (string) $expectedParentSectionId;
-                $errors[] = "Gallery SiteSection {$section->id} has parent_id {$actual}; expected {$expected} from artwork-category hierarchy.";
+                $errors[] = 'Gallery SiteSection '.(int) $section->getKey()." has parent_id {$actual}; expected {$expected} from artwork-category hierarchy.";
             }
         }
 
@@ -81,5 +94,12 @@ final class SiteSectionMigrationValidator
             ],
             'errors' => $errors,
         ];
+    }
+
+    private function nullableIntAttribute(ArtworkCategory|SiteSection $model, string $attribute): ?int
+    {
+        $value = $model->getAttribute($attribute);
+
+        return $value === null ? null : (int) $value;
     }
 }
