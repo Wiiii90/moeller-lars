@@ -6,6 +6,7 @@ use App\Domain\Media\MediaIngestService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
+use App\Models\SiteSection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -39,9 +40,6 @@ final class LegacyArtworkManifestImporter
                     $category->fill([
                         'slug' => $categoryData['slug'],
                         'name' => $categoryData['name'],
-                        'state' => 'published',
-                        'position' => $categoryData['position'],
-                        'show_in_navigation' => $categoryData['show_in_navigation'],
                         'show_on_home' => $categoryData['show_on_home'],
                         'description' => $categoryData['description'],
                         'legacy_source' => $categoryData['legacy_source'],
@@ -49,6 +47,18 @@ final class LegacyArtworkManifestImporter
                         'migrated_at' => $now,
                     ]);
                     $category->save();
+
+                    SiteSection::query()->create([
+                        'type' => SiteSection::TYPE_GALLERY,
+                        'title' => $categoryData['name'],
+                        'navigation_label' => $categoryData['name'],
+                        'slug' => $categoryData['slug'],
+                        'state' => 'published',
+                        'position' => $categoryData['position'],
+                        'show_in_navigation' => $categoryData['show_in_navigation'],
+                        'parent_id' => null,
+                        'artwork_category_id' => (int) $category->getKey(),
+                    ]);
 
                     foreach ($categoryData['artworks'] as $artworkData) {
                         $artwork = new Artwork;

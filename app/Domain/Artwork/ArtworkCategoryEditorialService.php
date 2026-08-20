@@ -27,18 +27,7 @@ class ArtworkCategoryEditorialService
 
         return DB::transaction(function () use ($validated, $parentSectionId, $actor): ArtworkCategory {
             $category = new ArtworkCategory;
-            $category->fill([
-                ...$validated,
-                // Transitional columns remain inert until the post-acceptance schema cleanup.
-                'state' => 'hidden',
-                'position' => 0,
-                'show_in_navigation' => false,
-                'parent_id' => null,
-                'legacy_id' => null,
-                'legacy_source' => null,
-                'migration_batch_id' => null,
-                'migrated_at' => null,
-            ]);
+            $category->fill($validated);
             $category->save();
 
             SiteSection::query()->create([
