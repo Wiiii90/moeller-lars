@@ -268,9 +268,24 @@ final class Analytics extends Page
             return [];
         }
 
-        $visits = (int) round((float) ($report['metrics']['nb_visits'] ?? 0));
-        $returning = (int) round((float) ($report['returning']['nb_visits_returning'] ?? 0));
-        $new = max(0, $visits - $returning);
+        $rawVisits = $report['metrics']['nb_visits'] ?? null;
+        $rawReturning = $report['returning']['nb_visits_returning'] ?? null;
+        $visits = is_numeric($rawVisits) ? (int) round((float) $rawVisits) : null;
+        $returning = is_numeric($rawReturning) ? (int) round((float) $rawReturning) : null;
+
+        if ($visits === 0 && $returning === null) {
+            $returning = 0;
+        }
+
+        $visitorSplit = $visits !== null && $returning !== null
+            ? [
+                'value' => number_format(max(0, $visits - $returning)).' / '.number_format($returning),
+                'detail' => 'visits in selected period',
+            ]
+            : [
+                'value' => '—',
+                'detail' => 'Returning-visitor split unavailable',
+            ];
 
         $topSource = $this->topRow($report['referrers'] ?? []);
         $topCountry = $this->topRow($report['countries'] ?? []);
@@ -280,8 +295,8 @@ final class Analytics extends Page
         return [
             [
                 'label' => 'New / returning',
-                'value' => number_format($new).' / '.number_format($returning),
-                'detail' => 'visits in selected period',
+                'value' => $visitorSplit['value'],
+                'detail' => $visitorSplit['detail'],
             ],
             [
                 'label' => 'Leading source',
@@ -311,13 +326,20 @@ final class Analytics extends Page
      */
     private function topRow(array $rows, string $metric = 'nb_visits'): ?array
     {
-        if ($rows === []) {
+        $rankedRows = array_values(array_filter(
+            $rows,
+            static fn (array $row): bool => is_string($row['label'] ?? null)
+                && trim($row['label']) !== ''
+                && is_numeric($row[$metric] ?? null),
+        ));
+
+        if ($rankedRows === []) {
             return null;
         }
 
-        usort($rows, static fn (array $a, array $b): int => ((float) ($b[$metric] ?? 0)) <=> ((float) ($a[$metric] ?? 0)));
+        usort($rankedRows, static fn (array $a, array $b): int => ((float) $b[$metric]) <=> ((float) $a[$metric]));
 
-        return $rows[0];
+        return $rankedRows[0];
     }
 
     /** @param array<int, array<string, mixed>> $rows
