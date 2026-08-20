@@ -67,7 +67,7 @@ Backup automation, off-server storage, restore orchestration and the isolated re
 
 Variants remain non-authoritative because they derive from canonical originals. Their absence must never cause the original to be silently served as a thumbnail. Until a recovery run has regenerated any omitted derivative and `media:verify` is green, the recovered target must remain out of service. The platform may avoid that regeneration dependency by restoring the backed-up complete private media tree.
 
-For the frozen legacy migration snapshot specifically, `legacy:validate {manifest}` remains an additional migration reconciliation check. It is not a replacement for the general backup/recovery `media:verify` check and a normal backup restore must not rerun the legacy import merely to obtain validation data.
+For the frozen legacy migration snapshot specifically, `legacy:validate {manifest}` remains an additional migration reconciliation check. It now also validates the canonical `SiteSection` projection. It is not a replacement for the general backup/recovery `media:verify` check and a normal backup restore must not rerun the legacy import merely to obtain validation data.
 
 ## Required production configuration
 
@@ -88,9 +88,21 @@ Always required by the production image:
 Feature/runtime configuration names include:
 
 - mail: `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, `CONTACT_TO_ADDRESS`
-- Matomo: `MATOMO_ENABLED`, `MATOMO_BASE_URL`, `MATOMO_SITE_ID`, `MATOMO_API_TOKEN`, `MATOMO_REPORT_TIMEOUT_SECONDS`
+- Matomo browser tracking: `MATOMO_TRACKING_ENABLED`, `MATOMO_BASE_URL`, `MATOMO_SITE_ID`
+- Matomo Reporting API: `MATOMO_REPORTING_ENABLED`, `MATOMO_BASE_URL`, `MATOMO_SITE_ID`, `MATOMO_API_TOKEN`, `MATOMO_REPORT_TIMEOUT_SECONDS`
 
-No real values belong in Git. When Matomo browser tracking is enabled the image additionally requires a valid HTTPS `MATOMO_BASE_URL` and positive `MATOMO_SITE_ID`. The admin Reporting API requires `MATOMO_API_TOKEN`; an unavailable Reporting API produces an explicit dashboard error state and does not break public requests.
+`MATOMO_ENABLED` remains only a legacy compatibility fallback in configuration parsing; new platform configuration must use the separate tracking/reporting flags. No real values belong in Git.
+
+When Matomo browser tracking is enabled the image requires a valid HTTPS `MATOMO_BASE_URL` and positive `MATOMO_SITE_ID`. When Reporting API access is enabled it additionally requires `MATOMO_API_TOKEN`; the token is a server-local credential for a restricted Matomo identity with View access to the intended Website and must never be exposed to browser code. The client sends `token_auth` only in the HTTPS POST body. An unavailable Reporting API produces an explicit dashboard error/stale state and does not break public requests.
+
+Validation and Production are separate runtime/data boundaries. Validation may inspect Production aggregate reporting without generating Production browser events by using exactly:
+
+```text
+MATOMO_TRACKING_ENABLED=false
+MATOMO_REPORTING_ENABLED=true
+```
+
+The platform owns injection of the matching site ID/read-only token. Validation must not enable tracking against the Production Matomo Website during review. Range-level `nb_uniq_visitors` is optional because Matomo may not provide it for arbitrary ranges; the application displays that metric as unavailable rather than manufacturing it by summing daily unique visitors.
 
 ## Administration provisioning
 
@@ -129,8 +141,12 @@ Validation environment smoke contract after platform-provided PostgreSQL, secret
 
 ```sh
 php artisan migrate:status --no-interaction
+php artisan media:verify
+php artisan legacy:validate <reviewed-manifest>
 ./scripts/release-smoke.sh http://127.0.0.1:8080
 ```
+
+`legacy:validate` is specific to the frozen legacy migration and requires the reviewed manifest to be available in the isolated operator context. It is not a routine application startup command.
 
 ## Rollback
 

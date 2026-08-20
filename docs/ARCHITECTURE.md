@@ -54,32 +54,31 @@ This is not a speculative microservice split.
   admin correctness.
 - PostgreSQL and internal service interfaces are not publicly exposed, and
   production secrets are not stored in repository content.
+- Production and Validation are distinct runtime/data trust boundaries. Validation must never share a writable application database or authoritative media path with Production.
 
 ## Verified production and platform baseline
 
-The current production host is the working baseline documented in [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md): Scaleway dev-play-1 / DEV1-S in AMS1 with 2 vCPU, 2 GB RAM, 50 GB block storage, and Ubuntu 24.04.4 LTS. For `moeller-lars`, the host has one permanent environment: production. Independent services may share the host later; current utilization is not a downsizing signal because future services may share it.
+The current production host is the working baseline documented in [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md): Scaleway dev-play-1 / DEV1-S in AMS1 with 2 vCPU, 2 GB RAM, 50 GB block storage, and Ubuntu 24.04.4 LTS. The platform may host logically separate shared workloads in addition to `moeller-lars`; current utilization is not a downsizing signal because future services may share it.
 
-The verified containment baseline includes UFW default-deny inbound rules, public ports 22/80/443 only, localhost-only MySQL bindings, valid renewing TLS for apex and `www`, working HTTPS/canonical-host redirects, disabled directory listing, removed public phpinfo, and blocked sensitive source/vendor/config paths.
+The verified containment baseline includes UFW default-deny inbound rules, localhost-only database bindings, valid TLS/canonical-host handling, disabled directory listing, removed public phpinfo, and blocked sensitive source/vendor/config paths. Public port ownership and the exact currently exposed service set remain platform-owned runtime state and must be verified from `server-platform` evidence rather than copied into application code.
 
 The verified platform containment and deployment details are maintained by
 `server-platform`; this repository consumes that contract and does not define
 production ingress, `/srv` placement, deployment transport, or host-level
 runtime topology.
 
-`moeller-lars` owns application code/tests, Dockerfile/build/runtime contract, migrations, application configuration templates, health/readiness, CI/build artifacts, persistence declarations, and migration expectations. `server-platform` owns production manifests, deployed artifact/image references, Compose, networks, Caddy, host ports, resource limits, production secret placement, monitoring, backups, and deployment/rollback. Do not duplicate platform implementation here.
+`moeller-lars` owns application code/tests, Dockerfile/build/runtime contract, migrations, application configuration templates, health/readiness, CI/build artifacts, persistence declarations, and migration expectations. `server-platform` owns Production/Validation manifests, deployed artifact/image references, Compose, networks, Caddy, host ports, resource limits, runtime secret placement, monitoring, backups, and deployment/rollback. Do not duplicate platform implementation here.
 
-Explicit platform gates are [#4](https://github.com/Wiiii90/server-platform/issues/4), [#5](https://github.com/Wiiii90/server-platform/issues/5), [#6](https://github.com/Wiiii90/server-platform/issues/6), [#7](https://github.com/Wiiii90/server-platform/issues/7), [#8](https://github.com/Wiiii90/server-platform/issues/8), [#9](https://github.com/Wiiii90/server-platform/issues/9), [#10](https://github.com/Wiiii90/server-platform/issues/10), [#11](https://github.com/Wiiii90/server-platform/issues/11), [#12](https://github.com/Wiiii90/server-platform/issues/12), and [#14](https://github.com/Wiiii90/server-platform/issues/14).
+Current platform gates are tracked in `Wiiii90/server-platform`, especially production cutover #11, post-cutover stabilization #12, readiness #14, shared mail #24, application capacity #30, host maintenance #33, bounded log growth #35, and documentation reconciliation #36. Historical closed issues remain evidence but are not active gates.
 
 ## Deployment environments
 
-- `moeller-lars` has exactly one permanent environment: production.
-- No permanent staging environment is required. Temporary isolated release
-  validation is created and used when required before
-  high-risk production changes or cutover.
-- Development and testing occur locally or in CI, never against production
-  data.
-- The current Scaleway host remains the baseline; server-platform owns its
-  physical runtime and ingress lifecycle.
+- **Production** is the only public authoritative application environment.
+- **Validation** is a platform-owned, non-production release-validation environment with isolated PostgreSQL data, isolated media, isolated secrets and separate authenticated ingress. Its lifecycle may be temporary, but while it exists it is a distinct environment and must remain separate from Production.
+- Validation may read Production Matomo aggregate reports through a restricted View-only reporting identity while browser/event tracking remains disabled (`MATOMO_TRACKING_ENABLED=false`, `MATOMO_REPORTING_ENABLED=true`). This does not permit Production database/media writes from Validation.
+- Development and testing occur locally or in CI, never against Production data.
+- The current Scaleway host remains the baseline; `server-platform` owns its physical runtime, ingress and environment lifecycle.
+- A successful Validation review does not itself authorize Production deployment, migration, routing or cutover. Those require the explicit readiness and artist-approval gates.
 
 ## Non-functional requirements
 
@@ -117,7 +116,7 @@ The analytics boundary is fixed: self-hosted Matomo Community/Core owns human vi
 
 The application owns browser tracking integration, event taxonomy, consent/privacy behaviour, site-specific configuration, reporting client/dashboard, and application-local operational aggregates. The platform owns Matomo containers/database, persistence, Caddy, secrets, resource limits, health, archiving, upgrades, and backup integration.
 
-Production operations are part of this architecture, with platform-owned deployment automation, secrets, TLS ingress, monitoring, encrypted recurring backups, restore testing, rollback, and CI/CD integration. Application-specific deployment contract and workload integration remain the application gates through server-platform #4/#5; backup/restore is server-platform #8/#9/#10, temporary validation is #6, cutover/rollback routing is #7/#11, stabilization is #12, and readiness is #14.
+Production operations are part of this architecture, with platform-owned deployment automation, secrets, TLS ingress, monitoring, encrypted recurring backups, restore testing, rollback, and CI/CD integration. Application-specific release identity and persistence/restore expectations are documented in [RELEASE.md](RELEASE.md); deployment/cutover evidence remains in `server-platform`.
 
 The hosting and cost baseline is recorded in [ADR-0002](adr/ADR-0002-HOSTING-COST-BASELINE.md); it does not decide deployment topology, ingress, OS migration, or other platform items that remain open.
 
@@ -131,7 +130,7 @@ The hosting and cost baseline is recorded in [ADR-0002](adr/ADR-0002-HOSTING-COS
 - Analytics failure is tested as isolated from public rendering and normal admin workflows; operational aggregates remain distinguishable from Matomo data.
 - Analytics acceptance covers traffic sources, geography, devices, content interaction, and separate bot/error/performance metrics without exposing unnecessary raw identifiers.
 - Logical separation of analytics from the public application is demonstrated; physical server separation is not required.
-- Temporary release validation proves the application contract behind platform HTTPS, backup/restore, rollback, and pre-cutover behaviour before production cutover; permanent staging is not required.
+- Validation proves the application contract behind platform HTTPS, isolated data/media, backup/restore, rollback and pre-cutover behaviour before Production cutover; Validation does not share writable Production persistence.
 - Matomo is logically isolated from public rendering and normal admin operation; a separate physical server is not required.
 - CI/CD, recurring offsite backups, monitoring, Docker/Compose placement, and common ingress are verified through the server-platform contract; Kubernetes is not selected.
 - A cost review confirms that mandatory commercial runtime dependencies are avoided where practical, with minimized and justified server/hosting cost.
