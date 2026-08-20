@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('reconciles canonical singleton and Gallery SiteSections', function (): void {
+it('reconciles canonical unique and Gallery SiteSections', function (): void {
     $parent = ArtworkCategory::create([
         'name' => 'Paintings',
         'slug' => 'paintings',
@@ -30,9 +30,9 @@ it('reconciles canonical singleton and Gallery SiteSections', function (): void 
     expect($result['ok'])->toBeTrue()
         ->and($result['errors'])->toBe([])
         ->and($result['source']['artwork_categories'])->toBe(2)
-        ->and($result['target']['singleton_sections'])->toBe(count(SiteSection::SINGLETON_TYPES))
+        ->and($result['target']['unique_sections'])->toBe(count(SiteSection::UNIQUE_TYPES))
         ->and($result['target']['gallery_sections'])->toBe(2)
-        ->and($result['target']['site_sections'])->toBe(count(SiteSection::SINGLETON_TYPES) + 2);
+        ->and($result['target']['site_sections'])->toBe(count(SiteSection::UNIQUE_TYPES) + 2);
 });
 
 it('fails when an artwork category has no canonical Gallery SiteSection', function (): void {
