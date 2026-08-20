@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 use UnitEnum;
 
 final class SitePages extends Page
@@ -276,8 +277,8 @@ final class SitePages extends Page
     {
         return match ($section->getAttribute('type')) {
             SiteSection::TYPE_GALLERY => ArtworkCategoryResource::getUrl('edit', ['record' => $section->getAttribute('artwork_category_id')]),
-            SiteSection::TYPE_VITA => PublicContentSettingResource::getUrl('edit', ['record' => 1]),
-            SiteSection::TYPE_BLOG => BlogSettingResource::getUrl('edit', ['record' => 1]),
+            SiteSection::TYPE_VITA => PublicContentSettingResource::getNavigationUrl(),
+            SiteSection::TYPE_BLOG => BlogSettingResource::getSettingsUrl(),
             default => null,
         };
     }
@@ -290,7 +291,7 @@ final class SitePages extends Page
             SiteSection::TYPE_VITA => CvEntryResource::getUrl('index'),
             SiteSection::TYPE_BLOG => BlogPostResource::getUrl('index'),
             SiteSection::TYPE_EXHIBITIONS => ExhibitionResource::getUrl('index'),
-            default => route('home'),
+            default => throw new LogicException('Unsupported site section type.'),
         };
     }
 }
