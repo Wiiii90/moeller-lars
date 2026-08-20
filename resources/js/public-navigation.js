@@ -1,16 +1,4 @@
-function navigationCanOverflow() {
-    return !window.matchMedia('(max-width: 550px)').matches;
-}
-
-function submenuFor(control) {
-    const id = control.getAttribute('aria-controls');
-    if (!id) {
-        return null;
-    }
-
-    const submenu = document.getElementById(id);
-    return submenu instanceof HTMLElement ? submenu : null;
-}
+const SUBMENU_TRANSITION_MS = 180;
 
 function submenuControls(item) {
     const parentLink = item.querySelector('[data-navigation-parent-link]');
@@ -26,59 +14,28 @@ function submenuControls(item) {
     return { parentLink, toggle, submenu };
 }
 
-function positionSubmenu(item, submenu) {
-    if (!navigationCanOverflow()) {
-        submenu.style.removeProperty('--navigation-submenu-top');
-        submenu.style.removeProperty('--navigation-submenu-left');
-        submenu.style.removeProperty('--navigation-submenu-width');
-        return;
-    }
-
-    const rect = item.getBoundingClientRect();
-    const viewportPadding = 8;
-    const naturalWidth = Math.max(rect.width, submenu.scrollWidth);
-    const width = Math.min(naturalWidth, window.innerWidth - viewportPadding * 2);
-    const left = Math.min(
-        Math.max(viewportPadding, rect.left),
-        Math.max(viewportPadding, window.innerWidth - width - viewportPadding),
-    );
-
-    submenu.style.setProperty('--navigation-submenu-top', `${Math.round(rect.bottom)}px`);
-    submenu.style.setProperty('--navigation-submenu-left', `${Math.round(left)}px`);
-    submenu.style.setProperty('--navigation-submenu-width', `${Math.round(width)}px`);
-}
-
 function setExpanded(controls, expanded) {
     controls.parentLink.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     controls.toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
 }
 
-function closeSubmenu(item, controls, restoreFocus = false) {
-    setExpanded(controls, false);
-    item.dataset.submenuOpen = 'false';
-    controls.submenu.hidden = true;
-    controls.submenu.style.removeProperty('--navigation-submenu-top');
-    controls.submenu.style.removeProperty('--navigation-submenu-left');
-    controls.submenu.style.removeProperty('--navigation-submenu-width');
-
-    if (restoreFocus) {
-        controls.parentLink.focus();
-    }
-}
-
-function openSubmenu(item, controls) {
-    setExpanded(controls, true);
-    item.dataset.submenuOpen = 'true';
-    controls.submenu.hidden = false;
-    positionSubmenu(item, controls.submenu);
-}
-
 function initializeSubmenus(container) {
+    const region = container.querySelector('[data-navigation-submenu-region]');
+    const regionInner = container.querySelector('[data-navigation-submenu-region-inner]');
+    if (!(region instanceof HTMLElement) || !(regionInner instanceof HTMLElement)) {
+        return () => {};
+    }
+
     const entries = Array.from(container.querySelectorAll('[data-navigation-item]'))
         .filter((item) => item instanceof HTMLElement)
         .map((item) => ({ item, controls: submenuControls(item) }))
         .filter((entry) => entry.controls !== null);
+
+    entries.forEach(({ controls }) => regionInner.append(controls.submenu));
+
+    let activeEntry = null;
     let closeTimer = null;
+    let hideTimer = null;
 
     const clearCloseTimer = () => {
         if (closeTimer !== null) {
@@ -87,29 +44,67 @@ function initializeSubmenus(container) {
         }
     };
 
-    const closeOthers = (current = null) => {
+    const clearHideTimer = () => {
+        if (hideTimer !== null) {
+            window.clearTimeout(hideTimer);
+            hideTimer = null;
+        }
+    };
+
+    const hideEntryImmediately = (entry) => {
+        setExpanded(entry.controls, false);
+        entry.item.dataset.submenuOpen = 'false';
+        entry.controls.submenu.hidden = true;
+    };
+
+    const closeActive = (restoreFocus = false) => {
         clearCloseTimer();
-        entries.forEach(({ item, controls }) => {
-            if (item !== current) {
-                closeSubmenu(item, controls);
-            }
-        });
+        clearHideTimer();
+        if (activeEntry === null) return;
+
+        const closingEntry = activeEntry;
+        activeEntry = null;
+        setExpanded(closingEntry.controls, false);
+        closingEntry.item.dataset.submenuOpen = 'false';
+        region.dataset.open = 'false';
+
+        hideTimer = window.setTimeout(() => {
+            closingEntry.controls.submenu.hidden = true;
+            hideTimer = null;
+        }, SUBMENU_TRANSITION_MS);
+
+        if (restoreFocus) {
+            closingEntry.controls.parentLink.focus();
+        }
     };
 
     const openEntry = (entry) => {
         clearCloseTimer();
-        closeOthers(entry.item);
-        openSubmenu(entry.item, entry.controls);
+        clearHideTimer();
+
+        if (activeEntry !== null && activeEntry !== entry) {
+            hideEntryImmediately(activeEntry);
+        }
+
+        activeEntry = entry;
+        entry.controls.submenu.hidden = false;
+        setExpanded(entry.controls, true);
+        entry.item.dataset.submenuOpen = 'true';
+        region.dataset.open = 'true';
     };
 
-    const scheduleDesktopClose = (entry) => {
+    const scheduleClose = (entry) => {
         clearCloseTimer();
         closeTimer = window.setTimeout(() => {
-            if (!entry.item.matches(':hover') && !entry.item.contains(document.activeElement)) {
-                closeSubmenu(entry.item, entry.controls);
+            const focusInside = entry.item.contains(document.activeElement)
+                || entry.controls.submenu.contains(document.activeElement);
+            const hoverInside = entry.item.matches(':hover')
+                || entry.controls.submenu.matches(':hover');
+            if (!focusInside && !hoverInside && activeEntry === entry) {
+                closeActive();
             }
             closeTimer = null;
-        }, 140);
+        }, 150);
     };
 
     entries.forEach((entry) => {
@@ -117,27 +112,32 @@ function initializeSubmenus(container) {
         const { parentLink, toggle, submenu } = controls;
 
         item.addEventListener('pointerenter', (event) => {
-            if (event.pointerType === 'mouse' && navigationCanOverflow()) {
-                openEntry(entry);
-            }
+            if (event.pointerType === 'mouse') openEntry(entry);
         });
-
         item.addEventListener('pointerleave', (event) => {
-            if (event.pointerType === 'mouse' && navigationCanOverflow()) {
-                scheduleDesktopClose(entry);
-            }
+            if (event.pointerType === 'mouse') scheduleClose(entry);
+        });
+        submenu.addEventListener('pointerenter', clearCloseTimer);
+        submenu.addEventListener('pointerleave', (event) => {
+            if (event.pointerType === 'mouse') scheduleClose(entry);
         });
 
-        item.addEventListener('focusin', () => {
-            if (navigationCanOverflow()) {
-                openEntry(entry);
-            }
-        });
-
+        item.addEventListener('focusin', () => openEntry(entry));
         item.addEventListener('focusout', () => {
             window.setTimeout(() => {
-                if (!item.contains(document.activeElement)) {
-                    closeSubmenu(item, controls);
+                if (!item.contains(document.activeElement)
+                    && !submenu.contains(document.activeElement)
+                    && activeEntry === entry) {
+                    closeActive();
+                }
+            }, 0);
+        });
+        submenu.addEventListener('focusout', () => {
+            window.setTimeout(() => {
+                if (!item.contains(document.activeElement)
+                    && !submenu.contains(document.activeElement)
+                    && activeEntry === entry) {
+                    closeActive();
                 }
             }, 0);
         });
@@ -147,52 +147,44 @@ function initializeSubmenus(container) {
                 event.preventDefault();
                 openEntry(entry);
                 const firstLink = submenu.querySelector('a');
-                if (firstLink instanceof HTMLAnchorElement) {
-                    firstLink.focus();
-                }
+                if (firstLink instanceof HTMLAnchorElement) firstLink.focus();
             } else if (event.key === 'Escape') {
                 event.preventDefault();
-                closeSubmenu(item, controls, true);
+                closeActive(true);
             }
         });
 
         toggle.addEventListener('click', () => {
-            const expanded = toggle.getAttribute('aria-expanded') === 'true';
-            closeOthers(item);
-            expanded ? closeSubmenu(item, controls) : openSubmenu(item, controls);
+            if (activeEntry === entry && toggle.getAttribute('aria-expanded') === 'true') {
+                closeActive();
+            } else {
+                openEntry(entry);
+            }
         });
-
         toggle.addEventListener('keydown', (event) => {
             if (event.key === 'ArrowDown') {
                 event.preventDefault();
                 openEntry(entry);
                 const firstLink = submenu.querySelector('a');
-                if (firstLink instanceof HTMLAnchorElement) {
-                    firstLink.focus();
-                }
+                if (firstLink instanceof HTMLAnchorElement) firstLink.focus();
             } else if (event.key === 'Escape') {
                 event.preventDefault();
-                closeSubmenu(item, controls, true);
+                closeActive(true);
             }
         });
 
         submenu.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 event.preventDefault();
-                closeSubmenu(item, controls, true);
+                closeActive(true);
                 return;
             }
-
-            if (!['ArrowDown', 'ArrowUp'].includes(event.key)) {
-                return;
-            }
+            if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
 
             const links = Array.from(submenu.querySelectorAll('a'))
                 .filter((link) => link instanceof HTMLAnchorElement);
             const current = links.indexOf(document.activeElement);
-            if (current === -1 || links.length === 0) {
-                return;
-            }
+            if (current === -1 || links.length === 0) return;
 
             event.preventDefault();
             const offset = event.key === 'ArrowDown' ? 1 : -1;
@@ -201,21 +193,26 @@ function initializeSubmenus(container) {
     });
 
     document.addEventListener('pointerdown', (event) => {
-        if (!(event.target instanceof Node) || container.contains(event.target)) {
-            return;
-        }
-        closeOthers();
+        if (event.target instanceof Node && !container.contains(event.target)) closeActive();
     });
 
-    window.addEventListener('resize', () => {
-        entries.forEach(({ item, controls }) => {
-            if (controls.parentLink.getAttribute('aria-expanded') === 'true') {
-                positionSubmenu(item, controls.submenu);
-            }
-        });
-    }, { passive: true });
+    return closeActive;
+}
 
-    return closeOthers;
+function shiftByOneItem(scroller, direction) {
+    const items = Array.from(scroller.querySelectorAll('[data-navigation-item]'))
+        .filter((item) => item instanceof HTMLElement);
+    if (items.length === 0) return;
+
+    const currentLeft = scroller.scrollLeft;
+    let index = items.findIndex((item) => item.offsetLeft + item.offsetWidth > currentLeft + 2);
+    if (index < 0) index = items.length - 1;
+
+    if (direction > 0 && items[index].offsetLeft <= currentLeft + 2) index += 1;
+    if (direction < 0 && items[index].offsetLeft >= currentLeft - 2) index -= 1;
+
+    index = Math.max(0, Math.min(items.length - 1, index));
+    scroller.scrollTo({ left: items[index].offsetLeft, behavior: 'smooth' });
 }
 
 export function initializePublicNavigation() {
@@ -237,7 +234,7 @@ export function initializePublicNavigation() {
         let dragStartScroll = 0;
 
         const update = () => {
-            const overflow = navigationCanOverflow() && scroller.scrollWidth > scroller.clientWidth + 2;
+            const overflow = scroller.scrollWidth > scroller.clientWidth + 2;
             container.classList.toggle('is-overflowing', overflow);
             previous.hidden = !overflow;
             next.hidden = !overflow;
@@ -254,21 +251,16 @@ export function initializePublicNavigation() {
             next.disabled = scroller.scrollLeft >= maxScroll - 1;
         };
 
-        const scrollByPage = (direction) => {
+        previous.addEventListener('click', () => {
             closeSubmenus();
-            scroller.scrollBy({
-                left: direction * Math.max(180, scroller.clientWidth * .55),
-                behavior: 'smooth',
-            });
-        };
-
-        previous.addEventListener('click', () => scrollByPage(-1));
-        next.addEventListener('click', () => scrollByPage(1));
-        scroller.addEventListener('scroll', () => {
+            shiftByOneItem(scroller, -1);
+        });
+        next.addEventListener('click', () => {
             closeSubmenus();
-            update();
-        }, { passive: true });
+            shiftByOneItem(scroller, 1);
+        });
 
+        scroller.addEventListener('scroll', update, { passive: true });
         scroller.addEventListener('pointerdown', (event) => {
             if (event.pointerType !== 'mouse'
                 || !container.classList.contains('is-overflowing')
@@ -286,37 +278,24 @@ export function initializePublicNavigation() {
         });
 
         scroller.addEventListener('pointermove', (event) => {
-            if (!dragging) {
-                return;
-            }
-
+            if (!dragging) return;
             const delta = event.clientX - dragStartX;
-            if (Math.abs(delta) > 4) {
-                dragged = true;
-            }
+            if (Math.abs(delta) > 4) dragged = true;
             scroller.scrollLeft = dragStartScroll - delta;
         });
 
         const finishDrag = (event) => {
-            if (!dragging) {
-                return;
-            }
-
+            if (!dragging) return;
             dragging = false;
             container.classList.remove('is-dragging');
-            if (scroller.hasPointerCapture(event.pointerId)) {
-                scroller.releasePointerCapture(event.pointerId);
-            }
+            if (scroller.hasPointerCapture(event.pointerId)) scroller.releasePointerCapture(event.pointerId);
             update();
         };
 
         scroller.addEventListener('pointerup', finishDrag);
         scroller.addEventListener('pointercancel', finishDrag);
         scroller.addEventListener('click', (event) => {
-            if (!dragged) {
-                return;
-            }
-
+            if (!dragged) return;
             event.preventDefault();
             dragged = false;
         }, true);

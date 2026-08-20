@@ -7,6 +7,9 @@
         <title>@yield('title')</title>
         <meta name="description" content="{{ trim($__env->yieldContent('meta_description', 'Lars Möller — artist')) }}">
         <link rel="canonical" href="{{ trim($__env->yieldContent('canonical', app(\App\Domain\Content\CanonicalUrl::class)->current())) }}">
+        @if ($faviconVariant !== null)
+            <link rel="icon" href="{{ route('media.variant', $faviconVariant) }}" type="{{ $faviconVariant->mime_type }}">
+        @endif
         @php($matomoTracking = app(\App\Domain\Analytics\MatomoConfiguration::class)->browserTracking())
         @if ($matomoTracking !== null)
             <meta
@@ -16,18 +19,21 @@
             >
         @endif
         @vite(['resources/css/app.css', 'resources/css/public-content.css', 'resources/js/app.js'])
-        <link rel="stylesheet" href="{{ asset('css/legacy-public.css') }}">
-        <link rel="stylesheet" href="{{ asset('css/public-navigation-hierarchy.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/public-presentation.css') }}">
     </head>
     <body>
         <header class="site-header">
-            <h1><a href="{{ route('home') }}" class="site-title">Lars Möller</a></h1>
+            <h1>
+                <a href="{{ route('home') }}" class="site-title" aria-label="Lars Möller — Home">
+                    <span class="site-title__first">Lars</span><span class="site-title__last">Möller</span>
+                </a>
+            </h1>
             <div class="site-navigation" data-site-navigation>
                 <button
                     class="site-navigation__control"
                     type="button"
                     data-direction="previous"
-                    aria-label="Previous navigation items"
+                    aria-label="Previous navigation item"
                     hidden
                 >‹</button>
                 <nav aria-label="Main navigation" data-site-navigation-scroll>
@@ -75,9 +81,12 @@
                     class="site-navigation__control"
                     type="button"
                     data-direction="next"
-                    aria-label="Next navigation items"
+                    aria-label="Next navigation item"
                     hidden
                 >›</button>
+                <div class="site-navigation__submenu-region" data-navigation-submenu-region>
+                    <div class="site-navigation__submenu-region-inner" data-navigation-submenu-region-inner></div>
+                </div>
             </div>
         </header>
         <main id="content" class="site-content">

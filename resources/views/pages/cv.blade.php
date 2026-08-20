@@ -12,6 +12,11 @@
             : null;
         $portraitWidth = $portraitVariant !== null ? (int) ($portraitVariant->getAttribute('width') ?? 0) : 0;
         $portraitHeight = $portraitVariant !== null ? (int) ($portraitVariant->getAttribute('height') ?? 0) : 0;
+        $showContactArea = ((bool) $settings->show_public_email && $settings->public_email !== null)
+            || ((bool) $settings->show_instagram && $settings->instagram_handle !== null)
+            || $settings->contact_state !== 'hidden';
+        $profileTextBlocks = collect($settings->profile_text_blocks ?? [])
+            ->filter(fn ($block) => is_array($block) && filled($block['title'] ?? null) && filled($block['body'] ?? null));
     @endphp
 
     <div class="cv-page">
@@ -63,9 +68,22 @@
             </div>
         </section>
 
-        <div class="cv-contact-area">
-            <x-contact :settings="$settings" :show-status="false" />
-        </div>
+        @if ($showContactArea)
+            <div class="cv-contact-area">
+                <x-contact :settings="$settings" :show-status="true" />
+            </div>
+        @endif
+
+        @if ($profileTextBlocks->isNotEmpty())
+            <section class="cv-text-blocks" aria-label="Additional information">
+                @foreach ($profileTextBlocks as $block)
+                    <article class="cv-text-block">
+                        <h2>{{ $block['title'] }}</h2>
+                        <p>{!! nl2br(e($block['body'])) !!}</p>
+                    </article>
+                @endforeach
+            </section>
+        @endif
 
         @if ($settings->legal_disclaimer !== null)
             <section class="legal-disclaimer cv-bottom-disclaimer" aria-labelledby="legal-disclaimer-heading">
