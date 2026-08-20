@@ -19,10 +19,7 @@ final class PublicExhibitionController extends Controller
 
     public function index(): View
     {
-        abort_unless(
-            SiteSection::query()->where('type', SiteSection::TYPE_EXHIBITIONS)->where('state', 'published')->exists(),
-            404,
-        );
+        abort_unless(SiteSection::isPublished(SiteSection::TYPE_EXHIBITIONS), 404);
 
         /** @var Collection<int, Exhibition> $exhibitions */
         $exhibitions = Exhibition::query()
