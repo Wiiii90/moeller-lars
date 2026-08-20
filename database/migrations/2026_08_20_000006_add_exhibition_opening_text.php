@@ -7,13 +7,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    private const LEGACY_VITA_SOURCE = 'legacy-public-vita';
+
     public function up(): void
     {
         Schema::table('exhibitions', function (Blueprint $table): void {
-            $table->string('opening_text', 500)->nullable()->after('date_text');
+            $table->string('opening_text', 500)->nullable();
         });
 
         DB::table('exhibitions')
+            ->where('legacy_source', self::LEGACY_VITA_SOURCE)
             ->whereNotNull('description')
             ->orderBy('id')
             ->each(function (object $row): void {
@@ -43,6 +46,7 @@ return new class extends Migration
     public function down(): void
     {
         DB::table('exhibitions')
+            ->where('legacy_source', self::LEGACY_VITA_SOURCE)
             ->whereNotNull('opening_text')
             ->orderBy('id')
             ->each(function (object $row): void {
