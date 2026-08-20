@@ -177,31 +177,6 @@ function initializeSubmenus(container) {
     return closeActive;
 }
 
-function initializeFullCellTargets(scroller) {
-    Array.from(scroller.querySelectorAll('[data-navigation-item]'))
-        .filter((item) => item instanceof HTMLElement)
-        .forEach((item) => {
-            const primary = item.querySelector('.site-navigation__primary');
-            const link = primary?.querySelector('a');
-            if (!(primary instanceof HTMLElement) || !(link instanceof HTMLAnchorElement)) return;
-
-            primary.style.cursor = 'pointer';
-            primary.addEventListener('click', (event) => {
-                if (event.defaultPrevented
-                    || event.button !== 0
-                    || event.ctrlKey
-                    || event.metaKey
-                    || event.shiftKey
-                    || event.altKey) {
-                    return;
-                }
-
-                if (event.target instanceof Element && event.target.closest('a')) return;
-                link.click();
-            });
-        });
-}
-
 function shiftByOneItem(scroller, direction) {
     const items = Array.from(scroller.querySelectorAll('[data-navigation-item]'))
         .filter((item) => item instanceof HTMLElement);
@@ -231,7 +206,6 @@ export function initializePublicNavigation() {
         }
 
         const closeSubmenus = initializeSubmenus(container);
-        initializeFullCellTargets(scroller);
         let dragging = false;
         let dragged = false;
         let dragStartX = 0;
