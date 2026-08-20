@@ -28,7 +28,7 @@ class PublicCvController extends Controller
             ->get();
 
         return view('pages.cv', [
-            'settings' => PublicContentSetting::current(),
+            'settings' => PublicContentSetting::query()->sole(),
             'cvEntries' => $cvEntries,
             'richText' => $this->richText,
             'media' => $this->media,
