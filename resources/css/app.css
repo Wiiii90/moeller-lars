@@ -284,12 +284,12 @@ img { max-width: 100%; }
     padding: 0;
     overflow: hidden;
     border: 0;
-    background: #050505;
+    background: #000;
     color: #fff;
 }
 
 .artwork-viewer::backdrop {
-    background: #050505;
+    background: #000;
 }
 
 .artwork-viewer__surface {
@@ -298,7 +298,7 @@ img { max-width: 100%; }
     height: 100%;
     min-width: 0;
     overflow: hidden;
-    background: #050505;
+    background: #000;
 }
 
 .artwork-viewer__topbar {
@@ -320,7 +320,7 @@ img { max-width: 100%; }
     place-items: center;
     border: 1px solid rgba(255, 255, 255, .42);
     border-radius: 999px;
-    background: rgba(5, 5, 5, .54);
+    background: rgba(0, 0, 0, .54);
     color: #fff;
     font: inherit;
     line-height: 1;
@@ -366,7 +366,7 @@ img { max-width: 100%; }
     min-height: 0;
     place-items: center;
     overflow: hidden;
-    background: #050505;
+    background: #000;
     cursor: zoom-in;
     touch-action: none;
     user-select: none;
@@ -423,7 +423,7 @@ img { max-width: 100%; }
     padding: .36rem;
     border: 1px solid rgba(255, 255, 255, .18);
     border-radius: 999px;
-    background: rgba(5, 5, 5, .52);
+    background: rgba(0, 0, 0, .52);
     transform: translateX(-50%);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
