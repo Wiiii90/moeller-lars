@@ -9,13 +9,6 @@
         @forelse ($exhibitions as $exhibition)
             @php
                 $description = trim((string) ($exhibition->description ?? ''));
-                $openingText = null;
-
-                if ($description !== '' && preg_match('/\bVernissage:\s*(.+)$/ui', $description, $openingMatch) === 1) {
-                    $openingText = trim($openingMatch[1]);
-                    $description = trim((string) preg_replace('/\s*\bVernissage:\s*.+$/ui', '', $description));
-                }
-
                 $descriptionPlain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($description)));
                 $hasLongDescription = mb_strlen($descriptionPlain) > 280;
                 $descriptionPreview = $hasLongDescription
@@ -32,10 +25,10 @@
                 <div class="exhibition-entry__schedule" aria-label="Exhibition dates">
                     <div class="exhibition-entry__date">{{ $exhibition->date_text }}</div>
 
-                    @if ($openingText !== null && $openingText !== '')
+                    @if ($exhibition->opening_text !== null)
                         <div class="exhibition-entry__opening">
                             <span class="exhibition-entry__opening-label">Vernissage</span>
-                            <span>{{ $openingText }}</span>
+                            <span>{{ $exhibition->opening_text }}</span>
                         </div>
                     @endif
                 </div>
