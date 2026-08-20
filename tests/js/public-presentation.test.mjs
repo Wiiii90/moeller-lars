@@ -17,3 +17,13 @@ test('public submenus use the shared expanding navigation region and item-step o
     assert.doesNotMatch(source, /positionSubmenu/);
     assert.doesNotMatch(source, /--submenu-left/);
 });
+
+test('the full primary navigation cell activates its canonical link without stealing submenu toggle clicks', () => {
+    const source = readFileSync(new URL('../../resources/js/public-navigation.js', import.meta.url), 'utf8');
+
+    assert.match(source, /function initializeFullCellTargets\(scroller\)/);
+    assert.match(source, /primary\.style\.cursor = 'pointer'/);
+    assert.match(source, /event\.target\.closest\('a, button'\)/);
+    assert.match(source, /link\.click\(\)/);
+    assert.match(source, /initializeFullCellTargets\(scroller\)/);
+});
