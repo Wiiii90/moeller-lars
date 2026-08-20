@@ -23,17 +23,17 @@ it('keeps gallery sequence markup free from synthetic leading separators', funct
         ->not->toContain('separator', 'divider', '::before', '::after');
 });
 
-it('keeps one visible grid across navigation gallery cv and exhibitions', function () {
+it('keeps menu dividers gallery cv and exhibitions on the same visible 650px edges', function () {
     $css = file_get_contents(resource_path('css/public-content.css'));
     $gallery = file_get_contents(resource_path('views/pages/artworks/index.blade.php'));
 
     expect($css)
-        ->toContain('--public-shell-max: 800px;', '--public-art-max: 760px;', '--public-content-inset: 20px;')
+        ->toContain('--public-shell-max: 800px;', '--public-art-max: 650px;', '--public-content-inset: 20px;')
         ->toContain('body .site-header .site-navigation {', 'var(--public-shell-max)')
         ->toContain('body .site-header .site-navigation > nav,', 'var(--public-content-inset)', 'var(--public-art-max)')
         ->toContain('body .site-header .site-navigation__item {', 'flex: 1 0 max-content;', 'border-left: 1px solid #e4e1de;')
         ->toContain('body .site-header .site-navigation__item:last-child {', 'border-right: 1px solid #e4e1de;')
-        ->toContain('body #content.site-content {', 'padding: 24px var(--public-content-inset) 22px;', 'min-height: 0;')
+        ->toContain('body #content.site-content {', 'padding-right: var(--public-content-inset);', 'padding-left: var(--public-content-inset);', 'min-height: 0;')
         ->toContain('body #content.site-content > .cv-page,', 'body #content.site-content > .exhibitions-page,', 'max-width: var(--public-art-max);')
         ->toContain('body .site-header .site-title {', 'calc((100% - var(--public-shell-max)) / 2)')
         ->toContain('@media (max-width: 1040px)', 'body .site-header .site-title')
