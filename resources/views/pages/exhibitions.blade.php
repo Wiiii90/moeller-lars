@@ -79,6 +79,7 @@
                                     $variant = $media->thumbnailVariantForAsset($usage->mediaAsset);
                                     $variantWidth = (int) ($variant->getAttribute('width') ?? 0);
                                     $variantHeight = (int) ($variant->getAttribute('height') ?? 0);
+                                    $prioritizeMedia = $loop->parent->first && $loop->first;
                                 @endphp
                                 <figure class="exhibition-media__item" @if ($usage->role === 'hero') data-role="hero" @endif>
                                     <img
@@ -88,8 +89,9 @@
                                             width="{{ $variantWidth }}"
                                             height="{{ $variantHeight }}"
                                         @endif
-                                        loading="lazy"
+                                        loading="{{ $prioritizeMedia ? 'eager' : 'lazy' }}"
                                         decoding="async"
+                                        fetchpriority="{{ $prioritizeMedia ? 'high' : 'auto' }}"
                                     >
                                     @if ($usage->mediaAsset->credit !== null || $usage->mediaAsset->copyright_notice !== null)
                                         <figcaption>

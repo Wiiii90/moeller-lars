@@ -1,7 +1,11 @@
 @extends('layouts.app')
 
 @php
-    $imageUrl = $media->originalUrl($artwork);
+    $thumbnail = $media->thumbnailVariant($artwork);
+    $imageUrl = route('media.variant', $thumbnail);
+    $originalUrl = $media->originalUrl($artwork);
+    $thumbnailWidth = (int) ($thumbnail->getAttribute('width') ?? 0);
+    $thumbnailHeight = (int) ($thumbnail->getAttribute('height') ?? 0);
     $primaryMedia = $media->primaryMedia($artwork);
     $primaryAsset = $primaryMedia->getRelationValue('mediaAsset');
     $category = $artwork->getRelationValue('category');
@@ -21,8 +25,19 @@
         data-matomo-event-category="Artwork"
         data-matomo-event-name="{{ $artwork->analytics_key }}"
     >
-        <a class="artwork-detail__viewer-trigger" href="{{ $imageUrl }}" data-artwork-viewer-trigger data-viewer-key="{{ $artwork->slug }}" aria-label="Open {{ $artwork->title }} in image viewer">
-            <img class="artwork-image artwork-detail__image" src="{{ $imageUrl }}" alt="{{ $media->altText($artwork) }}">
+        <a class="artwork-detail__viewer-trigger" href="{{ $originalUrl }}" data-artwork-viewer-trigger data-viewer-key="{{ $artwork->slug }}" aria-label="Open {{ $artwork->title }} in image viewer">
+            <img
+                class="artwork-image artwork-detail__image"
+                src="{{ $imageUrl }}"
+                alt="{{ $media->altText($artwork) }}"
+                @if ($thumbnailWidth > 0 && $thumbnailHeight > 0)
+                    width="{{ $thumbnailWidth }}"
+                    height="{{ $thumbnailHeight }}"
+                @endif
+                loading="eager"
+                decoding="async"
+                fetchpriority="high"
+            >
         </a>
 
         <div class="artwork-detail__footer">

@@ -33,6 +33,7 @@ function viewerAsset(string $key): MediaAsset
     return MediaAsset::create([
         'storage_key' => $key, 'original_filename' => basename($key), 'mime_type' => 'image/jpeg',
         'byte_size' => 4, 'sha256' => str_repeat('c', 64), 'state' => 'available', 'alt_text' => 'Asset ALT',
+        'width' => 1600, 'height' => 1200,
     ]);
 }
 
@@ -52,6 +53,8 @@ function viewerThumbnail(MediaAsset $asset): MediaVariant
         'sha256' => str_repeat('d', 64),
         'transform_profile' => 'public-v1',
         'state' => 'available',
+        'width' => 960,
+        'height' => 720,
     ]);
 }
 
@@ -92,23 +95,32 @@ it('renders ordered category and home viewer sequences with controlled URLs', fu
         ->and(substr_count($homeContent, 'class="artwork-card__link"'))->toBe(1);
 });
 
-it('renders direct-view sequence data and preserves the no-JS original link', function () {
+it('renders direct-view sequence data while keeping the visible image on the public variant', function () {
     Storage::fake(config('media.disk'));
     $category = viewerCategory('sculptures', 0);
     $current = viewerArtwork($category, 'viewer-current', ['work_date' => '2026-01-01', 'position' => 2]);
     $other = viewerArtwork($category, 'viewer-other', ['work_date' => '2025-01-01', 'position' => 1]);
     $third = viewerArtwork($category, 'viewer-third', ['work_date' => '2024-01-01', 'position' => 0]);
     $outside = viewerArtwork(viewerCategory('works-a', 1), 'viewer-outside');
+    $currentVariant = null;
     foreach ([$current, $other, $third, $outside] as $artwork) {
         $asset = viewerAsset('originals/'.$artwork->slug.'.jpg');
         viewerPrimary($artwork, $asset);
+        $variant = viewerThumbnail($asset);
+        if ($artwork->is($current)) {
+            $currentVariant = $variant;
+        }
         Storage::disk(config('media.disk'))->put($asset->storage_key, 'image');
+        Storage::disk(config('media.disk'))->put($variant->storage_key, 'thumb');
     }
 
     $content = $this->get('/artworks/viewer-current')->assertSuccessful()->getContent();
-    $url = route('media.original', ['mediaAsset' => $current->artworkMedia()->first()->mediaAsset]);
+    $originalUrl = route('media.original', ['mediaAsset' => $current->artworkMedia()->first()->mediaAsset]);
+    $variantUrl = route('media.variant', $currentVariant);
     expect($content)->toContain('class="artwork-detail" data-artwork-viewer-sequence')
-        ->and($content)->toContain('class="artwork-detail__viewer-trigger" href="'.$url.'"')
+        ->and($content)->toContain('class="artwork-detail__viewer-trigger" href="'.$originalUrl.'"')
+        ->and($content)->toContain('class="artwork-image artwork-detail__image"', 'src="'.$variantUrl.'"')
+        ->and($content)->toContain('width="960"', 'height="720"', 'loading="eager"', 'fetchpriority="high"')
         ->and($content)->toContain('data-viewer-key="viewer-current"', 'data-viewer-key="viewer-other"', 'data-viewer-key="viewer-third"')
         ->and($content)->not->toContain('data-viewer-key="viewer-outside"')
         ->and($content)->toContain('data-viewer-page="'.route('artworks.show', 'viewer-current').'"');
@@ -141,11 +153,13 @@ it('escapes viewer data and keeps the viewer source free of unsafe DOM APIs', fu
         ->not->toContain('fetch(')->not->toContain('window.location');
 });
 
-it('contains source contracts for wheel, pointer, pinch, keyboard, focus restore, and resize', function () {
+it('contains source contracts for immersive black presentation, input handling, focus restore, and resize', function () {
     $source = file_get_contents(resource_path('js/artwork-viewer.js'));
     $css = file_get_contents(resource_path('css/app.css'));
 
     expect($source)->toContain('showModal', 'setPointerCapture', 'pointerdown', 'pointermove', 'wheel')
         ->toContain('orientationchange', 'requestAnimationFrame', 'ArrowLeft', 'ArrowRight', 'trigger.focus')
-        ->and($css)->toContain('touch-action: none', 'object-fit: contain', '100dvh', '::backdrop', 'focus-visible');
+        ->and($css)->toContain('touch-action: none', 'object-fit: contain', '100dvh', '::backdrop', 'focus-visible')
+        ->and($css)->toContain('background: #000;')
+        ->and($css)->not->toContain('background: #050505;');
 });
