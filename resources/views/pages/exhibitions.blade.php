@@ -7,13 +7,38 @@
 @section('content')
     <section class="exhibitions-page" aria-label="Exhibitions">
         @forelse ($exhibitions as $exhibition)
+            @php
+                $description = trim((string) ($exhibition->description ?? ''));
+                $openingText = null;
+
+                if ($description !== '' && preg_match('/\bVernissage:\s*(.+)$/ui', $description, $openingMatch) === 1) {
+                    $openingText = trim($openingMatch[1]);
+                    $description = trim((string) preg_replace('/\s*\bVernissage:\s*.+$/ui', '', $description));
+                }
+
+                $descriptionPlain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($description)));
+                $hasLongDescription = mb_strlen($descriptionPlain) > 280;
+                $descriptionPreview = $hasLongDescription
+                    ? \Illuminate\Support\Str::limit($descriptionPlain, 220)
+                    : null;
+            @endphp
+
             <article
                 class="exhibition-entry"
                 data-matomo-event-view="exhibition_view"
                 data-matomo-event-category="Exhibition"
                 data-matomo-event-name="{{ $exhibition->title }}"
             >
-                <div class="exhibition-entry__date">{{ $exhibition->date_text }}</div>
+                <div class="exhibition-entry__schedule" aria-label="Exhibition dates">
+                    <div class="exhibition-entry__date">{{ $exhibition->date_text }}</div>
+
+                    @if ($openingText !== null && $openingText !== '')
+                        <div class="exhibition-entry__opening">
+                            <span class="exhibition-entry__opening-label">Vernissage</span>
+                            <span>{{ $openingText }}</span>
+                        </div>
+                    @endif
+                </div>
 
                 <div class="exhibition-entry__content">
                     @if ($exhibition->kind !== null)
@@ -45,8 +70,17 @@
                         </div>
                     @endif
 
-                    @if ($exhibition->description !== null)
-                        <div class="rich-text exhibition-entry__description">{!! $richText->render($exhibition->description) !!}</div>
+                    @if ($description !== '')
+                        @if ($hasLongDescription)
+                            <details class="exhibition-entry__description exhibition-entry__description-details">
+                                <summary>
+                                    <span class="exhibition-entry__description-preview">{{ $descriptionPreview }}</span>
+                                </summary>
+                                <div class="rich-text exhibition-entry__description-full">{!! $richText->render($description) !!}</div>
+                            </details>
+                        @else
+                            <div class="rich-text exhibition-entry__description">{!! $richText->render($description) !!}</div>
+                        @endif
                     @endif
 
                     @if ($exhibition->external_url !== null || $exhibition->directions_url !== null)
@@ -73,7 +107,7 @@
                     @endif
 
                     @if ($exhibition->mediaUsages->isNotEmpty())
-                        <div class="exhibition-media">
+                        <div class="exhibition-media" aria-label="Exhibition images">
                             @foreach ($exhibition->mediaUsages as $usage)
                                 @php
                                     $variant = $media->thumbnailVariantForAsset($usage->mediaAsset);
