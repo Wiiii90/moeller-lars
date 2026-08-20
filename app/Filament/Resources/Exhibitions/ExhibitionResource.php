@@ -63,7 +63,15 @@ class ExhibitionResource extends Resource
                         ->maxLength(180)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                         ->unique('exhibitions', 'slug', ignoreRecord: true),
-                    TextInput::make('date_text')->label('Displayed date')->required()->maxLength(160),
+                    TextInput::make('date_text')
+                        ->label('Displayed exhibition dates')
+                        ->required()
+                        ->maxLength(160),
+                    TextInput::make('opening_text')
+                        ->label('Opening / vernissage')
+                        ->maxLength(500)
+                        ->nullable()
+                        ->helperText('Optional kickoff/opening date and time. Keep the exhibition run itself in “Displayed exhibition dates”.'),
                     Select::make('kind')->options([
                         'solo' => 'Solo',
                         'group' => 'Group',
