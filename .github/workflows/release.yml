@@ -44,8 +44,6 @@ jobs:
       MATOMO_REPORTING_ENABLED: false
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -79,18 +77,8 @@ jobs:
       - name: Run PHPStan
         run: composer analyse
 
-      - name: Apply exact PHP formatting
-        run: |
-          vendor/bin/pint app/Domain/Admin/AdminActionReceiptService.php
-          if git diff --quiet -- app/Domain/Admin/AdminActionReceiptService.php; then
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- app/Domain/Admin/AdminActionReceiptService.php
-          git commit -m 'Format media undo receipt service'
-          git push origin "HEAD:${GITHUB_HEAD_REF}"
-          exit 1
+      - name: Check PHP formatting
+        run: vendor/bin/pint --test
 
       - name: Run JavaScript tests
         run: npm run test:js
