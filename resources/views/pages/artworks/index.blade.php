@@ -7,7 +7,7 @@
 @section('content')
     <div class="artwork-list" data-artwork-viewer-sequence>
         @forelse ($artworks as $artwork)
-            <x-artwork-card :artwork="$artwork" :media="$media" :eager="$loop->first" />
+            <x-artwork-card :artwork="$artwork" :media="$media" :eager="$loop->index < 5" />
         @empty
             <p class="public-empty-state">No artwork is currently available.</p>
         @endforelse
