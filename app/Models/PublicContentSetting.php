@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\SingletonRecord;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 #[Fillable([
     'contact_state',
@@ -25,8 +25,6 @@ use Illuminate\Validation\ValidationException;
 #[Guarded(['id'])]
 class PublicContentSetting extends Model
 {
-    use SingletonRecord;
-
     protected $table = 'public_content_settings';
 
     public $incrementing = false;
@@ -115,6 +113,10 @@ class PublicContentSetting extends Model
                     }
                 }
             }
+        });
+
+        static::deleting(function (): never {
+            throw new LogicException('Public content settings cannot be deleted.');
         });
     }
 }
