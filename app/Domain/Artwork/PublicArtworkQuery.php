@@ -15,7 +15,7 @@ class PublicArtworkQuery
     {
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $this->publicQuery()
-            ->whereHas('category', fn (Builder $query) => $query
+            ->whereHas('category.siteSection', fn (Builder $query) => $query
                 ->where('slug', $slug)
                 ->where('state', 'published'))
             ->orderBy('position')
@@ -90,7 +90,7 @@ class PublicArtworkQuery
     {
         return $this->publicQuery()
             ->where('slug', $slug)
-            ->whereHas('category', fn (Builder $query) => $query->where('state', 'published'))
+            ->whereHas('category.siteSection', fn (Builder $query) => $query->where('state', 'published'))
             ->first();
     }
 
@@ -120,8 +120,8 @@ class PublicArtworkQuery
         /** @var Builder<Artwork> $result */
         $result = $query
             ->whereHas('category', fn (Builder $query) => $query
-                ->where('state', 'published')
-                ->where('show_on_home', true))
+                ->where('show_on_home', true)
+                ->whereHas('siteSection', fn (Builder $section) => $section->where('state', 'published')))
             ->whereNotNull('work_year');
 
         return $result;
@@ -132,6 +132,6 @@ class PublicArtworkQuery
     {
         return Artwork::query()
             ->where('state', 'published')
-            ->with(['category', 'artworkMedia.mediaAsset.variants']);
+            ->with(['category.siteSection', 'artworkMedia.mediaAsset.variants']);
     }
 }
