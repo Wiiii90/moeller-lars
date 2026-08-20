@@ -14,14 +14,14 @@ final class MediaCapacityService
     private const DISPLAY_CACHE_SECONDS = 300;
 
     /**
-     * @return array{configured:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null}
+     * @return array{configured:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null}
      */
     public function snapshot(): array
     {
         $quota = $this->quotaBytes();
 
         try {
-            [$authoritativeBytes, $originalFiles] = $this->measurePrefix('originals');
+            [$authoritativeBytes, $originalFiles, $authoritativeFiles] = $this->measurePrefix('originals', true);
             [$generatedBytes, $generatedFiles] = $this->measurePrefix('variants');
         } catch (Throwable) {
             return [
@@ -36,6 +36,7 @@ final class MediaCapacityService
                 'authoritative_ratio' => null,
                 'original_files' => null,
                 'generated_files' => null,
+                'authoritative_file_bytes' => null,
             ];
         }
 
@@ -62,10 +63,11 @@ final class MediaCapacityService
             'authoritative_ratio' => $ratio,
             'original_files' => $originalFiles,
             'generated_files' => $generatedFiles,
+            'authoritative_file_bytes' => $authoritativeFiles,
         ];
     }
 
-    /** @return array{configured:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null} */
+    /** @return array{configured:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null} */
     public function cachedSnapshot(): array
     {
         return Cache::remember($this->displayCacheKey(), self::DISPLAY_CACHE_SECONDS, fn (): array => $this->snapshot());
@@ -124,18 +126,24 @@ final class MediaCapacityService
         return 'media-capacity:display:'.sha1((string) config('media.disk').'|'.(string) ($this->quotaBytes() ?? 'none'));
     }
 
-    /** @return array{int, int} */
-    private function measurePrefix(string $prefix): array
+    /** @return array{int, int, array<string, int>} */
+    private function measurePrefix(string $prefix, bool $captureFiles = false): array
     {
         $disk = Storage::disk((string) config('media.disk'));
         $bytes = 0;
         $files = 0;
+        $fileBytes = [];
 
         foreach ($disk->allFiles($prefix) as $path) {
-            $bytes += $disk->size($path);
+            $size = $disk->size($path);
+            $bytes += $size;
             $files++;
+
+            if ($captureFiles) {
+                $fileBytes[$path] = $size;
+            }
         }
 
-        return [$bytes, $files];
+        return [$bytes, $files, $fileBytes];
     }
 }

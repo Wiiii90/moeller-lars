@@ -31,6 +31,9 @@
                         <div><dt>Allowance</dt><dd>{{ $capacity['allowance'] }}</dd></div>
                         <div><dt>Generated previews</dt><dd>{{ $capacity['generated'] }}</dd></div>
                     </dl>
+                    @if (filled($capacity['action']))
+                        <div class="artist-workspace__footnote"><span>{{ $capacity['action'] }}</span></div>
+                    @endif
                 </div>
             </section>
 
@@ -38,6 +41,27 @@
                 <div><span>Original media</span><strong>{{ $capacity['authoritative'] }}</strong><small>{{ $capacity['original_files'] }} authoritative files</small></div>
                 <div><span>Generated derivatives</span><strong>{{ $capacity['generated'] }}</strong><small>{{ $capacity['generated_files'] }} rebuildable files</small></div>
             </section>
+
+            @if ($breakdown !== [])
+                <section class="artist-dashboard__content" aria-label="Authoritative originals by library use">
+                    <div class="artist-dashboard__section-head">
+                        <span>Originals by library use</span>
+                        <span>Measured bytes</span>
+                    </div>
+                    @foreach ($breakdown as $row)
+                        <div class="artist-dashboard__row">
+                            <span class="artist-dashboard__identity">
+                                <strong>{{ $row['label'] }}</strong>
+                                <small>{{ $row['files'] }} {{ $row['files'] === 1 ? 'file' : 'files' }} · {{ number_format($row['percent'], 1) }}% of authoritative originals</small>
+                            </span>
+                            <strong class="artist-dashboard__number">{{ $row['display_bytes'] }}</strong>
+                        </div>
+                    @endforeach
+                    <div class="artist-workspace__footnote">
+                        <span>Each measured original appears exactly once. Media reused by more than one content area is grouped as shared instead of double-counted.</span>
+                    </div>
+                </section>
+            @endif
         @endif
 
         <footer class="artist-workspace__footnote">
