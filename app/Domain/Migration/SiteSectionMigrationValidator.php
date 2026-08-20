@@ -21,7 +21,6 @@ final class SiteSectionMigrationValidator
     public function validate(): array
     {
         $errors = [];
-
         /** @var Collection<int, ArtworkCategory> $categories */
         $categories = ArtworkCategory::query()->orderBy('id')->get();
 
