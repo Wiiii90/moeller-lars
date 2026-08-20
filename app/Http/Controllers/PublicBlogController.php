@@ -19,19 +19,15 @@ final class PublicBlogController extends Controller
 
     public function index(): View
     {
-        abort_unless(
-            SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->where('state', 'published')->exists(),
-            404,
-        );
+        $this->requirePublishedBlog();
 
-        $settings = BlogSetting::query()->findOrFail(1);
         $posts = BlogEditorialService::publicQuery()
             ->with('coverMedia.variants')
             ->orderBy('position')
             ->get();
 
         return view('pages.blog.index', [
-            'settings' => $settings,
+            'settings' => BlogSetting::current(),
             'posts' => $posts,
             'richText' => $this->richText,
             'media' => $this->media,
@@ -40,10 +36,7 @@ final class PublicBlogController extends Controller
 
     public function show(string $slug): View
     {
-        abort_unless(
-            SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->where('state', 'published')->exists(),
-            404,
-        );
+        $this->requirePublishedBlog();
 
         /** @var BlogPost|null $post */
         $post = BlogEditorialService::publicQuery()
@@ -57,5 +50,10 @@ final class PublicBlogController extends Controller
             'richText' => $this->richText,
             'media' => $this->media,
         ]);
+    }
+
+    private function requirePublishedBlog(): void
+    {
+        abort_unless(SiteSection::isPublished(SiteSection::TYPE_BLOG), 404);
     }
 }
