@@ -10,140 +10,117 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-it('backfills the typed singleton site sections from existing settings', function (): void {
-    $public = PublicContentSetting::query()->findOrFail(1);
-    $blog = BlogSetting::query()->findOrFail(1);
-
+it('creates exactly one canonical SiteSection for every singleton public surface', function (): void {
     expect(SiteSection::query()->where('type', SiteSection::TYPE_HOME)->count())->toBe(1)
         ->and(SiteSection::query()->where('type', SiteSection::TYPE_VITA)->count())->toBe(1)
         ->and(SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->count())->toBe(1)
         ->and(SiteSection::query()->where('type', SiteSection::TYPE_EXHIBITIONS)->count())->toBe(1);
-
-    $vita = SiteSection::query()->where('type', SiteSection::TYPE_VITA)->firstOrFail();
-    $blogSection = SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->firstOrFail();
-
-    expect($vita->navigation_label)->toBe($public->cv_navigation_label)
-        ->and($vita->position)->toBe($public->cv_navigation_position)
-        ->and($vita->state)->toBe($public->cv_enabled ? 'published' : 'hidden')
-        ->and($blogSection->navigation_label)->toBe($blog->navigation_label)
-        ->and($blogSection->position)->toBe($blog->navigation_position)
-        ->and($blogSection->state)->toBe($blog->public_enabled ? 'published' : 'hidden');
 });
 
-it('mirrors gallery category lifecycle and hierarchy into site sections', function (): void {
-    $parent = ArtworkCategory::create([
+it('does not mirror direct legacy Gallery placement fields into the canonical SiteSection', function (): void {
+    $category = ArtworkCategory::create([
         'name' => 'Paintings',
         'slug' => 'paintings',
-        'state' => 'published',
-        'position' => 10,
-        'show_in_navigation' => true,
         'show_on_home' => false,
     ]);
-    $child = ArtworkCategory::create([
-        'name' => 'Large works',
-        'slug' => 'large-works',
+    $section = testGallerySection($category, [
+        'navigation_label' => 'PAINTINGS',
         'state' => 'published',
-        'position' => 10,
-        'parent_id' => $parent->id,
         'show_in_navigation' => true,
-        'show_on_home' => false,
+        'position' => 200,
     ]);
 
-    $parentSection = SiteSection::query()->where('artwork_category_id', $parent->id)->firstOrFail();
-    $childSection = SiteSection::query()->where('artwork_category_id', $child->id)->firstOrFail();
+    $category->forceFill([
+        'state' => 'hidden',
+        'position' => 999,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+    ])->save();
 
-    expect($parentSection->type)->toBe(SiteSection::TYPE_GALLERY)
-        ->and($parentSection->slug)->toBe('paintings')
-        ->and($childSection->parent_id)->toBe($parentSection->id)
-        ->and($childSection->slug)->toBe('large-works');
-
-    $child->update([
-        'name' => 'Works on paper',
-        'slug' => 'works-on-paper',
-        'position' => 20,
-    ]);
-
-    expect($childSection->fresh()->title)->toBe('Works on paper')
-        ->and($childSection->fresh()->slug)->toBe('works-on-paper')
-        ->and($childSection->fresh()->position)->toBe(20);
+    expect($section->fresh()->state)->toBe('published')
+        ->and($section->fresh()->show_in_navigation)->toBeTrue()
+        ->and((int) $section->fresh()->position)->toBe(200)
+        ->and($section->fresh()->navigation_label)->toBe('PAINTINGS');
 });
 
-it('synchronizes legacy singleton editors during the cutover', function (): void {
-    $public = PublicContentSetting::query()->findOrFail(1);
-    $public->update([
-        'cv_enabled' => true,
-        'cv_navigation_label' => 'VITA',
-        'cv_navigation_position' => 40,
-    ]);
-
-    $blog = BlogSetting::query()->findOrFail(1);
-    $blog->update([
-        'public_enabled' => true,
-        'navigation_label' => 'JOURNAL',
-        'navigation_position' => 50,
-    ]);
-
+it('does not synchronize legacy singleton settings after the SiteSection cutover', function (): void {
     $vita = SiteSection::query()->where('type', SiteSection::TYPE_VITA)->firstOrFail();
     $blogSection = SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->firstOrFail();
+    $vitaState = $vita->state;
+    $vitaPosition = (int) $vita->position;
+    $blogState = $blogSection->state;
+    $blogPosition = (int) $blogSection->position;
 
-    expect($vita->state)->toBe('published')
-        ->and($vita->show_in_navigation)->toBeTrue()
-        ->and($vita->navigation_label)->toBe('VITA')
-        ->and($vita->position)->toBe(40)
-        ->and($blogSection->state)->toBe('published')
-        ->and($blogSection->show_in_navigation)->toBeTrue()
-        ->and($blogSection->navigation_label)->toBe('JOURNAL')
-        ->and($blogSection->position)->toBe(50);
+    PublicContentSetting::query()->findOrFail(1)->forceFill([
+        'cv_enabled' => ! (bool) PublicContentSetting::query()->findOrFail(1)->getRawOriginal('cv_enabled'),
+        'cv_navigation_label' => 'LEGACY VITA',
+        'cv_navigation_position' => 777,
+    ])->save();
+    BlogSetting::query()->findOrFail(1)->forceFill([
+        'public_enabled' => ! (bool) BlogSetting::query()->findOrFail(1)->getRawOriginal('public_enabled'),
+        'navigation_label' => 'LEGACY BLOG',
+        'navigation_position' => 888,
+    ])->save();
+
+    expect($vita->fresh()->state)->toBe($vitaState)
+        ->and((int) $vita->fresh()->position)->toBe($vitaPosition)
+        ->and($vita->fresh()->navigation_label)->not->toBe('LEGACY VITA')
+        ->and($blogSection->fresh()->state)->toBe($blogState)
+        ->and((int) $blogSection->fresh()->position)->toBe($blogPosition)
+        ->and($blogSection->fresh()->navigation_label)->not->toBe('LEGACY BLOG');
 });
 
 it('builds public navigation only from visible canonical sections', function (): void {
     $gallery = ArtworkCategory::create([
         'name' => 'Painting',
         'slug' => 'painting',
-        'state' => 'published',
-        'position' => 10,
-        'show_in_navigation' => true,
         'show_on_home' => false,
     ]);
-
-    PublicContentSetting::query()->findOrFail(1)->update([
-        'cv_enabled' => true,
-        'cv_navigation_label' => 'Vita',
-        'cv_navigation_position' => 20,
+    $gallerySection = testGallerySection($gallery, [
+        'navigation_label' => 'Painting',
+        'state' => 'published',
+        'show_in_navigation' => true,
+        'position' => 200,
+    ]);
+    testSingletonSection(SiteSection::TYPE_VITA, [
+        'navigation_label' => 'Vita',
+        'state' => 'published',
+        'show_in_navigation' => true,
+        'position' => 210,
     ]);
 
     $items = app(PublicNavigationService::class)->items();
+    expect($items->pluck('label')->all())->toContain('Painting', 'Vita');
 
-    expect($items->pluck('label')->all())->toBe(['Painting', 'Vita']);
-
-    SiteSection::query()->where('artwork_category_id', $gallery->id)->firstOrFail()->update([
+    $gallerySection->update([
         'state' => 'hidden',
         'show_in_navigation' => false,
     ]);
 
-    expect(app(PublicNavigationService::class)->items()->pluck('label')->all())->toBe(['Vita']);
+    expect(app(PublicNavigationService::class)->items()->pluck('label')->all())->not->toContain('Painting');
 });
 
-it('uses the site section as the public availability gate', function (): void {
-    $settings = PublicContentSetting::query()->findOrFail(1);
-    $settings->update([
-        'cv_enabled' => true,
-        'cv_navigation_label' => 'Vita',
-        'cv_navigation_position' => 20,
+it('uses the SiteSection as the public availability gate regardless of legacy settings', function (): void {
+    PublicContentSetting::query()->findOrFail(1)->forceFill(['cv_enabled' => false])->save();
+    $vita = testSingletonSection(SiteSection::TYPE_VITA, [
+        'navigation_label' => 'Vita',
+        'state' => 'published',
+        'show_in_navigation' => true,
+        'position' => 200,
     ]);
 
     $this->get('/cv')->assertSuccessful();
 
-    SiteSection::query()->where('type', SiteSection::TYPE_VITA)->firstOrFail()->update([
+    $vita->update([
         'state' => 'hidden',
         'show_in_navigation' => false,
     ]);
+    PublicContentSetting::query()->findOrFail(1)->forceFill(['cv_enabled' => true])->save();
 
-    expect($settings->fresh()->cv_enabled)->toBeTrue();
     $this->get('/cv')->assertNotFound();
 });
 
-it('rejects hierarchy on non-gallery section types', function (): void {
+it('rejects hierarchy on non-Gallery section types', function (): void {
     $parent = SiteSection::query()->where('type', SiteSection::TYPE_VITA)->firstOrFail();
     $blog = SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->firstOrFail();
 
