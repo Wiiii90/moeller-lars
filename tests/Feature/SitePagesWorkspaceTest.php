@@ -97,7 +97,11 @@ it('edits Gallery publication and hierarchy from Pages without writing legacy ca
     ]);
     $gallery = ArtworkCategory::create(['name' => 'Movable Gallery', 'slug' => 'movable-gallery', 'show_on_home' => false]);
     $section = testGallerySection($gallery, ['state' => 'hidden', 'position' => 210]);
-    $legacyGalleryState = $gallery->fresh()->getRawOriginal('state');
+    $legacyGallery = $gallery->fresh();
+    $legacyGalleryState = $legacyGallery->getRawOriginal('state');
+    $legacyGalleryShowInNavigation = (bool) $legacyGallery->getRawOriginal('show_in_navigation');
+    $legacyGalleryPosition = (int) $legacyGallery->getRawOriginal('position');
+    $legacyGalleryParentId = $legacyGallery->getRawOriginal('parent_id');
 
     Livewire::test(SitePages::class)
         ->call('moveGallery', $section->id, $parentSection->id)
@@ -111,10 +115,10 @@ it('edits Gallery publication and hierarchy from Pages without writing legacy ca
     expect((int) $freshSection->parent_id)->toBe($parentSection->id)
         ->and($freshSection->state)->toBe('published')
         ->and((bool) $freshSection->show_in_navigation)->toBeTrue()
-        ->and($freshCategory->getRawOriginal('parent_id'))->toBeNull()
+        ->and($freshCategory->getRawOriginal('parent_id'))->toBe($legacyGalleryParentId)
         ->and($freshCategory->getRawOriginal('state'))->toBe($legacyGalleryState)
-        ->and((bool) $freshCategory->getRawOriginal('show_in_navigation'))->toBeTrue()
-        ->and((int) $freshCategory->getRawOriginal('position'))->toBe(0)
+        ->and((bool) $freshCategory->getRawOriginal('show_in_navigation'))->toBe($legacyGalleryShowInNavigation)
+        ->and((int) $freshCategory->getRawOriginal('position'))->toBe($legacyGalleryPosition)
         ->and(AuditEvent::query()->where('action', 'site_section.updated')->where('entity_id', $section->id)->count())->toBe(3);
 });
 
