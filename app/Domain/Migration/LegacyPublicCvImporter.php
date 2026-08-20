@@ -2,7 +2,6 @@
 
 namespace App\Domain\Migration;
 
-use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -23,8 +22,6 @@ final class LegacyPublicCvImporter
             if (DB::table('exhibitions')->exists()) {
                 throw new RuntimeException('Legacy Vita import requires an empty exhibitions table.');
             }
-
-            PublicContentSetting::query()->sole();
 
             $now = now();
             $rows = $this->expectedRows();
