@@ -35,10 +35,10 @@ function testGallerySection(ArtworkCategory $category, array $overrides = []): S
 }
 
 /** @param array<string, mixed> $attributes */
-function testSingletonSection(string $type, array $attributes): SiteSection
+function testUniqueSection(string $type, array $attributes): SiteSection
 {
     /** @var SiteSection $section */
-    $section = SiteSection::query()->where('type', $type)->firstOrFail();
+    $section = SiteSection::query()->where('type', $type)->sole();
     $section->fill($attributes);
     $section->save();
 
