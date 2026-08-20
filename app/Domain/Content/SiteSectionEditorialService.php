@@ -32,12 +32,8 @@ final class SiteSectionEditorialService
                 throw ValidationException::withMessages(['type' => 'Only Gallery sections support Gallery placement controls.']);
             }
 
-            $categoryId = (int) $fresh->getAttribute('artwork_category_id');
-            DB::table('artwork_categories')->where('id', $categoryId)->lockForUpdate()->first();
-
             $parent = $this->parentSection($fresh, $parentSectionId);
             $parentId = $parent?->getKey();
-            $parentCategoryId = $parent?->getAttribute('artwork_category_id');
 
             if ($parentId !== null && SiteSection::query()->where('parent_id', $fresh->getKey())->exists()) {
                 throw ValidationException::withMessages([
@@ -82,14 +78,6 @@ final class SiteSectionEditorialService
                 'position' => $position,
             ]);
             $fresh->save();
-
-            DB::table('artwork_categories')->where('id', $categoryId)->update([
-                'state' => $state,
-                'show_in_navigation' => $showInNavigation,
-                'parent_id' => $parentCategoryId,
-                'position' => $position,
-                'updated_at' => now(),
-            ]);
 
             $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
 
