@@ -105,12 +105,17 @@ final class SiteSection extends Model
     /** @param Builder<self> $query */
     public function scopeVisibleInNavigation(Builder $query): Builder
     {
-        return $query->published()->where('show_in_navigation', true);
+        return $query
+            ->where('state', 'published')
+            ->where('show_in_navigation', true);
     }
 
     public static function isPublished(string $type): bool
     {
-        return static::query()->ofType($type)->published()->exists();
+        return static::query()
+            ->where('type', $type)
+            ->where('state', 'published')
+            ->exists();
     }
 
     public function parent(): BelongsTo
