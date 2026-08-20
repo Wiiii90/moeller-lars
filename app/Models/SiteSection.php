@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -88,26 +87,6 @@ final class SiteSection extends Model
                 }
             }
         });
-    }
-
-    /** @param Builder<self> $query */
-    public function scopePublished(Builder $query): Builder
-    {
-        return $query->where('state', 'published');
-    }
-
-    /** @param Builder<self> $query */
-    public function scopeOfType(Builder $query, string $type): Builder
-    {
-        return $query->where('type', $type);
-    }
-
-    /** @param Builder<self> $query */
-    public function scopeVisibleInNavigation(Builder $query): Builder
-    {
-        return $query
-            ->where('state', 'published')
-            ->where('show_in_navigation', true);
     }
 
     public static function isPublished(string $type): bool
