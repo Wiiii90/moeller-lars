@@ -1,0 +1,129 @@
+name: Temporary canonical fixture migration
+
+on:
+  push:
+    branches:
+      - tmp/canonical-fixture-migration-20260820
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migrate fixtures
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, count=1):
+              p = Path(path)
+              text = p.read_text()
+              if text.count(old) < count:
+                  raise SystemExit(f'pattern not found enough times in {path}: {old[:120]!r}')
+              p.write_text(text.replace(old, new, count))
+
+          # Artwork publication helper: category content + explicit canonical section.
+          replace(
+              'tests/Feature/ArtworkEditorialServiceTest.php',
+              """    $category = new ArtworkCategory;\n    $category->fill(['slug' => 'test-category-'.fake()->unique()->uuid(), 'name' => 'Test category', 'state' => $state, 'position' => 0]);\n    $category->save();\n\n    return $category;\n""",
+              """    $category = new ArtworkCategory;\n    $category->fill(['slug' => 'test-category-'.fake()->unique()->uuid(), 'name' => 'Test category', 'show_on_home' => false]);\n    $category->save();\n    testGallerySection($category, ['state' => $state === 'published' ? 'published' : 'hidden']);\n\n    return $category;\n""",
+          )
+
+          # Full vertical slice explicitly publishes its Gallery section.
+          replace(
+              'tests/Feature/ArtworkVerticalSliceTest.php',
+              """        'show_on_home' => true,\n    ]);\n\n    Livewire::test(CreateArtwork::class)\n""",
+              """        'show_on_home' => true,\n    ]);\n    testGallerySection($category, ['state' => 'published', 'show_in_navigation' => true]);\n\n    Livewire::test(CreateArtwork::class)\n""",
+          )
+
+          # Viewer category helper owns public state in SiteSection.
+          replace(
+              'tests/Feature/PublicImageViewerTest.php',
+              """function viewerCategory(string $slug, int $position): ArtworkCategory\n{\n    return ArtworkCategory::create([\n        'name' => ucfirst($slug),\n        'slug' => $slug,\n        'state' => 'published',\n        'position' => $position,\n        'show_in_navigation' => true,\n        'show_on_home' => true,\n    ]);\n}\n""",
+              """function viewerCategory(string $slug, int $position): ArtworkCategory\n{\n    $category = ArtworkCategory::create([\n        'name' => ucfirst($slug),\n        'slug' => $slug,\n        'show_on_home' => true,\n    ]);\n    testGallerySection($category, [\n        'state' => 'published',\n        'show_in_navigation' => false,\n        'position' => 200 + ($position * 10),\n    ]);\n\n    return $category;\n}\n""",
+          )
+
+          # Gallery workspace fixtures need sections, but publication remains section-owned.
+          path = Path('tests/Feature/GalleryArtworkWorkspaceTest.php')
+          text = path.read_text()
+          marker = """        'show_on_home' => false,\n    ]);\n    $otherGallery = ArtworkCategory::create([\n"""
+          replacement = """        'show_on_home' => false,\n    ]);\n    testGallerySection($gallery, ['state' => 'published', 'show_in_navigation' => false, 'position' => 210]);\n    $otherGallery = ArtworkCategory::create([\n"""
+          if marker not in text:
+              raise SystemExit('first workspace marker missing')
+          text = text.replace(marker, replacement, 1)
+          marker2 = """        'show_on_home' => false,\n    ]);\n    Artwork::create([\n"""
+          replacement2 = """        'show_on_home' => false,\n    ]);\n    testGallerySection($otherGallery, ['state' => 'hidden', 'show_in_navigation' => false, 'position' => 220]);\n    Artwork::create([\n"""
+          if marker2 not in text:
+              raise SystemExit('first other workspace marker missing')
+          text = text.replace(marker2, replacement2, 1)
+          marker3 = """        'show_on_home' => false,\n    ]);\n    $otherGallery = ArtworkCategory::create([\n"""
+          replacement3 = """        'show_on_home' => false,\n    ]);\n    testGallerySection($gallery, ['state' => 'hidden', 'show_in_navigation' => false, 'position' => 230]);\n    $otherGallery = ArtworkCategory::create([\n"""
+          if marker3 not in text:
+              raise SystemExit('second workspace marker missing')
+          text = text.replace(marker3, replacement3, 1)
+          marker4 = """        'show_on_home' => false,\n    ]);\n    $first = Artwork::create([\n"""
+          replacement4 = """        'show_on_home' => false,\n    ]);\n    testGallerySection($otherGallery, ['state' => 'hidden', 'show_in_navigation' => false, 'position' => 240]);\n    $first = Artwork::create([\n"""
+          if marker4 not in text:
+              raise SystemExit('second other workspace marker missing')
+          path.write_text(text.replace(marker4, replacement4, 1))
+
+          # Public blog availability now uses the Blog singleton SiteSection.
+          replace(
+              'tests/Feature/PublicBlogSeoTest.php',
+              "BlogSetting::query()->findOrFail(1)->update(['public_enabled' => true]);",
+              "testSingletonSection(\\App\\Models\\SiteSection::TYPE_BLOG, ['state' => 'published', 'show_in_navigation' => true]);",
+              1,
+          )
+          replace(
+              'tests/Feature/PublicBlogSeoTest.php',
+              """    ArtworkCategory::create(['slug' => 'sculptures', 'name' => 'Sculptures', 'state' => 'published', 'position' => 0]);\n    PublicContentSetting::query()->findOrFail(1)->update(['cv_enabled' => true]);\n    BlogSetting::query()->findOrFail(1)->update(['public_enabled' => true]);\n""",
+              """    $category = ArtworkCategory::create(['slug' => 'sculptures', 'name' => 'Sculptures', 'show_on_home' => false]);\n    testGallerySection($category, ['state' => 'published']);\n    testSingletonSection(\\App\\Models\\SiteSection::TYPE_VITA, ['state' => 'published']);\n    testSingletonSection(\\App\\Models\\SiteSection::TYPE_BLOG, ['state' => 'published']);\n""",
+          )
+
+          # CV and Exhibitions public surfaces use their singleton SiteSections.
+          cv = Path('tests/Feature/PublicCvSliceTest.php')
+          text = cv.read_text()
+          text = text.replace(
+              """    publicContentSettings()->update([\n        'cv_enabled' => true,\n        'cv_navigation_label' => 'CV',\n        'cv_navigation_position' => 20,\n    ]);\n""",
+              """    testSingletonSection(\\App\\Models\\SiteSection::TYPE_VITA, [\n        'navigation_label' => 'CV',\n        'state' => 'published',\n        'show_in_navigation' => true,\n    ]);\n""",
+          )
+          text = text.replace(
+              """    publicContentSettings()->update([\n        'exhibitions_enabled' => true,\n        'exhibitions_navigation_label' => 'EXHIBITIONS',\n        'exhibitions_navigation_position' => 20,\n    ]);\n""",
+              """    testSingletonSection(\\App\\Models\\SiteSection::TYPE_EXHIBITIONS, [\n        'navigation_label' => 'EXHIBITIONS',\n        'state' => 'published',\n        'show_in_navigation' => true,\n    ]);\n""",
+          )
+          old_collision = """    ArtworkCategory::create([\n        'slug' => 'works',\n        'name' => 'Works',\n        'state' => 'published',\n        'position' => 7,\n        'show_in_navigation' => true,\n    ]);\n\n    expect(fn () => publicContentSettings()->update([\n        'cv_enabled' => true,\n        'cv_navigation_position' => 7,\n    ]))->toThrow(ValidationException::class);\n"""
+          new_collision = """    $category = ArtworkCategory::create(['slug' => 'works', 'name' => 'Works', 'show_on_home' => false]);\n    testGallerySection($category, ['state' => 'published', 'show_in_navigation' => true, 'position' => 200]);\n\n    expect(fn () => testSingletonSection(\\App\\Models\\SiteSection::TYPE_VITA, [\n        'state' => 'published',\n        'show_in_navigation' => true,\n        'position' => 200,\n    ]))->toThrow(\\Illuminate\\Database\\QueryException::class);\n"""
+          if old_collision not in text:
+              raise SystemExit('CV collision marker missing')
+          text = text.replace(old_collision, new_collision, 1)
+          cv.write_text(text)
+
+          # Database navigation-position invariant belongs to SiteSection.
+          replace(
+              'tests/Feature/DatabaseInvariantTest.php',
+              "use App\\Models\\MediaVariant;\n",
+              "use App\\Models\\MediaVariant;\nuse App\\Models\\SiteSection;\n",
+          )
+          replace(
+              'tests/Feature/DatabaseInvariantTest.php',
+              """it('enforces unique visible navigation positions', function () {\n    ArtworkCategory::create([\n        'slug' => 'first', 'name' => 'First', 'state' => 'published', 'position' => 4, 'show_in_navigation' => true,\n    ]);\n\n    expect(fn () => ArtworkCategory::create([\n        'slug' => 'second', 'name' => 'Second', 'state' => 'published', 'position' => 4, 'show_in_navigation' => true,\n    ]))->toThrow(QueryException::class);\n});\n""",
+              """it('enforces unique visible top-level SiteSection navigation positions', function () {\n    $first = ArtworkCategory::create(['slug' => 'first', 'name' => 'First', 'show_on_home' => false]);\n    testGallerySection($first, ['state' => 'published', 'show_in_navigation' => true, 'position' => 200]);\n    $second = ArtworkCategory::create(['slug' => 'second', 'name' => 'Second', 'show_on_home' => false]);\n\n    expect(fn () => testGallerySection($second, [\n        'state' => 'published',\n        'show_in_navigation' => true,\n        'position' => 200,\n    ]))->toThrow(QueryException::class);\n});\n""",
+          )
+
+          # Remove an unused import left after moving the invariant.
+          db = Path('tests/Feature/DatabaseInvariantTest.php')
+          text = db.read_text().replace("use App\\Models\\SiteSection;\n", "")
+          db.write_text(text)
+          PY
+
+          rm .github/workflows/_tmp-canonical-fixtures.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Migrate public tests to canonical SiteSection fixtures"
+          git push origin HEAD:tmp/canonical-fixture-migration-20260820
