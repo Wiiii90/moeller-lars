@@ -7,6 +7,7 @@ use App\Filament\Pages\SitePages;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\CvEntry;
+use App\Models\PublicContentSetting;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
@@ -48,7 +49,7 @@ class ListCvEntries extends Page
             Action::make('contactSettings')
                 ->label('Contact settings')
                 ->icon(Heroicon::OutlinedCog6Tooth)
-                ->url(PublicContentSettingResource::getUrl('edit', ['record' => 1])),
+                ->url(PublicContentSettingResource::getUrl('edit', ['record' => PublicContentSetting::current()])),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
