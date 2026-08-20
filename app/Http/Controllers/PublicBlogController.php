@@ -27,7 +27,7 @@ final class PublicBlogController extends Controller
             ->get();
 
         return view('pages.blog.index', [
-            'settings' => BlogSetting::current(),
+            'settings' => BlogSetting::query()->sole(),
             'posts' => $posts,
             'richText' => $this->richText,
             'media' => $this->media,
