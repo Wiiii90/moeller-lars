@@ -19,7 +19,7 @@ final class PublicSeoController extends Controller
     {
         /** @var Collection<int, SiteSection> $sections */
         $sections = SiteSection::query()
-            ->published()
+            ->where('state', 'published')
             ->orderBy('position')
             ->orderBy('id')
             ->get();
@@ -32,7 +32,7 @@ final class PublicSeoController extends Controller
         /** @var Collection<int, Artwork> $artworks */
         $artworks = Artwork::query()
             ->where('state', 'published')
-            ->whereHas('category.siteSection', static fn (Builder $query): Builder => $query->published())
+            ->whereHas('category.siteSection', static fn (Builder $query): Builder => $query->where('state', 'published'))
             ->get(['slug']);
 
         foreach ($artworks as $artwork) {
