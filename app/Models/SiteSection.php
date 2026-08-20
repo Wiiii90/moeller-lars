@@ -43,7 +43,8 @@ final class SiteSection extends Model
         self::TYPE_EXHIBITIONS,
     ];
 
-    public const SINGLETON_TYPES = [
+    /** Section types whose data model permits exactly one row per type. */
+    public const UNIQUE_TYPES = [
         self::TYPE_HOME,
         self::TYPE_VITA,
         self::TYPE_BLOG,
