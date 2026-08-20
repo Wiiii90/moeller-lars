@@ -11,12 +11,7 @@ use RuntimeException;
 
 final class LegacyPublicProfileMediaValidator
 {
-    private readonly MediaIntegrityService $mediaIntegrityService;
-
-    public function __construct(MediaIntegrityService $mediaIntegrityService)
-    {
-        $this->mediaIntegrityService = $mediaIntegrityService;
-    }
+    public function __construct(private readonly MediaIntegrityService $mediaIntegrityService) {}
 
     /** @return array{source:int,target:int,errors:list<string>} */
     public function validate(string $manifestPath): array
@@ -25,6 +20,7 @@ final class LegacyPublicProfileMediaValidator
         $snapshotBatch = $this->requiredString($manifest, 'batch');
         $profileMedia = $this->requiredObject($manifest, 'profile_media');
         $legacySource = $this->requiredString($profileMedia, 'legacy_source');
+        $cvLegacyId = $this->requiredInteger($profileMedia, 'cv_legacy_id');
         $mediaPath = $this->requiredString($profileMedia, 'media_path');
         $expectedBytes = $this->requiredInteger($profileMedia, 'media_byte_size');
         $expectedSha = strtolower($this->requiredString($profileMedia, 'media_sha256'));
@@ -33,6 +29,9 @@ final class LegacyPublicProfileMediaValidator
         if ($legacySource !== LegacyPublicCvImporter::SOURCE) {
             throw new RuntimeException('Legacy portrait source does not match the verified public Vita source.');
         }
+        if ($cvLegacyId < 1) {
+            throw new RuntimeException('Legacy portrait CV reference must be a positive legacy id.');
+        }
         if (preg_match('/^[a-f0-9]{64}$/', $expectedSha) !== 1) {
             throw new RuntimeException('Legacy portrait manifest SHA-256 is invalid.');
         }
@@ -40,7 +39,7 @@ final class LegacyPublicProfileMediaValidator
         $errors = [];
         $cvEntry = DB::table('cv_entries')
             ->where('legacy_source', LegacyPublicCvImporter::SOURCE)
-            ->where('legacy_id', 1)
+            ->where('legacy_id', $cvLegacyId)
             ->first();
         if (is_object($cvEntry) === false) {
             $errors[] = 'Verified legacy biography entry is missing.';
