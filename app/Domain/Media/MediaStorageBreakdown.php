@@ -47,10 +47,9 @@ final class MediaStorageBreakdown
 
         /** @var EloquentCollection<int, MediaAsset> $assets */
         $assets = MediaAsset::query()
-            ->select(['id', 'storage_key'])
             ->withCount(['artworks', 'exhibitions', 'cvEntries', 'blogPosts'])
             ->whereIn('storage_key', array_keys($normalized))
-            ->get();
+            ->get(['id', 'storage_key']);
 
         /** @var array<string, MediaAsset> $assetsByStorageKey */
         $assetsByStorageKey = [];
