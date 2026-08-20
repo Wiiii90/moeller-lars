@@ -358,12 +358,15 @@ final class AdminActionReceiptService
             return is_string($currentState) && $currentState === (string) $receipt->getAttribute('after_state');
         }
 
-        return match ($action) {
-            'artwork.additional_media_attached' => $this->attachedMediaReceiptAvailable($receipt, $media),
-            'artwork.additional_media_detached' => $this->detachedMediaReceiptAvailable($receipt, $media),
-            'artwork.additional_media_reordered' => $this->reorderedMediaReceiptAvailable($receipt, $media),
-            default => false,
-        };
+        if ($action === 'artwork.additional_media_attached') {
+            return $this->attachedMediaReceiptAvailable($receipt, $media);
+        }
+
+        if ($action === 'artwork.additional_media_detached') {
+            return $this->detachedMediaReceiptAvailable($receipt, $media);
+        }
+
+        return $this->reorderedMediaReceiptAvailable($receipt, $media);
     }
 
     /** @param array{usages:array<int, array{artwork_id:int,media_asset_id:int,position:int}>,ordered:array<int, array<int, int>>,asset_states:array<int, string>} $media */
