@@ -22,6 +22,8 @@ final class MatomoReportingClient
 
     private const PRESETS = ['today', '7d', '30d', '12m'];
 
+    private const CACHE_SCHEMA = 6;
+
     public function __construct(private readonly MatomoConfiguration $configuration) {}
 
     /** @return array<string, mixed> */
@@ -38,11 +40,11 @@ final class MatomoReportingClient
         try {
             $siteId = $this->configuration->siteId();
             $range = $this->range($preset);
-            $freshKey = "analytics:matomo:v6:site:{$siteId}:{$preset}:fresh";
-            $staleKey = "analytics:matomo:v6:site:{$siteId}:{$preset}:stale";
+            $freshKey = "analytics:matomo:v5:site:{$siteId}:{$preset}:fresh";
+            $staleKey = "analytics:matomo:v5:site:{$siteId}:{$preset}:stale";
 
             $cached = Cache::get($freshKey);
-            if (is_array($cached)) {
+            if (is_array($cached) && ($cached['schema'] ?? null) === self::CACHE_SCHEMA) {
                 $cached['cache'] = 'fresh';
 
                 return $cached;
@@ -57,7 +59,7 @@ final class MatomoReportingClient
                 return $report;
             } catch (Throwable $exception) {
                 $stale = Cache::get($staleKey);
-                if (is_array($stale)) {
+                if (is_array($stale) && ($stale['schema'] ?? null) === self::CACHE_SCHEMA) {
                     $stale['status'] = 'stale';
                     $stale['cache'] = 'stale';
                     $stale['message'] = 'Live Matomo reporting is unavailable. Showing cached aggregate data.';
@@ -241,6 +243,7 @@ final class MatomoReportingClient
         }
 
         return [
+            'schema' => self::CACHE_SCHEMA,
             'status' => 'available',
             'generated_at' => now()->toIso8601String(),
             'range' => $range,
