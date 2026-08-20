@@ -38,8 +38,8 @@ final class MatomoReportingClient
         try {
             $siteId = $this->configuration->siteId();
             $range = $this->range($preset);
-            $freshKey = "analytics:matomo:v5:site:{$siteId}:{$preset}:fresh";
-            $staleKey = "analytics:matomo:v5:site:{$siteId}:{$preset}:stale";
+            $freshKey = "analytics:matomo:v6:site:{$siteId}:{$preset}:fresh";
+            $staleKey = "analytics:matomo:v6:site:{$siteId}:{$preset}:stale";
 
             $cached = Cache::get($freshKey);
             if (is_array($cached)) {
@@ -434,7 +434,7 @@ final class MatomoReportingClient
     }
 
     /** @param list<string> $metricNames
-     * @return array<int, array<string, float|string>>
+     * @return array<int, array<string, float|string|null>>
      */
     private function normalizeRows(?array $payload, array $metricNames, string $labelMode = 'generic'): array
     {
@@ -450,7 +450,7 @@ final class MatomoReportingClient
 
             $normalized = ['label' => $this->sanitizeLabel($row['label'], $labelMode)];
             foreach ($metricNames as $metric) {
-                $normalized[$metric] = $this->numericValue($row[$metric] ?? null) ?? 0.0;
+                $normalized[$metric] = $this->numericValue($row[$metric] ?? null);
             }
             $rows[] = $normalized;
         }
