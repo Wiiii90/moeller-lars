@@ -5,6 +5,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
 use App\Models\Redirect;
+use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,114 +18,164 @@ function categoryServiceAdmin(): User
     return User::factory()->admin()->create();
 }
 
-function customCategoryService(string $slug = 'custom-one', string $state = 'hidden'): ArtworkCategory
+function customCategoryService(string $slug = 'custom-one', string $sectionState = 'hidden'): ArtworkCategory
 {
-    return ArtworkCategory::create(['name' => 'Custom category', 'slug' => $slug, 'state' => $state, 'position' => 0]);
+    $category = ArtworkCategory::create([
+        'name' => 'Custom category',
+        'slug' => $slug,
+        'show_on_home' => false,
+    ]);
+    testGallerySection($category, [
+        'state' => $sectionState,
+        'show_in_navigation' => false,
+    ]);
+
+    return $category;
 }
 
-it('denies unauthenticated and non-admin category creation without mutation or audit', function () {
+it('denies unauthenticated and non-admin Gallery creation without mutation or audit', function () {
     $initialCount = ArtworkCategory::query()->count();
-    expect(fn () => app(ArtworkCategoryEditorialService::class)->create(['name' => 'No', 'slug' => 'no', 'position' => 0]))
+    expect(fn () => app(ArtworkCategoryEditorialService::class)->create(['name' => 'No', 'slug' => 'no']))
         ->toThrow(AuthorizationException::class);
 
     $this->actingAs(User::factory()->create(), 'web');
-    expect(fn () => app(ArtworkCategoryEditorialService::class)->create(['name' => 'No', 'slug' => 'no', 'position' => 0]))
+    expect(fn () => app(ArtworkCategoryEditorialService::class)->create(['name' => 'No', 'slug' => 'no']))
         ->toThrow(AuthorizationException::class);
-    expect(ArtworkCategory::query()->count())->toBe($initialCount)->and(AuditEvent::query()->count())->toBe(0);
+    expect(ArtworkCategory::query()->count())->toBe($initialCount)
+        ->and(AuditEvent::query()->count())->toBe(0);
 });
 
-it('creates hidden categories and audits the admin actor', function () {
+it('creates Gallery content with one hidden canonical SiteSection and audits the admin actor', function () {
     $admin = categoryServiceAdmin();
     $this->actingAs($admin, 'web');
-    $category = app(ArtworkCategoryEditorialService::class)->create([
-        'name' => 'New category', 'slug' => 'new-category', 'position' => 4, 'description' => 'Description', 'state' => 'published',
-    ]);
 
-    expect($category->state)->toBe('hidden')
+    $category = app(ArtworkCategoryEditorialService::class)->create([
+        'name' => 'New category',
+        'slug' => 'new-category',
+        'description' => 'Description',
+        'show_on_home' => true,
+    ]);
+    $section = $category->siteSection()->firstOrFail();
+
+    expect($category->name)->toBe('New category')
+        ->and($category->description)->toBe('Description')
+        ->and($category->show_on_home)->toBeTrue()
         ->and($category->legacy_id)->toBeNull()
+        ->and($section->type)->toBe(SiteSection::TYPE_GALLERY)
+        ->and($section->state)->toBe('hidden')
+        ->and($section->show_in_navigation)->toBeFalse()
+        ->and($section->slug)->toBe('new-category')
         ->and(AuditEvent::query()->where('action', 'artwork_category.created')->where('entity_id', $category->id)->where('admin_user_id', $admin->id)->count())->toBe(1);
 });
 
-it('rejects reserved, invalid, and duplicate category slugs', function (string $slug) {
+it('rejects reserved, invalid, and duplicate Gallery slugs', function (string $slug) {
     $this->actingAs(categoryServiceAdmin(), 'web');
-    expect(fn () => app(ArtworkCategoryEditorialService::class)->create(['name' => 'Bad', 'slug' => $slug, 'position' => 0]))
+    expect(fn () => app(ArtworkCategoryEditorialService::class)->create(['name' => 'Bad', 'slug' => $slug]))
         ->toThrow(ValidationException::class);
 })->with(['admin', 'artworks', 'media', 'cv', 'contact', 'blog', 'api', 'up', 'storage', 'sitemap', 'robots', 'Bad Slug']);
 
-it('updates, publishes, and hides categories with the required audits and guards', function () {
+it('updates Gallery content without mutating canonical placement', function () {
     $this->actingAs(categoryServiceAdmin(), 'web');
-    $category = customCategoryService();
-    app(ArtworkCategoryEditorialService::class)->update($category, ['name' => 'Changed', 'position' => 2, 'description' => 'Changed']);
-    app(ArtworkCategoryEditorialService::class)->publish($category);
-    app(ArtworkCategoryEditorialService::class)->publish($category);
-    app(ArtworkCategoryEditorialService::class)->hide($category);
+    $category = customCategoryService('content-update', 'published');
+    $section = $category->siteSection()->firstOrFail();
+    $section->update(['show_in_navigation' => true, 'navigation_label' => 'Custom navigation']);
+    $position = (int) $section->position;
 
-    expect($category->fresh()->state)->toBe('hidden')
-        ->and(AuditEvent::query()->where('entity_id', $category->id)->pluck('action')->all())->toBe([
-            'artwork_category.updated', 'artwork_category.published', 'artwork_category.hidden',
-        ]);
+    app(ArtworkCategoryEditorialService::class)->update($category, [
+        'name' => 'Changed',
+        'description' => 'Changed description',
+        'show_on_home' => true,
+    ]);
+
+    expect($category->fresh()->name)->toBe('Changed')
+        ->and($category->fresh()->description)->toBe('Changed description')
+        ->and($category->fresh()->show_on_home)->toBeTrue()
+        ->and($section->fresh()->title)->toBe('Changed')
+        ->and($section->fresh()->navigation_label)->toBe('Custom navigation')
+        ->and($section->fresh()->state)->toBe('published')
+        ->and((int) $section->fresh()->position)->toBe($position)
+        ->and(AuditEvent::query()->where('action', 'artwork_category.updated')->where('entity_id', $category->id)->count())->toBe(1);
 });
 
-it('blocks hiding a category with published artwork', function () {
-    $this->actingAs(categoryServiceAdmin(), 'web');
-    $category = customCategoryService('with-work', 'published');
-    Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'published-category-work', 'title' => 'Work', 'state' => 'published', 'position' => 0, 'date_precision' => 'unknown']);
-
-    expect(fn () => app(ArtworkCategoryEditorialService::class)->hide($category))->toThrow(ValidationException::class);
-    expect($category->fresh()->state)->toBe('published')
-        ->and(AuditEvent::query()->where('action', 'artwork_category.hidden')->count())->toBe(0);
-});
-
-it('changes custom slugs and collapses category redirect chains', function () {
+it('changes custom slugs, updates the canonical SiteSection and collapses redirect chains', function () {
     $this->actingAs(categoryServiceAdmin(), 'web');
     $category = customCategoryService();
+    $section = $category->siteSection()->firstOrFail();
     $service = app(ArtworkCategoryEditorialService::class);
+
     $service->changeSlug($category, 'custom-two');
     $service->changeSlug($category, 'custom-three');
 
     expect($category->fresh()->slug)->toBe('custom-three')
+        ->and($section->fresh()->slug)->toBe('custom-three')
         ->and(Redirect::query()->where('source_path', '/custom-one')->value('target_path'))->toBe('/custom-three')
         ->and(Redirect::query()->where('source_path', '/custom-two')->value('target_path'))->toBe('/custom-three')
         ->and(AuditEvent::query()->where('action', 'artwork_category.slug_changed')->count())->toBe(2);
 });
 
-it('renames and safely deletes any hidden application category', function () {
+it('safely deletes Gallery content only while its canonical SiteSection is hidden and empty', function () {
     $this->actingAs(categoryServiceAdmin(), 'web');
     $category = customCategoryService('deletable');
     app(ArtworkCategoryEditorialService::class)->changeSlug($category, 'deletable-new');
     app(ArtworkCategoryEditorialService::class)->delete($category);
+
     expect(ArtworkCategory::query()->whereKey($category->id)->exists())->toBeFalse()
+        ->and(SiteSection::query()->where('artwork_category_id', $category->id)->exists())->toBeFalse()
         ->and(AuditEvent::query()->where('action', 'artwork_category.deleted')->where('entity_id', $category->id)->exists())->toBeTrue()
         ->and(Redirect::query()->where('reason', 'artwork_category_slug_change')->where(fn ($q) => $q->where('source_path', '/deletable')->orWhere('target_path', '/deletable-new'))->exists())->toBeFalse();
 });
 
-it('persists generic presentation settings for created and updated categories', function () {
+it('rejects deleting a public, populated, or parent Gallery', function (string $case) {
+    $this->actingAs(categoryServiceAdmin(), 'web');
+    $category = customCategoryService('delete-'.$case, $case === 'public' ? 'published' : 'hidden');
+    $section = $category->siteSection()->firstOrFail();
+
+    if ($case === 'populated') {
+        Artwork::create([
+            'artwork_category_id' => $category->id,
+            'slug' => 'delete-blocking-work',
+            'title' => 'Work',
+            'state' => 'draft',
+            'position' => 0,
+            'date_precision' => 'unknown',
+        ]);
+    }
+    if ($case === 'parent') {
+        $child = ArtworkCategory::create(['name' => 'Child', 'slug' => 'delete-child', 'show_on_home' => false]);
+        testGallerySection($child, ['state' => 'hidden', 'parent_id' => $section->id]);
+    }
+
+    expect(fn () => app(ArtworkCategoryEditorialService::class)->delete($category))
+        ->toThrow(ValidationException::class);
+    expect(ArtworkCategory::query()->whereKey($category->id)->exists())->toBeTrue();
+})->with(['public', 'populated', 'parent']);
+
+it('persists homepage eligibility independently from SiteSection placement', function () {
     $this->actingAs(categoryServiceAdmin(), 'web');
     $service = app(ArtworkCategoryEditorialService::class);
-    $category = $service->create(['name' => 'Sculptures', 'slug' => 'sculptures', 'position' => 0, 'show_in_navigation' => true, 'show_on_home' => true]);
+    $category = $service->create([
+        'name' => 'Sculptures',
+        'slug' => 'sculptures',
+        'show_on_home' => true,
+    ]);
+    $section = $category->siteSection()->firstOrFail();
 
-    expect($category->show_in_navigation)->toBeTrue()->and($category->show_on_home)->toBeTrue();
-    $service->update($category, ['name' => 'Works A', 'position' => 1, 'show_in_navigation' => false, 'show_on_home' => false]);
-    expect($category->fresh()->show_in_navigation)->toBeFalse()->and($category->fresh()->show_on_home)->toBeFalse();
+    expect($category->show_on_home)->toBeTrue()
+        ->and($section->state)->toBe('hidden')
+        ->and($section->show_in_navigation)->toBeFalse();
+
+    $service->update($category, [
+        'name' => 'Works A',
+        'description' => null,
+        'show_on_home' => false,
+    ]);
+
+    expect($category->fresh()->show_on_home)->toBeFalse()
+        ->and($section->fresh()->state)->toBe('hidden')
+        ->and($section->fresh()->show_in_navigation)->toBeFalse();
 });
 
-it('rejects publishing a navigation category with a duplicate explicit position', function () {
-    $this->actingAs(categoryServiceAdmin(), 'web');
-    ArtworkCategory::create([
-        'name' => 'Sculptures', 'slug' => 'sculptures', 'state' => 'published', 'position' => 7,
-        'show_in_navigation' => true,
-    ]);
-    $pending = ArtworkCategory::create([
-        'name' => 'Works A', 'slug' => 'works-a', 'state' => 'hidden', 'position' => 7,
-        'show_in_navigation' => true,
-    ]);
-
-    expect(fn () => app(ArtworkCategoryEditorialService::class)->publish($pending))
-        ->toThrow(ValidationException::class);
-    expect($pending->fresh()->state)->toBe('hidden');
-});
-
-it('reorders every artwork in a category and audits once', function () {
+it('reorders every artwork in a Gallery and audits once', function () {
     $admin = categoryServiceAdmin();
     $this->actingAs($admin, 'web');
     $category = customCategoryService('reorderable', 'published');
@@ -158,7 +209,7 @@ it('rejects invalid artwork reorder sets without mutation', function (array $ids
     'non-int' => [['1', 2]],
 ]);
 
-it('rejects an artwork from another category during reorder', function () {
+it('rejects an artwork from another Gallery during reorder', function () {
     $this->actingAs(categoryServiceAdmin(), 'web');
     $category = customCategoryService('reorder-owned', 'published');
     $other = customCategoryService('reorder-other', 'published');
@@ -167,10 +218,11 @@ it('rejects an artwork from another category during reorder', function () {
 
     expect(fn () => app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, [$foreign->id]))
         ->toThrow(ValidationException::class);
-    expect($owned->fresh()->position)->toBe(4)->and($foreign->fresh()->position)->toBe(9);
+    expect($owned->fresh()->position)->toBe(4)
+        ->and($foreign->fresh()->position)->toBe(9);
 });
 
-it('does not write or audit an already normalized reorder', function () {
+it('does not write or audit an already normalized artwork reorder', function () {
     $this->actingAs(categoryServiceAdmin(), 'web');
     $category = customCategoryService('reorder-noop', 'published');
     $first = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'noop-first', 'title' => 'First', 'state' => 'draft', 'position' => 0, 'date_precision' => 'unknown']);
@@ -183,7 +235,7 @@ it('does not write or audit an already normalized reorder', function () {
         ->and(AuditEvent::query()->where('action', 'artwork_category.gallery_reordered')->count())->toBe(0);
 });
 
-it('rolls back all positions when reorder auditing fails', function () {
+it('rolls back all artwork positions when reorder auditing fails', function () {
     $this->actingAs(categoryServiceAdmin(), 'web');
     $category = customCategoryService('reorder-rollback', 'published');
     $first = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'rollback-first', 'title' => 'First', 'state' => 'draft', 'position' => 10, 'date_precision' => 'unknown']);
@@ -215,5 +267,6 @@ it('requires an admin for artwork reorder', function () {
     $this->actingAs(User::factory()->create(), 'web');
     expect(fn () => app(ArtworkCategoryEditorialService::class)->reorderArtworks($category, [$artwork->id]))
         ->toThrow(AuthorizationException::class);
-    expect($artwork->fresh()->position)->toBe(5)->and(AuditEvent::query()->count())->toBe(0);
+    expect($artwork->fresh()->position)->toBe(5)
+        ->and(AuditEvent::query()->count())->toBe(0);
 });
