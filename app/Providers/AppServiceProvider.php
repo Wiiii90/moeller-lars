@@ -2,13 +2,7 @@
 
 namespace App\Providers;
 
-use App\Domain\Content\ArtworkCategorySiteSectionObserver;
-use App\Domain\Content\BlogSettingSiteSectionObserver;
-use App\Domain\Content\PublicContentSettingSiteSectionObserver;
 use App\Domain\Content\PublicNavigationService;
-use App\Models\ArtworkCategory;
-use App\Models\BlogSetting;
-use App\Models\PublicContentSetting;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\Facades\View;
@@ -34,10 +28,6 @@ class AppServiceProvider extends ServiceProvider
             Css::make('analytics-dashboard', $analyticsStylesheet),
             Css::make('artist-editorial', $editorialStylesheet),
         ]);
-
-        ArtworkCategory::observe(ArtworkCategorySiteSectionObserver::class);
-        PublicContentSetting::observe(PublicContentSettingSiteSectionObserver::class);
-        BlogSetting::observe(BlogSettingSiteSectionObserver::class);
 
         View::composer('layouts.app', function ($view): void {
             $view->with('navigationItems', app(PublicNavigationService::class)->items());
