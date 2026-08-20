@@ -6,6 +6,7 @@ import {
     MAX_SCALE,
     MIN_ATTENTION_MS,
     adjacentIndex,
+    calculateFittedSize,
     calculatePanBounds,
     clamp,
     clampPan,
@@ -24,6 +25,29 @@ test('calculatePanBounds handles fitting and overflowing dimensions', () => {
     assert.deepEqual(calculatePanBounds(100, 100, 200, 200, 1), { maxX: 0, maxY: 0 });
     assert.deepEqual(calculatePanBounds(400, 300, 200, 200, 2), { maxX: 300, maxY: 200 });
     assert.deepEqual(calculatePanBounds(400, 100, 200, 300, 1), { maxX: 100, maxY: 0 });
+});
+
+test('calculateFittedSize fits portrait and landscape images completely inside the safe stage', () => {
+    const portrait = calculateFittedSize(1200, 2400, 1000, 700);
+    assert.equal(portrait.width, 350);
+    assert.equal(portrait.height, 700);
+
+    const landscape = calculateFittedSize(2000, 1000, 1000, 700);
+    assert.equal(landscape.width, 1000);
+    assert.equal(landscape.height, 500);
+
+    const small = calculateFittedSize(400, 300, 1000, 700);
+    assert.equal(small.width, 400);
+    assert.equal(small.height, 300);
+    assert.equal(small.scale, 1);
+});
+
+test('fitted portrait pan bounds can expose both top and bottom edges after zoom', () => {
+    const fitted = calculateFittedSize(1200, 2400, 1000, 700);
+    const bounds = calculatePanBounds(fitted.width, fitted.height, 1000, 700, 1.5);
+
+    assert.equal(bounds.maxY, 175);
+    assert.equal(fitted.height * 1.5 / 2 - bounds.maxY, 350);
 });
 
 test('clampPan constrains both axes', () => {
@@ -132,6 +156,16 @@ test('viewer panning follows actual bounds instead of requiring an arbitrary zoo
     assert.match(source, /stage\.dataset\.viewerPannable = pannable \? 'true' : 'false'/);
     assert.match(source, /stage\.dataset\.viewerPannable === 'true'/);
     assert.doesNotMatch(source, /dragStart && state\.scale > 1/);
+});
+
+test('viewer fits the loaded original before reset and refits on resize', () => {
+    const source = readFileSync(new URL('../../resources/js/artwork-viewer.js', import.meta.url), 'utf8');
+
+    assert.match(source, /const fitImageToStage = \(\) =>/);
+    assert.match(source, /image\.style\.maxWidth = 'none'/);
+    assert.match(source, /image\.style\.maxHeight = 'none'/);
+    assert.match(source, /fitImageToStage\(\);\n        resetState\(\);/);
+    assert.match(source, /if \(!dialog\.open \|\| image\.hidden\) return;\n        fitImageToStage\(\);\n        updateTransform\(\);/);
 });
 
 test('viewer analytics use stable artwork keys and one bounded attention event', () => {

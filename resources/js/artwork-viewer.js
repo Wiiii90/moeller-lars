@@ -25,6 +25,22 @@ export function calculatePanBounds(imageWidth, imageHeight, stageWidth, stageHei
     };
 }
 
+export function calculateFittedSize(naturalWidth, naturalHeight, stageWidth, stageHeight) {
+    const values = [naturalWidth, naturalHeight, stageWidth, stageHeight].map(Number);
+    if (values.some((value) => !Number.isFinite(value) || value <= 0)) {
+        return { width: 0, height: 0, scale: 0 };
+    }
+
+    const [sourceWidth, sourceHeight, availableWidth, availableHeight] = values;
+    const scale = Math.min(1, availableWidth / sourceWidth, availableHeight / sourceHeight);
+
+    return {
+        width: sourceWidth * scale,
+        height: sourceHeight * scale,
+        scale,
+    };
+}
+
 export function clampPan(x, y, bounds) {
     return {
         x: clamp(x, -bounds.maxX, bounds.maxX),
@@ -147,6 +163,22 @@ export function initializeArtworkViewer(root = document) {
         resetAttention();
     };
 
+    const fitImageToStage = () => {
+        const fitted = calculateFittedSize(
+            image.naturalWidth,
+            image.naturalHeight,
+            stage.clientWidth,
+            stage.clientHeight,
+        );
+        if (fitted.width <= 0 || fitted.height <= 0) return false;
+
+        image.style.width = `${fitted.width}px`;
+        image.style.height = `${fitted.height}px`;
+        image.style.maxWidth = 'none';
+        image.style.maxHeight = 'none';
+        return true;
+    };
+
     const panBounds = () => calculatePanBounds(
         image.clientWidth,
         image.clientHeight,
@@ -202,6 +234,10 @@ export function initializeArtworkViewer(root = document) {
         expectedSrc = item.src;
         image.removeAttribute('src');
         image.hidden = true;
+        image.style.removeProperty('width');
+        image.style.removeProperty('height');
+        image.style.removeProperty('max-width');
+        image.style.removeProperty('max-height');
         missing.hidden = true;
         loading.hidden = false;
         zoomOut.disabled = true;
@@ -282,6 +318,7 @@ export function initializeArtworkViewer(root = document) {
         loading.hidden = true;
         missing.hidden = true;
         image.hidden = false;
+        fitImageToStage();
         resetState();
         resumeAttention();
     });
@@ -403,7 +440,9 @@ export function initializeArtworkViewer(root = document) {
 
     const recalculate = () => {
         resizeFrame = null;
-        if (dialog.open) updateTransform();
+        if (!dialog.open || image.hidden) return;
+        fitImageToStage();
+        updateTransform();
     };
     const scheduleResize = () => {
         if (resizeFrame === null) resizeFrame = requestAnimationFrame(recalculate);

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="public-site-root">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -21,7 +21,7 @@
         @vite(['resources/css/app.css', 'resources/css/public-content.css', 'resources/js/app.js'])
         <link rel="stylesheet" href="{{ asset('css/public-presentation.css') }}">
     </head>
-    <body>
+    <body class="public-site">
         <header class="site-header">
             <h1>
                 <a href="{{ route('home') }}" class="site-title" aria-label="Lars Möller — Home">
@@ -89,9 +89,11 @@
                 </div>
             </div>
         </header>
-        <main id="content" class="site-content">
-            @yield('content')
-        </main>
+        <div class="site-scroll-region" data-site-scroll-region>
+            <main id="content" class="site-content">
+                @yield('content')
+            </main>
+        </div>
         <x-artwork-viewer />
     </body>
 </html>

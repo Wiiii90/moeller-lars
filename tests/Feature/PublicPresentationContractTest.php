@@ -1,13 +1,20 @@
 <?php
 
-it('keeps hierarchical public navigation operable in one expanding sticky shell for mouse touch and keyboard', function () {
-    $css = file_get_contents(public_path('css/public-presentation.css'));
+it('keeps hierarchical public navigation operable in one expanding fixed header region for mouse touch and keyboard', function () {
+    $presentationCss = file_get_contents(public_path('css/public-presentation.css'));
+    $appCss = file_get_contents(resource_path('css/app.css'));
+    $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
     $source = file_get_contents(resource_path('js/public-navigation.js'));
 
-    expect($css)
-        ->toContain('.site-header {', 'position: sticky;', '.site-header::after {', 'order: 3;')
+    expect($presentationCss)
+        ->toContain('.site-header::after {', 'order: 3;')
         ->toContain('.site-navigation__submenu-toggle', '.site-navigation__submenu-region', 'grid-template-rows: 0fr;', 'grid-template-rows: 1fr;')
         ->not->toContain('box-shadow: 0 7px 16px', 'position: fixed', '--submenu-left')
+        ->and($appCss)
+        ->toContain('html.public-site-root {', 'body.public-site {', 'body.public-site .site-header {', 'position: relative;')
+        ->toContain('body.public-site .site-scroll-region {', 'overflow-y: auto;', 'flex: 1 1 auto;')
+        ->and($layout)
+        ->toContain('class="public-site-root"', 'class="public-site"', 'class="site-scroll-region"', 'data-site-scroll-region')
         ->and($source)
         ->toContain("toggle.addEventListener('click'", "event.key === 'ArrowDown'", "['ArrowDown', 'ArrowUp']", "event.key === 'Escape'")
         ->toContain("event.pointerType === 'mouse'", 'regionInner.append(controls.submenu)', 'shiftByOneItem');
