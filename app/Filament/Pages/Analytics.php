@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\ArtworkAttentionReport;
 use App\Domain\Analytics\MatomoReportingClient;
 use App\Domain\Analytics\OperationalMetricsQuery;
@@ -314,6 +315,7 @@ final class Analytics extends Page
             return [];
         }
 
+        $availability = AnalyticsReportAvailability::fromReport($report);
         $rawVisits = $report['metrics']['nb_visits'] ?? null;
         $rawReturning = $report['returning']['nb_visits_returning'] ?? null;
         $visits = is_numeric($rawVisits) ? (int) round((float) $rawVisits) : null;
@@ -333,10 +335,15 @@ final class Analytics extends Page
                 'detail' => 'Returning-visitor split unavailable',
             ];
 
-        $topSource = $this->topRow($report['referrers'] ?? []);
-        $topCountry = $this->topRow($report['countries'] ?? []);
-        $topContent = $this->topRow($report['content'] ?? [], 'nb_hits');
-        $topAi = $this->topRow($report['ai_assistants'] ?? []);
+        $sourceAvailable = $availability->isAvailable('referrers');
+        $countryAvailable = $availability->isAvailable('countries');
+        $contentAvailable = $availability->isAvailable('content');
+        $aiAvailable = $availability->isAvailable('ai_assistants');
+
+        $topSource = $sourceAvailable ? $this->topRow($report['referrers'] ?? []) : null;
+        $topCountry = $countryAvailable ? $this->topRow($report['countries'] ?? []) : null;
+        $topContent = $contentAvailable ? $this->topRow($report['content'] ?? [], 'nb_hits') : null;
+        $topAi = $aiAvailable ? $this->topRow($report['ai_assistants'] ?? []) : null;
 
         return [
             [
@@ -346,23 +353,31 @@ final class Analytics extends Page
             ],
             [
                 'label' => 'Leading source',
-                'value' => $topSource['label'] ?? 'No data',
-                'detail' => isset($topSource['nb_visits']) ? number_format((int) $topSource['nb_visits']).' visits' : 'No referrer data',
+                'value' => $sourceAvailable ? ($topSource['label'] ?? 'No data') : '—',
+                'detail' => ! $sourceAvailable
+                    ? 'Referrer report unavailable'
+                    : (isset($topSource['nb_visits']) ? number_format((int) $topSource['nb_visits']).' visits' : 'No referrer data'),
             ],
             [
                 'label' => 'Leading country',
-                'value' => $topCountry['label'] ?? 'No data',
-                'detail' => isset($topCountry['nb_visits']) ? number_format((int) $topCountry['nb_visits']).' visits' : 'No geography data',
+                'value' => $countryAvailable ? ($topCountry['label'] ?? 'No data') : '—',
+                'detail' => ! $countryAvailable
+                    ? 'Country report unavailable'
+                    : (isset($topCountry['nb_visits']) ? number_format((int) $topCountry['nb_visits']).' visits' : 'No geography data'),
             ],
             [
                 'label' => 'Most viewed content',
-                'value' => $topContent['label'] ?? 'No data',
-                'detail' => isset($topContent['nb_hits']) ? number_format((int) $topContent['nb_hits']).' views/actions' : 'No content data',
+                'value' => $contentAvailable ? ($topContent['label'] ?? 'No data') : '—',
+                'detail' => ! $contentAvailable
+                    ? 'Content report unavailable'
+                    : (isset($topContent['nb_hits']) ? number_format((int) $topContent['nb_hits']).' views/actions' : 'No content data'),
             ],
             [
                 'label' => 'AI referrals',
-                'value' => $topAi['label'] ?? 'None detected',
-                'detail' => isset($topAi['nb_visits']) ? number_format((int) $topAi['nb_visits']).' visits' : 'No AI-assistant referrals in range',
+                'value' => $aiAvailable ? ($topAi['label'] ?? 'None detected') : '—',
+                'detail' => ! $aiAvailable
+                    ? 'AI-assistant report unavailable'
+                    : (isset($topAi['nb_visits']) ? number_format((int) $topAi['nb_visits']).' visits' : 'No AI-assistant referrals in range'),
             ],
         ];
     }
@@ -476,6 +491,7 @@ final class Analytics extends Page
             'bot:request' => 'Bot requests',
             'operation:admin_request' => 'Admin requests',
             'performance:request_duration_ms' => 'Average request duration',
+            'performance:admin_request_request_duration_ms' => 'Average admin request duration',
             'performance:admin_request_duration_ms' => 'Average admin request duration',
             default => str_replace([':', '_'], [' · ', ' '], $metricName),
         };
