@@ -8,6 +8,7 @@ use App\Domain\Media\MediaIntegrityService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\MediaAsset;
+use App\Models\PublicContentSetting;
 use Illuminate\Support\Facades\DB;
 use JsonException;
 use RuntimeException;
@@ -18,10 +19,7 @@ final class LegacyMigrationValidator
         private readonly MediaIntegrityService $mediaIntegrityService,
         private readonly PublicArtworkQuery $publicArtworkQuery,
         private readonly LegacyPublicCvImporter $cvImporter,
-        private readonly LegacyPublicProfileImporter $profileImporter,
-    ) {
-        // Constructor property promotion initializes the validator dependencies.
-    }
+    ) {}
 
     /**
      * @return array{
@@ -153,7 +151,7 @@ final class LegacyMigrationValidator
         }
 
         [$cvCount, $exhibitionCount] = $this->validateVitaContent($errors);
-        $this->validatePublicProfile($errors);
+        $this->validatePublicProfile($manifest, $errors);
 
         return [
             'ok' => $errors === [],
@@ -374,6 +372,7 @@ final class LegacyMigrationValidator
                 'venue' => $expected['organisation'],
                 'location_text' => $expected['location'],
                 'description' => $expected['body'],
+                'opening_text' => $expected['opening_text'],
                 'starts_on' => $expected['starts_on'],
                 'ends_on' => $expected['ends_on'],
                 'position' => $position,
@@ -389,19 +388,16 @@ final class LegacyMigrationValidator
         return [$actualCv->count(), $actualExhibitions->count()];
     }
 
-    /** @param list<string> $errors */
-    private function validatePublicProfile(array &$errors): void
+    /** @param array<string, mixed> $manifest @param list<string> $errors */
+    private function validatePublicProfile(array $manifest, array &$errors): void
     {
-        $settings = DB::table('public_content_settings')->where('id', 1)->first();
-        if (is_object($settings) === false) {
-            $errors[] = 'Public content settings singleton is missing.';
+        $expected = $this->requiredObject($manifest, 'public_profile');
+        $settings = PublicContentSetting::query()->sole();
 
-            return;
-        }
-
-        foreach ($this->profileImporter->expectedValues() as $field => $value) {
-            if (($settings->{$field} ?? null) !== $value) {
-                $errors[] = "Public profile field {$field} does not match the verified legacy source.";
+        foreach (['public_email', 'instagram_handle', 'legal_disclaimer'] as $field) {
+            $value = $this->requiredString($expected, $field);
+            if ($settings->getAttribute($field) !== $value) {
+                $errors[] = "Public profile field {$field} does not match the reviewed manifest.";
             }
         }
     }
@@ -429,6 +425,17 @@ final class LegacyMigrationValidator
         }
 
         return $data;
+    }
+
+    /** @return array<string, mixed> */
+    private function requiredObject(array $data, string $key): array
+    {
+        $value = $data[$key] ?? null;
+        if (is_array($value) === false || array_is_list($value)) {
+            throw new RuntimeException("Legacy manifest field {$key} must be an object.");
+        }
+
+        return $value;
     }
 
     private function requiredString(array $data, string $key): string
