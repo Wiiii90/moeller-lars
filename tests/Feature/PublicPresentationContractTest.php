@@ -23,14 +23,18 @@ it('keeps gallery sequence markup free from synthetic leading separators', funct
         ->not->toContain('separator', 'divider', '::before', '::after');
 });
 
-it('keeps navigation gallery and cv on one narrow responsive content measure', function () {
+it('keeps one outer shell and one inner content measure across navigation gallery and cv', function () {
     $css = file_get_contents(resource_path('css/public-content.css'));
     $gallery = file_get_contents(resource_path('views/pages/artworks/index.blade.php'));
 
     expect($css)
         ->toContain('--public-shell-max: 800px;', '--public-art-max: 760px;', '--public-content-inset: 20px;')
+        ->toContain('body .site-header .site-navigation {', 'var(--public-shell-max)')
+        ->toContain('body .site-header .site-navigation > nav,', 'var(--public-content-inset)', 'var(--public-art-max)')
+        ->toContain('body #content.site-content {', 'min-height: 0;')
+        ->toContain('body .site-header .site-title {', 'calc((100% - var(--public-shell-max)) / 2)')
         ->toContain('body .site-header .site-navigation__item', 'border-left: 1px solid #e4e1de;')
-        ->toContain('@media (max-width: 920px)', 'body .site-header .site-title')
+        ->toContain('@media (max-width: 1040px)', 'body .site-header .site-title')
         ->and($gallery)
         ->toContain(':eager="$loop->index < 5"');
 });
