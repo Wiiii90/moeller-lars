@@ -2,6 +2,7 @@
     @php
         $status = $matomo['status'] ?? null;
         $available = in_array($status, ['available', 'stale'], true);
+        $reportAvailability = \App\Domain\Analytics\AnalyticsReportAvailability::fromReport($matomo);
         $metricValue = static function (array $row, string $metric = 'nb_visits'): ?int {
             $value = $row[$metric] ?? null;
 
@@ -61,21 +62,28 @@
         }
 
         $acquisitionGroups = [
-            'Referring websites' => $matomo['referrer_websites'] ?? [],
-            'Social networks' => $matomo['socials'] ?? [],
-            'Search engines' => $matomo['search_engines'] ?? [],
-            'AI assistants' => $matomo['ai_assistants'] ?? [],
-            'Campaigns' => $matomo['campaigns'] ?? [],
+            'Referring websites' => ['report' => 'referrer_websites', 'rows' => $matomo['referrer_websites'] ?? []],
+            'Social networks' => ['report' => 'socials', 'rows' => $matomo['socials'] ?? []],
+            'Search engines' => ['report' => 'search_engines', 'rows' => $matomo['search_engines'] ?? []],
+            'AI assistants' => ['report' => 'ai_assistants', 'rows' => $matomo['ai_assistants'] ?? []],
+            'Campaigns' => ['report' => 'campaigns', 'rows' => $matomo['campaigns'] ?? []],
         ];
-        $hasAcquisition = collect($acquisitionGroups)->contains(static fn (array $rows): bool => $rows !== []);
+        $hasAcquisition = collect($acquisitionGroups)->contains(static fn (array $group): bool => $group['rows'] !== []);
+        $hasUnavailableAcquisition = collect($acquisitionGroups)->contains(
+            static fn (array $group): bool => ! $reportAvailability->isAvailable($group['report']),
+        );
 
         $contentRows = $matomo['content'] ?? [];
-        $entryRows = $matomo['entry_pages'] ?? [];
-        $exitRows = $matomo['exit_pages'] ?? [];
-        $downloadRows = $matomo['downloads'] ?? [];
-        $outlinkRows = $matomo['outlinks'] ?? [];
-        $searchRows = $matomo['site_searches'] ?? [];
-        $hasJourneys = $contentRows !== [] || $entryRows !== [] || $exitRows !== [] || $downloadRows !== [] || $outlinkRows !== [] || $searchRows !== [];
+        $journeyGroups = [
+            'Entry pages' => ['report' => 'entry_pages', 'rows' => $matomo['entry_pages'] ?? [], 'metric' => 'nb_entrances'],
+            'Exit pages' => ['report' => 'exit_pages', 'rows' => $matomo['exit_pages'] ?? [], 'metric' => 'nb_exits'],
+            'Downloads' => ['report' => 'downloads', 'rows' => $matomo['downloads'] ?? [], 'metric' => 'nb_hits'],
+            'Outbound destinations' => ['report' => 'outlinks', 'rows' => $matomo['outlinks'] ?? [], 'metric' => 'nb_hits'],
+            'Site search' => ['report' => 'site_searches', 'rows' => $matomo['site_searches'] ?? [], 'metric' => 'nb_visits'],
+        ];
+        $hasJourneys = $contentRows !== [] || collect($journeyGroups)->contains(static fn (array $group): bool => $group['rows'] !== []);
+        $hasUnavailableJourneys = ! $reportAvailability->isAvailable('content')
+            || collect($journeyGroups)->contains(static fn (array $group): bool => ! $reportAvailability->isAvailable($group['report']));
 
         $eventRows = $matomo['events'] ?? [];
         $eventCategoryRows = $matomo['event_categories'] ?? [];
@@ -88,13 +96,16 @@
             && $measuredInteractionSignals->every(static fn ($value): bool => (float) $value === 0.0);
 
         $technologyGroups = [
-            'Devices' => $matomo['devices'] ?? [],
-            'Browsers' => $matomo['browsers'] ?? [],
-            'Operating systems' => $matomo['operating_systems'] ?? [],
-            'Visit duration' => $matomo['visit_duration'] ?? [],
-            'Pages / actions per visit' => $matomo['pages_per_visit'] ?? [],
+            'Devices' => ['report' => 'devices', 'rows' => $matomo['devices'] ?? []],
+            'Browsers' => ['report' => 'browsers', 'rows' => $matomo['browsers'] ?? []],
+            'Operating systems' => ['report' => 'operating_systems', 'rows' => $matomo['operating_systems'] ?? []],
+            'Visit duration' => ['report' => 'visit_duration', 'rows' => $matomo['visit_duration'] ?? []],
+            'Pages / actions per visit' => ['report' => 'pages_per_visit', 'rows' => $matomo['pages_per_visit'] ?? []],
         ];
-        $hasTechnology = collect($technologyGroups)->contains(static fn (array $rows): bool => $rows !== []);
+        $hasTechnology = collect($technologyGroups)->contains(static fn (array $group): bool => $group['rows'] !== []);
+        $hasUnavailableTechnology = collect($technologyGroups)->contains(
+            static fn (array $group): bool => ! $reportAvailability->isAvailable($group['report']),
+        );
 
         // Matomo's dedicated day-of-week report has produced contradictory range aggregates in Validation.
         // Derive this distribution from the already-authoritative daily series instead, so it must reconcile with
@@ -126,6 +137,8 @@
         $localTimeRows = $matomo['local_time'] ?? [];
         $weekdayMax = $maxMetric($weekdayRows);
         $localTimeMax = $maxMetric($localTimeRows);
+        $weekdayAvailable = $reportAvailability->isAvailable('series');
+        $localTimeAvailable = $reportAvailability->isAvailable('local_time');
     @endphp
 
     <div class="analytics-dashboard">
@@ -220,8 +233,10 @@
 
                 <div class="analytics-overview__grid">
                     <div class="analytics-trend">
-                        @if ($trendChart === [])
-                            <p class="analytics-empty">No time-series data is available for this period.</p>
+                        @if (! $weekdayAvailable)
+                            <p class="analytics-empty">Traffic time-series report unavailable.</p>
+                        @elseif ($trendChart === [])
+                            <p class="analytics-empty">No time-series activity in this period.</p>
                         @else
                             <svg viewBox="0 0 1000 260" role="img" aria-label="Visits and tracked actions trend">
                                 <line x1="22" y1="238" x2="978" y2="238" class="analytics-chart__grid" />
@@ -275,7 +290,9 @@
                             @endforeach
                         </div>
                         <figcaption>
-                            @if ($countryRows === [])
+                            @if (! $reportAvailability->isAvailable('countries'))
+                                Country-level visit report unavailable.
+                            @elseif ($countryRows === [])
                                 No country-level visits in this period.
                             @else
                                 Marker area follows aggregate visit volume. Natural Earth country geometry is generated at build time.
@@ -286,18 +303,27 @@
                     <div class="analytics-ranking">
                         <div>
                             <h4>Top countries</h4>
-                            @forelse (array_slice($countryRows, 0, 8) as $row)
-                                <div class="analytics-rank-row">
-                                    <span>{{ $row['label'] }}</span>
-                                    <i><b style="width: {{ number_format($percent($row, $countryMax), 2, '.', '') }}%"></b></i>
-                                    <strong>{{ $metricDisplay($row) }}</strong>
-                                </div>
-                            @empty
-                                <p class="analytics-empty">No country report.</p>
-                            @endforelse
+                            @if (! $reportAvailability->isAvailable('countries'))
+                                <p class="analytics-empty">Country report unavailable.</p>
+                            @else
+                                @forelse (array_slice($countryRows, 0, 8) as $row)
+                                    <div class="analytics-rank-row">
+                                        <span>{{ $row['label'] }}</span>
+                                        <i><b style="width: {{ number_format($percent($row, $countryMax), 2, '.', '') }}%"></b></i>
+                                        <strong>{{ $metricDisplay($row) }}</strong>
+                                    </div>
+                                @empty
+                                    <p class="analytics-empty">No country visits in this period.</p>
+                                @endforelse
+                            @endif
                         </div>
 
-                        @if ($continentRows !== [])
+                        @if (! $reportAvailability->isAvailable('continents'))
+                            <div>
+                                <h4>Continents</h4>
+                                <p class="analytics-empty">Continent report unavailable.</p>
+                            </div>
+                        @elseif ($continentRows !== [])
                             <div>
                                 <h4>Continents</h4>
                                 @foreach ($continentRows as $row)
@@ -308,11 +334,15 @@
                     </div>
                 </div>
 
-                @if ($weekdayRows !== [] || $localTimeRows !== [])
+                @if ($weekdayRows !== [] || $localTimeRows !== [] || ! $weekdayAvailable || ! $localTimeAvailable)
                     <div class="analytics-time-grid">
-                        @if ($weekdayRows !== [])
-                            <div>
-                                <h4>Visits by weekday</h4>
+                        <div>
+                            <h4>Visits by weekday</h4>
+                            @if (! $weekdayAvailable)
+                                <p class="analytics-empty">Traffic time-series report unavailable.</p>
+                            @elseif ($weekdayRows === [])
+                                <p class="analytics-empty">No weekday visits in this period.</p>
+                            @else
                                 @foreach ($weekdayRows as $row)
                                     <div class="analytics-rank-row is-compact">
                                         <span>{{ $row['label'] }}</span>
@@ -320,12 +350,16 @@
                                         <strong>{{ $metricDisplay($row) }}</strong>
                                     </div>
                                 @endforeach
-                            </div>
-                        @endif
+                            @endif
+                        </div>
 
-                        @if ($localTimeRows !== [])
-                            <div>
-                                <h4>Visits by local hour</h4>
+                        <div>
+                            <h4>Visits by local hour</h4>
+                            @if (! $localTimeAvailable)
+                                <p class="analytics-empty">Local-time report unavailable.</p>
+                            @elseif ($localTimeRows === [])
+                                <p class="analytics-empty">No local-hour visits in this period.</p>
+                            @else
                                 @foreach ($localTimeRows as $row)
                                     <div class="analytics-rank-row is-compact">
                                         <span>{{ $row['label'] }}</span>
@@ -333,8 +367,8 @@
                                         <strong>{{ $metricDisplay($row) }}</strong>
                                     </div>
                                 @endforeach
-                            </div>
-                        @endif
+                            @endif
+                        </div>
                     </div>
                 @endif
             </section>
@@ -348,15 +382,19 @@
                     <p>How visitors reached the site.</p>
                 </div>
 
-                @if ($hasAcquisition)
+                @if ($hasAcquisition || $hasUnavailableAcquisition)
                     <div class="analytics-data-columns">
-                        @foreach ($acquisitionGroups as $label => $rows)
-                            @if ($rows !== [])
+                        @foreach ($acquisitionGroups as $label => $group)
+                            @if ($group['rows'] !== [] || ! $reportAvailability->isAvailable($group['report']))
                                 <div>
                                     <h4>{{ $label }}</h4>
-                                    @foreach (array_slice($rows, 0, 8) as $row)
-                                        <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ $metricDisplay($row) }}</strong></div>
-                                    @endforeach
+                                    @if (! $reportAvailability->isAvailable($group['report']))
+                                        <p class="analytics-empty">Report unavailable.</p>
+                                    @else
+                                        @foreach (array_slice($group['rows'], 0, 8) as $row)
+                                            <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ $metricDisplay($row) }}</strong></div>
+                                        @endforeach
+                                    @endif
                                 </div>
                             @endif
                         @endforeach
@@ -375,31 +413,41 @@
                     <p>What was viewed and where sessions moved.</p>
                 </div>
 
-                @if ($hasJourneys)
+                @if ($hasJourneys || $hasUnavailableJourneys)
                     <div class="analytics-journey-grid">
                         <div class="analytics-table-wrap">
                             <h4>Most-viewed content</h4>
-                            <table class="analytics-table">
-                                <thead><tr><th>Content</th><th>Views</th><th>Visits</th></tr></thead>
-                                <tbody>
-                                @foreach (array_slice($contentRows, 0, 12) as $row)
-                                    <tr><td>{{ $row['label'] }}</td><td>{{ $metricDisplay($row, 'nb_hits') }}</td><td>{{ $metricDisplay($row) }}</td></tr>
-                                @endforeach
-                                </tbody>
-                            </table>
+                            @if (! $reportAvailability->isAvailable('content'))
+                                <p class="analytics-empty">Content report unavailable.</p>
+                            @elseif ($contentRows === [])
+                                <p class="analytics-empty">No content activity in this period.</p>
+                            @else
+                                <table class="analytics-table">
+                                    <thead><tr><th>Content</th><th>Views</th><th>Visits</th></tr></thead>
+                                    <tbody>
+                                    @foreach (array_slice($contentRows, 0, 12) as $row)
+                                        <tr><td>{{ $row['label'] }}</td><td>{{ $metricDisplay($row, 'nb_hits') }}</td><td>{{ $metricDisplay($row) }}</td></tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            @endif
                         </div>
 
                         <div class="analytics-journey-side">
-                            @foreach (['Entry pages' => $entryRows, 'Exit pages' => $exitRows, 'Downloads' => $downloadRows, 'Outbound destinations' => $outlinkRows, 'Site search' => $searchRows] as $label => $rows)
-                                @if ($rows !== [])
+                            @foreach ($journeyGroups as $label => $group)
+                                @if ($group['rows'] !== [] || ! $reportAvailability->isAvailable($group['report']))
                                     <div>
                                         <h4>{{ $label }}</h4>
-                                        @foreach (array_slice($rows, 0, 6) as $row)
-                                            <div class="analytics-plain-row">
-                                                <span>{{ $row['label'] }}</span>
-                                                <strong>{{ $metricDisplay($row, in_array($label, ['Downloads', 'Outbound destinations'], true) ? 'nb_hits' : ($label === 'Exit pages' ? 'nb_exits' : ($label === 'Entry pages' ? 'nb_entrances' : 'nb_visits'))) }}</strong>
-                                            </div>
-                                        @endforeach
+                                        @if (! $reportAvailability->isAvailable($group['report']))
+                                            <p class="analytics-empty">Report unavailable.</p>
+                                        @else
+                                            @foreach (array_slice($group['rows'], 0, 6) as $row)
+                                                <div class="analytics-plain-row">
+                                                    <span>{{ $row['label'] }}</span>
+                                                    <strong>{{ $metricDisplay($row, $group['metric']) }}</strong>
+                                                </div>
+                                            @endforeach
+                                        @endif
                                     </div>
                                 @endif
                             @endforeach
@@ -454,26 +502,30 @@
                     <p>Aggregate compatibility and session-depth context.</p>
                 </div>
 
-                @if ($hasTechnology)
+                @if ($hasTechnology || $hasUnavailableTechnology)
                     <div class="analytics-data-columns">
-                        @foreach ($technologyGroups as $label => $rows)
-                            @if ($rows !== [])
-                                @php($groupMax = $maxMetric($rows))
+                        @foreach ($technologyGroups as $label => $group)
+                            @if ($group['rows'] !== [] || ! $reportAvailability->isAvailable($group['report']))
                                 <div>
                                     <h4>{{ $label }}</h4>
-                                    @foreach (array_slice($rows, 0, 8) as $row)
-                                        <div class="analytics-rank-row is-compact">
-                                            <span>{{ $row['label'] }}</span>
-                                            <i><b style="width: {{ number_format($percent($row, $groupMax), 2, '.', '') }}%"></b></i>
-                                            <strong>{{ $metricDisplay($row) }}</strong>
-                                        </div>
-                                    @endforeach
+                                    @if (! $reportAvailability->isAvailable($group['report']))
+                                        <p class="analytics-empty">Report unavailable.</p>
+                                    @else
+                                        @php($groupMax = $maxMetric($group['rows']))
+                                        @foreach (array_slice($group['rows'], 0, 8) as $row)
+                                            <div class="analytics-rank-row is-compact">
+                                                <span>{{ $row['label'] }}</span>
+                                                <i><b style="width: {{ number_format($percent($row, $groupMax), 2, '.', '') }}%"></b></i>
+                                                <strong>{{ $metricDisplay($row) }}</strong>
+                                            </div>
+                                        @endforeach
+                                    @endif
                                 </div>
                             @endif
                         @endforeach
                     </div>
                 @else
-                    <p class="analytics-empty analytics-empty--section">No engagement or technology distribution is available for this period.</p>
+                    <p class="analytics-empty analytics-empty--section">No engagement or technology distribution in this period.</p>
                 @endif
             </section>
 
