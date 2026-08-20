@@ -2,16 +2,35 @@
     @php
         $status = $matomo['status'] ?? null;
         $available = in_array($status, ['available', 'stale'], true);
-        $metricValue = static fn (array $row, string $metric = 'nb_visits'): int => (int) round((float) ($row[$metric] ?? 0));
-        $maxMetric = static function (array $rows, string $metric = 'nb_visits'): float {
+        $metricValue = static function (array $row, string $metric = 'nb_visits'): ?int {
+            $value = $row[$metric] ?? null;
+
+            return is_numeric($value) ? (int) round((float) $value) : null;
+        };
+        $metricDisplay = static function (array $row, string $metric = 'nb_visits') use ($metricValue): string {
+            $value = $metricValue($row, $metric);
+
+            return $value === null ? '—' : number_format($value);
+        };
+        $maxMetric = static function (array $rows, string $metric = 'nb_visits') use ($metricValue): float {
             $max = 0.0;
             foreach ($rows as $row) {
-                $max = max($max, (float) ($row[$metric] ?? 0));
+                $value = $metricValue($row, $metric);
+                if ($value !== null) {
+                    $max = max($max, $value);
+                }
             }
 
             return max(1.0, $max);
         };
-        $percent = static fn (array $row, float $max, string $metric = 'nb_visits'): float => min(100, max(0, ((float) ($row[$metric] ?? 0) / $max) * 100));
+        $percent = static function (array $row, float $max, string $metric = 'nb_visits') use ($metricValue): float {
+            $value = $metricValue($row, $metric);
+            if ($value === null) {
+                return 0.0;
+            }
+
+            return min(100, max(0, ($value / $max) * 100));
+        };
 
         $countryRows = $matomo['countries'] ?? [];
         $continentRows = $matomo['continents'] ?? [];
@@ -25,8 +44,8 @@
                 continue;
             }
 
-            $visits = max(0, $metricValue($row));
-            if ($visits === 0) {
+            $visits = $metricValue($row);
+            if ($visits === null || $visits <= 0) {
                 continue;
             }
 
@@ -266,7 +285,7 @@
                                 <div class="analytics-rank-row">
                                     <span>{{ $row['label'] }}</span>
                                     <i><b style="width: {{ number_format($percent($row, $countryMax), 2, '.', '') }}%"></b></i>
-                                    <strong>{{ number_format($metricValue($row)) }}</strong>
+                                    <strong>{{ $metricDisplay($row) }}</strong>
                                 </div>
                             @empty
                                 <p class="analytics-empty">No country report.</p>
@@ -277,7 +296,7 @@
                             <div>
                                 <h4>Continents</h4>
                                 @foreach ($continentRows as $row)
-                                    <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ number_format($metricValue($row)) }}</strong></div>
+                                    <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ $metricDisplay($row) }}</strong></div>
                                 @endforeach
                             </div>
                         @endif
@@ -293,7 +312,7 @@
                                     <div class="analytics-rank-row is-compact">
                                         <span>{{ $row['label'] }}</span>
                                         <i><b style="width: {{ number_format($percent($row, $weekdayMax), 2, '.', '') }}%"></b></i>
-                                        <strong>{{ number_format($metricValue($row)) }}</strong>
+                                        <strong>{{ $metricDisplay($row) }}</strong>
                                     </div>
                                 @endforeach
                             </div>
@@ -306,7 +325,7 @@
                                     <div class="analytics-rank-row is-compact">
                                         <span>{{ $row['label'] }}</span>
                                         <i><b style="width: {{ number_format($percent($row, $localTimeMax), 2, '.', '') }}%"></b></i>
-                                        <strong>{{ number_format($metricValue($row)) }}</strong>
+                                        <strong>{{ $metricDisplay($row) }}</strong>
                                     </div>
                                 @endforeach
                             </div>
@@ -331,7 +350,7 @@
                                 <div>
                                     <h4>{{ $label }}</h4>
                                     @foreach (array_slice($rows, 0, 8) as $row)
-                                        <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ number_format($metricValue($row)) }}</strong></div>
+                                        <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ $metricDisplay($row) }}</strong></div>
                                     @endforeach
                                 </div>
                             @endif
@@ -359,7 +378,7 @@
                                 <thead><tr><th>Content</th><th>Views</th><th>Visits</th></tr></thead>
                                 <tbody>
                                 @foreach (array_slice($contentRows, 0, 12) as $row)
-                                    <tr><td>{{ $row['label'] }}</td><td>{{ number_format($metricValue($row, 'nb_hits')) }}</td><td>{{ number_format($metricValue($row)) }}</td></tr>
+                                    <tr><td>{{ $row['label'] }}</td><td>{{ $metricDisplay($row, 'nb_hits') }}</td><td>{{ $metricDisplay($row) }}</td></tr>
                                 @endforeach
                                 </tbody>
                             </table>
@@ -373,7 +392,7 @@
                                         @foreach (array_slice($rows, 0, 6) as $row)
                                             <div class="analytics-plain-row">
                                                 <span>{{ $row['label'] }}</span>
-                                                <strong>{{ number_format($metricValue($row, in_array($label, ['Downloads', 'Outbound destinations'], true) ? 'nb_hits' : ($label === 'Exit pages' ? 'nb_exits' : ($label === 'Entry pages' ? 'nb_entrances' : 'nb_visits')))) }}</strong>
+                                                <strong>{{ $metricDisplay($row, in_array($label, ['Downloads', 'Outbound destinations'], true) ? 'nb_hits' : ($label === 'Exit pages' ? 'nb_exits' : ($label === 'Entry pages' ? 'nb_entrances' : 'nb_visits'))) }}</strong>
                                             </div>
                                         @endforeach
                                     </div>
@@ -410,7 +429,7 @@
                                 <div>
                                     <h4>{{ $label }}</h4>
                                     @foreach (array_slice($rows, 0, 10) as $row)
-                                        <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ number_format($metricValue($row, 'nb_events')) }}</strong></div>
+                                        <div class="analytics-plain-row"><span>{{ $row['label'] }}</span><strong>{{ $metricDisplay($row, 'nb_events') }}</strong></div>
                                     @endforeach
                                 </div>
                             @endif
@@ -441,7 +460,7 @@
                                         <div class="analytics-rank-row is-compact">
                                             <span>{{ $row['label'] }}</span>
                                             <i><b style="width: {{ number_format($percent($row, $groupMax), 2, '.', '') }}%"></b></i>
-                                            <strong>{{ number_format($metricValue($row)) }}</strong>
+                                            <strong>{{ $metricDisplay($row) }}</strong>
                                         </div>
                                     @endforeach
                                 </div>
