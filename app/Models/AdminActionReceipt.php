@@ -16,6 +16,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'entity_id',
     'before_state',
     'after_state',
+    'media_asset_id',
+    'artwork_media_id',
+    'neighbor_artwork_media_id',
+    'previous_artwork_media_id',
+    'next_artwork_media_id',
+    'before_position',
+    'after_position',
+    'inverse_direction',
     'receipt_version',
     'expires_at',
     'undone_at',
@@ -29,6 +37,13 @@ final class AdminActionReceipt extends Model
     protected function casts(): array
     {
         return [
+            'media_asset_id' => 'integer',
+            'artwork_media_id' => 'integer',
+            'neighbor_artwork_media_id' => 'integer',
+            'previous_artwork_media_id' => 'integer',
+            'next_artwork_media_id' => 'integer',
+            'before_position' => 'integer',
+            'after_position' => 'integer',
             'receipt_version' => 'integer',
             'expires_at' => 'datetime',
             'undone_at' => 'datetime',

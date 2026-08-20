@@ -210,6 +210,7 @@ class ArtworkEditorialService
                 $this->adminAuditService->record($actor, 'artwork.additional_media_attached', 'artwork', $fresh->getKey(), [
                     'media_asset_id' => $asset->getKey(),
                     'artwork_media_id' => $usage->getKey(),
+                    'position' => (int) $usage->getAttribute('position'),
                 ]);
 
                 return $usage;
@@ -221,25 +222,16 @@ class ArtworkEditorialService
 
     public function attachAdditionalMedia(Artwork $artwork, MediaAsset $asset): ArtworkMedia
     {
-        $actor = $this->adminAuditService->requireActor();
-        /** @var Artwork $fresh */
-        $fresh = Artwork::query()->findOrFail($artwork->getKey());
-        /** @var MediaAsset $freshAsset */
-        $freshAsset = MediaAsset::query()->findOrFail($asset->getKey());
+        return $this->attachAdditionalMediaAtPosition($artwork, $asset, null);
+    }
 
-        if ($freshAsset->getAttribute('state') !== 'available') {
-            throw ValidationException::withMessages(['media' => 'Only available media can be attached to an artwork.']);
+    public function restoreAdditionalMedia(Artwork $artwork, MediaAsset $asset, int $position): ArtworkMedia
+    {
+        if ($position < 1) {
+            throw ValidationException::withMessages(['position' => 'The restored gallery image position is invalid.']);
         }
 
-        return DB::transaction(function () use ($fresh, $freshAsset, $actor): ArtworkMedia {
-            $usage = $this->attachAdditionalAsset($fresh, $freshAsset);
-            $this->adminAuditService->record($actor, 'artwork.additional_media_attached', 'artwork', $fresh->getKey(), [
-                'media_asset_id' => $freshAsset->getKey(),
-                'artwork_media_id' => $usage->getKey(),
-            ]);
-
-            return $usage;
-        });
+        return $this->attachAdditionalMediaAtPosition($artwork, $asset, $position);
     }
 
     public function detachAdditionalMedia(Artwork $artwork, ArtworkMedia $usage): void
@@ -249,26 +241,49 @@ class ArtworkEditorialService
         DB::transaction(function () use ($artwork, $usage, $actor): void {
             /** @var Artwork $lockedArtwork */
             $lockedArtwork = Artwork::query()->whereKey($artwork->getKey())->lockForUpdate()->firstOrFail();
-            /** @var ArtworkMedia|null $lockedUsage */
-            $lockedUsage = ArtworkMedia::query()
-                ->whereKey($usage->getKey())
+            /** @var Collection<int, ArtworkMedia> $additional */
+            $additional = ArtworkMedia::query()
                 ->where('artwork_id', $lockedArtwork->getKey())
+                ->where('role', 'additional')
+                ->orderBy('position')
                 ->lockForUpdate()
-                ->first();
+                ->get();
+            $index = $additional->search(fn (ArtworkMedia $candidate): bool => (int) $candidate->getKey() === (int) $usage->getKey());
 
-            if (! $lockedUsage || $lockedUsage->getAttribute('role') !== 'additional') {
+            if ($index === false) {
                 throw ValidationException::withMessages(['media' => 'Only an additional artwork image can be detached here.']);
             }
 
+            /** @var ArtworkMedia $lockedUsage */
+            $lockedUsage = $additional->get($index);
             $assetId = (int) $lockedUsage->getAttribute('media_asset_id');
             $usageId = (int) $lockedUsage->getKey();
+            $position = (int) $lockedUsage->getAttribute('position');
+            $previous = $index > 0 ? $additional->get($index - 1) : null;
+            $next = $index < $additional->count() - 1 ? $additional->get($index + 1) : null;
+
             $lockedUsage->delete();
             $this->normalizeAdditionalPositions($lockedArtwork);
 
-            $this->adminAuditService->record($actor, 'artwork.additional_media_detached', 'artwork', $lockedArtwork->getKey(), [
+            $metadata = [
                 'media_asset_id' => $assetId,
                 'artwork_media_id' => $usageId,
-            ]);
+                'position' => $position,
+            ];
+            if ($previous instanceof ArtworkMedia) {
+                $metadata['previous_artwork_media_id'] = (int) $previous->getKey();
+            }
+            if ($next instanceof ArtworkMedia) {
+                $metadata['next_artwork_media_id'] = (int) $next->getKey();
+            }
+
+            $this->adminAuditService->record(
+                $actor,
+                'artwork.additional_media_detached',
+                'artwork',
+                $lockedArtwork->getKey(),
+                $metadata,
+            );
         });
     }
 
@@ -300,14 +315,24 @@ class ArtworkEditorialService
                 return;
             }
 
+            /** @var ArtworkMedia $moving */
+            $moving = $additional->get($index);
+            /** @var ArtworkMedia $neighbor */
+            $neighbor = $additional->get($target);
+            $fromPosition = (int) $moving->getAttribute('position');
+            $toPosition = (int) $neighbor->getAttribute('position');
+
             $ordered = $additional->all();
             [$ordered[$index], $ordered[$target]] = [$ordered[$target], $ordered[$index]];
             /** @var Collection<int, ArtworkMedia> $reordered */
-            $reordered = new Collection(array_values($ordered));
+            $reordered = new Collection($ordered);
             $this->normalizeAdditionalPositions($lockedArtwork, $reordered);
 
             $this->adminAuditService->record($actor, 'artwork.additional_media_reordered', 'artwork', $lockedArtwork->getKey(), [
-                'artwork_media_id' => $usage->getKey(),
+                'artwork_media_id' => (int) $moving->getKey(),
+                'neighbor_artwork_media_id' => (int) $neighbor->getKey(),
+                'from_position' => $fromPosition,
+                'to_position' => $toPosition,
                 'direction' => $direction,
             ]);
         });
@@ -321,7 +346,31 @@ class ArtworkEditorialService
         return [(string) $asset->getAttribute('storage_key'), ...$variantKeys];
     }
 
-    private function attachAdditionalAsset(Artwork $artwork, MediaAsset $asset): ArtworkMedia
+    private function attachAdditionalMediaAtPosition(Artwork $artwork, MediaAsset $asset, ?int $position): ArtworkMedia
+    {
+        $actor = $this->adminAuditService->requireActor();
+        /** @var Artwork $fresh */
+        $fresh = Artwork::query()->findOrFail($artwork->getKey());
+        /** @var MediaAsset $freshAsset */
+        $freshAsset = MediaAsset::query()->findOrFail($asset->getKey());
+
+        if ($freshAsset->getAttribute('state') !== 'available') {
+            throw ValidationException::withMessages(['media' => 'Only available media can be attached to an artwork.']);
+        }
+
+        return DB::transaction(function () use ($fresh, $freshAsset, $position, $actor): ArtworkMedia {
+            $usage = $this->attachAdditionalAsset($fresh, $freshAsset, $position);
+            $this->adminAuditService->record($actor, 'artwork.additional_media_attached', 'artwork', $fresh->getKey(), [
+                'media_asset_id' => $freshAsset->getKey(),
+                'artwork_media_id' => $usage->getKey(),
+                'position' => (int) $usage->getAttribute('position'),
+            ]);
+
+            return $usage;
+        });
+    }
+
+    private function attachAdditionalAsset(Artwork $artwork, MediaAsset $asset, ?int $position = null): ArtworkMedia
     {
         /** @var Artwork $lockedArtwork */
         $lockedArtwork = Artwork::query()->whereKey($artwork->getKey())->lockForUpdate()->firstOrFail();
@@ -335,20 +384,51 @@ class ArtworkEditorialService
             throw ValidationException::withMessages(['media' => 'This media is already attached to the artwork.']);
         }
 
-        $nextPosition = ((int) ArtworkMedia::query()
+        /** @var Collection<int, ArtworkMedia> $additional */
+        $additional = ArtworkMedia::query()
             ->where('artwork_id', $lockedArtwork->getKey())
             ->where('role', 'additional')
-            ->max('position')) + 1;
+            ->orderBy('position')
+            ->lockForUpdate()
+            ->get();
+        $targetPosition = $position ?? $additional->count() + 1;
 
+        if ($targetPosition < 1 || $targetPosition > $additional->count() + 1) {
+            throw ValidationException::withMessages(['position' => 'The restored gallery image position is no longer available.']);
+        }
+
+        if ($targetPosition === $additional->count() + 1) {
+            $usage = new ArtworkMedia;
+            $usage->fill([
+                'artwork_id' => $lockedArtwork->getKey(),
+                'media_asset_id' => $lockedAsset->getKey(),
+                'role' => 'additional',
+                'position' => $targetPosition,
+                'alt_text_override' => null,
+            ]);
+            $usage->save();
+
+            return $usage->fresh(['mediaAsset.variants']);
+        }
+
+        $temporaryPosition = ((int) ArtworkMedia::query()
+            ->where('artwork_id', $lockedArtwork->getKey())
+            ->max('position')) + $additional->count() + 2;
         $usage = new ArtworkMedia;
         $usage->fill([
             'artwork_id' => $lockedArtwork->getKey(),
             'media_asset_id' => $lockedAsset->getKey(),
             'role' => 'additional',
-            'position' => max(1, $nextPosition),
+            'position' => $temporaryPosition,
             'alt_text_override' => null,
         ]);
         $usage->save();
+
+        $ordered = $additional->values()->all();
+        array_splice($ordered, $targetPosition - 1, 0, [$usage]);
+        /** @var Collection<int, ArtworkMedia> $reordered */
+        $reordered = new Collection($ordered);
+        $this->normalizeAdditionalPositions($lockedArtwork, $reordered);
 
         return $usage->fresh(['mediaAsset.variants']);
     }
