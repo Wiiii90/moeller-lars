@@ -12,7 +12,7 @@ uses(RefreshDatabase::class);
 
 function publishProfileVita(): void
 {
-    testSingletonSection(SiteSection::TYPE_VITA, [
+    testUniqueSection(SiteSection::TYPE_VITA, [
         'navigation_label' => 'CV',
         'state' => 'published',
         'show_in_navigation' => true,
@@ -31,7 +31,7 @@ function publishProfileVita(): void
 it('keeps the reviewed public contact form visible by default', function () {
     publishProfileVita();
 
-    expect(PublicContentSetting::query()->findOrFail(1)->contact_state)->toBe('enabled');
+    expect(PublicContentSetting::query()->sole()->contact_state)->toBe('enabled');
 
     $this->get('/cv')
         ->assertSuccessful()
@@ -41,7 +41,7 @@ it('keeps the reviewed public contact form visible by default', function () {
 it('controls public profile details independently from the contact form', function () {
     publishProfileVita();
 
-    PublicContentSetting::query()->findOrFail(1)->update([
+    PublicContentSetting::query()->sole()->update([
         'public_email' => 'artist@example.test',
         'show_public_email' => false,
         'instagram_handle' => 'artist_account',
@@ -88,7 +88,7 @@ it('serves an assigned favicon through the controlled public media route', funct
         'height' => 256,
     ]);
 
-    PublicContentSetting::query()->findOrFail(1)->update([
+    PublicContentSetting::query()->sole()->update([
         'favicon_media_asset_id' => $asset->getKey(),
     ]);
     Storage::fake(config('media.disk'));
