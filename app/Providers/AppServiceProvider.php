@@ -2,11 +2,7 @@
 
 namespace App\Providers;
 
-use App\Domain\Content\PublicNavigationService;
-use App\Domain\Media\PublicMedia;
-use App\Models\MediaAsset;
-use App\Models\MediaVariant;
-use App\Models\PublicContentSetting;
+use App\Domain\Content\PublicSiteContext;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
 use Illuminate\Support\Facades\View;
@@ -34,25 +30,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         View::composer('layouts.app', function ($view): void {
-            $settings = PublicContentSetting::query()
-                ->with('faviconMediaAsset.variants')
-                ->find(1);
-            $faviconVariant = null;
-            $faviconAsset = $settings?->getRelationValue('faviconMediaAsset');
-
-            if ($faviconAsset instanceof MediaAsset && $faviconAsset->getAttribute('state') === 'available') {
-                $variants = $faviconAsset->getRelationValue('variants');
-                $faviconVariant = $variants->first(
-                    fn (MediaVariant $variant): bool => $variant->getAttribute('variant_kind') === PublicMedia::THUMBNAIL_KIND
-                        && $variant->getAttribute('transform_profile') === PublicMedia::PUBLIC_TRANSFORM_PROFILE
-                        && $variant->getAttribute('state') === 'available',
-                );
-            }
-
-            $view->with([
-                'navigationItems' => app(PublicNavigationService::class)->items(),
-                'faviconVariant' => $faviconVariant,
-            ]);
+            $view->with(app(PublicSiteContext::class)->layoutData());
         });
     }
 }
