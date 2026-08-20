@@ -405,7 +405,11 @@
     }
 }
 
-/* Shared acceptance geometry: one shell, one inner content measure, one title axis. */
+/*
+ * Public acceptance grid.
+ * One visible shell (800px) and one inner measure (760px) own navigation,
+ * gallery, CV, exhibitions and the title axis. Keep geometry here together.
+ */
 html:root {
     --public-shell-max: 800px;
     --public-art-max: 760px;
@@ -422,7 +426,10 @@ body .site-header .site-navigation__submenu {
     width: min(calc(100% - (2 * var(--public-content-inset))), var(--public-art-max));
 }
 
+/* Stretch the actual menu cells across the complete 760px artwork measure. */
 body .site-header .site-navigation__item {
+    min-width: max-content;
+    flex: 1 0 max-content;
     border-left: 1px solid #e4e1de;
 }
 
@@ -430,14 +437,36 @@ body .site-header .site-navigation__item:last-child {
     border-right: 1px solid #e4e1de;
 }
 
+body .site-header .site-navigation__primary {
+    width: 100%;
+    justify-content: center;
+}
+
+body .site-header .site-navigation__primary > a {
+    justify-content: center;
+}
+
 body #content.site-content {
     width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
     max-width: var(--public-shell-max);
     min-height: 0;
-    padding-right: var(--public-content-inset);
-    padding-left: var(--public-content-inset);
+    padding: 24px var(--public-content-inset) 22px;
 }
 
+/* Every public content surface uses exactly the same inner edges as gallery art. */
+body #content.site-content > .artwork-list,
+body #content.site-content > .cv-page,
+body #content.site-content > .exhibitions-page,
+body #content.site-content > .blog-page,
+body #content.site-content > .blog-post,
+body #content.site-content > .contact-page {
+    width: 100%;
+    max-width: var(--public-art-max);
+    margin-right: auto;
+    margin-left: auto;
+}
+
+/* The LARS | MÖLLER split axis is the left edge of the white outer shell. */
 body .site-header .site-title {
     left: max(var(--public-gutter), calc((100% - var(--public-shell-max)) / 2));
 }
@@ -465,5 +494,10 @@ body .site-header .site-title {
     html:root {
         --public-content-inset: .65rem;
         --public-gutter: .65rem;
+    }
+
+    body #content.site-content {
+        padding-top: 1.25rem;
+        padding-bottom: 1.2rem;
     }
 }
