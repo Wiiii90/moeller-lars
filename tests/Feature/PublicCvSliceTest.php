@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 
 function publicContentSettings(): PublicContentSetting
 {
-    return PublicContentSetting::query()->findOrFail(1);
+    return PublicContentSetting::query()->sole();
 }
 
 function publicContentAsset(string $name = 'content'): MediaAsset
@@ -50,12 +50,12 @@ function publicContentThumbnail(MediaAsset $asset, string $name = 'content'): Me
     ]);
 }
 
-it('keeps CV and exhibitions unavailable until their own feature is enabled', function () {
+it('keeps CV and exhibitions unavailable until their canonical SiteSections are published', function () {
     $this->get('/cv')->assertNotFound();
     $this->get('/exhibitions')->assertNotFound();
 });
 
-it('renders published biography entries and the configured CV navigation item', function () {
+it('renders every published Vita entry regardless of its editorial section label', function () {
     testSingletonSection(SiteSection::TYPE_VITA, [
         'navigation_label' => 'CV',
         'state' => 'published',
@@ -71,11 +71,20 @@ it('renders published biography entries and the configured CV navigation item', 
         'year_text' => '2026',
         'body' => '**Selected** work',
     ]);
+    CvEntry::create([
+        'section' => 'Awards',
+        'title' => 'Independent award',
+        'state' => 'published',
+        'position' => 1,
+        'date_precision' => 'year',
+        'year_text' => '2025',
+    ]);
 
     $this->get('/cv')
         ->assertSuccessful()
         ->assertSee('CV')
         ->assertSee('Artist in Hamburg')
+        ->assertSee('Independent award')
         ->assertSee('<strong>Selected</strong> work', false);
 });
 
@@ -138,7 +147,7 @@ it('enforces a total published CV order', function () {
     ]))->toThrow(QueryException::class);
 });
 
-it('renders exhibition media through the separate exhibitions surface and existing controlled media routes', function () {
+it('renders structured exhibition schedule and media through controlled public routes', function () {
     testSingletonSection(SiteSection::TYPE_EXHIBITIONS, [
         'navigation_label' => 'EXHIBITIONS',
         'state' => 'published',
@@ -153,6 +162,7 @@ it('renders exhibition media through the separate exhibitions surface and existi
         'state' => 'published',
         'position' => 0,
         'date_text' => '2026',
+        'opening_text' => '3 January, 7 pm',
         'starts_on' => '2026-01-01',
         'ends_on' => '2026-12-31',
         'description' => 'Exhibition **description**.',
@@ -168,6 +178,8 @@ it('renders exhibition media through the separate exhibitions surface and existi
     $this->get('/exhibitions')
         ->assertSuccessful()
         ->assertSee('Current Show')
+        ->assertSee('Vernissage')
+        ->assertSee('3 January, 7 pm')
         ->assertSee(route('media.variant', $variant), false)
         ->assertSee('Directions');
 
