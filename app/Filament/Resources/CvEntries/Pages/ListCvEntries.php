@@ -49,7 +49,7 @@ class ListCvEntries extends Page
             Action::make('contactSettings')
                 ->label('Contact settings')
                 ->icon(Heroicon::OutlinedCog6Tooth)
-                ->url(PublicContentSettingResource::getUrl('edit', ['record' => PublicContentSetting::current()])),
+                ->url(PublicContentSettingResource::getUrl('edit', ['record' => PublicContentSetting::query()->sole()])),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
