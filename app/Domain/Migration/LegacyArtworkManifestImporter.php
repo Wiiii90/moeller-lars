@@ -315,8 +315,8 @@ final class LegacyArtworkManifestImporter
 
         $occupiedNavigationPositions = SiteSection::query()
             ->whereNull('parent_id')
-            ->published()
-            ->visibleInNavigation()
+            ->where('state', 'published')
+            ->where('show_in_navigation', true)
             ->pluck('position')
             ->map(static fn ($position): int => (int) $position)
             ->all();
