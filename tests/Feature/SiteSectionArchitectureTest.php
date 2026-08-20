@@ -83,7 +83,7 @@ it('builds public navigation only from visible canonical sections', function ():
         'show_in_navigation' => true,
         'position' => 200,
     ]);
-    testSingletonSection(SiteSection::TYPE_VITA, [
+    testUniqueSection(SiteSection::TYPE_VITA, [
         'navigation_label' => 'Vita',
         'state' => 'published',
         'show_in_navigation' => true,
@@ -104,7 +104,7 @@ it('builds public navigation only from visible canonical sections', function ():
 it('uses the SiteSection as the public availability gate regardless of legacy settings', function (): void {
     $settings = PublicContentSetting::query()->sole();
     $settings->forceFill(['cv_enabled' => false])->save();
-    $vita = testSingletonSection(SiteSection::TYPE_VITA, [
+    $vita = testUniqueSection(SiteSection::TYPE_VITA, [
         'navigation_label' => 'Vita',
         'state' => 'published',
         'show_in_navigation' => true,
