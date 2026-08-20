@@ -43,7 +43,7 @@ class PublicContentSettingResource extends Resource
     {
         return $schema->components([
             Section::make('Public identity and contact')
-                ->description('Central public profile values. Vita / CV uses these values directly; visibility can be controlled independently from the contact form.')
+                ->description('Central public profile values. Vita / CV uses these values directly; visibility can be controlled independently from the contact form. Vita and Exhibitions publication/navigation are managed from Pages.')
                 ->schema([
                     TextInput::make('public_email')->label('Public email')->email()->maxLength(254)->nullable(),
                     Toggle::make('show_public_email')->label('Show email on Vita / CV')->default(true),
