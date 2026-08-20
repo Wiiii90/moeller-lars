@@ -126,6 +126,14 @@ test('pointer continuation uses the current pan state after pinch', () => {
     assert.doesNotMatch(releaseBlock, /\.\.\.dragStart/);
 });
 
+test('viewer panning follows actual bounds instead of requiring an arbitrary zoom threshold', () => {
+    const source = readFileSync(new URL('../../resources/js/artwork-viewer.js', import.meta.url), 'utf8');
+
+    assert.match(source, /stage\.dataset\.viewerPannable = pannable \? 'true' : 'false'/);
+    assert.match(source, /stage\.dataset\.viewerPannable === 'true'/);
+    assert.doesNotMatch(source, /dragStart && state\.scale > 1/);
+});
+
 test('viewer analytics use stable artwork keys and one bounded attention event', () => {
     const source = readFileSync(new URL('../../resources/js/artwork-viewer.js', import.meta.url), 'utf8');
 

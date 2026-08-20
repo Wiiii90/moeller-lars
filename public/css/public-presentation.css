@@ -1,9 +1,10 @@
-/* Canonical public presentation layer. Keep this as the single non-Vite shell/navigation stylesheet. */
+/* Canonical public presentation layer. Shell, navigation, public geometry and viewer polish live here. */
 
 :root {
-    --public-shell-max: 1120px;
-    --public-art-max: 840px;
-    --public-gutter: clamp(.85rem, 3.2vw, 2.75rem);
+    --public-shell-max: 800px;
+    --public-art-max: 650px;
+    --public-gutter: clamp(.65rem, 2vw, 1.5rem);
+    --public-mobile-inset: .65rem;
     --public-page: #777;
     --public-surface: #fff;
     --public-ink: #555;
@@ -32,6 +33,11 @@ body {
     font-size: 14px;
 }
 
+/*
+ * The whole header is the sticky region. Navigation may grow vertically when a
+ * submenu opens; the title and divider move down with it. Only content below
+ * the divider scrolls away.
+ */
 .site-header {
     position: sticky;
     top: 0;
@@ -47,9 +53,11 @@ body {
 }
 
 .site-header::after {
+    order: 3;
     display: block;
     width: 100%;
     height: 2px;
+    flex: 0 0 2px;
     background: var(--public-header-separator);
     content: "";
     pointer-events: none;
@@ -100,16 +108,43 @@ body {
     position: relative;
     display: flex;
     min-width: max-content;
-    flex: 0 0 auto;
+    flex: 1 0 max-content;
     flex-direction: column;
     align-items: stretch;
+    border-left: 1px solid #e4e1de;
+}
+
+.site-navigation__item:last-child {
+    border-right: 1px solid #e4e1de;
 }
 
 .site-navigation__primary {
+    position: relative;
     display: flex;
+    width: 100%;
     min-width: 0;
     height: 100%;
     align-items: stretch;
+    justify-content: center;
+}
+
+.site-navigation__primary::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: transparent;
+    content: "";
+    pointer-events: none;
+    transition: background-color .14s ease;
+}
+
+.site-navigation__item.is-active > .site-navigation__primary::after,
+.site-navigation__item:hover > .site-navigation__primary::after,
+.site-navigation__item:focus-within > .site-navigation__primary::after,
+.site-navigation__item[data-submenu-open="true"] > .site-navigation__primary::after {
+    background: var(--public-active);
 }
 
 .site-header nav a {
@@ -117,6 +152,7 @@ body {
     min-height: 2.95rem;
     padding: .9rem 1rem .82rem;
     align-items: center;
+    justify-content: center;
     background: transparent;
     color: var(--public-muted);
     font-family: Arial, Helvetica, sans-serif;
@@ -127,13 +163,13 @@ body {
     text-decoration: none;
     text-transform: uppercase;
     white-space: nowrap;
-    transition: color .14s ease, box-shadow .14s ease, opacity .14s ease;
+    transition: color .14s ease, opacity .14s ease;
 }
 
 .site-navigation__item.is-active > .site-navigation__primary > a,
 .site-header nav a[aria-current="page"] {
     color: #393532;
-    box-shadow: inset 0 -2px 0 var(--public-active);
+    box-shadow: none;
 }
 
 .site-header nav a:hover,
@@ -185,6 +221,7 @@ body {
     color: #3d3935;
 }
 
+/* Submenus remain in normal flow so the sticky header itself grows. */
 .site-navigation__submenu-region {
     display: grid;
     grid-template-rows: 0fr;
@@ -220,6 +257,7 @@ body {
     width: 100%;
     min-height: 0;
     padding: .58rem 1rem;
+    justify-content: flex-start;
     border-left: 2px solid transparent;
     color: #716b66;
     font-size: 11px;
@@ -308,13 +346,8 @@ body {
     bottom: 0;
 }
 
-.site-title__first {
-    right: .32em;
-}
-
-.site-title__last {
-    left: .32em;
-}
+.site-title__first { right: .32em; }
+.site-title__last { left: .32em; }
 
 .site-title:hover,
 .site-title:focus-visible {
@@ -331,7 +364,7 @@ body {
     width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
     max-width: var(--public-shell-max);
     min-width: 0;
-    min-height: 60vh;
+    min-height: 0;
     margin: .7rem auto 0;
     background: var(--public-surface);
 }
@@ -355,7 +388,9 @@ body {
 
 .artwork-list {
     display: block;
+    width: min(100%, var(--public-art-max));
     min-width: 0;
+    margin-inline: auto;
 }
 
 .artwork-card,
@@ -369,6 +404,10 @@ body {
     min-width: 0;
     margin-right: auto;
     margin-left: auto;
+}
+
+.artwork-list .artwork-card {
+    width: 100%;
 }
 
 .artwork-card,
@@ -418,7 +457,7 @@ body {
     min-width: 0;
     color: inherit;
     text-decoration: none;
-    cursor: zoom-in;
+    cursor: pointer;
 }
 
 .artwork-label {
@@ -435,8 +474,8 @@ body {
 
 .artwork-label-trigger:hover .artwork-label,
 .artwork-label-trigger:focus-visible .artwork-label {
-    border-color: #aaa39d;
-    color: #303030;
+    border-color: #918b85;
+    color: #2f2f2f;
 }
 
 .artwork-label-trigger:focus-visible {
@@ -760,16 +799,17 @@ body {
     white-space: pre-line;
 }
 
+/* Exhibitions: editorial timeline, with all temporal information kept together. */
 .exhibitions-page {
     color: var(--public-ink);
 }
 
 .exhibition-entry {
     display: grid;
-    grid-template-columns: 6rem minmax(0, 1fr);
-    gap: clamp(1.2rem, 2.8vw, 1.8rem);
+    grid-template-columns: 7.25rem minmax(0, 1fr);
+    gap: clamp(1.15rem, 2.8vw, 1.8rem);
     margin: 0;
-    padding: 1.65rem 0 1.8rem;
+    padding: 1.55rem 0 1.7rem;
     border: 0;
     border-top: var(--public-divider-width) solid var(--public-divider);
     color: var(--public-ink);
@@ -782,15 +822,37 @@ body {
     border-top: 0;
 }
 
+.exhibition-entry__schedule {
+    display: grid;
+    align-content: start;
+    gap: .62rem;
+}
+
 .exhibition-entry__date {
     display: block;
     margin: .08rem 0 0;
-    color: #77716c;
-    font-size: .68rem;
-    font-weight: 400;
+    color: #615c58;
+    font-size: .7rem;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
-    letter-spacing: .015em;
+    letter-spacing: .01em;
     line-height: 1.45;
+}
+
+.exhibition-entry__opening {
+    display: grid;
+    gap: .12rem;
+    color: #706a65;
+    font-size: .64rem;
+    line-height: 1.45;
+}
+
+.exhibition-entry__opening-label {
+    color: #928b85;
+    font-size: .54rem;
+    font-weight: 500;
+    letter-spacing: .075em;
+    text-transform: uppercase;
 }
 
 .exhibition-entry__content {
@@ -813,18 +875,18 @@ body {
     max-width: 38rem;
     margin: 0;
     color: #403c39;
-    font-size: .88rem;
+    font-size: .9rem;
     font-weight: 500;
     letter-spacing: .005em;
-    line-height: 1.45;
+    line-height: 1.42;
     overflow-wrap: break-word;
     text-wrap: pretty;
 }
 
 .exhibition-entry__facts {
     display: grid;
-    margin-top: .72rem;
-    gap: .32rem;
+    margin-top: .62rem;
+    gap: .28rem;
 }
 
 .exhibition-entry__fact {
@@ -854,10 +916,52 @@ body {
 .exhibition-entry__description {
     display: block;
     max-width: 36rem;
-    margin-top: .9rem;
+    margin-top: .88rem;
     color: #5d5955;
     font-size: .73rem;
     line-height: 1.62;
+}
+
+.exhibition-entry__description-preview {
+    margin: 0;
+}
+
+.exhibition-entry__description-details {
+    margin-top: .8rem;
+}
+
+.exhibition-entry__description-details summary {
+    display: inline-flex;
+    align-items: baseline;
+    gap: .55rem;
+    color: #66605b;
+    cursor: pointer;
+    list-style: none;
+}
+
+.exhibition-entry__description-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.exhibition-entry__description-details summary::after {
+    content: "Read more";
+    color: #706a65;
+    font-size: .66rem;
+    font-weight: 500;
+    letter-spacing: .025em;
+    white-space: nowrap;
+}
+
+.exhibition-entry__description-details[open] summary::after {
+    content: "Hide";
+}
+
+.exhibition-entry__description-details[open] .exhibition-entry__description-preview {
+    display: none;
+}
+
+.exhibition-entry__description-full {
+    margin-top: .65rem;
 }
 
 .exhibition-entry__links {
@@ -882,9 +986,9 @@ body {
     display: grid;
     width: 100%;
     max-width: none;
-    margin-top: 1rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: .75rem;
+    margin-top: 1.05rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .68rem;
 }
 
 .exhibition-media__item,
@@ -914,17 +1018,41 @@ body {
     line-height: 1.35;
 }
 
-@media (max-width: 760px) {
-    :root {
-        --public-gutter: clamp(.55rem, 2.8vw, 1.1rem);
+@media (max-width: 1040px) {
+    .site-title {
+        right: 0;
+        left: 0;
+        width: max-content;
+        margin: auto;
     }
 
-    .site-navigation {
-        width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
+    .site-title__first,
+    .site-title__last {
+        position: static;
+    }
+
+    .site-title__first::after {
+        content: " ";
+        white-space: pre;
+    }
+}
+
+@media (max-width: 760px) {
+    :root {
+        --public-gutter: .65rem;
+    }
+
+    .site-navigation,
+    #content {
+        width: calc(100% - (2 * var(--public-gutter)));
+    }
+
+    .site-header nav,
+    .site-navigation__submenu {
+        width: calc(100% - (2 * var(--public-mobile-inset)));
     }
 
     .site-header nav {
-        width: 100%;
         justify-content: flex-start;
     }
 
@@ -955,29 +1083,15 @@ body {
     }
 
     .site-title {
-        right: 0;
         bottom: .82rem;
-        left: 0;
-        width: max-content;
-        margin: auto;
-    }
-
-    .site-title__first,
-    .site-title__last {
-        position: static;
-    }
-
-    .site-title__first::after {
-        content: " ";
-        white-space: pre;
     }
 
     #content {
-        margin-top: .55rem;
+        margin-top: 0;
     }
 
     .site-content {
-        padding: clamp(1.25rem, 5vw, 1.8rem) clamp(.85rem, 4vw, 1.35rem);
+        padding: var(--public-mobile-inset);
     }
 
     .cv-legacy-layout {
@@ -999,17 +1113,16 @@ body {
     }
 
     .exhibition-entry {
-        grid-template-columns: 5.2rem minmax(0, 1fr);
-        gap: .95rem;
+        grid-template-columns: 6.1rem minmax(0, 1fr);
+        gap: .9rem;
+    }
+
+    .exhibition-media {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 520px) {
-    .site-navigation,
-    #content {
-        width: calc(100% - (2 * var(--public-gutter)));
-    }
-
     .site-navigation__submenu {
         padding: .25rem 0 .45rem;
     }
@@ -1020,35 +1133,51 @@ body {
 
     .artwork-card,
     .artwork-detail {
-        margin-bottom: 3rem;
+        margin-bottom: var(--public-mobile-inset);
     }
 
     .artwork-card__footer,
     .artwork-detail__footer {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: .7rem;
+        display: block;
+        margin-top: var(--public-mobile-inset);
     }
 
+    .artwork-label-trigger,
     .artwork-label {
         width: 100%;
+    }
+
+    .artwork-card__actions,
+    .artwork-detail__actions {
+        margin-top: .55rem;
     }
 
     .contact-details__row {
         grid-template-columns: 4.3rem minmax(0, 1fr);
     }
 
+    .cv-contact-area .contact-form {
+        width: 100%;
+    }
+
     .exhibition-entry {
         display: block;
-        padding: 1.3rem 0 1.45rem;
+        padding: 1rem 0 1.1rem;
     }
 
     .exhibition-entry:first-child {
-        padding-top: .05rem;
+        padding-top: 0;
     }
 
-    .exhibition-entry__date {
-        margin-bottom: .45rem;
+    .exhibition-entry__schedule {
+        margin-bottom: .58rem;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: .8rem;
+    }
+
+    .exhibition-entry__opening {
+        justify-self: end;
+        text-align: right;
     }
 
     .exhibition-entry__fact {
@@ -1057,6 +1186,7 @@ body {
 
     .exhibition-media {
         grid-template-columns: 1fr;
+        gap: .6rem;
     }
 
     .exhibition-media__item[data-role="hero"] {
@@ -1067,6 +1197,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
     .site-navigation__submenu-region,
     .site-navigation__submenu-toggle::before,
+    .site-navigation__primary::after,
     .site-header nav {
         transition: none !important;
         scroll-behavior: auto !important;
@@ -1102,10 +1233,19 @@ html:has(.artwork-viewer[open]) {
     background: #000;
 }
 
+/* Reserve black control-safe bands above and below the initial fitted artwork. */
 .artwork-viewer__stage {
-    inset: clamp(.75rem, 1.45vw, 1.35rem);
+    inset: clamp(4.1rem, 7vh, 5rem) clamp(.8rem, 1.45vw, 1.35rem) clamp(4.6rem, 8vh, 5.4rem);
     overflow: hidden;
     overscroll-behavior: none;
+}
+
+.artwork-viewer__stage[data-viewer-pannable="true"] {
+    cursor: grab;
+}
+
+.artwork-viewer__stage[data-viewer-pannable="true"]:active {
+    cursor: grabbing;
 }
 
 .artwork-viewer__image {
@@ -1115,6 +1255,6 @@ html:has(.artwork-viewer[open]) {
 
 @media (max-width: 640px) {
     .artwork-viewer__stage {
-        inset: .55rem;
+        inset: 3.8rem .55rem 4.25rem;
     }
 }
