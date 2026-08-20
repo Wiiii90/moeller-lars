@@ -147,31 +147,40 @@ export function initializeArtworkViewer(root = document) {
         resetAttention();
     };
 
+    const panBounds = () => calculatePanBounds(
+        image.clientWidth,
+        image.clientHeight,
+        stage.clientWidth,
+        stage.clientHeight,
+        state.scale,
+        PAN_OVERSCROLL,
+    );
+
     const updateTransform = () => {
         if (!image || image.hidden || !stage) return;
-        if (state.scale === 1) state = { ...state, x: 0, y: 0 };
-        const bounds = calculatePanBounds(
-            image.clientWidth,
-            image.clientHeight,
-            stage.clientWidth,
-            stage.clientHeight,
-            state.scale,
-            PAN_OVERSCROLL,
-        );
+
+        const bounds = panBounds();
+        const pannable = bounds.maxX > 0 || bounds.maxY > 0;
+        if (!pannable) state = { ...state, x: 0, y: 0 };
+
         const pan = clampPan(state.x, state.y, bounds);
         state = { ...state, ...pan };
         image.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) scale(${state.scale})`;
         stage.dataset.viewerZoomed = state.scale > MIN_SCALE ? 'true' : 'false';
+        stage.dataset.viewerPannable = pannable ? 'true' : 'false';
         zoomOut.disabled = state.scale <= MIN_SCALE;
         zoomIn.disabled = state.scale >= MAX_SCALE;
-        reset.disabled = state.scale === MIN_SCALE;
+        reset.disabled = state.scale === MIN_SCALE && state.x === 0 && state.y === 0;
         reset.textContent = state.scale === 1 ? '100%' : `${Math.round(state.scale * 100)}%`;
     };
 
     const resetState = () => {
         state = { scale: 1, x: 0, y: 0 };
         if (image) image.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
-        if (stage) stage.dataset.viewerZoomed = 'false';
+        if (stage) {
+            stage.dataset.viewerZoomed = 'false';
+            stage.dataset.viewerPannable = 'false';
+        }
         updateTransform();
     };
 
@@ -200,6 +209,7 @@ export function initializeArtworkViewer(root = document) {
         reset.disabled = true;
         reset.textContent = '100%';
         stage.dataset.viewerZoomed = 'false';
+        stage.dataset.viewerPannable = 'false';
         image.alt = item.alt;
         image.src = item.src;
     };
@@ -284,6 +294,7 @@ export function initializeArtworkViewer(root = document) {
         zoomOut.disabled = true;
         zoomIn.disabled = true;
         reset.disabled = true;
+        stage.dataset.viewerPannable = 'false';
     });
 
     stage.addEventListener('wheel', (event) => {
@@ -336,7 +347,7 @@ export function initializeArtworkViewer(root = document) {
             state = pinchFromGestureStart(pinchStart.state, nextScale, pinchStart.pointX, pinchStart.pointY, pointX, pointY);
             updateTransform();
             trackZoomIfNeeded();
-        } else if (values.length === 1 && dragStart && state.scale > 1) {
+        } else if (values.length === 1 && dragStart && stage.dataset.viewerPannable === 'true') {
             state.x = dragStart.panX + event.clientX - dragStart.x;
             state.y = dragStart.panY + event.clientY - dragStart.y;
             updateTransform();
@@ -381,6 +392,7 @@ export function initializeArtworkViewer(root = document) {
         image.hidden = true;
         missing.hidden = true;
         stage.dataset.viewerZoomed = 'false';
+        stage.dataset.viewerPannable = 'false';
         if (trigger?.isConnected && typeof trigger.focus === 'function') trigger.focus();
         trigger = null;
     });
