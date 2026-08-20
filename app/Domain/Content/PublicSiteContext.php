@@ -18,7 +18,7 @@ final class PublicSiteContext
     public function layoutData(): array
     {
         $settings = PublicContentSetting::query()->sole();
-        $asset = $settings->faviconMediaAsset;
+        $asset = $settings->faviconMediaAsset()->first();
         $faviconVariant = null;
 
         if ($asset instanceof MediaAsset && $asset->getAttribute('state') === 'available') {
@@ -26,7 +26,7 @@ final class PublicSiteContext
         }
 
         return [
-            'navigationItems' => $this->navigation->items(),
+            'navigationItems' => $this->navigation->items()->values()->all(),
             'faviconVariant' => $faviconVariant,
         ];
     }
