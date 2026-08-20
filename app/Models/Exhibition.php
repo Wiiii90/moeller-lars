@@ -32,7 +32,9 @@ class Exhibition extends Model
 
     public function mediaUsages(): HasMany
     {
-        return $this->hasMany(ExhibitionMedia::class);
+        return $this->hasMany(ExhibitionMedia::class)
+            ->orderBy('position')
+            ->orderBy('id');
     }
 
     public function mediaAssets(): BelongsToMany
