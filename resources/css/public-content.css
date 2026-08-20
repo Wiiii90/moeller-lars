@@ -404,3 +404,71 @@
         width: 85%;
     }
 }
+
+/* Acceptance geometry corrections: one shared visible width for navigation, gallery and CV. */
+html:root {
+    --public-shell-max: 800px;
+    --public-art-max: 760px;
+    --public-content-inset: 20px;
+    --public-gutter: clamp(.65rem, 2vw, 1.5rem);
+}
+
+body .site-header .site-navigation {
+    width: min(
+        calc(100% - (2 * var(--public-gutter)) - (2 * var(--public-content-inset))),
+        var(--public-art-max)
+    );
+}
+
+body .site-header .site-navigation > nav,
+body .site-header .site-navigation__submenu {
+    width: 100%;
+}
+
+body .site-header .site-navigation__item {
+    border-left: 1px solid #e4e1de;
+}
+
+body .site-header .site-navigation__item:last-child {
+    border-right: 1px solid #e4e1de;
+}
+
+body #content.site-content {
+    width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
+    max-width: var(--public-shell-max);
+    padding-right: var(--public-content-inset);
+    padding-left: var(--public-content-inset);
+}
+
+body .site-header .site-title {
+    left: max(
+        calc(var(--public-gutter) + var(--public-content-inset)),
+        calc((100% - var(--public-art-max)) / 2)
+    );
+}
+
+@media (max-width: 920px) {
+    body .site-header .site-title {
+        right: 0;
+        left: 0;
+        width: max-content;
+        margin: auto;
+    }
+
+    body .site-header .site-title__first,
+    body .site-header .site-title__last {
+        position: static;
+    }
+
+    body .site-header .site-title__first::after {
+        content: " ";
+        white-space: pre;
+    }
+}
+
+@media (max-width: 760px) {
+    html:root {
+        --public-content-inset: .65rem;
+        --public-gutter: .65rem;
+    }
+}

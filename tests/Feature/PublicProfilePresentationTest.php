@@ -28,6 +28,16 @@ function publishProfileVita(): void
     ]);
 }
 
+it('keeps the reviewed public contact form visible by default', function () {
+    publishProfileVita();
+
+    expect(PublicContentSetting::query()->findOrFail(1)->contact_state)->toBe('enabled');
+
+    $this->get('/cv')
+        ->assertSuccessful()
+        ->assertSee('<form class="contact-form"', false);
+});
+
 it('controls public profile details independently from the contact form', function () {
     publishProfileVita();
 

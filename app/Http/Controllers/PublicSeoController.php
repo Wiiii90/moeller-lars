@@ -6,7 +6,6 @@ use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\CanonicalUrl;
 use App\Models\Artwork;
 use App\Models\BlogPost;
-use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -46,11 +45,6 @@ final class PublicSeoController extends Controller
         }
         if (SiteSection::query()->where('type', SiteSection::TYPE_EXHIBITIONS)->where('state', 'published')->exists()) {
             $urls[] = $this->canonical->forPath('/exhibitions');
-        }
-
-        $publicSettings = PublicContentSetting::query()->findOrFail(1);
-        if ($publicSettings->getAttribute('contact_state') === 'enabled') {
-            $urls[] = $this->canonical->forPath('/contact');
         }
 
         if (SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->where('state', 'published')->exists()) {
