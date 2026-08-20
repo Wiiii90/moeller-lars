@@ -3,6 +3,7 @@
 namespace App\Domain\Migration;
 
 use App\Domain\Media\MediaIngestService;
+use App\Models\CvEntry;
 use App\Models\PublicContentSetting;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -13,24 +14,24 @@ use Throwable;
 
 final class LegacyPublicProfileImporter
 {
-    public function __construct(private readonly MediaIngestService $mediaIngestService) {}
+    public function __construct(
+        private readonly MediaIngestService $mediaIngestService,
+        private readonly LegacyProfileTargetResolver $targetResolver,
+    ) {}
 
     public function import(string $manifestPath, string $mediaRoot): void
     {
         [$snapshotBatch, $profileMedia, $profileValues, $sourcePath] = $this->preflight($manifestPath, $mediaRoot);
 
-        $cvEntry = DB::table('cv_entries')
-            ->where('legacy_source', LegacyPublicCvImporter::SOURCE)
-            ->where('legacy_id', $profileMedia['cv_legacy_id'])
-            ->first();
-        if (is_object($cvEntry) === false) {
+        $cvEntry = $this->targetResolver->resolve($profileMedia['legacy_source'], $profileMedia['cv_legacy_id']);
+        if (! $cvEntry instanceof CvEntry) {
             throw new RuntimeException('Verified legacy biography entry is missing; import CV content before the public profile portrait.');
         }
-        if (($cvEntry->image_media_asset_id ?? null) !== null) {
+        if ($cvEntry->getAttribute('image_media_asset_id') !== null) {
             throw new RuntimeException('Verified legacy biography entry already has media attached.');
         }
 
-        $settings = PublicContentSetting::query()->sole();
+        $settings = $profileValues === null ? null : PublicContentSetting::query()->sole();
         $storageKeys = [];
 
         try {
@@ -67,7 +68,7 @@ final class LegacyPublicProfileImporter
                 }
 
                 $updatedCv = DB::table('cv_entries')
-                    ->where('id', $cvEntry->id)
+                    ->where('id', $cvEntry->getKey())
                     ->whereNull('image_media_asset_id')
                     ->update([
                         'image_media_asset_id' => $asset->getKey(),
@@ -77,8 +78,10 @@ final class LegacyPublicProfileImporter
                     throw new RuntimeException('Verified legacy biography portrait could not be attached.');
                 }
 
-                $settings->fill($profileValues);
-                $settings->save();
+                if ($settings instanceof PublicContentSetting && $profileValues !== null) {
+                    $settings->fill($profileValues);
+                    $settings->save();
+                }
             });
         } catch (Throwable $exception) {
             $this->cleanupStorage($storageKeys, $exception);
@@ -88,8 +91,8 @@ final class LegacyPublicProfileImporter
     /**
      * @return array{
      *     string,
-     *     array{legacy_source:string,cv_legacy_id:int,media_path:string,media_byte_size:int,media_sha256:string,alt_text:string},
-     *     array{public_email:string,instagram_handle:string,legal_disclaimer:string},
+     *     array{legacy_source:string,cv_legacy_id:?int,media_path:string,media_byte_size:int,media_sha256:string,alt_text:string},
+     *     ?array{public_email:string,instagram_handle:string,legal_disclaimer:string},
      *     string
      * }
      */
@@ -121,16 +124,15 @@ final class LegacyPublicProfileImporter
 
         $snapshotBatch = $this->requiredString($manifest, 'batch');
         $profileMedia = $this->requiredObject($manifest, 'profile_media');
-        $profileValues = $this->requiredObject($manifest, 'public_profile');
 
         $legacySource = $this->requiredString($profileMedia, 'legacy_source');
         if ($legacySource !== LegacyPublicCvImporter::SOURCE) {
             throw new RuntimeException('Legacy portrait source does not match the verified public Vita source.');
         }
 
-        $cvLegacyId = $this->requiredInteger($profileMedia, 'cv_legacy_id');
-        if ($cvLegacyId < 1) {
-            throw new RuntimeException('Legacy portrait CV reference must be a positive legacy id.');
+        $cvLegacyId = $profileMedia['cv_legacy_id'] ?? null;
+        if ($cvLegacyId !== null && (is_int($cvLegacyId) === false || $cvLegacyId < 1)) {
+            throw new RuntimeException('Legacy portrait CV reference must be a positive legacy id when provided.');
         }
 
         $mediaPath = $this->requiredString($profileMedia, 'media_path');
@@ -147,15 +149,24 @@ final class LegacyPublicProfileImporter
         }
 
         $altText = $this->requiredString($profileMedia, 'alt_text');
-        $publicEmail = $this->requiredString($profileValues, 'public_email');
-        if (filter_var($publicEmail, FILTER_VALIDATE_EMAIL) === false) {
-            throw new RuntimeException('Legacy public profile email is invalid.');
+        $profileValues = null;
+        if (array_key_exists('public_profile', $manifest)) {
+            $publicProfile = $this->requiredObject($manifest, 'public_profile');
+            $publicEmail = $this->requiredString($publicProfile, 'public_email');
+            if (filter_var($publicEmail, FILTER_VALIDATE_EMAIL) === false) {
+                throw new RuntimeException('Legacy public profile email is invalid.');
+            }
+            $instagramHandle = $this->requiredString($publicProfile, 'instagram_handle');
+            if (preg_match('/^[A-Za-z0-9._]{1,30}$/', $instagramHandle) !== 1) {
+                throw new RuntimeException('Legacy public profile Instagram handle is invalid.');
+            }
+            $legalDisclaimer = $this->requiredString($publicProfile, 'legal_disclaimer');
+            $profileValues = [
+                'public_email' => $publicEmail,
+                'instagram_handle' => $instagramHandle,
+                'legal_disclaimer' => $legalDisclaimer,
+            ];
         }
-        $instagramHandle = $this->requiredString($profileValues, 'instagram_handle');
-        if (preg_match('/^[A-Za-z0-9._]{1,30}$/', $instagramHandle) !== 1) {
-            throw new RuntimeException('Legacy public profile Instagram handle is invalid.');
-        }
-        $legalDisclaimer = $this->requiredString($profileValues, 'legal_disclaimer');
 
         return [
             $snapshotBatch,
@@ -167,11 +178,7 @@ final class LegacyPublicProfileImporter
                 'media_sha256' => $expectedSha,
                 'alt_text' => $altText,
             ],
-            [
-                'public_email' => $publicEmail,
-                'instagram_handle' => $instagramHandle,
-                'legal_disclaimer' => $legalDisclaimer,
-            ],
+            $profileValues,
             $sourcePath,
         ];
     }
