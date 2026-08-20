@@ -79,8 +79,13 @@
 
         $eventRows = $matomo['events'] ?? [];
         $eventCategoryRows = $matomo['event_categories'] ?? [];
-        $hasInteractions = collect($interactionSignals)->contains(static fn ($value): bool => (float) $value > 0)
+        $measuredInteractionSignals = collect($interactionSignals)->filter(static fn ($value): bool => is_numeric($value));
+        $hasInteractions = $measuredInteractionSignals->contains(static fn ($value): bool => (float) $value > 0)
             || $eventRows !== [] || $eventCategoryRows !== [] || $artworkAttention !== [];
+        $allInteractionSignalsMeasured = $interactionSignals !== []
+            && $measuredInteractionSignals->count() === count($interactionSignals);
+        $allMeasuredInteractionSignalsZero = $allInteractionSignalsMeasured
+            && $measuredInteractionSignals->every(static fn ($value): bool => (float) $value === 0.0);
 
         $technologyGroups = [
             'Devices' => $matomo['devices'] ?? [],
@@ -416,7 +421,7 @@
 
                 <div class="analytics-interaction-strip">
                     @foreach ($interactionSignals as $label => $value)
-                        <div><span>{{ $label }}</span><strong>{{ number_format((int) $value) }}</strong></div>
+                        <div><span>{{ $label }}</span><strong>{{ is_numeric($value) ? number_format((int) $value) : '—' }}</strong></div>
                     @endforeach
                 </div>
 
@@ -435,7 +440,7 @@
                             @endif
                         @endforeach
                     </div>
-                @elseif (collect($interactionSignals)->every(static fn ($value): bool => (float) $value === 0.0))
+                @elseif ($allMeasuredInteractionSignalsZero)
                     <p class="analytics-empty analytics-empty--section">No artist interaction events in this period.</p>
                 @endif
             </section>

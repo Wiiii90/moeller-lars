@@ -90,7 +90,20 @@ final class Analytics extends Page
             $this->matomo['artwork_events'] ?? [],
             $this->matomo['artwork_event_series'] ?? [],
         );
-        $this->interactionSignals = $this->buildInteractionSignals($this->matomo['events'] ?? [], $this->artworkAttention);
+
+        $warnings = array_values(array_filter(
+            $this->matomo['warnings'] ?? [],
+            static fn (mixed $warning): bool => is_string($warning),
+        ));
+        $eventsAvailable = ! in_array('Events report is unavailable.', $warnings, true);
+        $artworkEventsAvailable = ! in_array('Per-artwork interaction report is unavailable.', $warnings, true);
+
+        $this->interactionSignals = $this->buildInteractionSignals(
+            $this->matomo['events'] ?? [],
+            $this->artworkAttention,
+            $eventsAvailable,
+            $artworkEventsAvailable,
+        );
         $this->audienceHighlights = $this->buildAudienceHighlights($this->matomo);
 
         if ($this->selectedArtworkAnalyticsKey !== null) {
@@ -234,28 +247,61 @@ final class Analytics extends Page
      * @param  array<int, array<string, mixed>>  $artworkAttention
      * @return array<string, int|float|string>
      */
-    private function buildInteractionSignals(array $events, array $artworkAttention): array
-    {
+    private function buildInteractionSignals(
+        array $events,
+        array $artworkAttention,
+        bool $eventsAvailable = true,
+        bool $artworkEventsAvailable = true,
+    ): array {
+        /** @var array<string, int|null> $counts */
         $counts = [];
         foreach ($events as $event) {
-            $label = (string) ($event['label'] ?? '');
-            $counts[$label] = (int) round((float) ($event['nb_events'] ?? 0));
+            $label = is_string($event['label'] ?? null) ? trim($event['label']) : '';
+            if ($label === '') {
+                continue;
+            }
+
+            $rawCount = $event['nb_events'] ?? null;
+            $counts[$label] = is_numeric($rawCount) ? (int) round((float) $rawCount) : null;
         }
+
+        $eventSignal = static function (string $label) use ($counts, $eventsAvailable): int|string {
+            if (! $eventsAvailable) {
+                return '—';
+            }
+            if (array_key_exists($label, $counts) && $counts[$label] === null) {
+                return '—';
+            }
+
+            return $counts[$label] ?? 0;
+        };
+        $combinedEventSignal = static function (array $labels) use ($eventSignal): int|string {
+            $total = 0;
+            foreach ($labels as $label) {
+                $value = $eventSignal($label);
+                if (! is_int($value)) {
+                    return '—';
+                }
+                $total += $value;
+            }
+
+            return $total;
+        };
 
         $detailViews = array_sum(array_map(static fn (array $row): int => (int) ($row['detail_views'] ?? 0), $artworkAttention));
         $attentionEvents = array_sum(array_map(static fn (array $row): int => (int) ($row['attention_events'] ?? 0), $artworkAttention));
 
         return [
-            'Artwork detail views' => $detailViews,
-            'Artwork opens' => $counts['artwork_open'] ?? 0,
-            'Artwork zooms' => $counts['artwork_zoom_used'] ?? 0,
-            'Active artwork views' => $attentionEvents,
-            'Next / previous' => ($counts['artwork_next'] ?? 0) + ($counts['artwork_previous'] ?? 0),
-            'Exhibition views' => $counts['exhibition_view'] ?? 0,
-            'Exhibition outbound' => ($counts['exhibition_external_click'] ?? 0) + ($counts['exhibition_directions_click'] ?? 0),
-            'Blog reads' => $counts['blog_view'] ?? 0,
-            'Contact messages' => $counts['contact_submit_success'] ?? 0,
-            'Email / Instagram clicks' => ($counts['email_click'] ?? 0) + ($counts['instagram_click'] ?? 0),
+            'Artwork detail views' => $artworkEventsAvailable ? $detailViews : '—',
+            'Artwork opens' => $eventSignal('artwork_open'),
+            'Artwork zooms' => $eventSignal('artwork_zoom_used'),
+            'Active artwork views' => $artworkEventsAvailable ? $attentionEvents : '—',
+            'Next / previous' => $combinedEventSignal(['artwork_next', 'artwork_previous']),
+            'Exhibition views' => $eventSignal('exhibition_view'),
+            'Exhibition outbound' => $combinedEventSignal(['exhibition_external_click', 'exhibition_directions_click']),
+            'Blog reads' => $eventSignal('blog_view'),
+            'Contact messages' => $eventSignal('contact_submit_success'),
+            'Email / Instagram clicks' => $combinedEventSignal(['email_click', 'instagram_click']),
         ];
     }
 
