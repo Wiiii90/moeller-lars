@@ -2,21 +2,18 @@ const SUBMENU_TRANSITION_MS = 180;
 
 function submenuControls(item) {
     const parentLink = item.querySelector('[data-navigation-parent-link]');
-    const toggle = item.querySelector('[data-navigation-submenu-toggle]');
     const submenu = item.querySelector('[data-navigation-submenu]');
 
     if (!(parentLink instanceof HTMLAnchorElement)
-        || !(toggle instanceof HTMLButtonElement)
         || !(submenu instanceof HTMLElement)) {
         return null;
     }
 
-    return { parentLink, toggle, submenu };
+    return { parentLink, submenu };
 }
 
 function setExpanded(controls, expanded) {
     controls.parentLink.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    controls.toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
 }
 
 function initializeSubmenus(container) {
@@ -109,7 +106,7 @@ function initializeSubmenus(container) {
 
     entries.forEach((entry) => {
         const { item, controls } = entry;
-        const { parentLink, toggle, submenu } = controls;
+        const { parentLink, submenu } = controls;
 
         item.addEventListener('pointerenter', (event) => {
             if (event.pointerType === 'mouse') openEntry(entry);
@@ -143,25 +140,6 @@ function initializeSubmenus(container) {
         });
 
         parentLink.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                openEntry(entry);
-                const firstLink = submenu.querySelector('a');
-                if (firstLink instanceof HTMLAnchorElement) firstLink.focus();
-            } else if (event.key === 'Escape') {
-                event.preventDefault();
-                closeActive(true);
-            }
-        });
-
-        toggle.addEventListener('click', () => {
-            if (activeEntry === entry && toggle.getAttribute('aria-expanded') === 'true') {
-                closeActive();
-            } else {
-                openEntry(entry);
-            }
-        });
-        toggle.addEventListener('keydown', (event) => {
             if (event.key === 'ArrowDown') {
                 event.preventDefault();
                 openEntry(entry);
@@ -218,7 +196,7 @@ function initializeFullCellTargets(scroller) {
                     return;
                 }
 
-                if (event.target instanceof Element && event.target.closest('a, button')) return;
+                if (event.target instanceof Element && event.target.closest('a')) return;
                 link.click();
             });
         });
@@ -289,8 +267,7 @@ export function initializePublicNavigation() {
         scroller.addEventListener('scroll', update, { passive: true });
         scroller.addEventListener('pointerdown', (event) => {
             if (event.pointerType !== 'mouse'
-                || !container.classList.contains('is-overflowing')
-                || (event.target instanceof Element && event.target.closest('[data-navigation-submenu-toggle]'))) {
+                || !container.classList.contains('is-overflowing')) {
                 return;
             }
 
