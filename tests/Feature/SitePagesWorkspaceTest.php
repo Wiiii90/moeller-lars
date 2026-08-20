@@ -35,7 +35,6 @@ it('keeps Home pinned outside normal navigation reordering', function (): void {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin, 'web');
 
-    /** @var SiteSection $home */
     $home = SiteSection::query()->where('type', SiteSection::TYPE_HOME)->firstOrFail();
     $order = app(SiteSectionOrderService::class);
 
@@ -44,13 +43,11 @@ it('keeps Home pinned outside normal navigation reordering', function (): void {
         ->and($order->move($home, 'down'))->toBeFalse();
 });
 
-it('reorders top-level sections and keeps transitional legacy positions aligned', function (): void {
+it('reorders top-level sections without mirroring into legacy settings', function (): void {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin, 'web');
 
-    /** @var SiteSection $blog */
     $blog = SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->firstOrFail();
-    /** @var SiteSection $previous */
     $previous = SiteSection::query()
         ->whereNull('parent_id')
         ->where('type', '<>', SiteSection::TYPE_HOME)
@@ -60,81 +57,46 @@ it('reorders top-level sections and keeps transitional legacy positions aligned'
 
     $blogPosition = (int) $blog->position;
     $previousPosition = (int) $previous->position;
+    $legacyBlogPosition = (int) BlogSetting::query()->findOrFail(1)->getRawOriginal('navigation_position');
 
     expect(app(SiteSectionOrderService::class)->move($blog, 'up'))->toBeTrue()
         ->and((int) $blog->fresh()->position)->toBe($previousPosition)
         ->and((int) $previous->fresh()->position)->toBe($blogPosition)
-        ->and((int) BlogSetting::query()->findOrFail(1)->navigation_position)->toBe($previousPosition)
+        ->and((int) BlogSetting::query()->findOrFail(1)->getRawOriginal('navigation_position'))->toBe($legacyBlogPosition)
         ->and(AuditEvent::query()->where('action', 'site_section.reordered')->where('entity_id', $blog->id)->exists())->toBeTrue();
 });
 
-it('reorders gallery children only inside their submenu and mirrors category positions', function (): void {
+it('reorders Gallery children only inside their canonical submenu', function (): void {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin, 'web');
 
-    $parent = ArtworkCategory::create([
-        'name' => 'Parent Gallery',
-        'slug' => 'parent-gallery',
-        'state' => 'published',
-        'position' => 200,
-        'show_in_navigation' => false,
-        'show_on_home' => false,
-    ]);
-    $first = ArtworkCategory::create([
-        'name' => 'First Child',
-        'slug' => 'first-child',
-        'state' => 'published',
-        'position' => 10,
-        'parent_id' => $parent->id,
-        'show_in_navigation' => false,
-        'show_on_home' => false,
-    ]);
-    $second = ArtworkCategory::create([
-        'name' => 'Second Child',
-        'slug' => 'second-child',
-        'state' => 'published',
-        'position' => 20,
-        'parent_id' => $parent->id,
-        'show_in_navigation' => false,
-        'show_on_home' => false,
-    ]);
-
-    /** @var SiteSection $secondSection */
-    $secondSection = SiteSection::query()->where('artwork_category_id', $second->id)->firstOrFail();
+    $parent = ArtworkCategory::create(['name' => 'Parent Gallery', 'slug' => 'parent-gallery', 'show_on_home' => false]);
+    $parentSection = testGallerySection($parent, ['state' => 'hidden', 'position' => 200]);
+    $first = ArtworkCategory::create(['name' => 'First Child', 'slug' => 'first-child', 'show_on_home' => false]);
+    $firstSection = testGallerySection($first, ['state' => 'hidden', 'parent_id' => $parentSection->id, 'position' => 10]);
+    $second = ArtworkCategory::create(['name' => 'Second Child', 'slug' => 'second-child', 'show_on_home' => false]);
+    $secondSection = testGallerySection($second, ['state' => 'hidden', 'parent_id' => $parentSection->id, 'position' => 20]);
 
     expect(app(SiteSectionOrderService::class)->move($secondSection, 'up'))->toBeTrue()
         ->and((int) $secondSection->fresh()->position)->toBe(10)
-        ->and((int) SiteSection::query()->where('artwork_category_id', $first->id)->firstOrFail()->position)->toBe(20)
-        ->and((int) $second->fresh()->position)->toBe(10)
-        ->and((int) $first->fresh()->position)->toBe(20)
-        ->and((int) $parent->fresh()->position)->toBe(200);
+        ->and((int) $firstSection->fresh()->position)->toBe(20)
+        ->and((int) $second->fresh()->getRawOriginal('position'))->toBe(0)
+        ->and((int) $first->fresh()->getRawOriginal('position'))->toBe(0)
+        ->and((int) $parent->fresh()->getRawOriginal('position'))->toBe(0);
 });
 
-it('edits Gallery publication and hierarchy from Pages while keeping legacy category fields aligned', function (): void {
+it('edits Gallery publication and hierarchy from Pages without writing legacy category placement', function (): void {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin, 'web');
 
-    $parent = ArtworkCategory::create([
-        'name' => 'Visible Parent',
-        'slug' => 'visible-parent',
+    $parent = ArtworkCategory::create(['name' => 'Visible Parent', 'slug' => 'visible-parent', 'show_on_home' => false]);
+    $parentSection = testGallerySection($parent, [
         'state' => 'published',
-        'position' => 200,
         'show_in_navigation' => true,
-        'show_on_home' => false,
+        'position' => 200,
     ]);
-    $gallery = ArtworkCategory::create([
-        'name' => 'Movable Gallery',
-        'slug' => 'movable-gallery',
-        'state' => 'hidden',
-        'position' => 210,
-        'show_in_navigation' => false,
-        'show_on_home' => false,
-    ]);
-
-    /** @var SiteSection $parentSection */
-    $parentSection = SiteSection::query()->where('artwork_category_id', $parent->id)->firstOrFail();
-    /** @var SiteSection $section */
-    $section = SiteSection::query()->where('artwork_category_id', $gallery->id)->firstOrFail();
+    $gallery = ArtworkCategory::create(['name' => 'Movable Gallery', 'slug' => 'movable-gallery', 'show_on_home' => false]);
+    $section = testGallerySection($gallery, ['state' => 'hidden', 'position' => 210]);
 
     Livewire::test(SitePages::class)
         ->call('moveGallery', $section->id, $parentSection->id)
@@ -148,10 +110,10 @@ it('edits Gallery publication and hierarchy from Pages while keeping legacy cate
     expect((int) $freshSection->parent_id)->toBe($parentSection->id)
         ->and($freshSection->state)->toBe('published')
         ->and((bool) $freshSection->show_in_navigation)->toBeTrue()
-        ->and((int) $freshCategory->parent_id)->toBe($parent->id)
-        ->and($freshCategory->state)->toBe('published')
-        ->and((bool) $freshCategory->show_in_navigation)->toBeTrue()
-        ->and((int) $freshCategory->position)->toBe((int) $freshSection->position)
+        ->and($freshCategory->getRawOriginal('parent_id'))->toBeNull()
+        ->and($freshCategory->getRawOriginal('state'))->toBe('draft')
+        ->and((bool) $freshCategory->getRawOriginal('show_in_navigation'))->toBeTrue()
+        ->and((int) $freshCategory->getRawOriginal('position'))->toBe(0)
         ->and(AuditEvent::query()->where('action', 'site_section.updated')->where('entity_id', $section->id)->count())->toBe(3);
 });
 
@@ -159,31 +121,24 @@ it('does not hide a navigation parent while it still has a visible submenu Galle
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin, 'web');
 
-    $parent = ArtworkCategory::create([
-        'name' => 'Required Parent',
-        'slug' => 'required-parent',
+    $parent = ArtworkCategory::create(['name' => 'Required Parent', 'slug' => 'required-parent', 'show_on_home' => false]);
+    $parentSection = testGallerySection($parent, [
         'state' => 'published',
-        'position' => 220,
         'show_in_navigation' => true,
-        'show_on_home' => false,
+        'position' => 200,
     ]);
-    ArtworkCategory::create([
-        'name' => 'Visible Child',
-        'slug' => 'visible-child',
+    $child = ArtworkCategory::create(['name' => 'Visible Child', 'slug' => 'visible-child', 'show_on_home' => false]);
+    testGallerySection($child, [
         'state' => 'published',
+        'show_in_navigation' => true,
+        'parent_id' => $parentSection->id,
         'position' => 10,
-        'parent_id' => $parent->id,
-        'show_in_navigation' => true,
-        'show_on_home' => false,
     ]);
-
-    /** @var SiteSection $parentSection */
-    $parentSection = SiteSection::query()->where('artwork_category_id', $parent->id)->firstOrFail();
 
     Livewire::test(SitePages::class)
         ->call('toggleGalleryState', $parentSection->id)
         ->assertHasNoErrors();
 
     expect($parentSection->fresh()->state)->toBe('published')
-        ->and($parent->fresh()->state)->toBe('published');
+        ->and($parent->fresh()->getRawOriginal('state'))->toBe('draft');
 });
