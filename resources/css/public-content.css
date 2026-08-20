@@ -405,7 +405,7 @@
     }
 }
 
-/* Acceptance geometry corrections: one shared visible width for navigation, gallery and CV. */
+/* Shared acceptance geometry: one shell, one inner content measure, one title axis. */
 html:root {
     --public-shell-max: 800px;
     --public-art-max: 760px;
@@ -414,15 +414,12 @@ html:root {
 }
 
 body .site-header .site-navigation {
-    width: min(
-        calc(100% - (2 * var(--public-gutter)) - (2 * var(--public-content-inset))),
-        var(--public-art-max)
-    );
+    width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
 }
 
 body .site-header .site-navigation > nav,
 body .site-header .site-navigation__submenu {
-    width: 100%;
+    width: min(calc(100% - (2 * var(--public-content-inset))), var(--public-art-max));
 }
 
 body .site-header .site-navigation__item {
@@ -436,18 +433,16 @@ body .site-header .site-navigation__item:last-child {
 body #content.site-content {
     width: min(calc(100% - (2 * var(--public-gutter))), var(--public-shell-max));
     max-width: var(--public-shell-max);
+    min-height: 0;
     padding-right: var(--public-content-inset);
     padding-left: var(--public-content-inset);
 }
 
 body .site-header .site-title {
-    left: max(
-        calc(var(--public-gutter) + var(--public-content-inset)),
-        calc((100% - var(--public-art-max)) / 2)
-    );
+    left: max(var(--public-gutter), calc((100% - var(--public-shell-max)) / 2));
 }
 
-@media (max-width: 920px) {
+@media (max-width: 1040px) {
     body .site-header .site-title {
         right: 0;
         left: 0;
