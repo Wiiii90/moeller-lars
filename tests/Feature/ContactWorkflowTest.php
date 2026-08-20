@@ -12,6 +12,7 @@ function publicContactSettings(): PublicContentSetting
 }
 
 it('keeps hidden contact unavailable and renders the explicit construction state', function () {
+    publicContactSettings()->update(['contact_state' => 'hidden']);
     $this->get('/contact')->assertNotFound();
 
     publicContactSettings()->update([
