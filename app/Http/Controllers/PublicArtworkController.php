@@ -30,9 +30,9 @@ class PublicArtworkController extends Controller
     {
         /** @var SiteSection|null $section */
         $section = SiteSection::query()
-            ->where('type', SiteSection::TYPE_GALLERY)
+            ->ofType(SiteSection::TYPE_GALLERY)
+            ->published()
             ->where('slug', $category)
-            ->where('state', 'published')
             ->with('artworkCategory')
             ->first();
 
@@ -68,9 +68,9 @@ class PublicArtworkController extends Controller
         $categoryRecord = $artwork->getRelationValue('category');
         abort_unless(
             SiteSection::query()
-                ->where('type', SiteSection::TYPE_GALLERY)
+                ->ofType(SiteSection::TYPE_GALLERY)
+                ->published()
                 ->where('artwork_category_id', $categoryRecord->getKey())
-                ->where('state', 'published')
                 ->exists(),
             404,
         );
