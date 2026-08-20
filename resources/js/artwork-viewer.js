@@ -2,7 +2,7 @@ import { trackMatomoEvent } from './matomo.js';
 
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 8;
-export const PAN_OVERSCROLL = 56;
+export const PAN_OVERSCROLL = 0;
 export const MIN_ATTENTION_MS = 3000;
 
 export function clamp(value, min, max) {

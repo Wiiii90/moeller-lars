@@ -3,11 +3,14 @@
 namespace App\Filament\Resources\PublicContentSettings;
 
 use App\Filament\Resources\PublicContentSettings\Pages\EditPublicContentSetting;
+use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -23,11 +26,11 @@ class PublicContentSettingResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Settings';
 
-    protected static ?string $navigationLabel = 'Website settings';
+    protected static ?string $navigationLabel = 'General';
 
-    protected static ?string $modelLabel = 'website settings';
+    protected static ?string $modelLabel = 'general site settings';
 
-    protected static ?string $pluralModelLabel = 'website settings';
+    protected static ?string $pluralModelLabel = 'general site settings';
 
     protected static ?int $navigationSort = 30;
 
@@ -39,15 +42,17 @@ class PublicContentSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Public contact details')
-                ->description('These details are shown in the Contact area of the public Vita / CV page. Vita and Exhibitions publication/navigation are managed from Pages.')
+            Section::make('Public identity and contact')
+                ->description('Central public profile values. Vita / CV uses these values directly; visibility can be controlled independently from the contact form. Vita and Exhibitions publication/navigation are managed from Pages.')
                 ->schema([
                     TextInput::make('public_email')->label('Public email')->email()->maxLength(254)->nullable(),
+                    Toggle::make('show_public_email')->label('Show email on Vita / CV')->default(true),
                     TextInput::make('instagram_handle')->label('Instagram handle')->maxLength(30)->regex('/^[A-Za-z0-9._]{1,30}$/')->nullable(),
+                    Toggle::make('show_instagram')->label('Show Instagram on Vita / CV')->default(true),
                 ])
                 ->columns(2),
             Section::make('Contact form')
-                ->description('Controls the message form embedded in Vita / CV. The delivery address is private and is never rendered on the public site. Mail transport credentials remain server configuration.')
+                ->description('Controls the message form inside Vita / CV. The delivery address stays private and mail transport credentials remain server configuration.')
                 ->schema([
                     Select::make('contact_state')->label('Form state')->options([
                         'enabled' => 'Enabled',
@@ -68,8 +73,31 @@ class PublicContentSettingResource extends Resource
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
+            Section::make('Site identity')
+                ->description('Shared browser identity for the public site.')
+                ->schema([
+                    MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon')
+                        ->nullable()
+                        ->helperText('Use a small square source image. The public generated variant is served as the browser icon.')
+                        ->columnSpanFull(),
+                ]),
+            Section::make('Additional Vita / CV text')
+                ->description('Optional editorial text blocks shown between Contact and the legal disclaimer. Reorder them here instead of adding one-off public templates.')
+                ->schema([
+                    Repeater::make('profile_text_blocks')
+                        ->label('Text blocks')
+                        ->schema([
+                            TextInput::make('title')->required()->maxLength(120),
+                            Textarea::make('body')->required()->rows(4)->maxLength(5000),
+                        ])
+                        ->defaultItems(0)
+                        ->reorderable()
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): ?string => $state['title'] ?? null)
+                        ->columnSpanFull(),
+                ]),
             Section::make('Legal')
-                ->description('Public legal/disclaimer text displayed at the bottom of the Vita / CV surface where configured.')
+                ->description('Public disclaimer text displayed at the bottom of Vita / CV where configured.')
                 ->schema([
                     Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
                 ])

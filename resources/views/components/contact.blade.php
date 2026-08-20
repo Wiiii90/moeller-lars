@@ -1,11 +1,16 @@
 @props(['settings', 'showStatus' => true])
 
+@php
+    $showEmail = (bool) $settings->show_public_email && $settings->public_email !== null;
+    $showInstagram = (bool) $settings->show_instagram && $settings->instagram_handle !== null;
+@endphp
+
 <section class="contact-section" aria-labelledby="contact-heading">
     <h2 id="contact-heading" class="category-heading">Contact</h2>
 
-    @if ($settings->public_email !== null || $settings->instagram_handle !== null)
+    @if ($showEmail || $showInstagram)
         <div class="contact-details" aria-label="Contact details">
-            @if ($settings->public_email !== null)
+            @if ($showEmail)
                 <div class="contact-details__row">
                     <span class="contact-details__label">E-Mail</span>
                     <a
@@ -16,7 +21,7 @@
                     >{{ $settings->public_email }}</a>
                 </div>
             @endif
-            @if ($settings->instagram_handle !== null)
+            @if ($showInstagram)
                 <div class="contact-details__row">
                     <span class="contact-details__label">Instagram</span>
                     <a

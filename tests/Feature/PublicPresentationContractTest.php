@@ -1,15 +1,15 @@
 <?php
 
-it('keeps hierarchical public navigation operable for coarse pointers and keyboard without decorative shadow', function () {
-    $css = file_get_contents(public_path('css/public-navigation-hierarchy.css'));
+it('keeps hierarchical public navigation operable in one expanding shell for mouse touch and keyboard', function () {
+    $css = file_get_contents(public_path('css/public-presentation.css'));
     $source = file_get_contents(resource_path('js/public-navigation.js'));
 
     expect($css)
-        ->toContain('(hover: none)', '(pointer: coarse)', '.site-navigation__submenu-toggle', 'display: block;')
-        ->not->toContain('box-shadow: 0 7px 16px')
+        ->toContain('.site-navigation__submenu-toggle', '.site-navigation__submenu-region', 'grid-template-rows: 0fr;', 'grid-template-rows: 1fr;')
+        ->not->toContain('box-shadow: 0 7px 16px', 'position: fixed', '--submenu-left')
         ->and($source)
         ->toContain("toggle.addEventListener('click'", "event.key === 'ArrowDown'", "['ArrowDown', 'ArrowUp']", "event.key === 'Escape'")
-        ->toContain("event.pointerType === 'mouse'");
+        ->toContain("event.pointerType === 'mouse'", 'regionInner.append(controls.submenu)', 'shiftByOneItem');
 });
 
 it('keeps gallery sequence markup free from synthetic leading separators', function () {

@@ -9,6 +9,7 @@ use App\Models\CvEntry;
 use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Collection;
 use LogicException;
@@ -23,6 +24,10 @@ class PublicMedia
     {
         if ($asset->getAttribute('state') !== 'available') {
             return false;
+        }
+
+        if (PublicContentSetting::query()->where('favicon_media_asset_id', $asset->getKey())->exists()) {
+            return true;
         }
 
         if (ArtworkMedia::query()
