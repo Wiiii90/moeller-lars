@@ -347,8 +347,9 @@ final class Analytics extends Page
      */
     private function buildOperationalSummary(array $rows): array
     {
-        $errors = 0;
         $notFound = 0;
+        $serverErrors = 0;
+        $requestExceptions = 0;
         $bots = 0;
         $adminRequests = 0;
         $duration = 0.0;
@@ -361,11 +362,14 @@ final class Analytics extends Page
             $value = (float) $row['value'];
             $samples = (int) ($row['sample_count'] ?? 0);
 
-            if (str_starts_with($name, 'error:')) {
-                $errors += (int) round($value);
-            }
             if ($name === 'error:http_404') {
                 $notFound += (int) round($value);
+            }
+            if ($name === 'error:http_5xx') {
+                $serverErrors += (int) round($value);
+            }
+            if ($name === 'error:request_exception') {
+                $requestExceptions += (int) round($value);
             }
             if ($name === 'bot:request') {
                 $bots += (int) round($value);
@@ -384,7 +388,8 @@ final class Analytics extends Page
         }
 
         return [
-            'Errors' => $errors,
+            '5xx responses' => $serverErrors,
+            'Request exceptions' => $requestExceptions,
             '404 responses' => $notFound,
             'Bot requests' => $bots,
             'Average response' => $durationSamples > 0 ? round($duration / $durationSamples, 1).' ms' : 'No data',
