@@ -391,6 +391,10 @@ final class LegacyMigrationValidator
     /** @param array<string, mixed> $manifest @param list<string> $errors */
     private function validatePublicProfile(array $manifest, array &$errors): void
     {
+        if (! array_key_exists('public_profile', $manifest)) {
+            return;
+        }
+
         $expected = $this->requiredObject($manifest, 'public_profile');
         $settings = PublicContentSetting::query()->sole();
 
