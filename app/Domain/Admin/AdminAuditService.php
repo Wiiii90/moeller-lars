@@ -55,10 +55,17 @@ class AdminAuditService
 
         $metadata ??= [];
         foreach ($metadata as $key => $value) {
-            $validReference = in_array($key, ['artwork_id', 'media_asset_id', 'artwork_media_id'], true)
+            $validReference = in_array($key, [
+                'artwork_id',
+                'media_asset_id',
+                'artwork_media_id',
+                'neighbor_artwork_media_id',
+                'previous_artwork_media_id',
+                'next_artwork_media_id',
+            ], true)
                 && is_int($value)
                 && $value > 0;
-            $validPosition = $key === 'position'
+            $validPosition = in_array($key, ['position', 'from_position', 'to_position'], true)
                 && is_int($value)
                 && $value >= 0;
             $validDirection = $key === 'direction'
