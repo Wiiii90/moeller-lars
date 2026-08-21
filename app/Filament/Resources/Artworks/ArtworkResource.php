@@ -25,7 +25,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
@@ -59,7 +59,9 @@ class ArtworkResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Artwork')
+            Fieldset::make('Artwork')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     TextInput::make('title')
                         ->required()
@@ -96,8 +98,9 @@ class ArtworkResource extends Resource
                     Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
                 ])
                 ->columns(2),
-            Section::make('Primary image')
-                ->description('Attach the primary artwork image while creating the draft. You can replace it and edit its ALT text from the artwork edit page later.')
+            Fieldset::make('Primary image')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     FileUpload::make('primary_media')
                         ->label('Primary image')
@@ -108,7 +111,9 @@ class ArtworkResource extends Resource
                         ->helperText('Optional while drafting, but required before publication.'),
                 ])
                 ->visible(fn (string $operation): bool => $operation === 'create'),
-            Section::make('Date and homepage')
+            Fieldset::make('Date and homepage')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     TextInput::make('work_year')
                         ->label('Year')
