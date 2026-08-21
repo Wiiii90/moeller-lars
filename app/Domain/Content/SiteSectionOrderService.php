@@ -6,24 +6,25 @@ use App\Domain\Admin\AdminAuditService;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
 
 final class SiteSectionOrderService
 {
-    public function __construct(private readonly AdminAuditService $audit) {}
+    private const REQUEST_CACHE_ATTRIBUTE = 'site-section-order:sibling-ids';
+
+    public function __construct(
+        private readonly AdminAuditService $audit,
+        private readonly Request $request,
+    ) {}
 
     public function canMove(SiteSection $section, string $direction): bool
     {
         $this->validateDirection($direction);
 
-        $ids = $this->siblings($section)
-            ->orderBy('position')
-            ->orderBy('id')
-            ->pluck('id')
-            ->map(static fn ($id): int => (int) $id)
-            ->all();
+        $ids = $this->orderedSiblingIds($section);
         $index = array_search((int) $section->getKey(), $ids, true);
 
         if ($index === false) {
@@ -38,7 +39,7 @@ final class SiteSectionOrderService
         $this->validateDirection($direction);
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use ($section, $direction, $actor): bool {
+        $moved = DB::transaction(function () use ($section, $direction, $actor): bool {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             /** @var Collection<int, SiteSection> $siblings */
@@ -109,6 +110,62 @@ final class SiteSectionOrderService
 
             return true;
         });
+
+        if ($moved) {
+            $this->forgetOrderedSiblingIds($section);
+        }
+
+        return $moved;
+    }
+
+    /** @return list<int> */
+    private function orderedSiblingIds(SiteSection $section): array
+    {
+        $cache = $this->request->attributes->get(self::REQUEST_CACHE_ATTRIBUTE, []);
+        if (! is_array($cache)) {
+            $cache = [];
+        }
+
+        $key = $this->siblingCacheKey($section);
+        $cached = $cache[$key] ?? null;
+        if (is_array($cached)) {
+            return array_values(array_map(static fn (mixed $id): int => (int) $id, $cached));
+        }
+
+        $ids = $this->siblings($section)
+            ->orderBy('position')
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        $cache[$key] = $ids;
+        $this->request->attributes->set(self::REQUEST_CACHE_ATTRIBUTE, $cache);
+
+        return $ids;
+    }
+
+    private function forgetOrderedSiblingIds(SiteSection $section): void
+    {
+        $cache = $this->request->attributes->get(self::REQUEST_CACHE_ATTRIBUTE, []);
+        if (! is_array($cache)) {
+            return;
+        }
+
+        unset($cache[$this->siblingCacheKey($section)]);
+        $this->request->attributes->set(self::REQUEST_CACHE_ATTRIBUTE, $cache);
+    }
+
+    private function siblingCacheKey(SiteSection $section): string
+    {
+        $parentId = $section->getAttribute('parent_id');
+        if ($parentId !== null) {
+            return 'parent:'.(int) $parentId;
+        }
+
+        return (string) $section->getAttribute('type') === SiteSection::TYPE_HOME
+            ? 'root:home'
+            : 'root:navigation';
     }
 
     /** @return Builder<SiteSection> */
