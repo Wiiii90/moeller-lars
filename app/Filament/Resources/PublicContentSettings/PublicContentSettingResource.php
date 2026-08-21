@@ -24,9 +24,9 @@ class PublicContentSettingResource extends Resource
 {
     protected static ?string $model = PublicContentSetting::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGlobeAlt;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Settings';
+    protected static string|UnitEnum|null $navigationGroup = null;
 
     protected static ?string $navigationLabel = 'General';
 
@@ -34,7 +34,7 @@ class PublicContentSettingResource extends Resource
 
     protected static ?string $pluralModelLabel = 'general site settings';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 1;
 
     public static function getNavigationUrl(): string
     {
@@ -54,7 +54,7 @@ class PublicContentSettingResource extends Resource
                 ->schema([
                     MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
                         ->nullable()
-                        ->helperText('Choose an image from Media. The generated thumbnail variant is used as the browser icon.')
+                        ->helperText('Choose an image from Files. The generated thumbnail variant is used as the browser icon.')
                         ->columnSpanFull(),
                 ]),
             Section::make('Public contact')
