@@ -74,6 +74,9 @@ final class CustomPageSettingResource extends Resource
                             Repeater::make('items')
                                 ->label('List entries')
                                 ->schema([
+                                    Toggle::make('visible')
+                                        ->label('Visible on public page')
+                                        ->default(true),
                                     TextInput::make('date')->label('Date / year')->maxLength(120),
                                     TextInput::make('title')->required()->maxLength(240),
                                     TextInput::make('meta')->label('Organisation / context')->maxLength(240),
