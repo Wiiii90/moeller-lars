@@ -3,9 +3,15 @@
 use App\Domain\Media\MediaCapacityService;
 use App\Filament\Widgets\ArtistDashboard;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+
+beforeEach(function (): void {
+    Filament::setCurrentPanel('admin');
+    Filament::bootCurrentPanel();
+});
 
 it('renders the final at-a-glance dashboard without rebuilding the Pages or Gallery overview', function (): void {
     config(['analytics.matomo.reporting_enabled' => false]);
