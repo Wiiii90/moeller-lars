@@ -113,7 +113,7 @@
             @endif
         </div>
     @else
-        <div @class(['custom-page', 'custom-page--'.$pageSlug, 'contact-page' => $isContactPage]) aria-label="{{ $section->title }}">
+        <div @class(['contact-page' => $isContactPage, 'custom-page', 'custom-page--'.$pageSlug]) aria-label="{{ $section->title }}">
             @unless ($isContactPage)
                 <h2 class="category-heading">{{ $section->title }}</h2>
             @endunless
