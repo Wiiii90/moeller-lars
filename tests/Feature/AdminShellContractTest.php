@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\User;
@@ -30,10 +31,15 @@ it('uses the artist-facing shell navigation and public brand target', function (
         ->assertSee('Website')
         ->assertSee('Content')
         ->assertSee('Insights')
+        ->assertSee('Settings')
+        ->assertSee('General')
+        ->assertSee('Contact')
         ->assertDontSee('Library');
 });
 
-it('renders direct sign out and compact quick actions with the retained dashboard heading', function (): void {
+it('renders direct sign out and compact quick actions under the single composed dashboard heading', function (): void {
+    expect((new Dashboard)->getHeading())->toBeNull();
+
     $this->get('/admin')
         ->assertSuccessful()
         ->assertSee('<form class="artist-topbar-sign-out" method="POST"', false)
@@ -48,4 +54,13 @@ it('renders direct sign out and compact quick actions with the retained dashboar
             'Manage pages',
             'Open public site',
         ]);
+});
+
+it('renders the canonical Pages workspace and its interactive structure controls', function (): void {
+    $this->get('/admin/pages')
+        ->assertSuccessful()
+        ->assertSee('Public pages')
+        ->assertSee('Add page/section')
+        ->assertSee('Preview site')
+        ->assertSee('In menu');
 });
