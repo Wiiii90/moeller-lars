@@ -7,6 +7,7 @@ use App\Filament\Pages\SitePages;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Resources\BlogSettings\BlogSettingResource;
 use App\Models\BlogPost;
+use App\Models\SiteSection;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -21,20 +22,25 @@ final class ListBlogPosts extends Page
 
     protected string $view = 'filament.resources.blog-posts.pages.list-blog-posts';
 
+    public int $sectionId;
+
     /** @var list<array<string, mixed>> */
     public array $posts = [];
 
     public function mount(): void
     {
+        $this->sectionId = $this->resolveSectionId();
         $this->loadPosts();
     }
 
     public function movePost(int $postId, string $direction): void
     {
         /** @var BlogPost $post */
-        $post = BlogPost::query()->findOrFail($postId);
+        $post = BlogPost::query()
+            ->where('site_section_id', $this->sectionId)
+            ->findOrFail($postId);
         if (app(BlogEditorialService::class)->move($post, $direction)) {
-            Notification::make()->title('Blog order updated')->success()->send();
+            Notification::make()->title('Journal order updated')->success()->send();
         }
 
         $this->loadPosts();
@@ -46,11 +52,11 @@ final class ListBlogPosts extends Page
             Action::make('addPost')
                 ->label('Add blog post')
                 ->icon(Heroicon::OutlinedPlus)
-                ->url(BlogPostResource::getUrl('create')),
-            Action::make('blogSettings')
-                ->label('Blog page settings')
-                ->icon(Heroicon::OutlinedCog6Tooth)
-                ->url(BlogSettingResource::getSettingsUrl()),
+                ->url(BlogPostResource::getUrl('create', ['section' => $this->sectionId])),
+            Action::make('journalSettings')
+                ->label('Journal settings')
+                ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
+                ->url(BlogSettingResource::getSettingsUrl($this->sectionId)),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
@@ -60,12 +66,17 @@ final class ListBlogPosts extends Page
     private function loadPosts(): void
     {
         $publicIds = BlogEditorialService::publicQuery()
+            ->where('site_section_id', $this->sectionId)
             ->pluck('id')
             ->map(static fn ($id): int => (int) $id)
             ->all();
 
         /** @var EloquentCollection<int, BlogPost> $records */
-        $records = BlogPost::query()->orderBy('position')->orderBy('id')->get();
+        $records = BlogPost::query()
+            ->where('site_section_id', $this->sectionId)
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get();
         $lastIndex = $records->count() - 1;
 
         $this->posts = $records->values()->map(static function (BlogPost $post, int $index) use ($lastIndex, $publicIds): array {
@@ -86,10 +97,25 @@ final class ListBlogPosts extends Page
                 'date' => $date,
                 'state' => $state,
                 'edit_url' => BlogPostResource::getUrl('edit', ['record' => $post]),
-                'public_url' => in_array((int) $post->getKey(), $publicIds, true) ? route('blog.show', ['slug' => $post->getAttribute('slug')]) : null,
+                'public_url' => in_array((int) $post->getKey(), $publicIds, true) ? BlogPostResource::publicUrl($post) : null,
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < $lastIndex,
             ];
         })->all();
+    }
+
+    private function resolveSectionId(): int
+    {
+        $sectionId = request()->integer('section');
+        abort_unless($sectionId > 0, 404);
+
+        $exists = SiteSection::query()
+            ->whereKey($sectionId)
+            ->where('type', SiteSection::TYPE_JOURNAL)
+            ->where('template', SiteSection::JOURNAL_TEMPLATE_BLOG)
+            ->exists();
+        abort_unless($exists, 404);
+
+        return $sectionId;
     }
 }
