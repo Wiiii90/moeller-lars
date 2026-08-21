@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
 #[Fillable([
     'type',
+    'template',
     'title',
     'navigation_label',
     'slug',
@@ -38,6 +40,19 @@ final class SiteSection extends Model
 
     public const TYPE_CONTACT = 'contact';
 
+    public const TYPE_CUSTOM = 'custom';
+
+    public const TYPE_JOURNAL = 'journal';
+
+    public const JOURNAL_TEMPLATE_BLOG = 'blog';
+
+    public const JOURNAL_TEMPLATE_EXHIBITIONS = 'exhibitions';
+
+    public const JOURNAL_TEMPLATES = [
+        self::JOURNAL_TEMPLATE_BLOG,
+        self::JOURNAL_TEMPLATE_EXHIBITIONS,
+    ];
+
     public const TYPES = [
         self::TYPE_HOME,
         self::TYPE_GALLERY,
@@ -46,9 +61,11 @@ final class SiteSection extends Model
         self::TYPE_BLOG,
         self::TYPE_EXHIBITIONS,
         self::TYPE_CONTACT,
+        self::TYPE_CUSTOM,
+        self::TYPE_JOURNAL,
     ];
 
-    /** Section types whose data model permits exactly one row per type. */
+    /** Legacy section types whose data model still permits exactly one row per type. */
     public const UNIQUE_TYPES = [
         self::TYPE_HOME,
         self::TYPE_VITA,
@@ -75,6 +92,15 @@ final class SiteSection extends Model
                 throw ValidationException::withMessages(['type' => 'The site section type is invalid.']);
             }
 
+            $template = $section->getAttribute('template');
+            if ($type === self::TYPE_JOURNAL) {
+                if (! is_string($template) || ! in_array($template, self::JOURNAL_TEMPLATES, true)) {
+                    throw ValidationException::withMessages(['template' => 'A Journal page requires a supported template.']);
+                }
+            } elseif ($template !== null) {
+                throw ValidationException::withMessages(['template' => 'Only Journal pages may select a template.']);
+            }
+
             if ($type === self::TYPE_GALLERY) {
                 if ($section->getAttribute('artwork_category_id') === null) {
                     throw ValidationException::withMessages(['artwork_category_id' => 'A Gallery section must reference an artwork category.']);
@@ -84,7 +110,7 @@ final class SiteSection extends Model
             }
 
             if ($type === self::TYPE_NAVIGATION_GROUP && $section->getAttribute('slug') !== null) {
-                throw ValidationException::withMessages(['slug' => 'Navigation groups do not own a public URL slug.']);
+                throw ValidationException::withMessages(['slug' => 'Navigation nodes do not own a public URL slug.']);
             }
 
             $parentId = $section->getAttribute('parent_id');
@@ -93,7 +119,7 @@ final class SiteSection extends Model
                     throw ValidationException::withMessages(['parent_id' => 'Home cannot be nested below another section.']);
                 }
                 if ($type === self::TYPE_NAVIGATION_GROUP) {
-                    throw ValidationException::withMessages(['parent_id' => 'Navigation groups must remain top-level submenu parents.']);
+                    throw ValidationException::withMessages(['parent_id' => 'Navigation nodes must remain top-level submenu parents.']);
                 }
                 if ($section->exists && (int) $parentId === (int) $section->getKey()) {
                     throw ValidationException::withMessages(['parent_id' => 'A site section cannot be its own parent.']);
@@ -140,6 +166,11 @@ final class SiteSection extends Model
         return $this->belongsTo(ArtworkCategory::class);
     }
 
+    public function customPageSetting(): HasOne
+    {
+        return $this->hasOne(CustomPageSetting::class);
+    }
+
     public function hasPublicPage(): bool
     {
         return (string) $this->getAttribute('type') !== self::TYPE_NAVIGATION_GROUP;
@@ -154,7 +185,9 @@ final class SiteSection extends Model
     {
         return match ($this->getAttribute('type')) {
             self::TYPE_HOME => '/',
-            self::TYPE_GALLERY => '/'.$this->getAttribute('slug'),
+            self::TYPE_GALLERY,
+            self::TYPE_CUSTOM,
+            self::TYPE_JOURNAL => '/'.$this->getAttribute('slug'),
             self::TYPE_NAVIGATION_GROUP => null,
             self::TYPE_VITA => '/cv',
             self::TYPE_BLOG => '/blog',
@@ -168,7 +201,9 @@ final class SiteSection extends Model
     {
         return match ($this->getAttribute('type')) {
             self::TYPE_HOME => route('home'),
-            self::TYPE_GALLERY => route('artworks.category', ['category' => $this->getAttribute('slug')]),
+            self::TYPE_GALLERY,
+            self::TYPE_CUSTOM,
+            self::TYPE_JOURNAL => route('site.section', ['section' => $this->getAttribute('slug')]),
             self::TYPE_NAVIGATION_GROUP => null,
             self::TYPE_VITA => route('cv'),
             self::TYPE_BLOG => route('blog.index'),
@@ -182,8 +217,10 @@ final class SiteSection extends Model
     {
         return match ($this->getAttribute('type')) {
             self::TYPE_HOME => request()->routeIs('home', 'preview.home'),
-            self::TYPE_GALLERY => request()->routeIs('artworks.category', 'preview.artworks.category')
-                && request()->route('category') === $this->getAttribute('slug'),
+            self::TYPE_GALLERY,
+            self::TYPE_CUSTOM,
+            self::TYPE_JOURNAL => request()->routeIs('site.section', 'preview.site.section')
+                && request()->route('section') === $this->getAttribute('slug'),
             self::TYPE_NAVIGATION_GROUP => false,
             self::TYPE_VITA => request()->routeIs('cv', 'preview.cv'),
             self::TYPE_BLOG => request()->routeIs('blog.*', 'preview.blog.*'),
