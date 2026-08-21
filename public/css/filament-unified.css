@@ -30,7 +30,6 @@
     --artist-admin-success: #75b787;
 }
 
-/* Analytics aliases point at the same tokens used by every other admin page. */
 .analytics-dashboard {
     --an-text: var(--artist-admin-text);
     --an-muted: var(--artist-admin-muted);
@@ -121,8 +120,9 @@
     background: rgba(255, 255, 255, .045);
 }
 
-/* Shared metric strip. Dashboard uses the same spacing and divider rhythm as Analytics. */
-.artist-kpi-strip {
+/* One KPI primitive for Analytics and Dashboard. */
+.artist-kpi-strip,
+.analytics-kpi-strip {
     --artist-kpi-columns: 6;
     display: grid;
     grid-template-columns: repeat(var(--artist-kpi-columns), minmax(0, 1fr));
@@ -134,21 +134,25 @@
 .artist-kpi-strip--5 { --artist-kpi-columns: 5; }
 .artist-kpi-strip--6 { --artist-kpi-columns: 6; }
 
-.artist-kpi {
+.artist-kpi,
+.analytics-kpi {
     min-width: 0;
     padding: 1.25rem 1rem 1.2rem 0;
     border-right: 1px solid var(--artist-admin-line);
 }
 
-.artist-kpi:not(:first-child) {
+.artist-kpi:not(:first-child),
+.analytics-kpi:not(:first-child) {
     padding-left: 1rem;
 }
 
-.artist-kpi:last-child {
+.artist-kpi:last-child,
+.analytics-kpi:last-child {
     border-right: 0;
 }
 
-.artist-kpi span {
+.artist-kpi span,
+.analytics-kpi span {
     display: block;
     color: var(--artist-admin-muted);
     font-size: .67rem;
@@ -156,7 +160,8 @@
     letter-spacing: .025em;
 }
 
-.artist-kpi strong {
+.artist-kpi strong,
+.analytics-kpi strong {
     display: block;
     margin-top: .35rem;
     color: var(--artist-admin-text);
@@ -382,8 +387,7 @@ a.artist-page-row__title:focus-visible {
     border-color: var(--artist-admin-line);
 }
 
-/* Sidebar site tree: every row is a real link. Hierarchy is conveyed by indentation,
- * not by Filament childItems(), which turns parent links into disclosure buttons. */
+/* Sidebar site tree: all rows remain links. */
 [data-artist-tree-root="true"] {
     margin-bottom: .15rem;
 }
@@ -460,7 +464,6 @@ a.artist-page-row__title:focus-visible {
     box-shadow: none !important;
 }
 
-/* Shared media/gallery dark-mode corrections. */
 .artist-contact-sheet {
     background: var(--artist-admin-line);
 }
