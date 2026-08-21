@@ -20,7 +20,10 @@ class BlogSetting extends Model
     public static function forBlogSection(): self
     {
         $section = SiteSection::query()
-            ->where('type', SiteSection::TYPE_BLOG)
+            ->where('type', SiteSection::TYPE_JOURNAL)
+            ->where('template', SiteSection::JOURNAL_TEMPLATE_BLOG)
+            ->orderBy('position')
+            ->orderBy('id')
             ->firstOrFail();
 
         return self::forSection($section);
@@ -50,7 +53,7 @@ class BlogSetting extends Model
             if ($section === null
                 || (string) $section->getAttribute('type') !== SiteSection::TYPE_JOURNAL
                 || (string) $section->getAttribute('template') !== SiteSection::JOURNAL_TEMPLATE_BLOG) {
-                throw new LogicException('Canonical legacy Blog settings cannot be deleted.');
+                throw new LogicException('Journal settings can only be removed with their owning Blog Journal.');
             }
         });
     }
