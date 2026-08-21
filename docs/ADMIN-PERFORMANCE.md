@@ -13,9 +13,9 @@ Validation investigation on 2026-08-21 established the following baseline before
 - normal operational request telemetry is aggregated into at most one synchronous database upsert per request;
 - the production image enables OPcache and runs `php artisan optimize` after runtime environment injection.
 
-The remaining cross-page stall was isolated at the Apache boundary. With Apache `KeepAlive On`, `KeepAliveTimeout 5` and four `mpm_prefork` workers behind Caddy, a real Chrome HTTP/2 hard load produced five-second-quantized static-asset queues and Media preview queues reaching roughly 14 s, 19 s and 24 s, with later requests cancelled around 25 s. A Validation-only single-variable A/B changed Apache to `KeepAlive Off`: the five-second quantization disappeared, Pages/Media/Activity/final-Dashboard HTML completed in about 0.216/0.292/0.256/0.295 s, normal static assets stayed subsecond, and the same uncached Media preview burst topped out around 2.27 s instead of 24+ s. The temporary runtime override was removed after measurement.
+The remaining cross-page/browser stall is not yet attributed to one proven root cause. One real Chrome HTTP/2 hard load with Apache `KeepAlive On`, `KeepAliveTimeout 5` and four `mpm_prefork` workers behind Caddy showed five-second-quantized request waves, including static assets and a much longer Media preview queue. A temporary Validation-only A/B changed Apache to `KeepAlive Off`; individual Caddy request durations no longer showed the same obvious five-second quantization, but the browser was still observed to be very slow end-to-end. Therefore that experiment does not establish a user-visible speedup and does not prove Apache keep-alive starvation as the root cause.
 
-This establishes the deployment contract: Caddy owns client-facing persistent HTTP/2 connections; the internal Caddy-to-Apache HTTP/1.1 hop must not keep scarce mod_php prefork workers pinned between requests.
+`KeepAlive Off` remains a source-controlled Validation candidate to test because it directly changes the internal Caddy-to-Apache hop implicated by the queueing pattern. Browser wall-clock behavior is authoritative: if the permanent candidate does not clearly improve the real page load/navigation experience, roll Validation back and reject this candidate rather than merging it.
 
 ## Budget
 
@@ -63,7 +63,7 @@ Production releases assume immutable application code inside the container:
 - timestamp validation may stay disabled because a deployment replaces/restarts the release container;
 - Laravel config/route/view/event optimization must happen only after runtime environment configuration is injected;
 - cache changes must not freeze environment-specific secrets or configuration into the image build;
-- Caddy remains the public persistent-connection/HTTP2 endpoint, while Apache `mpm_prefork` runs with `KeepAlive Off` on the internal reverse-proxy hop so idle upstream connections cannot occupy the four-worker mod_php pool.
+- Apache keep-alive behavior behind Caddy is currently under Validation investigation. `KeepAlive Off` must not be promoted to the release contract until the source-controlled candidate shows a clear browser-visible improvement.
 
 ## Validation measurement protocol
 
@@ -72,11 +72,12 @@ After performance-sensitive admin work is merged into one candidate SHA, measure
 1. Confirm release SHA/image identity and health.
 2. Use the representative migrated dataset.
 3. Warm the admin once, then record at least five normal transitions for Dashboard, Pages, Artworks, Gallery, Media, Analytics and Storage plus one representative Livewire action.
-4. Record server timing separately from browser/client gaps so delayed hydration is not misdiagnosed as backend latency.
+4. Record browser wall-clock behavior and server/Caddy timing separately. Fast individual request timings are not sufficient evidence when the page remains visibly blocked.
 5. Measure Analytics once from fresh cache and, separately, once as an intentional live cache miss.
 6. Measure Storage from cache and, separately, an explicit refresh/authoritative measurement.
-7. Include one hard-load/parallel-asset pass and confirm there is no recurring five-second quantization or cross-page Apache worker starvation.
+7. Include one hard-load/parallel-asset pass and compare end-to-end browser completion with the prior slow baseline, not only per-request Caddy durations.
 8. Review query/filesystem telemetry for any row-scaled fanout or unexpected recursive media scan.
+9. If the candidate does not produce a clear user-visible improvement, roll Validation back to the prior known-good release before continuing diagnosis.
 
 ## Integration re-check
 
