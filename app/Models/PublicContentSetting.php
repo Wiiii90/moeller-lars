@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use LogicException;
 
 #[Fillable([
@@ -24,9 +25,21 @@ use LogicException;
     'profile_text_blocks',
     'favicon_media_asset_id',
 ])]
-#[Guarded(['id'])]
+#[Guarded(['id', 'scope'])]
 class PublicContentSetting extends Model
 {
+    public const SCOPE_GENERAL = 'general';
+
+    public const SCOPE_CONTACT = 'contact';
+
+    public const SCOPE_VITA = 'vita';
+
+    public const SCOPES = [
+        self::SCOPE_GENERAL,
+        self::SCOPE_CONTACT,
+        self::SCOPE_VITA,
+    ];
+
     protected $table = 'public_content_settings';
 
     public $incrementing = false;
@@ -41,6 +54,33 @@ class PublicContentSetting extends Model
         ];
     }
 
+    public static function forScope(string $scope): self
+    {
+        if (! in_array($scope, self::SCOPES, true)) {
+            throw new InvalidArgumentException('Unsupported public content settings scope.');
+        }
+
+        /** @var self $setting */
+        $setting = self::query()->where('scope', $scope)->firstOrFail();
+
+        return $setting;
+    }
+
+    public static function general(): self
+    {
+        return self::forScope(self::SCOPE_GENERAL);
+    }
+
+    public static function contact(): self
+    {
+        return self::forScope(self::SCOPE_CONTACT);
+    }
+
+    public static function vita(): self
+    {
+        return self::forScope(self::SCOPE_VITA);
+    }
+
     /** @return BelongsTo<MediaAsset, $this> */
     public function faviconMediaAsset(): BelongsTo
     {
@@ -50,135 +90,144 @@ class PublicContentSetting extends Model
     protected static function booted(): void
     {
         static::saving(function (self $setting): void {
-            if ($setting->getAttribute('contact_state') === 'under_construction') {
-                $statusText = $setting->getAttribute('contact_status_text');
-                if (! is_string($statusText) || trim($statusText) === '') {
-                    throw ValidationException::withMessages([
-                        'contact_status_text' => 'A status text is required while Contact is under construction.',
-                    ]);
-                }
+            $scope = (string) $setting->getAttribute('scope');
+            if (! in_array($scope, self::SCOPES, true)) {
+                throw ValidationException::withMessages(['scope' => 'The settings scope is invalid.']);
             }
 
-            $publicEmail = $setting->getAttribute('public_email');
-            if ($publicEmail !== null && (! is_string($publicEmail) || filter_var($publicEmail, FILTER_VALIDATE_EMAIL) === false)) {
-                throw ValidationException::withMessages([
-                    'public_email' => 'The public email address is invalid.',
-                ]);
+            if ($scope === self::SCOPE_CONTACT) {
+                self::validateContact($setting);
             }
 
-            $contactRecipientEmail = $setting->getAttribute('contact_recipient_email');
-            if ($contactRecipientEmail !== null && (! is_string($contactRecipientEmail) || filter_var($contactRecipientEmail, FILTER_VALIDATE_EMAIL) === false)) {
-                throw ValidationException::withMessages([
-                    'contact_recipient_email' => 'The contact form recipient email address is invalid.',
-                ]);
+            if ($scope === self::SCOPE_GENERAL) {
+                self::validateGeneral($setting);
             }
 
-            $socialLinks = $setting->getAttribute('social_links');
-            $legacyInstagram = $setting->getAttribute('instagram_handle');
-            if (($socialLinks === null || $socialLinks === []) && is_string($legacyInstagram) && trim($legacyInstagram) !== '') {
-                $socialLinks = [[
-                    'platform' => 'instagram',
-                    'url' => 'https://www.instagram.com/'.trim($legacyInstagram).'/',
-                    'visible' => (bool) $setting->getAttribute('show_instagram'),
-                ]];
-                $setting->setAttribute('social_links', $socialLinks);
-            }
-
-            if ($socialLinks !== null) {
-                if (! is_array($socialLinks)) {
-                    throw ValidationException::withMessages([
-                        'social_links' => 'Social links must be a list.',
-                    ]);
-                }
-
-                $platforms = [];
-                foreach ($socialLinks as $index => $link) {
-                    if (! is_array($link)) {
-                        throw ValidationException::withMessages([
-                            "social_links.$index" => 'Each social link must be structured content.',
-                        ]);
-                    }
-
-                    $platform = $link['platform'] ?? null;
-                    $url = $link['url'] ?? null;
-                    $visible = $link['visible'] ?? true;
-                    if (! is_string($platform) || ! SocialLinks::supports($platform)) {
-                        throw ValidationException::withMessages([
-                            "social_links.$index.platform" => 'Choose a supported social platform.',
-                        ]);
-                    }
-                    if (isset($platforms[$platform])) {
-                        throw ValidationException::withMessages([
-                            "social_links.$index.platform" => 'Each social platform can only be configured once.',
-                        ]);
-                    }
-                    $platforms[$platform] = true;
-
-                    $scheme = is_string($url) ? strtolower((string) parse_url($url, PHP_URL_SCHEME)) : '';
-                    if (! is_string($url) || mb_strlen($url) > 2048 || filter_var($url, FILTER_VALIDATE_URL) === false || ! in_array($scheme, ['http', 'https'], true)) {
-                        throw ValidationException::withMessages([
-                            "social_links.$index.url" => 'Social links must use a valid HTTP or HTTPS URL.',
-                        ]);
-                    }
-                    if (! is_bool($visible)) {
-                        throw ValidationException::withMessages([
-                            "social_links.$index.visible" => 'Social link visibility must be true or false.',
-                        ]);
-                    }
-                }
-            }
-
-            $faviconId = $setting->getAttribute('favicon_media_asset_id');
-            if ($faviconId !== null) {
-                $favicon = MediaAsset::query()->find($faviconId);
-                $mimeType = $favicon?->getAttribute('mime_type');
-                if (! $favicon instanceof MediaAsset || $favicon->getAttribute('state') !== 'available' || ! is_string($mimeType) || ! str_starts_with($mimeType, 'image/')) {
-                    throw ValidationException::withMessages([
-                        'favicon_media_asset_id' => 'The favicon must be an available image from Media.',
-                    ]);
-                }
-            }
-
-            $legalDisclaimer = $setting->getAttribute('legal_disclaimer');
-            if ($legalDisclaimer !== null && (! is_string($legalDisclaimer) || trim($legalDisclaimer) === '')) {
-                throw ValidationException::withMessages([
-                    'legal_disclaimer' => 'The legal disclaimer must contain text or be empty.',
-                ]);
-            }
-
-            $blocks = $setting->getAttribute('profile_text_blocks');
-            if ($blocks !== null) {
-                if (! is_array($blocks)) {
-                    throw ValidationException::withMessages([
-                        'profile_text_blocks' => 'Additional CV text blocks must be a list.',
-                    ]);
-                }
-
-                foreach ($blocks as $index => $block) {
-                    if (! is_array($block)) {
-                        throw ValidationException::withMessages([
-                            "profile_text_blocks.$index" => 'Each additional CV text block must be structured content.',
-                        ]);
-                    }
-
-                    $title = $block['title'] ?? null;
-                    $body = $block['body'] ?? null;
-                    if (! is_string($title) || trim($title) === '' || mb_strlen($title) > 120) {
-                        throw ValidationException::withMessages([
-                            "profile_text_blocks.$index.title" => 'Each additional CV text block needs a short title.',
-                        ]);
-                    }
-                    if (! is_string($body) || trim($body) === '' || mb_strlen($body) > 5000) {
-                        throw ValidationException::withMessages([
-                            "profile_text_blocks.$index.body" => 'Each additional CV text block needs text.',
-                        ]);
-                    }
-                }
+            if ($scope === self::SCOPE_VITA) {
+                self::validateVita($setting);
             }
         });
 
         static::deleting(function (): never {
-            throw new LogicException('Public content settings cannot be deleted.');
+            throw new LogicException('Typed public content settings cannot be deleted.');
         });
+    }
+
+    private static function validateContact(self $setting): void
+    {
+        if ($setting->getAttribute('contact_state') !== 'under_construction') {
+            return;
+        }
+
+        $statusText = $setting->getAttribute('contact_status_text');
+        if (! is_string($statusText) || trim($statusText) === '') {
+            throw ValidationException::withMessages([
+                'contact_status_text' => 'A status text is required while Contact is under construction.',
+            ]);
+        }
+    }
+
+    private static function validateGeneral(self $setting): void
+    {
+        $publicEmail = $setting->getAttribute('public_email');
+        if ($publicEmail !== null && (! is_string($publicEmail) || filter_var($publicEmail, FILTER_VALIDATE_EMAIL) === false)) {
+            throw ValidationException::withMessages([
+                'public_email' => 'The public email address is invalid.',
+            ]);
+        }
+
+        $contactRecipientEmail = $setting->getAttribute('contact_recipient_email');
+        if ($contactRecipientEmail !== null && (! is_string($contactRecipientEmail) || filter_var($contactRecipientEmail, FILTER_VALIDATE_EMAIL) === false)) {
+            throw ValidationException::withMessages([
+                'contact_recipient_email' => 'The contact form recipient email address is invalid.',
+            ]);
+        }
+
+        $socialLinks = $setting->getAttribute('social_links');
+        $legacyInstagram = $setting->getAttribute('instagram_handle');
+        if (($socialLinks === null || $socialLinks === []) && is_string($legacyInstagram) && trim($legacyInstagram) !== '') {
+            $socialLinks = [[
+                'platform' => 'instagram',
+                'url' => 'https://www.instagram.com/'.trim($legacyInstagram).'/',
+                'visible' => (bool) $setting->getAttribute('show_instagram'),
+            ]];
+            $setting->setAttribute('social_links', $socialLinks);
+        }
+
+        if ($socialLinks !== null) {
+            if (! is_array($socialLinks)) {
+                throw ValidationException::withMessages(['social_links' => 'Social links must be a list.']);
+            }
+
+            $platforms = [];
+            foreach ($socialLinks as $index => $link) {
+                if (! is_array($link)) {
+                    throw ValidationException::withMessages(["social_links.$index" => 'Each social link must be structured content.']);
+                }
+
+                $platform = $link['platform'] ?? null;
+                $url = $link['url'] ?? null;
+                $visible = $link['visible'] ?? true;
+                if (! is_string($platform) || ! SocialLinks::supports($platform)) {
+                    throw ValidationException::withMessages(["social_links.$index.platform" => 'Choose a supported social platform.']);
+                }
+                if (isset($platforms[$platform])) {
+                    throw ValidationException::withMessages(["social_links.$index.platform" => 'Each social platform can only be configured once.']);
+                }
+                $platforms[$platform] = true;
+
+                $scheme = is_string($url) ? strtolower((string) parse_url($url, PHP_URL_SCHEME)) : '';
+                if (! is_string($url) || mb_strlen($url) > 2048 || filter_var($url, FILTER_VALIDATE_URL) === false || ! in_array($scheme, ['http', 'https'], true)) {
+                    throw ValidationException::withMessages(["social_links.$index.url" => 'Social links must use a valid HTTP or HTTPS URL.']);
+                }
+                if (! is_bool($visible)) {
+                    throw ValidationException::withMessages(["social_links.$index.visible" => 'Social link visibility must be true or false.']);
+                }
+            }
+        }
+
+        $faviconId = $setting->getAttribute('favicon_media_asset_id');
+        if ($faviconId !== null) {
+            $favicon = MediaAsset::query()->find($faviconId);
+            $mimeType = $favicon?->getAttribute('mime_type');
+            if (! $favicon instanceof MediaAsset || $favicon->getAttribute('state') !== 'available' || ! is_string($mimeType) || ! str_starts_with($mimeType, 'image/')) {
+                throw ValidationException::withMessages([
+                    'favicon_media_asset_id' => 'The favicon must be an available image from Media.',
+                ]);
+            }
+        }
+
+        $legalDisclaimer = $setting->getAttribute('legal_disclaimer');
+        if ($legalDisclaimer !== null && (! is_string($legalDisclaimer) || trim($legalDisclaimer) === '')) {
+            throw ValidationException::withMessages([
+                'legal_disclaimer' => 'The legal disclaimer must contain text or be empty.',
+            ]);
+        }
+    }
+
+    private static function validateVita(self $setting): void
+    {
+        $blocks = $setting->getAttribute('profile_text_blocks');
+        if ($blocks === null) {
+            return;
+        }
+        if (! is_array($blocks)) {
+            throw ValidationException::withMessages(['profile_text_blocks' => 'Additional CV text blocks must be a list.']);
+        }
+
+        foreach ($blocks as $index => $block) {
+            if (! is_array($block)) {
+                throw ValidationException::withMessages(["profile_text_blocks.$index" => 'Each additional CV text block must be structured content.']);
+            }
+
+            $title = $block['title'] ?? null;
+            $body = $block['body'] ?? null;
+            if (! is_string($title) || trim($title) === '' || mb_strlen($title) > 120) {
+                throw ValidationException::withMessages(["profile_text_blocks.$index.title" => 'Each additional CV text block needs a short title.']);
+            }
+            if (! is_string($body) || trim($body) === '' || mb_strlen($body) > 5000) {
+                throw ValidationException::withMessages(["profile_text_blocks.$index.body" => 'Each additional CV text block needs text.']);
+            }
+        }
     }
 }
