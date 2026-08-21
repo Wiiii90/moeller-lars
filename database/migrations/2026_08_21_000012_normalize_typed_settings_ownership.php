@@ -58,11 +58,11 @@ return new class extends Migration
         });
 
         $blogSectionId = DB::table('site_sections')->where('type', 'blog')->value('id');
-        if (! is_int($blogSectionId)) {
+        if (! is_numeric($blogSectionId)) {
             throw new RuntimeException('The canonical Blog SiteSection must exist before normalizing Blog settings.');
         }
 
-        DB::table('blog_settings')->update(['site_section_id' => $blogSectionId]);
+        DB::table('blog_settings')->update(['site_section_id' => (int) $blogSectionId]);
         DB::statement('ALTER TABLE blog_settings ALTER COLUMN site_section_id SET NOT NULL');
         DB::statement('ALTER TABLE blog_settings ADD CONSTRAINT blog_settings_site_section_unique UNIQUE (site_section_id)');
         DB::statement('ALTER TABLE blog_settings DROP CONSTRAINT IF EXISTS blog_settings_singleton_check');
@@ -79,6 +79,20 @@ return new class extends Migration
 
         DB::statement('ALTER TABLE public_content_settings DROP CONSTRAINT IF EXISTS public_content_settings_scope_check');
         DB::statement('ALTER TABLE public_content_settings DROP CONSTRAINT IF EXISTS public_content_settings_scope_unique');
+        DB::statement(<<<'SQL'
+            UPDATE public_content_settings AS target
+            SET contact_state = source.contact_state,
+                contact_status_text = source.contact_status_text,
+                contact_icon = source.contact_icon
+            FROM public_content_settings AS source
+            WHERE target.scope = 'general' AND source.scope = 'contact'
+        SQL);
+        DB::statement(<<<'SQL'
+            UPDATE public_content_settings AS target
+            SET profile_text_blocks = source.profile_text_blocks
+            FROM public_content_settings AS source
+            WHERE target.scope = 'general' AND source.scope = 'vita'
+        SQL);
         DB::table('public_content_settings')->whereIn('scope', ['contact', 'vita'])->delete();
 
         Schema::table('public_content_settings', function (Blueprint $table): void {
