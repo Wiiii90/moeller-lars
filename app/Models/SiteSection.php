@@ -143,6 +143,15 @@ final class SiteSection extends Model
                     throw ValidationException::withMessages(['navigation_label' => 'A navigation label is required while this section is shown in navigation.']);
                 }
             }
+
+            if ($type === self::TYPE_CUSTOM && (string) $section->getAttribute('state') === 'published' && $section->exists) {
+                /** @var CustomPageSetting|null $settings */
+                $settings = $section->customPageSetting()->first();
+                if (! $settings instanceof CustomPageSetting) {
+                    throw ValidationException::withMessages(['state' => 'A Custom page needs its component configuration before it can be published.']);
+                }
+                $settings->assertReadyForPublic();
+            }
         });
     }
 
@@ -203,7 +212,7 @@ final class SiteSection extends Model
             self::TYPE_HOME => route('home'),
             self::TYPE_GALLERY,
             self::TYPE_CUSTOM,
-            self::TYPE_JOURNAL => route('site.section', ['section' => $this->getAttribute('slug')]),
+            self::TYPE_JOURNAL => route('artworks.category', ['category' => $this->getAttribute('slug')]),
             self::TYPE_NAVIGATION_GROUP => null,
             self::TYPE_VITA => route('cv'),
             self::TYPE_BLOG => route('blog.index'),
@@ -219,8 +228,8 @@ final class SiteSection extends Model
             self::TYPE_HOME => request()->routeIs('home', 'preview.home'),
             self::TYPE_GALLERY,
             self::TYPE_CUSTOM,
-            self::TYPE_JOURNAL => request()->routeIs('site.section', 'preview.site.section')
-                && request()->route('section') === $this->getAttribute('slug'),
+            self::TYPE_JOURNAL => request()->routeIs('artworks.category', 'preview.artworks.category')
+                && request()->route('category') === $this->getAttribute('slug'),
             self::TYPE_NAVIGATION_GROUP => false,
             self::TYPE_VITA => request()->routeIs('cv', 'preview.cv'),
             self::TYPE_BLOG => request()->routeIs('blog.*', 'preview.blog.*'),
