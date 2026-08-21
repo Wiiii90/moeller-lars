@@ -12,10 +12,10 @@
             : null;
         $portraitWidth = $portraitVariant !== null ? (int) ($portraitVariant->getAttribute('width') ?? 0) : 0;
         $portraitHeight = $portraitVariant !== null ? (int) ($portraitVariant->getAttribute('height') ?? 0) : 0;
-        $showContactArea = ((bool) $settings->show_public_email && $settings->public_email !== null)
-            || \App\Domain\Content\SocialLinks::visible($settings->social_links) !== []
-            || $settings->contact_state !== 'hidden';
-        $profileTextBlocks = collect($settings->profile_text_blocks ?? [])
+        $showContactArea = ((bool) $generalSettings->show_public_email && $generalSettings->public_email !== null)
+            || \App\Domain\Content\SocialLinks::visible($generalSettings->social_links) !== []
+            || $contactSettings->contact_state !== 'hidden';
+        $profileTextBlocks = collect($vitaSettings->profile_text_blocks ?? [])
             ->filter(fn ($block) => is_array($block) && filled($block['title'] ?? null) && filled($block['body'] ?? null));
     @endphp
 
@@ -70,7 +70,7 @@
 
         @if ($showContactArea)
             <div class="cv-contact-area">
-                <x-contact :settings="$settings" :show-status="true" />
+                <x-contact :general-settings="$generalSettings" :contact-settings="$contactSettings" :show-status="true" />
             </div>
         @endif
 
@@ -85,10 +85,10 @@
             </section>
         @endif
 
-        @if ($settings->legal_disclaimer !== null)
+        @if ($generalSettings->legal_disclaimer !== null)
             <section class="legal-disclaimer cv-bottom-disclaimer" aria-labelledby="legal-disclaimer-heading">
                 <h2 id="legal-disclaimer-heading">Haftungsablehnung</h2>
-                <p>{{ $settings->legal_disclaimer }}</p>
+                <p>{{ $generalSettings->legal_disclaimer }}</p>
             </section>
         @endif
     </div>
