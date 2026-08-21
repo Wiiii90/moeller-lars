@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Content\SocialLinks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,7 @@ use LogicException;
     'show_public_email',
     'instagram_handle',
     'show_instagram',
+    'social_links',
     'legal_disclaimer',
     'profile_text_blocks',
     'favicon_media_asset_id',
@@ -34,6 +36,7 @@ class PublicContentSetting extends Model
         return [
             'show_public_email' => 'boolean',
             'show_instagram' => 'boolean',
+            'social_links' => 'array',
             'profile_text_blocks' => 'array',
         ];
     }
@@ -70,11 +73,70 @@ class PublicContentSetting extends Model
                 ]);
             }
 
-            $instagramHandle = $setting->getAttribute('instagram_handle');
-            if ($instagramHandle !== null && (! is_string($instagramHandle) || preg_match('/^[A-Za-z0-9._]{1,30}$/', $instagramHandle) !== 1)) {
-                throw ValidationException::withMessages([
-                    'instagram_handle' => 'The Instagram handle is invalid.',
-                ]);
+            $socialLinks = $setting->getAttribute('social_links');
+            $legacyInstagram = $setting->getAttribute('instagram_handle');
+            if (($socialLinks === null || $socialLinks === []) && is_string($legacyInstagram) && trim($legacyInstagram) !== '') {
+                $socialLinks = [[
+                    'platform' => 'instagram',
+                    'url' => 'https://www.instagram.com/'.trim($legacyInstagram).'/',
+                    'visible' => (bool) $setting->getAttribute('show_instagram'),
+                ]];
+                $setting->setAttribute('social_links', $socialLinks);
+            }
+
+            if ($socialLinks !== null) {
+                if (! is_array($socialLinks)) {
+                    throw ValidationException::withMessages([
+                        'social_links' => 'Social links must be a list.',
+                    ]);
+                }
+
+                $platforms = [];
+                foreach ($socialLinks as $index => $link) {
+                    if (! is_array($link)) {
+                        throw ValidationException::withMessages([
+                            "social_links.$index" => 'Each social link must be structured content.',
+                        ]);
+                    }
+
+                    $platform = $link['platform'] ?? null;
+                    $url = $link['url'] ?? null;
+                    $visible = $link['visible'] ?? true;
+                    if (! is_string($platform) || ! SocialLinks::supports($platform)) {
+                        throw ValidationException::withMessages([
+                            "social_links.$index.platform" => 'Choose a supported social platform.',
+                        ]);
+                    }
+                    if (isset($platforms[$platform])) {
+                        throw ValidationException::withMessages([
+                            "social_links.$index.platform" => 'Each social platform can only be configured once.',
+                        ]);
+                    }
+                    $platforms[$platform] = true;
+
+                    $scheme = is_string($url) ? strtolower((string) parse_url($url, PHP_URL_SCHEME)) : '';
+                    if (! is_string($url) || mb_strlen($url) > 2048 || filter_var($url, FILTER_VALIDATE_URL) === false || ! in_array($scheme, ['http', 'https'], true)) {
+                        throw ValidationException::withMessages([
+                            "social_links.$index.url" => 'Social links must use a valid HTTP or HTTPS URL.',
+                        ]);
+                    }
+                    if (! is_bool($visible)) {
+                        throw ValidationException::withMessages([
+                            "social_links.$index.visible" => 'Social link visibility must be true or false.',
+                        ]);
+                    }
+                }
+            }
+
+            $faviconId = $setting->getAttribute('favicon_media_asset_id');
+            if ($faviconId !== null) {
+                $favicon = MediaAsset::query()->find($faviconId);
+                $mimeType = $favicon?->getAttribute('mime_type');
+                if (! $favicon instanceof MediaAsset || $favicon->getAttribute('state') !== 'available' || ! is_string($mimeType) || ! str_starts_with($mimeType, 'image/')) {
+                    throw ValidationException::withMessages([
+                        'favicon_media_asset_id' => 'The favicon must be an available image from Media.',
+                    ]);
+                }
             }
 
             $legalDisclaimer = $setting->getAttribute('legal_disclaimer');
