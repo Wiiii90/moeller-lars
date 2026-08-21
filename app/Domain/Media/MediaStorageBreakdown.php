@@ -19,37 +19,33 @@ final class MediaStorageBreakdown
     ];
 
     /**
-     * Build an exclusive attribution of the already-measured authoritative files.
-     * Every measured original lands in exactly one bucket so bytes never get
-     * duplicated when one reusable media asset is referenced from multiple areas.
-     *
      * @param  array<string, int>  $authoritativeFiles
      * @return list<array{key:string,label:string,bytes:int,files:int,percent:float}>
      */
     public function build(array $authoritativeFiles): array
     {
-        if ($authoritativeFiles === []) {
-            return [];
-        }
+        return $this->analyze($authoritativeFiles, 0)['breakdown'];
+    }
 
-        $normalized = [];
-        foreach ($authoritativeFiles as $storageKey => $bytes) {
-            if ($storageKey === '' || $bytes < 0) {
-                continue;
-            }
-
-            $normalized[$storageKey] = $bytes;
-        }
-
+    /**
+     * Build exclusive library-use attribution and a small, path-free list of the
+     * largest authoritative originals from the same measured file snapshot.
+     *
+     * @param  array<string, int>  $authoritativeFiles
+     * @return array{breakdown:list<array{key:string,label:string,bytes:int,files:int,percent:float}>,heavy_consumers:list<array{label:string,classification:string,bytes:int}>}
+     */
+    public function analyze(array $authoritativeFiles, int $heavyLimit = 5): array
+    {
+        $normalized = $this->normalize($authoritativeFiles);
         if ($normalized === []) {
-            return [];
+            return ['breakdown' => [], 'heavy_consumers' => []];
         }
 
         /** @var EloquentCollection<int, MediaAsset> $assets */
         $assets = MediaAsset::query()
             ->withCount(['artworks', 'exhibitions', 'cvEntries', 'blogPosts'])
             ->whereIn('storage_key', array_keys($normalized))
-            ->get(['id', 'storage_key']);
+            ->get(['id', 'storage_key', 'original_filename']);
 
         /** @var array<string, MediaAsset> $assetsByStorageKey */
         $assetsByStorageKey = [];
@@ -90,12 +86,46 @@ final class MediaStorageBreakdown
             ];
         }
 
-        return $rows;
+        arsort($normalized, SORT_NUMERIC);
+        $heavyConsumers = [];
+        foreach (array_slice($normalized, 0, max(0, $heavyLimit), true) as $storageKey => $bytes) {
+            $asset = $assetsByStorageKey[$storageKey] ?? null;
+            $bucket = $this->classify($asset);
+            $filename = $asset instanceof MediaAsset
+                ? $asset->getAttribute('original_filename')
+                : null;
+
+            $heavyConsumers[] = [
+                'label' => is_string($filename) && trim($filename) !== '' ? $filename : 'Uncatalogued original',
+                'classification' => self::LABELS[$bucket],
+                'bytes' => $bytes,
+            ];
+        }
+
+        return ['breakdown' => $rows, 'heavy_consumers' => $heavyConsumers];
+    }
+
+    /**
+     * @param  array<string, int>  $authoritativeFiles
+     * @return array<string, int>
+     */
+    private function normalize(array $authoritativeFiles): array
+    {
+        $normalized = [];
+        foreach ($authoritativeFiles as $storageKey => $bytes) {
+            if ($storageKey === '' || $bytes < 0) {
+                continue;
+            }
+
+            $normalized[$storageKey] = $bytes;
+        }
+
+        return $normalized;
     }
 
     private function classify(?MediaAsset $asset): string
     {
-        if (! $asset instanceof MediaAsset) {
+        if ($asset === null) {
             return 'uncatalogued';
         }
 
