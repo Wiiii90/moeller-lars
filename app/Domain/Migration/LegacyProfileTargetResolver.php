@@ -3,25 +3,19 @@
 namespace App\Domain\Migration;
 
 use App\Models\CvEntry;
-use Illuminate\Database\Eloquent\Builder;
 
 final class LegacyProfileTargetResolver
 {
     public function resolve(string $legacySource, ?int $legacyId): ?CvEntry
     {
-        /** @var Builder<CvEntry> $query */
-        $query = CvEntry::query();
-        $query
+        $query = CvEntry::query()
             ->where('legacy_source', $legacySource)
             ->where('migration_batch_id', LegacyPublicCvImporter::BATCH);
 
-        if ($legacyId !== null) {
-            return $query->where('legacy_id', $legacyId)->first();
-        }
+        $entry = $legacyId !== null
+            ? $query->where('legacy_id', $legacyId)->first()
+            : $query->orderBy('position')->orderBy('id')->first();
 
-        return $query
-            ->orderBy('position')
-            ->orderBy('id')
-            ->first();
+        return $entry instanceof CvEntry ? $entry : null;
     }
 }
