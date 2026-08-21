@@ -4,7 +4,15 @@
             <div>
                 <p class="artist-workspace__kicker">Editorial overview</p>
                 <h2>Website at a glance</h2>
-                <p>Public structure, content state and recent editorial work in one compact workspace. Detailed editing stays in the relevant page or library.</p>
+                <div class="artist-dashboard__quick-actions" aria-label="Quick actions">
+                    {{ $this->addArtworkAction }}
+                    {{ $this->addExhibitionAction }}
+                    {{ $this->addCvEntryAction }}
+                    {{ $this->addBlogPostAction }}
+                    {{ $this->managePagesAction }}
+                    {{ $this->openSiteAction }}
+                </div>
+                <p>Public structure, content state and recent editorial work in one compact workspace. Detailed editing stays in the relevant page or content area.</p>
             </div>
         </header>
 
@@ -19,7 +27,7 @@
                     <span class="artist-action">Open</span>
                 </a>
             @empty
-                <p class="artist-dashboard__quiet">Personalized shortcuts appear after an admin action is used repeatedly. The stable actions in the page header stay available.</p>
+                <p class="artist-dashboard__quiet">Personalized shortcuts appear after an admin action is used repeatedly. The stable quick actions above stay available.</p>
             @endforelse
         </section>
 
@@ -61,4 +69,6 @@
             </aside>
         </div>
     </div>
+
+    <x-filament-actions::modals />
 </x-filament-widgets::widget>

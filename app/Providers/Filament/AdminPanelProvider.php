@@ -31,6 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
             ->brandName('Lars Möller')
+            ->homeUrl(fn (): string => route('home'))
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -42,7 +43,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make()->label('Website'),
-                NavigationGroup::make()->label('Library'),
+                NavigationGroup::make()->label('Content'),
                 NavigationGroup::make()->label('Insights'),
                 NavigationGroup::make()->label('Settings'),
             ])
