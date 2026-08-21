@@ -2,16 +2,18 @@
 
 namespace App\Filament\Resources\Exhibitions;
 
-use App\Domain\Admin\EditorialRecordService;
+use App\Domain\Content\JournalEntryOrderService;
 use App\Filament\Resources\Exhibitions\Pages\CreateExhibition;
 use App\Filament\Resources\Exhibitions\Pages\EditExhibition;
 use App\Filament\Resources\Exhibitions\Pages\ListExhibitions;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\Exhibition;
+use App\Models\SiteSection;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -26,6 +28,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use LogicException;
 use UnitEnum;
 
 class ExhibitionResource extends Resource
@@ -36,15 +39,15 @@ class ExhibitionResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendar;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Content';
+    protected static string|UnitEnum|null $navigationGroup = 'Website';
 
-    protected static ?string $navigationLabel = 'Exhibitions';
-
-    protected static ?int $navigationSort = 21;
+    protected static ?string $navigationLabel = 'Journal';
 
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
+            Hidden::make('site_section_id')
+                ->default(fn (): ?int => request()->integer('section') ?: null),
             Section::make('Exhibition')
                 ->description('Content edits are saved independently from publication. Use the page actions to publish, unpublish or archive.')
                 ->schema([
@@ -58,7 +61,7 @@ class ExhibitionResource extends Resource
                             }
                         }),
                     TextInput::make('slug')
-                        ->label('Public URL slug')
+                        ->label('Entry URL slug')
                         ->required()
                         ->maxLength(180)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
@@ -126,21 +129,14 @@ class ExhibitionResource extends Resource
                 TextColumn::make('title')->searchable(),
                 TextColumn::make('venue')->searchable(),
                 TextColumn::make('state')->badge()->sortable(),
-                TextColumn::make('position')
-                    ->label('Display order')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('position')->label('Display order')->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('position')
             ->filters([
                 SelectFilter::make('state')->options([
                     'draft' => 'Draft',
                     'published' => 'Published',
-                    'hidden' => 'Hidden (legacy)',
                     'archived' => 'Archived',
                 ]),
             ])
@@ -148,30 +144,44 @@ class ExhibitionResource extends Resource
                 Action::make('moveUp')
                     ->label('Move up')
                     ->icon('heroicon-o-chevron-up')
-                    ->visible(fn (Exhibition $record): bool => app(EditorialRecordService::class)->canMove($record, 'up'))
+                    ->visible(fn (Exhibition $record): bool => app(JournalEntryOrderService::class)->canMove($record, 'up'))
                     ->action(function (Exhibition $record): void {
-                        app(EditorialRecordService::class)->move($record, 'up');
+                        app(JournalEntryOrderService::class)->move($record, 'up');
                         Notification::make()->title('Exhibition moved up')->success()->send();
                     }),
                 Action::make('moveDown')
                     ->label('Move down')
                     ->icon('heroicon-o-chevron-down')
-                    ->visible(fn (Exhibition $record): bool => app(EditorialRecordService::class)->canMove($record, 'down'))
+                    ->visible(fn (Exhibition $record): bool => app(JournalEntryOrderService::class)->canMove($record, 'down'))
                     ->action(function (Exhibition $record): void {
-                        app(EditorialRecordService::class)->move($record, 'down');
+                        app(JournalEntryOrderService::class)->move($record, 'down');
                         Notification::make()->title('Exhibition moved down')->success()->send();
                     }),
                 Action::make('viewPublic')
                     ->label('View on site')
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
-                    ->url(fn (Exhibition $record): string => route('exhibitions.index'))
+                    ->url(fn (Exhibition $record): string => self::publicUrl($record))
                     ->openUrlInNewTab()
-                    ->visible(fn (Exhibition $record): bool => $record->getAttribute('state') === 'published'),
+                    ->visible(fn (Exhibition $record): bool => $record->getAttribute('state') === 'published'
+                        && $record->siteSection()->where('state', 'published')->exists()),
                 EditAction::make(),
             ])
             ->toolbarActions([])
             ->emptyStateHeading('No exhibitions yet')
             ->emptyStateDescription('Add the first exhibition. New exhibitions start as drafts and are published explicitly.');
+    }
+
+    public static function publicUrl(Exhibition $exhibition): string
+    {
+        /** @var SiteSection|null $section */
+        $section = $exhibition->siteSection()->first();
+        if (! $section instanceof SiteSection
+            || (string) $section->getAttribute('type') !== SiteSection::TYPE_JOURNAL
+            || (string) $section->getAttribute('template') !== SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS) {
+            throw new LogicException('Exhibitions must belong to an Exhibitions Journal.');
+        }
+
+        return route('site.section', ['section' => $section->getAttribute('slug')]);
     }
 
     public static function getPages(): array
