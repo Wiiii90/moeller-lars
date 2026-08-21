@@ -84,6 +84,7 @@ class AdminPanelProvider extends PanelProvider
     private function navigation(NavigationBuilder $builder): NavigationBuilder
     {
         $pagesItem = SitePages::getNavigationItems()[0]
+            ->childItems($this->siteSectionNavigationItems())
             ->extraAttributes(['data-artist-tree-root' => 'true']);
 
         return $builder
@@ -100,10 +101,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Website')
                     ->collapsible()
-                    ->items([
-                        $pagesItem,
-                        ...$this->siteSectionNavigationItems(),
-                    ]),
+                    ->items([$pagesItem]),
                 NavigationGroup::make()
                     ->label('Insights')
                     ->items([
@@ -139,33 +137,50 @@ class AdminPanelProvider extends PanelProvider
                 continue;
             }
 
-            $items[] = $this->siteSectionNavigationItem($section, 0);
-            foreach ($childrenByParent[(int) $section->getKey()] ?? [] as $child) {
-                $items[] = $this->siteSectionNavigationItem($child, 1);
-            }
+            $items[] = $this->siteSectionNavigationItem($section, $childrenByParent, 0);
         }
 
         return $items;
     }
 
-    private function siteSectionNavigationItem(SiteSection $section, int $depth): NavigationItem
+    /** @param array<int, list<SiteSection>> $childrenByParent */
+    private function siteSectionNavigationItem(SiteSection $section, array $childrenByParent, int $depth): NavigationItem
     {
         $label = trim((string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')));
+        $children = $childrenByParent[(int) $section->getKey()] ?? [];
+        $url = $this->siteSectionWorkspaceUrl($section);
 
-        return NavigationItem::make($label)
+        $item = NavigationItem::make($label)
             ->key('site-section-'.$section->getKey())
-            ->url($this->siteSectionWorkspaceUrl($section))
+            ->url($url)
+            ->isActiveWhen(fn (): bool => $url !== null && $this->navigationUrlIsActive($url))
             ->extraAttributes([
                 'data-artist-site-section' => (string) $section->getKey(),
                 'data-artist-site-section-depth' => (string) $depth,
                 'data-artist-site-section-type' => (string) $section->getAttribute('type'),
+                'data-artist-tree-branch' => $children === [] ? 'false' : 'true',
             ]);
+
+        if ($children !== []) {
+            $item
+                ->icon(Heroicon::OutlinedFolder)
+                ->childItems(array_map(
+                    fn (SiteSection $child): NavigationItem => $this->siteSectionNavigationItem($child, $childrenByParent, $depth + 1),
+                    $children,
+                ));
+        }
+
+        return $item;
     }
 
-    private function siteSectionWorkspaceUrl(SiteSection $section): string
+    private function siteSectionWorkspaceUrl(SiteSection $section): ?string
     {
         $fallback = SitePages::getUrl().'#site-section-'.$section->getKey();
         $type = (string) $section->getAttribute('type');
+
+        if ($type === SiteSection::TYPE_NAVIGATION_GROUP) {
+            return null;
+        }
 
         if ($type === SiteSection::TYPE_HOME) {
             return ArtworkResource::getUrl('index');
@@ -194,5 +209,33 @@ class AdminPanelProvider extends PanelProvider
         }
 
         return $fallback;
+    }
+
+    private function navigationUrlIsActive(string $url): bool
+    {
+        $target = parse_url($url);
+        $targetPath = $target['path'] ?? null;
+        if (! is_string($targetPath) || $targetPath === '') {
+            return false;
+        }
+
+        $request = original_request();
+        $requestPath = '/'.ltrim($request->path(), '/');
+        if (rtrim($requestPath, '/') !== rtrim($targetPath, '/')) {
+            return false;
+        }
+
+        $query = [];
+        if (isset($target['query']) && is_string($target['query'])) {
+            parse_str($target['query'], $query);
+        }
+
+        foreach ($query as $key => $value) {
+            if ((string) $request->query((string) $key) !== (string) $value) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
