@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
@@ -32,7 +33,7 @@ it('uses the artist-facing shell navigation and public brand target', function (
         ->assertSee('Pages')
         ->assertSee('Home')
         ->assertSee('Vita')
-        ->assertSee('Exhibitions')
+        ->assertSee('EXHIBITIONS')
         ->assertSee('Blog')
         ->assertSee('Contact')
         ->assertSee('Content')
@@ -47,7 +48,9 @@ it('uses the artist-facing shell navigation and public brand target', function (
         ->assertSee('Contact delivery');
 });
 
-it('renders direct sign out and compact quick actions with the retained dashboard heading', function (): void {
+it('renders direct sign out and compact quick actions under one composed dashboard heading', function (): void {
+    expect((new Dashboard)->getHeading())->toBeNull();
+
     $this->get('/admin')
         ->assertSuccessful()
         ->assertSee('<form class="artist-topbar-sign-out" method="POST"', false)
