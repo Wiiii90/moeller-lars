@@ -14,9 +14,9 @@
 
         @if (! $capacity['measurement_available'])
             <section class="artist-storage__unavailable">
-                <p class="artist-workspace__kicker">Measurement unavailable</p>
-                <h3>Current usage cannot be verified</h3>
-                <p>Existing media remains readable. When an allowance is configured, new uploads stay blocked until authoritative usage can be measured again.</p>
+                <p class="artist-workspace__kicker">{{ $capacity['status_label'] }}</p>
+                <h3>{{ $capacity['configuration_valid'] ? 'Current usage cannot be verified' : 'The configured allowance cannot be verified' }}</h3>
+                <p>{{ $capacity['action'] }}</p>
             </section>
         @else
             <section class="artist-storage__composition">
@@ -34,12 +34,16 @@
                     @if (filled($capacity['action']))
                         <div class="artist-workspace__footnote"><span>{{ $capacity['action'] }}</span></div>
                     @endif
+                    <div class="artist-workspace__footnote">
+                        <span>Warning begins at {{ $capacity['warning_threshold'] }} of the allowance.</span>
+                        <span>{{ $capacity['unit_note'] }}</span>
+                    </div>
                 </div>
             </section>
 
             <section class="artist-storage__breakdown" aria-label="Storage classes">
                 <div><span>Original media</span><strong>{{ $capacity['authoritative'] }}</strong><small>{{ $capacity['original_files'] }} authoritative files</small></div>
-                <div><span>Generated derivatives</span><strong>{{ $capacity['generated'] }}</strong><small>{{ $capacity['generated_files'] }} rebuildable files</small></div>
+                <div><span>Generated derivatives</span><strong>{{ $capacity['generated'] }}</strong><small>{{ $capacity['generated_files'] }} rebuildable files · outside the allowance</small></div>
             </section>
 
             @if ($breakdown !== [])
@@ -61,6 +65,27 @@
                         <span>Each measured original appears exactly once. Media reused by more than one content area is grouped as shared instead of double-counted.</span>
                     </div>
                 </section>
+            @endif
+
+            @if ($heavyConsumers !== [])
+                <details class="artist-dashboard__content" aria-label="Largest authoritative originals">
+                    <summary class="artist-dashboard__section-head">
+                        <span>Largest originals</span>
+                        <span>Details</span>
+                    </summary>
+                    @foreach ($heavyConsumers as $row)
+                        <div class="artist-dashboard__row">
+                            <span class="artist-dashboard__identity">
+                                <strong>{{ $row['label'] }}</strong>
+                                <small>{{ $row['classification'] }} · authoritative original</small>
+                            </span>
+                            <strong class="artist-dashboard__number">{{ $row['display_bytes'] }}</strong>
+                        </div>
+                    @endforeach
+                    <div class="artist-workspace__footnote">
+                        <span>Largest files are derived from the authoritative measurement. Internal storage paths are intentionally not exposed.</span>
+                    </div>
+                </details>
             @endif
         @endif
 
