@@ -91,18 +91,18 @@ final class AdminQuickActionService
     /** @return array<string, int> */
     private function sequenceBonuses(User $user): array
     {
-        $events = AuditEvent::query()
+        $actions = AuditEvent::query()
             ->where('admin_user_id', $user->getKey())
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
             ->limit(self::RECENT_SEQUENCE_LIMIT)
-            ->get(['action'])
+            ->pluck('action')
             ->reverse()
             ->values();
 
         $sequence = [];
-        foreach ($events as $event) {
-            $key = $this->destinationKey((string) $event->getAttribute('action'));
+        foreach ($actions as $action) {
+            $key = $this->destinationKey((string) $action);
             if ($key !== null) {
                 $sequence[] = $key;
             }
