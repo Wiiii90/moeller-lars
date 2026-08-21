@@ -10,6 +10,21 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
+it('preserves legacy Instagram data in the typed social-link contract', function () {
+    $settings = PublicContentSetting::query()->sole();
+    $settings->update([
+        'instagram_handle' => 'legacy_artist',
+        'show_instagram' => false,
+        'social_links' => null,
+    ]);
+
+    expect($settings->refresh()->social_links)->toBe([[
+        'platform' => 'instagram',
+        'url' => 'https://www.instagram.com/legacy_artist/',
+        'visible' => false,
+    ]]);
+});
+
 it('renders typed social links without exposing hidden links', function () {
     PublicContentSetting::query()->sole()->update([
         'contact_state' => 'enabled',
