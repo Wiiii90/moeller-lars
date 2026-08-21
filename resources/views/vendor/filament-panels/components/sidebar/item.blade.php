@@ -35,8 +35,7 @@
             'fi-active' => $active,
             'fi-sidebar-item-has-active-child-items' => $activeChildItems,
             'fi-sidebar-item-has-url' => filled($url),
-            'artist-sidebar-tree-parent' => $hasChildItems,
-        ])
+        ])->style($hasChildItems && (! $isArtistTreeRoot) ? 'position: relative;' : null)
     }}
 >
     <a
@@ -60,6 +59,9 @@
             x-tooltip.html="tooltip"
         @endif
         class="fi-sidebar-item-btn"
+        @if ($hasChildItems && (! $isArtistTreeRoot))
+            style="padding-inline-end: 2.5rem;"
+        @endif
     >
         @if (filled($icon) && ((! $subGrouped) || ($sidebarCollapsible && (! $subNavigation))))
             {{
@@ -120,17 +122,17 @@
     @if ($hasChildItems && (! $isArtistTreeRoot))
         <button
             type="button"
-            class="artist-sidebar-tree-toggle"
             x-show="$store.sidebar.isOpen"
             x-on:click.stop.prevent="artistChildrenOpen = ! artistChildrenOpen"
             x-bind:aria-expanded="artistChildrenOpen.toString()"
             aria-label="Toggle {{ trim(strip_tags($slot->toHtml())) }} children"
+            style="position:absolute;inset-inline-end:.45rem;top:.42rem;z-index:2;display:grid;width:1.65rem;height:1.65rem;padding:0;place-items:center;border:0;border-radius:.25rem;background:transparent;color:currentColor;cursor:pointer;"
         >
-            <x-filament::icon
-                icon="heroicon-m-chevron-right"
-                class="artist-sidebar-tree-toggle__icon"
-                x-bind:class="{ 'is-open': artistChildrenOpen }"
-            />
+            <span
+                aria-hidden="true"
+                style="display:inline-block;font-size:.8rem;line-height:1;transition:transform 150ms ease;"
+                x-bind:style="artistChildrenOpen ? 'transform: rotate(90deg)' : 'transform: rotate(0deg)'"
+            >›</span>
         </button>
     @endif
 
@@ -140,7 +142,7 @@
                 x-show="artistChildrenOpen"
                 x-cloak
             @endif
-            class="fi-sidebar-sub-group-items artist-sidebar-tree-children"
+            class="fi-sidebar-sub-group-items"
         >
             @foreach ($childItems as $childItem)
                 @php
