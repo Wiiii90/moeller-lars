@@ -10,11 +10,11 @@ use UnitEnum;
 
 final class Dashboard extends BaseDashboard
 {
-    protected static string|UnitEnum|null $navigationGroup = 'Website';
+    protected static string|UnitEnum|null $navigationGroup = null;
 
     protected static ?string $title = 'Dashboard';
 
-    protected static ?int $navigationSort = -2;
+    protected static ?int $navigationSort = 0;
 
     public function getHeading(): string|Htmlable|null
     {
