@@ -4,21 +4,29 @@
             <div>
                 <p class="artist-workspace__kicker">Editorial history</p>
                 <h2>Activity</h2>
-                <p>A readable record of administrative and editorial changes from the last 180 days. The immutable security audit remains separate, and visitor analytics remain in Analytics.</p>
+                <p>A compact record of administrative and editorial changes. Visitor analytics stay in Analytics; immutable security audit data stays separate from this working history.</p>
             </div>
         </header>
 
         <div class="artist-workspace__footnote" aria-label="Activity filters">
-            <div class="artist-media-library__filters">
-                <a class="artist-action {{ $area === null ? 'is-primary' : '' }}" href="{{ request()->url().($family !== null ? '?'.http_build_query(['family' => $family]) : '') }}">All areas</a>
-                @foreach ($areaOptions as $value => $label)
-                    <a class="artist-action {{ $area === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['area' => $value, 'family' => $family])) }}">{{ $label }}</a>
+            <div class="artist-media-library__filters" aria-label="Time range">
+                @foreach ($periodOptions as $value => $label)
+                    <a
+                        class="artist-action {{ $period === $value ? 'is-primary' : '' }}"
+                        href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $value, 'area' => $area, 'family' => $family])) }}"
+                    >{{ $label }}</a>
                 @endforeach
             </div>
-            <div class="artist-media-library__filters">
-                <a class="artist-action {{ $family === null ? 'is-primary' : '' }}" href="{{ request()->url().($area !== null ? '?'.http_build_query(['area' => $area]) : '') }}">All changes</a>
+            <div class="artist-media-library__filters" aria-label="Editorial area">
+                <a class="artist-action {{ $area === null ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'family' => $family])) }}">All areas</a>
+                @foreach ($areaOptions as $value => $label)
+                    <a class="artist-action {{ $area === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $value, 'family' => $family])) }}">{{ $label }}</a>
+                @endforeach
+            </div>
+            <div class="artist-media-library__filters" aria-label="Change type">
+                <a class="artist-action {{ $family === null ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $area])) }}">All changes</a>
                 @foreach ($familyOptions as $value => $label)
-                    <a class="artist-action {{ $family === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['area' => $area, 'family' => $value])) }}">{{ $label }}</a>
+                    <a class="artist-action {{ $family === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $area, 'family' => $value])) }}">{{ $label }}</a>
                 @endforeach
             </div>
         </div>
@@ -47,7 +55,7 @@
                     </div>
                 </article>
             @empty
-                <p class="artist-dashboard__quiet">No activity matches the selected filters.</p>
+                <p class="artist-dashboard__quiet">No editorial activity matches these filters.</p>
             @endforelse
         </section>
 
