@@ -108,7 +108,7 @@ it('aggregates related stable action keys into one explainable destination', fun
         ->and($actions[0]['reason'])->toContain('8 related actions');
 });
 
-it('renders adaptive shortcuts inside the existing lazy editorial dashboard', function (): void {
+it('renders adaptive shortcuts inside the dashboard quick actions', function (): void {
     $admin = adaptiveQuickActionAdmin('adaptive-widget@example.test');
     AdminActionStat::create([
         'admin_user_id' => $admin->getKey(),
@@ -120,7 +120,7 @@ it('renders adaptive shortcuts inside the existing lazy editorial dashboard', fu
     $this->actingAs($admin);
 
     Livewire::test(ArtistDashboard::class)
-        ->assertSee('For you')
+        ->assertSee('Quick actions')
         ->assertSee('New blog post')
         ->assertSee('Based on repeated admin work');
 });
