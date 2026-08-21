@@ -4,7 +4,6 @@
             <div>
                 <p class="artist-workspace__kicker">Media capacity</p>
                 <h2>Storage allowance</h2>
-                <p>Authoritative originals count against the artist's configured allowance. Generated previews stay visibly separate because they can be rebuilt.</p>
             </div>
             <div class="artist-workspace__summary">
                 <div><strong>{{ $availableAssets }}</strong><span>Assets</span></div>
