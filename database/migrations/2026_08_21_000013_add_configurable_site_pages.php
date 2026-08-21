@@ -20,6 +20,14 @@ return new class extends Migration
             $table->timestampsTz();
         });
 
+        Schema::create('journal_settings', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('site_section_id')->unique()->constrained('site_sections')->cascadeOnDelete();
+            $table->string('listing_title', 240)->nullable();
+            $table->text('listing_intro')->nullable();
+            $table->timestampsTz();
+        });
+
         Schema::table('blog_posts', function (Blueprint $table): void {
             $table->foreignId('site_section_id')->nullable()->constrained('site_sections')->restrictOnDelete();
             $table->index(['site_section_id', 'position']);
@@ -31,25 +39,28 @@ return new class extends Migration
         });
 
         DB::statement('DROP INDEX IF EXISTS site_sections_singleton_type_unique');
+        DB::statement('DROP INDEX IF EXISTS blog_posts_public_position_unique');
         DB::statement('ALTER TABLE site_sections DROP CONSTRAINT IF EXISTS site_sections_type_check');
 
         $vita = DB::table('site_sections')->where('type', 'vita')->first();
         $contact = DB::table('site_sections')->where('type', 'contact')->first();
         $blog = DB::table('site_sections')->where('type', 'blog')->first();
         $exhibitions = DB::table('site_sections')->where('type', 'exhibitions')->first();
+        $legacyBlogSettings = DB::table('blog_settings')->orderBy('id')->first();
+        $now = now();
 
         if ($vita !== null) {
             DB::table('site_sections')->where('id', $vita->id)->update([
                 'type' => 'custom',
                 'template' => null,
                 'title' => $this->displayTitle($vita, 'CV'),
-                'updated_at' => now(),
+                'updated_at' => $now,
             ]);
             DB::table('custom_page_settings')->insert([
                 'site_section_id' => $vita->id,
                 'blocks' => json_encode($this->vitaBlocks(), JSON_THROW_ON_ERROR),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
 
@@ -58,34 +69,52 @@ return new class extends Migration
                 'type' => 'custom',
                 'template' => null,
                 'title' => $this->displayTitle($contact, 'Contact'),
-                'updated_at' => now(),
+                'updated_at' => $now,
             ]);
             DB::table('custom_page_settings')->insert([
                 'site_section_id' => $contact->id,
                 'blocks' => json_encode([$this->contactBlock(false)], JSON_THROW_ON_ERROR),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
 
         if ($blog !== null) {
+            $title = $this->displayTitle($blog, 'Blog');
             DB::table('site_sections')->where('id', $blog->id)->update([
                 'type' => 'journal',
                 'template' => 'blog',
-                'title' => $this->displayTitle($blog, 'Blog'),
-                'updated_at' => now(),
+                'title' => $title,
+                'updated_at' => $now,
             ]);
             DB::table('blog_posts')->whereNull('site_section_id')->update(['site_section_id' => $blog->id]);
+            DB::table('journal_settings')->insert([
+                'site_section_id' => $blog->id,
+                'listing_title' => is_string($legacyBlogSettings?->listing_title ?? null)
+                    ? $legacyBlogSettings->listing_title
+                    : $title,
+                'listing_intro' => $legacyBlogSettings?->listing_intro ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
         }
 
         if ($exhibitions !== null) {
+            $title = $this->displayTitle($exhibitions, 'Exhibitions');
             DB::table('site_sections')->where('id', $exhibitions->id)->update([
                 'type' => 'journal',
                 'template' => 'exhibitions',
-                'title' => $this->displayTitle($exhibitions, 'Exhibitions'),
-                'updated_at' => now(),
+                'title' => $title,
+                'updated_at' => $now,
             ]);
             DB::table('exhibitions')->whereNull('site_section_id')->update(['site_section_id' => $exhibitions->id]);
+            DB::table('journal_settings')->insert([
+                'site_section_id' => $exhibitions->id,
+                'listing_title' => $title,
+                'listing_intro' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
         }
 
         if (DB::table('blog_posts')->whereNull('site_section_id')->exists()) {
@@ -97,6 +126,8 @@ return new class extends Migration
 
         DB::statement('ALTER TABLE blog_posts ALTER COLUMN site_section_id SET NOT NULL');
         DB::statement('ALTER TABLE exhibitions ALTER COLUMN site_section_id SET NOT NULL');
+        DB::statement('CREATE UNIQUE INDEX blog_posts_section_position_unique ON blog_posts (site_section_id, position)');
+        DB::statement('CREATE UNIQUE INDEX exhibitions_section_position_unique ON exhibitions (site_section_id, position)');
 
         DB::statement("ALTER TABLE site_sections ADD CONSTRAINT site_sections_type_check CHECK (type IN ('home', 'gallery', 'navigation_group', 'custom', 'journal'))");
         DB::statement("ALTER TABLE site_sections ADD CONSTRAINT site_sections_template_check CHECK ((type = 'journal' AND template IN ('blog', 'exhibitions')) OR (type <> 'journal' AND template IS NULL))");
@@ -113,12 +144,26 @@ return new class extends Migration
             throw new RuntimeException('User-created configurable pages must be removed before rolling back their schema.');
         }
 
+        DB::statement('DROP INDEX IF EXISTS blog_posts_section_position_unique');
+        DB::statement('DROP INDEX IF EXISTS exhibitions_section_position_unique');
         DB::statement('ALTER TABLE blog_posts ALTER COLUMN site_section_id DROP NOT NULL');
         DB::statement('ALTER TABLE exhibitions ALTER COLUMN site_section_id DROP NOT NULL');
 
         DB::statement('DROP INDEX IF EXISTS site_sections_singleton_type_unique');
         DB::statement('ALTER TABLE site_sections DROP CONSTRAINT IF EXISTS site_sections_template_check');
         DB::statement('ALTER TABLE site_sections DROP CONSTRAINT IF EXISTS site_sections_type_check');
+
+        $blogSection = DB::table('site_sections')->where('slug', 'blog')->where('type', 'journal')->first();
+        if ($blogSection !== null) {
+            $journalSettings = DB::table('journal_settings')->where('site_section_id', $blogSection->id)->first();
+            if ($journalSettings !== null) {
+                DB::table('blog_settings')->where('id', 1)->update([
+                    'listing_title' => $journalSettings->listing_title,
+                    'listing_intro' => $journalSettings->listing_intro,
+                    'updated_at' => now(),
+                ]);
+            }
+        }
 
         DB::table('site_sections')->where('slug', 'cv')->where('type', 'custom')->update(['type' => 'vita', 'template' => null]);
         DB::table('site_sections')->where('slug', 'contact')->where('type', 'custom')->update(['type' => 'contact', 'template' => null]);
@@ -127,6 +172,7 @@ return new class extends Migration
 
         DB::statement("ALTER TABLE site_sections ADD CONSTRAINT site_sections_type_check CHECK (type IN ('home', 'gallery', 'navigation_group', 'vita', 'blog', 'exhibitions', 'contact'))");
         DB::statement("CREATE UNIQUE INDEX site_sections_singleton_type_unique ON site_sections (type) WHERE type IN ('home', 'vita', 'blog', 'exhibitions', 'contact')");
+        DB::statement("CREATE UNIQUE INDEX blog_posts_public_position_unique ON blog_posts (position) WHERE state IN ('published', 'scheduled')");
 
         Schema::table('exhibitions', function (Blueprint $table): void {
             $table->dropIndex(['site_section_id', 'position']);
@@ -138,6 +184,7 @@ return new class extends Migration
             $table->dropConstrainedForeignId('site_section_id');
         });
 
+        Schema::dropIfExists('journal_settings');
         Schema::dropIfExists('custom_page_settings');
 
         Schema::table('site_sections', function (Blueprint $table): void {
