@@ -30,12 +30,12 @@ class PublicArtworkController extends Controller
 
     public function category(string $category): View|RedirectResponse
     {
-        /** @var SiteSection|null $section */
         $sectionQuery = SiteSection::query()
             ->where('type', SiteSection::TYPE_GALLERY)
             ->where('slug', $category)
             ->with('artworkCategory');
         $this->preview->constrainSectionQuery($sectionQuery);
+        /** @var SiteSection|null $section */
         $section = $sectionQuery->first();
 
         if ($section === null) {
