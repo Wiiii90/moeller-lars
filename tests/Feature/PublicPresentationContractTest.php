@@ -63,7 +63,7 @@ it('separates artwork zoom from artwork detail navigation', function () {
 
     expect($card)
         ->toContain('class="artwork-card__link"', 'data-artwork-viewer-trigger', 'class="artwork-label-trigger"', 'View details for')
-        ->toContain('href="{{ route(\'artworks.show\', $artwork->slug) }}"');
+        ->toContain('$detailUrl = $preview->url(route(\'artworks.show\', $artwork->slug));', 'href="{{ $detailUrl }}"');
 
     $labelSegment = explode('class="artwork-label-trigger"', $card, 2)[1] ?? '';
     $labelSegment = explode('</a>', $labelSegment, 2)[0] ?? $labelSegment;
