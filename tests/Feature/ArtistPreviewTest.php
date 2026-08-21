@@ -26,8 +26,14 @@ it('marks authenticated preview as noindex and non-cacheable without changing pu
     $response->assertSuccessful()
         ->assertSee('PREVIEW')
         ->assertSee('name="robots" content="noindex,nofollow,noarchive"', false)
-        ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
-        ->assertHeader('Cache-Control', 'private, no-store, max-age=0, must-revalidate');
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+
+    $cacheControl = (string) $response->headers->get('Cache-Control');
+    expect($cacheControl)
+        ->toContain('private')
+        ->toContain('no-store')
+        ->toContain('max-age=0')
+        ->toContain('must-revalidate');
 
     expect($vita->fresh()->state)->toBe('hidden');
     $this->get('/cv')->assertNotFound();
