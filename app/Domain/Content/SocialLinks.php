@@ -29,10 +29,7 @@ final class SocialLinks
         return self::PLATFORMS[$platform] ?? ucfirst($platform);
     }
 
-    /**
-     * @param array<int, mixed>|null $links
-     * @return list<array{platform:string,url:string,visible:bool}>
-     */
+    /** @param array<int, mixed>|null $links */
     public static function visible(?array $links): array
     {
         $visible = [];
