@@ -25,7 +25,7 @@ final class VitaContentSettingResource extends Resource
 
     public static function getSettingsUrl(): string
     {
-        return static::getUrl('edit', ['record' => PublicContentSetting::vita()]);
+        return self::getUrl('edit', ['record' => PublicContentSetting::vita()]);
     }
 
     public static function getEloquentQuery(): Builder
