@@ -396,7 +396,7 @@ final class LegacyMigrationValidator
         }
 
         $expected = $this->requiredObject($manifest, 'public_profile');
-        $settings = PublicContentSetting::query()->sole();
+        $settings = PublicContentSetting::general();
 
         foreach (['public_email', 'instagram_handle', 'legal_disclaimer'] as $field) {
             $value = $this->requiredString($expected, $field);
