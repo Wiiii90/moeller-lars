@@ -27,7 +27,72 @@
             </nav>
         </header>
 
+        @php
+            $analyticsAvailable = is_array($analytics)
+                && in_array($analytics['status'] ?? null, ['available', 'stale'], true);
+            $visits = $analytics['page']['visits'] ?? null;
+            $views = $analytics['page']['views'] ?? null;
+            $interactions = $analytics['artwork_interactions'] ?? null;
+            $topWorks = ($analytics['artworks']['state'] ?? null) === 'available'
+                ? array_slice($analytics['artworks']['rows'] ?? [], 0, 3)
+                : [];
+            $trendRows = ($analytics['trend']['state'] ?? null) === 'available'
+                ? ($analytics['trend']['rows'] ?? [])
+                : [];
+            $lastTrend = $trendRows === [] ? null : end($trendRows);
+            $hasAnalyticsSignal = $analyticsAvailable && (
+                (($visits['state'] ?? null) === 'available' && (float) ($visits['value'] ?? 0) > 0)
+                || (($views['state'] ?? null) === 'available' && (float) ($views['value'] ?? 0) > 0)
+                || (($interactions['state'] ?? null) === 'available' && (float) ($interactions['value'] ?? 0) > 0)
+                || $topWorks !== []
+                || $trendRows !== []
+            );
+        @endphp
+
+        @if ($hasAnalyticsSignal)
+            <section aria-label="30-day gallery analytics">
+                <nav class="artist-gallery-tools">
+                    <span><strong>30d</strong> analytics</span>
+                    @if (($visits['state'] ?? null) === 'available')
+                        <span>{{ number_format((float) $visits['value']) }} visits</span>
+                    @endif
+                    @if (($views['state'] ?? null) === 'available')
+                        <span>{{ number_format((float) $views['value']) }} views</span>
+                    @endif
+                    @if (($interactions['state'] ?? null) === 'available')
+                        <span>{{ number_format((float) $interactions['value']) }} artwork interactions</span>
+                    @endif
+                    @if ($topWorks !== [])
+                        <span>Top work: {{ $topWorks[0]['title'] }}</span>
+                    @endif
+                    @if (is_array($lastTrend) && is_string($lastTrend['date'] ?? null))
+                        <span>Latest tracked day: {{ $lastTrend['date'] }}</span>
+                    @endif
+                    <a class="artist-action" href="{{ \App\Filament\Pages\Analytics::getUrl() }}">Open Analytics</a>
+                </nav>
+            </section>
+        @endif
+
         @if ($artworks !== [])
+            @if ($moveTargets !== [])
+                <section aria-label="Batch artwork actions">
+                    <nav class="artist-gallery-tools">
+                        <span>{{ count($selectedArtworkIds) }} selected</span>
+                        <select wire:model="batchTargetGalleryId" aria-label="Move selected artworks to Gallery">
+                            <option value="">Move selected to…</option>
+                            @foreach ($moveTargets as $target)
+                                <option value="{{ $target['id'] }}">
+                                    {{ $target['name'] }}{{ $target['state'] === 'published' ? '' : ' · '.$target['state'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button class="artist-action" type="button" wire:click="reassignSelectedArtworks" @disabled(count($selectedArtworkIds) === 0)>
+                            Move selected
+                        </button>
+                    </nav>
+                </section>
+            @endif
+
             <section class="artist-contact-sheet" aria-label="Artwork sequence for {{ $galleryContext['name'] }}">
                 @foreach ($artworks as $artwork)
                     <article class="artist-contact-sheet__item" wire:key="gallery-artwork-{{ $artwork['id'] }}">
@@ -49,10 +114,18 @@
                                     @if ($artwork['dimensions']){{ ($artwork['year'] || $artwork['medium']) ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
                                 </span>
                             </div>
-                            <span class="artist-contact-sheet__state {{ $artwork['state'] === 'published' ? 'is-published' : '' }}">{{ $artwork['state_label'] }}</span>
+                            <span class="artist-contact-sheet__state {{ $artwork['state'] === 'published' || $artwork['is_ready'] ? 'is-published' : '' }}">
+                                {{ $artwork['state_label'] }} · {{ $artwork['readiness_label'] }}
+                            </span>
                         </div>
 
                         <div class="artist-contact-sheet__actions">
+                            @if ($moveTargets !== [])
+                                <label class="artist-action">
+                                    <input type="checkbox" wire:model.live="selectedArtworkIds" value="{{ $artwork['id'] }}">
+                                    Select
+                                </label>
+                            @endif
                             <a class="artist-action is-primary" href="{{ $artwork['edit_url'] }}">Edit</a>
                             @if ($artwork['media_preview_url'])<a class="artist-action" href="{{ $artwork['media_preview_url'] }}">Images</a>@endif
                             @if ($artwork['public_url'])<a class="artist-action" href="{{ $artwork['public_url'] }}" target="_blank" rel="noopener">View</a>@endif
@@ -61,6 +134,20 @@
                                 <button class="artist-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'down')" aria-label="Move {{ $artwork['title'] }} later" @disabled(! $artwork['can_move_down'])>↓</button>
                             </span>
                         </div>
+
+                        @if ($moveTargets !== [])
+                            <div class="artist-contact-sheet__actions">
+                                <select wire:model="moveTargetGalleryIds.{{ $artwork['id'] }}" aria-label="Move {{ $artwork['title'] }} to Gallery">
+                                    <option value="">Move to Gallery…</option>
+                                    @foreach ($moveTargets as $target)
+                                        <option value="{{ $target['id'] }}">
+                                            {{ $target['name'] }}{{ $target['state'] === 'published' ? '' : ' · '.$target['state'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <button class="artist-action" type="button" wire:click="reassignArtwork({{ $artwork['id'] }})">Move</button>
+                            </div>
+                        @endif
                     </article>
                 @endforeach
             </section>
@@ -75,7 +162,8 @@
 
         <footer class="artist-workspace__footnote">
             <span>This sequence is the Gallery order used by the public artwork collection.</span>
-            <span>All artworks remains available for cross-Gallery editorial work; normal Gallery editing starts here.</span>
+            <span>An artwork keeps one owning Gallery. Moving it removes it from this Gallery and reassigns that ownership without touching shared MediaAssets.</span>
+            <span>Draft/site Preview remains the Pages preview integration; public View actions here never publish or synthesize draft routes.</span>
         </footer>
     </div>
 </x-filament-panels::page>

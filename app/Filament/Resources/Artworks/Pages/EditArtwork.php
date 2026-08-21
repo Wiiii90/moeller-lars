@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Artworks\Pages;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\ArtworkEditorialService;
+use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIngestService;
 use App\Filament\Resources\Artworks\ArtworkResource;
@@ -27,6 +28,14 @@ class EditArtwork extends EditRecord
 {
     protected static string $resource = ArtworkResource::class;
 
+    public bool $returnToGallery = false;
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+        $this->returnToGallery = request()->integer('gallery') > 0;
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         if (! array_key_exists('artwork_category_id', $data) || ! array_key_exists('work_date', $data)) {
@@ -42,9 +51,12 @@ class EditArtwork extends EditRecord
                 'artwork_category_id' => 'The artwork category is invalid.',
             ]);
         }
-        if ($record->getAttribute('state') === 'published' && $category->getAttribute('state') !== 'published') {
+        if (
+            $record->getAttribute('state') === 'published'
+            && ! $category->siteSection()->where('state', 'published')->exists()
+        ) {
             throw ValidationException::withMessages([
-                'artwork_category_id' => 'Published artwork requires a published category.',
+                'artwork_category_id' => 'Published artwork requires a published Gallery.',
             ]);
         }
 
@@ -74,20 +86,27 @@ class EditArtwork extends EditRecord
             unset($data['position']);
             $originalCategoryId = (int) $artwork->getRawOriginal('artwork_category_id');
             $targetCategoryId = (int) $data['artwork_category_id'];
+
             if ($targetCategoryId !== $originalCategoryId) {
                 /** @var ArtworkCategory|null $destination */
-                $destination = ArtworkCategory::query()->whereKey($targetCategoryId)->lockForUpdate()->first();
+                $destination = ArtworkCategory::query()->find($targetCategoryId);
                 if (! $destination) {
                     throw ValidationException::withMessages(['artwork_category_id' => 'The artwork category is invalid.']);
                 }
-                $maxPosition = $destination->artworks()->max('position');
-                $data['position'] = $maxPosition === null ? 0 : ((int) $maxPosition) + 1;
+
+                app(ArtworkGalleryAssignmentService::class)->reassign($artwork, $destination);
+                $artwork->refresh();
             }
+
+            unset($data['artwork_category_id']);
             $artwork->fill($data);
 
-            if ($artwork->getAttribute('state') === 'published' && $artwork->category()->where('state', '!=', 'published')->exists()) {
+            if (
+                $artwork->getAttribute('state') === 'published'
+                && ! $artwork->category()->whereHas('siteSection', static fn ($query) => $query->where('state', 'published'))->exists()
+            ) {
                 throw ValidationException::withMessages([
-                    'artwork_category_id' => 'Published artwork requires a published category.',
+                    'artwork_category_id' => 'Published artwork requires a published Gallery.',
                 ]);
             }
 
@@ -98,6 +117,17 @@ class EditArtwork extends EditRecord
 
             return $artwork;
         });
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        if ($this->returnToGallery) {
+            return ArtworkResource::getUrl('gallery', [
+                'gallery' => (int) $this->artworkRecord()->getAttribute('artwork_category_id'),
+            ]);
+        }
+
+        return ArtworkResource::getUrl('index');
     }
 
     protected function getHeaderActions(): array
