@@ -52,7 +52,7 @@
         @if ($hasAnalyticsSignal)
             <section aria-label="30-day gallery analytics">
                 <nav class="artist-gallery-tools">
-                    <span><strong>30d</strong> analytics</span>
+                    <span><strong>30d analytics</strong></span>
                     @if (($visits['state'] ?? null) === 'available')
                         <span>{{ number_format((float) $visits['value']) }} visits</span>
                     @endif
