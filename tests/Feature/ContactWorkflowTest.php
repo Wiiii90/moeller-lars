@@ -28,9 +28,12 @@ function validContactPayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('keeps hidden contact unavailable and renders the explicit construction state', function () {
+it('keeps page availability with SiteSection while Contact controls presentation', function () {
     contactPresentationSettings()->update(['contact_state' => 'hidden']);
-    $this->get('/contact')->assertNotFound();
+
+    $this->get('/contact')
+        ->assertSuccessful()
+        ->assertDontSee('<form', false);
 
     contactPresentationSettings()->update([
         'contact_state' => 'under_construction',
