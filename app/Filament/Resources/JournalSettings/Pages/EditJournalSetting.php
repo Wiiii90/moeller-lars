@@ -4,6 +4,7 @@ namespace App\Filament\Resources\JournalSettings\Pages;
 
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SafeRichTextRenderer;
+use App\Filament\Concerns\UsesEditorOverlay;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\JournalSettings\JournalSettingResource;
 use App\Models\JournalSetting;
@@ -14,18 +15,20 @@ use Illuminate\Validation\ValidationException;
 
 final class EditJournalSetting extends EditRecord
 {
+    use UsesEditorOverlay;
+
     protected static string $resource = JournalSettingResource::class;
 
     public function getBreadcrumbs(): array
     {
-        return ['Journal settings'];
+        return [];
     }
 
     protected function getHeaderActions(): array
     {
         return [
             Action::make('pages')
-                ->label('Back to Pages')
+                ->label('Pages')
                 ->url(SitePages::getUrl()),
         ];
     }
@@ -46,5 +49,10 @@ final class EditJournalSetting extends EditRecord
     {
         /** @var JournalSetting $record */
         return app(AdminSettingsService::class)->updateJournal($record, $data);
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->editorReturnUrl(SitePages::getUrl());
     }
 }
