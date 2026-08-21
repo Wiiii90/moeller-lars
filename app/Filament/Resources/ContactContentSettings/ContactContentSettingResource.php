@@ -7,7 +7,7 @@ use App\Models\PublicContentSetting;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -35,8 +35,9 @@ final class ContactContentSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Contact presentation')
-                ->description('Page publication and navigation live in Pages. This controls the canonical Contact form presentation only.')
+            Fieldset::make('Contact presentation')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     Select::make('contact_state')
                         ->label('Form state')
