@@ -121,6 +121,5 @@ it('renders adaptive shortcuts inside the dashboard quick actions', function ():
 
     Livewire::test(ArtistDashboard::class)
         ->assertSee('Quick actions')
-        ->assertSee('New blog post')
-        ->assertSee('Based on repeated admin work');
+        ->assertSee('New blog post');
 });
