@@ -56,7 +56,7 @@ it('renders the artist dashboard overview eagerly in the initial dashboard respo
     $this->get('/admin')
         ->assertSuccessful()
         ->assertSee('Website at a glance')
-        ->assertSee('Content')
+        ->assertSee('Traffic &amp; engagement', false)
         ->assertSee('Needs attention')
         ->assertSee('Recent activity');
 });
