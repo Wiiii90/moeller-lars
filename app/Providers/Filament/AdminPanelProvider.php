@@ -26,6 +26,7 @@ use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
@@ -112,6 +113,7 @@ class AdminPanelProvider extends PanelProvider
     /** @return array<NavigationItem> */
     private function siteSectionNavigationItems(): array
     {
+        /** @var EloquentCollection<int, SiteSection> $sections */
         $sections = SiteSection::query()
             ->orderBy('position')
             ->orderBy('id')
