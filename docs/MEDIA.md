@@ -31,6 +31,10 @@ The global Media workspace defaults to a paginated compact list. Search covers f
 
 The inspector loads the original only on demand and shows all current first-class consumers in one usage list. List/grid pages load only bounded thumbnail derivatives for image identification and use relationship counts instead of per-row usage queries.
 
+## Verification
+
+The pull-request verification pipeline runs the frontend build, Pest suite, PHPStan, Pint, and JavaScript tests. Media policy tests cover the explicit MIME allowlist, image/video classification, and operator-configured type-specific byte ceilings; the existing ingest suite continues to cover canonical image preservation, thumbnail generation, invalid input rejection, storage cleanup, and collision safety.
+
 ## Integration boundary
 
 Gallery/Artwork, Exhibitions, Blog, Vita/CV, and General/Site Identity should attach existing `MediaAsset` IDs rather than copying files. Content-specific validation still applies: favicon and other image-only fields must continue to constrain their selections even though the Media library itself also contains video.
