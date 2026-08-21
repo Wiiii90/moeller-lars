@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Filament\Widgets\ArtistDashboard;
 use App\Filament\Widgets\ContactHealth;
 use Filament\Pages\Dashboard as BaseDashboard;
+use Filament\Support\Enums\Width;
 use Illuminate\Contracts\Support\Htmlable;
 use UnitEnum;
 
@@ -15,6 +16,8 @@ final class Dashboard extends BaseDashboard
     protected static ?string $title = 'Dashboard';
 
     protected static ?int $navigationSort = 0;
+
+    protected Width|string|null $maxContentWidth = Width::Full;
 
     public function getHeading(): string|Htmlable|null
     {
