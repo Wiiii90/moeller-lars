@@ -161,9 +161,9 @@ final class SiteSection extends Model
         return $this->hasOne(CustomPageSetting::class);
     }
 
-    public function blogSetting(): HasOne
+    public function journalSetting(): HasOne
     {
-        return $this->hasOne(BlogSetting::class);
+        return $this->hasOne(JournalSetting::class);
     }
 
     public function hasPublicPage(): bool

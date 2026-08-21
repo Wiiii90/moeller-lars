@@ -2,7 +2,6 @@
 
 namespace App\Domain\Migration;
 
-use App\Models\SiteSection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -12,6 +11,9 @@ final class LegacyPublicCvImporter
     public const SOURCE = 'legacy-public-vita';
 
     public const BATCH = 'legacy-public-vita-2026-08-16';
+
+    /** @var list<string> */
+    private const LEGACY_SECTION_TYPES = ['vita', 'exhibitions'];
 
     public function import(): int
     {
@@ -86,7 +88,7 @@ final class LegacyPublicCvImporter
                 ]);
             }
 
-            foreach ([SiteSection::TYPE_VITA, SiteSection::TYPE_EXHIBITIONS] as $type) {
+            foreach (self::LEGACY_SECTION_TYPES as $type) {
                 $updated = DB::table('site_sections')
                     ->where('type', $type)
                     ->update([
@@ -135,7 +137,7 @@ final class LegacyPublicCvImporter
             $this->row('Exhibitions', 'Art AHoJ', '15.10.2020 – 05.11.2020', 'day', '2020-10-15', '2020-11-05', 'Erotik Art Museum & Popstreet.shop', 'Reeperbahn 157, 20359 Hamburg'),
             $this->row('Exhibitions', 'Der blonde Hans', '29.06.2021 – 25.09.2021', 'day', '2021-06-29', '2021-09-25', 'Jawoll Erotik Art Museum & St. Pauli Bürgerverein', 'Hamburg', 'Hans Albers Eck, Hans-Albers-Platz 20 & Hans-Albers-Klause, Friedrichstraße 19.'),
             $this->row('Exhibitions', 'Entdeckungsreisen', '01.07.2021 – 31.08.2021', 'day', '2021-07-01', '2021-08-31', 'Haspa-Filiale Bergstedt', 'Volksdorfer Damm 180, 22359 Hamburg'),
-            $this->row('Exhibitions', 'Schau´ nicht weg!', '14.08.2021 – 17.09.2021', 'day', '2021-08-14', '2021-09-17', 'EWIG Künstlerkollektiv und Schau´ nicht weg! e.V.', 'Hansa-Theater, Steindamm 17, 20099 Hamburg'),
+            $this->row('Exhibitions', 'Schau´ nicht weg!', '14.08.2021 – 17.09.2021', 'day', '2021-08-14', '2021-09-17', 'EWIG Künstlerkollektiv, wer wenn nicht wir e.V.', 'Hansa-Theater, Steindamm 17, 20099 Hamburg'),
             $this->row('Exhibitions', 'Labyrinthe', '24.10.2021 – 19.12.2021', 'day', '2021-10-24', '2021-12-19', 'Barfuss-Galerie', 'Sandkuhlenkoppel 55, 22399 Hamburg'),
             $this->row('Exhibitions', 'Verknotet im Leben', '06.03.2022 – 03.04.2022', 'day', '2022-03-06', '2022-04-03', 'Ev. Akademie in der Region Alstertal', 'Simon-Petrus-Kirche, Harksheider Str. 156, 22399 Hamburg'),
             $this->row('Exhibitions', 'Philippus Loves Art', '24.06.2022 – 08.07.2022', 'day', '2022-06-24', '2022-07-08', 'Ev. Philippus-Kirchengemeinde Kassel', 'Wolfhager Str. 182, 34127 Kassel'),

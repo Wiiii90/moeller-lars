@@ -121,7 +121,7 @@ final class CustomPageSettingResource extends Resource
                         ->defaultItems(0)
                         ->reorderable()
                         ->collapsible()
-                        ->itemLabel(function (array $state): ?string {
+                        ->itemLabel(function (array $state): string {
                             $type = $state['type'] ?? null;
                             $title = $state['title'] ?? null;
                             if (is_string($title) && trim($title) !== '') {
