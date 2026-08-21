@@ -24,7 +24,7 @@ final class CustomPageSetting extends Model
 
     protected static function booted(): void
     {
-        static::saving(function (self $settings): void {
+        self::saving(function (self $settings): void {
             $settings->validateBlocks(requirePublicMedia: false);
         });
     }
