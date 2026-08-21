@@ -21,14 +21,9 @@ class PublicContactController extends Controller
     {
         abort_unless($this->preview->sectionIsAvailable(SiteSection::TYPE_CONTACT), 404);
 
-        $contactSettings = PublicContentSetting::contact();
-        if (! $this->preview->active()) {
-            abort_if($contactSettings->getAttribute('contact_state') === 'hidden', 404);
-        }
-
         return view('pages.contact', [
             'generalSettings' => PublicContentSetting::general(),
-            'contactSettings' => $contactSettings,
+            'contactSettings' => PublicContentSetting::contact(),
         ]);
     }
 
