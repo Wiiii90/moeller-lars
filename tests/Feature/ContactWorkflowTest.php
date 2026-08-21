@@ -8,9 +8,14 @@ use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
-function publicContactSettings(): PublicContentSetting
+function contactPresentationSettings(): PublicContentSetting
 {
-    return PublicContentSetting::query()->sole();
+    return PublicContentSetting::contact();
+}
+
+function generalContactSettings(): PublicContentSetting
+{
+    return PublicContentSetting::general();
 }
 
 function validContactPayload(array $overrides = []): array
@@ -24,10 +29,10 @@ function validContactPayload(array $overrides = []): array
 }
 
 it('keeps hidden contact unavailable and renders the explicit construction state', function () {
-    publicContactSettings()->update(['contact_state' => 'hidden']);
+    contactPresentationSettings()->update(['contact_state' => 'hidden']);
     $this->get('/contact')->assertNotFound();
 
-    publicContactSettings()->update([
+    contactPresentationSettings()->update([
         'contact_state' => 'under_construction',
         'contact_status_text' => 'Contact is being prepared.',
         'contact_icon' => 'info',
@@ -39,7 +44,7 @@ it('keeps hidden contact unavailable and renders the explicit construction state
         ->assertDontSee('<form', false);
 });
 
-it('uses the private settings recipient and the configured site sender identity', function () {
+it('uses the private General recipient and configured site sender identity', function () {
     config([
         'contact.recipient' => 'fallback@example.test',
         'mail.default' => 'smtp',
@@ -47,8 +52,8 @@ it('uses the private settings recipient and the configured site sender identity'
         'mail.from.name' => 'Lars Möller Website',
     ]);
     Mail::fake();
-    publicContactSettings()->update([
-        'contact_state' => 'enabled',
+    contactPresentationSettings()->update(['contact_state' => 'enabled']);
+    generalContactSettings()->update([
         'public_email' => 'public@example.test',
         'show_public_email' => true,
         'contact_recipient_email' => 'private@example.test',
@@ -84,10 +89,8 @@ it('falls back to the runtime recipient when the private recipient is empty', fu
         'mail.from.name' => 'Website',
     ]);
     Mail::fake();
-    publicContactSettings()->update([
-        'contact_state' => 'enabled',
-        'contact_recipient_email' => null,
-    ]);
+    contactPresentationSettings()->update(['contact_state' => 'enabled']);
+    generalContactSettings()->update(['contact_recipient_email' => null]);
 
     $this->post('/contact', validContactPayload())->assertSessionHas('contact_success');
 
@@ -96,7 +99,7 @@ it('falls back to the runtime recipient when the private recipient is empty', fu
 
 it('validates the minimal form and keeps csrf plus the honeypot internal', function () {
     config(['contact.recipient' => 'artist@example.test']);
-    publicContactSettings()->update(['contact_state' => 'enabled']);
+    contactPresentationSettings()->update(['contact_state' => 'enabled']);
 
     $this->from('/contact')->post('/contact', validContactPayload([
         'name' => '',
@@ -121,7 +124,7 @@ it('rate limits repeated contact submissions', function () {
         'mail.from.address' => 'website@moeller-lars.de',
     ]);
     Mail::fake();
-    publicContactSettings()->update(['contact_state' => 'enabled']);
+    contactPresentationSettings()->update(['contact_state' => 'enabled']);
 
     foreach (range(1, 5) as $attempt) {
         $this->post('/contact', validContactPayload(['message' => "Attempt {$attempt}"]))
@@ -137,7 +140,8 @@ it('reports missing mail configuration as failure instead of success', function 
         'contact.recipient' => null,
         'mail.from.address' => null,
     ]);
-    publicContactSettings()->update(['contact_state' => 'enabled']);
+    contactPresentationSettings()->update(['contact_state' => 'enabled']);
+    generalContactSettings()->update(['contact_recipient_email' => null]);
 
     $this->from('/contact')->post('/contact', validContactPayload())
         ->assertSessionHasErrors('contact')
