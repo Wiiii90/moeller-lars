@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\ArtworkCategories\Pages;
 
 use App\Domain\Artwork\ArtworkCategoryEditorialService;
+use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Pages\SitePages;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
@@ -10,6 +12,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreateArtworkCategory extends CreateRecord
 {
+    use UsesEditorOverlay;
+
     protected static string $resource = ArtworkCategoryResource::class;
 
     protected function handleRecordCreation(array $data): Model
@@ -17,11 +21,15 @@ class CreateArtworkCategory extends CreateRecord
         return app(ArtworkCategoryEditorialService::class)->create($data);
     }
 
+    protected function getRedirectUrl(): string
+    {
+        return $this->editorReturnUrl(SitePages::getUrl());
+    }
+
     protected function getCreatedNotification(): ?Notification
     {
         return Notification::make()
             ->success()
-            ->title('Gallery created as hidden')
-            ->body('Publication, navigation and site order are managed from Pages.');
+            ->title('Gallery created as hidden');
     }
 }
