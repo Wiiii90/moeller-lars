@@ -3,6 +3,7 @@
 use App\Mail\WebsiteContactMessage;
 use App\Models\PublicContentSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
@@ -64,10 +65,14 @@ it('uses the private settings recipient and the configured site sender identity'
 
     Mail::assertSent(WebsiteContactMessage::class, function (WebsiteContactMessage $mail): bool {
         $envelope = $mail->envelope();
+        $from = $envelope->from;
+        $replyTo = $envelope->replyTo[0] ?? null;
 
         return $mail->hasTo('private@example.test')
-            && $envelope->from?->address === 'website@moeller-lars.de'
-            && ($envelope->replyTo[0]->address ?? null) === 'visitor@example.test';
+            && $from instanceof Address
+            && $from->address === 'website@moeller-lars.de'
+            && $replyTo instanceof Address
+            && $replyTo->address === 'visitor@example.test';
     });
 });
 
@@ -89,7 +94,7 @@ it('falls back to the runtime recipient when the private recipient is empty', fu
     Mail::assertSent(WebsiteContactMessage::class, fn (WebsiteContactMessage $mail): bool => $mail->hasTo('fallback@example.test'));
 });
 
-it('validates the minimal form and keeps the honeypot internal', function () {
+it('validates the minimal form and keeps csrf plus the honeypot internal', function () {
     config(['contact.recipient' => 'artist@example.test']);
     publicContactSettings()->update(['contact_state' => 'enabled']);
 
@@ -105,6 +110,7 @@ it('validates the minimal form and keeps the honeypot internal', function () {
 
     $this->get('/contact')
         ->assertSuccessful()
+        ->assertSee('name="_token"', false)
         ->assertDontSee('name="website"', false);
 });
 
