@@ -21,20 +21,23 @@ class PublicContactController extends Controller
     {
         abort_unless($this->preview->sectionIsAvailable(SiteSection::TYPE_CONTACT), 404);
 
-        $settings = PublicContentSetting::query()->sole();
+        $contactSettings = PublicContentSetting::contact();
         if (! $this->preview->active()) {
-            abort_if($settings->getAttribute('contact_state') === 'hidden', 404);
+            abort_if($contactSettings->getAttribute('contact_state') === 'hidden', 404);
         }
 
-        return view('pages.contact', ['settings' => $settings]);
+        return view('pages.contact', [
+            'generalSettings' => PublicContentSetting::general(),
+            'contactSettings' => $contactSettings,
+        ]);
     }
 
     public function submit(Request $request): RedirectResponse
     {
-        $settings = PublicContentSetting::query()->sole();
+        $contactSettings = PublicContentSetting::contact();
         abort_unless(
             SiteSection::isPublished(SiteSection::TYPE_CONTACT)
-                && $settings->getAttribute('contact_state') === 'enabled',
+                && $contactSettings->getAttribute('contact_state') === 'enabled',
             404,
         );
 
@@ -45,7 +48,8 @@ class PublicContactController extends Controller
             'company' => ['nullable', 'string', 'max:0'],
         ]);
 
-        $recipient = $settings->getAttribute('contact_recipient_email');
+        $generalSettings = PublicContentSetting::general();
+        $recipient = $generalSettings->getAttribute('contact_recipient_email');
         if (! is_string($recipient) || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
             $recipient = config('contact.recipient');
         }
