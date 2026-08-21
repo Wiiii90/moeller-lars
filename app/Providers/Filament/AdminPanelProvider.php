@@ -7,11 +7,16 @@ use App\Filament\Pages\Analytics;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\SitePages;
 use App\Filament\Pages\StorageCapacity;
+use App\Filament\Resources\Artworks\ArtworkResource;
+use App\Filament\Resources\BlogPosts\BlogPostResource;
+use App\Filament\Resources\CustomPageSettings\CustomPageSettingResource;
+use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Filament\Widgets\ArtistDashboard;
 use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
+use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -112,6 +117,7 @@ class AdminPanelProvider extends PanelProvider
     {
         /** @var EloquentCollection<int, SiteSection> $sections */
         $sections = SiteSection::query()
+            ->with('customPageSetting')
             ->orderBy('position')
             ->orderBy('id')
             ->get();
@@ -145,7 +151,7 @@ class AdminPanelProvider extends PanelProvider
 
         $item = NavigationItem::make($label)
             ->key('site-section-'.$section->getKey())
-            ->url(SitePages::getUrl().'#site-section-'.$section->getKey())
+            ->url($this->siteSectionWorkspaceUrl($section))
             ->extraAttributes([
                 'data-artist-site-section' => (string) $section->getKey(),
                 'data-artist-site-section-type' => (string) $section->getAttribute('type'),
@@ -161,5 +167,39 @@ class AdminPanelProvider extends PanelProvider
         }
 
         return $item;
+    }
+
+    private function siteSectionWorkspaceUrl(SiteSection $section): string
+    {
+        $fallback = SitePages::getUrl().'#site-section-'.$section->getKey();
+        $type = (string) $section->getAttribute('type');
+
+        if ($type === SiteSection::TYPE_HOME) {
+            return ArtworkResource::getUrl('index');
+        }
+
+        if ($type === SiteSection::TYPE_GALLERY) {
+            $galleryId = $section->getAttribute('artwork_category_id');
+
+            return is_numeric($galleryId)
+                ? ArtworkResource::getUrl('gallery', ['gallery' => (int) $galleryId])
+                : $fallback;
+        }
+
+        if ($type === SiteSection::TYPE_CUSTOM) {
+            $settings = $section->getRelation('customPageSetting');
+
+            return $settings instanceof CustomPageSetting
+                ? CustomPageSettingResource::getUrl('edit', ['record' => $settings])
+                : $fallback;
+        }
+
+        if ($type === SiteSection::TYPE_JOURNAL) {
+            return $section->getAttribute('template') === SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS
+                ? ExhibitionResource::getUrl('index', ['section' => $section->getKey()])
+                : BlogPostResource::getUrl('index', ['section' => $section->getKey()]);
+        }
+
+        return $fallback;
     }
 }
