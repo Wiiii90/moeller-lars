@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Exhibitions · Lars Möller')
-@section('meta_description', 'Exhibitions by Lars Möller')
-@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/exhibitions'))
+@section('title', $section->title.' · Lars Möller')
+@section('meta_description', $section->title.' by Lars Möller')
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($section->publicPath()))
 
 @section('content')
-    <section class="exhibitions-page" aria-label="Exhibitions">
+    <section class="exhibitions-page" aria-label="{{ $section->title }}">
         @forelse ($exhibitions as $exhibition)
             @php
                 $description = trim((string) ($exhibition->description ?? ''));
@@ -19,7 +19,7 @@
             <article
                 class="exhibition-entry"
                 data-matomo-event-view="exhibition_view"
-                data-matomo-event-category="Exhibition"
+                data-matomo-event-category="Journal"
                 data-matomo-event-name="{{ $exhibition->title }}"
             >
                 <div class="exhibition-entry__schedule" aria-label="Exhibition dates">
@@ -82,7 +82,7 @@
                                 <a
                                     href="{{ $exhibition->external_url }}"
                                     rel="noopener noreferrer"
-                                    data-matomo-event-category="Exhibition"
+                                    data-matomo-event-category="Journal"
                                     data-matomo-event-action="exhibition_external_click"
                                     data-matomo-event-name="{{ $exhibition->title }}"
                                 >More information</a>
@@ -91,7 +91,7 @@
                                 <a
                                     href="{{ $exhibition->directions_url }}"
                                     rel="noopener noreferrer"
-                                    data-matomo-event-category="Exhibition"
+                                    data-matomo-event-category="Journal"
                                     data-matomo-event-action="exhibition_directions_click"
                                     data-matomo-event-name="{{ $exhibition->title }}"
                                 >Directions</a>
