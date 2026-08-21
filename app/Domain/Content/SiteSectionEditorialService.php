@@ -4,9 +4,9 @@ namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Models\BlogPost;
-use App\Models\BlogSetting;
 use App\Models\CustomPageSetting;
 use App\Models\Exhibition;
+use App\Models\JournalSetting;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -99,13 +99,11 @@ final class SiteSectionEditorialService
                 'artwork_category_id' => null,
             ]);
 
-            if ($template === SiteSection::JOURNAL_TEMPLATE_BLOG) {
-                $settings = new BlogSetting;
-                $settings->setAttribute('site_section_id', $section->getKey());
-                $settings->setAttribute('listing_title', $title);
-                $settings->setAttribute('listing_intro', null);
-                $settings->save();
-            }
+            $settings = new JournalSetting;
+            $settings->setAttribute('site_section_id', $section->getKey());
+            $settings->setAttribute('listing_title', $title);
+            $settings->setAttribute('listing_intro', null);
+            $settings->save();
 
             $this->audit->record($actor, 'site_section.created', 'site_section', (int) $section->getKey());
 
@@ -117,7 +115,7 @@ final class SiteSectionEditorialService
     {
         $type = (string) $section->getAttribute('type');
         if (! in_array($type, [SiteSection::TYPE_CUSTOM, SiteSection::TYPE_JOURNAL, SiteSection::TYPE_NAVIGATION_GROUP], true)) {
-            throw ValidationException::withMessages(['section' => 'This system or legacy page cannot be deleted from the configurable page workflow.']);
+            throw ValidationException::withMessages(['section' => 'This page cannot be deleted from the configurable page workflow.']);
         }
 
         $actor = $this->audit->requireActor();
@@ -141,8 +139,6 @@ final class SiteSectionEditorialService
                 if ($hasEntries) {
                     throw ValidationException::withMessages(['section' => 'This Journal cannot be deleted while it still contains entries.']);
                 }
-
-                BlogSetting::query()->where('site_section_id', $fresh->getKey())->delete();
             }
 
             $sectionId = (int) $fresh->getKey();
