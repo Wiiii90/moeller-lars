@@ -4,22 +4,26 @@
             <div>
                 <p class="artist-workspace__kicker">Contact &amp; delivery</p>
                 <h2>Contact form readiness</h2>
-                <p>Public availability and non-sensitive mail-delivery readiness from the same runtime contract used by the form.</p>
+                <p>Published Contact components and non-sensitive mail-delivery readiness from the same runtime contract used by submissions.</p>
             </div>
             <div class="artist-dashboard__quick-actions" aria-label="Contact settings actions">
                 <a class="artist-action" href="{{ $generalUrl }}">General</a>
-                <a class="artist-action" href="{{ $contactUrl }}">Contact content</a>
+                <a class="artist-action" href="{{ $pagesUrl }}">Pages</a>
             </div>
         </header>
 
         <div class="artist-workspace__summary" aria-label="Contact health summary">
             <div>
-                <strong>{{ $pageState }}</strong>
-                <span>Contact page</span>
+                <strong>{{ $publishedPlacements }}</strong>
+                <span>Published placements</span>
+            </div>
+            <div>
+                <strong>{{ $formPlacements }}</strong>
+                <span>Form placements</span>
             </div>
             <div>
                 <strong>{{ $formState }}</strong>
-                <span>Form</span>
+                <span>Global form state</span>
             </div>
             <div>
                 <strong>{{ $delivery['recipient_ready'] ? $delivery['recipient_source'] : 'Missing' }}</strong>
