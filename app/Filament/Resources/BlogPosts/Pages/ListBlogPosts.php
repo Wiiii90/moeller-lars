@@ -5,7 +5,7 @@ namespace App\Filament\Resources\BlogPosts\Pages;
 use App\Domain\Blog\BlogEditorialService;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\BlogSettings\BlogSettingResource;
+use App\Filament\Resources\JournalSettings\JournalSettingResource;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
 use DateTimeInterface;
@@ -56,7 +56,7 @@ final class ListBlogPosts extends Page
             Action::make('journalSettings')
                 ->label('Journal settings')
                 ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
-                ->url(BlogSettingResource::getSettingsUrl($this->sectionId)),
+                ->url(JournalSettingResource::getSettingsUrl($this->sectionId)),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
