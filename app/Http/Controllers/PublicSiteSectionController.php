@@ -1,0 +1,158 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\SafeRichTextRenderer;
+use App\Domain\Content\SitePreviewContext;
+use App\Domain\Media\PublicMedia;
+use App\Models\BlogPost;
+use App\Models\BlogSetting;
+use App\Models\Exhibition;
+use App\Models\MediaAsset;
+use App\Models\PublicContentSetting;
+use App\Models\SiteSection;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
+
+final class PublicSiteSectionController extends Controller
+{
+    public function __construct(
+        private readonly PublicArtworkController $artworks,
+        private readonly SafeRichTextRenderer $richText,
+        private readonly PublicMedia $media,
+        private readonly SitePreviewContext $preview,
+    ) {}
+
+    public function show(string $category): View|RedirectResponse
+    {
+        $query = SiteSection::query()->where('slug', $category);
+        $this->preview->constrainSectionQuery($query);
+        /** @var SiteSection|null $section */
+        $section = $query->first();
+
+        if ($section === null || (string) $section->getAttribute('type') === SiteSection::TYPE_GALLERY) {
+            return $this->artworks->category($category);
+        }
+
+        return match ((string) $section->getAttribute('type')) {
+            SiteSection::TYPE_CUSTOM => $this->customPage($section),
+            SiteSection::TYPE_JOURNAL => $this->journal($section),
+            default => abort(404),
+        };
+    }
+
+    public function journalEntry(string $section, string $slug): View
+    {
+        $sectionQuery = SiteSection::query()
+            ->where('type', SiteSection::TYPE_JOURNAL)
+            ->where('template', SiteSection::JOURNAL_TEMPLATE_BLOG)
+            ->where('slug', $section);
+        $this->preview->constrainSectionQuery($sectionQuery);
+        /** @var SiteSection|null $journal */
+        $journal = $sectionQuery->first();
+        abort_unless($journal instanceof SiteSection, 404);
+
+        /** @var BlogPost|null $post */
+        $post = $this->blogPostsQuery($journal)
+            ->where('slug', $slug)
+            ->with('coverMedia.variants')
+            ->first();
+        abort_unless($post instanceof BlogPost, 404);
+
+        return view('pages.blog.show', [
+            'section' => $journal,
+            'post' => $post,
+            'richText' => $this->richText,
+            'media' => $this->media,
+        ]);
+    }
+
+    private function customPage(SiteSection $section): View
+    {
+        $section->load('customPageSetting');
+        $settings = $section->getRelation('customPageSetting');
+        abort_unless($settings !== null, 404);
+
+        $blocks = is_array($settings->getAttribute('blocks')) ? $settings->getAttribute('blocks') : [];
+        $mediaIds = collect($blocks)
+            ->pluck('media_asset_id')
+            ->filter(fn ($id): bool => is_numeric($id))
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        /** @var Collection<int, MediaAsset> $assets */
+        $assets = MediaAsset::query()->whereKey($mediaIds)->with('variants')->get()->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
+
+        return view('pages.custom', [
+            'section' => $section,
+            'blocks' => $blocks,
+            'assets' => $assets,
+            'generalSettings' => PublicContentSetting::general(),
+            'contactSettings' => PublicContentSetting::contact(),
+            'richText' => $this->richText,
+            'media' => $this->media,
+        ]);
+    }
+
+    private function journal(SiteSection $section): View
+    {
+        return match ((string) $section->getAttribute('template')) {
+            SiteSection::JOURNAL_TEMPLATE_BLOG => $this->blogJournal($section),
+            SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS => $this->exhibitionsJournal($section),
+            default => abort(404),
+        };
+    }
+
+    private function blogJournal(SiteSection $section): View
+    {
+        $posts = $this->blogPostsQuery($section)
+            ->with('coverMedia.variants')
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get();
+
+        return view('pages.blog.index', [
+            'section' => $section,
+            'settings' => BlogSetting::forSection($section),
+            'posts' => $posts,
+            'richText' => $this->richText,
+            'media' => $this->media,
+        ]);
+    }
+
+    private function exhibitionsJournal(SiteSection $section): View
+    {
+        $exhibitions = Exhibition::query()
+            ->where('site_section_id', $section->getKey())
+            ->when(
+                $this->preview->active(),
+                fn (Builder $query) => $query->where('state', '<>', 'archived'),
+                fn (Builder $query) => $query->where('state', 'published'),
+            )
+            ->with(['mediaUsages.mediaAsset.variants'])
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get();
+
+        return view('pages.exhibitions', [
+            'section' => $section,
+            'exhibitions' => $exhibitions,
+            'richText' => $this->richText,
+            'media' => $this->media,
+        ]);
+    }
+
+    /** @return Builder<BlogPost> */
+    private function blogPostsQuery(SiteSection $section): Builder
+    {
+        $query = $this->preview->active()
+            ? BlogPost::query()->where('state', '<>', 'archived')
+            : BlogEditorialService::publicQuery();
+
+        return $query->where('site_section_id', $section->getKey());
+    }
+}
