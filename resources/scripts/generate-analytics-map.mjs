@@ -6,16 +6,54 @@ const sourceCommit = 'ca96624a56bd078437bca8184e78163e5039ad19';
 const sourceBlob = '1e6ab74c7042f97013be69ceec798be8e1aff27d';
 const sourceUrl = `https://raw.githubusercontent.com/nvkelso/natural-earth-vector/${sourceCommit}/geojson/ne_110m_admin_0_countries.geojson`;
 const output = 'resources/views/filament/generated/analytics-world-map.blade.php';
+const width = 1200;
+const height = 600;
 
-const response = await fetch(sourceUrl, {
-    headers: { 'User-Agent': 'moeller-lars-map-builder/1.0' },
-});
+const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-if (!response.ok) {
-    throw new Error(`Natural Earth download failed with HTTP ${response.status}.`);
+async function downloadSource() {
+    let lastError;
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+            const response = await fetch(sourceUrl, {
+                headers: { 'User-Agent': 'moeller-lars-map-builder/1.0' },
+                signal: AbortSignal.timeout(10_000),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Natural Earth download failed with HTTP ${response.status}.`);
+            }
+
+            return Buffer.from(await response.arrayBuffer());
+        } catch (error) {
+            lastError = error;
+            if (attempt < 3) {
+                await sleep(attempt * 500);
+            }
+        }
+    }
+
+    throw lastError ?? new Error('Natural Earth download failed.');
 }
 
-const bytes = Buffer.from(await response.arrayBuffer());
+async function writeOfflineFallback(error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    const blade = `{{-- Natural Earth map generation was unavailable during this build.\n     The analytics geography table remains canonical; this SVG intentionally degrades to an empty map.\n     Source commit: ${sourceCommit}\n     Source Git blob: ${sourceBlob} --}}\n<svg class="analytics-world__svg" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet" data-map-source-unavailable="true"></svg>\n`;
+
+    await mkdir(dirname(output), { recursive: true });
+    await writeFile(output, blade, 'utf8');
+    console.warn(`Natural Earth map unavailable (${reason}); wrote deterministic offline fallback at ${output}.`);
+}
+
+let bytes;
+try {
+    bytes = await downloadSource();
+} catch (error) {
+    await writeOfflineFallback(error);
+    process.exit(0);
+}
+
 const gitBlobHash = createHash('sha1')
     .update(`blob ${bytes.length}\0`)
     .update(bytes)
@@ -30,8 +68,6 @@ if (collection?.type !== 'FeatureCollection' || !Array.isArray(collection.featur
     throw new Error('Natural Earth source is not a GeoJSON FeatureCollection.');
 }
 
-const width = 1200;
-const height = 600;
 const project = ([longitude, latitude]) => [
     ((Number(longitude) + 180) / 360) * width,
     ((90 - Number(latitude)) / 180) * height,
