@@ -1,8 +1,21 @@
-@props(['generalSettings', 'contactSettings', 'showStatus' => true])
+@props([
+    'generalSettings',
+    'contactSettings',
+    'showStatus' => true,
+    'showEmail' => null,
+    'showForm' => null,
+    'socialPlatforms' => null,
+])
 
 @php
-    $showEmail = (bool) $generalSettings->show_public_email && $generalSettings->public_email !== null;
-    $socialLinks = \App\Domain\Content\SocialLinks::visible($generalSettings->social_links);
+    $showEmail = $showEmail ?? true;
+    $showForm = $showForm ?? true;
+    $showEmail = (bool) $showEmail && (bool) $generalSettings->show_public_email && $generalSettings->public_email !== null;
+    $allowedPlatforms = is_array($socialPlatforms) ? $socialPlatforms : null;
+    $socialLinks = collect(\App\Domain\Content\SocialLinks::visible($generalSettings->social_links))
+        ->filter(fn (array $link): bool => $allowedPlatforms === null || in_array($link['platform'], $allowedPlatforms, true))
+        ->values()
+        ->all();
 @endphp
 
 <section class="contact-section" aria-labelledby="contact-heading">
@@ -36,13 +49,13 @@
         </div>
     @endif
 
-    @if ($contactSettings->contact_state === 'under_construction')
+    @if ($showForm && $contactSettings->contact_state === 'under_construction')
         @if ($showStatus)
             <p class="contact-status contact-status--quiet" role="status">
                 {{ $contactSettings->contact_status_text }}
             </p>
         @endif
-    @elseif ($contactSettings->contact_state === 'enabled')
+    @elseif ($showForm && $contactSettings->contact_state === 'enabled')
         @if (session('contact_success'))
             <p
                 class="contact-message"
