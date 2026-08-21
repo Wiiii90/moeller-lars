@@ -1,0 +1,240 @@
+/* Route-backed editor dialogs.
+ * Resource create/edit routes keep real URLs and browser history while presenting
+ * as one shared responsive editor surface. On small screens the surface becomes
+ * a full-screen editor rather than a constrained modal.
+ */
+.artist-editor-overlay {
+    position: relative;
+    z-index: 30;
+    min-height: calc(100dvh - 7rem);
+    padding: .75rem 0 2rem;
+}
+
+.artist-editor-overlay::before {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: rgba(24, 24, 24, .16);
+    backdrop-filter: blur(1.5px);
+    content: "";
+    pointer-events: none;
+}
+
+.dark .artist-editor-overlay::before {
+    background: rgba(0, 0, 0, .34);
+}
+
+.artist-editor-overlay > .fi-page-header-main-ctn {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 78rem);
+    max-height: calc(100dvh - 7rem);
+    margin: 0 auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 1px solid var(--artist-admin-line-strong);
+    border-radius: .65rem;
+    background: #fff;
+    box-shadow: 0 1.35rem 4rem rgba(20, 20, 20, .16);
+}
+
+.dark .artist-editor-overlay > .fi-page-header-main-ctn {
+    background: rgb(24, 24, 27);
+    box-shadow: 0 1.35rem 4rem rgba(0, 0, 0, .42);
+}
+
+.artist-editor-overlay .fi-header {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    min-height: 0;
+    padding: 1.15rem 1.4rem;
+    border-bottom: 1px solid var(--artist-admin-line-strong);
+    background: #fff;
+}
+
+.dark .artist-editor-overlay .fi-header {
+    background: rgb(24, 24, 27);
+}
+
+.artist-editor-overlay .fi-breadcrumbs {
+    display: none;
+}
+
+.artist-editor-overlay .fi-header-heading {
+    color: var(--artist-admin-text);
+    font-size: 1.25rem;
+    font-weight: 650;
+    letter-spacing: -.02em;
+}
+
+.artist-editor-overlay .fi-header-actions-ctn,
+.artist-editor-overlay .fi-header-actions-ctn > .fi-ac {
+    gap: .3rem;
+}
+
+.artist-editor-overlay .fi-header .fi-btn {
+    min-height: 2rem;
+    padding: .38rem .58rem;
+    border-radius: .2rem;
+    box-shadow: none;
+    font-size: .74rem;
+}
+
+.artist-editor-overlay .fi-page-main {
+    padding: 0;
+}
+
+.artist-editor-overlay .fi-page-content {
+    padding: .25rem 1.4rem 0;
+}
+
+.artist-editor-form-section {
+    margin: 0 !important;
+    padding: 1.35rem 0 1.55rem !important;
+    border: 0 !important;
+    border-top: 1px solid var(--artist-admin-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.artist-editor-form-section legend,
+.artist-editor-form-section .fi-sc-fieldset-label {
+    color: var(--artist-admin-text) !important;
+    font-size: .78rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .01em;
+}
+
+.artist-editor-overlay .fi-fo-repeater-item,
+.artist-component-repeater .fi-fo-repeater-item {
+    border: 0 !important;
+    border-top: 1px solid var(--artist-admin-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.artist-editor-overlay .fi-fo-repeater-item-header,
+.artist-component-repeater .fi-fo-repeater-item-header {
+    padding: .65rem 0 !important;
+}
+
+.artist-editor-overlay .fi-fo-repeater-item-content,
+.artist-component-repeater .fi-fo-repeater-item-content {
+    padding: 1rem 0 1.25rem !important;
+    border-top-color: var(--artist-admin-line) !important;
+}
+
+.artist-editor-overlay .fi-fo-repeater-items,
+.artist-component-repeater .fi-fo-repeater-items {
+    gap: 0 !important;
+}
+
+.artist-editor-overlay .fi-fo-table-repeater > table,
+.artist-editor-form-section .fi-fo-table-repeater > table {
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    border-top: 1px solid var(--artist-admin-line) !important;
+    border-bottom: 1px solid var(--artist-admin-line) !important;
+}
+
+.artist-editor-overlay .fi-fo-table-repeater > table > thead > tr > th,
+.artist-editor-form-section .fi-fo-table-repeater > table > thead > tr > th {
+    border-color: var(--artist-admin-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--artist-admin-muted) !important;
+    font-size: .68rem !important;
+    font-weight: 650 !important;
+}
+
+.artist-editor-overlay .fi-fo-table-repeater > table > tbody,
+.artist-editor-form-section .fi-fo-table-repeater > table > tbody,
+.artist-editor-overlay .fi-fo-table-repeater > table > tbody > tr > td,
+.artist-editor-form-section .fi-fo-table-repeater > table > tbody > tr > td {
+    border-color: var(--artist-admin-line) !important;
+}
+
+.artist-editor-overlay .fi-fo-table-repeater-add,
+.artist-editor-form-section .fi-fo-table-repeater-add {
+    justify-content: flex-start !important;
+}
+
+/* Filament's sticky action bar is viewport-fixed by default. Inside the editor
+ * surface it belongs to the scrolling dialog instead. */
+.artist-editor-overlay .fi-sc-actions.fi-sticky .fi-ac {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 7;
+    width: auto !important;
+    margin: 0 -1.4rem !important;
+    padding: .9rem 1.4rem !important;
+    border-top: 1px solid var(--artist-admin-line-strong);
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.dark .artist-editor-overlay .fi-sc-actions.fi-sticky .fi-ac {
+    background: rgb(24, 24, 27) !important;
+}
+
+.artist-editor-overlay .fi-sc-actions.fi-sticky .fi-btn {
+    min-height: 2.15rem;
+    border-radius: .25rem;
+    box-shadow: none;
+}
+
+@media (max-width: 760px) {
+    .artist-editor-overlay {
+        min-height: 100dvh;
+        margin: 0;
+        padding: 0;
+    }
+
+    .artist-editor-overlay::before {
+        background: #fff;
+        backdrop-filter: none;
+    }
+
+    .dark .artist-editor-overlay::before {
+        background: rgb(24, 24, 27);
+    }
+
+    .artist-editor-overlay > .fi-page-header-main-ctn {
+        width: 100%;
+        min-height: 100dvh;
+        max-height: none;
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .artist-editor-overlay .fi-header {
+        padding: 1rem;
+    }
+
+    .artist-editor-overlay .fi-header-main-ctn {
+        gap: .75rem;
+    }
+
+    .artist-editor-overlay .fi-page-content {
+        padding: .15rem 1rem 0;
+    }
+
+    .artist-editor-overlay .fi-sc-actions.fi-sticky .fi-ac {
+        margin: 0 -1rem !important;
+        padding: .85rem 1rem calc(.85rem + env(safe-area-inset-bottom)) !important;
+    }
+
+    .artist-editor-form-section {
+        padding: 1.15rem 0 1.35rem !important;
+    }
+}
