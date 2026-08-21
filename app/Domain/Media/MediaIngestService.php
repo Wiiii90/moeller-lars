@@ -90,7 +90,7 @@ class MediaIngestService
                 fclose($originalStream);
             }
 
-            if ($thumbnailKey !== null && $prepared['thumbnail_bytes'] !== null && ! $disk->put($thumbnailKey, $prepared['thumbnail_bytes'])) {
+            if ($thumbnailKey !== null && ! $disk->put($thumbnailKey, $prepared['thumbnail_bytes'])) {
                 throw new RuntimeException('Unable to write media thumbnail.');
             }
 
