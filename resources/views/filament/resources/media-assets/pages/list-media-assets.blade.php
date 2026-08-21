@@ -4,9 +4,9 @@
     <div class="artist-workspace media-workspace">
         <header class="artist-workspace__head">
             <div>
-                <p class="artist-workspace__kicker">Library</p>
+                <p class="artist-workspace__kicker">Media</p>
                 <h2>Find, reuse and manage media</h2>
-                <p>The media library is the reusable asset store for artworks, exhibitions, Vita, Blog and site identity. Assignments are references; detaching content does not delete the underlying media.</p>
+                <p>The media workspace is the reusable asset store for artworks, exhibitions, Vita, Blog and site identity. Assignments are references; detaching content does not delete the underlying media.</p>
             </div>
             <div class="artist-workspace__summary">
                 <div><strong>{{ $total }}</strong><span>Matches</span></div>
@@ -70,48 +70,107 @@
                         <article class="media-workspace__grid-item" wire:key="media-grid-{{ $asset['id'] }}">
                             <a class="media-workspace__visual" href="{{ $asset['preview_url'] }}">
                                 @if ($asset['thumbnail_url'])
-                                    <img src="{{ $asset['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" @if($asset['thumbnail_width']) width="{{ $asset['thumbnail_width'] }}" @endif @if($asset['thumbnail_height']) height="{{ $asset['thumbnail_height'] }}" @endif>
+                                    <img
+                                        src="{{ $asset['thumbnail_url'] }}"
+                                        alt=""
+                                        loading="lazy"
+                                        decoding="async"
+                                        @if ($asset['thumbnail_width'])
+                                            width="{{ $asset['thumbnail_width'] }}"
+                                        @endif
+                                        @if ($asset['thumbnail_height'])
+                                            height="{{ $asset['thumbnail_height'] }}"
+                                        @endif
+                                    >
                                 @else
                                     <span>{{ strtoupper($asset['kind']) }}</span>
                                 @endif
-                                @if ($asset['shared'])<em>Shared</em>@elseif($asset['usage'] === 0)<em>Unreferenced</em>@endif
+                                @if ($asset['shared'])
+                                    <em>Shared</em>
+                                @elseif ($asset['usage'] === 0)
+                                    <em>Unreferenced</em>
+                                @endif
                             </a>
                             <div class="media-workspace__grid-meta">
                                 <strong title="{{ $asset['filename'] }}">{{ $asset['filename'] }}</strong>
                                 <span>{{ $asset['type_label'] }} · {{ $asset['size'] }}</span>
                                 <small>{{ $asset['usage_label'] }}</small>
                             </div>
-                            <div class="media-workspace__actions"><a class="artist-action" href="{{ $asset['preview_url'] }}">Preview</a><a class="artist-action" href="{{ $asset['edit_url'] }}">Edit</a></div>
+                            <div class="media-workspace__actions">
+                                <a class="artist-action" href="{{ $asset['preview_url'] }}">Preview</a>
+                                <a class="artist-action" href="{{ $asset['edit_url'] }}">Edit</a>
+                            </div>
                         </article>
                     @endforeach
                 </section>
             @else
                 <div class="media-workspace__table-wrap {{ $viewMode === 'dense' ? 'is-dense' : '' }}">
                     <table class="media-workspace__table">
-                        <thead><tr>
-                            @if ($viewMode === 'list')<th scope="col" class="media-workspace__thumb-head">Preview</th>@endif
-                            <th scope="col">Media</th><th scope="col">Type</th><th scope="col">Usage</th><th scope="col">Status</th><th scope="col">Size</th><th scope="col"><span class="sr-only">Actions</span></th>
-                        </tr></thead>
-                        <tbody>
-                        @foreach ($assets as $asset)
-                            <tr wire:key="media-row-{{ $asset['id'] }}">
+                        <thead>
+                            <tr>
                                 @if ($viewMode === 'list')
-                                    <td class="media-workspace__thumb"><a href="{{ $asset['preview_url'] }}">@if($asset['thumbnail_url'])<img src="{{ $asset['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">@else<span>{{ strtoupper($asset['kind']) }}</span>@endif</a></td>
+                                    <th scope="col" class="media-workspace__thumb-head">Preview</th>
                                 @endif
-                                <td class="media-workspace__identity"><a href="{{ $asset['preview_url'] }}"><strong>{{ $asset['filename'] }}</strong></a><small>@if($asset['credit'] !== ''){{ $asset['credit'] }} · @endif{{ $asset['created'] }}@if($asset['alt_missing']) · ALT missing@endif</small></td>
-                                <td><strong class="media-workspace__type">{{ $asset['type_label'] }}</strong>@if($asset['dimensions'] !== '—')<small>{{ $asset['dimensions'] }}</small>@endif</td>
-                                <td><span class="media-workspace__usage {{ $asset['usage'] === 0 ? 'is-unused' : '' }}">{{ $asset['shared'] ? 'Shared · ' : '' }}{{ $asset['usage_label'] }}</span></td>
-                                <td><span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span></td>
-                                <td class="media-workspace__size">{{ $asset['size'] }}</td>
-                                <td class="media-workspace__actions"><a class="artist-action" href="{{ $asset['preview_url'] }}">Preview</a><a class="artist-action" href="{{ $asset['edit_url'] }}">Edit</a></td>
+                                <th scope="col">Media</th>
+                                <th scope="col">Type</th>
+                                <th scope="col">Usage</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Size</th>
+                                <th scope="col"><span class="sr-only">Actions</span></th>
                             </tr>
-                        @endforeach
+                        </thead>
+                        <tbody>
+                            @foreach ($assets as $asset)
+                                <tr wire:key="media-row-{{ $asset['id'] }}">
+                                    @if ($viewMode === 'list')
+                                        <td class="media-workspace__thumb">
+                                            <a href="{{ $asset['preview_url'] }}">
+                                                @if ($asset['thumbnail_url'])
+                                                    <img src="{{ $asset['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                                @else
+                                                    <span>{{ strtoupper($asset['kind']) }}</span>
+                                                @endif
+                                            </a>
+                                        </td>
+                                    @endif
+                                    <td class="media-workspace__identity">
+                                        <a href="{{ $asset['preview_url'] }}"><strong>{{ $asset['filename'] }}</strong></a>
+                                        <small>
+                                            @if ($asset['credit'] !== '')
+                                                {{ $asset['credit'] }} ·
+                                            @endif
+                                            {{ $asset['created'] }}
+                                            @if ($asset['alt_missing'])
+                                                · ALT missing
+                                            @endif
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong class="media-workspace__type">{{ $asset['type_label'] }}</strong>
+                                        @if ($asset['dimensions'] !== '—')
+                                            <small>{{ $asset['dimensions'] }}</small>
+                                        @endif
+                                    </td>
+                                    <td><span class="media-workspace__usage {{ $asset['usage'] === 0 ? 'is-unused' : '' }}">{{ $asset['shared'] ? 'Shared · ' : '' }}{{ $asset['usage_label'] }}</span></td>
+                                    <td><span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span></td>
+                                    <td class="media-workspace__size">{{ $asset['size'] }}</td>
+                                    <td class="media-workspace__actions">
+                                        <a class="artist-action" href="{{ $asset['preview_url'] }}">Preview</a>
+                                        <a class="artist-action" href="{{ $asset['edit_url'] }}">Edit</a>
+                                    </td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
             @endif
         @else
-            <section class="artist-gallery-empty"><p class="artist-workspace__kicker">No matches</p><h3>No media in this view</h3><p>Change the filters or search, or upload a new supported media asset.</p><button class="artist-action" type="button" wire:click="resetFilters">Clear filters</button></section>
+            <section class="artist-gallery-empty">
+                <p class="artist-workspace__kicker">No matches</p>
+                <h3>No media in this view</h3>
+                <p>Change the filters or search, or upload a new supported media asset.</p>
+                <button class="artist-action" type="button" wire:click="resetFilters">Clear filters</button>
+            </section>
         @endif
 
         <footer class="media-workspace__pager">
