@@ -3,11 +3,11 @@
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
-use App\Models\BlogSetting;
 use App\Models\Exhibition;
 use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use App\Models\SiteSection;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +40,7 @@ function invariantAsset(): MediaAsset
     return $asset;
 }
 
-it('enforces unique visible top-level SiteSection navigation positions', function () {
+it('enforces unique visible top-level SiteSection navigation positions', function (): void {
     $first = ArtworkCategory::create(['slug' => 'first', 'name' => 'First', 'show_on_home' => false]);
     testGallerySection($first, ['state' => 'published', 'show_in_navigation' => true, 'position' => 200]);
     $second = ArtworkCategory::create(['slug' => 'second', 'name' => 'Second', 'show_on_home' => false]);
@@ -52,7 +52,7 @@ it('enforces unique visible top-level SiteSection navigation positions', functio
     ]))->toThrow(QueryException::class);
 });
 
-it('enforces one primary media usage per artwork', function () {
+it('enforces one primary media usage per artwork', function (): void {
     $category = ArtworkCategory::create(['slug' => 'works', 'name' => 'Works', 'state' => 'published', 'position' => 0]);
     $artwork = Artwork::create([
         'artwork_category_id' => $category->id, 'slug' => 'one', 'title' => 'One', 'state' => 'draft', 'position' => 0,
@@ -64,8 +64,18 @@ it('enforces one primary media usage per artwork', function () {
     ]))->toThrow(QueryException::class);
 });
 
-it('enforces at most one exhibition hero', function () {
-    $exhibition = Exhibition::create(['slug' => 'show', 'title' => 'Show', 'state' => 'draft', 'position' => 0]);
+it('enforces at most one exhibition hero inside a Journal', function (): void {
+    $journal = SiteSection::query()
+        ->where('type', SiteSection::TYPE_JOURNAL)
+        ->where('template', SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS)
+        ->firstOrFail();
+    $exhibition = Exhibition::create([
+        'site_section_id' => $journal->id,
+        'slug' => 'show',
+        'title' => 'Show',
+        'state' => 'draft',
+        'position' => 0,
+    ]);
     ExhibitionMedia::create(['exhibition_id' => $exhibition->id, 'media_asset_id' => invariantAsset()->id, 'role' => 'hero', 'position' => 0]);
 
     expect(fn () => ExhibitionMedia::create([
@@ -73,13 +83,20 @@ it('enforces at most one exhibition hero', function () {
     ]))->toThrow(QueryException::class);
 });
 
-it('keeps public settings singletons singular', function () {
-    expect(BlogSetting::query()->count())->toBe(1);
-    expect(fn () => DB::table('blog_settings')->insert([
-        'id' => 2,
-        'public_enabled' => false,
-        'navigation_label' => 'Blog',
-        'navigation_position' => 110,
+it('enforces Home as the only singleton SiteSection type', function (): void {
+    expect(SiteSection::query()->where('type', SiteSection::TYPE_HOME)->count())->toBe(1);
+
+    expect(fn () => DB::table('site_sections')->insert([
+        'type' => SiteSection::TYPE_HOME,
+        'template' => null,
+        'title' => 'Duplicate Home',
+        'navigation_label' => 'Duplicate Home',
+        'slug' => 'duplicate-home',
+        'state' => 'hidden',
+        'position' => 999,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
         'created_at' => now(),
         'updated_at' => now(),
     ]))->toThrow(QueryException::class);
