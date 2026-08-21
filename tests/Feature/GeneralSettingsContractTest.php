@@ -10,8 +10,15 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
+it('addresses public content settings by explicit typed scope', function () {
+    expect(PublicContentSetting::query()->count())->toBe(3)
+        ->and(PublicContentSetting::general()->scope)->toBe(PublicContentSetting::SCOPE_GENERAL)
+        ->and(PublicContentSetting::contact()->scope)->toBe(PublicContentSetting::SCOPE_CONTACT)
+        ->and(PublicContentSetting::vita()->scope)->toBe(PublicContentSetting::SCOPE_VITA);
+});
+
 it('preserves legacy Instagram data in the typed social-link contract', function () {
-    $settings = PublicContentSetting::query()->sole();
+    $settings = PublicContentSetting::general();
     $settings->update([
         'instagram_handle' => 'legacy_artist',
         'show_instagram' => false,
@@ -26,14 +33,14 @@ it('preserves legacy Instagram data in the typed social-link contract', function
 });
 
 it('renders typed social links without exposing hidden links', function () {
-    PublicContentSetting::query()->sole()->update([
-        'contact_state' => 'enabled',
+    PublicContentSetting::general()->update([
         'social_links' => [
             ['platform' => 'instagram', 'url' => 'https://www.instagram.com/lars/', 'visible' => true],
             ['platform' => 'facebook', 'url' => 'https://www.facebook.com/lars.artist/', 'visible' => true],
             ['platform' => 'youtube', 'url' => 'https://www.youtube.com/@hidden', 'visible' => false],
         ],
     ]);
+    PublicContentSetting::contact()->update(['contact_state' => 'enabled']);
 
     $this->get('/contact')
         ->assertSuccessful()
@@ -43,13 +50,13 @@ it('renders typed social links without exposing hidden links', function () {
 });
 
 it('rejects unsupported social platforms and unsafe social urls', function () {
-    expect(fn () => PublicContentSetting::query()->sole()->update([
+    expect(fn () => PublicContentSetting::general()->update([
         'social_links' => [
             ['platform' => 'myspace', 'url' => 'https://example.test/profile', 'visible' => true],
         ],
     ]))->toThrow(ValidationException::class);
 
-    expect(fn () => PublicContentSetting::query()->sole()->update([
+    expect(fn () => PublicContentSetting::general()->update([
         'social_links' => [
             ['platform' => 'instagram', 'url' => 'javascript:alert(1)', 'visible' => true],
         ],
@@ -66,7 +73,7 @@ it('keeps favicon selection image-only at the model boundary', function () {
         'state' => 'available',
     ]);
 
-    expect(fn () => PublicContentSetting::query()->sole()->update([
+    expect(fn () => PublicContentSetting::general()->update([
         'favicon_media_asset_id' => $document->getKey(),
     ]))->toThrow(ValidationException::class);
 });
@@ -76,13 +83,12 @@ it('does not expose smtp credentials or transport topology in General', function
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
 
-    $this->get(PublicContentSettingResource::getUrl('edit', ['record' => 1]))
+    $this->get(PublicContentSettingResource::getUrl('edit', ['record' => PublicContentSetting::general()]))
         ->assertSuccessful()
         ->assertSee('Private delivery recipient')
-        ->assertSee('SMTP credentials and mail-server configuration remain runtime/platform secrets')
+        ->assertSee('SMTP credentials, sender identity, DKIM and TLS remain runtime/platform configuration.')
         ->assertDontSee('SMTP Host')
         ->assertDontSee('SMTP Username')
         ->assertDontSee('SMTP Password')
-        ->assertDontSee('DKIM')
         ->assertDontSee('TLS secret');
 });
