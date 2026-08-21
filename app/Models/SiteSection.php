@@ -25,11 +25,17 @@ use LogicException;
 final class SiteSection extends Model
 {
     public const TYPE_HOME = 'home';
+
     public const TYPE_GALLERY = 'gallery';
+
     public const TYPE_NAVIGATION_GROUP = 'navigation_group';
+
     public const TYPE_VITA = 'vita';
+
     public const TYPE_BLOG = 'blog';
+
     public const TYPE_EXHIBITIONS = 'exhibitions';
+
     public const TYPE_CONTACT = 'contact';
 
     public const TYPES = [
