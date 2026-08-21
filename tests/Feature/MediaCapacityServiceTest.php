@@ -48,6 +48,19 @@ it('caches presentation measurements without weakening fresh upload admission', 
     expect($capacity->cachedSnapshot()['authoritative_bytes'])->toBe(90);
 });
 
+it('can read a presentation snapshot without measuring storage on a cache miss', function (): void {
+    Storage::fake('media-capacity');
+    Cache::flush();
+    config(['media.disk' => 'media-capacity', 'media.quota_bytes' => 100]);
+    Storage::disk('media-capacity')->put('originals/one.jpg', str_repeat('a', 20));
+
+    $capacity = app(MediaCapacityService::class);
+
+    expect($capacity->cachedSnapshotIfAvailable())->toBeNull();
+    expect($capacity->cachedSnapshot()['authoritative_bytes'])->toBe(20);
+    expect($capacity->cachedSnapshotIfAvailable()['authoritative_bytes'])->toBe(20);
+});
+
 it('blocks new original media before writing when the configured allowance is exhausted', function (): void {
     Storage::fake('media-capacity');
     config(['media.disk' => 'media-capacity', 'media.quota_bytes' => 1]);
