@@ -65,6 +65,14 @@
         @if ($section['public_url'] && $section['state'] === 'published')
             <a class="artist-action" href="{{ $section['public_url'] }}" target="_blank" rel="noopener">View live</a>
         @endif
+        @if ($section['can_delete'])
+            <button
+                class="artist-action"
+                type="button"
+                wire:click="deleteSection({{ $section['id'] }})"
+                wire:confirm="Delete this page or navigation node? Published pages, menu entries, parents with children and Journals with entries must be emptied or hidden first."
+            >Delete</button>
+        @endif
         <span class="artist-section__order" aria-label="Reorder {{ $section['navigation_label'] ?: $section['title'] }}">
             <button class="artist-action" type="button" wire:click="moveSection({{ $section['id'] }}, 'up')" aria-label="Move {{ $section['navigation_label'] ?: $section['title'] }} earlier" @disabled(! $section['can_move_up'])>↑</button>
             <button class="artist-action" type="button" wire:click="moveSection({{ $section['id'] }}, 'down')" aria-label="Move {{ $section['navigation_label'] ?: $section['title'] }} later" @disabled(! $section['can_move_down'])>↓</button>
