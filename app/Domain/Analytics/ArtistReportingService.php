@@ -36,7 +36,7 @@ final class ArtistReportingService
      * Canonical Gallery snippet. Pass the public category path (for example `/paintings`)
      * and the stable analytics keys of the artworks currently belonging to that Gallery.
      *
-     * @param list<string> $artworkAnalyticsKeys
+     * @param  list<string>  $artworkAnalyticsKeys
      * @return array<string, mixed>
      */
     public function gallery(string $publicPath, array $artworkAnalyticsKeys, string $range = '30d'): array
@@ -137,7 +137,8 @@ final class ArtistReportingService
         return $this->matomo->report($range);
     }
 
-    /** @param array<string, mixed> $report
+    /**
+     * @param  array<string, mixed>  $report
      * @return array<string, mixed>
      */
     private function base(array $report): array
@@ -151,7 +152,8 @@ final class ArtistReportingService
         ];
     }
 
-    /** @param array<string, mixed> $report
+    /**
+     * @param  array<string, mixed>  $report
      * @return array{state:string,value:float|null}
      */
     private function summaryMetric(array $report, string $metric, bool $unsupportedWhenMissing = false): array
@@ -168,7 +170,8 @@ final class ArtistReportingService
         return $this->availableMetric((float) $value);
     }
 
-    /** @param array<string, mixed> $report
+    /**
+     * @param  array<string, mixed>  $report
      * @return array{state:string,value:float|null}
      */
     private function eventMetric(array $report, string $action): array
@@ -196,7 +199,8 @@ final class ArtistReportingService
         return $this->availableMetric(0.0);
     }
 
-    /** @param array<string, mixed> $report
+    /**
+     * @param  array<string, mixed>  $report
      * @return array{state:string,value:float|null}
      */
     private function pathMetric(array $report, string $path, string $metric): array
@@ -224,7 +228,8 @@ final class ArtistReportingService
         return $this->availableMetric(0.0);
     }
 
-    /** @param array<string, mixed> $report
+    /**
+     * @param  array<string, mixed>  $report
      * @return array{state:string,rows:array<int, mixed>}
      */
     private function dataset(array $report, string $name): array
@@ -243,7 +248,8 @@ final class ArtistReportingService
         return ['state' => $rows === [] ? 'empty' : 'available', 'rows' => $rows];
     }
 
-    /** @param array<string, mixed> $report
+    /**
+     * @param  array<string, mixed>  $report
      * @return array{state:string,rows:array<int, array<string, mixed>>}
      */
     private function contentDataset(array $report, string $prefix): array
@@ -262,8 +268,9 @@ final class ArtistReportingService
         return ['state' => $rows === [] ? 'empty' : 'available', 'rows' => $rows];
     }
 
-    /** @param array<string, mixed> $report
-     * @param list<string> $keys
+    /**
+     * @param  array<string, mixed>  $report
+     * @param  list<string>  $keys
      * @return array{state:string,rows:array<int, array<string, mixed>>}
      */
     private function artworkDataset(array $report, array $keys): array
@@ -299,7 +306,8 @@ final class ArtistReportingService
         return ['state' => $rows === [] ? 'empty' : 'available', 'rows' => $rows];
     }
 
-    /** @param array{state:string,rows:array<int, array<string, mixed>>} $artworks
+    /**
+     * @param  array{state:string,rows:array<int, array<string, mixed>>}  $artworks
      * @return array{state:string,rows:list<array{date:string,detail_views:int,viewer_opens:int,zooms:int,attention_seconds:float}>}
      */
     private function artworkTrend(array $artworks): array
