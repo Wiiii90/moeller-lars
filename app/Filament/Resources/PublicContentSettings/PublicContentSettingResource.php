@@ -13,7 +13,8 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
@@ -49,69 +50,81 @@ class PublicContentSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Site identity')
-                ->extraAttributes(['class' => 'artist-general-section'])
+            Grid::make([
+                'default' => 1,
+                'xl' => 2,
+            ])
+                ->extraAttributes(['class' => 'artist-general-grid'])
                 ->schema([
-                    MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
-                        ->nullable()
-                        ->helperText('Choose an image from Files. The generated thumbnail variant is used as the browser icon.')
-                        ->columnSpanFull(),
-                ]),
-            Section::make('Public contact')
-                ->extraAttributes(['class' => 'artist-general-section'])
-                ->schema([
-                    TextInput::make('public_email')
-                        ->label('Public email')
-                        ->email()
-                        ->maxLength(254)
-                        ->nullable(),
-                    Toggle::make('show_public_email')
-                        ->label('Show public email')
-                        ->default(true),
-                ])
-                ->columns(2),
-            Section::make('Social links')
-                ->extraAttributes(['class' => 'artist-general-section'])
-                ->schema([
-                    Repeater::make('social_links')
-                        ->label('Profiles')
+                    Fieldset::make('Site identity')
+                        ->contained(false)
+                        ->extraAttributes(['class' => 'artist-general-section'])
                         ->schema([
-                            Select::make('platform')
-                                ->options(SocialLinks::options())
-                                ->required(),
-                            TextInput::make('url')
-                                ->label('Profile URL')
-                                ->url()
-                                ->maxLength(2048)
-                                ->required(),
-                            Toggle::make('visible')
-                                ->label('Visible')
+                            MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
+                                ->nullable()
+                                ->helperText('Choose an image from Files. The generated thumbnail variant is used as the browser icon.')
+                                ->columnSpanFull(),
+                        ]),
+                    Fieldset::make('Public contact')
+                        ->contained(false)
+                        ->extraAttributes(['class' => 'artist-general-section'])
+                        ->schema([
+                            TextInput::make('public_email')
+                                ->label('Public email')
+                                ->email()
+                                ->maxLength(254)
+                                ->nullable(),
+                            Toggle::make('show_public_email')
+                                ->label('Show public email')
                                 ->default(true),
                         ])
-                        ->columns(3)
-                        ->defaultItems(0)
-                        ->reorderable()
-                        ->collapsible()
-                        ->addActionLabel('Add social link')
-                        ->itemLabel(fn (array $state): ?string => isset($state['platform']) && is_string($state['platform']) ? SocialLinks::label($state['platform']) : null)
-                        ->columnSpanFull(),
+                        ->columns(2),
+                    Fieldset::make('Social links')
+                        ->contained(false)
+                        ->extraAttributes(['class' => 'artist-general-section'])
+                        ->columnSpanFull()
+                        ->schema([
+                            Repeater::make('social_links')
+                                ->label('Profiles')
+                                ->schema([
+                                    Select::make('platform')
+                                        ->options(SocialLinks::options())
+                                        ->required(),
+                                    TextInput::make('url')
+                                        ->label('Profile URL')
+                                        ->url()
+                                        ->maxLength(2048)
+                                        ->required(),
+                                    Toggle::make('visible')
+                                        ->label('Visible')
+                                        ->default(true),
+                                ])
+                                ->columns(3)
+                                ->defaultItems(0)
+                                ->reorderable()
+                                ->collapsible()
+                                ->addActionLabel('Add social link')
+                                ->itemLabel(fn (array $state): ?string => isset($state['platform']) && is_string($state['platform']) ? SocialLinks::label($state['platform']) : null)
+                                ->columnSpanFull(),
+                        ]),
+                    Fieldset::make('Contact delivery')
+                        ->contained(false)
+                        ->extraAttributes(['class' => 'artist-general-section'])
+                        ->schema([
+                            TextInput::make('contact_recipient_email')
+                                ->label('Private delivery recipient')
+                                ->email()
+                                ->maxLength(254)
+                                ->nullable()
+                                ->helperText('If empty, the server-configured fallback recipient is used.'),
+                        ]),
+                    Fieldset::make('Legal')
+                        ->contained(false)
+                        ->extraAttributes(['class' => 'artist-general-section'])
+                        ->schema([
+                            Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
+                        ]),
                 ]),
-            Section::make('Contact delivery')
-                ->extraAttributes(['class' => 'artist-general-section'])
-                ->schema([
-                    TextInput::make('contact_recipient_email')
-                        ->label('Private delivery recipient')
-                        ->email()
-                        ->maxLength(254)
-                        ->nullable()
-                        ->helperText('If empty, the server-configured fallback recipient is used.'),
-                ]),
-            Section::make('Legal')
-                ->extraAttributes(['class' => 'artist-general-section'])
-                ->schema([
-                    Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
-                ])
-                ->collapsible(),
         ]);
     }
 

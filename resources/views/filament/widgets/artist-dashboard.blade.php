@@ -52,7 +52,7 @@
                     </div>
 
                     @if ($analytics['trend'] !== [])
-                        <div class="artist-dashboard__row">
+                        <div class="artist-dashboard__row artist-dashboard__trend-row">
                             <span class="artist-dashboard__identity">
                                 <strong>Visit trend</strong>
                                 <small>{{ $analytics['trend']['start'] }} → {{ $analytics['trend']['end'] }}</small>
@@ -66,10 +66,10 @@
                         <p class="artist-dashboard__quiet">Traffic time-series data is unavailable for this period.</p>
                     @endif
 
-                    <div class="artist-workspace__summary" aria-label="Engagement metrics">
-                        <div><strong>{{ $analytics['actions_per_visit'] }}</strong><span>Actions / visit</span></div>
-                        <div><strong>{{ $analytics['average_visit'] }}</strong><span>Average visit</span></div>
-                        <div><strong>{{ $analytics['bounce_rate'] }}</strong><span>Bounce rate</span></div>
+                    <div class="artist-kpi-strip artist-kpi-strip--3" aria-label="Engagement metrics">
+                        <div class="artist-kpi"><span>Actions / visit</span><strong>{{ $analytics['actions_per_visit'] }}</strong></div>
+                        <div class="artist-kpi"><span>Average visit</span><strong>{{ $analytics['average_visit'] }}</strong></div>
+                        <div class="artist-kpi"><span>Bounce rate</span><strong>{{ $analytics['bounce_rate'] }}</strong></div>
                     </div>
 
                     @if ($analytics['status'] === 'stale' && $analytics['message'])
@@ -106,13 +106,13 @@
             </section>
         </div>
 
-        <section aria-label="Editorial publication state">
+        <section class="artist-dashboard__publication" aria-label="Editorial publication state">
             <div class="artist-dashboard__section-head"><span>Publication state</span><span>Current content</span></div>
-            <div class="artist-workspace__summary">
+            <div class="artist-kpi-strip artist-kpi-strip--4">
                 @foreach ($editorialStatus as $status)
-                    <div>
-                        <strong>{{ number_format($status['value']) }}</strong>
+                    <div class="artist-kpi">
                         <span>{{ $status['label'] }}</span>
+                        <strong>{{ number_format($status['value']) }}</strong>
                     </div>
                 @endforeach
             </div>
