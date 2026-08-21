@@ -33,7 +33,7 @@ function adminViewerAsset(string $filename, string $suffix): MediaAsset
     ]);
 }
 
-it('renders media metadata and typed usage from the library', function (): void {
+it('renders media metadata and typed usage from the workspace', function (): void {
     $asset = adminViewerAsset('library-viewer.jpg', 'library-viewer');
     $category = ArtworkCategory::create([
         'name' => 'Viewer Gallery',
@@ -60,7 +60,7 @@ it('renders media metadata and typed usage from the library', function (): void 
 
     $this->get(MediaAssetResource::getUrl('view', ['record' => $asset]))
         ->assertSuccessful()
-        ->assertSee('Media inspection')
+        ->assertSee('Media preview')
         ->assertSee('library-viewer.jpg')
         ->assertSee('1600×1200')
         ->assertSee('ALT library-viewer')
@@ -103,14 +103,14 @@ it('navigates primary and additional media as one artwork inspection sequence', 
     $primaryPage
         ->assertSuccessful()
         ->assertSee('1 / 2')
-        ->assertSee('Primary image')
+        ->assertSee('Primary media')
         ->assertSee('Next →');
 
     $additionalPage = $this->get(MediaAssetResource::getUrl('view', ['record' => $additional, 'artwork' => $artwork->getKey()]));
     $additionalPage
         ->assertSuccessful()
         ->assertSee('2 / 2')
-        ->assertSee('Gallery image')
+        ->assertSee('Gallery media')
         ->assertSee('← Previous')
         ->assertSee(ArtworkResource::getUrl('edit', ['record' => $artwork]), escape: false);
 });

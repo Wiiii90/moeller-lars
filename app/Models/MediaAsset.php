@@ -40,6 +40,11 @@ class MediaAsset extends Model
         return $this->hasMany(BlogPost::class, 'cover_media_asset_id');
     }
 
+    public function siteIdentitySettings(): HasMany
+    {
+        return $this->hasMany(PublicContentSetting::class, 'favicon_media_asset_id');
+    }
+
     public function artworks(): BelongsToMany
     {
         return $this->belongsToMany(Artwork::class, 'artwork_media')

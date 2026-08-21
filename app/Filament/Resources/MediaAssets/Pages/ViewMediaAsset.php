@@ -2,17 +2,20 @@
 
 namespace App\Filament\Resources\MediaAssets\Pages;
 
+use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
+use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
 use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
+use App\Models\PublicContentSetting;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -39,8 +42,10 @@ final class ViewMediaAsset extends ViewRecord
     protected function getViewData(): array
     {
         $asset = $this->mediaAssetRecord();
-        $asset->loadMissing(['artworks', 'exhibitions', 'cvEntries', 'blogPosts']);
+        $asset->loadMissing(['artworks', 'exhibitions', 'cvEntries', 'blogPosts', 'siteIdentitySettings']);
         $available = $asset->getAttribute('state') === 'available';
+        $mime = (string) $asset->getAttribute('mime_type');
+        $usages = $this->usageRows($asset);
 
         return [
             'media' => [
@@ -48,17 +53,22 @@ final class ViewMediaAsset extends ViewRecord
                 'state' => (string) $asset->getAttribute('state'),
                 'original_url' => $available ? route('admin.media.original', $asset) : null,
                 'alt' => (string) ($asset->getAttribute('alt_text') ?? ''),
-                'alt_label' => filled($asset->getAttribute('alt_text')) ? (string) $asset->getAttribute('alt_text') : 'ALT text missing',
+                'alt_label' => filled($asset->getAttribute('alt_text')) ? (string) $asset->getAttribute('alt_text') : 'ALT text not set',
                 'credit' => filled($asset->getAttribute('credit')) ? (string) $asset->getAttribute('credit') : '—',
                 'copyright' => filled($asset->getAttribute('copyright_notice')) ? (string) $asset->getAttribute('copyright_notice') : '—',
                 'dimensions' => $asset->getAttribute('width') && $asset->getAttribute('height')
                     ? $asset->getAttribute('width').'×'.$asset->getAttribute('height')
                     : '—',
                 'size' => $this->formatBytes((int) $asset->getAttribute('byte_size')),
-                'type' => (string) $asset->getAttribute('mime_type'),
+                'type' => MediaTypePolicy::label($mime),
+                'mime' => $mime,
+                'kind' => MediaTypePolicy::kind($mime),
+                'is_video' => MediaTypePolicy::isVideo($mime),
+                'is_image' => MediaTypePolicy::isImage($mime),
+                'usage_count' => count($usages),
             ],
             'sequence' => $this->artworkSequence($asset),
-            'usages' => $this->usageRows($asset),
+            'usages' => $usages,
         ];
     }
 
@@ -126,7 +136,7 @@ final class ViewMediaAsset extends ViewRecord
 
         return [
             'artwork_title' => (string) $artwork->getAttribute('title'),
-            'role_label' => $sequence[$currentIndex]['role'] === 'primary' ? 'Primary image' : 'Gallery image',
+            'role_label' => $sequence[$currentIndex]['role'] === 'primary' ? 'Primary media' : 'Gallery media',
             'position_label' => ($currentIndex + 1).' / '.count($sequence),
             'previous_url' => $previous === null ? null : MediaAssetResource::getUrl('view', [
                 'record' => $previous['asset_id'],
@@ -186,6 +196,16 @@ final class ViewMediaAsset extends ViewRecord
             ];
         }
 
+        /** @var EloquentCollection<int, PublicContentSetting> $settings */
+        $settings = $asset->getRelation('siteIdentitySettings');
+        foreach ($settings as $setting) {
+            $rows[] = [
+                'type' => 'Site identity',
+                'label' => 'Favicon / browser identity',
+                'url' => PublicContentSettingResource::getUrl('edit', ['record' => $setting->getKey()]),
+            ];
+        }
+
         return $rows;
     }
 
@@ -197,7 +217,10 @@ final class ViewMediaAsset extends ViewRecord
         if ($bytes < 1024 * 1024) {
             return number_format($bytes / 1024, 1).' KB';
         }
+        if ($bytes < 1024 * 1024 * 1024) {
+            return number_format($bytes / (1024 * 1024), 1).' MB';
+        }
 
-        return number_format($bytes / (1024 * 1024), 1).' MB';
+        return number_format($bytes / (1024 * 1024 * 1024), 2).' GB';
     }
 }

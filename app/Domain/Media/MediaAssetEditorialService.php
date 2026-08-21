@@ -137,6 +137,7 @@ class MediaAssetEditorialService
             ['exhibition_media', 'media_asset_id'],
             ['cv_entries', 'image_media_asset_id'],
             ['blog_posts', 'cover_media_asset_id'],
+            ['public_content_settings', 'favicon_media_asset_id'],
         ];
         foreach ($references as [$table, $column]) {
             if (DB::table($table)->where($column, $id)->exists()) {
