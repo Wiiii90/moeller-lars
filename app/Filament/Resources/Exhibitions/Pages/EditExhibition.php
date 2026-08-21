@@ -26,6 +26,8 @@ class EditExhibition extends EditRecord
             unset($data[$field]);
         }
 
+        $data['site_section_id'] = (int) $this->exhibition()->getAttribute('site_section_id');
+
         return $data;
     }
 
@@ -36,7 +38,13 @@ class EditExhibition extends EditRecord
         return DB::transaction(function () use ($record, $data, $actor): Model {
             /** @var Exhibition $exhibition */
             $exhibition = $record;
+            $originalSectionId = (int) $exhibition->getAttribute('site_section_id');
+            $data['site_section_id'] = $originalSectionId;
             $exhibition->fill($data);
+
+            if ((int) $exhibition->getAttribute('site_section_id') !== $originalSectionId) {
+                throw ValidationException::withMessages(['site_section_id' => 'Move exhibitions between Journals through an explicit editorial workflow.']);
+            }
 
             if ($exhibition->isDirty()) {
                 $exhibition->save();
