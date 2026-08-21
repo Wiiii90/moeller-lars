@@ -49,8 +49,8 @@ it('does not synchronize legacy settings after the SiteSection cutover', functio
     $vitaPosition = (int) $vita->position;
     $blogState = $blogSection->state;
     $blogPosition = (int) $blogSection->position;
-    $publicSettings = PublicContentSetting::query()->sole();
-    $blogSettings = BlogSetting::query()->sole();
+    $publicSettings = PublicContentSetting::vita();
+    $blogSettings = BlogSetting::forBlogSection();
 
     $publicSettings->forceFill([
         'cv_enabled' => ! (bool) $publicSettings->getRawOriginal('cv_enabled'),
@@ -102,7 +102,7 @@ it('builds public navigation only from visible canonical sections', function ():
 });
 
 it('uses the SiteSection as the public availability gate regardless of legacy settings', function (): void {
-    $settings = PublicContentSetting::query()->sole();
+    $settings = PublicContentSetting::vita();
     $settings->forceFill(['cv_enabled' => false])->save();
     $vita = testUniqueSection(SiteSection::TYPE_VITA, [
         'navigation_label' => 'Vita',
