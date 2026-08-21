@@ -56,13 +56,7 @@ class AdminPanelProvider extends PanelProvider
                 ArtistDashboard::class,
                 ContactHealth::class,
             ])
-            ->navigationGroups([
-                NavigationGroup::make()->label('Website'),
-                NavigationGroup::make()->label('Content'),
-                NavigationGroup::make()->label('Insights'),
-                NavigationGroup::make()->label('Settings'),
-            ])
-            ->navigation(fn (NavigationBuilder $builder): NavigationBuilder => $builder->items($this->navigationItems()))
+            ->navigation(fn (NavigationBuilder $builder): NavigationBuilder => $builder->groups($this->navigationGroups()))
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -80,23 +74,38 @@ class AdminPanelProvider extends PanelProvider
             ], isPersistent: true);
     }
 
-    /** @return array<NavigationItem> */
-    private function navigationItems(): array
+    /** @return array<NavigationGroup> */
+    private function navigationGroups(): array
     {
         return [
-            ...Dashboard::getNavigationItems(),
-            ...SitePages::getNavigationItems(),
-            ...$this->siteSectionNavigationItems(),
-            ...MediaAssetResource::getNavigationItems(),
-            ...StorageCapacity::getNavigationItems(),
-            ...Analytics::getNavigationItems(),
-            ...Activity::getNavigationItems(),
-            NavigationItem::make('General')
-                ->group('Settings')
-                ->icon(Heroicon::OutlinedCog6Tooth)
-                ->isActiveWhen(fn (): bool => original_request()->routeIs(PublicContentSettingResource::getNavigationItemActiveRoutePattern()))
-                ->sort(10)
-                ->url(fn (): string => PublicContentSettingResource::getNavigationUrl()),
+            NavigationGroup::make()
+                ->label('Website')
+                ->items([
+                    ...Dashboard::getNavigationItems(),
+                    ...SitePages::getNavigationItems(),
+                    ...$this->siteSectionNavigationItems(),
+                ]),
+            NavigationGroup::make()
+                ->label('Content')
+                ->items([
+                    ...MediaAssetResource::getNavigationItems(),
+                ]),
+            NavigationGroup::make()
+                ->label('Insights')
+                ->items([
+                    ...Analytics::getNavigationItems(),
+                    ...Activity::getNavigationItems(),
+                    ...StorageCapacity::getNavigationItems(),
+                ]),
+            NavigationGroup::make()
+                ->label('Settings')
+                ->items([
+                    NavigationItem::make('General')
+                        ->icon(Heroicon::OutlinedCog6Tooth)
+                        ->isActiveWhen(fn (): bool => original_request()->routeIs(PublicContentSettingResource::getNavigationItemActiveRoutePattern()))
+                        ->sort(10)
+                        ->url(fn (): string => PublicContentSettingResource::getNavigationUrl()),
+                ]),
         ];
     }
 
@@ -138,7 +147,6 @@ class AdminPanelProvider extends PanelProvider
         }
 
         return NavigationItem::make($label)
-            ->group('Website')
             ->parentItem('Pages')
             ->sort($sort)
             ->url(SitePages::getUrl().'#site-section-'.$section->getKey());
