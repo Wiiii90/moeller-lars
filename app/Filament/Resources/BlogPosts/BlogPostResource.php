@@ -3,15 +3,18 @@
 namespace App\Filament\Resources\BlogPosts;
 
 use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\JournalEntryOrderService;
 use App\Filament\Resources\BlogPosts\Pages\CreateBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\ListBlogPosts;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\BlogPost;
+use App\Models\SiteSection;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -49,6 +52,8 @@ final class BlogPostResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
+            Hidden::make('site_section_id')
+                ->default(fn (): ?int => request()->integer('site_section') ?: self::legacyBlogSectionId()),
             Section::make('Post')
                 ->description('Write and save the post here. Publication is controlled with the page actions rather than a raw state field.')
                 ->schema([
@@ -74,7 +79,7 @@ final class BlogPostResource extends Resource
                             ['bulletList', 'orderedList'],
                             ['undo', 'redo'],
                         ])
-                        ->helperText('Formatting is deliberately limited to the Markdown supported by the public site. Images are managed through the media library, not embedded in post text.')
+                        ->helperText('Formatting is deliberately limited to the Markdown supported by the public site. Images are managed through Files, not embedded in post text.')
                         ->nullable()
                         ->columnSpanFull(),
                     MediaAssetSelect::make('cover_media_asset_id', 'coverMedia', 'Cover image')
@@ -83,7 +88,7 @@ final class BlogPostResource extends Resource
                 ])
                 ->columns(2),
             Section::make('Publication status')
-                ->description('Use Publish now, Schedule, Unpublish, Archive or Restore to draft in the page header. Listing order is managed directly from the Blog list.')
+                ->description('Use Publish now, Schedule, Unpublish, Archive or Restore to draft in the page header. Listing order is managed directly from the Journal list.')
                 ->schema([
                     Select::make('state')->options([
                         'draft' => 'Draft',
@@ -112,10 +117,7 @@ final class BlogPostResource extends Resource
             TextColumn::make('state')->badge()->sortable(),
             TextColumn::make('scheduled_at')->dateTime()->sortable(),
             TextColumn::make('published_at')->dateTime()->sortable(),
-            TextColumn::make('position')
-                ->label('Listing order')
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('position')->label('Listing order')->sortable()->toggleable(isToggledHiddenByDefault: true),
         ])->defaultSort('position')->filters([
             SelectFilter::make('state')->options([
                 'draft' => 'Draft',
@@ -128,29 +130,48 @@ final class BlogPostResource extends Resource
             Action::make('moveUp')
                 ->label('Move up')
                 ->icon('heroicon-o-chevron-up')
-                ->visible(fn (BlogPost $record): bool => app(BlogEditorialService::class)->canMove($record, 'up'))
+                ->visible(fn (BlogPost $record): bool => $record->getAttribute('site_section_id') !== null
+                    ? app(JournalEntryOrderService::class)->canMove($record, 'up')
+                    : app(BlogEditorialService::class)->canMove($record, 'up'))
                 ->action(function (BlogPost $record): void {
-                    app(BlogEditorialService::class)->move($record, 'up');
+                    $record->getAttribute('site_section_id') !== null
+                        ? app(JournalEntryOrderService::class)->move($record, 'up')
+                        : app(BlogEditorialService::class)->move($record, 'up');
                     Notification::make()->title('Blog post moved up')->success()->send();
                 }),
             Action::make('moveDown')
                 ->label('Move down')
                 ->icon('heroicon-o-chevron-down')
-                ->visible(fn (BlogPost $record): bool => app(BlogEditorialService::class)->canMove($record, 'down'))
+                ->visible(fn (BlogPost $record): bool => $record->getAttribute('site_section_id') !== null
+                    ? app(JournalEntryOrderService::class)->canMove($record, 'down')
+                    : app(BlogEditorialService::class)->canMove($record, 'down'))
                 ->action(function (BlogPost $record): void {
-                    app(BlogEditorialService::class)->move($record, 'down');
+                    $record->getAttribute('site_section_id') !== null
+                        ? app(JournalEntryOrderService::class)->move($record, 'down')
+                        : app(BlogEditorialService::class)->move($record, 'down');
                     Notification::make()->title('Blog post moved down')->success()->send();
                 }),
             Action::make('viewPublic')
                 ->label('View on site')
                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
-                ->url(fn (BlogPost $record): string => route('blog.show', ['slug' => $record->getAttribute('slug')]))
+                ->url(fn (BlogPost $record): string => self::publicUrl($record))
                 ->openUrlInNewTab()
                 ->visible(fn (BlogPost $record): bool => BlogEditorialService::publicQuery()->whereKey($record->getKey())->exists()),
             EditAction::make(),
         ])->toolbarActions([])
-            ->emptyStateHeading('No blog posts yet')
-            ->emptyStateDescription('Create a draft first. Blog publication and navigation are managed from Pages.');
+            ->emptyStateHeading('No posts yet')
+            ->emptyStateDescription('Create a draft first. Journal publication and navigation are managed from Pages.');
+    }
+
+    public static function publicUrl(BlogPost $post): string
+    {
+        $sectionId = $post->getAttribute('site_section_id');
+        /** @var SiteSection|null $section */
+        $section = is_numeric($sectionId) ? SiteSection::query()->find((int) $sectionId) : null;
+
+        return $section instanceof SiteSection && (string) $section->getAttribute('type') === SiteSection::TYPE_JOURNAL
+            ? route('journal.show', ['section' => $section->getAttribute('slug'), 'slug' => $post->getAttribute('slug')])
+            : route('blog.show', ['slug' => $post->getAttribute('slug')]);
     }
 
     public static function getPages(): array
@@ -165,5 +186,12 @@ final class BlogPostResource extends Resource
     public static function canDelete(Model $record): bool
     {
         return false;
+    }
+
+    private static function legacyBlogSectionId(): ?int
+    {
+        $id = SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->value('id');
+
+        return is_numeric($id) ? (int) $id : null;
     }
 }
