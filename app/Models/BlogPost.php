@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['slug', 'title', 'body', 'state', 'position', 'excerpt', 'cover_media_asset_id', 'published_at', 'scheduled_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'body', 'state', 'position', 'excerpt', 'cover_media_asset_id', 'published_at', 'scheduled_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at'])]
 #[Guarded(['id'])]
 class BlogPost extends Model
 {
@@ -22,6 +22,11 @@ class BlogPost extends Model
             'scheduled_at' => 'datetime',
             'migrated_at' => 'datetime',
         ];
+    }
+
+    public function siteSection(): BelongsTo
+    {
+        return $this->belongsTo(SiteSection::class);
     }
 
     public function coverMedia(): BelongsTo
