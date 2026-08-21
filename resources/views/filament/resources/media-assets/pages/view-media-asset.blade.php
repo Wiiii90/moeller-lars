@@ -6,7 +6,6 @@
             <div>
                 <p class="artist-workspace__kicker">Media preview</p>
                 <h2>{{ $media['filename'] }}</h2>
-                <p>{{ $media['type'] }} · {{ $media['size'] }}@if($media['dimensions'] !== '—') · {{ $media['dimensions'] }}@endif</p>
             </div>
             <div class="artist-workspace__summary">
                 <div><strong>{{ $media['usage_count'] }}</strong><span>References</span></div>
@@ -71,7 +70,6 @@
             <footer class="artist-workspace__footnote">
                 <a class="artist-action" href="{{ $sequence['artwork_url'] }}">Edit artwork</a>
                 @if ($sequence['gallery_url'])<a class="artist-action" href="{{ $sequence['gallery_url'] }}">Back to Gallery workspace</a>@endif
-                <span>Media remains reusable independently of this artwork placement.</span>
             </footer>
         @endif
     </div>
