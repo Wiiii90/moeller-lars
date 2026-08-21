@@ -16,8 +16,8 @@ it('audits website and blog settings changes', function () {
     $this->actingAs($admin, 'web');
 
     $service = app(AdminSettingsService::class);
-    $website = PublicContentSetting::query()->sole();
-    $blog = BlogSetting::query()->sole();
+    $website = PublicContentSetting::general();
+    $blog = BlogSetting::forBlogSection();
 
     $service->updatePublicContent($website, ['public_email' => 'artist@example.test']);
     $service->updateBlog($blog, ['listing_title' => 'News']);
@@ -34,7 +34,7 @@ it('audits website and blog settings changes', function () {
 });
 
 it('requires an admin actor for settings changes', function () {
-    $website = PublicContentSetting::query()->sole();
+    $website = PublicContentSetting::general();
 
     expect(fn () => app(AdminSettingsService::class)->updatePublicContent($website, ['public_email' => 'artist@example.test']))
         ->toThrow(AuthorizationException::class);
