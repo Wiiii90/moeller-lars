@@ -30,7 +30,7 @@ final class CustomPageSettingResource extends Resource
     {
         return $schema->components([
             Section::make('Page components')
-                ->description('Stack text, lists and contact areas in public order. Each component is separated visually on the public page.')
+                ->description('Stack text, lists and contact areas in public order. Each component can optionally draw a divider below itself.')
                 ->schema([
                     Repeater::make('blocks')
                         ->label('Components')
@@ -43,6 +43,9 @@ final class CustomPageSettingResource extends Resource
                                 ])
                                 ->required()
                                 ->live(),
+                            Toggle::make('divider')
+                                ->label('Divider after this component')
+                                ->default(true),
                             TextInput::make('title')
                                 ->label('Component heading')
                                 ->maxLength(160)
