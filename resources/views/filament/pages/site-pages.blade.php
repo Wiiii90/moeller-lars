@@ -11,7 +11,7 @@
             <div>
                 <p class="artist-workspace__kicker">Site structure</p>
                 <h2>Public pages</h2>
-                <p>The canonical page and navigation tree. Typed pages keep their dedicated editors; navigation groups organize submenu entries without creating a fake public page.</p>
+                <p>Create Galleries, Journals, Custom Pages and navigation-only nodes, then arrange them into the public page tree. Journal templates provide Blog or Exhibitions content while Custom Pages are assembled from reusable components.</p>
             </div>
 
             <div class="artist-workspace__summary" aria-label="Site structure summary">
@@ -29,7 +29,7 @@
 
                     @if ($section['children'] !== [])
                         <details open wire:key="site-section-children-{{ $section['id'] }}">
-                            <summary class="artist-workspace__kicker">{{ count($section['children']) }} submenu {{ count($section['children']) === 1 ? 'section' : 'sections' }}</summary>
+                            <summary class="artist-workspace__kicker">{{ count($section['children']) }} child {{ count($section['children']) === 1 ? 'page' : 'pages' }}</summary>
                             <div class="artist-section-list">
                                 @foreach ($section['children'] as $child)
                                     @include('filament.pages.partials.site-section-row', ['section' => $child])
@@ -42,8 +42,8 @@
         </section>
 
         <footer class="artist-workspace__footnote">
-            <span>Save editorial work first, then use Preview to inspect hidden sections, draft content and the draft navigation before publishing.</span>
-            <span>Navigation groups are capability-driven nodes with children and no public route. Media, Analytics and Storage remain global tools.</span>
+            <span>Save editorial work first, then use Preview to inspect hidden pages, draft content and draft navigation before publishing.</span>
+            <span>Navigation Nodes organize children without owning a public route. Files, Analytics and Storage remain global tools.</span>
         </footer>
     </div>
 </x-filament-panels::page>
