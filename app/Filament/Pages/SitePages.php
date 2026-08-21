@@ -10,9 +10,10 @@ use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Resources\BlogSettings\BlogSettingResource;
+use App\Filament\Resources\ContactContentSettings\ContactContentSettingResource;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
-use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
+use App\Filament\Resources\VitaContentSettings\VitaContentSettingResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
@@ -326,7 +327,8 @@ final class SitePages extends Page
     {
         return match ($section->getAttribute('type')) {
             SiteSection::TYPE_GALLERY => ArtworkCategoryResource::getUrl('edit', ['record' => $section->getAttribute('artwork_category_id')]),
-            SiteSection::TYPE_VITA, SiteSection::TYPE_CONTACT => PublicContentSettingResource::getNavigationUrl(),
+            SiteSection::TYPE_VITA => VitaContentSettingResource::getSettingsUrl(),
+            SiteSection::TYPE_CONTACT => ContactContentSettingResource::getSettingsUrl(),
             SiteSection::TYPE_BLOG => BlogSettingResource::getSettingsUrl(),
             default => null,
         };
@@ -340,7 +342,7 @@ final class SitePages extends Page
             SiteSection::TYPE_VITA => CvEntryResource::getUrl('index'),
             SiteSection::TYPE_BLOG => BlogPostResource::getUrl('index'),
             SiteSection::TYPE_EXHIBITIONS => ExhibitionResource::getUrl('index'),
-            SiteSection::TYPE_CONTACT => PublicContentSettingResource::getNavigationUrl(),
+            SiteSection::TYPE_CONTACT => ContactContentSettingResource::getSettingsUrl(),
             SiteSection::TYPE_NAVIGATION_GROUP => null,
             default => null,
         };

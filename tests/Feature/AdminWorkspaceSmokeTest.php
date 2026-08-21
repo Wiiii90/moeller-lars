@@ -15,6 +15,7 @@ use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\CvEntry;
 use App\Models\Exhibition;
+use App\Models\PublicContentSetting;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -44,7 +45,7 @@ it('renders the dashboard shell and central admin index and create surfaces', fu
         MediaAssetResource::getUrl('index'),
         StorageCapacity::getUrl(),
         BlogSettingResource::getUrl('edit', ['record' => 1]),
-        PublicContentSettingResource::getUrl('edit', ['record' => 1]),
+        PublicContentSettingResource::getUrl('edit', ['record' => PublicContentSetting::general()]),
     ] as $url) {
         $this->get($url)->assertSuccessful();
     }
@@ -84,11 +85,13 @@ it('keeps public placement controls in Pages instead of legacy settings editors'
         ->assertDontSee('Publish blog section')
         ->assertDontSee('Navigation label');
 
-    $this->get(PublicContentSettingResource::getUrl('edit', ['record' => 1]))
+    $this->get(PublicContentSettingResource::getUrl('edit', ['record' => PublicContentSetting::general()]))
         ->assertSuccessful()
-        ->assertSee('Vita and Exhibitions publication/navigation are managed from Pages.')
+        ->assertSee('Site identity')
+        ->assertSee('Contact delivery')
         ->assertDontSee('Publish Vita / CV section')
-        ->assertDontSee('Publish exhibitions section');
+        ->assertDontSee('Publish exhibitions section')
+        ->assertDontSee('Navigation label');
 });
 
 it('renders representative edit surfaces with their editorial form schemas', function () {

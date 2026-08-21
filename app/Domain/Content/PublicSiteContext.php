@@ -18,7 +18,7 @@ final class PublicSiteContext
     /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string} */
     public function layoutData(): array
     {
-        $settings = PublicContentSetting::query()->sole();
+        $settings = PublicContentSetting::general();
         $asset = $settings->faviconMediaAsset()->first();
         $faviconVariant = null;
 

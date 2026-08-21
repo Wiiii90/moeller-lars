@@ -12,15 +12,18 @@ use Illuminate\Database\Eloquent\Model;
 
 final class MediaAssetSelect
 {
-    public static function make(string $name, string $relationship, string $label): Select
+    public static function make(string $name, string $relationship, string $label, bool $imagesOnly = false): Select
     {
         return Select::make($name)
             ->label($label)
             ->relationship(
                 name: $relationship,
                 titleAttribute: 'original_filename',
-                modifyQueryUsing: function (Builder $query): void {
+                modifyQueryUsing: function (Builder $query) use ($imagesOnly): void {
                     $query->where('state', 'available');
+                    if ($imagesOnly) {
+                        $query->where('mime_type', 'like', 'image/%');
+                    }
                     $query->with('variants');
                     $query->orderBy('original_filename');
                 },

@@ -31,7 +31,7 @@ function publishProfileVita(): void
 it('keeps the reviewed public contact form visible by default', function () {
     publishProfileVita();
 
-    expect(PublicContentSetting::query()->sole()->contact_state)->toBe('enabled');
+    expect(PublicContentSetting::contact()->contact_state)->toBe('enabled');
 
     $this->get('/cv')
         ->assertSuccessful()
@@ -41,12 +41,14 @@ it('keeps the reviewed public contact form visible by default', function () {
 it('controls public profile details independently from the contact form', function () {
     publishProfileVita();
 
-    PublicContentSetting::query()->sole()->update([
+    PublicContentSetting::general()->update([
         'public_email' => 'artist@example.test',
         'show_public_email' => false,
         'instagram_handle' => 'artist_account',
         'show_instagram' => false,
-        'contact_state' => 'enabled',
+    ]);
+    PublicContentSetting::contact()->update(['contact_state' => 'enabled']);
+    PublicContentSetting::vita()->update([
         'profile_text_blocks' => [
             ['title' => 'Studio visits', 'body' => "By appointment.\nHamburg"],
         ],
@@ -88,7 +90,7 @@ it('serves an assigned favicon through the controlled public media route', funct
         'height' => 256,
     ]);
 
-    PublicContentSetting::query()->sole()->update([
+    PublicContentSetting::general()->update([
         'favicon_media_asset_id' => $asset->getKey(),
     ]);
     Storage::fake(config('media.disk'));

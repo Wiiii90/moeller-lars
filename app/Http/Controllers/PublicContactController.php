@@ -2,66 +2,49 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Content\SafeLinkPolicy;
 use App\Domain\Content\SitePreviewContext;
+use App\Mail\WebsiteContactMessage;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Mail\Message;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class PublicContactController extends Controller
 {
-    public function __construct(
-        private readonly SafeLinkPolicy $safeLinkPolicy,
-        private readonly SitePreviewContext $preview,
-    ) {}
+    public function __construct(private readonly SitePreviewContext $preview) {}
 
     public function show(): View
     {
         abort_unless($this->preview->sectionIsAvailable(SiteSection::TYPE_CONTACT), 404);
 
-        $settings = PublicContentSetting::query()->sole();
-        if (! $this->preview->active()) {
-            abort_if($settings->getAttribute('contact_state') === 'hidden', 404);
-        }
-
-        return view('pages.contact', ['settings' => $settings]);
+        return view('pages.contact', [
+            'generalSettings' => PublicContentSetting::general(),
+            'contactSettings' => PublicContentSetting::contact(),
+        ]);
     }
 
     public function submit(Request $request): RedirectResponse
     {
-        $settings = PublicContentSetting::query()->sole();
+        $contactSettings = PublicContentSetting::contact();
         abort_unless(
             SiteSection::isPublished(SiteSection::TYPE_CONTACT)
-                && $settings->getAttribute('contact_state') === 'enabled',
+                && $contactSettings->getAttribute('contact_state') === 'enabled',
             404,
         );
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],
             'email' => ['required', 'string', 'email:rfc', 'max:320'],
-            'website' => ['nullable', 'string', 'max:2048'],
-            'comment' => ['required', 'string', 'max:5000'],
+            'message' => ['required', 'string', 'max:5000'],
             'company' => ['nullable', 'string', 'max:0'],
         ]);
 
-        $website = $data['website'] ?? null;
-        if ($website !== null) {
-            $scheme = strtolower((string) parse_url($website, PHP_URL_SCHEME));
-            if (! in_array($scheme, ['http', 'https'], true) || ! $this->safeLinkPolicy->isAllowed($website)) {
-                throw ValidationException::withMessages([
-                    'website' => 'The website must be a valid HTTP or HTTPS URL.',
-                ]);
-            }
-        }
-
-        $recipient = $settings->getAttribute('contact_recipient_email');
+        $generalSettings = PublicContentSetting::general();
+        $recipient = $generalSettings->getAttribute('contact_recipient_email');
         if (! is_string($recipient) || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
             $recipient = config('contact.recipient');
         }
@@ -69,24 +52,28 @@ class PublicContactController extends Controller
             return back()->withErrors(['contact' => 'Message delivery is currently unavailable.'])->withInput();
         }
 
+        $senderAddress = config('mail.from.address');
+        if (! is_string($senderAddress) || filter_var($senderAddress, FILTER_VALIDATE_EMAIL) === false) {
+            return back()->withErrors(['contact' => 'Message delivery is currently unavailable.'])->withInput();
+        }
+        $senderName = config('mail.from.name');
+        if (! is_string($senderName) || trim($senderName) === '') {
+            $senderName = (string) config('app.name', 'Website');
+        }
+
         $mailer = config('mail.default');
         if (! is_string($mailer) || ! $this->mailerCanDeliver($mailer)) {
             return back()->withErrors(['contact' => 'Message delivery is currently unavailable.'])->withInput();
         }
 
-        $body = "Name: {$data['name']}\nEmail: {$data['email']}\n";
-        if ($website !== null) {
-            $body .= "Website: {$website}\n";
-        }
-        $body .= "\n{$data['comment']}";
-
         try {
-            Mail::raw($body, function (Message $message) use ($recipient, $data): void {
-                $message
-                    ->to($recipient)
-                    ->replyTo($data['email'], $data['name'])
-                    ->subject('Website contact · Lars Möller');
-            });
+            Mail::to($recipient)->send(new WebsiteContactMessage(
+                visitorName: $data['name'],
+                visitorEmail: $data['email'],
+                messageBody: $data['message'],
+                senderAddress: $senderAddress,
+                senderName: $senderName,
+            ));
         } catch (Throwable $exception) {
             Log::warning('Contact delivery failed.', ['exception' => $exception::class]);
 
