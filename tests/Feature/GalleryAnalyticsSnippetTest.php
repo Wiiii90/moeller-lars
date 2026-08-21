@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Analytics\MatomoReportingClient;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -143,6 +144,11 @@ it('renders the Gallery summary from the canonical Matomo reporting projection w
             galleryAnalyticsPayload((string) $artwork->getAttribute('analytics_key')),
         ),
     ]);
+
+    // The Gallery is a consumer of the canonical cache-first reporting projection.
+    // Warm that cache explicitly; first-paint / stale-while-revalidate behavior is
+    // covered separately by DeferMatomoReportingTest.
+    app(MatomoReportingClient::class)->report('30d');
 
     $this->get(ArtworkResource::getUrl('gallery', ['gallery' => $gallery->getKey()]))
         ->assertSuccessful()
