@@ -78,7 +78,7 @@ final class LegacyPublicProfileImporter
                     throw new RuntimeException('Verified legacy biography portrait could not be attached.');
                 }
 
-                if ($settings instanceof PublicContentSetting && $profileValues !== null) {
+                if ($settings instanceof PublicContentSetting) {
                     $settings->fill($profileValues);
                     $settings->save();
                 }
