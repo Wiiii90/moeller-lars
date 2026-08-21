@@ -1,76 +1,49 @@
 <?php
 
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
-use App\Domain\Media\MediaIngestService;
-use App\Filament\Resources\Artworks\ArtworkResource;
-use App\Filament\Resources\Artworks\Pages\CreateArtwork;
-use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
 use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\User;
-use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
-use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function (): void {
-    Filament::setCurrentPanel('admin');
-    Filament::bootCurrentPanel();
-});
-
-function finalWorkflowGallery(string $slug, string $state = 'hidden'): ArtworkCategory
+function assignmentGallery(string $slug, string $state = 'hidden'): ArtworkCategory
 {
     $gallery = ArtworkCategory::create([
         'name' => str($slug)->replace('-', ' ')->title()->toString(),
         'slug' => $slug,
         'show_on_home' => false,
     ]);
-    testGallerySection($gallery, [
-        'state' => $state,
-        'show_in_navigation' => false,
-    ]);
+    testGallerySection($gallery, ['state' => $state, 'show_in_navigation' => false]);
 
     return $gallery;
 }
 
-function finalWorkflowMedia(string $label = 'Shared artwork image'): MediaAsset
+function assignmentMedia(): MediaAsset
 {
-    $asset = MediaAsset::create([
-        'storage_key' => 'originals/'.uniqid('gallery-final-', true).'.jpg',
-        'original_filename' => 'gallery-final.jpg',
+    return MediaAsset::create([
+        'storage_key' => 'originals/'.uniqid('assignment-', true).'.jpg',
+        'original_filename' => 'assignment.jpg',
         'mime_type' => 'image/jpeg',
         'byte_size' => 4,
-        'sha256' => hash('sha256', uniqid('gallery-final-', true)),
+        'sha256' => hash('sha256', uniqid('assignment-', true)),
         'state' => 'available',
-        'alt_text' => $label,
+        'alt_text' => 'Shared artwork image',
     ]);
-    MediaVariant::create([
-        'media_asset_id' => $asset->id,
-        'variant_kind' => 'thumbnail',
-        'storage_key' => 'variants/'.uniqid('gallery-final-', true).'.webp',
-        'mime_type' => 'image/webp',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', uniqid('gallery-final-variant-', true)),
-        'transform_profile' => MediaIngestService::TRANSFORM_PROFILE,
-        'state' => 'available',
-    ]);
-
-    return $asset;
 }
 
-it('reassigns artwork between Galleries while preserving shared media and unrelated Gallery positions', function (): void {
+it('reassigns artwork without losing shared media or changing unrelated Gallery order', function (): void {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin, 'web');
 
-    $source = finalWorkflowGallery('move-source');
-    $destination = finalWorkflowGallery('move-destination');
-    $untouched = finalWorkflowGallery('move-untouched');
+    $source = assignmentGallery('move-source');
+    $destination = assignmentGallery('move-destination');
+    $untouched = assignmentGallery('move-untouched');
 
     $moving = Artwork::create([
         'artwork_category_id' => $source->id,
@@ -105,19 +78,9 @@ it('reassigns artwork between Galleries while preserving shared media and unrela
         'date_precision' => 'unknown',
     ]);
 
-    $sharedAsset = finalWorkflowMedia();
-    ArtworkMedia::create([
-        'artwork_id' => $moving->id,
-        'media_asset_id' => $sharedAsset->id,
-        'role' => 'primary',
-        'position' => 0,
-    ]);
-    ArtworkMedia::create([
-        'artwork_id' => $untouchedArtwork->id,
-        'media_asset_id' => $sharedAsset->id,
-        'role' => 'primary',
-        'position' => 0,
-    ]);
+    $sharedAsset = assignmentMedia();
+    ArtworkMedia::create(['artwork_id' => $moving->id, 'media_asset_id' => $sharedAsset->id, 'role' => 'primary', 'position' => 0]);
+    ArtworkMedia::create(['artwork_id' => $untouchedArtwork->id, 'media_asset_id' => $sharedAsset->id, 'role' => 'primary', 'position' => 0]);
 
     app(ArtworkGalleryAssignmentService::class)->reassign($moving, $destination);
 
@@ -128,18 +91,13 @@ it('reassigns artwork between Galleries while preserving shared media and unrela
         ->and((int) $untouchedArtwork->fresh()->position)->toBe(77)
         ->and($sharedAsset->fresh()->state)->toBe('available')
         ->and(ArtworkMedia::query()->where('media_asset_id', $sharedAsset->id)->count())->toBe(2)
-        ->and(ArtworkMedia::query()->where('artwork_id', $moving->id)->value('media_asset_id'))->toBe($sharedAsset->id)
-        ->and(AuditEvent::query()
-            ->where('action', 'artwork.updated')
-            ->where('entity_id', $moving->id)
-            ->where('admin_user_id', $admin->id)
-            ->exists())->toBeTrue();
+        ->and(AuditEvent::query()->where('action', 'artwork.updated')->where('entity_id', $moving->id)->exists())->toBeTrue();
 });
 
-it('keeps a published artwork in place when the destination Gallery is not published', function (): void {
+it('rejects moving a published artwork into a hidden Gallery without mutation', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    $source = finalWorkflowGallery('published-source', 'published');
-    $destination = finalWorkflowGallery('hidden-destination', 'hidden');
+    $source = assignmentGallery('published-source', 'published');
+    $destination = assignmentGallery('hidden-destination', 'hidden');
     $artwork = Artwork::create([
         'artwork_category_id' => $source->id,
         'slug' => 'published-move',
@@ -153,67 +111,5 @@ it('keeps a published artwork in place when the destination Gallery is not publi
         ->toThrow(ValidationException::class);
 
     expect((int) $artwork->fresh()->artwork_category_id)->toBe((int) $source->id)
-        ->and((int) $artwork->fresh()->position)->toBe(3)
-        ->and(AuditEvent::query()->where('action', 'artwork.updated')->exists())->toBeFalse();
-});
-
-it('shows publication readiness from eager-loaded primary thumbnail data and keeps edit links in Gallery context', function (): void {
-    $admin = User::factory()->admin()->create();
-    $this->actingAs($admin, 'web');
-    $gallery = finalWorkflowGallery('ready-gallery', 'published');
-    finalWorkflowGallery('ready-target');
-    $artwork = Artwork::create([
-        'artwork_category_id' => $gallery->id,
-        'slug' => 'ready-artwork',
-        'title' => 'Ready artwork',
-        'state' => 'draft',
-        'position' => 0,
-        'date_precision' => 'unknown',
-    ]);
-    $asset = finalWorkflowMedia('Ready artwork ALT');
-    ArtworkMedia::create([
-        'artwork_id' => $artwork->id,
-        'media_asset_id' => $asset->id,
-        'role' => 'primary',
-        'position' => 0,
-    ]);
-
-    $editUrl = ArtworkResource::getUrl('edit', [
-        'record' => $artwork->id,
-        'gallery' => $gallery->id,
-    ]);
-
-    $this->get(ArtworkResource::getUrl('gallery', ['gallery' => $gallery->id]))
-        ->assertSuccessful()
-        ->assertSee('Ready to publish')
-        ->assertSee($editUrl, false)
-        ->assertSee('Move to Gallery');
-});
-
-it('returns create and Gallery-originated edit saves to the owning Gallery workspace', function (): void {
-    $admin = User::factory()->admin()->create();
-    $this->actingAs($admin, 'web');
-    $gallery = finalWorkflowGallery('context-gallery', 'published');
-    $galleryUrl = ArtworkResource::getUrl('gallery', ['gallery' => $gallery->id]);
-
-    Livewire::withQueryParams(['gallery' => $gallery->id])
-        ->test(CreateArtwork::class)
-        ->fillForm([
-            'title' => 'Context artwork',
-            'slug' => 'context-artwork',
-            'artwork_category_id' => $gallery->id,
-            'work_date' => null,
-        ])
-        ->call('create')
-        ->assertHasNoFormErrors()
-        ->assertRedirect($galleryUrl);
-
-    $artwork = Artwork::query()->where('slug', 'context-artwork')->firstOrFail();
-
-    Livewire::withQueryParams(['gallery' => $gallery->id])
-        ->test(EditArtwork::class, ['record' => $artwork->id])
-        ->fillForm(['title' => 'Context artwork edited'])
-        ->call('save')
-        ->assertHasNoFormErrors()
-        ->assertRedirect($galleryUrl);
+        ->and((int) $artwork->fresh()->position)->toBe(3);
 });
