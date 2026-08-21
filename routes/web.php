@@ -15,7 +15,9 @@ Route::get('/', [PublicArtworkController::class, 'home'])->name('home');
 Route::get('/cv', [PublicCvController::class, 'show'])->name('cv');
 Route::get('/exhibitions', [PublicExhibitionController::class, 'index'])->name('exhibitions.index');
 Route::get('/contact', [PublicContactController::class, 'show'])->name('contact');
-Route::post('/contact', [PublicContactController::class, 'submit'])->name('contact.submit');
+Route::post('/contact', [PublicContactController::class, 'submit'])
+    ->middleware('throttle:5,1')
+    ->name('contact.submit');
 Route::get('/blog', [PublicBlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{slug}', [PublicBlogController::class, 'show'])->name('blog.show');
 Route::get('/sitemap.xml', [PublicSeoController::class, 'sitemap'])->name('seo.sitemap');
