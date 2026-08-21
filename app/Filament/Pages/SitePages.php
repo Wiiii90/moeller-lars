@@ -9,9 +9,9 @@ use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\BlogSettings\BlogSettingResource;
 use App\Filament\Resources\CustomPageSettings\CustomPageSettingResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
+use App\Filament\Resources\JournalSettings\JournalSettingResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
@@ -199,18 +199,9 @@ final class SitePages extends Page
                     $slug = trim((string) ($data['slug'] ?? ''));
 
                     $message = match ($type) {
-                        SiteSection::TYPE_NAVIGATION_GROUP => tap(
-                            app(SiteSectionEditorialService::class)->createNavigationGroup($title),
-                            static fn () => null,
-                        ) ? 'Navigation Node created' : 'Navigation Node created',
-                        SiteSection::TYPE_CUSTOM => tap(
-                            app(SiteSectionEditorialService::class)->createCustomPage($title, $slug),
-                            static fn () => null,
-                        ) ? 'Custom Page created as hidden' : 'Custom Page created as hidden',
-                        SiteSection::TYPE_JOURNAL => tap(
-                            app(SiteSectionEditorialService::class)->createJournal($title, $slug, (string) ($data['template'] ?? '')),
-                            static fn () => null,
-                        ) ? 'Journal created as hidden' : 'Journal created as hidden',
+                        SiteSection::TYPE_NAVIGATION_GROUP => $this->createNavigationNode($title),
+                        SiteSection::TYPE_CUSTOM => $this->createCustomPage($title, $slug),
+                        SiteSection::TYPE_JOURNAL => $this->createJournal($title, $slug, (string) ($data['template'] ?? '')),
                         SiteSection::TYPE_GALLERY => $this->createGallery($title, $slug),
                         default => throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Navigation Node.']),
                     };
@@ -223,6 +214,27 @@ final class SitePages extends Page
                         ->send();
                 }),
         ];
+    }
+
+    private function createNavigationNode(string $title): string
+    {
+        app(SiteSectionEditorialService::class)->createNavigationGroup($title);
+
+        return 'Navigation Node created';
+    }
+
+    private function createCustomPage(string $title, string $slug): string
+    {
+        app(SiteSectionEditorialService::class)->createCustomPage($title, $slug);
+
+        return 'Custom Page created as hidden';
+    }
+
+    private function createJournal(string $title, string $slug, string $template): string
+    {
+        app(SiteSectionEditorialService::class)->createJournal($title, $slug, $template);
+
+        return 'Journal created as hidden';
     }
 
     private function createGallery(string $title, string $slug): string
@@ -401,9 +413,7 @@ final class SitePages extends Page
     {
         return match ((string) $section->getAttribute('type')) {
             SiteSection::TYPE_GALLERY => ArtworkCategoryResource::getUrl('edit', ['record' => $section->getAttribute('artwork_category_id')]),
-            SiteSection::TYPE_JOURNAL => $section->getAttribute('template') === SiteSection::JOURNAL_TEMPLATE_BLOG
-                ? BlogSettingResource::getSettingsUrl($section)
-                : null,
+            SiteSection::TYPE_JOURNAL => JournalSettingResource::getSettingsUrl($section),
             default => null,
         };
     }
