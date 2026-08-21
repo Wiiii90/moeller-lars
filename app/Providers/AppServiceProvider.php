@@ -29,11 +29,15 @@ class AppServiceProvider extends ServiceProvider
         $editorialStylesheet = app()->environment('production')
             ? secure_asset('css/filament-editorial.css')
             : asset('css/filament-editorial.css');
+        $editorOverlayStylesheet = app()->environment('production')
+            ? secure_asset('css/filament-editor-overlays.css')
+            : asset('css/filament-editor-overlays.css');
 
         FilamentAsset::register([
             Css::make('artist-unified', $unifiedStylesheet),
             Css::make('analytics-dashboard', $analyticsStylesheet),
             Css::make('artist-editorial', $editorialStylesheet),
+            Css::make('artist-editor-overlays', $editorOverlayStylesheet),
         ]);
 
         FilamentView::registerRenderHook(
