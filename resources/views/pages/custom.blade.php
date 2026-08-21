@@ -5,6 +5,7 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($section->publicPath()))
 
 @section('content')
+    @php($isPreview = app(\App\Domain\Content\SitePreviewContext::class)->active())
     <div class="custom-page" aria-label="{{ $section->title }}">
         <h2 class="category-heading">{{ $section->title }}</h2>
 
@@ -31,7 +32,7 @@
                         @if ($type === 'list')
                             <div class="custom-page__list">
                                 @foreach (($block['items'] ?? []) as $item)
-                                    @continue(! is_array($item))
+                                    @continue(! is_array($item) || (! $isPreview && (($item['visible'] ?? true) !== true)))
                                     <article class="custom-page__list-item">
                                         <div class="custom-page__list-line">
                                             @if (filled($item['date'] ?? null))
