@@ -82,10 +82,7 @@ jobs:
         run: composer analyse
 
       - name: Check PHP formatting
-        run: |
-          vendor/bin/pint app/Models/CustomPageSetting.php
-          git diff -- app/Models/CustomPageSetting.php
-          git diff --exit-code
+        run: vendor/bin/pint --test
 
       - name: Run JavaScript tests
         run: npm run test:js
