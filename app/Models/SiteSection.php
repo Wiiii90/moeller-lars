@@ -32,14 +32,6 @@ final class SiteSection extends Model
 
     public const TYPE_NAVIGATION_GROUP = 'navigation_group';
 
-    public const TYPE_VITA = 'vita';
-
-    public const TYPE_BLOG = 'blog';
-
-    public const TYPE_EXHIBITIONS = 'exhibitions';
-
-    public const TYPE_CONTACT = 'contact';
-
     public const TYPE_CUSTOM = 'custom';
 
     public const TYPE_JOURNAL = 'journal';
@@ -57,22 +49,11 @@ final class SiteSection extends Model
         self::TYPE_HOME,
         self::TYPE_GALLERY,
         self::TYPE_NAVIGATION_GROUP,
-        self::TYPE_VITA,
-        self::TYPE_BLOG,
-        self::TYPE_EXHIBITIONS,
-        self::TYPE_CONTACT,
         self::TYPE_CUSTOM,
         self::TYPE_JOURNAL,
     ];
 
-    /** Legacy section types whose data model still permits exactly one row per type. */
-    public const UNIQUE_TYPES = [
-        self::TYPE_HOME,
-        self::TYPE_VITA,
-        self::TYPE_BLOG,
-        self::TYPE_EXHIBITIONS,
-        self::TYPE_CONTACT,
-    ];
+    public const UNIQUE_TYPES = [self::TYPE_HOME];
 
     protected function casts(): array
     {
@@ -180,6 +161,11 @@ final class SiteSection extends Model
         return $this->hasOne(CustomPageSetting::class);
     }
 
+    public function blogSetting(): HasOne
+    {
+        return $this->hasOne(BlogSetting::class);
+    }
+
     public function hasPublicPage(): bool
     {
         return (string) $this->getAttribute('type') !== self::TYPE_NAVIGATION_GROUP;
@@ -194,14 +180,10 @@ final class SiteSection extends Model
     {
         return match ($this->getAttribute('type')) {
             self::TYPE_HOME => '/',
+            self::TYPE_NAVIGATION_GROUP => null,
             self::TYPE_GALLERY,
             self::TYPE_CUSTOM,
             self::TYPE_JOURNAL => '/'.$this->getAttribute('slug'),
-            self::TYPE_NAVIGATION_GROUP => null,
-            self::TYPE_VITA => '/cv',
-            self::TYPE_BLOG => '/blog',
-            self::TYPE_EXHIBITIONS => '/exhibitions',
-            self::TYPE_CONTACT => '/contact',
             default => throw new LogicException('Unsupported site section type.'),
         };
     }
@@ -210,14 +192,10 @@ final class SiteSection extends Model
     {
         return match ($this->getAttribute('type')) {
             self::TYPE_HOME => route('home'),
+            self::TYPE_NAVIGATION_GROUP => null,
             self::TYPE_GALLERY,
             self::TYPE_CUSTOM,
-            self::TYPE_JOURNAL => route('artworks.category', ['category' => $this->getAttribute('slug')]),
-            self::TYPE_NAVIGATION_GROUP => null,
-            self::TYPE_VITA => route('cv'),
-            self::TYPE_BLOG => route('blog.index'),
-            self::TYPE_EXHIBITIONS => route('exhibitions.index'),
-            self::TYPE_CONTACT => route('contact'),
+            self::TYPE_JOURNAL => route('site.section', ['section' => $this->getAttribute('slug')]),
             default => throw new LogicException('Unsupported site section type.'),
         };
     }
@@ -226,15 +204,12 @@ final class SiteSection extends Model
     {
         return match ($this->getAttribute('type')) {
             self::TYPE_HOME => request()->routeIs('home', 'preview.home'),
-            self::TYPE_GALLERY,
-            self::TYPE_CUSTOM,
-            self::TYPE_JOURNAL => request()->routeIs('artworks.category', 'preview.artworks.category')
-                && request()->route('category') === $this->getAttribute('slug'),
             self::TYPE_NAVIGATION_GROUP => false,
-            self::TYPE_VITA => request()->routeIs('cv', 'preview.cv'),
-            self::TYPE_BLOG => request()->routeIs('blog.*', 'preview.blog.*'),
-            self::TYPE_EXHIBITIONS => request()->routeIs('exhibitions.*', 'preview.exhibitions.*'),
-            self::TYPE_CONTACT => request()->routeIs('contact', 'preview.contact'),
+            self::TYPE_GALLERY,
+            self::TYPE_CUSTOM => request()->routeIs('site.section', 'preview.site.section')
+                && request()->route('section') === $this->getAttribute('slug'),
+            self::TYPE_JOURNAL => request()->routeIs('site.section', 'preview.site.section', 'journal.show', 'preview.journal.show')
+                && request()->route('section') === $this->getAttribute('slug'),
             default => false,
         };
     }
