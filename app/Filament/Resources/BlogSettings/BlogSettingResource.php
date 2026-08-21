@@ -4,6 +4,7 @@ namespace App\Filament\Resources\BlogSettings;
 
 use App\Filament\Resources\BlogSettings\Pages\EditBlogSetting;
 use App\Models\BlogSetting;
+use App\Models\SiteSection;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -17,22 +18,26 @@ final class BlogSettingResource extends Resource
 
     protected static bool $shouldRegisterNavigation = false;
 
-    protected static ?string $navigationLabel = 'Blog settings';
+    protected static ?string $navigationLabel = 'Journal settings';
 
-    protected static ?string $modelLabel = 'blog settings';
+    protected static ?string $modelLabel = 'Journal settings';
 
-    protected static ?string $pluralModelLabel = 'blog settings';
+    protected static ?string $pluralModelLabel = 'Journal settings';
 
-    public static function getSettingsUrl(): string
+    public static function getSettingsUrl(SiteSection|int|null $section = null): string
     {
-        return self::getUrl('edit', ['record' => BlogSetting::forBlogSection()]);
+        $settings = $section === null
+            ? BlogSetting::forBlogSection()
+            : BlogSetting::forSection($section);
+
+        return self::getUrl('edit', ['record' => $settings]);
     }
 
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Blog listing page')
-                ->description('Public visibility, navigation and site order are managed from Pages. These fields control only the Blog index content.')
+            Section::make('Blog Journal page')
+                ->description('Public visibility, navigation and site order are managed from Pages. These fields control this Journal listing only.')
                 ->schema([
                     TextInput::make('listing_title')->maxLength(240)->nullable(),
                     MarkdownEditor::make('listing_intro')
@@ -42,7 +47,7 @@ final class BlogSettingResource extends Resource
                             ['bulletList', 'orderedList'],
                             ['undo', 'redo'],
                         ])
-                        ->helperText('Formatting is limited to the Markdown supported by the public Blog renderer.')
+                        ->helperText('Formatting is limited to the Markdown supported by the public Journal renderer.')
                         ->maxLength(10000)
                         ->nullable()
                         ->columnSpanFull(),
