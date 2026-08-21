@@ -41,7 +41,7 @@ body.public-site .site-scroll-region {
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    scrollbar-gutter: stable;
+    scrollbar-gutter: stable both-edges;
     -webkit-overflow-scrolling: touch;
 }
 
