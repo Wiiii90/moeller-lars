@@ -31,7 +31,7 @@ final class LegacyPublicProfileImporter
             throw new RuntimeException('Verified legacy biography entry already has media attached.');
         }
 
-        $settings = $profileValues === null ? null : PublicContentSetting::query()->sole();
+        $settings = $profileValues === null ? null : PublicContentSetting::general();
         $storageKeys = [];
 
         try {
