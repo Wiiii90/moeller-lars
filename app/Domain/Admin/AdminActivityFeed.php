@@ -5,7 +5,6 @@ namespace App\Domain\Admin;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\BlogSettings\BlogSettingResource;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
@@ -225,7 +224,7 @@ final class AdminActivityFeed
             'cv_entry' => CvEntryResource::getUrl('edit', ['record' => $entityId]),
             'exhibition' => ExhibitionResource::getUrl('edit', ['record' => $entityId]),
             'blog_post' => BlogPostResource::getUrl('edit', ['record' => $entityId]),
-            'blog_setting' => BlogSettingResource::getNavigationUrl(),
+            'blog_setting' => SitePages::getUrl(),
             'public_content_setting' => PublicContentSettingResource::getNavigationUrl(),
             default => null,
         };

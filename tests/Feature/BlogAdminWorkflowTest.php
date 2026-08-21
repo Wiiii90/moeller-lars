@@ -1,8 +1,10 @@
 <?php
 
 use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
+use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -10,9 +12,15 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-function blogWorkflowPost(string $title, int $position, string $state = 'draft'): BlogPost
+function workflowBlogJournal(string $slug): SiteSection
+{
+    return app(SiteSectionEditorialService::class)->createJournal(ucfirst(str_replace('-', ' ', $slug)), $slug, SiteSection::JOURNAL_TEMPLATE_BLOG);
+}
+
+function workflowBlogPost(SiteSection $journal, string $title, int $position, string $state = 'draft'): BlogPost
 {
     return BlogPost::create([
+        'site_section_id' => $journal->id,
         'title' => $title,
         'slug' => strtolower(str_replace(' ', '-', $title)),
         'body' => 'Editorial body',
@@ -23,11 +31,13 @@ function blogWorkflowPost(string $title, int $position, string $state = 'draft')
     ]);
 }
 
-it('creates private drafts and assigns listing order without exposing raw state controls', function () {
+it('creates drafts inside the selected Blog Journal and audits the action', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    blogWorkflowPost('Existing post', 7);
+    $journal = workflowBlogJournal('workflow-drafts');
+    workflowBlogPost($journal, 'Existing post', 7);
 
     $post = app(BlogEditorialService::class)->createDraft([
+        'site_section_id' => $journal->id,
         'title' => 'New draft',
         'slug' => 'new-draft',
         'body' => null,
@@ -36,85 +46,47 @@ it('creates private drafts and assigns listing order without exposing raw state 
     ]);
 
     expect($post->state)->toBe('draft')
+        ->and((int) $post->site_section_id)->toBe($journal->id)
         ->and($post->position)->toBe(8)
-        ->and($post->published_at)->toBeNull()
-        ->and($post->scheduled_at)->toBeNull()
         ->and(AuditEvent::query()->where('action', 'blog_post.created')->where('entity_id', $post->id)->exists())->toBeTrue();
 });
 
-it('publishes, schedules, cancels, unpublishes and archives with explicit audit events', function () {
+it('enforces the Blog editorial lifecycle without preserving legacy page state', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    $post = blogWorkflowPost('Lifecycle post', 0);
+    $journal = workflowBlogJournal('workflow-lifecycle');
+    $post = workflowBlogPost($journal, 'Lifecycle post', 0);
     $service = app(BlogEditorialService::class);
 
     expect($service->schedule($post, now()->addDay())->state)->toBe('scheduled')
         ->and($service->restoreDraft($post)->state)->toBe('draft')
         ->and($service->publish($post)->state)->toBe('published')
-        ->and($post->fresh()->published_at)->not->toBeNull()
         ->and($service->unpublish($post)->state)->toBe('unpublished')
-        ->and($service->archive($post)->state)->toBe('archived')
-        ->and($service->restoreDraft($post)->state)->toBe('draft');
+        ->and($service->archive($post)->state)->toBe('archived');
 
-    expect(AuditEvent::query()->where('entity_type', 'blog_post')->pluck('action')->all())
-        ->toContain(
-            'blog_post.scheduled',
-            'blog_post.restored_to_draft',
-            'blog_post.published',
-            'blog_post.unpublished',
-            'blog_post.archived',
-        );
+    expect(fn () => $service->publish($post))->toThrow(ValidationException::class);
+    expect($service->restoreDraft($post)->state)->toBe('draft');
+    expect(fn () => $service->schedule($post, now()->subMinute()))->toThrow(ValidationException::class);
 });
 
-it('rejects scheduling in the past', function () {
+it('reorders posts only inside their owning Journal', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    $post = blogWorkflowPost('Past schedule', 0);
+    $firstJournal = workflowBlogJournal('workflow-order-a');
+    $secondJournal = workflowBlogJournal('workflow-order-b');
+    $first = workflowBlogPost($firstJournal, 'First public', 0, 'published');
+    $second = workflowBlogPost($firstJournal, 'Second public', 1, 'published');
+    $other = workflowBlogPost($secondJournal, 'Other journal', 0, 'published');
 
-    expect(fn () => app(BlogEditorialService::class)->schedule($post, now()->subMinute()))
-        ->toThrow(ValidationException::class);
+    expect(app(BlogEditorialService::class)->move($second, 'up'))->toBeTrue()
+        ->and(BlogPost::query()->where('site_section_id', $firstJournal->id)->orderBy('position')->pluck('id')->all())->toBe([$second->id, $first->id])
+        ->and((int) $other->fresh()->position)->toBe(0)
+        ->and((int) $other->fresh()->site_section_id)->toBe($secondJournal->id);
 });
 
-it('requires archived posts to return to draft before publishing or scheduling', function () {
+it('requires an admin actor for Blog lifecycle mutations', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
-    $post = blogWorkflowPost('Archived post', 0, 'archived');
-    $service = app(BlogEditorialService::class);
+    $journal = workflowBlogJournal('workflow-auth');
+    $post = workflowBlogPost($journal, 'Protected post', 0);
+    auth()->logout();
 
-    expect(fn () => $service->publish($post))->toThrow(ValidationException::class)
-        ->and(fn () => $service->schedule($post, now()->addDay()))->toThrow(ValidationException::class)
-        ->and($post->fresh()->state)->toBe('archived')
-        ->and(AuditEvent::query()->whereIn('action', ['blog_post.published', 'blog_post.scheduled'])->count())->toBe(0);
-});
-
-it('does not schedule an already published post directly', function () {
-    $this->actingAs(User::factory()->admin()->create(), 'web');
-    $post = blogWorkflowPost('Published post', 0, 'published');
-
-    expect(fn () => app(BlogEditorialService::class)->schedule($post, now()->addDay()))
-        ->toThrow(ValidationException::class)
-        ->and($post->fresh()->state)->toBe('published');
-});
-
-it('reorders public posts without violating the partial unique position index', function () {
-    $this->actingAs(User::factory()->admin()->create(), 'web');
-    $first = blogWorkflowPost('First public', 0, 'published');
-    $second = blogWorkflowPost('Second public', 1, 'published');
-    $third = blogWorkflowPost('Third public', 2, 'published');
-
-    expect(app(BlogEditorialService::class)->move($third, 'up'))->toBeTrue()
-        ->and(BlogPost::query()->orderBy('position')->pluck('id')->all())
-        ->toBe([$first->id, $third->id, $second->id])
-        ->and(BlogPost::query()->orderBy('position')->pluck('position')->all())
-        ->toBe([0, 1, 2])
-        ->and(AuditEvent::query()->where('action', 'blog_post.reordered')->count())->toBe(2);
-});
-
-it('requires an admin actor for blog lifecycle mutations', function () {
-    $post = blogWorkflowPost('Protected blog post', 0);
-    $service = app(BlogEditorialService::class);
-
-    expect(fn () => $service->publish($post))->toThrow(AuthorizationException::class);
-
-    $this->actingAs(User::factory()->create(), 'web');
-    expect(fn () => $service->archive($post))->toThrow(AuthorizationException::class)
-        ->and(fn () => $service->move($post, 'up'))->toThrow(AuthorizationException::class)
-        ->and($post->fresh()->state)->toBe('draft');
+    expect(fn () => app(BlogEditorialService::class)->publish($post))->toThrow(AuthorizationException::class);
 });

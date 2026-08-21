@@ -3,6 +3,10 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Models\BlogPost;
+use App\Models\CustomPageSetting;
+use App\Models\Exhibition;
+use App\Models\JournalSetting;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -11,20 +15,20 @@ use Illuminate\Validation\ValidationException;
 
 final class SiteSectionEditorialService
 {
-    public function __construct(private readonly AdminAuditService $audit) {}
+    public function __construct(
+        private readonly AdminAuditService $audit,
+        private readonly SiteSectionPathPolicy $pathPolicy,
+    ) {}
 
     public function createNavigationGroup(string $title): SiteSection
     {
-        $title = trim($title);
-        if ($title === '' || mb_strlen($title) > 160) {
-            throw ValidationException::withMessages(['title' => 'A short navigation group title is required.']);
-        }
-
+        $title = $this->validatedTitle($title);
         $actor = $this->audit->requireActor();
 
         return DB::transaction(function () use ($title, $actor): SiteSection {
             $section = SiteSection::query()->create([
                 'type' => SiteSection::TYPE_NAVIGATION_GROUP,
+                'template' => null,
                 'title' => $title,
                 'navigation_label' => $title,
                 'slug' => null,
@@ -38,6 +42,108 @@ final class SiteSectionEditorialService
             $this->audit->record($actor, 'site_section.created', 'site_section', (int) $section->getKey());
 
             return $section;
+        });
+    }
+
+    public function createCustomPage(string $title, string $slug): SiteSection
+    {
+        $title = $this->validatedTitle($title);
+        $slug = $this->validatedSlug($slug);
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($title, $slug, $actor): SiteSection {
+            $section = SiteSection::query()->create([
+                'type' => SiteSection::TYPE_CUSTOM,
+                'template' => null,
+                'title' => $title,
+                'navigation_label' => $title,
+                'slug' => $slug,
+                'state' => 'hidden',
+                'position' => $this->nextSiblingPosition(null, null),
+                'show_in_navigation' => false,
+                'parent_id' => null,
+                'artwork_category_id' => null,
+            ]);
+
+            $settings = new CustomPageSetting;
+            $settings->setAttribute('site_section_id', $section->getKey());
+            $settings->setAttribute('blocks', []);
+            $settings->save();
+
+            $this->audit->record($actor, 'site_section.created', 'site_section', (int) $section->getKey());
+
+            return $section;
+        });
+    }
+
+    public function createJournal(string $title, string $slug, string $template): SiteSection
+    {
+        $title = $this->validatedTitle($title);
+        $slug = $this->validatedSlug($slug);
+        if (! in_array($template, SiteSection::JOURNAL_TEMPLATES, true)) {
+            throw ValidationException::withMessages(['template' => 'Choose Blog or Exhibitions as the Journal template.']);
+        }
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($title, $slug, $template, $actor): SiteSection {
+            $section = SiteSection::query()->create([
+                'type' => SiteSection::TYPE_JOURNAL,
+                'template' => $template,
+                'title' => $title,
+                'navigation_label' => $title,
+                'slug' => $slug,
+                'state' => 'hidden',
+                'position' => $this->nextSiblingPosition(null, null),
+                'show_in_navigation' => false,
+                'parent_id' => null,
+                'artwork_category_id' => null,
+            ]);
+
+            $settings = new JournalSetting;
+            $settings->setAttribute('site_section_id', $section->getKey());
+            $settings->setAttribute('listing_title', $title);
+            $settings->setAttribute('listing_intro', null);
+            $settings->save();
+
+            $this->audit->record($actor, 'site_section.created', 'site_section', (int) $section->getKey());
+
+            return $section;
+        });
+    }
+
+    public function deleteConfigurableSection(SiteSection $section): void
+    {
+        $type = (string) $section->getAttribute('type');
+        if (! in_array($type, [SiteSection::TYPE_CUSTOM, SiteSection::TYPE_JOURNAL, SiteSection::TYPE_NAVIGATION_GROUP], true)) {
+            throw ValidationException::withMessages(['section' => 'This page cannot be deleted from the configurable page workflow.']);
+        }
+
+        $actor = $this->audit->requireActor();
+
+        DB::transaction(function () use ($section, $type, $actor): void {
+            /** @var SiteSection $fresh */
+            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            if ((string) $fresh->getAttribute('state') !== 'hidden' || (bool) $fresh->getAttribute('show_in_navigation')) {
+                throw ValidationException::withMessages(['section' => 'Hide the page and remove it from navigation before deleting it.']);
+            }
+            if (SiteSection::query()->where('parent_id', $fresh->getKey())->exists()) {
+                throw ValidationException::withMessages(['section' => 'Move or delete submenu entries before deleting their parent.']);
+            }
+
+            if ($type === SiteSection::TYPE_JOURNAL) {
+                $hasEntries = match ($fresh->getAttribute('template')) {
+                    SiteSection::JOURNAL_TEMPLATE_BLOG => BlogPost::query()->where('site_section_id', $fresh->getKey())->exists(),
+                    SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS => Exhibition::query()->where('site_section_id', $fresh->getKey())->exists(),
+                    default => true,
+                };
+                if ($hasEntries) {
+                    throw ValidationException::withMessages(['section' => 'This Journal cannot be deleted while it still contains entries.']);
+                }
+            }
+
+            $sectionId = (int) $fresh->getKey();
+            $this->audit->record($actor, 'site_section.deleted', 'site_section', $sectionId);
+            $fresh->delete();
         });
     }
 
@@ -125,13 +231,36 @@ final class SiteSectionEditorialService
         });
     }
 
+    private function validatedTitle(string $title): string
+    {
+        $title = trim($title);
+        if ($title === '' || mb_strlen($title) > 160) {
+            throw ValidationException::withMessages(['title' => 'A short page title is required.']);
+        }
+
+        return $title;
+    }
+
+    private function validatedSlug(string $slug): string
+    {
+        $slug = trim($slug);
+        if ($slug === '' || mb_strlen($slug) > 80 || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) !== 1) {
+            throw ValidationException::withMessages(['slug' => 'Use lowercase letters, numbers and hyphens for the public URL slug.']);
+        }
+        if (! $this->pathPolicy->available($slug)) {
+            throw ValidationException::withMessages(['slug' => 'This public URL slug is reserved or already in use.']);
+        }
+
+        return $slug;
+    }
+
     private function parentSection(SiteSection $section, ?int $parentSectionId): ?SiteSection
     {
         if ($parentSectionId === null) {
             return null;
         }
         if ((string) $section->getAttribute('type') === SiteSection::TYPE_NAVIGATION_GROUP) {
-            throw ValidationException::withMessages(['parent_id' => 'Navigation groups must remain top-level submenu parents.']);
+            throw ValidationException::withMessages(['parent_id' => 'Navigation nodes must remain top-level submenu parents.']);
         }
         if ($parentSectionId === (int) $section->getKey()) {
             throw ValidationException::withMessages(['parent_id' => 'A section cannot be its own parent.']);

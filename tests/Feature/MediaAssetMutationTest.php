@@ -5,11 +5,11 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
-use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -42,11 +42,27 @@ function mutationAsset(): MediaAsset
     return $asset;
 }
 
-beforeEach(function () {
+function mutationJournal(string $template, string $slug): SiteSection
+{
+    return SiteSection::query()->create([
+        'type' => SiteSection::TYPE_JOURNAL,
+        'template' => $template,
+        'title' => ucfirst($slug),
+        'navigation_label' => ucfirst($slug),
+        'slug' => $slug,
+        'state' => 'hidden',
+        'position' => random_int(600, 800),
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
+    ]);
+}
+
+beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 });
 
-it('updates only approved media metadata', function () {
+it('updates only approved media metadata', function (): void {
     $asset = mutationAsset();
     $updated = app(MediaAssetEditorialService::class)->updateMetadata($asset, ['alt_text' => 'Updated ALT', 'credit' => 'Credit']);
 
@@ -55,7 +71,7 @@ it('updates only approved media metadata', function () {
         ->toThrow(ValidationException::class);
 });
 
-it('logically deletes unreferenced media and removes its files', function () {
+it('logically deletes unreferenced media and removes its files', function (): void {
     Storage::fake(config('media.disk'));
     $asset = mutationAsset();
     $variant = $asset->variants()->sole();
@@ -68,7 +84,7 @@ it('logically deletes unreferenced media and removes its files', function () {
     Storage::disk(config('media.disk'))->assertMissing($variant->storage_key);
 });
 
-it('refuses deletion while media is referenced by an approved content type', function (string $type) {
+it('refuses deletion while media is referenced by current content', function (string $type): void {
     $asset = mutationAsset();
 
     if ($type === 'artwork') {
@@ -76,14 +92,27 @@ it('refuses deletion while media is referenced by an approved content type', fun
         $artwork = Artwork::create(['artwork_category_id' => $category->id, 'slug' => 'work', 'title' => 'Work', 'state' => 'draft', 'position' => 0]);
         ArtworkMedia::create(['artwork_id' => $artwork->id, 'media_asset_id' => $asset->id, 'role' => 'primary', 'position' => 0]);
     } elseif ($type === 'exhibition') {
-        $exhibition = Exhibition::create(['slug' => 'show', 'title' => 'Show', 'state' => 'draft', 'position' => 0]);
+        $journal = mutationJournal(SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS, 'media-exhibitions');
+        $exhibition = Exhibition::create([
+            'site_section_id' => $journal->id,
+            'slug' => 'show',
+            'title' => 'Show',
+            'state' => 'draft',
+            'position' => 0,
+        ]);
         ExhibitionMedia::create(['exhibition_id' => $exhibition->id, 'media_asset_id' => $asset->id, 'role' => 'additional', 'position' => 0]);
-    } elseif ($type === 'cv') {
-        CvEntry::create(['section' => 'CV', 'title' => 'Entry', 'state' => 'draft', 'position' => 0, 'image_media_asset_id' => $asset->id]);
     } else {
-        BlogPost::create(['slug' => 'post', 'title' => 'Post', 'state' => 'draft', 'position' => 0, 'cover_media_asset_id' => $asset->id]);
+        $journal = mutationJournal(SiteSection::JOURNAL_TEMPLATE_BLOG, 'media-blog');
+        BlogPost::create([
+            'site_section_id' => $journal->id,
+            'slug' => 'post',
+            'title' => 'Post',
+            'state' => 'draft',
+            'position' => 0,
+            'cover_media_asset_id' => $asset->id,
+        ]);
     }
 
     expect(fn () => app(MediaAssetEditorialService::class)->delete($asset))->toThrow(ValidationException::class);
     expect($asset->fresh()->state)->toBe('available');
-})->with(['artwork', 'exhibition', 'cv', 'blog']);
+})->with(['artwork', 'exhibition', 'blog']);

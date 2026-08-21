@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         FilamentView::registerRenderHook(
-            PanelsRenderHook::USER_MENU_AFTER,
+            PanelsRenderHook::USER_MENU_BEFORE,
             fn (): ViewContract => view('filament.partials.topbar-sign-out'),
         );
 

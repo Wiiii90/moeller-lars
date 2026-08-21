@@ -2,16 +2,15 @@
     <div class="artist-workspace artist-dashboard">
         <header class="artist-workspace__head">
             <div>
-                <p class="artist-workspace__kicker">Editorial overview</p>
-                <h2>Website at a glance</h2>
                 <div class="artist-dashboard__quick-actions" aria-label="Quick actions">
                     {{ $this->addArtworkAction }}
-                    {{ $this->addExhibitionAction }}
-                    {{ $this->addCvEntryAction }}
-                    {{ $this->addBlogPostAction }}
                     {{ $this->managePagesAction }}
+                    {{ $this->filesAction }}
+                    {{ $this->generalAction }}
                     {{ $this->openSiteAction }}
                 </div>
+                <p class="artist-workspace__kicker">Editorial overview</p>
+                <h2>Website at a glance</h2>
                 <p>Traffic, recent editorial work and the few site conditions that need attention.</p>
             </div>
         </header>

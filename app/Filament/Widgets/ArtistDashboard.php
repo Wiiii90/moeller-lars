@@ -13,16 +13,14 @@ use App\Filament\Pages\Analytics;
 use App\Filament\Pages\SitePages;
 use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\Artworks\ArtworkResource;
-use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\CvEntries\CvEntryResource;
-use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
+use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
-use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
+use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -70,37 +68,31 @@ final class ArtistDashboard extends Widget implements HasActions, HasSchemas
             });
     }
 
-    public function addExhibitionAction(): Action
-    {
-        return Action::make('addExhibition')
-            ->label('Add exhibition')
-            ->icon(Heroicon::OutlinedPlus)
-            ->url(ExhibitionResource::getUrl('create'));
-    }
-
-    public function addCvEntryAction(): Action
-    {
-        return Action::make('addCvEntry')
-            ->label('Add Vita / CV entry')
-            ->icon(Heroicon::OutlinedPlus)
-            ->url(CvEntryResource::getUrl('create'));
-    }
-
-    public function addBlogPostAction(): Action
-    {
-        return Action::make('addBlogPost')
-            ->label('Add blog post')
-            ->icon(Heroicon::OutlinedPlus)
-            ->url(BlogPostResource::getUrl('create'));
-    }
-
     public function managePagesAction(): Action
     {
         return Action::make('managePages')
-            ->label('Manage pages')
+            ->label('Pages')
             ->icon(Heroicon::OutlinedRectangleStack)
             ->color('gray')
             ->url(SitePages::getUrl());
+    }
+
+    public function filesAction(): Action
+    {
+        return Action::make('files')
+            ->label('Files')
+            ->icon(Heroicon::OutlinedFolderOpen)
+            ->color('gray')
+            ->url(MediaAssetResource::getUrl('index'));
+    }
+
+    public function generalAction(): Action
+    {
+        return Action::make('general')
+            ->label('General')
+            ->icon(Heroicon::OutlinedGlobeAlt)
+            ->color('gray')
+            ->url(PublicContentSettingResource::getNavigationUrl());
     }
 
     public function openSiteAction(): Action
@@ -117,17 +109,20 @@ final class ArtistDashboard extends Widget implements HasActions, HasSchemas
     {
         $artworkStates = $this->stateCounts(Artwork::class);
         $exhibitionStates = $this->stateCounts(Exhibition::class);
-        $cvStates = $this->stateCounts(CvEntry::class);
         $blogStates = $this->stateCounts(BlogPost::class);
         $mediaStates = $this->stateCounts(MediaAsset::class);
-        $editorialGroups = [$artworkStates, $exhibitionStates, $cvStates, $blogStates];
+        $editorialGroups = [$artworkStates, $exhibitionStates, $blogStates];
         $drafts = $this->sumStates($editorialGroups, 'draft');
+        $hiddenPages = SiteSection::query()
+            ->where('type', '<>', SiteSection::TYPE_NAVIGATION_GROUP)
+            ->where('state', 'hidden')
+            ->count();
 
         $editorialStatus = [
-            ['label' => 'Published', 'value' => $this->sumStates($editorialGroups, 'published'), 'tone' => 'positive'],
-            ['label' => 'Drafts', 'value' => $drafts, 'tone' => 'attention'],
-            ['label' => 'Hidden', 'value' => $this->sumStates([$exhibitionStates, $cvStates], 'hidden'), 'tone' => 'muted'],
-            ['label' => 'Scheduled', 'value' => (int) ($blogStates['scheduled'] ?? 0), 'tone' => 'muted'],
+            ['label' => 'Published content', 'value' => $this->sumStates($editorialGroups, 'published'), 'tone' => 'positive'],
+            ['label' => 'Draft content', 'value' => $drafts, 'tone' => 'attention'],
+            ['label' => 'Hidden pages', 'value' => $hiddenPages, 'tone' => 'muted'],
+            ['label' => 'Scheduled posts', 'value' => (int) ($blogStates['scheduled'] ?? 0), 'tone' => 'muted'],
         ];
 
         $analytics = $this->analyticsOverview(app(ArtistReportingService::class)->dashboard('30d'));
@@ -156,17 +151,23 @@ final class ArtistDashboard extends Widget implements HasActions, HasSchemas
             $drafts > 0 ? [
                 'label' => 'Draft content awaiting publication',
                 'value' => $drafts,
-                'detail' => 'Across artworks, exhibitions, Vita / CV and Blog',
-                'url' => null,
+                'detail' => 'Across artworks and Journal entries',
+                'url' => SitePages::getUrl(),
+            ] : null,
+            $hiddenPages > 0 ? [
+                'label' => 'Hidden public pages',
+                'value' => $hiddenPages,
+                'detail' => 'Review page visibility and menu placement from Pages',
+                'url' => SitePages::getUrl(),
             ] : null,
             $missingAlt > 0 ? [
-                'label' => 'Media missing ALT text',
+                'label' => 'Files missing ALT text',
                 'value' => $missingAlt,
-                'detail' => 'Available media should carry useful accessibility metadata',
+                'detail' => 'Available image files should carry useful accessibility metadata',
                 'url' => MediaAssetResource::getUrl('index'),
             ] : null,
             $missingThumbnail > 0 ? [
-                'label' => 'Media missing current preview',
+                'label' => 'Files missing current preview',
                 'value' => $missingThumbnail,
                 'detail' => 'Thumbnail variant public-v1 is not ready',
                 'url' => MediaAssetResource::getUrl('index'),
@@ -178,9 +179,9 @@ final class ArtistDashboard extends Widget implements HasActions, HasSchemas
                 'url' => ArtworkResource::getUrl('index'),
             ] : null,
             $quarantinedMedia > 0 ? [
-                'label' => 'Quarantined media',
+                'label' => 'Quarantined files',
                 'value' => $quarantinedMedia,
-                'detail' => 'Review media that is not available for editorial reuse',
+                'detail' => 'Review files that are not available for editorial reuse',
                 'url' => MediaAssetResource::getUrl('index'),
             ] : null,
             in_array($analytics['status'], ['disabled', 'unavailable'], true) ? [
@@ -191,9 +192,9 @@ final class ArtistDashboard extends Widget implements HasActions, HasSchemas
             ] : null,
             in_array($storage['status'], ['near_capacity', 'full', 'unavailable'], true) ? [
                 'label' => match ($storage['status']) {
-                    'full' => 'Media storage allowance full',
-                    'near_capacity' => 'Media storage near capacity',
-                    default => 'Media storage measurement unavailable',
+                    'full' => 'File storage allowance full',
+                    'near_capacity' => 'File storage near capacity',
+                    default => 'File storage measurement unavailable',
                 },
                 'value' => $storage['percent'],
                 'value_suffix' => $storage['percent'] === null ? '' : '%',
@@ -399,7 +400,7 @@ final class ArtistDashboard extends Widget implements HasActions, HasSchemas
             return [
                 'status' => 'unavailable',
                 'label' => 'Measurement unavailable',
-                'detail' => 'Existing media remains readable; Storage can retry the authoritative measurement.',
+                'detail' => 'Existing files remain readable; Storage can retry the authoritative measurement.',
                 'percent' => null,
                 'remaining' => null,
                 'url' => $url,

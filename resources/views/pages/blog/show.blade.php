@@ -2,12 +2,12 @@
 
 @section('title', $post->title.' · Lars Möller')
 @section('meta_description', $post->excerpt ?: $post->title)
-@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/blog/'.$post->slug))
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($section->publicPath().'/'.$post->slug))
 
 @section('content')
     <article
         class="blog-post"
-        data-matomo-event-category="Blog"
+        data-matomo-event-category="Journal"
         data-matomo-event-on-load="blog_view"
         data-matomo-event-name="{{ $post->title }}"
     >

@@ -29,11 +29,11 @@ class MediaAssetResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolderOpen;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Content';
+    protected static string|UnitEnum|null $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Media';
+    protected static ?string $navigationLabel = 'Files';
 
-    protected static ?int $navigationSort = 12;
+    protected static ?int $navigationSort = 2;
 
     public static function getRecordTitleAttribute(): ?string
     {
@@ -88,7 +88,7 @@ class MediaAssetResource extends Resource
                 TextColumn::make('usage')
                     ->label('Used by')
                     ->state(fn (MediaAsset $record): string => sprintf(
-                        '%d artworks · %d exhibitions · %d Vita/CV · %d blog · %d site identity',
+                        '%d artworks · %d exhibitions · %d legacy profile refs · %d journal posts · %d site identity',
                         (int) $record->getAttribute('artworks_count'),
                         (int) $record->getAttribute('exhibitions_count'),
                         (int) $record->getAttribute('cv_entries_count'),
@@ -129,14 +129,14 @@ class MediaAssetResource extends Resource
             ])
             ->recordActions([
                 Action::make('preview')
-                    ->label('Inspect media')
+                    ->label('Inspect file')
                     ->icon(Heroicon::OutlinedMagnifyingGlassPlus)
                     ->url(fn (MediaAsset $record): string => self::getUrl('view', ['record' => $record])),
                 EditAction::make(),
             ])
             ->toolbarActions([])
-            ->emptyStateHeading('No media assets yet')
-            ->emptyStateDescription('Upload reusable media here or attach existing media from a consuming workspace.');
+            ->emptyStateHeading('No files yet')
+            ->emptyStateDescription('Upload reusable files here or attach existing files from a consuming workspace.');
     }
 
     public static function getRelations(): array

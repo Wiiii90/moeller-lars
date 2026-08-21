@@ -1,72 +1,41 @@
 <?php
 
-use App\Models\ArtworkCategory;
+use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('keeps the blog unavailable while its canonical SiteSection is hidden', function () {
-    BlogPost::create([
-        'slug' => 'hidden-post',
-        'title' => 'Hidden post',
-        'body' => 'Body',
-        'state' => 'published',
-        'position' => 0,
-        'published_at' => now(),
-    ]);
+it('publishes Blog Journal routes from their owning SiteSection and excludes future posts', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $sections = app(SiteSectionEditorialService::class);
+    $journal = $sections->createJournal('Dispatches', 'dispatches-seo', SiteSection::JOURNAL_TEMPLATE_BLOG);
+    $sections->updatePlacement($journal, 'published', false, null);
 
-    $this->get('/blog')->assertNotFound();
-    $this->get('/blog/hidden-post')->assertNotFound();
-    $this->get('/sitemap.xml')->assertDontSee('/blog');
+    BlogPost::create(['site_section_id' => $journal->id, 'slug' => 'published-post', 'title' => 'Published post', 'body' => 'Safe **body**', 'state' => 'published', 'position' => 0, 'published_at' => now()]);
+    BlogPost::create(['site_section_id' => $journal->id, 'slug' => 'future-post', 'title' => 'Future post', 'body' => 'Future body', 'state' => 'scheduled', 'position' => 1, 'scheduled_at' => now()->addDay()]);
+
+    $this->get('/dispatches-seo')->assertSuccessful()->assertSee('Published post')->assertDontSee('Future post');
+    $this->get('/dispatches-seo/published-post')->assertSuccessful()->assertSee('<strong>body</strong>', false);
+    $this->get('/dispatches-seo/future-post')->assertNotFound();
 });
 
-it('publishes blog routes from SiteSection state and excludes future scheduled posts', function () {
-    testUniqueSection(SiteSection::TYPE_BLOG, ['state' => 'published', 'show_in_navigation' => true]);
-    BlogPost::create([
-        'slug' => 'published-post', 'title' => 'Published post', 'body' => 'Safe **body**',
-        'state' => 'published', 'position' => 0, 'published_at' => now(),
-    ]);
-    BlogPost::create([
-        'slug' => 'future-post', 'title' => 'Future post', 'body' => 'Future body',
-        'state' => 'scheduled', 'position' => 1, 'scheduled_at' => now()->addDay(),
-    ]);
+it('builds the sitemap from current published page instances and omits route-less nodes', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $sections = app(SiteSectionEditorialService::class);
+    $page = $sections->createCustomPage('Studio', 'studio-seo');
+    $journal = $sections->createJournal('Journal', 'journal-seo', SiteSection::JOURNAL_TEMPLATE_BLOG);
+    $node = $sections->createNavigationGroup('Route-less SEO node');
 
-    $this->get('/blog')->assertSuccessful()->assertSee('Published post')->assertDontSee('Future post');
-    $this->get('/blog/published-post')->assertSuccessful()->assertSee('<strong>body</strong>', false);
-    $this->get('/blog/future-post')->assertNotFound();
+    $sections->updatePlacement($page, 'published', false, null);
+    $sections->updatePlacement($journal, 'published', false, null);
+    $sections->updatePlacement($node, 'published', true, null);
+
+    $this->get('/sitemap.xml')->assertSuccessful()->assertSee('/studio-seo')->assertSee('/journal-seo')->assertDontSee('Route-less SEO node');
 });
 
-it('builds sitemap from canonical published SiteSections while excluding node-only groups', function () {
-    $category = ArtworkCategory::create(['slug' => 'sculptures', 'name' => 'Sculptures', 'show_on_home' => false]);
-    testGallerySection($category, ['state' => 'published']);
-    testUniqueSection(SiteSection::TYPE_VITA, ['state' => 'published']);
-    testUniqueSection(SiteSection::TYPE_BLOG, ['state' => 'published']);
-    SiteSection::query()->create([
-        'type' => SiteSection::TYPE_NAVIGATION_GROUP,
-        'title' => 'Navigation only',
-        'navigation_label' => 'Navigation only',
-        'slug' => null,
-        'state' => 'published',
-        'position' => 500,
-        'show_in_navigation' => false,
-        'parent_id' => null,
-        'artwork_category_id' => null,
-    ]);
-
-    $response = $this->get('/sitemap.xml')->assertSuccessful();
-    $response
-        ->assertSee('/sculptures')
-        ->assertSee('/cv')
-        ->assertSee('/blog')
-        ->assertSee('/contact')
-        ->assertDontSee('Navigation only');
-});
-
-it('publishes intentional robots policy', function () {
-    $this->get('/robots.txt')
-        ->assertSuccessful()
-        ->assertSee('Disallow: /admin')
-        ->assertSee('Sitemap:');
+it('publishes the intentional robots policy', function (): void {
+    $this->get('/robots.txt')->assertSuccessful()->assertSee('Disallow: /admin')->assertSee('Sitemap:');
 });

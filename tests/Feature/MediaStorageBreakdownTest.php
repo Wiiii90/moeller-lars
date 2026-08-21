@@ -5,6 +5,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\MediaAsset;
+use App\Models\SiteSection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -24,7 +25,7 @@ function storageBreakdownAsset(string $name, int $bytes): MediaAsset
     ]);
 }
 
-it('attributes measured original bytes to exclusive library-use classes without double counting', function (): void {
+it('attributes original bytes to exclusive current-use classes without double counting', function (): void {
     $category = ArtworkCategory::query()->create([
         'slug' => 'storage-breakdown',
         'name' => 'Storage breakdown',
@@ -38,6 +39,18 @@ it('attributes measured original bytes to exclusive library-use classes without 
         'state' => 'draft',
         'position' => 0,
         'date_precision' => 'unknown',
+    ]);
+    $journal = SiteSection::query()->create([
+        'type' => SiteSection::TYPE_JOURNAL,
+        'template' => SiteSection::JOURNAL_TEMPLATE_BLOG,
+        'title' => 'Storage Blog',
+        'navigation_label' => 'Storage Blog',
+        'slug' => 'storage-blog',
+        'state' => 'hidden',
+        'position' => 700,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
     ]);
 
     $artworkOnly = storageBreakdownAsset('artwork-only', 100);
@@ -57,6 +70,7 @@ it('attributes measured original bytes to exclusive library-use classes without 
     ]);
 
     BlogPost::query()->create([
+        'site_section_id' => $journal->id,
         'title' => 'Blog only',
         'slug' => 'blog-only',
         'body' => 'Body',
@@ -65,6 +79,7 @@ it('attributes measured original bytes to exclusive library-use classes without 
         'cover_media_asset_id' => $blogOnly->getKey(),
     ]);
     BlogPost::query()->create([
+        'site_section_id' => $journal->id,
         'title' => 'Shared',
         'slug' => 'shared',
         'body' => 'Body',

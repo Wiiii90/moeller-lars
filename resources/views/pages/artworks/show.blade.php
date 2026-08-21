@@ -54,7 +54,7 @@
                     >‹</a>
                 @endif
 
-                <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('artworks.category', $category->slug)) }}">
+                <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}">
                     {{ $category->name }}
                 </a>
 

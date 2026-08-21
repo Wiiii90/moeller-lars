@@ -41,11 +41,21 @@ final class PublicSeoController extends Controller
             $urls[] = $this->canonical->forPath('/artworks/'.$artwork->getAttribute('slug'));
         }
 
-        if ($sections->contains(fn (SiteSection $section): bool => $section->getAttribute('type') === SiteSection::TYPE_BLOG)) {
+        /** @var Collection<int, SiteSection> $blogJournals */
+        $blogJournals = $sections
+            ->where('type', SiteSection::TYPE_JOURNAL)
+            ->where('template', SiteSection::JOURNAL_TEMPLATE_BLOG)
+            ->values();
+
+        foreach ($blogJournals as $journal) {
             /** @var Collection<int, BlogPost> $posts */
-            $posts = BlogEditorialService::publicQuery()->orderBy('position')->get(['slug']);
+            $posts = BlogEditorialService::publicQuery()
+                ->where('site_section_id', $journal->getKey())
+                ->orderBy('position')
+                ->orderBy('id')
+                ->get(['slug']);
             foreach ($posts as $post) {
-                $urls[] = $this->canonical->forPath('/blog/'.$post->getAttribute('slug'));
+                $urls[] = $this->canonical->forPath('/'.$journal->getAttribute('slug').'/'.$post->getAttribute('slug'));
             }
         }
 

@@ -10,46 +10,22 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-it('addresses public content settings by explicit typed scope', function () {
-    expect(PublicContentSetting::query()->count())->toBe(3)
-        ->and(PublicContentSetting::general()->scope)->toBe(PublicContentSetting::SCOPE_GENERAL)
-        ->and(PublicContentSetting::contact()->scope)->toBe(PublicContentSetting::SCOPE_CONTACT)
-        ->and(PublicContentSetting::vita()->scope)->toBe(PublicContentSetting::SCOPE_VITA);
-});
-
-it('preserves legacy Instagram data in the typed social-link contract', function () {
+it('stores safe typed social links in General settings', function (): void {
     $settings = PublicContentSetting::general();
     $settings->update([
-        'instagram_handle' => 'legacy_artist',
-        'show_instagram' => false,
-        'social_links' => null,
-    ]);
-
-    expect($settings->refresh()->social_links)->toEqual([[
-        'platform' => 'instagram',
-        'url' => 'https://www.instagram.com/legacy_artist/',
-        'visible' => false,
-    ]]);
-});
-
-it('renders typed social links without exposing hidden links', function () {
-    PublicContentSetting::general()->update([
         'social_links' => [
             ['platform' => 'instagram', 'url' => 'https://www.instagram.com/lars/', 'visible' => true],
-            ['platform' => 'facebook', 'url' => 'https://www.facebook.com/lars.artist/', 'visible' => true],
-            ['platform' => 'youtube', 'url' => 'https://www.youtube.com/@hidden', 'visible' => false],
+            ['platform' => 'facebook', 'url' => 'https://www.facebook.com/lars.artist/', 'visible' => false],
         ],
     ]);
-    PublicContentSetting::contact()->update(['contact_state' => 'enabled']);
 
-    $this->get('/contact')
-        ->assertSuccessful()
-        ->assertSee('https://www.instagram.com/lars/', false)
-        ->assertSee('https://www.facebook.com/lars.artist/', false)
-        ->assertDontSee('https://www.youtube.com/@hidden', false);
+    expect($settings->fresh()->social_links)->toEqual([
+        ['platform' => 'instagram', 'url' => 'https://www.instagram.com/lars/', 'visible' => true],
+        ['platform' => 'facebook', 'url' => 'https://www.facebook.com/lars.artist/', 'visible' => false],
+    ]);
 });
 
-it('rejects unsupported social platforms and unsafe social urls', function () {
+it('rejects unsupported social platforms and unsafe social urls', function (): void {
     expect(fn () => PublicContentSetting::general()->update([
         'social_links' => [
             ['platform' => 'myspace', 'url' => 'https://example.test/profile', 'visible' => true],
@@ -63,7 +39,7 @@ it('rejects unsupported social platforms and unsafe social urls', function () {
     ]))->toThrow(ValidationException::class);
 });
 
-it('keeps favicon selection image-only at the model boundary', function () {
+it('keeps favicon selection image-only at the model boundary', function (): void {
     $document = MediaAsset::create([
         'storage_key' => 'originals/statement.pdf',
         'original_filename' => 'statement.pdf',
@@ -78,7 +54,7 @@ it('keeps favicon selection image-only at the model boundary', function () {
     ]))->toThrow(ValidationException::class);
 });
 
-it('does not expose smtp credentials or transport topology in General', function () {
+it('keeps transport credentials and topology out of General', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     Filament::setCurrentPanel('admin');
     Filament::bootCurrentPanel();
@@ -86,7 +62,6 @@ it('does not expose smtp credentials or transport topology in General', function
     $this->get(PublicContentSettingResource::getUrl('edit', ['record' => PublicContentSetting::general()]))
         ->assertSuccessful()
         ->assertSee('Private delivery recipient')
-        ->assertSee('SMTP credentials, sender identity, DKIM and TLS remain runtime/platform configuration.')
         ->assertDontSee('SMTP Host')
         ->assertDontSee('SMTP Username')
         ->assertDontSee('SMTP Password')

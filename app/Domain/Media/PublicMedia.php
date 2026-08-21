@@ -5,7 +5,7 @@ namespace App\Domain\Media;
 use App\Domain\Blog\BlogEditorialService;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
-use App\Models\CvEntry;
+use App\Models\CustomPageSetting;
 use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -40,23 +40,34 @@ class PublicMedia
             return true;
         }
 
-        if ($this->sectionIsPublished(SiteSection::TYPE_VITA)
-            && CvEntry::query()->where('state', 'published')->where('image_media_asset_id', $asset->getKey())->exists()) {
+        if (CustomPageSetting::query()
+            ->whereHas('siteSection', fn ($query) => $query
+                ->where('type', SiteSection::TYPE_CUSTOM)
+                ->where('state', 'published'))
+            ->whereRaw('blocks @> ?::jsonb', [json_encode([['media_asset_id' => (int) $asset->getKey()]], JSON_THROW_ON_ERROR)])
+            ->exists()) {
             return true;
         }
 
-        if ($this->sectionIsPublished(SiteSection::TYPE_EXHIBITIONS)
-            && ExhibitionMedia::query()
-                ->where('media_asset_id', $asset->getKey())
-                ->whereHas('exhibition', fn ($query) => $query->where('state', 'published'))
-                ->exists()) {
+        if (ExhibitionMedia::query()
+            ->where('media_asset_id', $asset->getKey())
+            ->whereHas('exhibition', fn ($query) => $query
+                ->where('state', 'published')
+                ->whereHas('siteSection', fn ($section) => $section
+                    ->where('type', SiteSection::TYPE_JOURNAL)
+                    ->where('template', SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS)
+                    ->where('state', 'published')))
+            ->exists()) {
             return true;
         }
 
-        return $this->sectionIsPublished(SiteSection::TYPE_BLOG)
-            && BlogEditorialService::publicQuery()
-                ->where('cover_media_asset_id', $asset->getKey())
-                ->exists();
+        return BlogEditorialService::publicQuery()
+            ->where('cover_media_asset_id', $asset->getKey())
+            ->whereHas('siteSection', fn ($section) => $section
+                ->where('type', SiteSection::TYPE_JOURNAL)
+                ->where('template', SiteSection::JOURNAL_TEMPLATE_BLOG)
+                ->where('state', 'published'))
+            ->exists();
     }
 
     public function isPublicVariant(MediaVariant $variant): bool
@@ -180,13 +191,5 @@ class PublicMedia
         if ($asset->getAttribute('state') !== 'available') {
             throw new LogicException('Public media requires an available media asset.');
         }
-    }
-
-    private function sectionIsPublished(string $type): bool
-    {
-        return SiteSection::query()
-            ->where('type', $type)
-            ->where('state', 'published')
-            ->exists();
     }
 }

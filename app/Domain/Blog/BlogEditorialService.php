@@ -3,19 +3,19 @@
 namespace App\Domain\Blog;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
 use App\Models\MediaAsset;
+use App\Models\SiteSection;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
 use Throwable;
 
 final class BlogEditorialService
@@ -23,6 +23,7 @@ final class BlogEditorialService
     public function __construct(
         private readonly AdminAuditService $audit,
         private readonly SafeRichTextRenderer $richText,
+        private readonly JournalEntryOrderService $order,
     ) {}
 
     public function create(array $data): BlogPost
@@ -30,19 +31,18 @@ final class BlogEditorialService
         $actor = $this->audit->requireActor();
         $validated = $this->validate($data);
 
-        return DB::transaction(function () use ($validated, $actor): BlogPost {
-            return $this->createValidated($validated, $actor);
-        });
+        return DB::transaction(fn (): BlogPost => $this->createValidated($validated, $actor));
     }
 
     public function createDraft(array $data): BlogPost
     {
         $actor = $this->audit->requireActor();
+        $sectionId = $this->journalSectionId($data['site_section_id'] ?? null);
 
-        return DB::transaction(function () use ($data, $actor): BlogPost {
-            $lastPosition = DB::table('blog_posts')->orderByDesc('position')->lockForUpdate()->value('position');
+        return DB::transaction(function () use ($data, $sectionId, $actor): BlogPost {
+            $data['site_section_id'] = $sectionId;
             $data['state'] = 'draft';
-            $data['position'] = $lastPosition === null ? 0 : ((int) $lastPosition) + 1;
+            $data['position'] = $this->order->nextPosition(new BlogPost, $sectionId);
             $data['published_at'] = null;
             $data['scheduled_at'] = null;
 
@@ -53,16 +53,20 @@ final class BlogEditorialService
     public function update(BlogPost $post, array $data): BlogPost
     {
         $actor = $this->audit->requireActor();
+        $data['site_section_id'] = $post->getAttribute('site_section_id');
         $validated = $this->validate($data, (int) $post->getKey());
 
         return DB::transaction(function () use ($post, $validated, $actor): BlogPost {
-            DB::table('blog_posts')->where('id', $post->getKey())->lockForUpdate()->first();
             /** @var BlogPost $fresh */
-            $fresh = BlogPost::query()->findOrFail($post->getKey());
+            $fresh = BlogPost::query()->whereKey($post->getKey())->lockForUpdate()->firstOrFail();
 
             if (($fresh->getAttribute('published_at') !== null || $fresh->getAttribute('scheduled_at') !== null)
                 && $validated['slug'] !== $fresh->getAttribute('slug')) {
                 throw ValidationException::withMessages(['slug' => 'A post slug cannot change after publication or scheduling.']);
+            }
+
+            if ((int) $validated['site_section_id'] !== (int) $fresh->getAttribute('site_section_id')) {
+                throw ValidationException::withMessages(['site_section_id' => 'Move posts between Journals through an explicit editorial workflow.']);
             }
 
             $fresh->fill($validated);
@@ -87,11 +91,8 @@ final class BlogEditorialService
             if ($state === 'published') {
                 return $fresh;
             }
-
             if (! in_array($state, ['draft', 'scheduled', 'unpublished'], true)) {
-                throw ValidationException::withMessages([
-                    'state' => 'Restore this post to draft before publishing it again.',
-                ]);
+                throw ValidationException::withMessages(['state' => 'Restore this post to draft before publishing it again.']);
             }
 
             $fresh->setAttribute('state', 'published');
@@ -115,11 +116,8 @@ final class BlogEditorialService
         return DB::transaction(function () use ($post, $date, $actor): BlogPost {
             $fresh = $this->locked($post);
             $state = (string) $fresh->getAttribute('state');
-
             if (! in_array($state, ['draft', 'scheduled', 'unpublished'], true)) {
-                throw ValidationException::withMessages([
-                    'state' => 'Only draft, scheduled or unpublished posts can be scheduled.',
-                ]);
+                throw ValidationException::withMessages(['state' => 'Only draft, scheduled or unpublished posts can be scheduled.']);
             }
 
             $fresh->setAttribute('state', 'scheduled');
@@ -149,85 +147,12 @@ final class BlogEditorialService
 
     public function canMove(BlogPost $post, string $direction): bool
     {
-        $this->validateDirection($direction);
-        $ids = BlogPost::query()
-            ->orderBy('position')
-            ->orderBy('id')
-            ->pluck('id')
-            ->map(static fn ($id): int => (int) $id)
-            ->all();
-        $index = array_search((int) $post->getKey(), $ids, true);
-
-        if ($index === false) {
-            return false;
-        }
-
-        return $direction === 'up' ? $index > 0 : $index < count($ids) - 1;
+        return $this->order->canMove($post, $direction);
     }
 
     public function move(BlogPost $post, string $direction): bool
     {
-        $this->validateDirection($direction);
-        $actor = $this->audit->requireActor();
-
-        return DB::transaction(function () use ($post, $direction, $actor): bool {
-            /** @var Collection<int, BlogPost> $posts */
-            $posts = BlogPost::query()->orderBy('position')->orderBy('id')->lockForUpdate()->get();
-            $ordered = $posts->values()->all();
-            $index = null;
-
-            foreach ($ordered as $candidateIndex => $candidate) {
-                if ((int) $candidate->getKey() === (int) $post->getKey()) {
-                    $index = $candidateIndex;
-                    break;
-                }
-            }
-
-            if ($index === null) {
-                return false;
-            }
-
-            $targetIndex = $direction === 'up' ? $index - 1 : $index + 1;
-            if (! array_key_exists($targetIndex, $ordered)) {
-                return false;
-            }
-
-            [$ordered[$index], $ordered[$targetIndex]] = [$ordered[$targetIndex], $ordered[$index]];
-
-            $changes = [];
-            foreach ($ordered as $position => $candidate) {
-                if ((int) $candidate->getAttribute('position') !== $position) {
-                    $changes[] = [$candidate, $position];
-                }
-            }
-
-            $maxPosition = (int) ($posts->max('position') ?? 0);
-            $temporaryBase = $maxPosition + count($posts) + 1;
-
-            foreach ($changes as $temporaryOffset => [$candidate]) {
-                DB::table('blog_posts')
-                    ->where('id', $candidate->getKey())
-                    ->update(['position' => $temporaryBase + $temporaryOffset]);
-            }
-
-            foreach ($changes as [$candidate, $position]) {
-                DB::table('blog_posts')
-                    ->where('id', $candidate->getKey())
-                    ->update([
-                        'position' => $position,
-                        'updated_at' => now(),
-                    ]);
-                $this->audit->record(
-                    $actor,
-                    'blog_post.reordered',
-                    'blog_post',
-                    $candidate->getKey(),
-                    ['position' => $position],
-                );
-            }
-
-            return true;
-        });
+        return $this->order->move($post, $direction);
     }
 
     /** @return Builder<BlogPost> */
@@ -257,7 +182,9 @@ final class BlogEditorialService
         ]);
         $this->prepareLifecycle($post);
         $post->save();
-        $this->audit->record($actor, 'blog_post.created', 'blog_post', $post->getKey());
+        $this->audit->record($actor, 'blog_post.created', 'blog_post', $post->getKey(), [
+            'site_section_id' => (int) $post->getAttribute('site_section_id'),
+        ]);
 
         return $post;
     }
@@ -296,6 +223,7 @@ final class BlogEditorialService
 
     private function prepareLifecycle(BlogPost $post): void
     {
+        $this->journalSectionId($post->getAttribute('site_section_id'));
         $state = (string) $post->getAttribute('state');
         $body = $post->getAttribute('body');
 
@@ -311,11 +239,8 @@ final class BlogEditorialService
             $post->setAttribute('published_at', now());
         }
 
-        if ($state === 'scheduled') {
-            $scheduledAt = $post->getAttribute('scheduled_at');
-            if (! $scheduledAt instanceof CarbonInterface) {
-                throw ValidationException::withMessages(['scheduled_at' => 'Scheduled posts require a publication time.']);
-            }
+        if ($state === 'scheduled' && ! $post->getAttribute('scheduled_at') instanceof CarbonInterface) {
+            throw ValidationException::withMessages(['scheduled_at' => 'Scheduled posts require a publication time.']);
         }
     }
 
@@ -349,12 +274,13 @@ final class BlogEditorialService
     /** @return array<string, mixed> */
     private function validate(array $data, ?int $ignoreId = null): array
     {
-        foreach (['title', 'slug', 'state', 'position'] as $required) {
+        foreach (['site_section_id', 'title', 'slug', 'state', 'position'] as $required) {
             if (! array_key_exists($required, $data)) {
-                throw ValidationException::withMessages([$required => 'Required blog form data is missing.']);
+                throw ValidationException::withMessages([$required => 'Required Blog Journal form data is missing.']);
             }
         }
 
+        $sectionId = $this->journalSectionId($data['site_section_id']);
         $title = is_string($data['title']) ? trim($data['title']) : '';
         if ($title === '' || mb_strlen($title) > 240) {
             throw ValidationException::withMessages(['title' => 'The blog title is invalid.']);
@@ -401,6 +327,7 @@ final class BlogEditorialService
         }
 
         return [
+            'site_section_id' => $sectionId,
             'title' => $title,
             'slug' => $slug,
             'body' => $body,
@@ -411,6 +338,25 @@ final class BlogEditorialService
             'published_at' => $this->dateTime($data['published_at'] ?? null, 'published_at'),
             'scheduled_at' => $this->dateTime($data['scheduled_at'] ?? null, 'scheduled_at'),
         ];
+    }
+
+    private function journalSectionId(mixed $value): int
+    {
+        $sectionId = filter_var($value, FILTER_VALIDATE_INT);
+        if ($sectionId === false || $sectionId <= 0) {
+            throw ValidationException::withMessages(['site_section_id' => 'Choose a Blog Journal page.']);
+        }
+
+        $exists = SiteSection::query()
+            ->whereKey($sectionId)
+            ->where('type', SiteSection::TYPE_JOURNAL)
+            ->where('template', SiteSection::JOURNAL_TEMPLATE_BLOG)
+            ->exists();
+        if (! $exists) {
+            throw ValidationException::withMessages(['site_section_id' => 'The selected page is not a Blog Journal.']);
+        }
+
+        return (int) $sectionId;
     }
 
     private function dateTime(mixed $value, string $field): ?CarbonImmutable
@@ -429,13 +375,6 @@ final class BlogEditorialService
             return CarbonImmutable::parse($value);
         } catch (Throwable) {
             throw ValidationException::withMessages([$field => 'The publication time is invalid.']);
-        }
-    }
-
-    private function validateDirection(string $direction): void
-    {
-        if (! in_array($direction, ['up', 'down'], true)) {
-            throw new InvalidArgumentException('Blog order direction must be up or down.');
         }
     }
 }

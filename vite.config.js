@@ -8,6 +8,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/public-content.css',
                 'resources/css/public-presentation.css',
+                'resources/css/custom-pages.css',
                 'resources/js/app.js',
             ],
             refresh: true,
