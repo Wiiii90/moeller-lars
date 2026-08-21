@@ -28,7 +28,12 @@ final class ArtistReportingService
                 'duration' => $this->summaryMetric($report, 'avg_time_on_site'),
                 'bounce_rate' => $this->summaryMetric($report, 'bounce_rate'),
             ],
+            'comparison' => [
+                'visits' => $this->comparisonMetric($report, 'nb_visits'),
+                'actions' => $this->comparisonMetric($report, 'nb_actions'),
+            ],
             'trend' => $this->dataset($report, 'series'),
+            'content' => $this->dataset($report, 'content'),
         ];
     }
 
@@ -174,6 +179,24 @@ final class ArtistReportingService
      * @param  array<string, mixed>  $report
      * @return array{state:string,value:float|null}
      */
+    private function comparisonMetric(array $report, string $metric): array
+    {
+        if (! $this->humanReportAvailable($report)) {
+            return $this->unavailableMetric();
+        }
+
+        $value = $report['comparison'][$metric] ?? null;
+        if (! is_numeric($value)) {
+            return $this->unavailableMetric();
+        }
+
+        return $this->availableMetric((float) $value);
+    }
+
+    /**
+     * @param  array<string, mixed>  $report
+     * @return array{state:string,value:float|null}
+     */
     private function eventMetric(array $report, string $action): array
     {
         if (! $this->humanReportAvailable($report)) {
@@ -195,7 +218,6 @@ final class ArtistReportingService
                 : $this->unavailableMetric();
         }
 
-        // Successful Matomo aggregate reports omit dimensions whose measured count is zero.
         return $this->availableMetric(0.0);
     }
 
