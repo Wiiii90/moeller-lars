@@ -142,7 +142,7 @@ class AdminPanelProvider extends PanelProvider
         return NavigationItem::make($label)
             ->key('site-section:'.$section->getKey())
             ->group('Website')
-            ->parentItem(SitePages::class)
+            ->parentItem('Pages')
             ->sort($sort)
             ->url(SitePages::getUrl().'#site-section-'.$section->getKey());
     }
