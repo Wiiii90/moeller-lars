@@ -18,7 +18,7 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
-it('serves the typed Pages workspace to an admin', function (): void {
+it('serves the typed Pages workspace and its visible structure controls to an admin', function (): void {
     $admin = User::factory()->admin()->create();
 
     $this->actingAs($admin, 'web')
@@ -26,9 +26,12 @@ it('serves the typed Pages workspace to an admin', function (): void {
         ->assertSuccessful()
         ->assertSee('Public pages')
         ->assertSee('Site structure')
+        ->assertSee('Preview site')
+        ->assertSee('Add page/section')
         ->assertSee('Vita')
         ->assertSee('Blog')
-        ->assertSee('Exhibitions');
+        ->assertSee('Exhibitions')
+        ->assertSee('Add menu');
 });
 
 it('keeps Home pinned outside normal navigation reordering', function (): void {
