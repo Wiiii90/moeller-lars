@@ -23,14 +23,14 @@
                 data-matomo-event-name="{{ $exhibition->title }}"
             >
                 <div class="exhibition-entry__schedule" aria-label="Exhibition dates">
-                    <div class="exhibition-entry__date">{{ $exhibition->date_text }}</div>
-
                     @if ($exhibition->opening_text !== null)
                         <div class="exhibition-entry__opening">
                             <span class="exhibition-entry__opening-label">Vernissage</span>
                             <span>{{ $exhibition->opening_text }}</span>
                         </div>
                     @endif
+
+                    <div class="exhibition-entry__date">{{ $exhibition->date_text }}</div>
                 </div>
 
                 <div class="exhibition-entry__content">
