@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PublicContentSettings;
 
+use App\Domain\Content\SocialLinks;
 use App\Filament\Resources\PublicContentSettings\Pages\EditPublicContentSetting;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
@@ -42,29 +43,72 @@ class PublicContentSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Public identity and contact')
-                ->description('Central public profile values. Vita / CV uses these values directly; visibility can be controlled independently from the contact form. Vita and Exhibitions publication/navigation are managed from Pages.')
+            Section::make('Site identity')
+                ->description('Shared browser identity for the public website.')
                 ->schema([
-                    TextInput::make('public_email')->label('Public email')->email()->maxLength(254)->nullable(),
-                    Toggle::make('show_public_email')->label('Show email on Vita / CV')->default(true),
-                    TextInput::make('instagram_handle')->label('Instagram handle')->maxLength(30)->regex('/^[A-Za-z0-9._]{1,30}$/')->nullable(),
-                    Toggle::make('show_instagram')->label('Show Instagram on Vita / CV')->default(true),
+                    MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
+                        ->nullable()
+                        ->helperText('Choose an image from Media. The thumbnail preview helps identify the selected asset; the public generated variant is used as the browser icon.')
+                        ->columnSpanFull(),
+                ]),
+            Section::make('Public contact')
+                ->description('Public contact data can be shown independently from the private address that receives form submissions. Vita and Exhibitions publication/navigation are managed from Pages.')
+                ->schema([
+                    TextInput::make('public_email')
+                        ->label('Public email')
+                        ->email()
+                        ->maxLength(254)
+                        ->nullable()
+                        ->helperText('The address visitors may see on the public website.'),
+                    Toggle::make('show_public_email')
+                        ->label('Show public email')
+                        ->default(true),
                 ])
                 ->columns(2),
-            Section::make('Contact form')
-                ->description('Controls the message form inside Vita / CV. The delivery address stays private and mail transport credentials remain server configuration.')
+            Section::make('Social links')
+                ->description('Add the artist profiles that should be linked publicly. Each supported platform has one URL; links can be hidden without deleting them.')
+                ->schema([
+                    Repeater::make('social_links')
+                        ->label('Profiles')
+                        ->schema([
+                            Select::make('platform')
+                                ->options(SocialLinks::options())
+                                ->required(),
+                            TextInput::make('url')
+                                ->label('Profile URL')
+                                ->url()
+                                ->maxLength(2048)
+                                ->required(),
+                            Toggle::make('visible')
+                                ->label('Visible')
+                                ->default(true),
+                        ])
+                        ->columns(3)
+                        ->defaultItems(0)
+                        ->reorderable()
+                        ->collapsible()
+                        ->addActionLabel('Add social link')
+                        ->itemLabel(fn (array $state): ?string => isset($state['platform']) && is_string($state['platform']) ? SocialLinks::label($state['platform']) : null)
+                        ->columnSpanFull(),
+                ]),
+            Section::make('Contact form delivery')
+                ->description('The recipient can be changed here without a deployment. SMTP credentials and mail-server configuration remain runtime/platform secrets and are not exposed in the admin.')
+                ->schema([
+                    TextInput::make('contact_recipient_email')
+                        ->label('Private delivery recipient')
+                        ->email()
+                        ->maxLength(254)
+                        ->nullable()
+                        ->helperText('Form messages are delivered here. If empty, the server-configured fallback recipient is used.'),
+                ]),
+            Section::make('Contact form presentation')
+                ->description('Controls the currently shared Contact form presentation. When Contact becomes a canonical Pages/SiteSection type, these presentation fields can move there without duplicating delivery settings.')
                 ->schema([
                     Select::make('contact_state')->label('Form state')->options([
                         'enabled' => 'Enabled',
                         'under_construction' => 'Under construction',
                         'hidden' => 'Hidden',
                     ])->required(),
-                    TextInput::make('contact_recipient_email')
-                        ->label('Delivery recipient')
-                        ->email()
-                        ->maxLength(254)
-                        ->nullable()
-                        ->helperText('Messages are delivered here. If empty, the server-configured fallback address is used.'),
                     Textarea::make('contact_status_text')
                         ->label('Under-construction message')
                         ->maxLength(500)
@@ -73,16 +117,8 @@ class PublicContentSettingResource extends Resource
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
-            Section::make('Site identity')
-                ->description('Shared browser identity for the public site.')
-                ->schema([
-                    MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon')
-                        ->nullable()
-                        ->helperText('Use a small square source image. The public generated variant is served as the browser icon.')
-                        ->columnSpanFull(),
-                ]),
             Section::make('Additional Vita / CV text')
-                ->description('Optional editorial text blocks shown between Contact and the legal disclaimer. Reorder them here instead of adding one-off public templates.')
+                ->description('Optional site-wide profile text currently composed on Vita. Reorder the blocks here instead of adding one-off public templates.')
                 ->schema([
                     Repeater::make('profile_text_blocks')
                         ->label('Text blocks')
@@ -97,7 +133,7 @@ class PublicContentSettingResource extends Resource
                         ->columnSpanFull(),
                 ]),
             Section::make('Legal')
-                ->description('Public disclaimer text displayed at the bottom of Vita / CV where configured.')
+                ->description('Site-wide public disclaimer text displayed where the public design includes it.')
                 ->schema([
                     Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
                 ])

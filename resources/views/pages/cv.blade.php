@@ -13,7 +13,7 @@
         $portraitWidth = $portraitVariant !== null ? (int) ($portraitVariant->getAttribute('width') ?? 0) : 0;
         $portraitHeight = $portraitVariant !== null ? (int) ($portraitVariant->getAttribute('height') ?? 0) : 0;
         $showContactArea = ((bool) $settings->show_public_email && $settings->public_email !== null)
-            || ((bool) $settings->show_instagram && $settings->instagram_handle !== null)
+            || \App\Domain\Content\SocialLinks::visible($settings->social_links) !== []
             || $settings->contact_state !== 'hidden';
         $profileTextBlocks = collect($settings->profile_text_blocks ?? [])
             ->filter(fn ($block) => is_array($block) && filled($block['title'] ?? null) && filled($block['body'] ?? null));

@@ -2,13 +2,13 @@
 
 @php
     $showEmail = (bool) $settings->show_public_email && $settings->public_email !== null;
-    $showInstagram = (bool) $settings->show_instagram && $settings->instagram_handle !== null;
+    $socialLinks = \App\Domain\Content\SocialLinks::visible($settings->social_links);
 @endphp
 
 <section class="contact-section" aria-labelledby="contact-heading">
     <h2 id="contact-heading" class="category-heading">Contact</h2>
 
-    @if ($showEmail || $showInstagram)
+    @if ($showEmail || $socialLinks !== [])
         <div class="contact-details" aria-label="Contact details">
             @if ($showEmail)
                 <div class="contact-details__row">
@@ -21,18 +21,18 @@
                     >{{ $settings->public_email }}</a>
                 </div>
             @endif
-            @if ($showInstagram)
+            @foreach ($socialLinks as $socialLink)
                 <div class="contact-details__row">
-                    <span class="contact-details__label">Instagram</span>
+                    <span class="contact-details__label">{{ \App\Domain\Content\SocialLinks::label($socialLink['platform']) }}</span>
                     <a
-                        href="https://www.instagram.com/{{ $settings->instagram_handle }}/"
+                        href="{{ $socialLink['url'] }}"
                         rel="noopener noreferrer"
                         data-matomo-event-category="Outbound"
-                        data-matomo-event-action="instagram_click"
-                        data-matomo-event-name="{{ $settings->instagram_handle }}"
-                    >{{ $settings->instagram_handle }}</a>
+                        data-matomo-event-action="social_click"
+                        data-matomo-event-name="{{ $socialLink['platform'] }}"
+                    >{{ \App\Domain\Content\SocialLinks::displayValue($socialLink['url']) }}</a>
                 </div>
-            @endif
+            @endforeach
         </div>
     @endif
 
@@ -49,7 +49,7 @@
                 role="status"
                 data-matomo-event-category="Contact"
                 data-matomo-event-on-load="contact_submit_success"
-                data-matomo-event-name="CV contact form"
+                data-matomo-event-name="Contact form"
             >{{ session('contact_success') }}</p>
         @endif
 
@@ -73,9 +73,9 @@
             </div>
 
             <div class="contact-form__field">
-                <label for="contact-comment">Nachricht</label>
-                <textarea id="contact-comment" name="comment" maxlength="5000" rows="6" required>{{ old('comment') }}</textarea>
-                @error('comment')<p class="contact-form__error">{{ $message }}</p>@enderror
+                <label for="contact-message">Nachricht</label>
+                <textarea id="contact-message" name="message" maxlength="5000" rows="6" required>{{ old('message') }}</textarea>
+                @error('message')<p class="contact-form__error">{{ $message }}</p>@enderror
             </div>
 
             <div class="contact-form__honeypot" aria-hidden="true">
