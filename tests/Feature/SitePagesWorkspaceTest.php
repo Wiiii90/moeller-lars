@@ -57,7 +57,7 @@ it('reorders top-level sections without mirroring into legacy settings', functio
 
     $blogPosition = (int) $blog->position;
     $previousPosition = (int) $previous->position;
-    $blogSettings = BlogSetting::query()->sole();
+    $blogSettings = BlogSetting::forBlogSection();
     $legacyBlogPosition = (int) $blogSettings->getRawOriginal('navigation_position');
 
     expect(app(SiteSectionOrderService::class)->move($blog, 'up'))->toBeTrue()
