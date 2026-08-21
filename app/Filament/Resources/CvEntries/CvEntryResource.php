@@ -17,7 +17,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -43,8 +43,9 @@ class CvEntryResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Vita / CV entry')
-                ->description('Content edits are saved independently from publication. Use the page actions to publish, unpublish or archive.')
+            Fieldset::make('Vita / CV entry')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     TextInput::make('section')->required()->maxLength(120),
                     TextInput::make('title')->required()->maxLength(240),
@@ -73,8 +74,9 @@ class CvEntryResource extends Resource
                     TextInput::make('external_url')->url()->maxLength(2048)->nullable()->columnSpanFull(),
                 ])
                 ->columns(2),
-            Section::make('Presentation')
-                ->description('Ordering is managed directly from the Vita / CV list. Media previews are private admin previews.')
+            Fieldset::make('Presentation')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     MediaAssetSelect::make('image_media_asset_id', 'imageMediaAsset', 'Image')
                         ->nullable()
