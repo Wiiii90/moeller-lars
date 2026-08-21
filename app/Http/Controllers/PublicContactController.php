@@ -3,11 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Contact\ContactDeliveryReadiness;
-use App\Domain\Content\SitePreviewContext;
 use App\Mail\WebsiteContactMessage;
+use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -16,27 +15,14 @@ use Throwable;
 
 class PublicContactController extends Controller
 {
-    public function __construct(
-        private readonly SitePreviewContext $preview,
-        private readonly ContactDeliveryReadiness $deliveryReadiness,
-    ) {}
-
-    public function show(): View
-    {
-        abort_unless($this->preview->sectionIsAvailable(SiteSection::TYPE_CONTACT), 404);
-
-        return view('pages.contact', [
-            'generalSettings' => PublicContentSetting::general(),
-            'contactSettings' => PublicContentSetting::contact(),
-        ]);
-    }
+    public function __construct(private readonly ContactDeliveryReadiness $deliveryReadiness) {}
 
     public function submit(Request $request): RedirectResponse
     {
         $contactSettings = PublicContentSetting::contact();
         abort_unless(
-            SiteSection::isPublished(SiteSection::TYPE_CONTACT)
-                && $contactSettings->getAttribute('contact_state') === 'enabled',
+            $contactSettings->getAttribute('contact_state') === 'enabled'
+                && $this->publishedContactFormExists(),
             404,
         );
 
@@ -71,5 +57,25 @@ class PublicContactController extends Controller
         }
 
         return back()->with('contact_success', 'Your message was sent.');
+    }
+
+    private function publishedContactFormExists(): bool
+    {
+        return CustomPageSetting::query()
+            ->whereHas('siteSection', static fn ($query) => $query
+                ->where('type', SiteSection::TYPE_CUSTOM)
+                ->where('state', 'published'))
+            ->get(['blocks'])
+            ->contains(function (CustomPageSetting $settings): bool {
+                foreach ($settings->getAttribute('blocks') ?? [] as $block) {
+                    if (is_array($block)
+                        && ($block['type'] ?? null) === 'contact'
+                        && ($block['show_form'] ?? true) === true) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
     }
 }
