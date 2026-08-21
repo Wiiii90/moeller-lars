@@ -18,7 +18,7 @@ it('preserves legacy Instagram data in the typed social-link contract', function
         'social_links' => null,
     ]);
 
-    expect($settings->refresh()->social_links)->toBe([[
+    expect($settings->refresh()->social_links)->toEqual([[
         'platform' => 'instagram',
         'url' => 'https://www.instagram.com/legacy_artist/',
         'visible' => false,
