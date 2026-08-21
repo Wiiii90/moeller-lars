@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Widgets\ArtistDashboard;
+use App\Filament\Widgets\ContactHealth;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 final class Dashboard extends BaseDashboard
@@ -18,6 +19,9 @@ final class Dashboard extends BaseDashboard
 
     public function getWidgets(): array
     {
-        return [ArtistDashboard::class];
+        return [
+            ArtistDashboard::class,
+            ContactHealth::class,
+        ];
     }
 }
