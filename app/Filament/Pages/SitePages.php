@@ -12,11 +12,8 @@ use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Resources\CustomPageSettings\CustomPageSettingResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\JournalSettings\JournalSettingResource;
-use App\Models\Artwork;
 use App\Models\ArtworkCategory;
-use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
-use App\Models\Exhibition;
 use App\Models\SiteSection;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -207,11 +204,7 @@ final class SitePages extends Page
                     };
 
                     $this->loadSections();
-                    Notification::make()
-                        ->title($message)
-                        ->body('Add content, inspect it in Preview, then publish when it is ready.')
-                        ->success()
-                        ->send();
+                    Notification::make()->title($message)->success()->send();
                 }),
         ];
     }
@@ -257,11 +250,15 @@ final class SitePages extends Page
 
         /** @var EloquentCollection<int, SiteSection> $topLevel */
         $topLevel = $topLevelQuery
-            ->with(['children' => static function (Relation $relation): void {
-                $query = $relation->getQuery();
-                $query->orderBy('position');
-                $query->orderBy('id');
-            }])
+            ->with([
+                'customPageSetting',
+                'children' => static function (Relation $relation): void {
+                    $query = $relation->getQuery();
+                    $query->with('customPageSetting');
+                    $query->orderBy('position');
+                    $query->orderBy('id');
+                },
+            ])
             ->orderBy('position')
             ->orderBy('id')
             ->get();
@@ -276,38 +273,13 @@ final class SitePages extends Page
             ->values()
             ->all();
 
-        $homeCount = Artwork::query()->where('featured_on_home', true)->count();
-        $galleryCounts = ArtworkCategory::query()
-            ->withCount('artworks')
-            ->get(['id'])
-            ->mapWithKeys(static fn (ArtworkCategory $category): array => [(int) $category->getKey() => (int) $category->getAttribute('artworks_count')])
-            ->all();
-        $blogCounts = BlogPost::query()
-            ->selectRaw('site_section_id, count(*) as aggregate')
-            ->groupBy('site_section_id')
-            ->pluck('aggregate', 'site_section_id')
-            ->map(static fn ($count): int => (int) $count)
-            ->all();
-        $exhibitionCounts = Exhibition::query()
-            ->selectRaw('site_section_id, count(*) as aggregate')
-            ->groupBy('site_section_id')
-            ->pluck('aggregate', 'site_section_id')
-            ->map(static fn ($count): int => (int) $count)
-            ->all();
-        $customCounts = CustomPageSetting::query()
-            ->get(['site_section_id', 'blocks'])
-            ->mapWithKeys(static fn (CustomPageSetting $settings): array => [
-                (int) $settings->getAttribute('site_section_id') => count($settings->getAttribute('blocks') ?? []),
-            ])
-            ->all();
-
         $rows = [];
         foreach ($topLevel as $section) {
-            $row = $this->row($section, 0, $homeCount, $galleryCounts, $blogCounts, $exhibitionCounts, $customCounts);
+            $row = $this->row($section, 0);
             /** @var EloquentCollection<int, SiteSection> $children */
             $children = $section->getRelation('children');
             $row['children'] = $children
-                ->map(fn (SiteSection $child): array => $this->row($child, 1, $homeCount, $galleryCounts, $blogCounts, $exhibitionCounts, $customCounts))
+                ->map(fn (SiteSection $child): array => $this->row($child, 1))
                 ->values()
                 ->all();
             $rows[] = $row;
@@ -316,39 +288,14 @@ final class SitePages extends Page
         $this->sections = $rows;
     }
 
-    /**
-     * @param  array<int, int>  $galleryCounts
-     * @param  array<int|string, int>  $blogCounts
-     * @param  array<int|string, int>  $exhibitionCounts
-     * @param  array<int, int>  $customCounts
-     * @return array<string, mixed>
-     */
-    private function row(
-        SiteSection $section,
-        int $depth,
-        int $homeCount,
-        array $galleryCounts,
-        array $blogCounts,
-        array $exhibitionCounts,
-        array $customCounts,
-    ): array {
+    /** @return array<string, mixed> */
+    private function row(SiteSection $section, int $depth): array
+    {
         $type = (string) $section->getAttribute('type');
         $template = $section->getAttribute('template');
-        $sectionId = (int) $section->getKey();
-        $categoryId = $section->getAttribute('artwork_category_id');
-        $contentCount = match ($type) {
-            SiteSection::TYPE_HOME => $homeCount,
-            SiteSection::TYPE_GALLERY => is_numeric($categoryId) ? ($galleryCounts[(int) $categoryId] ?? 0) : 0,
-            SiteSection::TYPE_CUSTOM => $customCounts[$sectionId] ?? 0,
-            SiteSection::TYPE_JOURNAL => $template === SiteSection::JOURNAL_TEMPLATE_BLOG
-                ? ($blogCounts[$sectionId] ?? 0)
-                : ($exhibitionCounts[$sectionId] ?? 0),
-            default => 0,
-        };
-        $publicUrl = $section->publicUrl();
 
         return [
-            'id' => $sectionId,
+            'id' => (int) $section->getKey(),
             'type' => $type,
             'template' => $template,
             'type_label' => match ($type) {
@@ -367,18 +314,7 @@ final class SitePages extends Page
             'parent_id' => $section->getAttribute('parent_id'),
             'has_children' => $section->relationLoaded('children') && $section->getRelation('children')->isNotEmpty(),
             'depth' => $depth,
-            'count' => $contentCount,
-            'count_label' => match ($type) {
-                SiteSection::TYPE_HOME, SiteSection::TYPE_GALLERY => $contentCount === 1 ? 'artwork' : 'artworks',
-                SiteSection::TYPE_CUSTOM => $contentCount === 1 ? 'component' : 'components',
-                SiteSection::TYPE_JOURNAL => $template === SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS
-                    ? ($contentCount === 1 ? 'exhibition' : 'exhibitions')
-                    : ($contentCount === 1 ? 'post' : 'posts'),
-                SiteSection::TYPE_NAVIGATION_GROUP => 'no page',
-                default => 'items',
-            },
-            'public_url' => $publicUrl,
-            'preview_url' => app(SitePreviewContext::class)->previewUrlFor($section),
+            'public_url' => $section->publicUrl(),
             'can_move_up' => app(SiteSectionOrderService::class)->canMove($section, 'up'),
             'can_move_down' => app(SiteSectionOrderService::class)->canMove($section, 'down'),
             'can_delete' => $type !== SiteSection::TYPE_HOME,
@@ -412,7 +348,9 @@ final class SitePages extends Page
     private function editorUrl(SiteSection $section): ?string
     {
         return match ((string) $section->getAttribute('type')) {
-            SiteSection::TYPE_GALLERY => ArtworkCategoryResource::getUrl('edit', ['record' => $section->getAttribute('artwork_category_id')]),
+            SiteSection::TYPE_GALLERY => is_numeric($section->getAttribute('artwork_category_id'))
+                ? ArtworkCategoryResource::getUrl('edit', ['record' => (int) $section->getAttribute('artwork_category_id')])
+                : null,
             SiteSection::TYPE_JOURNAL => JournalSettingResource::getSettingsUrl($section),
             default => null,
         };
@@ -420,15 +358,36 @@ final class SitePages extends Page
 
     private function contentUrl(SiteSection $section): ?string
     {
-        return match ((string) $section->getAttribute('type')) {
-            SiteSection::TYPE_HOME => ArtworkResource::getUrl('index'),
-            SiteSection::TYPE_GALLERY => ArtworkResource::getUrl('gallery', ['gallery' => $section->getAttribute('artwork_category_id')]),
-            SiteSection::TYPE_CUSTOM => CustomPageSettingResource::getUrl('edit', ['record' => $section->customPageSetting()->firstOrFail()]),
-            SiteSection::TYPE_JOURNAL => $section->getAttribute('template') === SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS
+        $type = (string) $section->getAttribute('type');
+
+        if ($type === SiteSection::TYPE_HOME) {
+            return ArtworkResource::getUrl('index');
+        }
+
+        if ($type === SiteSection::TYPE_GALLERY) {
+            $galleryId = $section->getAttribute('artwork_category_id');
+
+            return is_numeric($galleryId)
+                ? ArtworkResource::getUrl('gallery', ['gallery' => (int) $galleryId])
+                : null;
+        }
+
+        if ($type === SiteSection::TYPE_CUSTOM) {
+            $settings = $section->relationLoaded('customPageSetting')
+                ? $section->getRelation('customPageSetting')
+                : null;
+
+            return $settings instanceof CustomPageSetting
+                ? CustomPageSettingResource::getUrl('edit', ['record' => $settings])
+                : null;
+        }
+
+        if ($type === SiteSection::TYPE_JOURNAL) {
+            return $section->getAttribute('template') === SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS
                 ? ExhibitionResource::getUrl('index', ['section' => $section->getKey()])
-                : BlogPostResource::getUrl('index', ['section' => $section->getKey()]),
-            SiteSection::TYPE_NAVIGATION_GROUP => null,
-            default => null,
-        };
+                : BlogPostResource::getUrl('index', ['section' => $section->getKey()]);
+        }
+
+        return null;
     }
 }

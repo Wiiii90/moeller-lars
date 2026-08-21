@@ -7,6 +7,7 @@ use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIngestService;
+use App\Filament\Concerns\UsesEditorOverlay;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -26,6 +27,8 @@ use LogicException;
 
 class EditArtwork extends EditRecord
 {
+    use UsesEditorOverlay;
+
     protected static string $resource = ArtworkResource::class;
 
     public bool $returnToGallery = false;
@@ -127,7 +130,7 @@ class EditArtwork extends EditRecord
             ]);
         }
 
-        return ArtworkResource::getUrl('index');
+        return $this->editorReturnUrl(ArtworkResource::getUrl('index'));
     }
 
     protected function getHeaderActions(): array

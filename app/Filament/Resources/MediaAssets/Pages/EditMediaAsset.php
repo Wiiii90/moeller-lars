@@ -4,6 +4,7 @@ namespace App\Filament\Resources\MediaAssets\Pages;
 
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIntegrityService;
+use App\Filament\Concerns\UsesEditorOverlay;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
@@ -15,6 +16,8 @@ use Throwable;
 
 class EditMediaAsset extends EditRecord
 {
+    use UsesEditorOverlay;
+
     protected static string $resource = MediaAssetResource::class;
 
     protected function handleRecordUpdate(Model $record, array $data): Model
@@ -23,6 +26,11 @@ class EditMediaAsset extends EditRecord
         $asset = $record;
 
         return app(MediaAssetEditorialService::class)->updateMetadata($asset, $data);
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->editorReturnUrl(MediaAssetResource::getUrl('index'));
     }
 
     protected function getHeaderActions(): array

@@ -43,7 +43,5 @@
         @else
             <section class="artist-gallery-empty"><p class="artist-workspace__kicker">Empty programme</p><h3>Add the first exhibition</h3><p>Create an exhibition draft, add venue/media details and publish it when ready.</p></section>
         @endif
-
-        <footer class="artist-workspace__footnote"><span>Order controls change the public exhibition sequence.</span><span>Section publication and navigation remain managed in Pages.</span></footer>
     </div>
 </x-filament-panels::page>

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CvEntries\Pages;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\EditorialRichTextValidator;
+use App\Filament\Concerns\UsesEditorOverlay;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Models\CvEntry;
 use Filament\Resources\Pages\CreateRecord;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class CreateCvEntry extends CreateRecord
 {
+    use UsesEditorOverlay;
+
     protected static string $resource = CvEntryResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array
@@ -43,5 +46,10 @@ class CreateCvEntry extends CreateRecord
 
             return $entry;
         });
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->editorReturnUrl(CvEntryResource::getUrl('index'));
     }
 }

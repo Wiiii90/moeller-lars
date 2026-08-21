@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Exhibitions\Pages;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\EditorialRichTextValidator;
 use App\Domain\Content\JournalEntryOrderService;
+use App\Filament\Concerns\UsesEditorOverlay;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Models\Exhibition;
 use App\Models\SiteSection;
@@ -15,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class CreateExhibition extends CreateRecord
 {
+    use UsesEditorOverlay;
+
     protected static string $resource = ExhibitionResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array
@@ -54,6 +57,13 @@ class CreateExhibition extends CreateRecord
 
             return $exhibition;
         });
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        $sectionId = (int) $this->getRecord()->getAttribute('site_section_id');
+
+        return $this->editorReturnUrl(ExhibitionResource::getUrl('index', ['section' => $sectionId]));
     }
 
     private function journalSectionId(mixed $value): int

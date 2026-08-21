@@ -13,7 +13,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
@@ -43,8 +43,9 @@ class MediaAssetResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Accessibility and credit')
-                ->description('Editorial metadata carried with this reusable asset wherever the consuming feature supports it.')
+            Fieldset::make('Accessibility and credit')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     TextInput::make('alt_text')
                         ->label('Default ALT text')

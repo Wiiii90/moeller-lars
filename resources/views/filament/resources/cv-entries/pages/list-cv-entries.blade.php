@@ -43,7 +43,5 @@
         @else
             <section class="artist-gallery-empty"><p class="artist-workspace__kicker">Empty Vita</p><h3>Add the first entry</h3><p>Start with a biography, education item, award or other Vita entry.</p></section>
         @endif
-
-        <footer class="artist-workspace__footnote"><span>Order controls change the public Vita sequence.</span><span>Contact and legal details are managed separately from entry content.</span></footer>
     </div>
 </x-filament-panels::page>

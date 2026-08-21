@@ -9,11 +9,6 @@
                     @endif
                 </p>
                 <h2>{{ $galleryContext['name'] }}</h2>
-                <p>
-                    {{ count($artworks) }} {{ count($artworks) === 1 ? 'artwork' : 'artworks' }}
-                    · {{ $publishedCount }} published
-                    · {{ $galleryContext['path'] }}
-                </p>
             </div>
 
             <nav class="artist-gallery-tools" aria-label="Gallery management">
@@ -159,11 +154,5 @@
                 <a class="artist-action is-primary" href="{{ $galleryContext['create_url'] }}">Add artwork</a>
             </section>
         @endif
-
-        <footer class="artist-workspace__footnote">
-            <span>This sequence is the Gallery order used by the public artwork collection.</span>
-            <span>An artwork keeps one owning Gallery. Moving it removes it from this Gallery and reassigns that ownership without touching shared MediaAssets.</span>
-            <span>Draft/site Preview remains the Pages preview integration; public View actions here never publish or synthesize draft routes.</span>
-        </footer>
     </div>
 </x-filament-panels::page>

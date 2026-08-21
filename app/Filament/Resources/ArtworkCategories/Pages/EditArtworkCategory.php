@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ArtworkCategories\Pages;
 
 use App\Domain\Artwork\ArtworkCategoryEditorialService;
+use App\Filament\Concerns\UsesEditorOverlay;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
@@ -16,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class EditArtworkCategory extends EditRecord
 {
+    use UsesEditorOverlay;
+
     protected static string $resource = ArtworkCategoryResource::class;
 
     protected function handleRecordUpdate(Model $record, array $data): Model
@@ -23,14 +26,21 @@ class EditArtworkCategory extends EditRecord
         return app(ArtworkCategoryEditorialService::class)->update($this->categoryRecord(), $data);
     }
 
+    protected function getRedirectUrl(): string
+    {
+        return $this->editorReturnUrl(ArtworkResource::getUrl('gallery', [
+            'gallery' => $this->categoryRecord()->getKey(),
+        ]));
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             Action::make('pages')
-                ->label('Back to Pages')
+                ->label('Pages')
                 ->url(SitePages::getUrl()),
             Action::make('manageArtworks')
-                ->label('Manage artworks')
+                ->label('Artworks')
                 ->url(fn (): string => ArtworkResource::getUrl('gallery', ['gallery' => $this->categoryRecord()->getKey()])),
             Action::make('changeSlug')
                 ->label('Change public slug')

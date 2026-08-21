@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Exhibitions\Pages;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\EditorialRecordService;
 use App\Domain\Admin\EditorialRichTextValidator;
+use App\Filament\Concerns\UsesEditorOverlay;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Models\Exhibition;
 use Filament\Actions\Action;
@@ -16,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class EditExhibition extends EditRecord
 {
+    use UsesEditorOverlay;
+
     protected static string $resource = ExhibitionResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array
@@ -53,6 +56,13 @@ class EditExhibition extends EditRecord
 
             return $exhibition;
         });
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        $sectionId = (int) $this->exhibition()->getAttribute('site_section_id');
+
+        return $this->editorReturnUrl(ExhibitionResource::getUrl('index', ['section' => $sectionId]));
     }
 
     protected function getHeaderActions(): array

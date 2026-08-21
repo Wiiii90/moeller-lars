@@ -8,7 +8,7 @@ use App\Models\SiteSection;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 
@@ -30,8 +30,9 @@ final class JournalSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Journal presentation')
-                ->description('Public visibility, navigation and site order are managed from Pages. These fields control this Journal listing only.')
+            Fieldset::make('Journal presentation')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     TextInput::make('listing_title')
                         ->label('Listing title')

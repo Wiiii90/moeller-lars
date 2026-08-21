@@ -8,7 +8,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -36,17 +36,20 @@ final class VitaContentSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Additional Vita text')
-                ->description('Optional text blocks composed on the public Vita page. Entries themselves remain managed in Vita content.')
+            Fieldset::make('Additional Vita text')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     Repeater::make('profile_text_blocks')
                         ->label('Text blocks')
+                        ->extraAttributes(['class' => 'artist-component-repeater'])
                         ->schema([
                             TextInput::make('title')->required()->maxLength(120),
                             Textarea::make('body')->required()->rows(4)->maxLength(5000),
                         ])
                         ->defaultItems(0)
-                        ->reorderable()
+                        ->reorderableWithButtons()
+                        ->reorderableWithDragAndDrop(false)
                         ->collapsible()
                         ->itemLabel(fn (array $state): ?string => isset($state['title']) && is_string($state['title']) ? $state['title'] : null)
                         ->columnSpanFull(),

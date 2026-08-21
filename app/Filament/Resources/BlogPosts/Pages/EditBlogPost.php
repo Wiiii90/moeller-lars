@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\BlogPosts\Pages;
 
 use App\Domain\Blog\BlogEditorialService;
+use App\Filament\Concerns\UsesEditorOverlay;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Models\BlogPost;
 use Filament\Actions\Action;
@@ -14,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 final class EditBlogPost extends EditRecord
 {
+    use UsesEditorOverlay;
+
     protected static string $resource = BlogPostResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array
@@ -31,6 +34,13 @@ final class EditBlogPost extends EditRecord
     {
         /** @var BlogPost $record */
         return app(BlogEditorialService::class)->update($record, $data);
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        $sectionId = (int) $this->post()->getAttribute('site_section_id');
+
+        return $this->editorReturnUrl(BlogPostResource::getUrl('index', ['section' => $sectionId]));
     }
 
     protected function getHeaderActions(): array

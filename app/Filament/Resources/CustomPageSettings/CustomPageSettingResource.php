@@ -12,7 +12,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 
@@ -29,11 +29,13 @@ final class CustomPageSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Page components')
-                ->description('Stack text, lists and contact areas in public order. Each component can optionally draw a divider below itself.')
+            Fieldset::make('Page components')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     Repeater::make('blocks')
                         ->label('Components')
+                        ->extraAttributes(['class' => 'artist-component-repeater'])
                         ->schema([
                             Select::make('type')
                                 ->options([
@@ -73,6 +75,7 @@ final class CustomPageSettingResource extends Resource
                                 ->visible(fn (callable $get): bool => in_array($get('type'), ['text', 'list'], true)),
                             Repeater::make('items')
                                 ->label('List entries')
+                                ->extraAttributes(['class' => 'artist-component-repeater artist-component-repeater--nested'])
                                 ->schema([
                                     Toggle::make('visible')
                                         ->label('Visible on public page')
@@ -97,8 +100,8 @@ final class CustomPageSettingResource extends Resource
                                 ])
                                 ->columns(2)
                                 ->defaultItems(0)
-                                ->reorderable()
-                                ->collapsible()
+                                ->reorderableWithButtons()
+                                ->reorderableWithDragAndDrop(false)
                                 ->itemLabel(fn (array $state): ?string => isset($state['title']) && is_string($state['title']) ? $state['title'] : null)
                                 ->columnSpanFull()
                                 ->visible(fn (callable $get): bool => $get('type') === 'list'),
@@ -119,8 +122,8 @@ final class CustomPageSettingResource extends Resource
                         ])
                         ->columns(2)
                         ->defaultItems(0)
-                        ->reorderable()
-                        ->collapsible()
+                        ->reorderableWithButtons()
+                        ->reorderableWithDragAndDrop(false)
                         ->itemLabel(function (array $state): string {
                             $type = $state['type'] ?? null;
                             $title = $state['title'] ?? null;

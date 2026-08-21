@@ -8,6 +8,7 @@ use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -99,12 +100,16 @@ class PublicContentSettingResource extends Resource
                                         ->label('Visible')
                                         ->default(true),
                                 ])
-                                ->columns(3)
+                                ->table([
+                                    TableColumn::make('Platform'),
+                                    TableColumn::make('Profile URL'),
+                                    TableColumn::make('Visible'),
+                                ])
+                                ->compact()
                                 ->defaultItems(0)
-                                ->reorderable()
-                                ->collapsible()
+                                ->reorderableWithButtons()
+                                ->reorderableWithDragAndDrop(false)
                                 ->addActionLabel('Add social link')
-                                ->itemLabel(fn (array $state): ?string => isset($state['platform']) && is_string($state['platform']) ? SocialLinks::label($state['platform']) : null)
                                 ->columnSpanFull(),
                         ]),
                     Fieldset::make('Contact delivery')
