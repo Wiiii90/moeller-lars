@@ -51,7 +51,7 @@ final class DeferMatomoReporting
             $stale = Cache::get($staleKey);
             Cache::put(
                 $freshKey,
-                $this->isCurrentReport($stale)
+                is_array($stale) && $this->isCurrentReport($stale)
                     ? $this->staleForImmediateDisplay($stale)
                     : $this->loadingReport(),
                 60,
