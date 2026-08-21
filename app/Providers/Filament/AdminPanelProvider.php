@@ -26,11 +26,9 @@ use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use function Filament\Support\original_request;
 
@@ -105,15 +103,7 @@ class AdminPanelProvider extends PanelProvider
     /** @return array<NavigationItem> */
     private function siteSectionNavigationItems(): array
     {
-        if (! Schema::hasTable('site_sections')) {
-            return [];
-        }
-
         $sections = SiteSection::query()
-            ->whereNull('parent_id')
-            ->with(['children' => static function (HasMany $relation): void {
-                $relation->orderBy('position')->orderBy('id');
-            }])
             ->orderBy('position')
             ->orderBy('id')
             ->get();
@@ -122,9 +112,17 @@ class AdminPanelProvider extends PanelProvider
         $sort = 10;
 
         foreach ($sections as $section) {
+            if ($section->getAttribute('parent_id') !== null) {
+                continue;
+            }
+
             $items[] = $this->siteSectionNavigationItem($section, depth: 0, sort: $sort++);
 
-            foreach ($section->children as $child) {
+            foreach ($sections as $child) {
+                if ((int) $child->getAttribute('parent_id') !== (int) $section->getKey()) {
+                    continue;
+                }
+
                 $items[] = $this->siteSectionNavigationItem($child, depth: 1, sort: $sort++);
             }
         }
