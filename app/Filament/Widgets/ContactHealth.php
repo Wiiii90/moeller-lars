@@ -3,8 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Domain\Contact\ContactDeliveryReadiness;
-use App\Filament\Resources\ContactContentSettings\ContactContentSettingResource;
+use App\Filament\Pages\SitePages;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
+use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Filament\Widgets\Widget;
@@ -22,11 +23,10 @@ final class ContactHealth extends Widget
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
-        $section = SiteSection::query()->where('type', SiteSection::TYPE_CONTACT)->first();
         $contact = PublicContentSetting::contact();
         $delivery = app(ContactDeliveryReadiness::class)->snapshot();
+        $placements = $this->placements();
 
-        $pageState = $section?->getAttribute('state') === 'published' ? 'Published' : 'Hidden';
         $formState = match ($contact->getAttribute('contact_state')) {
             'enabled' => 'Enabled',
             'under_construction' => 'Under construction',
@@ -34,11 +34,45 @@ final class ContactHealth extends Widget
         };
 
         return [
-            'pageState' => $pageState,
+            'publishedPlacements' => $placements['published'],
+            'formPlacements' => $placements['forms'],
             'formState' => $formState,
             'delivery' => $delivery,
             'generalUrl' => PublicContentSettingResource::getNavigationUrl(),
-            'contactUrl' => ContactContentSettingResource::getSettingsUrl(),
+            'pagesUrl' => SitePages::getUrl(),
         ];
+    }
+
+    /** @return array{published:int,forms:int} */
+    private function placements(): array
+    {
+        $published = 0;
+        $forms = 0;
+
+        $settings = CustomPageSetting::query()
+            ->whereHas('siteSection', static fn ($query) => $query
+                ->where('type', SiteSection::TYPE_CUSTOM)
+                ->where('state', 'published'))
+            ->get(['blocks']);
+
+        foreach ($settings as $pageSettings) {
+            $pageHasContact = false;
+            foreach ($pageSettings->getAttribute('blocks') ?? [] as $block) {
+                if (! is_array($block) || ($block['type'] ?? null) !== 'contact') {
+                    continue;
+                }
+
+                $pageHasContact = true;
+                if (($block['show_form'] ?? true) === true) {
+                    $forms++;
+                }
+            }
+
+            if ($pageHasContact) {
+                $published++;
+            }
+        }
+
+        return ['published' => $published, 'forms' => $forms];
     }
 }
