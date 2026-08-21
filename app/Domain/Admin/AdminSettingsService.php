@@ -2,8 +2,9 @@
 
 namespace App\Domain\Admin;
 
-use App\Models\BlogSetting;
+use App\Models\JournalSetting;
 use App\Models\PublicContentSetting;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 final class AdminSettingsService
@@ -12,31 +13,27 @@ final class AdminSettingsService
 
     public function updatePublicContent(PublicContentSetting $setting, array $data): PublicContentSetting
     {
+        /** @var PublicContentSetting $updated */
         $updated = $this->update($setting, $data, 'public_content_setting.updated', 'public_content_setting');
 
-        /** @var PublicContentSetting $updated */
         return $updated;
     }
 
-    public function updateBlog(BlogSetting $setting, array $data): BlogSetting
+    public function updateJournal(JournalSetting $setting, array $data): JournalSetting
     {
-        $updated = $this->update($setting, $data, 'blog_setting.updated', 'blog_setting');
+        /** @var JournalSetting $updated */
+        $updated = $this->update($setting, $data, 'journal_setting.updated', 'journal_setting');
 
-        /** @var BlogSetting $updated */
         return $updated;
     }
 
-    private function update(
-        PublicContentSetting|BlogSetting $record,
-        array $data,
-        string $action,
-        string $entityType,
-    ): PublicContentSetting|BlogSetting {
+    private function update(Model $record, array $data, string $action, string $entityType): Model
+    {
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use ($record, $data, $action, $entityType, $actor): PublicContentSetting|BlogSetting {
+        return DB::transaction(function () use ($record, $data, $action, $entityType, $actor): Model {
             $class = $record::class;
-            /** @var PublicContentSetting|BlogSetting $fresh */
+            /** @var Model $fresh */
             $fresh = $class::query()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
             $fresh->fill($data);
 
