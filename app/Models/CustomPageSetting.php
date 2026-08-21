@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Content\SafeLinkPolicy;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SocialLinks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -56,6 +57,10 @@ final class CustomPageSetting extends Model
                 throw ValidationException::withMessages(['blocks' => 'A page component has an unsupported type.']);
             }
 
+            if (array_key_exists('divider', $block) && ! is_bool($block['divider'])) {
+                throw ValidationException::withMessages(['blocks' => 'Component divider settings must be boolean.']);
+            }
+
             if ($type === 'text') {
                 $this->validateRichText($block['body'] ?? null, 'blocks.'.$blockIndex.'.body');
             }
@@ -69,15 +74,24 @@ final class CustomPageSetting extends Model
                     if (! is_array($item)) {
                         throw ValidationException::withMessages(['blocks' => 'A list component entry is invalid.']);
                     }
+                    if (array_key_exists('visible', $item) && ! is_bool($item['visible'])) {
+                        throw ValidationException::withMessages(['blocks' => 'List entry visibility must be boolean.']);
+                    }
                     $title = $item['title'] ?? null;
                     if (! is_string($title) || trim($title) === '' || mb_strlen($title) > 240) {
                         throw ValidationException::withMessages(['blocks' => 'Each list entry requires a short title.']);
                     }
                     $this->validateRichText($item['body'] ?? null, 'blocks.'.$blockIndex.'.items.'.$itemIndex.'.body');
+                    $this->validateUrl($item['url'] ?? null, 'blocks.'.$blockIndex.'.items.'.$itemIndex.'.url');
                 }
             }
 
             if ($type === 'contact') {
+                foreach (['show_email', 'show_form'] as $toggle) {
+                    if (array_key_exists($toggle, $block) && ! is_bool($block[$toggle])) {
+                        throw ValidationException::withMessages(['blocks' => 'Contact component toggles must be boolean.']);
+                    }
+                }
                 $platforms = $block['social_platforms'] ?? [];
                 if (! is_array($platforms) || ! array_is_list($platforms)) {
                     throw ValidationException::withMessages(['blocks' => 'Contact social links must be an ordered selection.']);
@@ -121,5 +135,17 @@ final class CustomPageSetting extends Model
         }
 
         app(SafeRichTextRenderer::class)->assertValid($value);
+    }
+
+    private function validateUrl(mixed $value, string $field): void
+    {
+        if ($value === null || $value === '') {
+            return;
+        }
+        if (! is_string($value)
+            || ! in_array(strtolower((string) parse_url($value, PHP_URL_SCHEME)), ['http', 'https'], true)
+            || ! app(SafeLinkPolicy::class)->isAllowed($value)) {
+            throw ValidationException::withMessages([$field => 'Component links must be valid HTTP or HTTPS URLs.']);
+        }
     }
 }
