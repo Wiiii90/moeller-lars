@@ -44,7 +44,7 @@ final class ArtistReportingService
         $report = $this->report($range);
         $keys = array_values(array_unique(array_filter(
             $artworkAnalyticsKeys,
-            static fn (mixed $key): bool => is_string($key) && trim($key) !== '',
+            static fn (string $key): bool => trim($key) !== '',
         )));
         $attention = $this->artworkDataset($report, $keys);
         $rows = $attention['rows'];
@@ -298,7 +298,7 @@ final class ArtistReportingService
     }
 
     /** @param array{state:string,rows:array<int, array<string, mixed>>} $artworks
-     * @return array{state:string,rows:array<int, array<string, int|float>>}
+     * @return array{state:string,rows:list<array{date:string,detail_views:int,viewer_opens:int,zooms:int,attention_seconds:float}>}
      */
     private function artworkTrend(array $artworks): array
     {
