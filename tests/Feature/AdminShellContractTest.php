@@ -2,6 +2,7 @@
 
 use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
+use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Support\Icons\Heroicon;
@@ -21,16 +22,29 @@ it('uses the artist-facing shell navigation and public brand target', function (
     expect($panel)->not->toBeNull()
         ->and($panel?->getHomeUrl())->toBe(route('home'))
         ->and(MediaAssetResource::getNavigationGroup())->toBe('Content')
-        ->and(StorageCapacity::getNavigationGroup())->toBe('Content')
+        ->and(StorageCapacity::getNavigationGroup())->toBe('Insights')
         ->and(MediaAssetResource::getNavigationIcon())->toBe(Heroicon::OutlinedFolderOpen)
         ->and(StorageCapacity::getNavigationIcon())->toBe(Heroicon::OutlinedCircleStack);
 
     $this->get('/admin')
         ->assertSuccessful()
         ->assertSee('Website')
+        ->assertSee('Pages')
+        ->assertSee('Home')
+        ->assertSee('Vita')
+        ->assertSee('Exhibitions')
+        ->assertSee('Blog')
+        ->assertSee('Contact')
         ->assertSee('Content')
         ->assertSee('Insights')
+        ->assertSee('Settings')
+        ->assertSee('General')
         ->assertDontSee('Library');
+
+    $this->get(PublicContentSettingResource::getNavigationUrl())
+        ->assertSuccessful()
+        ->assertSee('Site identity')
+        ->assertSee('Contact delivery');
 });
 
 it('renders direct sign out and compact quick actions with the retained dashboard heading', function (): void {
@@ -47,5 +61,8 @@ it('renders direct sign out and compact quick actions with the retained dashboar
             'Add blog post',
             'Manage pages',
             'Open public site',
-        ]);
+        ])
+        ->assertSee('Contact form readiness')
+        ->assertSee('Delivery recipient')
+        ->assertSee('Mail transport');
 });
