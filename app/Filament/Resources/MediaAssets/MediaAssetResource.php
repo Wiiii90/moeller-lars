@@ -44,11 +44,11 @@ class MediaAssetResource extends Resource
     {
         return $schema->components([
             Section::make('Accessibility and credit')
-                ->description('Metadata used wherever this asset is presented publicly.')
+                ->description('Editorial metadata carried with this reusable asset wherever the consuming feature supports it.')
                 ->schema([
                     TextInput::make('alt_text')
                         ->label('Default ALT text')
-                        ->helperText('Describe the image content and function. Individual usages may override this text.')
+                        ->helperText('For images, describe the content and function. Individual usages may override this text.')
                         ->maxLength(500)
                         ->nullable(),
                     TextInput::make('credit')
@@ -68,7 +68,7 @@ class MediaAssetResource extends Resource
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query
                 ->with('variants')
-                ->withCount(['artworks', 'exhibitions', 'cvEntries', 'blogPosts']))
+                ->withCount(['artworks', 'exhibitions', 'cvEntries', 'blogPosts', 'siteIdentitySettings']))
             ->columns([
                 ImageColumn::make('thumbnail')
                     ->label('')
@@ -88,11 +88,12 @@ class MediaAssetResource extends Resource
                 TextColumn::make('usage')
                     ->label('Used by')
                     ->state(fn (MediaAsset $record): string => sprintf(
-                        '%d artworks · %d exhibitions · %d Vita/CV · %d blog',
+                        '%d artworks · %d exhibitions · %d Vita/CV · %d blog · %d site identity',
                         (int) $record->getAttribute('artworks_count'),
                         (int) $record->getAttribute('exhibitions_count'),
                         (int) $record->getAttribute('cv_entries_count'),
                         (int) $record->getAttribute('blog_posts_count'),
+                        (int) $record->getAttribute('site_identity_settings_count'),
                     )),
                 TextColumn::make('dimensions')
                     ->label('Dimensions')
@@ -135,7 +136,7 @@ class MediaAssetResource extends Resource
             ])
             ->toolbarActions([])
             ->emptyStateHeading('No media assets yet')
-            ->emptyStateDescription('Media appears here after it has been ingested through the protected media workflow.');
+            ->emptyStateDescription('Upload reusable media here or attach existing media from a consuming workspace.');
     }
 
     public static function getRelations(): array

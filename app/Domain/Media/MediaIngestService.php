@@ -14,6 +14,7 @@ use Throwable;
 
 class MediaIngestService
 {
+    /** @deprecated UI callers should use MediaTypePolicy::maxUploadBytes() or the type-specific policy. */
     public const MAX_BYTES = 20 * 1024 * 1024;
 
     public const MAX_PIXELS = 16_000_000;
@@ -26,14 +27,7 @@ class MediaIngestService
 
     private const INGEST_LOCK_SECONDS = 120;
 
-    /**
-     * @var array<string, string>
-     */
-    private const MIME_EXTENSIONS = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-    ];
+    private const VIDEO_PROBE_BYTES = 1024 * 1024;
 
     public function ingest(UploadedFile $upload): MediaAsset
     {
@@ -52,25 +46,35 @@ class MediaIngestService
     private function ingestLocked(UploadedFile $upload): MediaAsset
     {
         try {
-            [$mime, $width, $height, $originalPath, $originalSize, $originalSha256, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight] = $this->prepare($upload);
-            app(MediaCapacityService::class)->assertCanStoreOriginal($originalSize);
+            $prepared = $this->prepare($upload);
+            app(MediaCapacityService::class)->assertCanStoreOriginal($prepared['size']);
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
             throw $this->validationFailure('The uploaded media could not be processed.', $exception);
         }
 
+        $extension = MediaTypePolicy::extensionFor($prepared['mime']);
+        if ($extension === null) {
+            throw $this->validationFailure('The uploaded media type is not allowed.');
+        }
+
         $disk = Storage::disk(config('media.disk'));
         $uuid = (string) Str::uuid();
-        $originalKey = 'originals/'.$uuid.'.'.self::MIME_EXTENSIONS[$mime];
-        $thumbnailKey = 'variants/'.$uuid.'-'.self::THUMBNAIL_KIND.'.webp';
+        $originalKey = 'originals/'.$uuid.'.'.$extension;
+        $thumbnailKey = $prepared['thumbnail_bytes'] === null
+            ? null
+            : 'variants/'.$uuid.'-'.self::THUMBNAIL_KIND.'.webp';
+        $storageKeys = array_values(array_filter([$originalKey, $thumbnailKey]));
 
-        if ($disk->exists($originalKey) || $disk->exists($thumbnailKey)) {
-            throw new RuntimeException('Generated media storage key already exists.');
+        foreach ($storageKeys as $key) {
+            if ($disk->exists($key)) {
+                throw new RuntimeException('Generated media storage key already exists.');
+            }
         }
 
         try {
-            $originalStream = @fopen($originalPath, 'rb');
+            $originalStream = @fopen($prepared['path'], 'rb');
             if (! is_resource($originalStream)) {
                 throw $this->validationFailure('The uploaded media could not be read completely.');
             }
@@ -83,41 +87,43 @@ class MediaIngestService
                 fclose($originalStream);
             }
 
-            if (! $disk->put($thumbnailKey, $thumbnailBytes)) {
+            if ($thumbnailKey !== null && $prepared['thumbnail_bytes'] !== null && ! $disk->put($thumbnailKey, $prepared['thumbnail_bytes'])) {
                 throw new RuntimeException('Unable to write media thumbnail.');
             }
 
-            return DB::transaction(function () use ($originalKey, $upload, $mime, $originalSize, $originalSha256, $width, $height, $thumbnailKey, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight): MediaAsset {
+            return DB::transaction(function () use ($originalKey, $upload, $prepared, $thumbnailKey): MediaAsset {
                 $asset = new MediaAsset;
                 $asset->fill([
                     'storage_key' => $originalKey,
                     'original_filename' => $this->basename($upload->getClientOriginalName()),
-                    'mime_type' => $mime,
-                    'byte_size' => $originalSize,
-                    'sha256' => $originalSha256,
+                    'mime_type' => $prepared['mime'],
+                    'byte_size' => $prepared['size'],
+                    'sha256' => $prepared['sha256'],
                     'state' => 'available',
-                    'width' => $width,
-                    'height' => $height,
+                    'width' => $prepared['width'],
+                    'height' => $prepared['height'],
                 ]);
                 $asset->save();
 
-                $asset->variants()->create([
-                    'variant_kind' => self::THUMBNAIL_KIND,
-                    'storage_key' => $thumbnailKey,
-                    'mime_type' => 'image/webp',
-                    'byte_size' => strlen($thumbnailBytes),
-                    'sha256' => hash('sha256', $thumbnailBytes),
-                    'transform_profile' => self::TRANSFORM_PROFILE,
-                    'state' => 'available',
-                    'width' => $thumbnailWidth,
-                    'height' => $thumbnailHeight,
-                ]);
+                if ($thumbnailKey !== null && $prepared['thumbnail_bytes'] !== null) {
+                    $asset->variants()->create([
+                        'variant_kind' => self::THUMBNAIL_KIND,
+                        'storage_key' => $thumbnailKey,
+                        'mime_type' => 'image/webp',
+                        'byte_size' => strlen($prepared['thumbnail_bytes']),
+                        'sha256' => hash('sha256', $prepared['thumbnail_bytes']),
+                        'transform_profile' => self::TRANSFORM_PROFILE,
+                        'state' => 'available',
+                        'width' => $prepared['thumbnail_width'],
+                        'height' => $prepared['thumbnail_height'],
+                    ]);
+                }
 
                 return $asset;
             });
         } catch (Throwable $exception) {
             $failed = [];
-            foreach ([$originalKey, $thumbnailKey] as $key) {
+            foreach ($storageKeys as $key) {
                 try {
                     if ($disk->exists($key) && ! $disk->delete($key)) {
                         $failed[] = $key;
@@ -144,16 +150,13 @@ class MediaIngestService
         }
     }
 
-    /** @return array{string, int, int, string, int, string, string, int, int} */
+    /**
+     * @return array{mime:string,width:?int,height:?int,path:string,size:int,sha256:string,thumbnail_bytes:?string,thumbnail_width:?int,thumbnail_height:?int}
+     */
     private function prepare(UploadedFile $upload): array
     {
         if (! $upload->isValid()) {
             throw $this->validationFailure('The upload was not successful.');
-        }
-
-        $size = $upload->getSize();
-        if (! is_int($size) || $size <= 0 || $size > self::MAX_BYTES) {
-            throw $this->validationFailure('The uploaded media has an invalid size.');
         }
 
         $path = $upload->getRealPath();
@@ -162,8 +165,34 @@ class MediaIngestService
         }
 
         $mime = $this->detectMime($path);
-        if (! isset(self::MIME_EXTENSIONS[$mime])) {
+        if (MediaTypePolicy::extensionFor($mime) === null) {
             throw $this->validationFailure('The uploaded media type is not allowed.');
+        }
+
+        $size = $upload->getSize();
+        if (! is_int($size) || $size <= 0 || $size > MediaTypePolicy::maxBytesFor($mime)) {
+            throw $this->validationFailure('The uploaded media has an invalid size for this media type.');
+        }
+
+        $sha256 = @hash_file('sha256', $path);
+        if (! is_string($sha256) || strlen($sha256) !== 64) {
+            throw $this->validationFailure('The uploaded media could not be read completely.');
+        }
+
+        if (MediaTypePolicy::isVideo($mime)) {
+            $this->validateVideoContainer($path, $mime, $size);
+
+            return [
+                'mime' => $mime,
+                'width' => null,
+                'height' => null,
+                'path' => $path,
+                'size' => $size,
+                'sha256' => $sha256,
+                'thumbnail_bytes' => null,
+                'thumbnail_width' => null,
+                'thumbnail_height' => null,
+            ];
         }
 
         $dimensions = @getimagesize($path);
@@ -175,11 +204,6 @@ class MediaIngestService
         $height = $dimensions[1];
         if ($width <= 0 || $height <= 0 || ($width * $height) > self::MAX_PIXELS) {
             throw $this->validationFailure('The uploaded image dimensions are not allowed.');
-        }
-
-        $sha256 = @hash_file('sha256', $path);
-        if (! is_string($sha256) || strlen($sha256) !== 64) {
-            throw $this->validationFailure('The uploaded media could not be read completely.');
         }
 
         $originalImage = $this->decode($path, $mime);
@@ -195,7 +219,17 @@ class MediaIngestService
             $this->destroyImage($originalImage);
         }
 
-        return [$mime, $width, $height, $path, $size, $sha256, $thumbnailBytes, $thumbnailWidth, $thumbnailHeight];
+        return [
+            'mime' => $mime,
+            'width' => $width,
+            'height' => $height,
+            'path' => $path,
+            'size' => $size,
+            'sha256' => $sha256,
+            'thumbnail_bytes' => $thumbnailBytes,
+            'thumbnail_width' => $thumbnailWidth,
+            'thumbnail_height' => $thumbnailHeight,
+        ];
     }
 
     private function detectMime(string $path): string
@@ -216,6 +250,69 @@ class MediaIngestService
         }
 
         return $mime;
+    }
+
+    private function validateVideoContainer(string $path, string $mime, int $size): void
+    {
+        [$head, $tail] = $this->videoProbe($path, $size);
+        $probe = $head.$tail;
+
+        if ($mime === 'video/mp4') {
+            $isMp4 = strlen($head) >= 12 && substr($head, 4, 4) === 'ftyp';
+            $hasH264 = str_contains($probe, 'avc1') || str_contains($probe, 'avc3');
+            if (! $isMp4 || ! $hasH264) {
+                throw $this->validationFailure('MP4 uploads must use a browser-native H.264 video track.');
+            }
+
+            return;
+        }
+
+        if ($mime === 'video/webm') {
+            $isWebm = str_starts_with($head, "\x1A\x45\xDF\xA3");
+            $hasSupportedVideo = str_contains($probe, 'V_VP8')
+                || str_contains($probe, 'V_VP9')
+                || str_contains($probe, 'V_AV1');
+            if (! $isWebm || ! $hasSupportedVideo) {
+                throw $this->validationFailure('WebM uploads must use a browser-native VP8, VP9 or AV1 video track.');
+            }
+
+            return;
+        }
+
+        throw $this->validationFailure('The uploaded video type is not allowed.');
+    }
+
+    /** @return array{string,string} */
+    private function videoProbe(string $path, int $size): array
+    {
+        $stream = @fopen($path, 'rb');
+        if (! is_resource($stream)) {
+            throw $this->validationFailure('The uploaded video could not be inspected.');
+        }
+
+        try {
+            $readLength = min(self::VIDEO_PROBE_BYTES, $size);
+            $head = fread($stream, $readLength);
+            if (! is_string($head)) {
+                throw $this->validationFailure('The uploaded video could not be inspected.');
+            }
+
+            $tail = '';
+            if ($size > self::VIDEO_PROBE_BYTES) {
+                if (fseek($stream, max(0, $size - self::VIDEO_PROBE_BYTES)) !== 0) {
+                    throw $this->validationFailure('The uploaded video could not be inspected.');
+                }
+                $tailBytes = fread($stream, self::VIDEO_PROBE_BYTES);
+                if (! is_string($tailBytes)) {
+                    throw $this->validationFailure('The uploaded video could not be inspected.');
+                }
+                $tail = $tailBytes;
+            }
+
+            return [$head, $tail];
+        } finally {
+            fclose($stream);
+        }
     }
 
     private function decode(string $path, string $mime): \GdImage
