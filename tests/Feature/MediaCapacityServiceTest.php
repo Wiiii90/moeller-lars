@@ -191,3 +191,17 @@ it('keeps existing public originals readable when the allowance is exhausted', f
     expect(app(MediaCapacityService::class)->snapshot()['status'])->toBe('full');
     $this->get(route('media.original', $asset))->assertSuccessful();
 });
+
+it('keeps platform topology out of the application quota contract and artist view', function (): void {
+    $applicationContract = implode("\n", [
+        file_get_contents(config_path('media.php')),
+        file_get_contents(base_path('.env.example')),
+        file_get_contents(resource_path('views/filament/pages/storage-capacity.blade.php')),
+    ]);
+
+    expect($applicationContract)
+        ->toContain('MEDIA_STORAGE_QUOTA_BYTES')
+        ->not->toContain('MOELLER_LARS_MEDIA_STORAGE_QUOTA_BYTES')
+        ->not->toContain('/srv/')
+        ->not->toContain('host free space');
+});
