@@ -226,7 +226,7 @@ class AdminPanelProvider extends PanelProvider
         }
 
         $query = [];
-        if (isset($target['query']) && is_string($target['query'])) {
+        if (isset($target['query'])) {
             parse_str($target['query'], $query);
         }
 
