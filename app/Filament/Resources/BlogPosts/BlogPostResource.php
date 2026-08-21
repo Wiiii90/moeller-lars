@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\BlogPosts;
 
 use App\Domain\Blog\BlogEditorialService;
-use App\Domain\Content\JournalEntryOrderService;
 use App\Filament\Resources\BlogPosts\Pages\CreateBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\ListBlogPosts;
@@ -39,21 +38,19 @@ final class BlogPostResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPencilSquare;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Content';
+    protected static string|UnitEnum|null $navigationGroup = 'Website';
 
-    protected static ?string $navigationLabel = 'Blog';
+    protected static ?string $navigationLabel = 'Journal';
 
     protected static ?string $modelLabel = 'blog post';
 
-    protected static ?string $pluralModelLabel = 'Blog';
-
-    protected static ?int $navigationSort = 22;
+    protected static ?string $pluralModelLabel = 'Blog Journal';
 
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
             Hidden::make('site_section_id')
-                ->default(fn (): ?int => request()->integer('site_section') ?: self::legacyBlogSectionId()),
+                ->default(fn (): ?int => request()->integer('section') ?: null),
             Section::make('Post')
                 ->description('Write and save the post here. Publication is controlled with the page actions rather than a raw state field.')
                 ->schema([
@@ -64,7 +61,7 @@ final class BlogPostResource extends Resource
                             }
                         }),
                     TextInput::make('slug')
-                        ->label('Public URL slug')
+                        ->label('Entry URL slug')
                         ->required()
                         ->maxLength(220)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
@@ -88,7 +85,7 @@ final class BlogPostResource extends Resource
                 ])
                 ->columns(2),
             Section::make('Publication status')
-                ->description('Use Publish now, Schedule, Unpublish, Archive or Restore to draft in the page header. Listing order is managed directly from the Journal list.')
+                ->description('Use Publish now, Schedule, Unpublish, Archive or Restore to draft in the page header. Listing order is managed from this Journal.')
                 ->schema([
                     Select::make('state')->options([
                         'draft' => 'Draft',
@@ -97,14 +94,8 @@ final class BlogPostResource extends Resource
                         'unpublished' => 'Unpublished',
                         'archived' => 'Archived',
                     ])->default('draft')->disabled()->dehydrated(false),
-                    DateTimePicker::make('scheduled_at')
-                        ->label('Scheduled for')
-                        ->disabled()
-                        ->dehydrated(false),
-                    DateTimePicker::make('published_at')
-                        ->label('First published')
-                        ->disabled()
-                        ->dehydrated(false),
+                    DateTimePicker::make('scheduled_at')->label('Scheduled for')->disabled()->dehydrated(false),
+                    DateTimePicker::make('published_at')->label('First published')->disabled()->dehydrated(false),
                 ])
                 ->columns(3),
         ]);
@@ -130,33 +121,28 @@ final class BlogPostResource extends Resource
             Action::make('moveUp')
                 ->label('Move up')
                 ->icon('heroicon-o-chevron-up')
-                ->visible(fn (BlogPost $record): bool => $record->getAttribute('site_section_id') !== null
-                    ? app(JournalEntryOrderService::class)->canMove($record, 'up')
-                    : app(BlogEditorialService::class)->canMove($record, 'up'))
+                ->visible(fn (BlogPost $record): bool => app(BlogEditorialService::class)->canMove($record, 'up'))
                 ->action(function (BlogPost $record): void {
-                    $record->getAttribute('site_section_id') !== null
-                        ? app(JournalEntryOrderService::class)->move($record, 'up')
-                        : app(BlogEditorialService::class)->move($record, 'up');
-                    Notification::make()->title('Blog post moved up')->success()->send();
+                    app(BlogEditorialService::class)->move($record, 'up');
+                    Notification::make()->title('Post moved up')->success()->send();
                 }),
             Action::make('moveDown')
                 ->label('Move down')
                 ->icon('heroicon-o-chevron-down')
-                ->visible(fn (BlogPost $record): bool => $record->getAttribute('site_section_id') !== null
-                    ? app(JournalEntryOrderService::class)->canMove($record, 'down')
-                    : app(BlogEditorialService::class)->canMove($record, 'down'))
+                ->visible(fn (BlogPost $record): bool => app(BlogEditorialService::class)->canMove($record, 'down'))
                 ->action(function (BlogPost $record): void {
-                    $record->getAttribute('site_section_id') !== null
-                        ? app(JournalEntryOrderService::class)->move($record, 'down')
-                        : app(BlogEditorialService::class)->move($record, 'down');
-                    Notification::make()->title('Blog post moved down')->success()->send();
+                    app(BlogEditorialService::class)->move($record, 'down');
+                    Notification::make()->title('Post moved down')->success()->send();
                 }),
             Action::make('viewPublic')
                 ->label('View on site')
                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                 ->url(fn (BlogPost $record): string => self::publicUrl($record))
                 ->openUrlInNewTab()
-                ->visible(fn (BlogPost $record): bool => BlogEditorialService::publicQuery()->whereKey($record->getKey())->exists()),
+                ->visible(fn (BlogPost $record): bool => BlogEditorialService::publicQuery()
+                    ->whereKey($record->getKey())
+                    ->whereHas('siteSection', fn ($section) => $section->where('state', 'published'))
+                    ->exists()),
             EditAction::make(),
         ])->toolbarActions([])
             ->emptyStateHeading('No posts yet')
@@ -165,13 +151,18 @@ final class BlogPostResource extends Resource
 
     public static function publicUrl(BlogPost $post): string
     {
-        $sectionId = $post->getAttribute('site_section_id');
         /** @var SiteSection|null $section */
-        $section = is_numeric($sectionId) ? SiteSection::query()->find((int) $sectionId) : null;
+        $section = $post->siteSection()->first();
+        if (! $section instanceof SiteSection
+            || (string) $section->getAttribute('type') !== SiteSection::TYPE_JOURNAL
+            || (string) $section->getAttribute('template') !== SiteSection::JOURNAL_TEMPLATE_BLOG) {
+            throw new \LogicException('Blog posts must belong to a Blog Journal.');
+        }
 
-        return $section instanceof SiteSection && (string) $section->getAttribute('type') === SiteSection::TYPE_JOURNAL
-            ? route('journal.show', ['section' => $section->getAttribute('slug'), 'slug' => $post->getAttribute('slug')])
-            : route('blog.show', ['slug' => $post->getAttribute('slug')]);
+        return route('journal.show', [
+            'section' => $section->getAttribute('slug'),
+            'slug' => $post->getAttribute('slug'),
+        ]);
     }
 
     public static function getPages(): array
@@ -186,12 +177,5 @@ final class BlogPostResource extends Resource
     public static function canDelete(Model $record): bool
     {
         return false;
-    }
-
-    private static function legacyBlogSectionId(): ?int
-    {
-        $id = SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->value('id');
-
-        return is_numeric($id) ? (int) $id : null;
     }
 }
