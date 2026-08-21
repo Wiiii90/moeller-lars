@@ -18,7 +18,7 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
-it('serves the typed Pages workspace to an admin', function (): void {
+it('serves the typed Pages workspace and its visible structure controls to an admin', function (): void {
     $admin = User::factory()->admin()->create();
 
     $this->actingAs($admin, 'web')
@@ -26,9 +26,12 @@ it('serves the typed Pages workspace to an admin', function (): void {
         ->assertSuccessful()
         ->assertSee('Public pages')
         ->assertSee('Site structure')
+        ->assertSee('Preview site')
+        ->assertSee('Add page/section')
         ->assertSee('Vita')
         ->assertSee('Blog')
-        ->assertSee('Exhibitions');
+        ->assertSee('Exhibitions')
+        ->assertSee('Add menu');
 });
 
 it('keeps Home pinned outside normal navigation reordering', function (): void {
@@ -149,3 +152,18 @@ it('does not hide a navigation parent while it still has a visible submenu Galle
     expect($parentSection->fresh()->state)->toBe('published')
         ->and($parent->fresh()->getRawOriginal('state'))->toBe($legacyParentState);
 });
+
+function testGallerySection(ArtworkCategory $category, array $overrides = []): SiteSection
+{
+    return SiteSection::create(array_merge([
+        'type' => SiteSection::TYPE_GALLERY,
+        'title' => $category->name,
+        'navigation_label' => $category->name,
+        'slug' => $category->slug,
+        'state' => 'hidden',
+        'position' => 0,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => $category->id,
+    ], $overrides));
+}
