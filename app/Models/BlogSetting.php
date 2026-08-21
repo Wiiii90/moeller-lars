@@ -23,10 +23,15 @@ class BlogSetting extends Model
             ->where('type', SiteSection::TYPE_BLOG)
             ->firstOrFail();
 
+        return self::forSection($section);
+    }
+
+    public static function forSection(SiteSection|int $section): self
+    {
+        $sectionId = $section instanceof SiteSection ? (int) $section->getKey() : $section;
+
         /** @var self $settings */
-        $settings = self::query()
-            ->where('site_section_id', $section->getKey())
-            ->firstOrFail();
+        $settings = self::query()->where('site_section_id', $sectionId)->firstOrFail();
 
         return $settings;
     }
@@ -39,8 +44,14 @@ class BlogSetting extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (): never {
-            throw new LogicException('Blog settings cannot be deleted.');
+        static::deleting(function (self $settings): void {
+            /** @var SiteSection|null $section */
+            $section = $settings->siteSection()->first();
+            if ($section === null
+                || (string) $section->getAttribute('type') !== SiteSection::TYPE_JOURNAL
+                || (string) $section->getAttribute('template') !== SiteSection::JOURNAL_TEMPLATE_BLOG) {
+                throw new LogicException('Canonical legacy Blog settings cannot be deleted.');
+            }
         });
     }
 }
