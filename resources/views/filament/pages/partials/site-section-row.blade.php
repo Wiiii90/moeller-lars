@@ -25,13 +25,25 @@
         <span class="artist-page-row__path">{{ $path ?? 'Navigation only' }}</span>
     </div>
 
-    <div class="artist-page-row__placement">
-        <div class="artist-section__state" aria-label="Publication and navigation status">
-            <span class="{{ $section['state'] === 'published' ? 'is-published' : '' }}">{{ $section['state'] === 'published' ? 'Published' : 'Hidden' }}</span>
-            @if ($section['type'] !== 'home')
-                <span class="{{ $section['visible'] ? 'is-visible' : '' }}">{{ $section['visible'] ? 'In menu' : 'Off menu' }}</span>
-            @endif
-        </div>
+    <div class="artist-page-row__placement" aria-label="Placement for {{ $label }}">
+        @if ($section['type'] === 'home')
+            <span class="artist-page-row__fixed-state">Published · in menu</span>
+        @else
+            <div class="artist-page-row__toggles">
+                <button
+                    class="artist-placement-toggle {{ $section['state'] === 'published' ? 'is-on' : '' }}"
+                    type="button"
+                    wire:click="toggleSectionState({{ $section['id'] }})"
+                    aria-pressed="{{ $section['state'] === 'published' ? 'true' : 'false' }}"
+                >{{ $section['state'] === 'published' ? 'Published' : 'Hidden' }}</button>
+                <button
+                    class="artist-placement-toggle {{ $section['visible'] ? 'is-on' : '' }}"
+                    type="button"
+                    wire:click="toggleSectionNavigation({{ $section['id'] }})"
+                    aria-pressed="{{ $section['visible'] ? 'true' : 'false' }}"
+                >{{ $section['visible'] ? 'In menu' : 'Off menu' }}</button>
+            </div>
+        @endif
 
         @if ($section['type'] !== 'home' && $section['type'] !== 'navigation_group')
             <label class="artist-page-row__parent">
@@ -50,28 +62,9 @@
         @endif
     </div>
 
-    <div class="artist-page-row__count">
-        <strong>{{ $section['count'] }}</strong>
-        <span>{{ $section['count_label'] }}</span>
-    </div>
-
     <div class="artist-page-row__actions">
-        @if ($section['type'] !== 'home')
-            <button class="artist-action" type="button" wire:click="toggleSectionState({{ $section['id'] }})">
-                {{ $section['state'] === 'published' ? 'Hide' : 'Publish' }}
-            </button>
-            <button class="artist-action" type="button" wire:click="toggleSectionNavigation({{ $section['id'] }})">
-                {{ $section['visible'] ? 'Remove menu' : 'Add menu' }}
-            </button>
-        @endif
         @if ($section['editor_url'] && $section['editor_url'] !== $workspaceUrl)
             <a class="artist-action" href="{{ $section['editor_url'] }}">Settings</a>
-        @endif
-        @if ($section['preview_url'])
-            <a class="artist-action" href="{{ $section['preview_url'] }}" target="_blank" rel="noopener">Preview</a>
-        @endif
-        @if ($section['public_url'] && $section['state'] === 'published')
-            <a class="artist-action" href="{{ $section['public_url'] }}" target="_blank" rel="noopener">Live</a>
         @endif
         @if ($section['can_delete'])
             <button
