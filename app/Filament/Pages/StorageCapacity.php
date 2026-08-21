@@ -67,7 +67,7 @@ final class StorageCapacity extends Page
         $capacityService = app(MediaCapacityService::class);
         $snapshot = $capacityService->cachedSnapshot();
         $ratio = is_float($snapshot['authoritative_ratio']) ? $snapshot['authoritative_ratio'] : null;
-        $configurationValid = (bool) ($snapshot['configuration_valid'] ?? true);
+        $configurationValid = $snapshot['configuration_valid'];
 
         $this->capacity = [
             'configured' => $snapshot['configured'],
