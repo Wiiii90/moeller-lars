@@ -2,10 +2,11 @@
 
 namespace App\Filament\Resources\Exhibitions\Pages;
 
-use App\Domain\Admin\EditorialRecordService;
+use App\Domain\Content\JournalEntryOrderService;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Models\Exhibition;
+use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
@@ -18,19 +19,24 @@ class ListExhibitions extends Page
 
     protected string $view = 'filament.resources.exhibitions.pages.list-exhibitions';
 
+    public int $sectionId;
+
     /** @var list<array<string, mixed>> */
     public array $exhibitions = [];
 
     public function mount(): void
     {
+        $this->sectionId = $this->resolveSectionId();
         $this->loadExhibitions();
     }
 
     public function moveExhibition(int $exhibitionId, string $direction): void
     {
         /** @var Exhibition $exhibition */
-        $exhibition = Exhibition::query()->findOrFail($exhibitionId);
-        if (app(EditorialRecordService::class)->move($exhibition, $direction)) {
+        $exhibition = Exhibition::query()
+            ->where('site_section_id', $this->sectionId)
+            ->findOrFail($exhibitionId);
+        if (app(JournalEntryOrderService::class)->move($exhibition, $direction)) {
             Notification::make()->title('Exhibition order updated')->success()->send();
         }
 
@@ -43,7 +49,7 @@ class ListExhibitions extends Page
             Action::make('addExhibition')
                 ->label('Add exhibition')
                 ->icon(Heroicon::OutlinedPlus)
-                ->url(ExhibitionResource::getUrl('create')),
+                ->url(ExhibitionResource::getUrl('create', ['section' => $this->sectionId])),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
@@ -53,7 +59,11 @@ class ListExhibitions extends Page
     private function loadExhibitions(): void
     {
         /** @var EloquentCollection<int, Exhibition> $records */
-        $records = Exhibition::query()->orderBy('position')->orderBy('id')->get();
+        $records = Exhibition::query()
+            ->where('site_section_id', $this->sectionId)
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get();
         $lastIndex = $records->count() - 1;
 
         $this->exhibitions = $records->values()->map(static function (Exhibition $exhibition, int $index) use ($lastIndex): array {
@@ -72,10 +82,25 @@ class ListExhibitions extends Page
                 'meta' => $meta === [] ? 'No venue details' : implode(' · ', $meta),
                 'state' => (string) $exhibition->getAttribute('state'),
                 'edit_url' => ExhibitionResource::getUrl('edit', ['record' => $exhibition]),
-                'public_url' => $exhibition->getAttribute('state') === 'published' ? route('exhibitions.index') : null,
+                'public_url' => $exhibition->getAttribute('state') === 'published' ? ExhibitionResource::publicUrl($exhibition) : null,
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < $lastIndex,
             ];
         })->all();
+    }
+
+    private function resolveSectionId(): int
+    {
+        $sectionId = request()->integer('section');
+        abort_unless($sectionId > 0, 404);
+
+        $exists = SiteSection::query()
+            ->whereKey($sectionId)
+            ->where('type', SiteSection::TYPE_JOURNAL)
+            ->where('template', SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS)
+            ->exists();
+        abort_unless($exists, 404);
+
+        return $sectionId;
     }
 }
