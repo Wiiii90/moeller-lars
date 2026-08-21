@@ -7,7 +7,6 @@
             <div>
                 <p class="artist-workspace__kicker">Blog</p>
                 <h2>Editorial queue</h2>
-                <p>Drafts, scheduled posts and published writing in listing order. The Blog page itself remains opt-in from Pages.</p>
             </div>
             <div class="artist-workspace__summary">
                 <div><strong>{{ count($posts) }}</strong><span>Posts</span></div>
