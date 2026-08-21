@@ -38,13 +38,13 @@ final class SocialLinks
         $visible = [];
 
         foreach ($links ?? [] as $link) {
-            if (! is_array($link)) {
+            if (is_array($link) === false) {
                 continue;
             }
 
             $platform = $link['platform'] ?? null;
             $url = $link['url'] ?? null;
-            if (! is_string($platform) || ! self::supports($platform) || ! is_string($url) || ($link['visible'] ?? true) !== true) {
+            if (is_string($platform) === false || self::supports($platform) === false || is_string($url) === false || ($link['visible'] ?? true) !== true) {
                 continue;
             }
 
