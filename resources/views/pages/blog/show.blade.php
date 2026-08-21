@@ -1,20 +1,13 @@
 @extends('layouts.app')
 
-@php
-    $journalSection = isset($section) && $section instanceof \App\Models\SiteSection ? $section : null;
-    $canonicalPath = $journalSection !== null
-        ? $journalSection->publicPath().'/'.$post->slug
-        : '/blog/'.$post->slug;
-@endphp
-
 @section('title', $post->title.' · Lars Möller')
 @section('meta_description', $post->excerpt ?: $post->title)
-@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($canonicalPath))
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($section->publicPath().'/'.$post->slug))
 
 @section('content')
     <article
         class="blog-post"
-        data-matomo-event-category="Blog"
+        data-matomo-event-category="Journal"
         data-matomo-event-on-load="blog_view"
         data-matomo-event-name="{{ $post->title }}"
     >
