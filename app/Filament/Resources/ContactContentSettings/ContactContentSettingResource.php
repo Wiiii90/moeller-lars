@@ -24,7 +24,7 @@ final class ContactContentSettingResource extends Resource
 
     public static function getSettingsUrl(): string
     {
-        return static::getUrl('edit', ['record' => PublicContentSetting::contact()]);
+        return self::getUrl('edit', ['record' => PublicContentSetting::contact()]);
     }
 
     public static function getEloquentQuery(): Builder
