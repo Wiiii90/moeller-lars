@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaStorageBreakdown;
+use App\Domain\Media\MediaStorageUnits;
 use App\Models\MediaAsset;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -29,6 +30,9 @@ final class StorageCapacity extends Page
 
     /** @var list<array<string, mixed>> */
     public array $breakdown = [];
+
+    /** @var list<array<string, mixed>> */
+    public array $heavyConsumers = [];
 
     public int $availableAssets = 0;
 
@@ -60,40 +64,53 @@ final class StorageCapacity extends Page
 
     private function loadCapacity(): void
     {
-        $snapshot = app(MediaCapacityService::class)->cachedSnapshot();
+        $capacityService = app(MediaCapacityService::class);
+        $snapshot = $capacityService->cachedSnapshot();
         $ratio = is_float($snapshot['authoritative_ratio']) ? $snapshot['authoritative_ratio'] : null;
+        $configurationValid = (bool) ($snapshot['configuration_valid'] ?? true);
 
         $this->capacity = [
             'configured' => $snapshot['configured'],
+            'configuration_valid' => $configurationValid,
             'measurement_available' => $snapshot['measurement_available'],
             'status' => $snapshot['status'],
             'status_label' => match ($snapshot['status']) {
                 'full' => 'Allowance full',
                 'near_capacity' => 'Near capacity',
                 'healthy' => 'Healthy',
-                'unavailable' => 'Measurement unavailable',
+                'unavailable' => $configurationValid ? 'Measurement unavailable' : 'Allowance unavailable',
                 default => 'Allowance not configured',
             },
             'action' => match ($snapshot['status']) {
                 'full' => 'New media uploads are blocked until unused originals are removed or the operator raises the allowance.',
                 'near_capacity' => 'Capacity is approaching the configured ceiling. Review unused media before the next larger upload.',
+                'unavailable' => $configurationValid
+                    ? 'Existing media remains readable. New uploads stay blocked while authoritative usage cannot be verified.'
+                    : 'The operator storage allowance is invalid. Existing media remains readable; new uploads stay blocked until the runtime configuration is corrected.',
                 default => null,
             },
             'percent' => $ratio === null ? 0 : (int) round(min(1, $ratio) * 100),
-            'authoritative' => $this->formatBytes($snapshot['authoritative_bytes']),
-            'generated' => $this->formatBytes($snapshot['generated_bytes']),
-            'remaining' => $snapshot['configured'] ? $this->formatBytes($snapshot['remaining_bytes']) : '—',
-            'allowance' => $this->formatBytes($snapshot['quota_bytes']),
+            'authoritative' => MediaStorageUnits::formatBytes($snapshot['authoritative_bytes']),
+            'generated' => MediaStorageUnits::formatBytes($snapshot['generated_bytes']),
+            'remaining' => $snapshot['configured'] ? MediaStorageUnits::formatBytes($snapshot['remaining_bytes']) : '—',
+            'allowance' => MediaStorageUnits::formatBytes($snapshot['quota_bytes']),
             'original_files' => $snapshot['original_files'] ?? 0,
             'generated_files' => $snapshot['generated_files'] ?? 0,
+            'warning_threshold' => $capacityService->warningThresholdPercent().'%',
+            'unit_note' => 'Decimal units · 1 GB = 1,000,000,000 bytes',
         ];
 
-        $breakdown = app(MediaStorageBreakdown::class)->build($snapshot['authoritative_file_bytes'] ?? []);
+        $analysis = app(MediaStorageBreakdown::class)->analyze($snapshot['authoritative_file_bytes'] ?? []);
         $this->breakdown = array_map(function (array $row): array {
-            $row['display_bytes'] = $this->formatBytes((int) $row['bytes']);
+            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) $row['bytes']);
 
             return $row;
-        }, $breakdown);
+        }, $analysis['breakdown']);
+        $this->heavyConsumers = array_map(function (array $row): array {
+            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) $row['bytes']);
+
+            return $row;
+        }, $analysis['heavy_consumers']);
 
         $this->availableAssets = MediaAsset::query()->where('state', 'available')->count();
         $this->unusedAssets = MediaAsset::query()
@@ -103,23 +120,5 @@ final class StorageCapacity extends Page
             ->whereDoesntHave('cvEntries')
             ->whereDoesntHave('blogPosts')
             ->count();
-    }
-
-    private function formatBytes(?int $bytes): string
-    {
-        if ($bytes === null) {
-            return '—';
-        }
-        if ($bytes < 1024) {
-            return $bytes.' B';
-        }
-        if ($bytes < 1024 * 1024) {
-            return number_format($bytes / 1024, 1).' KB';
-        }
-        if ($bytes < 1024 * 1024 * 1024) {
-            return number_format($bytes / (1024 * 1024), 1).' MB';
-        }
-
-        return number_format($bytes / (1024 * 1024 * 1024), 2).' GB';
     }
 }
