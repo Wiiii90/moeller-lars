@@ -4,7 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use RuntimeException;
 
 return new class extends Migration
 {
@@ -59,7 +58,7 @@ return new class extends Migration
 
         $blogSectionId = DB::table('site_sections')->where('type', 'blog')->value('id');
         if (! is_numeric($blogSectionId)) {
-            throw new RuntimeException('The canonical Blog SiteSection must exist before normalizing Blog settings.');
+            throw new \RuntimeException('The canonical Blog SiteSection must exist before normalizing Blog settings.');
         }
 
         DB::table('blog_settings')->update(['site_section_id' => (int) $blogSectionId]);
