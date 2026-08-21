@@ -81,6 +81,10 @@ final class CustomPageSettingResource extends Resource
                                     TextInput::make('title')->required()->maxLength(240),
                                     TextInput::make('meta')->label('Organisation / context')->maxLength(240),
                                     TextInput::make('location')->maxLength(240),
+                                    TextInput::make('url')
+                                        ->label('Optional link')
+                                        ->url()
+                                        ->maxLength(2048),
                                     MarkdownEditor::make('body')
                                         ->label('Details')
                                         ->toolbarButtons([
