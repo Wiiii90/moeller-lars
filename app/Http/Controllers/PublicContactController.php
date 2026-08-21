@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Contact\ContactDeliveryReadiness;
 use App\Domain\Content\SitePreviewContext;
 use App\Mail\WebsiteContactMessage;
 use App\Models\PublicContentSetting;
@@ -15,7 +16,10 @@ use Throwable;
 
 class PublicContactController extends Controller
 {
-    public function __construct(private readonly SitePreviewContext $preview) {}
+    public function __construct(
+        private readonly SitePreviewContext $preview,
+        private readonly ContactDeliveryReadiness $deliveryReadiness,
+    ) {}
 
     public function show(): View
     {
@@ -44,25 +48,11 @@ class PublicContactController extends Controller
         ]);
 
         $generalSettings = PublicContentSetting::general();
-        $recipient = $generalSettings->getAttribute('contact_recipient_email');
-        if (! is_string($recipient) || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
-            $recipient = config('contact.recipient');
-        }
-        if (! is_string($recipient) || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
-            return back()->withErrors(['contact' => 'Message delivery is currently unavailable.'])->withInput();
-        }
+        $recipient = $this->deliveryReadiness->resolveRecipient($generalSettings);
+        $senderAddress = $this->deliveryReadiness->senderAddress();
+        $delivery = $this->deliveryReadiness->snapshot($generalSettings);
 
-        $senderAddress = config('mail.from.address');
-        if (! is_string($senderAddress) || filter_var($senderAddress, FILTER_VALIDATE_EMAIL) === false) {
-            return back()->withErrors(['contact' => 'Message delivery is currently unavailable.'])->withInput();
-        }
-        $senderName = config('mail.from.name');
-        if (! is_string($senderName) || trim($senderName) === '') {
-            $senderName = (string) config('app.name', 'Website');
-        }
-
-        $mailer = config('mail.default');
-        if (! is_string($mailer) || ! $this->mailerCanDeliver($mailer)) {
+        if ($recipient === null || $senderAddress === null || ! $delivery['mailer_ready']) {
             return back()->withErrors(['contact' => 'Message delivery is currently unavailable.'])->withInput();
         }
 
@@ -72,7 +62,7 @@ class PublicContactController extends Controller
                 visitorEmail: $data['email'],
                 messageBody: $data['message'],
                 senderAddress: $senderAddress,
-                senderName: $senderName,
+                senderName: $this->deliveryReadiness->senderName(),
             ));
         } catch (Throwable $exception) {
             Log::warning('Contact delivery failed.', ['exception' => $exception::class]);
@@ -81,45 +71,5 @@ class PublicContactController extends Controller
         }
 
         return back()->with('contact_success', 'Your message was sent.');
-    }
-
-    /** @param array<string, true> $visited */
-    private function mailerCanDeliver(string $mailer, array $visited = []): bool
-    {
-        if (isset($visited[$mailer])) {
-            return false;
-        }
-        $visited[$mailer] = true;
-
-        $configuration = config("mail.mailers.{$mailer}");
-        if (! is_array($configuration)) {
-            return false;
-        }
-
-        $transport = $configuration['transport'] ?? null;
-        if (! is_string($transport)) {
-            return false;
-        }
-
-        if (in_array($transport, ['smtp', 'sendmail', 'mailgun', 'ses', 'ses-v2', 'postmark', 'resend'], true)) {
-            return true;
-        }
-
-        if (! in_array($transport, ['failover', 'roundrobin'], true)) {
-            return false;
-        }
-
-        $mailers = $configuration['mailers'] ?? null;
-        if (! is_array($mailers) || $mailers === []) {
-            return false;
-        }
-
-        foreach ($mailers as $childMailer) {
-            if (! is_string($childMailer) || ! $this->mailerCanDeliver($childMailer, $visited)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }
