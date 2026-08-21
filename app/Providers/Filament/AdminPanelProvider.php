@@ -13,7 +13,7 @@ use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -31,6 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
             ->brandName('Lars Möller')
+            ->homeUrl(fn (): string => route('home'))
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -42,7 +43,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make()->label('Website'),
-                NavigationGroup::make()->label('Library'),
+                NavigationGroup::make()->label('Content'),
                 NavigationGroup::make()->label('Insights'),
                 NavigationGroup::make()->label('Settings'),
             ])
@@ -52,7 +53,7 @@ class AdminPanelProvider extends PanelProvider
                 StartSession::class,
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,
-                PreventRequestForgery::class,
+                VerifyCsrfToken::class,
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
