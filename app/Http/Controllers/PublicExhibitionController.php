@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Content\SafeRichTextRenderer;
+use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
 use App\Models\Exhibition;
 use App\Models\SiteSection;
@@ -14,15 +15,20 @@ final class PublicExhibitionController extends Controller
     public function __construct(
         private readonly SafeRichTextRenderer $richText,
         private readonly PublicMedia $media,
+        private readonly SitePreviewContext $preview,
     ) {}
 
     public function index(): View
     {
-        abort_unless(SiteSection::isPublished(SiteSection::TYPE_EXHIBITIONS), 404);
+        abort_unless($this->preview->sectionIsAvailable(SiteSection::TYPE_EXHIBITIONS), 404);
 
         /** @var Collection<int, Exhibition> $exhibitions */
         $exhibitions = Exhibition::query()
-            ->where('state', 'published')
+            ->when(
+                $this->preview->active(),
+                fn ($query) => $query->where('state', '<>', 'archived'),
+                fn ($query) => $query->where('state', 'published'),
+            )
             ->with(['mediaUsages.mediaAsset.variants'])
             ->orderBy('position')
             ->get();

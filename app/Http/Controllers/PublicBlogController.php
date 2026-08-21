@@ -4,24 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\SafeRichTextRenderer;
+use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
 use App\Models\BlogSetting;
 use App\Models\SiteSection;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 
 final class PublicBlogController extends Controller
 {
     public function __construct(
         private readonly SafeRichTextRenderer $richText,
         private readonly PublicMedia $media,
+        private readonly SitePreviewContext $preview,
     ) {}
 
     public function index(): View
     {
-        $this->requirePublishedBlog();
+        $this->requireAvailableBlog();
 
-        $posts = BlogEditorialService::publicQuery()
+        $posts = $this->postsQuery()
             ->with('coverMedia.variants')
             ->orderBy('position')
             ->get();
@@ -36,10 +39,10 @@ final class PublicBlogController extends Controller
 
     public function show(string $slug): View
     {
-        $this->requirePublishedBlog();
+        $this->requireAvailableBlog();
 
         /** @var BlogPost|null $post */
-        $post = BlogEditorialService::publicQuery()
+        $post = $this->postsQuery()
             ->where('slug', $slug)
             ->with('coverMedia.variants')
             ->first();
@@ -52,8 +55,18 @@ final class PublicBlogController extends Controller
         ]);
     }
 
-    private function requirePublishedBlog(): void
+    /** @return Builder<BlogPost> */
+    private function postsQuery(): Builder
     {
-        abort_unless(SiteSection::isPublished(SiteSection::TYPE_BLOG), 404);
+        if ($this->preview->active()) {
+            return BlogPost::query()->where('state', '<>', 'archived');
+        }
+
+        return BlogEditorialService::publicQuery();
+    }
+
+    private function requireAvailableBlog(): void
+    {
+        abort_unless($this->preview->sectionIsAvailable(SiteSection::TYPE_BLOG), 404);
     }
 }

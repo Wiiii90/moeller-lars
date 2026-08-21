@@ -2,6 +2,7 @@
 
 namespace App\Domain\Artwork;
 
+use App\Domain\Content\SitePreviewContext;
 use App\Models\Artwork;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,14 +11,19 @@ use LogicException;
 
 class PublicArtworkQuery
 {
+    public function __construct(private readonly SitePreviewContext $preview) {}
+
     /** @return Collection<int, Artwork> */
     public function category(string $slug): Collection
     {
         /** @var Collection<int, Artwork> $artworks */
         $artworks = $this->publicQuery()
-            ->whereHas('category.siteSection', fn (Builder $query) => $query
-                ->where('slug', $slug)
-                ->where('state', 'published'))
+            ->whereHas('category.siteSection', function (Builder $query) use ($slug): void {
+                $query->where('slug', $slug);
+                if (! $this->preview->active()) {
+                    $query->where('state', 'published');
+                }
+            })
             ->orderBy('position')
             ->get();
 
@@ -26,7 +32,7 @@ class PublicArtworkQuery
             ->all();
 
         if (count($positions) !== count(array_unique($positions))) {
-            throw new LogicException('Published artwork positions must be unique within a category.');
+            throw new LogicException('Visible artwork positions must be unique within a category.');
         }
 
         return $artworks;
@@ -90,7 +96,11 @@ class PublicArtworkQuery
     {
         return $this->publicQuery()
             ->where('slug', $slug)
-            ->whereHas('category.siteSection', fn (Builder $query) => $query->where('state', 'published'))
+            ->whereHas('category.siteSection', function (Builder $query): void {
+                if (! $this->preview->active()) {
+                    $query->where('state', 'published');
+                }
+            })
             ->first();
     }
 
@@ -119,9 +129,14 @@ class PublicArtworkQuery
 
         /** @var Builder<Artwork> $result */
         $result = $query
-            ->whereHas('category', fn (Builder $query) => $query
-                ->where('show_on_home', true)
-                ->whereHas('siteSection', fn (Builder $section) => $section->where('state', 'published')))
+            ->whereHas('category', function (Builder $query): void {
+                $query->where('show_on_home', true)
+                    ->whereHas('siteSection', function (Builder $section): void {
+                        if (! $this->preview->active()) {
+                            $section->where('state', 'published');
+                        }
+                    });
+            })
             ->whereNotNull('work_year');
 
         return $result;
@@ -130,8 +145,15 @@ class PublicArtworkQuery
     /** @return Builder<Artwork> */
     private function publicQuery(): Builder
     {
-        return Artwork::query()
-            ->where('state', 'published')
+        $query = Artwork::query()
             ->with(['category.siteSection', 'artworkMedia.mediaAsset.variants']);
+
+        if ($this->preview->active()) {
+            $query->where('state', '<>', 'archived');
+        } else {
+            $query->where('state', 'published');
+        }
+
+        return $query;
     }
 }
