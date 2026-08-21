@@ -26,20 +26,20 @@ final class PublicSiteSectionController extends Controller
         private readonly SitePreviewContext $preview,
     ) {}
 
-    public function show(string $category): View|RedirectResponse
+    public function show(string $section): View|RedirectResponse
     {
-        $query = SiteSection::query()->where('slug', $category);
+        $query = SiteSection::query()->where('slug', $section);
         $this->preview->constrainSectionQuery($query);
-        /** @var SiteSection|null $section */
-        $section = $query->first();
+        /** @var SiteSection|null $siteSection */
+        $siteSection = $query->first();
 
-        if ($section === null || (string) $section->getAttribute('type') === SiteSection::TYPE_GALLERY) {
-            return $this->artworks->category($category);
+        if ($siteSection === null || (string) $siteSection->getAttribute('type') === SiteSection::TYPE_GALLERY) {
+            return $this->artworks->category($section);
         }
 
-        return match ((string) $section->getAttribute('type')) {
-            SiteSection::TYPE_CUSTOM => $this->customPage($section),
-            SiteSection::TYPE_JOURNAL => $this->journal($section),
+        return match ((string) $siteSection->getAttribute('type')) {
+            SiteSection::TYPE_CUSTOM => $this->customPage($siteSection),
+            SiteSection::TYPE_JOURNAL => $this->journal($siteSection),
             default => abort(404),
         };
     }
@@ -85,7 +85,11 @@ final class PublicSiteSectionController extends Controller
             ->values();
 
         /** @var Collection<int, MediaAsset> $assets */
-        $assets = MediaAsset::query()->whereKey($mediaIds)->with('variants')->get()->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
+        $assets = MediaAsset::query()
+            ->whereKey($mediaIds)
+            ->with('variants')
+            ->get()
+            ->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
 
         return view('pages.custom', [
             'section' => $section,
