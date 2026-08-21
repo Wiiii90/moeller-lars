@@ -58,7 +58,7 @@ class AdminPanelProvider extends PanelProvider
                 ArtistDashboard::class,
                 ContactHealth::class,
             ])
-            ->navigation(fn (NavigationBuilder $builder): NavigationBuilder => $builder->groups($this->navigationGroups()))
+            ->navigation(fn (NavigationBuilder $builder): NavigationBuilder => $this->navigation($builder))
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -76,39 +76,35 @@ class AdminPanelProvider extends PanelProvider
             ], isPersistent: true);
     }
 
-    /** @return array<NavigationGroup> */
-    private function navigationGroups(): array
+    private function navigation(NavigationBuilder $builder): NavigationBuilder
     {
-        return [
-            NavigationGroup::make()
-                ->label('Website')
-                ->items([
-                    ...Dashboard::getNavigationItems(),
-                    ...SitePages::getNavigationItems(),
-                    ...$this->siteSectionNavigationItems(),
-                ]),
-            NavigationGroup::make()
-                ->label('Content')
-                ->items([
-                    ...MediaAssetResource::getNavigationItems(),
-                ]),
-            NavigationGroup::make()
-                ->label('Insights')
-                ->items([
-                    ...Analytics::getNavigationItems(),
-                    ...Activity::getNavigationItems(),
-                    ...StorageCapacity::getNavigationItems(),
-                ]),
-            NavigationGroup::make()
-                ->label('Settings')
-                ->items([
-                    NavigationItem::make('General')
-                        ->icon(Heroicon::OutlinedCog6Tooth)
-                        ->isActiveWhen(fn (): bool => original_request()->routeIs(PublicContentSettingResource::getNavigationItemActiveRoutePattern()))
-                        ->sort(10)
-                        ->url(fn (): string => PublicContentSettingResource::getNavigationUrl()),
-                ]),
-        ];
+        $pagesItem = SitePages::getNavigationItems()[0]
+            ->childItems($this->siteSectionNavigationItems())
+            ->extraAttributes(['data-artist-tree-root' => 'true']);
+
+        return $builder
+            ->items([
+                ...Dashboard::getNavigationItems(),
+                NavigationItem::make('General')
+                    ->icon(Heroicon::OutlinedGlobeAlt)
+                    ->isActiveWhen(fn (): bool => original_request()->routeIs(PublicContentSettingResource::getNavigationItemActiveRoutePattern()))
+                    ->sort(1)
+                    ->url(fn (): string => PublicContentSettingResource::getNavigationUrl()),
+                ...MediaAssetResource::getNavigationItems(),
+            ])
+            ->groups([
+                NavigationGroup::make()
+                    ->label('Website')
+                    ->collapsible()
+                    ->items([$pagesItem]),
+                NavigationGroup::make()
+                    ->label('Insights')
+                    ->items([
+                        ...Analytics::getNavigationItems(),
+                        ...Activity::getNavigationItems(),
+                        ...StorageCapacity::getNavigationItems(),
+                    ]),
+            ]);
     }
 
     /** @return array<NavigationItem> */
@@ -120,38 +116,50 @@ class AdminPanelProvider extends PanelProvider
             ->orderBy('id')
             ->get();
 
-        $items = [];
-        $sort = 10;
+        /** @var array<int, list<SiteSection>> $childrenByParent */
+        $childrenByParent = [];
+        foreach ($sections as $section) {
+            $parentId = $section->getAttribute('parent_id');
+            if (is_numeric($parentId)) {
+                $childrenByParent[(int) $parentId][] = $section;
+            }
+        }
 
+        $items = [];
         foreach ($sections as $section) {
             if ($section->getAttribute('parent_id') !== null) {
                 continue;
             }
 
-            $items[] = $this->siteSectionNavigationItem($section, depth: 0, sort: $sort++);
-
-            foreach ($sections as $child) {
-                if ((int) $child->getAttribute('parent_id') !== (int) $section->getKey()) {
-                    continue;
-                }
-
-                $items[] = $this->siteSectionNavigationItem($child, depth: 1, sort: $sort++);
-            }
+            $items[] = $this->siteSectionNavigationItem($section, $childrenByParent);
         }
 
         return $items;
     }
 
-    private function siteSectionNavigationItem(SiteSection $section, int $depth, int $sort): NavigationItem
+    /** @param array<int, list<SiteSection>> $childrenByParent */
+    private function siteSectionNavigationItem(SiteSection $section, array $childrenByParent): NavigationItem
     {
         $label = trim((string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')));
-        if ($depth > 0) {
-            $label = '↳ '.$label;
+        $children = $childrenByParent[(int) $section->getKey()] ?? [];
+
+        $item = NavigationItem::make($label)
+            ->key('site-section-'.$section->getKey())
+            ->url(SitePages::getUrl().'#site-section-'.$section->getKey())
+            ->extraAttributes([
+                'data-artist-site-section' => (string) $section->getKey(),
+                'data-artist-site-section-type' => (string) $section->getAttribute('type'),
+            ]);
+
+        if ($children !== []) {
+            $item
+                ->icon(Heroicon::OutlinedFolder)
+                ->childItems(array_map(
+                    fn (SiteSection $child): NavigationItem => $this->siteSectionNavigationItem($child, $childrenByParent),
+                    $children,
+                ));
         }
 
-        return NavigationItem::make($label)
-            ->parentItem('Pages')
-            ->sort($sort)
-            ->url(SitePages::getUrl().'#site-section-'.$section->getKey());
+        return $item;
     }
 }
