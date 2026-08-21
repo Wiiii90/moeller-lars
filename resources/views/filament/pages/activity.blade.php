@@ -4,7 +4,6 @@
             <div>
                 <p class="artist-workspace__kicker">Editorial history</p>
                 <h2>Activity</h2>
-                <p>A compact record of administrative and editorial changes. Visitor analytics stay in Analytics; immutable security audit data stays separate from this working history.</p>
             </div>
         </header>
 

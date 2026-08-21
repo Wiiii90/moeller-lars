@@ -1,49 +1,20 @@
 <x-filament-panels::page>
-    @php
-        $allSections = collect($sections)->flatMap(fn (array $section) => [$section, ...$section['children']]);
-        $published = $allSections->where('state', 'published')->count();
-        $visible = $allSections->where('visible', true)->count();
-        $galleries = $allSections->where('type', 'gallery')->count();
-    @endphp
-
-    <div class="artist-workspace">
+    <div class="artist-workspace artist-pages">
         <header class="artist-workspace__head">
             <div>
                 <p class="artist-workspace__kicker">Site structure</p>
-                <h2>Public pages</h2>
-                <p>Create Galleries, Journals, Custom Pages and navigation-only nodes, then arrange them into the public page tree. Journal templates provide Blog or Exhibitions content while Custom Pages are assembled from reusable components.</p>
-            </div>
-
-            <div class="artist-workspace__summary" aria-label="Site structure summary">
-                <div><strong>{{ $allSections->count() }}</strong><span>Sections</span></div>
-                <div><strong>{{ $galleries }}</strong><span>Galleries</span></div>
-                <div><strong>{{ $published }}</strong><span>Published</span></div>
-                <div><strong>{{ $visible }}</strong><span>In menu</span></div>
+                <h2>Pages</h2>
             </div>
         </header>
 
-        <section aria-label="Public site sections">
-            <div class="artist-section-list">
-                @foreach ($sections as $section)
-                    @include('filament.pages.partials.site-section-row', ['section' => $section])
+        <section class="artist-page-list" aria-label="Public site structure">
+            @foreach ($sections as $section)
+                @include('filament.pages.partials.site-section-row', ['section' => $section])
 
-                    @if ($section['children'] !== [])
-                        <details open wire:key="site-section-children-{{ $section['id'] }}">
-                            <summary class="artist-workspace__kicker">{{ count($section['children']) }} child {{ count($section['children']) === 1 ? 'page' : 'pages' }}</summary>
-                            <div class="artist-section-list">
-                                @foreach ($section['children'] as $child)
-                                    @include('filament.pages.partials.site-section-row', ['section' => $child])
-                                @endforeach
-                            </div>
-                        </details>
-                    @endif
+                @foreach ($section['children'] as $child)
+                    @include('filament.pages.partials.site-section-row', ['section' => $child])
                 @endforeach
-            </div>
+            @endforeach
         </section>
-
-        <footer class="artist-workspace__footnote">
-            <span>Save editorial work first, then use Preview to inspect hidden pages, draft content and draft navigation before publishing.</span>
-            <span>Navigation Nodes organize children without owning a public route. Files, Analytics and Storage remain global tools.</span>
-        </footer>
     </div>
 </x-filament-panels::page>

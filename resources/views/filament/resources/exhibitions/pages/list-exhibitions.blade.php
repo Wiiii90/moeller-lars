@@ -6,7 +6,6 @@
             <div>
                 <p class="artist-workspace__kicker">Exhibitions</p>
                 <h2>Exhibition programme</h2>
-                <p>Exhibitions in their public sequence, with venue context and publication state visible without opening a database-style table.</p>
             </div>
             <div class="artist-workspace__summary">
                 <div><strong>{{ count($exhibitions) }}</strong><span>Exhibitions</span></div>

@@ -6,7 +6,6 @@
             <div>
                 <p class="artist-workspace__kicker">Media</p>
                 <h2>Find, reuse and manage media</h2>
-                <p>The media workspace is the reusable asset store for artworks, exhibitions, Vita, Blog and site identity. Assignments are references; detaching content does not delete the underlying media.</p>
             </div>
             <div class="artist-workspace__summary">
                 <div><strong>{{ $total }}</strong><span>Matches</span></div>

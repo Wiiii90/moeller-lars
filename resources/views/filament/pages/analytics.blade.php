@@ -146,7 +146,6 @@
             <div class="analytics-head__intro">
                 <p class="analytics-kicker">Site intelligence</p>
                 <h2>Human analytics</h2>
-                <p>Aggregate Matomo reporting for audience, content and meaningful interactions. Operational telemetry is kept separate below.</p>
             </div>
 
             <div class="analytics-head__controls">
@@ -219,55 +218,12 @@
                 @endforeach
             </section>
 
-            <section class="analytics-section analytics-overview">
-                <div class="analytics-section__head">
-                    <div>
-                        <p class="analytics-kicker">Traffic</p>
-                        <h3>Visits over time</h3>
-                    </div>
-                    <div class="analytics-legend" aria-label="Chart legend">
-                        <span><i class="is-visits"></i>Visits</span>
-                        <span><i class="is-actions"></i>Tracked actions</span>
-                    </div>
-                </div>
-
-                <div class="analytics-overview__grid">
-                    <div class="analytics-trend">
-                        @if (! $weekdayAvailable)
-                            <p class="analytics-empty">Traffic time-series report unavailable.</p>
-                        @elseif ($trendChart === [])
-                            <p class="analytics-empty">No time-series activity in this period.</p>
-                        @else
-                            <svg viewBox="0 0 1000 260" role="img" aria-label="Visits and tracked actions trend">
-                                <line x1="22" y1="238" x2="978" y2="238" class="analytics-chart__grid" />
-                                <line x1="22" y1="130" x2="978" y2="130" class="analytics-chart__grid" />
-                                <line x1="22" y1="22" x2="978" y2="22" class="analytics-chart__grid" />
-                                <polyline points="{{ $trendChart['actions_points'] }}" class="analytics-chart__line is-actions" />
-                                <polyline points="{{ $trendChart['visits_points'] }}" class="analytics-chart__line is-visits" />
-                            </svg>
-                            <div class="analytics-axis"><span>{{ $trendChart['start'] }}</span><span>{{ $trendChart['end'] }}</span></div>
-                        @endif
-                    </div>
-
-                    <dl class="analytics-highlights">
-                        @foreach ($audienceHighlights as $highlight)
-                            <div>
-                                <dt>{{ $highlight['label'] }}</dt>
-                                <dd>{{ $highlight['value'] }}</dd>
-                                <small>{{ $highlight['detail'] }}</small>
-                            </div>
-                        @endforeach
-                    </dl>
-                </div>
-            </section>
-
             <section class="analytics-section analytics-geography">
                 <div class="analytics-section__head">
                     <div>
                         <p class="analytics-kicker">Audience</p>
                         <h3>Geography</h3>
                     </div>
-                    <p>Country-level aggregates only.</p>
                 </div>
 
                 <div class="analytics-geography__grid">
@@ -373,13 +329,54 @@
                 @endif
             </section>
 
+            <section class="analytics-section analytics-overview">
+                <div class="analytics-section__head">
+                    <div>
+                        <p class="analytics-kicker">Traffic</p>
+                        <h3>Visits over time</h3>
+                    </div>
+                    <div class="analytics-legend" aria-label="Chart legend">
+                        <span><i class="is-visits"></i>Visits</span>
+                        <span><i class="is-actions"></i>Tracked actions</span>
+                    </div>
+                </div>
+
+                <div class="analytics-overview__grid">
+                    <div class="analytics-trend">
+                        @if (! $weekdayAvailable)
+                            <p class="analytics-empty">Traffic time-series report unavailable.</p>
+                        @elseif ($trendChart === [])
+                            <p class="analytics-empty">No time-series activity in this period.</p>
+                        @else
+                            <svg viewBox="0 0 1000 260" role="img" aria-label="Visits and tracked actions trend">
+                                <line x1="22" y1="238" x2="978" y2="238" class="analytics-chart__grid" />
+                                <line x1="22" y1="130" x2="978" y2="130" class="analytics-chart__grid" />
+                                <line x1="22" y1="22" x2="978" y2="22" class="analytics-chart__grid" />
+                                <polyline points="{{ $trendChart['actions_points'] }}" class="analytics-chart__line is-actions" />
+                                <polyline points="{{ $trendChart['visits_points'] }}" class="analytics-chart__line is-visits" />
+                            </svg>
+                            <div class="analytics-axis"><span>{{ $trendChart['start'] }}</span><span>{{ $trendChart['end'] }}</span></div>
+                        @endif
+                    </div>
+
+                    <dl class="analytics-highlights">
+                        @foreach ($audienceHighlights as $highlight)
+                            <div>
+                                <dt>{{ $highlight['label'] }}</dt>
+                                <dd>{{ $highlight['value'] }}</dd>
+                                <small>{{ $highlight['detail'] }}</small>
+                            </div>
+                        @endforeach
+                    </dl>
+                </div>
+            </section>
+
             <section class="analytics-section">
                 <div class="analytics-section__head">
                     <div>
                         <p class="analytics-kicker">Discovery</p>
                         <h3>Acquisition</h3>
                     </div>
-                    <p>How visitors reached the site.</p>
                 </div>
 
                 @if ($hasAcquisition || $hasUnavailableAcquisition)
@@ -410,7 +407,6 @@
                         <p class="analytics-kicker">Editorial</p>
                         <h3>Content & journeys</h3>
                     </div>
-                    <p>What was viewed and where sessions moved.</p>
                 </div>
 
                 @if ($hasJourneys || $hasUnavailableJourneys)
@@ -464,7 +460,6 @@
                         <p class="analytics-kicker">Artwork</p>
                         <h3>Artist interactions</h3>
                     </div>
-                    <p>Events that describe meaningful public engagement.</p>
                 </div>
 
                 <div class="analytics-interaction-strip">
@@ -499,7 +494,6 @@
                         <p class="analytics-kicker">Context</p>
                         <h3>Engagement & technology</h3>
                     </div>
-                    <p>Aggregate compatibility and session-depth context.</p>
                 </div>
 
                 @if ($hasTechnology || $hasUnavailableTechnology)
@@ -545,7 +539,6 @@
                     <p class="analytics-kicker">Application</p>
                     <h3>Operational health</h3>
                 </div>
-                <p>Local aggregate errors, bots, request performance and admin traffic.</p>
             </div>
 
             <div class="analytics-operational-strip">

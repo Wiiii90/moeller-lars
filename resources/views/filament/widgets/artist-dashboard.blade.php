@@ -2,27 +2,32 @@
     <div class="artist-workspace artist-dashboard">
         <header class="artist-workspace__head">
             <div>
-                <div class="artist-dashboard__quick-actions" aria-label="Quick actions">
-                    {{ $this->addArtworkAction }}
-                    {{ $this->managePagesAction }}
-                    {{ $this->filesAction }}
-                    {{ $this->generalAction }}
-                    {{ $this->openSiteAction }}
-                </div>
                 <p class="artist-workspace__kicker">Editorial overview</p>
                 <h2>Website at a glance</h2>
-                <p>Traffic, recent editorial work and the few site conditions that need attention.</p>
             </div>
-        </header>
 
-        @if ($quickActions !== [])
-            <nav class="artist-dashboard__quick-actions" aria-label="Personalized quick actions">
-                <span class="artist-workspace__kicker">For you · Based on repeated admin work</span>
-                @foreach ($quickActions as $action)
-                    <a class="artist-action" href="{{ $action['url'] }}" title="{{ $action['reason'] }}">{{ $action['label'] }}</a>
+            <nav class="artist-dashboard__quick-actions" aria-label="Quick actions">
+                @foreach ($quickActions as $quickAction)
+                    @switch($quickAction['key'])
+                        @case('add_artwork')
+                            {{ $this->addArtworkAction }}
+                            @break
+                        @case('pages')
+                            {{ $this->managePagesAction }}
+                            @break
+                        @case('files')
+                            {{ $this->filesAction }}
+                            @break
+                        @case('general')
+                            {{ $this->generalAction }}
+                            @break
+                        @case('open_site')
+                            {{ $this->openSiteAction }}
+                            @break
+                    @endswitch
                 @endforeach
             </nav>
-        @endif
+        </header>
 
         <div class="artist-dashboard__layout">
             <section class="artist-dashboard__content" aria-label="Traffic and engagement">

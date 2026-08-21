@@ -2,32 +2,36 @@
 
 namespace App\Domain\Admin;
 
-use App\Filament\Pages\SitePages;
-use App\Filament\Resources\MediaAssets\MediaAssetResource;
-use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\AdminActionStat;
+use App\Models\AuditEvent;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 final class AdminQuickActionService
 {
-    private const MAX_PERSONALIZED = 3;
+    private const DEFAULT_ORDER = [
+        'add_artwork',
+        'pages',
+        'files',
+        'general',
+        'open_site',
+    ];
 
-    private const MIN_DESTINATION_USES = 2;
+    private const RECENT_SEQUENCE_LIMIT = 120;
 
-    /**
-     * @return array<int, array{key:string,label:string,description:string,url:string,reason:string,score:int}>
-     */
+    /** @return list<array{key:string,score:int}> */
     public function forUser(User $user): array
     {
+        $scores = [];
+        foreach (self::DEFAULT_ORDER as $index => $key) {
+            $scores[$key] = 100 - ($index * 5);
+        }
+
         /** @var EloquentCollection<int, AdminActionStat> $stats */
         $stats = AdminActionStat::query()
             ->where('admin_user_id', $user->getKey())
             ->get(['action_key', 'use_count', 'last_used_at']);
-
-        /** @var array<string, array{use_count:int,last_used_at:CarbonInterface}> $destinations */
-        $destinations = [];
 
         foreach ($stats as $stat) {
             $destinationKey = $this->destinationKey((string) $stat->getAttribute('action_key'));
@@ -42,76 +46,35 @@ final class AdminQuickActionService
                 continue;
             }
 
-            if (! isset($destinations[$destinationKey])) {
-                $destinations[$destinationKey] = [
-                    'use_count' => $useCount,
-                    'last_used_at' => $lastUsedAt,
-                ];
-
-                continue;
-            }
-
-            $destinations[$destinationKey]['use_count'] += $useCount;
-            if ($lastUsedAt->getTimestamp() > $destinations[$destinationKey]['last_used_at']->getTimestamp()) {
-                $destinations[$destinationKey]['last_used_at'] = $lastUsedAt;
-            }
+            $scores[$destinationKey] += ($this->frequencyTier($useCount) * 100)
+                + ($this->recencyTier($lastUsedAt) * 10);
         }
 
-        $ranked = [];
-        foreach ($destinations as $key => $usage) {
-            if ($usage['use_count'] < self::MIN_DESTINATION_USES) {
-                continue;
-            }
-
-            $definition = $this->definition($key);
-            if ($definition === null) {
-                continue;
-            }
-
-            $ranked[] = [
-                ...$definition,
-                'reason' => $this->reason($usage['use_count'], $usage['last_used_at']),
-                'score' => ($this->frequencyTier($usage['use_count']) * 10) + $this->recencyTier($usage['last_used_at']),
-                'use_count' => $usage['use_count'],
-                'last_used_at' => $usage['last_used_at'],
-            ];
+        foreach ($this->sequenceBonuses($user) as $key => $bonus) {
+            $scores[$key] += $bonus;
         }
 
-        usort($ranked, static function (array $left, array $right): int {
-            $score = $right['score'] <=> $left['score'];
+        $ranked = self::DEFAULT_ORDER;
+        $defaultRanks = array_flip(self::DEFAULT_ORDER);
+        usort($ranked, static function (string $left, string $right) use ($scores, $defaultRanks): int {
+            $score = $scores[$right] <=> $scores[$left];
             if ($score !== 0) {
                 return $score;
             }
 
-            $frequency = $right['use_count'] <=> $left['use_count'];
-            if ($frequency !== 0) {
-                return $frequency;
-            }
-
-            $recency = $right['last_used_at']->getTimestamp() <=> $left['last_used_at']->getTimestamp();
-            if ($recency !== 0) {
-                return $recency;
-            }
-
-            return $left['key'] <=> $right['key'];
+            return $defaultRanks[$left] <=> $defaultRanks[$right];
         });
 
         return array_map(
-            static fn (array $action): array => [
-                'key' => $action['key'],
-                'label' => $action['label'],
-                'description' => $action['description'],
-                'url' => $action['url'],
-                'reason' => $action['reason'],
-                'score' => $action['score'],
-            ],
-            array_slice($ranked, 0, self::MAX_PERSONALIZED),
+            static fn (string $key): array => ['key' => $key, 'score' => $scores[$key]],
+            $ranked,
         );
     }
 
     private function destinationKey(string $actionKey): ?string
     {
         return match (true) {
+            $actionKey === 'artwork.created' => 'add_artwork',
             str_starts_with($actionKey, 'artwork.'),
             str_starts_with($actionKey, 'artwork_category.'),
             str_starts_with($actionKey, 'site_section.'),
@@ -125,35 +88,47 @@ final class AdminQuickActionService
         };
     }
 
-    /** @return array{key:string,label:string,description:string,url:string}|null */
-    private function definition(string $key): ?array
+    /** @return array<string, int> */
+    private function sequenceBonuses(User $user): array
     {
-        return match ($key) {
-            'pages' => [
-                'key' => $key,
-                'label' => 'Manage pages',
-                'description' => 'Return to the public page tree and its page-specific content workspaces.',
-                'url' => SitePages::getUrl(),
-            ],
-            'files' => [
-                'key' => $key,
-                'label' => 'Open Files',
-                'description' => 'Find, inspect and reuse media files.',
-                'url' => MediaAssetResource::getUrl('index'),
-            ],
-            'general' => [
-                'key' => $key,
-                'label' => 'General',
-                'description' => 'Edit site identity, contact, social and legal settings.',
-                'url' => PublicContentSettingResource::getNavigationUrl(),
-            ],
-            default => null,
-        };
+        $actions = AuditEvent::query()
+            ->where('admin_user_id', $user->getKey())
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->limit(self::RECENT_SEQUENCE_LIMIT)
+            ->pluck('action')
+            ->reverse()
+            ->values();
+
+        $sequence = [];
+        foreach ($actions as $action) {
+            $key = $this->destinationKey((string) $action);
+            if ($key !== null) {
+                $sequence[] = $key;
+            }
+        }
+
+        if (count($sequence) < 2) {
+            return [];
+        }
+
+        $current = $sequence[count($sequence) - 1];
+        $transitions = [];
+        for ($index = 0, $last = count($sequence) - 1; $index < $last; $index++) {
+            if ($sequence[$index] !== $current || $sequence[$index + 1] === $current) {
+                continue;
+            }
+
+            $next = $sequence[$index + 1];
+            $transitions[$next] = ($transitions[$next] ?? 0) + 1;
+        }
+
+        return array_map(static fn (int $count): int => min(100, $count * 25), $transitions);
     }
 
     private function frequencyTier(int $useCount): int
     {
-        return min(7, (int) floor(log($useCount, 2)) + 1);
+        return min(7, (int) floor(log(max(1, $useCount), 2)) + 1);
     }
 
     private function recencyTier(CarbonInterface $lastUsedAt): int
@@ -167,12 +142,5 @@ final class AdminQuickActionService
             $age <= 7776000 => 1,
             default => 0,
         };
-    }
-
-    private function reason(int $useCount, CarbonInterface $lastUsedAt): string
-    {
-        $uses = $useCount === 1 ? '1 related action' : $useCount.' related actions';
-
-        return $uses.' · last used '.$lastUsedAt->diffForHumans();
     }
 }

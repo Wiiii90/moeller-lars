@@ -7,9 +7,14 @@
 @section('content')
     @php
         $isPreview = app(\App\Domain\Content\SitePreviewContext::class)->active();
+        $pageSlug = (string) $section->slug;
+        $isLegacyProfile = $pageSlug === 'cv';
+        $isContactPage = $pageSlug === 'contact';
     @endphp
-    <div class="custom-page" aria-label="{{ $section->title }}">
-        <h2 class="category-heading">{{ $section->title }}</h2>
+    <div class="custom-page custom-page--{{ $pageSlug }}" aria-label="{{ $section->title }}">
+        @unless ($isLegacyProfile || $isContactPage)
+            <h2 class="category-heading">{{ $section->title }}</h2>
+        @endunless
 
         @forelse ($blocks as $blockIndex => $block)
             @php
@@ -21,7 +26,13 @@
             @endphp
 
             @if ($type === 'text' || $type === 'list')
-                <section class="custom-page__component @if ($asset !== null && $variant !== null) has-media @endif @if ($divider) has-divider @endif">
+                <section @class([
+                    'custom-page__component',
+                    'has-media' => $asset !== null && $variant !== null,
+                    'has-divider' => $divider,
+                    'is-profile-list' => $isLegacyProfile && $type === 'list' && $blockIndex === 0,
+                    'is-profile-text' => $isLegacyProfile && $type === 'text',
+                ])>
                     <div class="custom-page__copy">
                         @if (filled($block['title'] ?? null))
                             <h3>{{ $block['title'] }}</h3>
@@ -86,5 +97,12 @@
         @empty
             <p class="public-empty-state">This page does not have published content yet.</p>
         @endforelse
+
+        @if ($isLegacyProfile && $generalSettings->legal_disclaimer !== null)
+            <section class="legal-disclaimer custom-page__legal" aria-labelledby="legal-disclaimer-heading">
+                <h2 id="legal-disclaimer-heading">Haftungsablehnung</h2>
+                <p>{{ $generalSettings->legal_disclaimer }}</p>
+            </section>
+        @endif
     </div>
 @endsection

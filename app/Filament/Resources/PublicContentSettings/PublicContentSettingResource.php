@@ -50,7 +50,7 @@ class PublicContentSettingResource extends Resource
     {
         return $schema->components([
             Section::make('Site identity')
-                ->description('Shared browser identity for the public website.')
+                ->extraAttributes(['class' => 'artist-general-section'])
                 ->schema([
                     MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
                         ->nullable()
@@ -58,21 +58,20 @@ class PublicContentSettingResource extends Resource
                         ->columnSpanFull(),
                 ]),
             Section::make('Public contact')
-                ->description('Public contact data is separate from the private address that receives form submissions.')
+                ->extraAttributes(['class' => 'artist-general-section'])
                 ->schema([
                     TextInput::make('public_email')
                         ->label('Public email')
                         ->email()
                         ->maxLength(254)
-                        ->nullable()
-                        ->helperText('The address visitors may see on the public website.'),
+                        ->nullable(),
                     Toggle::make('show_public_email')
                         ->label('Show public email')
                         ->default(true),
                 ])
                 ->columns(2),
             Section::make('Social links')
-                ->description('Public artist profiles. Each supported platform can be configured once and hidden without deletion.')
+                ->extraAttributes(['class' => 'artist-general-section'])
                 ->schema([
                     Repeater::make('social_links')
                         ->label('Profiles')
@@ -98,7 +97,7 @@ class PublicContentSettingResource extends Resource
                         ->columnSpanFull(),
                 ]),
             Section::make('Contact delivery')
-                ->description('Only the private recipient lives here. SMTP credentials, sender identity, DKIM and TLS remain runtime/platform configuration.')
+                ->extraAttributes(['class' => 'artist-general-section'])
                 ->schema([
                     TextInput::make('contact_recipient_email')
                         ->label('Private delivery recipient')
@@ -108,7 +107,7 @@ class PublicContentSettingResource extends Resource
                         ->helperText('If empty, the server-configured fallback recipient is used.'),
                 ]),
             Section::make('Legal')
-                ->description('Site-wide public disclaimer text displayed where the public design includes it.')
+                ->extraAttributes(['class' => 'artist-general-section'])
                 ->schema([
                     Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
                 ])

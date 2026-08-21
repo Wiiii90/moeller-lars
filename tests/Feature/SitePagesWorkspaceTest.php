@@ -16,17 +16,18 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
-it('serves the current Pages workspace to an admin', function (): void {
+it('serves the concise Pages placement workspace to an admin', function (): void {
     $admin = User::factory()->admin()->create();
 
     $this->actingAs($admin, 'web')
         ->get(SitePages::getUrl())
         ->assertSuccessful()
-        ->assertSee('Public pages')
+        ->assertSee('Pages')
         ->assertSee('Site structure')
         ->assertSee('Preview site')
         ->assertSee('Add page/section')
-        ->assertSee('Galleries, Journals, Custom Pages and navigation-only nodes');
+        ->assertDontSee('Galleries, Journals, Custom Pages and navigation-only nodes')
+        ->assertDontSee('Save editorial work first');
 });
 
 it('keeps Home pinned outside normal page reordering', function (): void {

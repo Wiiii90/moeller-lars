@@ -12,9 +12,14 @@ class EditPublicContentSetting extends EditRecord
 {
     protected static string $resource = PublicContentSettingResource::class;
 
+    public function getHeading(): string
+    {
+        return 'General';
+    }
+
     public function getBreadcrumbs(): array
     {
-        return ['Website settings'];
+        return [];
     }
 
     protected function handleRecordUpdate(Model $record, array $data): Model
