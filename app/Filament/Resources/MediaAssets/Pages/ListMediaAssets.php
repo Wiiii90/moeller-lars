@@ -7,6 +7,7 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
@@ -153,10 +154,7 @@ final class ListMediaAssets extends Page
 
         /** @var Builder<MediaAsset> $query */
         $query = MediaAsset::query()
-            ->with(['variants' => static fn ($variants) => $variants
-                ->where('variant_kind', MediaIngestService::THUMBNAIL_KIND)
-                ->where('transform_profile', MediaIngestService::TRANSFORM_PROFILE)
-                ->where('state', 'available')])
+            ->with('variants')
             ->withCount(['artworks', 'exhibitions', 'cvEntries', 'blogPosts', 'siteIdentitySettings']);
 
         $term = trim($this->search);
@@ -196,7 +194,11 @@ final class ListMediaAssets extends Page
 
         $this->assets = $records->map(static function (MediaAsset $asset): array {
             /** @var MediaVariant|null $thumbnail */
-            $thumbnail = $asset->getRelationValue('variants')->first();
+            $thumbnail = $asset->getRelationValue('variants')->first(static function (MediaVariant $variant): bool {
+                return $variant->getAttribute('variant_kind') === MediaIngestService::THUMBNAIL_KIND
+                    && $variant->getAttribute('transform_profile') === MediaIngestService::TRANSFORM_PROFILE
+                    && $variant->getAttribute('state') === 'available';
+            });
             $usageCounts = [
                 'Artwork' => (int) $asset->getAttribute('artworks_count'),
                 'Exhibition' => (int) $asset->getAttribute('exhibitions_count'),
@@ -212,6 +214,7 @@ final class ListMediaAssets extends Page
                 }
             }
             $mime = (string) $asset->getAttribute('mime_type');
+            $createdAt = $asset->getAttribute('created_at');
 
             return [
                 'id' => (int) $asset->getKey(),
@@ -232,7 +235,7 @@ final class ListMediaAssets extends Page
                 'thumbnail_url' => $thumbnail === null ? null : route('admin.media.variant', $thumbnail),
                 'thumbnail_width' => $thumbnail?->getAttribute('width'),
                 'thumbnail_height' => $thumbnail?->getAttribute('height'),
-                'created' => optional($asset->getAttribute('created_at'))->format('Y-m-d') ?: '—',
+                'created' => $createdAt instanceof DateTimeInterface ? $createdAt->format('Y-m-d') : '—',
                 'edit_url' => MediaAssetResource::getUrl('edit', ['record' => $asset->getKey()]),
                 'preview_url' => MediaAssetResource::getUrl('view', ['record' => $asset->getKey()]),
             ];
@@ -289,15 +292,34 @@ final class ListMediaAssets extends Page
     /** @param Builder<MediaAsset> $query */
     private function applyContextFilter(Builder $query): void
     {
-        match ($this->context) {
-            'artwork' => $query->whereHas('artworks'),
-            'exhibition' => $query->whereHas('exhibitions'),
-            'vita' => $query->whereHas('cvEntries'),
-            'blog' => $query->whereHas('blogPosts'),
-            'identity' => $query->whereHas('siteIdentitySettings'),
-            'unassigned' => $this->applyUsageFilter($query, false),
-            default => null,
-        };
+        if ($this->context === 'artwork') {
+            $query->whereHas('artworks');
+
+            return;
+        }
+        if ($this->context === 'exhibition') {
+            $query->whereHas('exhibitions');
+
+            return;
+        }
+        if ($this->context === 'vita') {
+            $query->whereHas('cvEntries');
+
+            return;
+        }
+        if ($this->context === 'blog') {
+            $query->whereHas('blogPosts');
+
+            return;
+        }
+        if ($this->context === 'identity') {
+            $query->whereHas('siteIdentitySettings');
+
+            return;
+        }
+        if ($this->context === 'unassigned') {
+            $this->applyUsageFilter($query, false);
+        }
     }
 
     private static function formatBytes(int $bytes): string

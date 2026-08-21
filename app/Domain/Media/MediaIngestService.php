@@ -65,7 +65,10 @@ class MediaIngestService
         $thumbnailKey = $prepared['thumbnail_bytes'] === null
             ? null
             : 'variants/'.$uuid.'-'.self::THUMBNAIL_KIND.'.webp';
-        $storageKeys = array_values(array_filter([$originalKey, $thumbnailKey]));
+        $storageKeys = [$originalKey];
+        if ($thumbnailKey !== null) {
+            $storageKeys[] = $thumbnailKey;
+        }
 
         foreach ($storageKeys as $key) {
             if ($disk->exists($key)) {
