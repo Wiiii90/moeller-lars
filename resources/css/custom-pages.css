@@ -78,6 +78,21 @@
     margin: 0;
 }
 
+.cv-component-divider {
+    margin: 1.15rem 0;
+    border-top: var(--public-divider-width) solid var(--public-divider);
+}
+
+.cv-contact-area.has-divider {
+    padding-bottom: 1.2rem;
+    border-bottom: var(--public-divider-width) solid var(--public-divider);
+}
+
+.cv-text-block.has-divider {
+    padding-bottom: 1rem;
+    border-bottom: var(--public-divider-width) solid var(--public-divider);
+}
+
 @media (max-width: 680px) {
     .custom-page__component.has-media {
         grid-template-columns: 1fr;
