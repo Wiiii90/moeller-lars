@@ -6,7 +6,6 @@
             <div>
                 <p class="artist-workspace__kicker">Vita / CV</p>
                 <h2>Editorial sequence</h2>
-                <p>Biography, education, awards and other Vita entries in their public order. Publication stays explicit; contact details remain separate page settings.</p>
             </div>
             <div class="artist-workspace__summary">
                 <div><strong>{{ count($entries) }}</strong><span>Entries</span></div>
