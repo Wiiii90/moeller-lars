@@ -49,6 +49,8 @@
     display: block;
     width: 100%;
     height: auto;
+    outline: 1px solid rgba(50, 47, 44, .14);
+    outline-offset: -1px;
 }
 
 .custom-page__list {
@@ -76,13 +78,168 @@
     margin: 0;
 }
 
+.custom-page__contact .contact-form {
+    display: grid;
+    width: min(100%, 31rem);
+    margin: 0;
+    gap: .9rem;
+}
+
+.custom-page__contact .contact-form__field {
+    margin: 0;
+}
+
+.custom-page__contact .contact-form label {
+    display: block;
+    margin: 0 0 .27rem;
+    color: #706a65;
+    font-size: .66rem;
+    font-weight: 500;
+    letter-spacing: .065em;
+    text-transform: uppercase;
+}
+
+.custom-page__contact .contact-form input,
+.custom-page__contact .contact-form textarea {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: .58rem .64rem;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid #d0ccc8;
+    border-radius: 0;
+    background: #fff;
+    color: #444;
+    font: inherit;
+    line-height: 1.4;
+    box-shadow: none;
+    transition: border-color .14s ease;
+}
+
+.custom-page__contact .contact-form textarea {
+    min-height: 126px;
+    resize: vertical;
+}
+
+.custom-page__contact .contact-form input:focus-visible,
+.custom-page__contact .contact-form textarea:focus-visible {
+    border-color: #8d857e;
+    outline: 1px solid #8d857e;
+    outline-offset: 1px;
+}
+
+.custom-page__contact .contact-form button {
+    width: fit-content;
+    margin-top: .1rem;
+    padding: .54rem .88rem;
+    border: 1px solid #9a938d;
+    border-radius: 0;
+    background: #fff;
+    color: #555;
+    font: inherit;
+    font-size: .7rem;
+    font-weight: 500;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.custom-page__contact .contact-form button:hover:not(:disabled),
+.custom-page__contact .contact-form button:focus-visible:not(:disabled) {
+    border-color: #625d58;
+    color: #222;
+}
+
+.custom-page--cv .is-profile-list {
+    grid-template-columns: minmax(0, 1fr) minmax(165px, 30%);
+    gap: clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.custom-page--cv .is-profile-list .custom-page__list {
+    gap: .85rem;
+}
+
+.custom-page--cv .is-profile-list .custom-page__list-item {
+    color: #555;
+    font-size: .8rem;
+    line-height: 1.55;
+}
+
+.custom-page--cv .is-profile-list .custom-page__list-line {
+    display: block;
+}
+
+.custom-page--cv .is-profile-list .custom-page__date {
+    display: inline;
+    margin-right: .35rem;
+    color: inherit;
+}
+
+.custom-page--cv .is-profile-list .custom-page__list-line strong {
+    font-weight: 400;
+}
+
+.custom-page--cv .is-profile-list .custom-page__media img {
+    width: 100%;
+    max-width: 260px;
+    margin-left: auto;
+}
+
+.custom-page--cv .custom-page__contact,
+.custom-page--cv .is-profile-text,
+.custom-page--cv .custom-page__legal {
+    margin-top: 1rem;
+    padding-top: 1.2rem;
+    border-top: var(--public-divider-width) solid var(--public-divider);
+}
+
+.custom-page--cv .custom-page__contact.has-divider,
+.custom-page--cv .is-profile-text.has-divider {
+    border-bottom: 0;
+}
+
+.custom-page--cv .custom-page__contact .category-heading {
+    width: auto;
+    margin: 0 0 .95rem;
+    color: #504b47;
+}
+
+.custom-page--cv .is-profile-text .custom-page__copy > h3,
+.custom-page--cv .custom-page__legal h2 {
+    margin: 0 0 .42rem;
+    color: #625d58;
+    font-size: .7rem;
+    font-weight: 500;
+    letter-spacing: .045em;
+    text-transform: none;
+}
+
+.custom-page--cv .is-profile-text .rich-text,
+.custom-page--cv .custom-page__legal p {
+    margin: 0;
+    color: #777;
+    font-size: .69rem;
+    line-height: 1.55;
+}
+
+.custom-page--contact .custom-page__component:first-of-type {
+    padding-top: 0;
+}
+
 @media (max-width: 680px) {
-    .custom-page__component.has-media {
+    .custom-page__component.has-media,
+    .custom-page--cv .is-profile-list {
         grid-template-columns: 1fr;
     }
 
-    .custom-page__media {
+    .custom-page__media,
+    .custom-page--cv .is-profile-list .custom-page__media {
         width: min(15rem, 65%);
+    }
+
+    .custom-page--cv .is-profile-list .custom-page__media img {
+        margin-left: 0;
     }
 
     .custom-page__list-line {
