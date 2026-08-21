@@ -53,17 +53,31 @@ final class Activity extends Page
     {
         $area = request()->query('area');
         $family = request()->query('family');
+        $period = request()->query('period');
         $area = is_string($area) && array_key_exists($area, AdminActionCatalog::areaOptions()) ? $area : null;
         $family = is_string($family) && array_key_exists($family, AdminActionCatalog::familyOptions()) ? $family : null;
+        $periodOptions = [
+            '7d' => '7 days',
+            '30d' => '30 days',
+            '180d' => '180 days',
+        ];
+        $period = is_string($period) && array_key_exists($period, $periodOptions) ? $period : '180d';
+        $days = match ($period) {
+            '7d' => 7,
+            '30d' => 30,
+            default => AdminActivityFeed::ACTIVITY_WINDOW_DAYS,
+        };
         $actor = app(AdminAuditService::class)->requireActor();
-        $feed = app(AdminActivityFeed::class)->page($area, $family, actor: $actor);
+        $feed = app(AdminActivityFeed::class)->page($area, $family, actor: $actor, days: $days);
 
         return [
             ...$feed,
             'area' => $area,
             'family' => $family,
+            'period' => $period,
             'areaOptions' => AdminActionCatalog::areaOptions(),
             'familyOptions' => AdminActionCatalog::familyOptions(),
+            'periodOptions' => $periodOptions,
         ];
     }
 }
