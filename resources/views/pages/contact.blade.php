@@ -5,5 +5,5 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/contact'))
 
 @section('content')
-    <x-contact :settings="$settings" />
+    <x-contact :general-settings="$generalSettings" :contact-settings="$contactSettings" />
 @endsection
