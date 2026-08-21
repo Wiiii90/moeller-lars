@@ -91,7 +91,9 @@ final class MediaStorageBreakdown
         foreach (array_slice($normalized, 0, max(0, $heavyLimit), true) as $storageKey => $bytes) {
             $asset = $assetsByStorageKey[$storageKey] ?? null;
             $bucket = $this->classify($asset);
-            $filename = $asset?->getAttribute('original_filename');
+            $filename = $asset instanceof MediaAsset
+                ? $asset->getAttribute('original_filename')
+                : null;
 
             $heavyConsumers[] = [
                 'label' => is_string($filename) && trim($filename) !== '' ? $filename : 'Uncatalogued original',
@@ -122,7 +124,7 @@ final class MediaStorageBreakdown
 
     private function classify(?MediaAsset $asset): string
     {
-        if (! $asset instanceof MediaAsset) {
+        if ($asset === null) {
             return 'uncatalogued';
         }
 
