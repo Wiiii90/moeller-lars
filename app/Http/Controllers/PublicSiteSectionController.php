@@ -7,8 +7,8 @@ use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
-use App\Models\BlogSetting;
 use App\Models\Exhibition;
+use App\Models\JournalSetting;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
@@ -121,7 +121,7 @@ final class PublicSiteSectionController extends Controller
 
         return view('pages.blog.index', [
             'section' => $section,
-            'settings' => BlogSetting::forSection($section),
+            'settings' => JournalSetting::forSection($section),
             'posts' => $posts,
             'richText' => $this->richText,
             'media' => $this->media,
@@ -144,6 +144,7 @@ final class PublicSiteSectionController extends Controller
 
         return view('pages.exhibitions', [
             'section' => $section,
+            'settings' => JournalSetting::forSection($section),
             'exhibitions' => $exhibitions,
             'richText' => $this->richText,
             'media' => $this->media,
