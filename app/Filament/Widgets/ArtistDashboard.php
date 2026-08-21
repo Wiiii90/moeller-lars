@@ -14,17 +14,28 @@ use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
+use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\Select;
+use Filament\Schemas\Concerns\InteractsWithSchemas;
+use Filament\Schemas\Contracts\HasSchemas;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
-final class ArtistDashboard extends Widget
+final class ArtistDashboard extends Widget implements HasActions, HasSchemas
 {
+    use InteractsWithActions;
+    use InteractsWithSchemas;
+
     protected string $view = 'filament.widgets.artist-dashboard';
 
     protected static ?int $sort = 1;
@@ -32,6 +43,72 @@ final class ArtistDashboard extends Widget
     protected static bool $isLazy = false;
 
     protected int|string|array $columnSpan = 'full';
+
+    public function addArtworkAction(): Action
+    {
+        return Action::make('addArtwork')
+            ->label('Add artwork')
+            ->icon(Heroicon::OutlinedPlus)
+            ->schema([
+                Select::make('gallery_id')
+                    ->label('Gallery')
+                    ->placeholder('Choose Gallery')
+                    ->options(fn (): array => ArtworkCategory::query()
+                        ->orderBy('position')
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->helperText('Galleries and their public placement are managed from Pages.')
+                    ->searchable()
+                    ->required(),
+            ])
+            ->action(function (array $data): void {
+                $this->redirect(ArtworkResource::getUrl('create', ['gallery' => (int) $data['gallery_id']]));
+            });
+    }
+
+    public function addExhibitionAction(): Action
+    {
+        return Action::make('addExhibition')
+            ->label('Add exhibition')
+            ->icon(Heroicon::OutlinedPlus)
+            ->url(ExhibitionResource::getUrl('create'));
+    }
+
+    public function addCvEntryAction(): Action
+    {
+        return Action::make('addCvEntry')
+            ->label('Add Vita / CV entry')
+            ->icon(Heroicon::OutlinedPlus)
+            ->url(CvEntryResource::getUrl('create'));
+    }
+
+    public function addBlogPostAction(): Action
+    {
+        return Action::make('addBlogPost')
+            ->label('Add blog post')
+            ->icon(Heroicon::OutlinedPlus)
+            ->url(BlogPostResource::getUrl('create'));
+    }
+
+    public function managePagesAction(): Action
+    {
+        return Action::make('managePages')
+            ->label('Manage pages')
+            ->icon(Heroicon::OutlinedRectangleStack)
+            ->color('gray')
+            ->url(SitePages::getUrl());
+    }
+
+    public function openSiteAction(): Action
+    {
+        return Action::make('openSite')
+            ->label('Open public site')
+            ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+            ->color('gray')
+            ->url(route('home'))
+            ->openUrlInNewTab();
+    }
 
     protected function getViewData(): array
     {
