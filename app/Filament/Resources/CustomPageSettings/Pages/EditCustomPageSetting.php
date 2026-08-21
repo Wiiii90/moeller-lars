@@ -14,6 +14,11 @@ final class EditCustomPageSetting extends EditRecord
 
     protected static string $resource = CustomPageSettingResource::class;
 
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
