@@ -1,8 +1,9 @@
 <x-filament-panels::page>
     @php
-        $published = collect($sections)->where('state', 'published')->count();
-        $visible = collect($sections)->where('visible', true)->count();
-        $galleries = collect($sections)->where('type', 'gallery')->count();
+        $allSections = collect($sections)->flatMap(fn (array $section) => [$section, ...$section['children']]);
+        $published = $allSections->where('state', 'published')->count();
+        $visible = $allSections->where('visible', true)->count();
+        $galleries = $allSections->where('type', 'gallery')->count();
     @endphp
 
     <div class="artist-workspace">
@@ -10,11 +11,11 @@
             <div>
                 <p class="artist-workspace__kicker">Site structure</p>
                 <h2>Public pages</h2>
-                <p>One ordered view of the public site. Galleries may form one submenu level; Vita, Blog and Exhibitions remain typed sections with their own editors.</p>
+                <p>The canonical page and navigation tree. Typed pages keep their dedicated editors; navigation groups organize submenu entries without creating a fake public page.</p>
             </div>
 
             <div class="artist-workspace__summary" aria-label="Site structure summary">
-                <div><strong>{{ count($sections) }}</strong><span>Sections</span></div>
+                <div><strong>{{ $allSections->count() }}</strong><span>Sections</span></div>
                 <div><strong>{{ $galleries }}</strong><span>Galleries</span></div>
                 <div><strong>{{ $published }}</strong><span>Published</span></div>
                 <div><strong>{{ $visible }}</strong><span>In menu</span></div>
@@ -24,63 +25,25 @@
         <section aria-label="Public site sections">
             <div class="artist-section-list">
                 @foreach ($sections as $section)
-                    @php($path = parse_url($section['public_url'], PHP_URL_PATH) ?: '/')
-                    <article class="artist-section" data-depth="{{ $section['depth'] }}" wire:key="site-section-{{ $section['id'] }}">
-                        <div class="artist-section__identity">
-                            <span class="artist-section__type">{{ $section['type_label'] }}</span>
-                            <strong>{{ $section['navigation_label'] ?: $section['title'] }}</strong>
-                            <span class="artist-section__path">{{ $path }}</span>
-                        </div>
+                    @include('filament.pages.partials.site-section-row', ['section' => $section])
 
-                        <div class="artist-section__state" aria-label="Publication status">
-                            <span class="{{ $section['state'] === 'published' ? 'is-published' : '' }}">{{ $section['state'] === 'published' ? 'Published' : 'Hidden' }}</span>
-                            @if ($section['type'] !== 'home')
-                                <span class="{{ $section['visible'] ? 'is-visible' : '' }}">{{ $section['visible'] ? 'In navigation' : 'Not in navigation' }}</span>
-                            @endif
-                        </div>
-
-                        <div class="artist-section__count"><strong>{{ $section['count'] }}</strong><span>{{ $section['count_label'] }}</span></div>
-
-                        <div class="artist-section__actions">
-                            @if ($section['type'] === 'gallery')
-                                <button class="artist-action" type="button" wire:click="toggleGalleryState({{ $section['id'] }})">
-                                    {{ $section['state'] === 'published' ? 'Hide' : 'Publish' }}
-                                </button>
-                                <button class="artist-action" type="button" wire:click="toggleGalleryNavigation({{ $section['id'] }})">
-                                    {{ $section['visible'] ? 'Remove menu' : 'Add menu' }}
-                                </button>
-                                <select
-                                    class="artist-action"
-                                    aria-label="Parent Gallery for {{ $section['navigation_label'] ?: $section['title'] }}"
-                                    wire:change="moveGallery({{ $section['id'] }}, $event.target.value)"
-                                    @disabled($section['has_children'])
-                                >
-                                    <option value="" @selected($section['parent_id'] === null)>Top level</option>
-                                    @foreach ($galleryParents as $parent)
-                                        @if ($parent['id'] !== $section['id'])
-                                            <option value="{{ $parent['id'] }}" @selected($section['parent_id'] === $parent['id'])>{{ $parent['label'] }}</option>
-                                        @endif
-                                    @endforeach
-                                </select>
-                            @endif
-                            <a class="artist-action is-primary" href="{{ $section['content_url'] }}">Content</a>
-                            @if ($section['editor_url'])
-                                <a class="artist-action" href="{{ $section['editor_url'] }}">Settings</a>
-                            @endif
-                            <a class="artist-action" href="{{ $section['public_url'] }}" target="_blank" rel="noopener">View</a>
-                            <span class="artist-section__order" aria-label="Reorder {{ $section['navigation_label'] ?: $section['title'] }}">
-                                <button class="artist-action" type="button" wire:click="moveSection({{ $section['id'] }}, 'up')" aria-label="Move {{ $section['navigation_label'] ?: $section['title'] }} earlier" @disabled(! $section['can_move_up'])>↑</button>
-                                <button class="artist-action" type="button" wire:click="moveSection({{ $section['id'] }}, 'down')" aria-label="Move {{ $section['navigation_label'] ?: $section['title'] }} later" @disabled(! $section['can_move_down'])>↓</button>
-                            </span>
-                        </div>
-                    </article>
+                    @if ($section['children'] !== [])
+                        <details open wire:key="site-section-children-{{ $section['id'] }}">
+                            <summary class="artist-workspace__kicker">{{ count($section['children']) }} submenu {{ count($section['children']) === 1 ? 'section' : 'sections' }}</summary>
+                            <div class="artist-section-list">
+                                @foreach ($section['children'] as $child)
+                                    @include('filament.pages.partials.site-section-row', ['section' => $child])
+                                @endforeach
+                            </div>
+                        </details>
+                    @endif
                 @endforeach
             </div>
         </section>
 
         <footer class="artist-workspace__footnote">
-            <span>Gallery publication, menu placement and submenu parent are controlled here; order controls remain scoped to the current level.</span>
-            <span>Media, Analytics and Storage are global tools and intentionally do not appear as public pages.</span>
+            <span>Save editorial work first, then use Preview to inspect hidden sections, draft content and the draft navigation before publishing.</span>
+            <span>Navigation groups are capability-driven nodes with children and no public route. Media, Analytics and Storage remain global tools.</span>
         </footer>
     </div>
 </x-filament-panels::page>
