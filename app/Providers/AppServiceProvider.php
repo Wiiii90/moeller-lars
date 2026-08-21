@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Domain\Content\PublicSiteContext;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -28,6 +31,11 @@ class AppServiceProvider extends ServiceProvider
             Css::make('analytics-dashboard', $analyticsStylesheet),
             Css::make('artist-editorial', $editorialStylesheet),
         ]);
+
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::USER_MENU_AFTER,
+            fn (): ViewContract => view('filament.partials.topbar-sign-out'),
+        );
 
         View::composer('layouts.app', function ($view): void {
             $view->with(app(PublicSiteContext::class)->layoutData());

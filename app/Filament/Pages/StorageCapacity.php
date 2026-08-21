@@ -17,7 +17,7 @@ final class StorageCapacity extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCircleStack;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Library';
+    protected static string|UnitEnum|null $navigationGroup = 'Content';
 
     protected static ?string $navigationLabel = 'Storage';
 

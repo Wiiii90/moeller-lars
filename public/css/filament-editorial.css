@@ -1,3 +1,79 @@
+/* Global admin shell: composed pages own their visible content heading. */
+.fi-page:has(.artist-workspace__head, .analytics-head)
+    > .fi-page-header-main-ctn
+    > .fi-header
+    > :first-child {
+    display: none;
+}
+
+.fi-page:has(.artist-workspace__head, .analytics-head)
+    > .fi-page-header-main-ctn
+    > .fi-header:not(:has(.fi-header-actions-ctn)) {
+    display: none;
+}
+
+.fi-page:has(.artist-workspace__head, .analytics-head)
+    > .fi-page-header-main-ctn
+    > .fi-header {
+    min-height: 0;
+    gap: 0;
+}
+
+.fi-page:has(.artist-workspace__head, .analytics-head)
+    > .fi-page-header-main-ctn
+    > .fi-header
+    .fi-header-actions-ctn {
+    margin-top: 0;
+    gap: .35rem;
+}
+
+.fi-page:has(.artist-workspace__head, .analytics-head)
+    > .fi-page-header-main-ctn
+    > .fi-header
+    .fi-header-actions-ctn > .fi-ac {
+    flex: 0 1 auto;
+    gap: .35rem;
+}
+
+.fi-page:has(.artist-workspace__head, .analytics-head)
+    > .fi-page-header-main-ctn
+    > .fi-header
+    .fi-btn {
+    min-height: 2rem;
+    padding: .38rem .58rem;
+    border-radius: .2rem;
+    box-shadow: none;
+    font-size: .76rem;
+}
+
+.artist-topbar-sign-out {
+    display: inline-flex;
+    align-items: center;
+}
+
+@media (min-width: 1024px) {
+    .fi-topbar {
+        position: relative;
+    }
+
+    .fi-topbar-end > .fi-global-search-ctn {
+        position: absolute;
+        left: 50%;
+        width: min(42rem, calc(100% - 24rem));
+        transform: translateX(-50%);
+    }
+
+    .fi-topbar-end > .fi-global-search-ctn .fi-global-search {
+        width: 100%;
+    }
+
+    .fi-topbar .fi-global-search-results-ctn {
+        inset-inline: 0;
+        width: 100%;
+        max-width: none;
+    }
+}
+
 .artist-workspace {
     --artist-line: rgba(120, 113, 108, .22);
     --artist-muted: #78716c;
@@ -401,6 +477,22 @@
     font-size: .76rem;
     line-height: 1.5;
     flex-wrap: wrap;
+}
+
+.artist-dashboard__quick-actions {
+    display: flex;
+    gap: .35rem;
+    margin-top: .75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.artist-dashboard__quick-actions .fi-btn {
+    min-height: 2rem;
+    padding: .38rem .58rem;
+    border-radius: .2rem;
+    box-shadow: none;
+    font-size: .76rem;
 }
 
 .artist-dashboard__layout {
