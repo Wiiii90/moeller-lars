@@ -3,10 +3,6 @@
 namespace App\Domain\Admin;
 
 use App\Filament\Pages\SitePages;
-use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\BlogSettings\BlogSettingResource;
-use App\Filament\Resources\CvEntries\CvEntryResource;
-use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\AdminActionStat;
@@ -118,13 +114,13 @@ final class AdminQuickActionService
         return match (true) {
             str_starts_with($actionKey, 'artwork.'),
             str_starts_with($actionKey, 'artwork_category.'),
-            str_starts_with($actionKey, 'site_section.') => 'pages',
-            str_starts_with($actionKey, 'media.') => 'media',
-            str_starts_with($actionKey, 'exhibition.') => 'exhibition-create',
-            str_starts_with($actionKey, 'cv_entry.') => 'cv-create',
-            str_starts_with($actionKey, 'blog_post.') => 'blog-create',
-            str_starts_with($actionKey, 'blog_setting.') => 'blog-settings',
-            str_starts_with($actionKey, 'public_content_setting.') => 'website-settings',
+            str_starts_with($actionKey, 'site_section.'),
+            str_starts_with($actionKey, 'exhibition.'),
+            str_starts_with($actionKey, 'cv_entry.'),
+            str_starts_with($actionKey, 'blog_post.'),
+            str_starts_with($actionKey, 'blog_setting.') => 'pages',
+            str_starts_with($actionKey, 'media.') => 'files',
+            str_starts_with($actionKey, 'public_content_setting.') => 'general',
             default => null,
         };
     }
@@ -135,44 +131,20 @@ final class AdminQuickActionService
         return match ($key) {
             'pages' => [
                 'key' => $key,
-                'label' => 'Manage pages & galleries',
-                'description' => 'Return to the public structure and Gallery workflow.',
+                'label' => 'Manage pages',
+                'description' => 'Return to the public page tree and its page-specific content workspaces.',
                 'url' => SitePages::getUrl(),
             ],
-            'media' => [
+            'files' => [
                 'key' => $key,
-                'label' => 'Open media library',
-                'description' => 'Inspect, upload and reuse artwork media.',
+                'label' => 'Open Files',
+                'description' => 'Find, inspect and reuse media files.',
                 'url' => MediaAssetResource::getUrl('index'),
             ],
-            'exhibition-create' => [
+            'general' => [
                 'key' => $key,
-                'label' => 'Add exhibition',
-                'description' => 'Start a new exhibition draft.',
-                'url' => ExhibitionResource::getUrl('create'),
-            ],
-            'cv-create' => [
-                'key' => $key,
-                'label' => 'Add Vita / CV entry',
-                'description' => 'Add another biography or CV item.',
-                'url' => CvEntryResource::getUrl('create'),
-            ],
-            'blog-create' => [
-                'key' => $key,
-                'label' => 'New blog post',
-                'description' => 'Start a private blog draft.',
-                'url' => BlogPostResource::getUrl('create'),
-            ],
-            'blog-settings' => [
-                'key' => $key,
-                'label' => 'Blog settings',
-                'description' => 'Adjust the blog listing presentation.',
-                'url' => BlogSettingResource::getNavigationUrl(),
-            ],
-            'website-settings' => [
-                'key' => $key,
-                'label' => 'Website settings',
-                'description' => 'Edit contact, social and legal settings.',
+                'label' => 'General',
+                'description' => 'Edit site identity, contact, social and legal settings.',
                 'url' => PublicContentSettingResource::getNavigationUrl(),
             ],
             default => null,
