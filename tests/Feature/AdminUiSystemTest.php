@@ -103,21 +103,10 @@ it('marks route-backed content editors as responsive editor overlays', function 
 });
 
 it('renders migrated CV Custom Page data through the canonical CV structure', function (): void {
-    $section = SiteSection::query()->create([
-        'type' => SiteSection::TYPE_CUSTOM,
-        'template' => null,
-        'title' => 'CV',
-        'navigation_label' => 'CV',
-        'slug' => 'cv',
-        'state' => 'published',
-        'position' => 700,
-        'show_in_navigation' => false,
-        'parent_id' => null,
-        'artwork_category_id' => null,
-    ]);
+    $section = SiteSection::query()->where('slug', 'cv')->firstOrFail();
+    $section->forceFill(['state' => 'published'])->save();
 
-    $settings = new CustomPageSetting;
-    $settings->setAttribute('site_section_id', $section->getKey());
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
     $settings->setAttribute('blocks', [
         [
             'type' => 'list',
@@ -153,21 +142,10 @@ it('renders migrated CV Custom Page data through the canonical CV structure', fu
 it('renders migrated Contact Custom Page data with the canonical contact form classes', function (): void {
     PublicContentSetting::contact()->update(['contact_state' => 'enabled']);
 
-    $section = SiteSection::query()->create([
-        'type' => SiteSection::TYPE_CUSTOM,
-        'template' => null,
-        'title' => 'Contact',
-        'navigation_label' => 'Contact',
-        'slug' => 'contact',
-        'state' => 'published',
-        'position' => 710,
-        'show_in_navigation' => false,
-        'parent_id' => null,
-        'artwork_category_id' => null,
-    ]);
+    $section = SiteSection::query()->where('slug', 'contact')->firstOrFail();
+    $section->forceFill(['state' => 'published'])->save();
 
-    $settings = new CustomPageSetting;
-    $settings->setAttribute('site_section_id', $section->getKey());
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
     $settings->setAttribute('blocks', [[
         'type' => 'contact',
         'divider' => false,
