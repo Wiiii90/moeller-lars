@@ -12,7 +12,7 @@
     });
 @endphp
 
-<article class="artist-section" data-depth="{{ $section['depth'] }}" wire:key="site-section-{{ $section['id'] }}">
+<article id="site-section-{{ $section['id'] }}" class="artist-section" data-depth="{{ $section['depth'] }}" wire:key="site-section-{{ $section['id'] }}">
     <div class="artist-section__identity">
         <span class="artist-section__type">{{ $section['type_label'] }}</span>
         <strong>{{ $section['navigation_label'] ?: $section['title'] }}</strong>
