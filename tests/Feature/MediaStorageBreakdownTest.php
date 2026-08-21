@@ -73,13 +73,14 @@ it('attributes measured original bytes to exclusive library-use classes without 
         'cover_media_asset_id' => $shared->getKey(),
     ]);
 
-    $rows = app(MediaStorageBreakdown::class)->build([
+    $analysis = app(MediaStorageBreakdown::class)->analyze([
         (string) $artworkOnly->storage_key => 100,
         (string) $blogOnly->storage_key => 80,
         (string) $shared->storage_key => 70,
         (string) $unassigned->storage_key => 50,
         'originals/not-in-database.jpg' => 40,
     ]);
+    $rows = $analysis['breakdown'];
     $byKey = collect($rows)->keyBy('key');
 
     expect($byKey->get('artworks'))->toMatchArray(['bytes' => 100, 'files' => 1])
@@ -90,4 +91,16 @@ it('attributes measured original bytes to exclusive library-use classes without 
         ->and(array_sum(array_column($rows, 'bytes')))->toBe(340)
         ->and(array_sum(array_column($rows, 'files')))->toBe(5)
         ->and(round((float) array_sum(array_column($rows, 'percent')), 1))->toBe(100.0);
+
+    expect($analysis['heavy_consumers'][0])->toBe([
+        'label' => 'artwork-only.jpg',
+        'classification' => 'Artworks',
+        'bytes' => 100,
+    ])->and($analysis['heavy_consumers'][4])->toBe([
+        'label' => 'Uncatalogued original',
+        'classification' => 'Uncatalogued originals',
+        'bytes' => 40,
+    ])->and(collect($analysis['heavy_consumers'])->every(
+        fn (array $row): bool => ! array_key_exists('storage_key', $row),
+    ))->toBeTrue();
 });
