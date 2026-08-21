@@ -105,8 +105,9 @@ final class MediaStorageBreakdown
         return ['breakdown' => $rows, 'heavy_consumers' => $heavyConsumers];
     }
 
-    /** @param array<string, int> $authoritativeFiles
-     *  @return array<string, int>
+    /**
+     * @param  array<string, int>  $authoritativeFiles
+     * @return array<string, int>
      */
     private function normalize(array $authoritativeFiles): array
     {
