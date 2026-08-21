@@ -29,7 +29,7 @@ final class ArtistDashboard extends Widget
 
     protected static ?int $sort = 1;
 
-    protected static bool $isLazy = true;
+    protected static bool $isLazy = false;
 
     protected int|string|array $columnSpan = 'full';
 
