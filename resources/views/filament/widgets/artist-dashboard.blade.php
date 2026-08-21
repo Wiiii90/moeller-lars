@@ -14,7 +14,7 @@
 
         @if ($quickActions !== [])
             <nav class="artist-dashboard__quick-actions" aria-label="Personalized quick actions">
-                <span>Quick actions</span>
+                <span>For you</span>
                 @foreach ($quickActions as $action)
                     <a href="{{ $action['url'] }}" title="{{ $action['reason'] }}">{{ $action['label'] }}</a>
                 @endforeach
