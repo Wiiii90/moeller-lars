@@ -1,8 +1,8 @@
-@props(['settings', 'showStatus' => true])
+@props(['generalSettings', 'contactSettings', 'showStatus' => true])
 
 @php
-    $showEmail = (bool) $settings->show_public_email && $settings->public_email !== null;
-    $socialLinks = \App\Domain\Content\SocialLinks::visible($settings->social_links);
+    $showEmail = (bool) $generalSettings->show_public_email && $generalSettings->public_email !== null;
+    $socialLinks = \App\Domain\Content\SocialLinks::visible($generalSettings->social_links);
 @endphp
 
 <section class="contact-section" aria-labelledby="contact-heading">
@@ -14,11 +14,11 @@
                 <div class="contact-details__row">
                     <span class="contact-details__label">E-Mail</span>
                     <a
-                        href="mailto:{{ $settings->public_email }}"
+                        href="mailto:{{ $generalSettings->public_email }}"
                         data-matomo-event-category="Contact"
                         data-matomo-event-action="email_click"
                         data-matomo-event-name="Public email"
-                    >{{ $settings->public_email }}</a>
+                    >{{ $generalSettings->public_email }}</a>
                 </div>
             @endif
             @foreach ($socialLinks as $socialLink)
@@ -36,13 +36,13 @@
         </div>
     @endif
 
-    @if ($settings->contact_state === 'under_construction')
+    @if ($contactSettings->contact_state === 'under_construction')
         @if ($showStatus)
             <p class="contact-status contact-status--quiet" role="status">
-                {{ $settings->contact_status_text }}
+                {{ $contactSettings->contact_status_text }}
             </p>
         @endif
-    @elseif ($settings->contact_state === 'enabled')
+    @elseif ($contactSettings->contact_state === 'enabled')
         @if (session('contact_success'))
             <p
                 class="contact-message"
