@@ -8,7 +8,6 @@ use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Resources\CustomPageSettings\CustomPageSettingResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
-use App\Models\ArtworkCategory;
 use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
@@ -83,8 +82,7 @@ it('links Pages rows directly to their content workspaces', function (): void {
 });
 
 it('marks route-backed content editors as responsive editor overlays', function (): void {
-    $admin = User::factory()->admin()->create();
-    $this->actingAs($admin, 'web');
+    $this->actingAs(User::factory()->admin()->create(), 'web');
 
     $gallery = app(ArtworkCategoryEditorialService::class)->create([
         'name' => 'Prints',
@@ -160,7 +158,7 @@ it('renders migrated Contact Custom Page data with the canonical contact form cl
         'template' => null,
         'title' => 'Contact',
         'navigation_label' => 'Contact',
-        'slug' => 'contact-ui-system',
+        'slug' => 'contact',
         'state' => 'published',
         'position' => 710,
         'show_in_navigation' => false,
@@ -179,7 +177,7 @@ it('renders migrated Contact Custom Page data with the canonical contact form cl
     ]]);
     $settings->save();
 
-    $this->get('/contact-ui-system')
+    $this->get('/contact')
         ->assertSuccessful()
         ->assertSee('class="contact-page', false)
         ->assertSee('class="contact-form"', false)
