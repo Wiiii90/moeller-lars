@@ -45,7 +45,5 @@
         @else
             <section class="artist-gallery-empty"><p class="artist-workspace__kicker">Empty Blog</p><h3>Write the first post</h3><p>Create a draft now; public Blog visibility remains disabled until it is enabled from Pages.</p></section>
         @endif
-
-        <footer class="artist-workspace__footnote"><span>Order controls change the Blog listing sequence.</span><span>Publish, schedule, unpublish and archive actions remain on each post editor.</span></footer>
     </div>
 </x-filament-panels::page>
