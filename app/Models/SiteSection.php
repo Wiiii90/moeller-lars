@@ -179,7 +179,7 @@ final class SiteSection extends Model
             self::TYPE_GALLERY => request()->routeIs('artworks.category', 'preview.artworks.category')
                 && request()->route('category') === $this->getAttribute('slug'),
             self::TYPE_NAVIGATION_GROUP => false,
-            self::TYPE_VITA => request()->routeIs('cv', 'preview.cv', 'contact', 'preview.contact'),
+            self::TYPE_VITA => request()->routeIs('cv', 'preview.cv'),
             self::TYPE_BLOG => request()->routeIs('blog.*', 'preview.blog.*'),
             self::TYPE_EXHIBITIONS => request()->routeIs('exhibitions.*', 'preview.exhibitions.*'),
             self::TYPE_CONTACT => request()->routeIs('contact', 'preview.contact'),
