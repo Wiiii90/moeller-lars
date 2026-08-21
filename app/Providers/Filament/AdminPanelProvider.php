@@ -84,7 +84,6 @@ class AdminPanelProvider extends PanelProvider
     private function navigation(NavigationBuilder $builder): NavigationBuilder
     {
         $pagesItem = SitePages::getNavigationItems()[0]
-            ->childItems($this->siteSectionNavigationItems())
             ->extraAttributes(['data-artist-tree-root' => 'true']);
 
         return $builder
@@ -101,7 +100,10 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('Website')
                     ->collapsible()
-                    ->items([$pagesItem]),
+                    ->items([
+                        $pagesItem,
+                        ...$this->siteSectionNavigationItems(),
+                    ]),
                 NavigationGroup::make()
                     ->label('Insights')
                     ->items([
@@ -137,36 +139,27 @@ class AdminPanelProvider extends PanelProvider
                 continue;
             }
 
-            $items[] = $this->siteSectionNavigationItem($section, $childrenByParent);
+            $items[] = $this->siteSectionNavigationItem($section, 0);
+            foreach ($childrenByParent[(int) $section->getKey()] ?? [] as $child) {
+                $items[] = $this->siteSectionNavigationItem($child, 1);
+            }
         }
 
         return $items;
     }
 
-    /** @param array<int, list<SiteSection>> $childrenByParent */
-    private function siteSectionNavigationItem(SiteSection $section, array $childrenByParent): NavigationItem
+    private function siteSectionNavigationItem(SiteSection $section, int $depth): NavigationItem
     {
         $label = trim((string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')));
-        $children = $childrenByParent[(int) $section->getKey()] ?? [];
 
-        $item = NavigationItem::make($label)
+        return NavigationItem::make($label)
             ->key('site-section-'.$section->getKey())
             ->url($this->siteSectionWorkspaceUrl($section))
             ->extraAttributes([
                 'data-artist-site-section' => (string) $section->getKey(),
+                'data-artist-site-section-depth' => (string) $depth,
                 'data-artist-site-section-type' => (string) $section->getAttribute('type'),
             ]);
-
-        if ($children !== []) {
-            $item
-                ->icon(Heroicon::OutlinedFolder)
-                ->childItems(array_map(
-                    fn (SiteSection $child): NavigationItem => $this->siteSectionNavigationItem($child, $childrenByParent),
-                    $children,
-                ));
-        }
-
-        return $item;
     }
 
     private function siteSectionWorkspaceUrl(SiteSection $section): string
