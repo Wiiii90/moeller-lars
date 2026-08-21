@@ -5,7 +5,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         DB::statement('ALTER TABLE public_content_settings DROP CONSTRAINT IF EXISTS public_content_settings_singleton_check');
@@ -56,7 +57,7 @@ return new class extends Migration {
         });
 
         $blogSectionId = DB::table('site_sections')->where('type', 'blog')->value('id');
-        if (!is_numeric($blogSectionId)) {
+        if (! is_numeric($blogSectionId)) {
             throw new RuntimeException('The canonical Blog SiteSection must exist before normalizing Blog settings.');
         }
 
