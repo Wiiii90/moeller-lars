@@ -5,9 +5,12 @@ namespace App\Filament\Pages;
 use App\Filament\Widgets\ArtistDashboard;
 use App\Filament\Widgets\ContactHealth;
 use Filament\Pages\Dashboard as BaseDashboard;
+use UnitEnum;
 
 final class Dashboard extends BaseDashboard
 {
+    protected static string|UnitEnum|null $navigationGroup = 'Website';
+
     protected static ?string $title = 'Dashboard';
 
     protected static ?int $navigationSort = -2;
