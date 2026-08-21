@@ -5,6 +5,7 @@ namespace App\Filament\Resources\CvEntries\Pages;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\EditorialRecordService;
 use App\Domain\Admin\EditorialRichTextValidator;
+use App\Filament\Concerns\UsesEditorOverlay;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Models\CvEntry;
 use Filament\Actions\Action;
@@ -16,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class EditCvEntry extends EditRecord
 {
+    use UsesEditorOverlay;
+
     protected static string $resource = CvEntryResource::class;
 
     protected function mutateFormDataBeforeSave(array $data): array
@@ -45,6 +48,11 @@ class EditCvEntry extends EditRecord
 
             return $entry;
         });
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->editorReturnUrl(CvEntryResource::getUrl('index'));
     }
 
     protected function getHeaderActions(): array
