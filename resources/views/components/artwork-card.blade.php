@@ -8,12 +8,14 @@
     $category = $artwork->getRelationValue('category');
     $thumbnailWidth = (int) ($thumbnail->getAttribute('width') ?? 0);
     $thumbnailHeight = (int) ($thumbnail->getAttribute('height') ?? 0);
+    $preview = app(\App\Domain\Content\SitePreviewContext::class);
+    $detailUrl = $preview->url(route('artworks.show', $artwork->slug));
 @endphp
 
 <article class="artwork-card">
     <a
         class="artwork-card__link"
-        href="{{ route('artworks.show', $artwork->slug) }}"
+        href="{{ $detailUrl }}"
         data-artwork-viewer-item
         data-artwork-viewer-trigger
         data-viewer-key="{{ $artwork->slug }}"
@@ -21,7 +23,7 @@
         data-viewer-src="{{ $originalUrl }}"
         data-viewer-alt="{{ $altText }}"
         data-viewer-title="{{ $artwork->title }}"
-        data-viewer-page="{{ route('artworks.show', $artwork->slug) }}"
+        data-viewer-page="{{ $detailUrl }}"
         aria-label="Open {{ $artwork->title }} in image viewer"
     >
         <img
@@ -41,7 +43,7 @@
     <div class="artwork-card__footer">
         <a
             class="artwork-label-trigger"
-            href="{{ route('artworks.show', $artwork->slug) }}"
+            href="{{ $detailUrl }}"
             aria-label="View details for {{ $artwork->title }}"
         >
             <x-artwork-label :artwork="$artwork" />
@@ -49,7 +51,7 @@
 
         @if ($showCategoryLink && $category !== null)
             <nav class="artwork-card__actions" aria-label="Artwork navigation">
-                <a class="artwork-context-button artwork-context-button--category" href="{{ route('artworks.category', $category->slug) }}">
+                <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('artworks.category', $category->slug)) }}">
                     {{ $category->name }} <span aria-hidden="true">→</span>
                 </a>
             </nav>
