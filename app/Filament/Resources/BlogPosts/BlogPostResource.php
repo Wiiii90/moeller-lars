@@ -20,7 +20,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -51,8 +51,9 @@ final class BlogPostResource extends Resource
         return $schema->components([
             Hidden::make('site_section_id')
                 ->default(fn (): ?int => request()->integer('section') ?: null),
-            Section::make('Post')
-                ->description('Write and save the post here. Publication is controlled with the page actions rather than a raw state field.')
+            Fieldset::make('Post')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     TextInput::make('title')->required()->maxLength(240)->live(onBlur: true)
                         ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
@@ -84,8 +85,9 @@ final class BlogPostResource extends Resource
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
-            Section::make('Publication status')
-                ->description('Use Publish now, Schedule, Unpublish, Archive or Restore to draft in the page header. Listing order is managed from this Journal.')
+            Fieldset::make('Publication status')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     Select::make('state')->options([
                         'draft' => 'Draft',
