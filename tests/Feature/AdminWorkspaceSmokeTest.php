@@ -18,7 +18,6 @@ use App\Models\Exhibition;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -51,8 +50,11 @@ it('renders the dashboard shell and central admin index and create surfaces', fu
     }
 });
 
-it('renders the lazy artist dashboard overview when the widget loads', function () {
-    Livewire::test(ArtistDashboard::class)
+it('renders the artist dashboard overview eagerly in the initial dashboard response', function () {
+    expect(ArtistDashboard::isLazy())->toBeFalse();
+
+    $this->get('/admin')
+        ->assertSuccessful()
         ->assertSee('Website at a glance')
         ->assertSee('Content')
         ->assertSee('Needs attention')
