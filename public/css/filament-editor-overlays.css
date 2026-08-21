@@ -1,32 +1,16 @@
-/* Route-backed editor dialogs.
- * Resource create/edit routes keep real URLs and browser history while presenting
- * as one shared responsive editor surface. On small screens the surface becomes
- * a full-screen editor rather than a constrained modal.
+/* Route-backed content editors.
+ * Create/edit routes keep real URLs and browser history while presenting one
+ * shared responsive editor surface inside Filament's content area. Editors must
+ * never escape their page stacking context or cover global navigation.
  */
 .artist-editor-overlay {
     position: relative;
-    z-index: 30;
     min-height: calc(100dvh - 7rem);
     padding: .75rem 0 2rem;
 }
 
-.artist-editor-overlay::before {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    background: rgba(24, 24, 24, .16);
-    backdrop-filter: blur(1.5px);
-    content: "";
-    pointer-events: none;
-}
-
-.dark .artist-editor-overlay::before {
-    background: rgba(0, 0, 0, .34);
-}
-
 .artist-editor-overlay > .fi-page-header-main-ctn {
     position: relative;
-    z-index: 1;
     width: min(100%, 78rem);
     max-height: calc(100dvh - 7rem);
     margin: 0 auto;
@@ -165,8 +149,7 @@
     justify-content: flex-start !important;
 }
 
-/* Filament's sticky action bar is viewport-fixed by default. Inside the editor
- * surface it belongs to the scrolling dialog instead. */
+/* Filament's sticky action bar belongs to the editor's own scroll surface. */
 .artist-editor-overlay .fi-sc-actions.fi-sticky .fi-ac {
     position: sticky !important;
     bottom: 0 !important;
@@ -196,15 +179,6 @@
         min-height: 100dvh;
         margin: 0;
         padding: 0;
-    }
-
-    .artist-editor-overlay::before {
-        background: #fff;
-        backdrop-filter: none;
-    }
-
-    .dark .artist-editor-overlay::before {
-        background: rgb(24, 24, 27);
     }
 
     .artist-editor-overlay > .fi-page-header-main-ctn {
