@@ -45,6 +45,9 @@
                                         @if (filled($item['body'] ?? null))
                                             <div class="rich-text">{!! $richText->render((string) $item['body']) !!}</div>
                                         @endif
+                                        @if (filled($item['url'] ?? null))
+                                            <p><a href="{{ $item['url'] }}" rel="noopener noreferrer">More information</a></p>
+                                        @endif
                                     </article>
                                 @endforeach
                             </div>
