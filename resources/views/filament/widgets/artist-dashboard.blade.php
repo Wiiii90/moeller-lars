@@ -1,6 +1,6 @@
 <x-filament-widgets::widget>
     <div class="artist-workspace artist-dashboard">
-        <header class="artist-workspace__head artist-dashboard__head">
+        <header class="artist-workspace__head">
             <div>
                 <p class="artist-workspace__kicker">Editorial overview</p>
                 <h2>Website at a glance</h2>
@@ -17,155 +17,141 @@
         </header>
 
         @if ($quickActions !== [])
-            <nav class="artist-dashboard__adaptive-actions" aria-label="Personalized quick actions">
-                <span>For you · Based on repeated admin work</span>
+            <nav class="artist-dashboard__quick-actions" aria-label="Personalized quick actions">
+                <span class="artist-workspace__kicker">For you · based on repeated admin work</span>
                 @foreach ($quickActions as $action)
-                    <a href="{{ $action['url'] }}" title="{{ $action['reason'] }}">{{ $action['label'] }}</a>
+                    <a class="artist-action" href="{{ $action['url'] }}" title="{{ $action['reason'] }}">{{ $action['label'] }}</a>
                 @endforeach
             </nav>
         @endif
 
-        <section class="artist-dashboard__analytics" aria-label="Traffic and engagement">
-            <div class="artist-dashboard__section-head">
-                <span>Traffic &amp; engagement</span>
-                <span class="artist-dashboard__section-meta">
-                    {{ $analytics['range'] }}
-                    <a class="artist-action" href="{{ \App\Filament\Pages\Analytics::getUrl() }}">Analytics</a>
-                </span>
-            </div>
+        <div class="artist-dashboard__layout">
+            <section class="artist-dashboard__content" aria-label="Traffic and engagement">
+                <div class="artist-dashboard__section-head">
+                    <span>Traffic &amp; engagement</span>
+                    <span>{{ $analytics['range'] }}</span>
+                </div>
 
-            @if (in_array($analytics['status'], ['available', 'stale'], true))
-                <div class="artist-dashboard__analytics-grid">
-                    <div class="artist-dashboard__traffic">
-                        <div class="artist-dashboard__traffic-heading">
-                            <div>
-                                <span>Visits</span>
-                                <strong>{{ $analytics['visits_display'] }}</strong>
-                            </div>
-                            <div class="artist-dashboard__traffic-context">
-                                <span class="artist-dashboard__availability is-{{ $analytics['status'] }}">{{ $analytics['status_label'] }}</span>
+                @if (in_array($analytics['status'], ['available', 'stale'], true))
+                    <div class="artist-dashboard__row">
+                        <span class="artist-dashboard__identity">
+                            <strong>{{ $analytics['visits_display'] }} visits</strong>
+                            <small>
+                                {{ $analytics['visitors_display'] }} visitors
                                 @if ($analytics['visits_delta'] !== null)
-                                    <span>{{ $analytics['visits_delta'] }} vs previous period</span>
-                                @else
-                                    <span>No comparable previous period</span>
+                                    · {{ $analytics['visits_delta'] }} vs previous period
                                 @endif
-                            </div>
+                                · {{ $analytics['status_label'] }}
+                            </small>
+                        </span>
+                        <a class="artist-action" href="{{ \App\Filament\Pages\Analytics::getUrl() }}">Analytics</a>
+                    </div>
+
+                    @if ($analytics['trend'] !== [])
+                        <div class="artist-dashboard__row">
+                            <span class="artist-dashboard__identity">
+                                <strong>Visit trend</strong>
+                                <small>{{ $analytics['trend']['start'] }} → {{ $analytics['trend']['end'] }}</small>
+                            </span>
+                            <svg width="260" height="58" viewBox="0 0 680 150" role="img" aria-label="Visit trend for the last 30 days" preserveAspectRatio="none">
+                                <line x1="4" y1="146" x2="676" y2="146" stroke="currentColor" opacity="0.18" />
+                                <polyline points="{{ $analytics['trend']['points'] }}" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
                         </div>
+                    @else
+                        <p class="artist-dashboard__quiet">Traffic time-series data is unavailable for this period.</p>
+                    @endif
 
-                        @if ($analytics['trend'] !== [])
-                            <div class="artist-dashboard__trend">
-                                <svg viewBox="0 0 680 150" role="img" aria-label="Visit trend for the last 30 days" preserveAspectRatio="none">
-                                    <line x1="4" y1="146" x2="676" y2="146" />
-                                    <polyline points="{{ $analytics['trend']['points'] }}" />
-                                </svg>
-                                <div>
-                                    <time>{{ $analytics['trend']['start'] }}</time>
-                                    @if (! $analytics['trend']['has_visits'])
-                                        <span>No visits recorded in this period</span>
-                                    @endif
-                                    <time>{{ $analytics['trend']['end'] }}</time>
-                                </div>
-                            </div>
-                        @else
-                            <p class="artist-dashboard__quiet">Traffic time-series data is unavailable for this period.</p>
-                        @endif
-
-                        <dl class="artist-dashboard__engagement">
-                            <div><dt>Visitors</dt><dd>{{ $analytics['visitors_display'] }}</dd></div>
-                            <div><dt>Actions / visit</dt><dd>{{ $analytics['actions_per_visit'] }}</dd></div>
-                            <div><dt>Average visit</dt><dd>{{ $analytics['average_visit'] }}</dd></div>
-                            <div><dt>Bounce rate</dt><dd>{{ $analytics['bounce_rate'] }}</dd></div>
-                        </dl>
+                    <div class="artist-workspace__summary" aria-label="Engagement metrics">
+                        <div><strong>{{ $analytics['actions_per_visit'] }}</strong><span>Actions / visit</span></div>
+                        <div><strong>{{ $analytics['average_visit'] }}</strong><span>Average visit</span></div>
+                        <div><strong>{{ $analytics['bounce_rate'] }}</strong><span>Bounce rate</span></div>
                     </div>
 
-                    <div class="artist-dashboard__ranked">
-                        <div class="artist-dashboard__minor-head"><span>Most viewed content</span><span>Views / actions</span></div>
-                        @if ($analytics['content_state'] === 'available')
-                            <ol>
-                                @foreach ($analytics['content'] as $row)
-                                    <li>
-                                        <span class="artist-dashboard__rank">{{ $loop->iteration }}</span>
-                                        <span title="{{ $row['label'] }}">{{ $row['label'] }}</span>
-                                        <strong>{{ number_format($row['value']) }}</strong>
-                                    </li>
-                                @endforeach
-                            </ol>
-                        @elseif ($analytics['content_state'] === 'empty')
-                            <p class="artist-dashboard__quiet">No viewed content recorded in this period.</p>
-                        @else
-                            <p class="artist-dashboard__quiet">Content-level analytics is unavailable.</p>
-                        @endif
+                    @if ($analytics['status'] === 'stale' && $analytics['message'])
+                        <p class="artist-dashboard__quiet">{{ $analytics['message'] }}</p>
+                    @endif
+                @else
+                    <div class="artist-dashboard__row">
+                        <span class="artist-dashboard__identity">
+                            <strong>Traffic data is not available.</strong>
+                            <small>{{ $analytics['message'] }}</small>
+                        </span>
+                        <a class="artist-action" href="{{ \App\Filament\Pages\Analytics::getUrl() }}">Open Analytics</a>
                     </div>
-                </div>
-
-                @if ($analytics['status'] === 'stale' && $analytics['message'])
-                    <p class="artist-dashboard__data-note">{{ $analytics['message'] }}</p>
                 @endif
-            @else
-                <div class="artist-dashboard__unavailable">
-                    <span class="artist-dashboard__availability is-unavailable">{{ $analytics['status_label'] }}</span>
-                    <strong>Traffic data is not available.</strong>
-                    <p>{{ $analytics['message'] }}</p>
-                    <a class="artist-action" href="{{ \App\Filament\Pages\Analytics::getUrl() }}">Open Analytics</a>
-                </div>
-            @endif
+            </section>
+
+            <section class="artist-dashboard__content" aria-label="Most viewed content">
+                <div class="artist-dashboard__section-head"><span>Most viewed content</span><span>Views</span></div>
+                @if ($analytics['content_state'] === 'available')
+                    @foreach ($analytics['content'] as $row)
+                        <div class="artist-dashboard__row">
+                            <span class="artist-dashboard__identity">
+                                <strong>{{ $row['label'] }}</strong>
+                                <small>Rank {{ $loop->iteration }}</small>
+                            </span>
+                            <strong class="artist-dashboard__number">{{ number_format($row['value']) }}</strong>
+                        </div>
+                    @endforeach
+                @elseif ($analytics['content_state'] === 'empty')
+                    <p class="artist-dashboard__quiet">No viewed content recorded in this period.</p>
+                @else
+                    <p class="artist-dashboard__quiet">Content-level analytics is unavailable.</p>
+                @endif
+            </section>
+        </div>
+
+        <section aria-label="Editorial publication state">
+            <div class="artist-dashboard__section-head"><span>Publication state</span><span>Current content</span></div>
+            <div class="artist-workspace__summary">
+                @foreach ($editorialStatus as $status)
+                    <div>
+                        <strong>{{ number_format($status['value']) }}</strong>
+                        <span>{{ $status['label'] }}</span>
+                    </div>
+                @endforeach
+            </div>
         </section>
 
-        <section class="artist-dashboard__status" aria-label="Editorial publication state">
-            @foreach ($editorialStatus as $status)
-                <div class="is-{{ $status['tone'] }}">
-                    <strong>{{ number_format($status['value']) }}</strong>
-                    <span>{{ $status['label'] }}</span>
-                </div>
-            @endforeach
-        </section>
-
-        <div class="artist-dashboard__lower-grid">
+        <div class="artist-dashboard__layout">
             <section class="artist-dashboard__activity" aria-label="Recent editorial activity">
                 <div class="artist-dashboard__section-head">
                     <span>Recent activity</span>
                     <a class="artist-action" href="{{ $activityUrl }}">All activity</a>
                 </div>
-
-                <div class="artist-dashboard__timeline">
-                    @forelse ($activity as $event)
-                        <div class="artist-dashboard__activity-row">
-                            <span class="artist-dashboard__timeline-mark" aria-hidden="true"></span>
-                            <span class="artist-dashboard__activity-copy">
-                                <strong>{{ $event['action'] }}</strong>
-                                <small>{{ $event['area'] }} · {{ $event['target'] }}</small>
-                            </span>
-                            <time title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
-                        </div>
-                    @empty
-                        <p class="artist-dashboard__quiet">No editorial activity recorded yet.</p>
-                    @endforelse
-                </div>
+                @forelse ($activity as $event)
+                    <div class="artist-dashboard__activity-row">
+                        <span>
+                            <strong>{{ $event['action'] }}</strong>
+                            <small>{{ $event['area'] }} · {{ $event['target'] }}</small>
+                        </span>
+                        <time title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
+                    </div>
+                @empty
+                    <p class="artist-dashboard__quiet">No editorial activity recorded yet.</p>
+                @endforelse
             </section>
 
-            <aside class="artist-dashboard__health" aria-label="Website health and attention">
+            <aside class="artist-dashboard__side" aria-label="Website health and attention">
                 <section class="artist-dashboard__attention" aria-label="Needs attention">
                     <div class="artist-dashboard__section-head"><span>Needs attention</span></div>
                     @forelse ($attention as $item)
                         @if ($item['url'])
                             <a class="artist-dashboard__notice" href="{{ $item['url'] }}">
-                                <span>
+                                <span class="artist-dashboard__identity">
                                     <strong>{{ $item['label'] }}</strong>
                                     @if ($item['detail'])<small>{{ $item['detail'] }}</small>@endif
                                 </span>
-                                @if ($item['value'] !== null)
-                                    <b>{{ number_format($item['value']) }}{{ $item['value_suffix'] ?? '' }}</b>
-                                @endif
+                                @if ($item['value'] !== null)<strong>{{ number_format($item['value']) }}{{ $item['value_suffix'] ?? '' }}</strong>@endif
                             </a>
                         @else
                             <div class="artist-dashboard__notice">
-                                <span>
+                                <span class="artist-dashboard__identity">
                                     <strong>{{ $item['label'] }}</strong>
                                     @if ($item['detail'])<small>{{ $item['detail'] }}</small>@endif
                                 </span>
-                                @if ($item['value'] !== null)
-                                    <b>{{ number_format($item['value']) }}{{ $item['value_suffix'] ?? '' }}</b>
-                                @endif
+                                @if ($item['value'] !== null)<strong>{{ number_format($item['value']) }}{{ $item['value_suffix'] ?? '' }}</strong>@endif
                             </div>
                         @endif
                     @empty
@@ -173,16 +159,16 @@
                     @endforelse
                 </section>
 
-                <section class="artist-dashboard__storage" aria-label="Storage headroom">
-                    <div class="artist-dashboard__minor-head"><span>Storage headroom</span><a class="artist-action" href="{{ $storage['url'] }}">Storage</a></div>
-                    <div class="artist-dashboard__storage-row">
-                        <span>
+                <section class="artist-dashboard__attention" aria-label="Storage headroom">
+                    <div class="artist-dashboard__section-head"><span>Storage headroom</span><a class="artist-action" href="{{ $storage['url'] }}">Storage</a></div>
+                    <a class="artist-dashboard__notice" href="{{ $storage['url'] }}">
+                        <span class="artist-dashboard__identity">
                             <strong>{{ $storage['label'] }}</strong>
                             @if ($storage['remaining'] !== null)<small>{{ $storage['remaining'] }} remaining</small>@endif
                             @if ($storage['detail'])<small>{{ $storage['detail'] }}</small>@endif
                         </span>
-                        @if ($storage['percent'] !== null)<b>{{ $storage['percent'] }}%</b>@endif
-                    </div>
+                        @if ($storage['percent'] !== null)<strong>{{ $storage['percent'] }}%</strong>@endif
+                    </a>
                 </section>
             </aside>
         </div>
