@@ -1,4 +1,7 @@
-/* Shared artist-admin presentation layer. Analytics defines the visual baseline; this file aligns editorial surfaces to it. */
+/* Canonical artist-admin presentation layer.
+ * Analytics, Dashboard, Pages and settings consume these tokens and primitives.
+ * Page-specific styles may add layout, but must not redefine the visual system.
+ */
 :root {
     --artist-admin-text: #181818;
     --artist-admin-muted: #707070;
@@ -8,6 +11,9 @@
     --artist-admin-surface: #fff;
     --artist-admin-subtle: #f7f7f6;
     --artist-admin-accent: #b45309;
+    --artist-admin-accent-strong: #7c2d12;
+    --artist-admin-danger: #b42318;
+    --artist-admin-success: #39734d;
 }
 
 .dark {
@@ -19,6 +25,24 @@
     --artist-admin-surface: transparent;
     --artist-admin-subtle: rgba(255, 255, 255, .035);
     --artist-admin-accent: #d68a2f;
+    --artist-admin-accent-strong: #f0b65f;
+    --artist-admin-danger: #ef766d;
+    --artist-admin-success: #75b787;
+}
+
+/* Analytics aliases point at the same tokens used by every other admin page. */
+.analytics-dashboard {
+    --an-text: var(--artist-admin-text);
+    --an-muted: var(--artist-admin-muted);
+    --an-faint: var(--artist-admin-faint);
+    --an-line: var(--artist-admin-line);
+    --an-line-strong: var(--artist-admin-line-strong);
+    --an-surface: var(--artist-admin-surface);
+    --an-subtle: var(--artist-admin-subtle);
+    --an-accent: var(--artist-admin-accent);
+    --an-accent-strong: var(--artist-admin-accent-strong);
+    --an-danger: var(--artist-admin-danger);
+    --an-success: var(--artist-admin-success);
 }
 
 .artist-workspace {
@@ -27,24 +51,28 @@
     --artist-ink: var(--artist-admin-text);
     --artist-soft: var(--artist-admin-subtle);
     --artist-surface: var(--artist-admin-surface);
+    display: grid;
     gap: 0;
-    color: var(--artist-ink);
+    color: var(--artist-admin-text);
 }
 
 .artist-workspace > * + * {
-    margin-top: 1.5rem;
+    margin-top: 1.75rem;
 }
 
 .artist-workspace__head {
+    display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 2rem;
-    padding: .2rem 0 1.7rem;
     align-items: end;
+    padding: .2rem 0 1.7rem;
     border-bottom: 1px solid var(--artist-admin-line-strong);
 }
 
 .artist-workspace__kicker,
-.artist-section__type {
+.artist-section__type,
+.artist-general-heading__kicker {
+    display: block;
     margin: 0;
     color: var(--artist-admin-accent);
     font-size: .66rem;
@@ -53,7 +81,9 @@
     text-transform: uppercase;
 }
 
-.artist-workspace__head h2 {
+.artist-workspace__head h2,
+.artist-general-heading__title {
+    display: block;
     margin: .2rem 0 0;
     color: var(--artist-admin-text);
     font-size: clamp(1.65rem, 2vw, 2.25rem);
@@ -91,7 +121,93 @@
     background: rgba(255, 255, 255, .045);
 }
 
-.artist-workspace__summary strong,
+/* Shared metric strip. Dashboard uses the same spacing and divider rhythm as Analytics. */
+.artist-kpi-strip {
+    --artist-kpi-columns: 6;
+    display: grid;
+    grid-template-columns: repeat(var(--artist-kpi-columns), minmax(0, 1fr));
+    border-bottom: 1px solid var(--artist-admin-line-strong);
+}
+
+.artist-kpi-strip--3 { --artist-kpi-columns: 3; }
+.artist-kpi-strip--4 { --artist-kpi-columns: 4; }
+.artist-kpi-strip--5 { --artist-kpi-columns: 5; }
+.artist-kpi-strip--6 { --artist-kpi-columns: 6; }
+
+.artist-kpi {
+    min-width: 0;
+    padding: 1.25rem 1rem 1.2rem 0;
+    border-right: 1px solid var(--artist-admin-line);
+}
+
+.artist-kpi:not(:first-child) {
+    padding-left: 1rem;
+}
+
+.artist-kpi:last-child {
+    border-right: 0;
+}
+
+.artist-kpi span {
+    display: block;
+    color: var(--artist-admin-muted);
+    font-size: .67rem;
+    font-weight: 650;
+    letter-spacing: .025em;
+}
+
+.artist-kpi strong {
+    display: block;
+    margin-top: .35rem;
+    color: var(--artist-admin-text);
+    font-size: clamp(1.3rem, 1.7vw, 1.75rem);
+    font-weight: 580;
+    letter-spacing: -.03em;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Dashboard */
+.artist-dashboard__quick-actions {
+    display: flex;
+    gap: .35rem;
+    margin: 0;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.artist-dashboard__layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(20rem, .75fr);
+    gap: 2.5rem;
+    align-items: start;
+}
+
+.artist-dashboard__content,
+.artist-dashboard__attention,
+.artist-dashboard__activity,
+.artist-dashboard__publication {
+    border-top: 1px solid var(--artist-admin-line);
+}
+
+.artist-dashboard__section-head,
+.artist-dashboard__row,
+.artist-dashboard__notice,
+.artist-dashboard__activity-row {
+    border-color: var(--artist-admin-line);
+}
+
+.artist-dashboard__section-head {
+    padding: .7rem 0;
+    color: var(--artist-admin-muted);
+}
+
+.artist-dashboard__row {
+    min-height: 4.9rem;
+    padding: .85rem 0;
+}
+
 .artist-dashboard__identity strong,
 .artist-dashboard__activity-row strong,
 .artist-dashboard__number,
@@ -100,7 +216,6 @@
     color: var(--artist-admin-text);
 }
 
-.artist-workspace__summary span,
 .artist-dashboard__identity small,
 .artist-dashboard__activity-row small,
 .artist-dashboard__quiet,
@@ -110,27 +225,16 @@
     color: var(--artist-admin-muted);
 }
 
-.artist-dashboard__quick-actions {
-    margin: 0;
-    justify-content: flex-end;
+.artist-dashboard__trend-row svg {
+    color: var(--artist-admin-text);
 }
 
-.artist-dashboard__layout {
-    gap: 2.5rem;
+.artist-dashboard__content > .artist-kpi-strip {
+    border-bottom-color: var(--artist-admin-line);
 }
 
-.artist-dashboard__content,
-.artist-dashboard__attention,
-.artist-dashboard__activity,
-.artist-dashboard__section-head,
-.artist-dashboard__row,
-.artist-dashboard__notice,
-.artist-dashboard__activity-row {
-    border-color: var(--artist-admin-line);
-}
-
-.artist-dashboard__section-head {
-    color: var(--artist-admin-muted);
+.artist-dashboard__publication > .artist-dashboard__section-head {
+    border-bottom: 0;
 }
 
 .artist-dashboard__notice,
@@ -138,58 +242,31 @@ a.artist-dashboard__notice {
     color: inherit;
 }
 
-.artist-contact-sheet {
-    background: var(--artist-admin-line);
-}
-
-.artist-contact-sheet__item {
-    background: var(--artist-admin-surface);
-}
-
-.dark .artist-contact-sheet__image {
-    background: rgba(255, 255, 255, .035);
-}
-
-.analytics-dashboard {
-    display: flex;
-    flex-direction: column;
-}
-
-.analytics-head { order: 0; }
-.analytics-loading,
-.analytics-notice { order: 1; }
-.analytics-context { order: 2; }
-.analytics-kpi-strip { order: 3; }
-.analytics-geography { order: 4; }
-.analytics-overview { order: 5; }
-.analytics-dashboard > .analytics-section:not(.analytics-geography):not(.analytics-overview):not(.analytics-operations) { order: 6; }
-.analytics-warning-line { order: 7; }
-.analytics-operations { order: 8; }
-
+/* Pages placement workspace */
 .artist-page-list {
     border-top: 1px solid var(--artist-admin-line-strong);
 }
 
 .artist-page-row {
     display: grid;
-    grid-template-columns: minmax(12rem, 1.45fr) minmax(11rem, .95fr) minmax(4.5rem, .35fr) minmax(18rem, auto);
+    grid-template-columns: minmax(13rem, 1.55fr) minmax(10rem, .9fr) minmax(4.5rem, .3fr) minmax(13rem, 1fr);
     gap: 1.25rem;
-    min-height: 5rem;
-    padding: .9rem 0;
+    min-height: 5.2rem;
+    padding: 1rem 0;
     align-items: center;
     border-bottom: 1px solid var(--artist-admin-line);
 }
 
 .artist-page-row[data-depth="1"] {
     position: relative;
-    padding-left: 1.55rem;
+    padding-left: 1.5rem;
 }
 
 .artist-page-row[data-depth="1"]::before {
     position: absolute;
-    top: .7rem;
-    bottom: .7rem;
-    left: .55rem;
+    top: .8rem;
+    bottom: .8rem;
+    left: .5rem;
     width: 1px;
     background: var(--artist-admin-line-strong);
     content: "";
@@ -200,7 +277,6 @@ a.artist-dashboard__notice {
 }
 
 .artist-page-row__identity .artist-workspace__kicker {
-    display: block;
     margin-bottom: .26rem;
 }
 
@@ -208,7 +284,7 @@ a.artist-dashboard__notice {
     display: block;
     overflow: hidden;
     color: var(--artist-admin-text);
-    font-size: .94rem;
+    font-size: .95rem;
     font-weight: 650;
     line-height: 1.3;
     text-decoration: none;
@@ -233,7 +309,16 @@ a.artist-page-row__title:focus-visible {
 
 .artist-page-row__placement {
     display: grid;
-    gap: .55rem;
+    gap: .6rem;
+}
+
+.artist-page-row .artist-section__state {
+    gap: .65rem;
+}
+
+.artist-page-row .artist-section__state span {
+    color: var(--artist-admin-muted);
+    font-size: .7rem;
 }
 
 .artist-page-row__parent {
@@ -253,7 +338,7 @@ a.artist-page-row__title:focus-visible {
 .artist-page-row__parent select {
     width: 100%;
     min-width: 0;
-    padding: .28rem .4rem;
+    padding: .3rem .45rem;
     border: 1px solid var(--artist-admin-line);
     border-radius: .25rem;
     background: var(--artist-admin-surface);
@@ -274,7 +359,7 @@ a.artist-page-row__title:focus-visible {
 
 .artist-page-row__count strong {
     color: var(--artist-admin-text);
-    font-size: .95rem;
+    font-size: 1rem;
     font-weight: 620;
     font-variant-numeric: tabular-nums;
 }
@@ -287,85 +372,69 @@ a.artist-page-row__title:focus-visible {
 
 .artist-page-row__actions {
     display: flex;
-    gap: .2rem;
+    gap: .15rem;
     justify-content: flex-end;
     align-items: center;
     flex-wrap: wrap;
-}
-
-.artist-page-row .artist-section__state {
-    gap: .65rem;
-}
-
-.artist-page-row .artist-section__state span {
-    color: var(--artist-admin-muted);
-    font-size: .7rem;
 }
 
 .artist-page-row .artist-section__order {
     border-color: var(--artist-admin-line);
 }
 
-[data-artist-tree-branch="true"] .fi-sidebar-item-grouped-border,
-[data-artist-tree-branch="true"] > .fi-sidebar-item-btn .fi-sidebar-item-grouped-border {
-    display: none !important;
+/* Sidebar site tree: every row is a real link. Hierarchy is conveyed by indentation,
+ * not by Filament childItems(), which turns parent links into disclosure buttons. */
+[data-artist-tree-root="true"] {
+    margin-bottom: .15rem;
 }
 
-[data-artist-tree-branch="true"] > .fi-sidebar-item-btn {
-    padding-inline-start: .9rem !important;
+[data-artist-site-section] > .fi-sidebar-item-btn {
+    min-height: 2rem;
+    padding-inline-start: 1.65rem !important;
 }
 
-[data-artist-site-section] > button[aria-label^="Toggle"] {
-    inset-inline-end: .55rem !important;
-    top: .38rem !important;
-    width: 1.7rem !important;
-    height: 1.7rem !important;
-    border-radius: 999px !important;
-    color: var(--artist-admin-muted) !important;
-}
-
-[data-artist-site-section] > button[aria-label^="Toggle"]:hover,
-[data-artist-site-section] > button[aria-label^="Toggle"]:focus-visible {
-    background: var(--artist-admin-subtle) !important;
-    color: var(--artist-admin-text) !important;
-}
-
-[data-artist-site-section] > button[aria-label^="Toggle"] > span {
+[data-artist-site-section-depth="1"] {
     position: relative;
-    width: .42rem;
-    height: .42rem;
-    font-size: 0 !important;
 }
 
-[data-artist-site-section] > button[aria-label^="Toggle"] > span::before {
+[data-artist-site-section-depth="1"]::before {
     position: absolute;
-    inset: 0;
-    border-right: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    transform: rotate(-45deg);
+    top: .2rem;
+    bottom: .2rem;
+    left: 1.05rem;
+    width: 1px;
+    background: var(--artist-admin-line);
     content: "";
 }
 
-[data-artist-tree-branch="true"] > .fi-sidebar-sub-group-items {
-    margin-inline-start: .7rem;
-    padding-inline-start: .65rem;
-    border-inline-start: 1px solid var(--artist-admin-line);
+[data-artist-site-section-depth="1"] > .fi-sidebar-item-btn {
+    padding-inline-start: 2.35rem !important;
 }
 
-.fi-page:has(.artist-general-section) .fi-header {
-    padding-bottom: 1.25rem;
+[data-artist-site-section] .fi-sidebar-item-label {
+    font-size: .77rem;
+}
+
+/* General settings: native form controls, no card containers. */
+.fi-page:has(.artist-general-grid) .fi-header {
+    padding-bottom: 1.3rem;
     border-bottom: 1px solid var(--artist-admin-line-strong);
 }
 
-.fi-page:has(.artist-general-section) .fi-header-heading {
+.fi-page:has(.artist-general-grid) .fi-header-heading {
     color: var(--artist-admin-text);
-    font-size: clamp(1.65rem, 2vw, 2.25rem);
-    font-weight: 620;
-    letter-spacing: -.035em;
-    line-height: 1.05;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
 }
 
-.artist-general-section.fi-section {
+.artist-general-grid {
+    gap: 0 2.5rem !important;
+}
+
+.artist-general-section {
+    margin: 0 !important;
+    padding: 1.35rem 0 1.55rem !important;
     border: 0 !important;
     border-top: 1px solid var(--artist-admin-line) !important;
     border-radius: 0 !important;
@@ -373,33 +442,40 @@ a.artist-page-row__title:focus-visible {
     box-shadow: none !important;
 }
 
-.artist-general-section.fi-section:first-child {
-    border-top-color: var(--artist-admin-line-strong) !important;
-}
-
-.artist-general-section .fi-section-header {
-    padding: 1.25rem 0 .85rem !important;
-}
-
-.artist-general-section .fi-section-content-ctn,
-.artist-general-section .fi-section-content {
-    border: 0 !important;
-    background: transparent !important;
-}
-
-.artist-general-section .fi-section-content {
-    padding: 0 0 1.4rem !important;
-}
-
+.artist-general-section legend,
+.artist-general-section .fi-sc-fieldset-label,
 .artist-general-section .fi-section-header-heading {
     color: var(--artist-admin-text) !important;
-    font-size: .84rem !important;
-    font-weight: 650 !important;
+    font-size: .78rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .01em;
+}
+
+.artist-general-section .fi-section-header,
+.artist-general-section .fi-section-content,
+.artist-general-section .fi-section-content-ctn {
+    padding-inline: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Shared media/gallery dark-mode corrections. */
+.artist-contact-sheet {
+    background: var(--artist-admin-line);
+}
+
+.artist-contact-sheet__item {
+    background: var(--artist-admin-surface);
+}
+
+.dark .artist-contact-sheet__image {
+    background: rgba(255, 255, 255, .035);
 }
 
 @media (max-width: 1150px) {
     .artist-page-row {
-        grid-template-columns: minmax(12rem, 1.3fr) minmax(10rem, .9fr) minmax(4rem, .3fr);
+        grid-template-columns: minmax(12rem, 1.25fr) minmax(10rem, .85fr) minmax(4rem, .25fr);
     }
 
     .artist-page-row__actions {
@@ -422,6 +498,18 @@ a.artist-page-row__title:focus-visible {
     .artist-dashboard__layout,
     .artist-page-row {
         grid-template-columns: 1fr;
+    }
+
+    .artist-kpi-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .artist-kpi:nth-child(2n) {
+        border-right: 0;
+    }
+
+    .artist-kpi:nth-child(n + 3) {
+        border-top: 1px solid var(--artist-admin-line);
     }
 
     .artist-page-row[data-depth="1"] {
