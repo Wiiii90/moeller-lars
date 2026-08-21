@@ -1,15 +1,21 @@
 @extends('layouts.app')
 
-@section('title', ($settings->listing_title ?: 'Blog').' · Lars Möller')
-@section('meta_description', $settings->listing_intro ?: 'Blog by Lars Möller')
-@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/blog'))
+@php
+    $journalSection = isset($section) && $section instanceof \App\Models\SiteSection ? $section : null;
+    $pageTitle = $settings->listing_title ?: ($journalSection?->title ?: 'Blog');
+    $canonicalPath = $journalSection?->publicPath() ?? '/blog';
+@endphp
+
+@section('title', $pageTitle.' · Lars Möller')
+@section('meta_description', $settings->listing_intro ?: $pageTitle.' by Lars Möller')
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($canonicalPath))
 
 @section('content')
     @php
         $preview = app(\App\Domain\Content\SitePreviewContext::class);
     @endphp
     <section class="blog-page" aria-labelledby="blog-heading">
-        <h2 id="blog-heading" class="category-heading">{{ $settings->listing_title ?: 'Blog' }}</h2>
+        <h2 id="blog-heading" class="category-heading">{{ $pageTitle }}</h2>
 
         @if ($settings->listing_intro !== null)
             <div class="rich-text blog-intro">{!! $richText->render($settings->listing_intro) !!}</div>
@@ -17,7 +23,10 @@
 
         @foreach ($posts as $post)
             @php
-                $postUrl = $preview->url(route('blog.show', ['slug' => $post->slug]));
+                $publicPostUrl = $journalSection !== null
+                    ? route('journal.show', ['section' => $journalSection->slug, 'slug' => $post->slug])
+                    : route('blog.show', ['slug' => $post->slug]);
+                $postUrl = $preview->url($publicPostUrl);
             @endphp
             <article class="blog-entry">
                 <h3><a href="{{ $postUrl }}">{{ $post->title }}</a></h3>
