@@ -26,6 +26,7 @@ use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
@@ -93,7 +94,6 @@ class AdminPanelProvider extends PanelProvider
             ...Analytics::getNavigationItems(),
             ...Activity::getNavigationItems(),
             NavigationItem::make('General')
-                ->key(PublicContentSettingResource::class)
                 ->group('Settings')
                 ->icon(Heroicon::OutlinedCog6Tooth)
                 ->isActiveWhen(fn (): bool => original_request()->routeIs(PublicContentSettingResource::getNavigationItemActiveRoutePattern()))
@@ -111,7 +111,7 @@ class AdminPanelProvider extends PanelProvider
 
         $sections = SiteSection::query()
             ->whereNull('parent_id')
-            ->with(['children' => static function ($relation): void {
+            ->with(['children' => static function (HasMany $relation): void {
                 $relation->orderBy('position')->orderBy('id');
             }])
             ->orderBy('position')
@@ -140,7 +140,6 @@ class AdminPanelProvider extends PanelProvider
         }
 
         return NavigationItem::make($label)
-            ->key('site-section:'.$section->getKey())
             ->group('Website')
             ->parentItem('Pages')
             ->sort($sort)
