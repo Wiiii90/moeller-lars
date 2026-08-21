@@ -52,10 +52,12 @@ final class ArtistReportingService
         $interactions = null;
         if ($attention['state'] !== 'unavailable') {
             $interactions = array_sum(array_map(
-                static fn (array $row): int => (int) ($row['viewer_opens'] ?? 0)
-                    + (int) ($row['zooms'] ?? 0)
-                    + (int) ($row['navigation'] ?? 0)
-                    + (int) ($row['attention_events'] ?? 0),
+                static fn (array $row): int => array_sum([
+                    (int) ($row['viewer_opens'] ?? 0),
+                    (int) ($row['zooms'] ?? 0),
+                    (int) ($row['navigation'] ?? 0),
+                    (int) ($row['attention_events'] ?? 0),
+                ]),
                 $rows,
             ));
         }
