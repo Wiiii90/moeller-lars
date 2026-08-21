@@ -1,36 +1,36 @@
 <x-filament-widgets::widget>
     <div class="artist-workspace artist-dashboard">
+        <nav class="artist-dashboard__quick-actions" aria-label="Quick actions">
+            @foreach ($quickActions as $quickAction)
+                @switch($quickAction['key'])
+                    @case('add_artwork')
+                        {{ $this->addArtworkAction }}
+                        @break
+                    @case('pages')
+                        {{ $this->managePagesAction }}
+                        @break
+                    @case('files')
+                        {{ $this->filesAction }}
+                        @break
+                    @case('general')
+                        {{ $this->generalAction }}
+                        @break
+                    @case('open_site')
+                        {{ $this->openSiteAction }}
+                        @break
+                @endswitch
+            @endforeach
+        </nav>
+
         <header class="artist-workspace__head">
             <div>
                 <p class="artist-workspace__kicker">Editorial overview</p>
                 <h2>Website at a glance</h2>
             </div>
-
-            <nav class="artist-dashboard__quick-actions" aria-label="Quick actions">
-                @foreach ($quickActions as $quickAction)
-                    @switch($quickAction['key'])
-                        @case('add_artwork')
-                            {{ $this->addArtworkAction }}
-                            @break
-                        @case('pages')
-                            {{ $this->managePagesAction }}
-                            @break
-                        @case('files')
-                            {{ $this->filesAction }}
-                            @break
-                        @case('general')
-                            {{ $this->generalAction }}
-                            @break
-                        @case('open_site')
-                            {{ $this->openSiteAction }}
-                            @break
-                    @endswitch
-                @endforeach
-            </nav>
         </header>
 
         <div class="artist-dashboard__layout">
-            <section class="artist-dashboard__content" aria-label="Traffic and engagement">
+            <section class="artist-dashboard__section" aria-label="Traffic and engagement">
                 <div class="artist-dashboard__section-head">
                     <span>Traffic &amp; engagement</span>
                     <span>{{ $analytics['range'] }}</span>
@@ -86,15 +86,12 @@
                 @endif
             </section>
 
-            <section class="artist-dashboard__content" aria-label="Most viewed content">
+            <section class="artist-dashboard__section" aria-label="Most viewed content">
                 <div class="artist-dashboard__section-head"><span>Most viewed content</span><span>Views</span></div>
                 @if ($analytics['content_state'] === 'available')
                     @foreach ($analytics['content'] as $row)
                         <div class="artist-dashboard__row">
-                            <span class="artist-dashboard__identity">
-                                <strong>{{ $row['label'] }}</strong>
-                                <small>Rank {{ $loop->iteration }}</small>
-                            </span>
+                            <span class="artist-dashboard__identity"><strong>{{ $row['label'] }}</strong></span>
                             <strong class="artist-dashboard__number">{{ number_format($row['value']) }}</strong>
                         </div>
                     @endforeach
@@ -106,7 +103,7 @@
             </section>
         </div>
 
-        <section class="artist-dashboard__publication" aria-label="Editorial publication state">
+        <section class="artist-dashboard__section artist-dashboard__publication" aria-label="Editorial publication state">
             <div class="artist-dashboard__section-head"><span>Publication state</span><span>Current content</span></div>
             <div class="artist-kpi-strip artist-kpi-strip--4">
                 @foreach ($editorialStatus as $status)
@@ -119,7 +116,7 @@
         </section>
 
         <div class="artist-dashboard__layout">
-            <section class="artist-dashboard__activity" aria-label="Recent editorial activity">
+            <section class="artist-dashboard__section" aria-label="Recent editorial activity">
                 <div class="artist-dashboard__section-head">
                     <span>Recent activity</span>
                     <a class="artist-action" href="{{ $activityUrl }}">All activity</a>
@@ -138,7 +135,7 @@
             </section>
 
             <aside class="artist-dashboard__side" aria-label="Website health and attention">
-                <section class="artist-dashboard__attention" aria-label="Needs attention">
+                <section class="artist-dashboard__section" aria-label="Needs attention">
                     <div class="artist-dashboard__section-head"><span>Needs attention</span></div>
                     @forelse ($attention as $item)
                         @if ($item['url'])
@@ -163,7 +160,7 @@
                     @endforelse
                 </section>
 
-                <section class="artist-dashboard__attention" aria-label="Storage headroom">
+                <section class="artist-dashboard__section" aria-label="Storage headroom">
                     <div class="artist-dashboard__section-head"><span>Storage headroom</span><a class="artist-action" href="{{ $storage['url'] }}">Storage</a></div>
                     <a class="artist-dashboard__notice" href="{{ $storage['url'] }}">
                         <span class="artist-dashboard__identity">
