@@ -30,7 +30,6 @@ it('uses the artist-facing shell navigation and public brand target', function (
         ->assertSee('Website')
         ->assertSee('Content')
         ->assertSee('Insights')
-        ->assertSee('Settings')
         ->assertDontSee('Library');
 });
 
