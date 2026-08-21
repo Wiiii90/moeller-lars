@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Artwork\ArtworkCategoryPathPolicy;
 use App\Domain\Artwork\PublicArtworkQuery;
+use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
 use App\Models\ArtworkCategory;
 use App\Models\Redirect;
@@ -16,6 +17,7 @@ class PublicArtworkController extends Controller
     public function __construct(
         private readonly PublicArtworkQuery $artworks,
         private readonly PublicMedia $media,
+        private readonly SitePreviewContext $preview,
     ) {}
 
     public function home(): View
@@ -28,15 +30,19 @@ class PublicArtworkController extends Controller
 
     public function category(string $category): View|RedirectResponse
     {
-        /** @var SiteSection|null $section */
-        $section = SiteSection::query()
+        $sectionQuery = SiteSection::query()
             ->where('type', SiteSection::TYPE_GALLERY)
-            ->where('state', 'published')
             ->where('slug', $category)
-            ->with('artworkCategory')
-            ->first();
+            ->with('artworkCategory');
+        $this->preview->constrainSectionQuery($sectionQuery);
+        /** @var SiteSection|null $section */
+        $section = $sectionQuery->first();
 
         if ($section === null) {
+            if ($this->preview->active()) {
+                abort(404);
+            }
+
             $redirect = Redirect::query()
                 ->where('source_path', '/'.$category)
                 ->where('enabled', true)
@@ -66,14 +72,11 @@ class PublicArtworkController extends Controller
 
         /** @var ArtworkCategory $categoryRecord */
         $categoryRecord = $artwork->getRelationValue('category');
-        abort_unless(
-            SiteSection::query()
-                ->where('type', SiteSection::TYPE_GALLERY)
-                ->where('state', 'published')
-                ->where('artwork_category_id', $categoryRecord->getKey())
-                ->exists(),
-            404,
-        );
+        $sectionQuery = SiteSection::query()
+            ->where('type', SiteSection::TYPE_GALLERY)
+            ->where('artwork_category_id', $categoryRecord->getKey());
+        $this->preview->constrainSectionQuery($sectionQuery);
+        abort_unless($sectionQuery->exists(), 404);
 
         return view('pages.artworks.show', [
             'artwork' => $artwork,

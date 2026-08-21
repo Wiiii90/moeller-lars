@@ -122,10 +122,39 @@ it('uses the SiteSection as the public availability gate regardless of legacy se
     $this->get('/cv')->assertNotFound();
 });
 
-it('rejects hierarchy on non-Gallery section types', function (): void {
-    $parent = SiteSection::query()->where('type', SiteSection::TYPE_VITA)->firstOrFail();
-    $blog = SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->firstOrFail();
+it('models navigation groups as generic route-less parents without label special cases', function (): void {
+    $group = SiteSection::query()->create([
+        'type' => SiteSection::TYPE_NAVIGATION_GROUP,
+        'title' => 'Works',
+        'navigation_label' => 'Works',
+        'slug' => null,
+        'state' => 'published',
+        'position' => 500,
+        'show_in_navigation' => true,
+        'parent_id' => null,
+        'artwork_category_id' => null,
+    ]);
+    $vita = testUniqueSection(SiteSection::TYPE_VITA, [
+        'state' => 'published',
+        'show_in_navigation' => true,
+        'navigation_label' => 'Biography',
+        'position' => 10,
+        'parent_id' => $group->id,
+    ]);
 
-    expect(fn () => $blog->update(['parent_id' => $parent->id]))
-        ->toThrow(ValidationException::class, 'Only Gallery sections may have a parent section.');
+    expect($group->hasPublicPage())->toBeFalse()
+        ->and($group->publicPath())->toBeNull()
+        ->and($group->publicUrl())->toBeNull()
+        ->and($group->canContainChildren())->toBeTrue()
+        ->and((int) $vita->parent_id)->toBe($group->id);
+
+    $items = app(PublicNavigationService::class)->items();
+    $works = $items->firstWhere('label', 'Works');
+    expect($works)->not->toBeNull()
+        ->and($works['url'])->toBeNull()
+        ->and(collect($works['children'])->pluck('label')->all())->toContain('Biography');
+
+    $blog = SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->firstOrFail();
+    expect(fn () => $blog->update(['parent_id' => $vita->id]))
+        ->toThrow(ValidationException::class, 'The selected parent cannot contain submenu sections.');
 });

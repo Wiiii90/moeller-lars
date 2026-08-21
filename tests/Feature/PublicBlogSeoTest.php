@@ -38,14 +38,30 @@ it('publishes blog routes from SiteSection state and excludes future scheduled p
     $this->get('/blog/future-post')->assertNotFound();
 });
 
-it('builds sitemap from canonical published SiteSections', function () {
+it('builds sitemap from canonical published SiteSections while excluding node-only groups', function () {
     $category = ArtworkCategory::create(['slug' => 'sculptures', 'name' => 'Sculptures', 'show_on_home' => false]);
     testGallerySection($category, ['state' => 'published']);
     testUniqueSection(SiteSection::TYPE_VITA, ['state' => 'published']);
     testUniqueSection(SiteSection::TYPE_BLOG, ['state' => 'published']);
+    SiteSection::query()->create([
+        'type' => SiteSection::TYPE_NAVIGATION_GROUP,
+        'title' => 'Navigation only',
+        'navigation_label' => 'Navigation only',
+        'slug' => null,
+        'state' => 'published',
+        'position' => 500,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
+    ]);
 
     $response = $this->get('/sitemap.xml')->assertSuccessful();
-    $response->assertSee('/sculptures')->assertSee('/cv')->assertSee('/blog')->assertDontSee('/contact');
+    $response
+        ->assertSee('/sculptures')
+        ->assertSee('/cv')
+        ->assertSee('/blog')
+        ->assertSee('/contact')
+        ->assertDontSee('Navigation only');
 });
 
 it('publishes intentional robots policy', function () {

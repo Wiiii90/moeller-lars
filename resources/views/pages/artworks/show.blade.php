@@ -13,6 +13,7 @@
     $currentIndex = $sequence->search(fn ($candidate) => $candidate->getKey() === $artwork->getKey());
     $previousArtwork = is_int($currentIndex) && $currentIndex > 0 ? $sequence->get($currentIndex - 1) : null;
     $nextArtwork = is_int($currentIndex) && $currentIndex < $sequence->count() - 1 ? $sequence->get($currentIndex + 1) : null;
+    $preview = app(\App\Domain\Content\SitePreviewContext::class);
 @endphp
 
 @section('title', $artwork->title.' — Lars Möller')
@@ -47,20 +48,20 @@
                 @if ($previousArtwork !== null)
                     <a
                         class="artwork-context-button artwork-context-button--icon"
-                        href="{{ route('artworks.show', $previousArtwork->slug) }}"
+                        href="{{ $preview->url(route('artworks.show', $previousArtwork->slug)) }}"
                         aria-label="Previous artwork"
                         title="Previous artwork"
                     >‹</a>
                 @endif
 
-                <a class="artwork-context-button artwork-context-button--category" href="{{ route('artworks.category', $category->slug) }}">
+                <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('artworks.category', $category->slug)) }}">
                     {{ $category->name }}
                 </a>
 
                 @if ($nextArtwork !== null)
                     <a
                         class="artwork-context-button artwork-context-button--icon"
-                        href="{{ route('artworks.show', $nextArtwork->slug) }}"
+                        href="{{ $preview->url(route('artworks.show', $nextArtwork->slug)) }}"
                         aria-label="Next artwork"
                         title="Next artwork"
                     >›</a>
@@ -95,7 +96,7 @@
                     data-viewer-src="{{ $viewerMediaUrl }}"
                     data-viewer-alt="{{ $media->altText($viewerArtwork) }}"
                     data-viewer-title="{{ $viewerArtwork->title }}"
-                    data-viewer-page="{{ route('artworks.show', $viewerArtwork->slug) }}"
+                    data-viewer-page="{{ $preview->url(route('artworks.show', $viewerArtwork->slug)) }}"
                 ></span>
             @endforeach
         </div>

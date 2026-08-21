@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Content\SafeLinkPolicy;
+use App\Domain\Content\SitePreviewContext;
 use App\Models\PublicContentSetting;
+use App\Models\SiteSection;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,12 +17,19 @@ use Throwable;
 
 class PublicContactController extends Controller
 {
-    public function __construct(private readonly SafeLinkPolicy $safeLinkPolicy) {}
+    public function __construct(
+        private readonly SafeLinkPolicy $safeLinkPolicy,
+        private readonly SitePreviewContext $preview,
+    ) {}
 
     public function show(): View
     {
+        abort_unless($this->preview->sectionIsAvailable(SiteSection::TYPE_CONTACT), 404);
+
         $settings = PublicContentSetting::query()->sole();
-        abort_if($settings->getAttribute('contact_state') === 'hidden', 404);
+        if (! $this->preview->active()) {
+            abort_if($settings->getAttribute('contact_state') === 'hidden', 404);
+        }
 
         return view('pages.contact', ['settings' => $settings]);
     }
@@ -28,7 +37,11 @@ class PublicContactController extends Controller
     public function submit(Request $request): RedirectResponse
     {
         $settings = PublicContentSetting::query()->sole();
-        abort_unless($settings->getAttribute('contact_state') === 'enabled', 404);
+        abort_unless(
+            SiteSection::isPublished(SiteSection::TYPE_CONTACT)
+                && $settings->getAttribute('contact_state') === 'enabled',
+            404,
+        );
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],

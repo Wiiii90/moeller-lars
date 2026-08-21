@@ -4,6 +4,7 @@ use App\Domain\Migration\SiteSectionMigrationValidator;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -55,7 +56,10 @@ it('fails when the canonical Gallery hierarchy exceeds one submenu level', funct
     $childSection = testGallerySection($child, ['state' => 'hidden', 'parent_id' => $parentSection->id, 'position' => 10]);
     $grandchild = ArtworkCategory::create(['name' => 'Grandchild', 'slug' => 'validator-grandchild', 'show_on_home' => false]);
     $grandchildSection = testGallerySection($grandchild, ['state' => 'hidden', 'position' => 210]);
-    $grandchildSection->forceFill(['parent_id' => $childSection->id])->save();
+
+    DB::table('site_sections')
+        ->where('id', $grandchildSection->id)
+        ->update(['parent_id' => $childSection->id]);
 
     $result = app(SiteSectionMigrationValidator::class)->validate();
 

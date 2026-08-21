@@ -5,6 +5,9 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath('/blog'))
 
 @section('content')
+    @php
+        $preview = app(\App\Domain\Content\SitePreviewContext::class);
+    @endphp
     <section class="blog-page" aria-labelledby="blog-heading">
         <h2 id="blog-heading" class="category-heading">{{ $settings->listing_title ?: 'Blog' }}</h2>
 
@@ -13,15 +16,18 @@
         @endif
 
         @foreach ($posts as $post)
+            @php
+                $postUrl = $preview->url(route('blog.show', ['slug' => $post->slug]));
+            @endphp
             <article class="blog-entry">
-                <h3><a href="{{ route('blog.show', ['slug' => $post->slug]) }}">{{ $post->title }}</a></h3>
+                <h3><a href="{{ $postUrl }}">{{ $post->title }}</a></h3>
                 @if ($post->coverMedia !== null)
                     @php
                         $variant = $media->thumbnailVariantForAsset($post->coverMedia);
                         $variantWidth = (int) ($variant->getAttribute('width') ?? 0);
                         $variantHeight = (int) ($variant->getAttribute('height') ?? 0);
                     @endphp
-                    <a href="{{ route('blog.show', ['slug' => $post->slug]) }}" class="blog-entry__cover">
+                    <a href="{{ $postUrl }}" class="blog-entry__cover">
                         <img
                             src="{{ route('media.variant', $variant) }}"
                             alt="{{ $media->altTextForAsset($post->coverMedia) }}"

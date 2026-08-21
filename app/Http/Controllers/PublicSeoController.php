@@ -25,7 +25,9 @@ final class PublicSeoController extends Controller
             ->get();
 
         $urls = $sections
-            ->map(fn (SiteSection $section): string => $this->canonical->forPath($section->publicPath()))
+            ->map(fn (SiteSection $section): ?string => $section->publicPath())
+            ->filter(fn (?string $path): bool => $path !== null)
+            ->map(fn (string $path): string => $this->canonical->forPath($path))
             ->values()
             ->all();
 

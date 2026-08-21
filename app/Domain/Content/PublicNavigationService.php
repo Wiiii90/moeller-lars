@@ -10,15 +10,17 @@ use Illuminate\Support\Collection;
 
 final class PublicNavigationService
 {
+    public function __construct(private readonly SitePreviewContext $preview) {}
+
     /**
      * @return Collection<int, array{
      *     position:int,
      *     tie_breaker:int,
      *     label:string,
-     *     url:string,
+     *     url:?string,
      *     current:bool,
      *     active:bool,
-     *     children:list<array{label:string,url:string,current:bool}>
+     *     children:list<array{label:string,url:?string,current:bool}>
      * }>
      */
     public function items(): Collection
@@ -26,11 +28,16 @@ final class PublicNavigationService
         /** @var Builder<SiteSection> $query */
         $query = SiteSection::query();
         $query->whereNull('parent_id');
-        $query->where('state', 'published');
+        if (! $this->preview->active()) {
+            $query->where('state', 'published');
+        }
         $query->where('show_in_navigation', true);
-        $query->with(['children' => static function (Relation $relation): void {
+        $preview = $this->preview;
+        $query->with(['children' => static function (Relation $relation) use ($preview): void {
             $childQuery = $relation->getQuery();
-            $childQuery->where('state', 'published');
+            if (! $preview->active()) {
+                $childQuery->where('state', 'published');
+            }
             $childQuery->where('show_in_navigation', true);
             $childQuery->orderBy('position');
             $childQuery->orderBy('id');
@@ -41,12 +48,12 @@ final class PublicNavigationService
         /** @var EloquentCollection<int, SiteSection> $sections */
         $sections = $query->get();
 
-        return $sections->map(static function (SiteSection $section): array {
+        return $sections->map(function (SiteSection $section): array {
             /** @var EloquentCollection<int, SiteSection> $childSections */
             $childSections = $section->getRelation('children');
-            $children = $childSections->map(static fn (SiteSection $child): array => [
+            $children = $childSections->map(fn (SiteSection $child): array => [
                 'label' => (string) $child->getAttribute('navigation_label'),
-                'url' => $child->publicUrl(),
+                'url' => $this->sectionUrl($child),
                 'current' => $child->isCurrentRequest(),
             ])->values()->all();
             $childCurrent = collect($children)->contains(static fn (array $child): bool => $child['current']);
@@ -56,11 +63,18 @@ final class PublicNavigationService
                 'position' => (int) $section->getAttribute('position'),
                 'tie_breaker' => (int) $section->getKey(),
                 'label' => (string) $section->getAttribute('navigation_label'),
-                'url' => $section->publicUrl(),
+                'url' => $this->sectionUrl($section),
                 'current' => $current,
                 'active' => $current || $childCurrent,
                 'children' => $children,
             ];
         })->values();
+    }
+
+    private function sectionUrl(SiteSection $section): ?string
+    {
+        $url = $section->publicUrl();
+
+        return $url === null ? null : $this->preview->url($url);
     }
 }

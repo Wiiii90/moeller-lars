@@ -12,9 +12,10 @@ final class PublicSiteContext
     public function __construct(
         private readonly PublicNavigationService $navigation,
         private readonly PublicMedia $media,
+        private readonly SitePreviewContext $preview,
     ) {}
 
-    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant} */
+    /** @return array{navigationItems:list<array<string,mixed>>,faviconVariant:?MediaVariant,isPreview:bool,homeUrl:string} */
     public function layoutData(): array
     {
         $settings = PublicContentSetting::query()->sole();
@@ -28,6 +29,8 @@ final class PublicSiteContext
         return [
             'navigationItems' => $this->navigation->items()->values()->all(),
             'faviconVariant' => $faviconVariant,
+            'isPreview' => $this->preview->active(),
+            'homeUrl' => $this->preview->homeUrl(),
         ];
     }
 }
