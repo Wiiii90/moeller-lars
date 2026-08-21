@@ -51,7 +51,7 @@
 
         @if ($showCategoryLink && $category !== null)
             <nav class="artwork-card__actions" aria-label="Artwork navigation">
-                <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('artworks.category', $category->slug)) }}">
+                <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}">
                     {{ $category->name }} <span aria-hidden="true">→</span>
                 </a>
             </nav>

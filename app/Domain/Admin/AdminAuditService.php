@@ -62,6 +62,7 @@ class AdminAuditService
                 'neighbor_artwork_media_id',
                 'previous_artwork_media_id',
                 'next_artwork_media_id',
+                'site_section_id',
             ], true)
                 && is_int($value)
                 && $value > 0;

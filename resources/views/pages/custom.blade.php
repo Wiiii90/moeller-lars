@@ -5,7 +5,9 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($section->publicPath()))
 
 @section('content')
-    @php($isPreview = app(\App\Domain\Content\SitePreviewContext::class)->active())
+    @php
+        $isPreview = app(\App\Domain\Content\SitePreviewContext::class)->active();
+    @endphp
     <div class="custom-page" aria-label="{{ $section->title }}">
         <h2 class="category-heading">{{ $section->title }}</h2>
 

@@ -9,7 +9,9 @@
 @section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($section->publicPath()))
 
 @section('content')
-    @php($preview = app(\App\Domain\Content\SitePreviewContext::class))
+    @php
+        $preview = app(\App\Domain\Content\SitePreviewContext::class);
+    @endphp
     <section class="blog-page" aria-labelledby="blog-heading">
         <h2 id="blog-heading" class="category-heading">{{ $pageTitle }}</h2>
 

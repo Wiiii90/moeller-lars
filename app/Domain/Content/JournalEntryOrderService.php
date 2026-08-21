@@ -5,6 +5,7 @@ namespace App\Domain\Content;
 use App\Domain\Admin\AdminAuditService;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
+use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -16,9 +17,13 @@ final class JournalEntryOrderService
 
     public function nextPosition(Model $model, int $siteSectionId): int
     {
+        SiteSection::query()
+            ->whereKey($siteSectionId)
+            ->lockForUpdate()
+            ->firstOrFail();
+
         $maximum = $model->newQuery()
             ->where('site_section_id', $siteSectionId)
-            ->lockForUpdate()
             ->max('position');
 
         return $maximum === null ? 0 : ((int) $maximum) + 1;
