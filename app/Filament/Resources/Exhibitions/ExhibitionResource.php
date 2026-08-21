@@ -16,11 +16,12 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -48,8 +49,9 @@ class ExhibitionResource extends Resource
         return $schema->components([
             Hidden::make('site_section_id')
                 ->default(fn (): ?int => request()->integer('section') ?: null),
-            Section::make('Exhibition')
-                ->description('Content edits are saved independently from publication. Use the page actions to publish, unpublish or archive.')
+            Fieldset::make('Exhibition')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     TextInput::make('title')
                         ->required()
@@ -73,8 +75,7 @@ class ExhibitionResource extends Resource
                     TextInput::make('opening_text')
                         ->label('Opening / vernissage')
                         ->maxLength(500)
-                        ->nullable()
-                        ->helperText('Optional kickoff/opening date and time. Keep the exhibition run itself in “Displayed exhibition dates”.'),
+                        ->nullable(),
                     Select::make('kind')->options([
                         'solo' => 'Solo',
                         'group' => 'Group',
@@ -100,23 +101,30 @@ class ExhibitionResource extends Resource
                     TextInput::make('directions_url')->label('Directions URL')->url()->maxLength(2048)->nullable(),
                 ])
                 ->columns(2),
-            Section::make('Media')
-                ->description('Choose media visually and drag items into their public order. A published exhibition may have at most one hero image.')
+            Fieldset::make('Media')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     Repeater::make('mediaUsages')
                         ->relationship()
                         ->schema([
                             MediaAssetSelect::make('media_asset_id', 'mediaAsset', 'Image')
-                                ->required()
-                                ->columnSpanFull(),
+                                ->required(),
                             Select::make('role')->options([
                                 'hero' => 'Hero',
                                 'additional' => 'Additional',
                             ])->required()->default('additional'),
-                            TextInput::make('alt_text_override')->label('ALT text override')->maxLength(500)->nullable(),
+                            TextInput::make('alt_text_override')->label('ALT override')->maxLength(500)->nullable(),
                         ])
-                        ->columns(2)
-                        ->orderColumn('position'),
+                        ->table([
+                            TableColumn::make('Image'),
+                            TableColumn::make('Role'),
+                            TableColumn::make('ALT override'),
+                        ])
+                        ->compact()
+                        ->orderColumn('position')
+                        ->reorderableWithButtons()
+                        ->reorderableWithDragAndDrop(false),
                 ]),
         ]);
     }
