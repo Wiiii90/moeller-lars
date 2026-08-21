@@ -25,7 +25,7 @@ final class BlogSettingResource extends Resource
 
     public static function getSettingsUrl(): string
     {
-        return self::getUrl('edit', ['record' => BlogSetting::query()->sole()]);
+        return self::getUrl('edit', ['record' => BlogSetting::forBlogSection()]);
     }
 
     public static function form(Schema $schema): Schema
