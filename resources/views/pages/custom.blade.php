@@ -14,10 +14,11 @@
                 $assetId = is_array($block) && is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
                 $asset = $assetId !== null ? $assets->get($assetId) : null;
                 $variant = $asset !== null ? $media->thumbnailVariantForAsset($asset) : null;
+                $divider = (bool) ($block['divider'] ?? true);
             @endphp
 
             @if ($type === 'text' || $type === 'list')
-                <section class="custom-page__component @if ($asset !== null && $variant !== null) has-media @endif">
+                <section class="custom-page__component @if ($asset !== null && $variant !== null) has-media @endif @if ($divider) has-divider @endif">
                     <div class="custom-page__copy">
                         @if (filled($block['title'] ?? null))
                             <h3>{{ $block['title'] }}</h3>
@@ -65,7 +66,7 @@
                     @endif
                 </section>
             @elseif ($type === 'contact')
-                <div class="custom-page__component custom-page__contact">
+                <div class="custom-page__component custom-page__contact @if ($divider) has-divider @endif">
                     <x-contact
                         :general-settings="$generalSettings"
                         :contact-settings="$contactSettings"
