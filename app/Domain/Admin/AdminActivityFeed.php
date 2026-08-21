@@ -29,16 +29,25 @@ final class AdminActivityFeed
 {
     public const ACTIVITY_WINDOW_DAYS = 180;
 
+    private const FILTER_WINDOWS = [7, 30, self::ACTIVITY_WINDOW_DAYS];
+
     public function __construct(private readonly AdminActionReceiptService $receipts) {}
 
     /**
      * @return array{activity: array<int, array<string, mixed>>, paginator: LengthAwarePaginator<int, AuditEvent>}
      */
-    public function page(?string $area = null, ?string $family = null, int $perPage = 30, ?User $actor = null): array
-    {
+    public function page(
+        ?string $area = null,
+        ?string $family = null,
+        int $perPage = 30,
+        ?User $actor = null,
+        int $days = self::ACTIVITY_WINDOW_DAYS,
+    ): array {
+        $days = in_array($days, self::FILTER_WINDOWS, true) ? $days : self::ACTIVITY_WINDOW_DAYS;
+
         $query = AuditEvent::query()
             ->with('adminUser:id,name')
-            ->where('occurred_at', '>=', now()->subDays(self::ACTIVITY_WINDOW_DAYS))
+            ->where('occurred_at', '>=', now()->subDays($days))
             ->orderByDesc('occurred_at')
             ->orderByDesc('id');
 

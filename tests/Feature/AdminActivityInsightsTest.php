@@ -76,6 +76,27 @@ it('projects paginated activity into current editorial context and filters by ar
         ->and($feed['paginator']->total())->toBe(1);
 });
 
+it('filters the working Activity view by a bounded recent time window', function (): void {
+    $admin = activityAdmin('activity-period@example.test');
+
+    AuditEvent::create([
+        'admin_user_id' => $admin->getKey(),
+        'action' => 'site_section.updated',
+        'entity_type' => 'site_section',
+        'entity_id' => 1,
+        'occurred_at' => now()->subDays(20),
+    ]);
+    app(AdminAuditService::class)->record($admin, 'site_section.updated', 'site_section', 1);
+
+    $week = app(AdminActivityFeed::class)->page(days: 7);
+    $month = app(AdminActivityFeed::class)->page(days: 30);
+    $invalid = app(AdminActivityFeed::class)->page(days: 365);
+
+    expect($week['paginator']->total())->toBe(1)
+        ->and($month['paginator']->total())->toBe(2)
+        ->and($invalid['paginator']->total())->toBe(2);
+});
+
 it('keeps deleted targets readable without exposing raw ids as the primary label', function (): void {
     $admin = activityAdmin('activity-deleted@example.test');
     app(AdminAuditService::class)->record($admin, 'media.deleted', 'media_asset', 987654);
@@ -114,6 +135,9 @@ it('serves the Activity manager to admins with editorial filters', function (): 
         ->get(Activity::getUrl())
         ->assertSuccessful()
         ->assertSee('Editorial history')
+        ->assertSee('7 days')
+        ->assertSee('30 days')
+        ->assertSee('180 days')
         ->assertSee('All areas')
         ->assertSee('All changes');
 });
