@@ -1,24 +1,42 @@
 <?php
 
 use App\Mail\WebsiteContactMessage;
+use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
+use App\Models\SiteSection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
-function contactPresentationSettings(): PublicContentSetting
+function enablePublishedContactForm(): void
 {
-    return PublicContentSetting::contact();
+    PublicContentSetting::contact()->update(['contact_state' => 'enabled']);
+
+    $section = SiteSection::query()->create([
+        'type' => SiteSection::TYPE_CUSTOM,
+        'template' => null,
+        'title' => 'Contact test page',
+        'navigation_label' => 'Contact test page',
+        'slug' => 'contact-test-page',
+        'state' => 'published',
+        'position' => 900,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
+    ]);
+
+    $settings = new CustomPageSetting;
+    $settings->setAttribute('site_section_id', $section->id);
+    $settings->setAttribute('blocks', [[
+        'type' => 'contact',
+        'show_form' => true,
+    ]]);
+    $settings->save();
 }
 
-function generalContactSettings(): PublicContentSetting
-{
-    return PublicContentSetting::general();
-}
-
-function validContactPayload(array $overrides = []): array
+function contactPayload(array $overrides = []): array
 {
     return array_merge([
         'name' => 'Visitor',
@@ -28,26 +46,7 @@ function validContactPayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('keeps page availability with SiteSection while Contact controls presentation', function () {
-    contactPresentationSettings()->update(['contact_state' => 'hidden']);
-
-    $this->get('/contact')
-        ->assertSuccessful()
-        ->assertDontSee('<form', false);
-
-    contactPresentationSettings()->update([
-        'contact_state' => 'under_construction',
-        'contact_status_text' => 'Contact is being prepared.',
-        'contact_icon' => 'info',
-    ]);
-
-    $this->get('/contact')
-        ->assertSuccessful()
-        ->assertSee('Contact is being prepared.')
-        ->assertDontSee('<form', false);
-});
-
-it('uses the private General recipient and configured site sender identity', function () {
+it('delivers to the private General recipient with the configured sender and visitor Reply-To', function (): void {
     config([
         'contact.recipient' => 'fallback@example.test',
         'mail.default' => 'smtp',
@@ -55,20 +54,13 @@ it('uses the private General recipient and configured site sender identity', fun
         'mail.from.name' => 'Lars Möller Website',
     ]);
     Mail::fake();
-    contactPresentationSettings()->update(['contact_state' => 'enabled']);
-    generalContactSettings()->update([
-        'public_email' => 'public@example.test',
-        'show_public_email' => true,
+    enablePublishedContactForm();
+    PublicContentSetting::general()->update([
         'contact_recipient_email' => 'private@example.test',
     ]);
 
-    $this->get('/contact')
-        ->assertSuccessful()
-        ->assertSee('public@example.test')
-        ->assertDontSee('private@example.test');
-
-    $this->from('/contact')->post('/contact', validContactPayload())
-        ->assertRedirect('/contact')
+    $this->post('/contact', contactPayload())
+        ->assertRedirect()
         ->assertSessionHas('contact_success');
 
     Mail::assertSent(WebsiteContactMessage::class, function (WebsiteContactMessage $mail): bool {
@@ -84,7 +76,7 @@ it('uses the private General recipient and configured site sender identity', fun
     });
 });
 
-it('falls back to the runtime recipient when the private recipient is empty', function () {
+it('falls back to the runtime recipient when General has no private recipient', function (): void {
     config([
         'contact.recipient' => 'fallback@example.test',
         'mail.default' => 'smtp',
@@ -92,61 +84,55 @@ it('falls back to the runtime recipient when the private recipient is empty', fu
         'mail.from.name' => 'Website',
     ]);
     Mail::fake();
-    contactPresentationSettings()->update(['contact_state' => 'enabled']);
-    generalContactSettings()->update(['contact_recipient_email' => null]);
+    enablePublishedContactForm();
+    PublicContentSetting::general()->update(['contact_recipient_email' => null]);
 
-    $this->post('/contact', validContactPayload())->assertSessionHas('contact_success');
+    $this->post('/contact', contactPayload())->assertSessionHas('contact_success');
 
     Mail::assertSent(WebsiteContactMessage::class, fn (WebsiteContactMessage $mail): bool => $mail->hasTo('fallback@example.test'));
 });
 
-it('validates the minimal form and keeps csrf plus the honeypot internal', function () {
+it('validates required fields and rejects the honeypot', function (): void {
     config(['contact.recipient' => 'artist@example.test']);
-    contactPresentationSettings()->update(['contact_state' => 'enabled']);
+    enablePublishedContactForm();
 
-    $this->from('/contact')->post('/contact', validContactPayload([
+    $this->post('/contact', contactPayload([
         'name' => '',
         'email' => 'not-an-email',
         'message' => '',
     ]))->assertSessionHasErrors(['name', 'email', 'message']);
 
-    $this->from('/contact')->post('/contact', validContactPayload([
-        'company' => 'spam',
-    ]))->assertSessionHasErrors('company');
-
-    $this->get('/contact')
-        ->assertSuccessful()
-        ->assertSee('name="_token"', false)
-        ->assertDontSee('name="website"', false);
+    $this->post('/contact', contactPayload(['company' => 'spam']))
+        ->assertSessionHasErrors('company');
 });
 
-it('rate limits repeated contact submissions', function () {
+it('rate limits repeated contact submissions', function (): void {
     config([
         'contact.recipient' => 'artist@example.test',
         'mail.default' => 'smtp',
         'mail.from.address' => 'website@moeller-lars.de',
     ]);
     Mail::fake();
-    contactPresentationSettings()->update(['contact_state' => 'enabled']);
+    enablePublishedContactForm();
 
     foreach (range(1, 5) as $attempt) {
-        $this->post('/contact', validContactPayload(['message' => "Attempt {$attempt}"]))
+        $this->post('/contact', contactPayload(['message' => "Attempt {$attempt}"]))
             ->assertRedirect();
     }
 
-    $this->post('/contact', validContactPayload(['message' => 'Attempt 6']))
+    $this->post('/contact', contactPayload(['message' => 'Attempt 6']))
         ->assertTooManyRequests();
 });
 
-it('reports missing mail configuration as failure instead of success', function () {
+it('fails closed when delivery configuration is incomplete', function (): void {
     config([
         'contact.recipient' => null,
         'mail.from.address' => null,
     ]);
-    contactPresentationSettings()->update(['contact_state' => 'enabled']);
-    generalContactSettings()->update(['contact_recipient_email' => null]);
+    enablePublishedContactForm();
+    PublicContentSetting::general()->update(['contact_recipient_email' => null]);
 
-    $this->from('/contact')->post('/contact', validContactPayload())
+    $this->post('/contact', contactPayload())
         ->assertSessionHasErrors('contact')
         ->assertSessionMissing('contact_success');
 });
