@@ -25,7 +25,7 @@
                 </div>
 
                 <div class="artist-storage__numbers">
-                    <div class="artist-storage__primary"><span>Authoritative originals</span><strong>{{ $capacity['authoritative'] }}</strong><small>{{ $capacity['original_files'] }} files · counts against allowance</small></div>
+                    <div class="artist-storage__primary"><span>Used · authoritative originals</span><strong>{{ $capacity['authoritative'] }}</strong><small>{{ $capacity['original_files'] }} files · counts against allowance</small></div>
                     <dl>
                         <div><dt>Remaining</dt><dd>{{ $capacity['remaining'] }}</dd></div>
                         <div><dt>Allowance</dt><dd>{{ $capacity['allowance'] }}</dd></div>
