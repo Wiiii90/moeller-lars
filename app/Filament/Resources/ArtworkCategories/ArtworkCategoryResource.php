@@ -12,7 +12,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -39,8 +39,9 @@ class ArtworkCategoryResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Gallery details')
-                ->description('Name, stable public URL and description belong to the Gallery itself. Publication, menu placement, submenu parent and site order are managed from Pages.')
+            Fieldset::make('Gallery details')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     TextInput::make('name')
                         ->required()
@@ -65,12 +66,12 @@ class ArtworkCategoryResource extends Resource
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
-            Section::make('Homepage')
-                ->description('Homepage eligibility is Gallery content behavior, independent from public navigation placement.')
+            Fieldset::make('Homepage')
+                ->contained(false)
+                ->extraAttributes(['class' => 'artist-editor-form-section'])
                 ->schema([
                     Toggle::make('show_on_home')
-                        ->label('Eligible for homepage')
-                        ->helperText('Allows this Gallery to participate in homepage presentation while its SiteSection is published.'),
+                        ->label('Eligible for homepage'),
                 ]),
         ]);
     }
