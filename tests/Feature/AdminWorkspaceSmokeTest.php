@@ -56,9 +56,12 @@ it('renders the artist dashboard overview eagerly in the initial dashboard respo
     $this->get('/admin')
         ->assertSuccessful()
         ->assertSee('Website at a glance')
-        ->assertSee('Content')
+        ->assertSee('Traffic & engagement')
         ->assertSee('Needs attention')
-        ->assertSee('Recent activity');
+        ->assertSee('Recent activity')
+        ->assertSee('Storage headroom')
+        ->assertDontSee('Content overview')
+        ->assertDontSee('Galleries');
 });
 
 it('keeps public placement controls in Pages instead of legacy settings editors', function () {
