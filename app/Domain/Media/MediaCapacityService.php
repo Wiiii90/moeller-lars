@@ -14,30 +14,22 @@ final class MediaCapacityService
     private const DISPLAY_CACHE_SECONDS = 300;
 
     /**
-     * @return array{configured:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null}
+     * @return array{configured:bool,configuration_valid:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null}
      */
     public function snapshot(): array
     {
-        $quota = $this->quotaBytes();
+        $quotaConfiguration = $this->quotaConfiguration();
+        if (! $quotaConfiguration['valid']) {
+            return $this->unavailableSnapshot(true, false, null);
+        }
+
+        $quota = $quotaConfiguration['bytes'];
 
         try {
             [$authoritativeBytes, $originalFiles, $authoritativeFiles] = $this->measurePrefix('originals', true);
             [$generatedBytes, $generatedFiles] = $this->measurePrefix('variants');
         } catch (Throwable) {
-            return [
-                'configured' => $quota !== null,
-                'measurement_available' => false,
-                'status' => 'unavailable',
-                'quota_bytes' => $quota,
-                'authoritative_bytes' => null,
-                'generated_bytes' => null,
-                'managed_bytes' => null,
-                'remaining_bytes' => null,
-                'authoritative_ratio' => null,
-                'original_files' => null,
-                'generated_files' => null,
-                'authoritative_file_bytes' => null,
-            ];
+            return $this->unavailableSnapshot($quotaConfiguration['configured'], true, $quota);
         }
 
         $remaining = $quota === null ? null : max(0, $quota - $authoritativeBytes);
@@ -52,7 +44,8 @@ final class MediaCapacityService
         }
 
         return [
-            'configured' => $quota !== null,
+            'configured' => $quotaConfiguration['configured'],
+            'configuration_valid' => true,
             'measurement_available' => true,
             'status' => $status,
             'quota_bytes' => $quota,
@@ -67,7 +60,7 @@ final class MediaCapacityService
         ];
     }
 
-    /** @return array{configured:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null} */
+    /** @return array{configured:bool,configuration_valid:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null} */
     public function cachedSnapshot(): array
     {
         return Cache::remember($this->displayCacheKey(), self::DISPLAY_CACHE_SECONDS, fn (): array => $this->snapshot());
@@ -78,52 +71,92 @@ final class MediaCapacityService
         Cache::forget($this->displayCacheKey());
     }
 
+    public function warningThresholdPercent(): int
+    {
+        return (int) round(self::WARNING_RATIO * 100);
+    }
+
     public function assertCanStoreOriginal(int $bytes): void
     {
         if ($bytes <= 0) {
             throw ValidationException::withMessages(['media' => 'The uploaded media has an invalid size.']);
         }
 
-        $quota = $this->quotaBytes();
+        $quotaConfiguration = $this->quotaConfiguration();
+        if (! $quotaConfiguration['valid']) {
+            throw ValidationException::withMessages(['media' => 'Storage allowance configuration could not be verified. Try the upload again later.']);
+        }
+
+        $quota = $quotaConfiguration['bytes'];
         if ($quota === null) {
             return;
         }
 
-        $snapshot = $this->snapshot();
-        if (empty($snapshot['measurement_available'])) {
+        try {
+            [$authoritativeBytes] = $this->measurePrefix('originals');
+        } catch (Throwable) {
             throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
         }
 
-        $authoritativeBytes = $snapshot['authoritative_bytes'];
-        if (is_int($authoritativeBytes)) {
-            if ($authoritativeBytes + $bytes > $quota) {
-                throw ValidationException::withMessages(['media' => 'The media storage allowance is full. Remove unused original media or ask the operator to increase the allowance before uploading.']);
-            }
-
-            return;
+        if ($authoritativeBytes >= $quota || $bytes > ($quota - $authoritativeBytes)) {
+            throw ValidationException::withMessages(['media' => 'The media storage allowance is full. Remove unused original media or ask the operator to increase the allowance before uploading.']);
         }
-
-        throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
     }
 
-    private function quotaBytes(): ?int
+    /** @return array{configured:bool,valid:bool,bytes:int|null} */
+    private function quotaConfiguration(): array
     {
         $configured = config('media.quota_bytes');
+        if ($configured === null || $configured === '') {
+            return ['configured' => false, 'valid' => true, 'bytes' => null];
+        }
+
         if (is_int($configured)) {
-            return $configured > 0 ? $configured : null;
-        }
-        if (is_string($configured) && ctype_digit($configured)) {
-            $quota = (int) $configured;
-
-            return $quota > 0 ? $quota : null;
+            return $configured > 0
+                ? ['configured' => true, 'valid' => true, 'bytes' => $configured]
+                : ['configured' => true, 'valid' => false, 'bytes' => null];
         }
 
-        return null;
+        if (is_string($configured) && preg_match('/^[1-9][0-9]*$/D', $configured) === 1) {
+            $quota = filter_var($configured, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if (is_int($quota)) {
+                return ['configured' => true, 'valid' => true, 'bytes' => $quota];
+            }
+        }
+
+        return ['configured' => true, 'valid' => false, 'bytes' => null];
+    }
+
+    /**
+     * @return array{configured:bool,configuration_valid:bool,measurement_available:false,status:'unavailable',quota_bytes:int|null,authoritative_bytes:null,generated_bytes:null,managed_bytes:null,remaining_bytes:null,authoritative_ratio:null,original_files:null,generated_files:null,authoritative_file_bytes:null}
+     */
+    private function unavailableSnapshot(bool $configured, bool $configurationValid, ?int $quota): array
+    {
+        return [
+            'configured' => $configured,
+            'configuration_valid' => $configurationValid,
+            'measurement_available' => false,
+            'status' => 'unavailable',
+            'quota_bytes' => $quota,
+            'authoritative_bytes' => null,
+            'generated_bytes' => null,
+            'managed_bytes' => null,
+            'remaining_bytes' => null,
+            'authoritative_ratio' => null,
+            'original_files' => null,
+            'generated_files' => null,
+            'authoritative_file_bytes' => null,
+        ];
     }
 
     private function displayCacheKey(): string
     {
-        return 'media-capacity:display:'.sha1((string) config('media.disk').'|'.(string) ($this->quotaBytes() ?? 'none'));
+        $configured = config('media.quota_bytes');
+        $quotaToken = is_scalar($configured) || $configured === null
+            ? var_export($configured, true)
+            : get_debug_type($configured);
+
+        return 'media-capacity:display:'.sha1((string) config('media.disk').'|'.$quotaToken);
     }
 
     /** @return array{int, int, array<string, int>} */
