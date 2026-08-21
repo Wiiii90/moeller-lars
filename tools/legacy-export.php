@@ -36,8 +36,13 @@ if ($mediaRoot === false || is_dir($mediaRoot) === false) {
 }
 
 $profileMediaConfig = $config['profile_media'] ?? null;
-if (is_array($profileMediaConfig) === false) {
-    throw new RuntimeException('Mapping must define profile_media.');
+if (is_array($profileMediaConfig) === false || array_is_list($profileMediaConfig)) {
+    throw new RuntimeException('Mapping must define profile_media as an object.');
+}
+
+$profileCvLegacyId = $profileMediaConfig['cv_legacy_id'] ?? null;
+if (is_int($profileCvLegacyId) === false || $profileCvLegacyId < 1) {
+    throw new RuntimeException('profile_media.cv_legacy_id must be a positive integer.');
 }
 
 $profileMediaPath = str_replace('\\', '/', trim((string) ($profileMediaConfig['path'] ?? '')));
@@ -53,6 +58,30 @@ $profileAltText = trim((string) ($profileMediaConfig['alt_text'] ?? ''));
 if ($profileLegacySource === '' || $profileAltText === '') {
     throw new RuntimeException('profile_media requires explicit legacy_source and alt_text.');
 }
+
+$publicProfileConfig = $config['public_profile'] ?? null;
+if (is_array($publicProfileConfig) === false || array_is_list($publicProfileConfig)) {
+    throw new RuntimeException('Mapping must define public_profile as an object.');
+}
+
+$publicEmail = trim((string) ($publicProfileConfig['public_email'] ?? ''));
+$instagramHandle = trim((string) ($publicProfileConfig['instagram_handle'] ?? ''));
+$legalDisclaimer = trim((string) ($publicProfileConfig['legal_disclaimer'] ?? ''));
+if (filter_var($publicEmail, FILTER_VALIDATE_EMAIL) === false) {
+    throw new RuntimeException('public_profile.public_email must be a valid email address.');
+}
+if (preg_match('/^[A-Za-z0-9._]{1,30}$/', $instagramHandle) !== 1) {
+    throw new RuntimeException('public_profile.instagram_handle must be a valid Instagram handle.');
+}
+if ($legalDisclaimer === '') {
+    throw new RuntimeException('public_profile.legal_disclaimer must be explicit non-empty text.');
+}
+
+$manifestPublicProfile = [
+    'public_email' => $publicEmail,
+    'instagram_handle' => $instagramHandle,
+    'legal_disclaimer' => $legalDisclaimer,
+];
 
 $profileSourcePath = realpath($mediaRoot.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $profileMediaPath));
 if ($profileSourcePath === false || is_file($profileSourcePath) === false) {
@@ -71,6 +100,7 @@ if (is_int($profileByteSize) === false || is_string($profileSha256) === false) {
 
 $manifestProfileMedia = [
     'legacy_source' => $profileLegacySource,
+    'cv_legacy_id' => $profileCvLegacyId,
     'media_path' => $profileMediaPath,
     'media_byte_size' => $profileByteSize,
     'media_sha256' => $profileSha256,
@@ -276,6 +306,7 @@ $pdo->rollBack();
 $manifest = [
     'batch' => 'legacy-'.gmdate('Ymd-His'),
     'profile_media' => $manifestProfileMedia,
+    'public_profile' => $manifestPublicProfile,
     'categories' => $manifestCategories,
 ];
 

@@ -3,6 +3,8 @@
 namespace App\Domain\Migration;
 
 use App\Domain\Media\MediaIngestService;
+use App\Models\CvEntry;
+use App\Models\PublicContentSetting;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -12,32 +14,28 @@ use Throwable;
 
 final class LegacyPublicProfileImporter
 {
-    private readonly MediaIngestService $mediaIngestService;
-
-    public function __construct(MediaIngestService $mediaIngestService)
-    {
-        $this->mediaIngestService = $mediaIngestService;
-    }
+    public function __construct(
+        private readonly MediaIngestService $mediaIngestService,
+        private readonly LegacyProfileTargetResolver $targetResolver,
+    ) {}
 
     public function import(string $manifestPath, string $mediaRoot): void
     {
-        [$snapshotBatch, $profileMedia, $sourcePath] = $this->preflight($manifestPath, $mediaRoot);
+        [$snapshotBatch, $profileMedia, $profileValues, $sourcePath] = $this->preflight($manifestPath, $mediaRoot);
 
-        $cvEntry = DB::table('cv_entries')
-            ->where('legacy_source', LegacyPublicCvImporter::SOURCE)
-            ->where('legacy_id', 1)
-            ->first();
-        if (is_object($cvEntry) === false) {
+        $cvEntry = $this->targetResolver->resolve($profileMedia['legacy_source'], $profileMedia['cv_legacy_id']);
+        if (! $cvEntry instanceof CvEntry) {
             throw new RuntimeException('Verified legacy biography entry is missing; import CV content before the public profile portrait.');
         }
-        if (($cvEntry->image_media_asset_id ?? null) !== null) {
+        if ($cvEntry->getAttribute('image_media_asset_id') !== null) {
             throw new RuntimeException('Verified legacy biography entry already has media attached.');
         }
 
+        $settings = $profileValues === null ? null : PublicContentSetting::query()->sole();
         $storageKeys = [];
 
         try {
-            DB::transaction(function () use ($snapshotBatch, $profileMedia, $sourcePath, $cvEntry, &$storageKeys): void {
+            DB::transaction(function () use ($snapshotBatch, $profileMedia, $profileValues, $sourcePath, $cvEntry, $settings, &$storageKeys): void {
                 $upload = new UploadedFile(
                     $sourcePath,
                     basename($sourcePath),
@@ -70,7 +68,7 @@ final class LegacyPublicProfileImporter
                 }
 
                 $updatedCv = DB::table('cv_entries')
-                    ->where('id', $cvEntry->id)
+                    ->where('id', $cvEntry->getKey())
                     ->whereNull('image_media_asset_id')
                     ->update([
                         'image_media_asset_id' => $asset->getKey(),
@@ -80,14 +78,9 @@ final class LegacyPublicProfileImporter
                     throw new RuntimeException('Verified legacy biography portrait could not be attached.');
                 }
 
-                $updatedSettings = DB::table('public_content_settings')
-                    ->where('id', 1)
-                    ->update([
-                        ...$this->expectedValues(),
-                        'updated_at' => $now,
-                    ]);
-                if ($updatedSettings !== 1) {
-                    throw new RuntimeException('Public content settings singleton is missing.');
+                if ($settings instanceof PublicContentSetting) {
+                    $settings->fill($profileValues);
+                    $settings->save();
                 }
             });
         } catch (Throwable $exception) {
@@ -95,17 +88,14 @@ final class LegacyPublicProfileImporter
         }
     }
 
-    /** @return array{public_email:string,instagram_handle:string,legal_disclaimer:string} */
-    public function expectedValues(): array
-    {
-        return [
-            'public_email' => 'moeller.lars1689@gmail.com',
-            'instagram_handle' => 'larsmoeller_art',
-            'legal_disclaimer' => 'Obwohl ich die Inhalte sowie die hier aufgeführten Verweise regelmäßig pflege, kann ich für diese nicht haften.',
-        ];
-    }
-
-    /** @return array{string,array{legacy_source:string,media_path:string,media_byte_size:int,media_sha256:string,alt_text:string},string} */
+    /**
+     * @return array{
+     *     string,
+     *     array{legacy_source:string,cv_legacy_id:?int,media_path:string,media_byte_size:int,media_sha256:string,alt_text:string},
+     *     ?array{public_email:string,instagram_handle:string,legal_disclaimer:string},
+     *     string
+     * }
+     */
     private function preflight(string $manifestPath, string $mediaRoot): array
     {
         $manifestFile = realpath($manifestPath);
@@ -133,14 +123,16 @@ final class LegacyPublicProfileImporter
         }
 
         $snapshotBatch = $this->requiredString($manifest, 'batch');
-        $profileMedia = $manifest['profile_media'] ?? null;
-        if (is_array($profileMedia) === false || array_is_list($profileMedia)) {
-            throw new RuntimeException('Legacy manifest field profile_media must be an object.');
-        }
+        $profileMedia = $this->requiredObject($manifest, 'profile_media');
 
         $legacySource = $this->requiredString($profileMedia, 'legacy_source');
         if ($legacySource !== LegacyPublicCvImporter::SOURCE) {
             throw new RuntimeException('Legacy portrait source does not match the verified public Vita source.');
+        }
+
+        $cvLegacyId = $profileMedia['cv_legacy_id'] ?? null;
+        if ($cvLegacyId !== null && (is_int($cvLegacyId) === false || $cvLegacyId < 1)) {
+            throw new RuntimeException('Legacy portrait CV reference must be a positive legacy id when provided.');
         }
 
         $mediaPath = $this->requiredString($profileMedia, 'media_path');
@@ -157,16 +149,36 @@ final class LegacyPublicProfileImporter
         }
 
         $altText = $this->requiredString($profileMedia, 'alt_text');
+        $profileValues = null;
+        if (array_key_exists('public_profile', $manifest)) {
+            $publicProfile = $this->requiredObject($manifest, 'public_profile');
+            $publicEmail = $this->requiredString($publicProfile, 'public_email');
+            if (filter_var($publicEmail, FILTER_VALIDATE_EMAIL) === false) {
+                throw new RuntimeException('Legacy public profile email is invalid.');
+            }
+            $instagramHandle = $this->requiredString($publicProfile, 'instagram_handle');
+            if (preg_match('/^[A-Za-z0-9._]{1,30}$/', $instagramHandle) !== 1) {
+                throw new RuntimeException('Legacy public profile Instagram handle is invalid.');
+            }
+            $legalDisclaimer = $this->requiredString($publicProfile, 'legal_disclaimer');
+            $profileValues = [
+                'public_email' => $publicEmail,
+                'instagram_handle' => $instagramHandle,
+                'legal_disclaimer' => $legalDisclaimer,
+            ];
+        }
 
         return [
             $snapshotBatch,
             [
                 'legacy_source' => $legacySource,
+                'cv_legacy_id' => $cvLegacyId,
                 'media_path' => $mediaPath,
                 'media_byte_size' => $expectedBytes,
                 'media_sha256' => $expectedSha,
                 'alt_text' => $altText,
             ],
+            $profileValues,
             $sourcePath,
         ];
     }
@@ -214,6 +226,17 @@ final class LegacyPublicProfileImporter
         }
 
         throw $original;
+    }
+
+    /** @return array<string, mixed> */
+    private function requiredObject(array $data, string $key): array
+    {
+        $value = $data[$key] ?? null;
+        if (is_array($value) === false || array_is_list($value)) {
+            throw new RuntimeException("Legacy manifest field {$key} must be an object.");
+        }
+
+        return $value;
     }
 
     private function requiredString(array $data, string $key): string

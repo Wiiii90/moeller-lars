@@ -8,7 +8,7 @@ uses(RefreshDatabase::class);
 
 function publicContactSettings(): PublicContentSetting
 {
-    return PublicContentSetting::query()->findOrFail(1);
+    return PublicContentSetting::query()->sole();
 }
 
 it('keeps hidden contact unavailable and renders the explicit construction state', function () {

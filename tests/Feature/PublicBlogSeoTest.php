@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('keeps the blog completely unavailable until enabled', function () {
+it('keeps the blog unavailable while its canonical SiteSection is hidden', function () {
     BlogPost::create([
         'slug' => 'hidden-post',
         'title' => 'Hidden post',
@@ -22,8 +22,8 @@ it('keeps the blog completely unavailable until enabled', function () {
     $this->get('/sitemap.xml')->assertDontSee('/blog');
 });
 
-it('publishes enabled blog routes and excludes future scheduled posts', function () {
-    testSingletonSection(SiteSection::TYPE_BLOG, ['state' => 'published', 'show_in_navigation' => true]);
+it('publishes blog routes from SiteSection state and excludes future scheduled posts', function () {
+    testUniqueSection(SiteSection::TYPE_BLOG, ['state' => 'published', 'show_in_navigation' => true]);
     BlogPost::create([
         'slug' => 'published-post', 'title' => 'Published post', 'body' => 'Safe **body**',
         'state' => 'published', 'position' => 0, 'published_at' => now(),
@@ -38,11 +38,11 @@ it('publishes enabled blog routes and excludes future scheduled posts', function
     $this->get('/blog/future-post')->assertNotFound();
 });
 
-it('builds sitemap from public feature state only', function () {
+it('builds sitemap from canonical published SiteSections', function () {
     $category = ArtworkCategory::create(['slug' => 'sculptures', 'name' => 'Sculptures', 'show_on_home' => false]);
     testGallerySection($category, ['state' => 'published']);
-    testSingletonSection(SiteSection::TYPE_VITA, ['state' => 'published']);
-    testSingletonSection(SiteSection::TYPE_BLOG, ['state' => 'published']);
+    testUniqueSection(SiteSection::TYPE_VITA, ['state' => 'published']);
+    testUniqueSection(SiteSection::TYPE_BLOG, ['state' => 'published']);
 
     $response = $this->get('/sitemap.xml')->assertSuccessful();
     $response->assertSee('/sculptures')->assertSee('/cv')->assertSee('/blog')->assertDontSee('/contact');

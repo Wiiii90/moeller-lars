@@ -17,18 +17,17 @@ final class PublicSeoController extends Controller
 
     public function sitemap(): Response
     {
-        $urls = [$this->canonical->forPath('/')];
-
-        /** @var Collection<int, SiteSection> $gallerySections */
-        $gallerySections = SiteSection::query()
-            ->where('type', SiteSection::TYPE_GALLERY)
+        /** @var Collection<int, SiteSection> $sections */
+        $sections = SiteSection::query()
             ->where('state', 'published')
             ->orderBy('position')
-            ->get(['slug']);
+            ->orderBy('id')
+            ->get();
 
-        foreach ($gallerySections as $section) {
-            $urls[] = $this->canonical->forPath('/'.$section->getAttribute('slug'));
-        }
+        $urls = $sections
+            ->map(fn (SiteSection $section): string => $this->canonical->forPath($section->publicPath()))
+            ->values()
+            ->all();
 
         /** @var Collection<int, Artwork> $artworks */
         $artworks = Artwork::query()
@@ -40,15 +39,7 @@ final class PublicSeoController extends Controller
             $urls[] = $this->canonical->forPath('/artworks/'.$artwork->getAttribute('slug'));
         }
 
-        if (SiteSection::query()->where('type', SiteSection::TYPE_VITA)->where('state', 'published')->exists()) {
-            $urls[] = $this->canonical->forPath('/cv');
-        }
-        if (SiteSection::query()->where('type', SiteSection::TYPE_EXHIBITIONS)->where('state', 'published')->exists()) {
-            $urls[] = $this->canonical->forPath('/exhibitions');
-        }
-
-        if (SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->where('state', 'published')->exists()) {
-            $urls[] = $this->canonical->forPath('/blog');
+        if ($sections->contains(fn (SiteSection $section): bool => $section->getAttribute('type') === SiteSection::TYPE_BLOG)) {
             /** @var Collection<int, BlogPost> $posts */
             $posts = BlogEditorialService::publicQuery()->orderBy('position')->get(['slug']);
             foreach ($posts as $post) {

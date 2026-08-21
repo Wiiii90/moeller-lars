@@ -23,6 +23,11 @@ final class BlogSettingResource extends Resource
 
     protected static ?string $pluralModelLabel = 'blog settings';
 
+    public static function getSettingsUrl(): string
+    {
+        return self::getUrl('edit', ['record' => BlogSetting::query()->sole()]);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

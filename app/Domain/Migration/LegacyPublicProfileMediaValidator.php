@@ -4,19 +4,17 @@ namespace App\Domain\Migration;
 
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaIntegrityService;
+use App\Models\CvEntry;
 use App\Models\MediaAsset;
-use Illuminate\Support\Facades\DB;
 use JsonException;
 use RuntimeException;
 
 final class LegacyPublicProfileMediaValidator
 {
-    private readonly MediaIntegrityService $mediaIntegrityService;
-
-    public function __construct(MediaIntegrityService $mediaIntegrityService)
-    {
-        $this->mediaIntegrityService = $mediaIntegrityService;
-    }
+    public function __construct(
+        private readonly MediaIntegrityService $mediaIntegrityService,
+        private readonly LegacyProfileTargetResolver $targetResolver,
+    ) {}
 
     /** @return array{source:int,target:int,errors:list<string>} */
     public function validate(string $manifestPath): array
@@ -25,6 +23,7 @@ final class LegacyPublicProfileMediaValidator
         $snapshotBatch = $this->requiredString($manifest, 'batch');
         $profileMedia = $this->requiredObject($manifest, 'profile_media');
         $legacySource = $this->requiredString($profileMedia, 'legacy_source');
+        $cvLegacyId = $profileMedia['cv_legacy_id'] ?? null;
         $mediaPath = $this->requiredString($profileMedia, 'media_path');
         $expectedBytes = $this->requiredInteger($profileMedia, 'media_byte_size');
         $expectedSha = strtolower($this->requiredString($profileMedia, 'media_sha256'));
@@ -33,22 +32,22 @@ final class LegacyPublicProfileMediaValidator
         if ($legacySource !== LegacyPublicCvImporter::SOURCE) {
             throw new RuntimeException('Legacy portrait source does not match the verified public Vita source.');
         }
+        if ($cvLegacyId !== null && (is_int($cvLegacyId) === false || $cvLegacyId < 1)) {
+            throw new RuntimeException('Legacy portrait CV reference must be a positive legacy id when provided.');
+        }
         if (preg_match('/^[a-f0-9]{64}$/', $expectedSha) !== 1) {
             throw new RuntimeException('Legacy portrait manifest SHA-256 is invalid.');
         }
 
         $errors = [];
-        $cvEntry = DB::table('cv_entries')
-            ->where('legacy_source', LegacyPublicCvImporter::SOURCE)
-            ->where('legacy_id', 1)
-            ->first();
-        if (is_object($cvEntry) === false) {
+        $cvEntry = $this->targetResolver->resolve($legacySource, $cvLegacyId);
+        if (! $cvEntry instanceof CvEntry) {
             $errors[] = 'Verified legacy biography entry is missing.';
 
             return ['source' => 1, 'target' => 0, 'errors' => $errors];
         }
 
-        $assetId = $cvEntry->image_media_asset_id ?? null;
+        $assetId = $cvEntry->getAttribute('image_media_asset_id');
         if (is_int($assetId) === false) {
             $errors[] = 'Verified legacy biography portrait is not attached.';
 
@@ -64,7 +63,7 @@ final class LegacyPublicProfileMediaValidator
         }
 
         $asset = $profileAssets->firstWhere('id', $assetId);
-        if (($asset instanceof MediaAsset) === false) {
+        if (! $asset instanceof MediaAsset) {
             $errors[] = 'Attached legacy biography portrait does not resolve to the canonical migrated Vita media asset.';
 
             return ['source' => 1, 'target' => $profileAssets->count(), 'errors' => $errors];

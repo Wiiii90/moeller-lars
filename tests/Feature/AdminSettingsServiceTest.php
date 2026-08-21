@@ -11,13 +11,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('audits website and blog singleton setting changes', function () {
+it('audits website and blog settings changes', function () {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin, 'web');
 
     $service = app(AdminSettingsService::class);
-    $website = PublicContentSetting::query()->findOrFail(1);
-    $blog = BlogSetting::query()->findOrFail(1);
+    $website = PublicContentSetting::query()->sole();
+    $blog = BlogSetting::query()->sole();
 
     $service->updatePublicContent($website, ['public_email' => 'artist@example.test']);
     $service->updateBlog($blog, ['listing_title' => 'News']);
@@ -33,8 +33,8 @@ it('audits website and blog singleton setting changes', function () {
     expect(AuditEvent::query()->count())->toBe(2);
 });
 
-it('requires an admin actor for singleton setting changes', function () {
-    $website = PublicContentSetting::query()->findOrFail(1);
+it('requires an admin actor for settings changes', function () {
+    $website = PublicContentSetting::query()->sole();
 
     expect(fn () => app(AdminSettingsService::class)->updatePublicContent($website, ['public_email' => 'artist@example.test']))
         ->toThrow(AuthorizationException::class);

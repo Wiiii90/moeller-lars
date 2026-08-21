@@ -57,12 +57,13 @@ it('reorders top-level sections without mirroring into legacy settings', functio
 
     $blogPosition = (int) $blog->position;
     $previousPosition = (int) $previous->position;
-    $legacyBlogPosition = (int) BlogSetting::query()->findOrFail(1)->getRawOriginal('navigation_position');
+    $blogSettings = BlogSetting::query()->sole();
+    $legacyBlogPosition = (int) $blogSettings->getRawOriginal('navigation_position');
 
     expect(app(SiteSectionOrderService::class)->move($blog, 'up'))->toBeTrue()
         ->and((int) $blog->fresh()->position)->toBe($previousPosition)
         ->and((int) $previous->fresh()->position)->toBe($blogPosition)
-        ->and((int) BlogSetting::query()->findOrFail(1)->getRawOriginal('navigation_position'))->toBe($legacyBlogPosition)
+        ->and((int) $blogSettings->fresh()->getRawOriginal('navigation_position'))->toBe($legacyBlogPosition)
         ->and(AuditEvent::query()->where('action', 'site_section.reordered')->where('entity_id', $blog->id)->exists())->toBeTrue();
 });
 

@@ -22,20 +22,6 @@ final class LegacyPublicCvImporter
             if (DB::table('exhibitions')->exists()) {
                 throw new RuntimeException('Legacy Vita import requires an empty exhibitions table.');
             }
-            if (! DB::table('public_content_settings')->where('id', 1)->exists()) {
-                throw new RuntimeException('Public content settings singleton is missing.');
-            }
-
-            foreach ([3, 4] as $position) {
-                if (DB::table('site_sections')
-                    ->whereNull('parent_id')
-                    ->where('state', 'published')
-                    ->where('show_in_navigation', true)
-                    ->where('position', $position)
-                    ->exists()) {
-                    throw new RuntimeException("Navigation position {$position} is already occupied; legacy Vita navigation cannot be imported safely.");
-                }
-            }
 
             $now = now();
             $rows = $this->expectedRows();
@@ -89,6 +75,7 @@ final class LegacyPublicCvImporter
                     'starts_on' => $row['starts_on'],
                     'ends_on' => $row['ends_on'],
                     'date_text' => $row['year_text'],
+                    'opening_text' => $row['opening_text'],
                     'legacy_id' => $legacyId,
                     'legacy_source' => self::SOURCE,
                     'migration_batch_id' => self::BATCH,
@@ -99,38 +86,17 @@ final class LegacyPublicCvImporter
                 ]);
             }
 
-            DB::table('public_content_settings')
-                ->where('id', 1)
-                ->update([
-                    'cv_enabled' => true,
-                    'exhibitions_enabled' => true,
-                    'cv_navigation_label' => 'CV',
-                    'cv_navigation_position' => 3,
-                    'exhibitions_navigation_label' => 'EXHIBITIONS',
-                    'exhibitions_navigation_position' => 4,
-                    'updated_at' => $now,
-                ]);
-
-            $vitaUpdated = DB::table('site_sections')
-                ->where('type', SiteSection::TYPE_VITA)
-                ->update([
-                    'navigation_label' => 'CV',
-                    'state' => 'published',
-                    'position' => 3,
-                    'show_in_navigation' => true,
-                    'updated_at' => $now,
-                ]);
-            $exhibitionsUpdated = DB::table('site_sections')
-                ->where('type', SiteSection::TYPE_EXHIBITIONS)
-                ->update([
-                    'navigation_label' => 'EXHIBITIONS',
-                    'state' => 'published',
-                    'position' => 4,
-                    'show_in_navigation' => true,
-                    'updated_at' => $now,
-                ]);
-            if ($vitaUpdated !== 1 || $exhibitionsUpdated !== 1) {
-                throw new RuntimeException('Canonical Vita or Exhibitions site section is missing.');
+            foreach ([SiteSection::TYPE_VITA, SiteSection::TYPE_EXHIBITIONS] as $type) {
+                $updated = DB::table('site_sections')
+                    ->where('type', $type)
+                    ->update([
+                        'state' => 'published',
+                        'show_in_navigation' => true,
+                        'updated_at' => $now,
+                    ]);
+                if ($updated !== 1) {
+                    throw new RuntimeException("Canonical {$type} site section is missing.");
+                }
             }
 
             return count($rows);
@@ -138,10 +104,10 @@ final class LegacyPublicCvImporter
     }
 
     /**
-     * Verified factual content from the currently public legacy Vita surface.
-     * Biography rows are imported to CV; exhibition rows are imported to Exhibition entities.
+     * Verified factual snapshot from the legacy public Vita surface. This is migration source data,
+     * not runtime navigation or presentation logic.
      *
-     * @return list<array{section:string,title:string,year_text:string,date_precision:string,starts_on:?string,ends_on:?string,organisation:?string,location:?string,body:?string}>
+     * @return list<array{section:string,title:string,year_text:string,date_precision:string,starts_on:?string,ends_on:?string,organisation:?string,location:?string,body:?string,opening_text:?string}>
      */
     public function expectedRows(): array
     {
@@ -151,15 +117,15 @@ final class LegacyPublicCvImporter
             $this->row('Exhibitions', 'Annual Rundgang University of Arts Berlin', '2010–2013', 'unknown', null, null, 'University of Arts Berlin', 'Berlin'),
             $this->row('Exhibitions', 'Atelierbesuche – junge surreale Positionen: Illusions to carry on', '2012', 'year', null, null, 'Galerie Rosendahl, Thöne & Westphal', 'Berlin'),
             $this->row('Exhibitions', 'Gallery Weekend', '02.05.2014', 'day', '2014-05-02', null, 'Westphal Berlin', 'Berlin'),
-            $this->row('Exhibitions', 'Neue Räume - Neue Bilder', 'June 2014', 'month', null, null, 'Westphal Berlin', 'Berlin', 'Vernissage: 6 June.'),
-            $this->row('Exhibitions', 'I Love Art From Berlin', 'June 2014', 'month', null, null, 'Galerie Karin Sutter in cooperation with Westphal-Berlin', 'Basel', 'Vernissage: 15 June.'),
+            $this->row('Exhibitions', 'Neue Räume - Neue Bilder', 'June 2014', 'month', null, null, 'Westphal Berlin', 'Berlin', null, '6 June.'),
+            $this->row('Exhibitions', 'I Love Art From Berlin', 'June 2014', 'month', null, null, 'Galerie Karin Sutter in cooperation with Westphal-Berlin', 'Basel', null, '15 June.'),
             $this->row('Exhibitions', 'Mögliche Welten', '30.04.2015 – 27.06.2015', 'day', '2015-04-30', '2015-06-27', 'Westphal Berlin', 'Berlin'),
             $this->row('Exhibitions', '26 Positions', '01.05.2015 – 03.05.2015', 'day', '2015-05-01', '2015-05-03', null, 'Berlin'),
-            $this->row('Exhibitions', 'Kunstpreis 2016: Schöne, böse Bilder', '07.03.2016 – 23.03.2016', 'day', '2016-03-07', '2016-03-23', 'Sparkassen-Kundenzentrum am Europaplatz', 'Karlsruhe', 'Vernissage: 4 March, 7 pm.'),
-            $this->row('Exhibitions', 'Aus Garten, Wald und Wiesen', '13.05.2016 – 02.07.2016', 'day', '2016-05-13', '2016-07-02', 'Westphal Berlin Kunst und Projekte', 'Berlin', 'Vernissage: 13 May, 7 pm.'),
+            $this->row('Exhibitions', 'Kunstpreis 2016: Schöne, böse Bilder', '07.03.2016 – 23.03.2016', 'day', '2016-03-07', '2016-03-23', 'Sparkassen-Kundenzentrum am Europaplatz', 'Karlsruhe', null, '4 March, 7 pm.'),
+            $this->row('Exhibitions', 'Aus Garten, Wald und Wiesen', '13.05.2016 – 02.07.2016', 'day', '2016-05-13', '2016-07-02', 'Westphal Berlin Kunst und Projekte', 'Berlin', null, '13 May, 7 pm.'),
             $this->row('Exhibitions', 'Bildauflehnung: Sehn- und Suchtgeschichten', '06.11.2016 – 27.11.2016', 'day', '2016-11-06', '2016-11-27', 'Barfuss-Galerie', 'Hamburg'),
-            $this->row('Exhibitions', 'Blick zurück - nach vorn', 'December 2016', 'month', null, null, 'Westphal Berlin', 'Berlin', 'Vernissage: 9 December, 18 pm.'),
-            $this->row('Exhibitions', 'Urbane Grenzgänger', '15.02.2017 – 14.03.2017', 'day', '2017-02-15', '2017-03-14', 'Nissis Kunstkantine', 'Hamburg', 'With Claudia Tejeda. Vernissage: 15 February, 7 pm.'),
+            $this->row('Exhibitions', 'Blick zurück - nach vorn', 'December 2016', 'month', null, null, 'Westphal Berlin', 'Berlin', null, '9 December, 18 pm.'),
+            $this->row('Exhibitions', 'Urbane Grenzgänger', '15.02.2017 – 14.03.2017', 'day', '2017-02-15', '2017-03-14', 'Nissis Kunstkantine', 'Hamburg', 'With Claudia Tejeda.', '15 February, 7 pm.'),
             $this->row('Exhibitions', 'Westphal Berlin: Am Meer - Ahrenshoop 2018', '16.08.2018 – 23.09.2018', 'day', '2018-08-16', '2018-09-23', 'Strandhalle Ahrenshoop', 'Ahrenshoop'),
             $this->row('Exhibitions', 'Lange Nacht der Bilder', '14.09.2018', 'day', '2018-09-14', null, 'Lichtenberg Studios ID', 'Genslerstraße 13, 13055 Berlin-Lichtenberg'),
             $this->row('Exhibitions', 'Berlin Art Week: Open Studios ID', '28.09.2018 & 29.09.2018', 'day', '2018-09-28', '2018-09-29', 'Studios ID', 'Genslerstraße 13, 13055 Berlin-Lichtenberg'),
@@ -180,8 +146,8 @@ final class LegacyPublicCvImporter
         ];
     }
 
-    /** @return array{section:string,title:string,year_text:string,date_precision:string,starts_on:?string,ends_on:?string,organisation:?string,location:?string,body:?string} */
-    private function row(string $section, string $title, string $yearText, string $datePrecision, ?string $startsOn, ?string $endsOn, ?string $organisation, ?string $location, ?string $body = null): array
+    /** @return array{section:string,title:string,year_text:string,date_precision:string,starts_on:?string,ends_on:?string,organisation:?string,location:?string,body:?string,opening_text:?string} */
+    private function row(string $section, string $title, string $yearText, string $datePrecision, ?string $startsOn, ?string $endsOn, ?string $organisation, ?string $location, ?string $body = null, ?string $openingText = null): array
     {
         return [
             'section' => $section,
@@ -193,6 +159,7 @@ final class LegacyPublicCvImporter
             'organisation' => $organisation,
             'location' => $location,
             'body' => $body,
+            'opening_text' => $openingText,
         ];
     }
 }

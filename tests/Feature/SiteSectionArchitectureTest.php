@@ -10,11 +10,10 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-it('creates exactly one canonical SiteSection for every singleton public surface', function (): void {
-    expect(SiteSection::query()->where('type', SiteSection::TYPE_HOME)->count())->toBe(1)
-        ->and(SiteSection::query()->where('type', SiteSection::TYPE_VITA)->count())->toBe(1)
-        ->and(SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->count())->toBe(1)
-        ->and(SiteSection::query()->where('type', SiteSection::TYPE_EXHIBITIONS)->count())->toBe(1);
+it('creates exactly one canonical SiteSection for every unique public surface', function (): void {
+    foreach (SiteSection::UNIQUE_TYPES as $type) {
+        expect(SiteSection::query()->where('type', $type)->count())->toBe(1);
+    }
 });
 
 it('does not mirror direct legacy Gallery placement fields into the canonical SiteSection', function (): void {
@@ -43,21 +42,23 @@ it('does not mirror direct legacy Gallery placement fields into the canonical Si
         ->and($section->fresh()->navigation_label)->toBe('PAINTINGS');
 });
 
-it('does not synchronize legacy singleton settings after the SiteSection cutover', function (): void {
+it('does not synchronize legacy settings after the SiteSection cutover', function (): void {
     $vita = SiteSection::query()->where('type', SiteSection::TYPE_VITA)->firstOrFail();
     $blogSection = SiteSection::query()->where('type', SiteSection::TYPE_BLOG)->firstOrFail();
     $vitaState = $vita->state;
     $vitaPosition = (int) $vita->position;
     $blogState = $blogSection->state;
     $blogPosition = (int) $blogSection->position;
+    $publicSettings = PublicContentSetting::query()->sole();
+    $blogSettings = BlogSetting::query()->sole();
 
-    PublicContentSetting::query()->findOrFail(1)->forceFill([
-        'cv_enabled' => ! (bool) PublicContentSetting::query()->findOrFail(1)->getRawOriginal('cv_enabled'),
+    $publicSettings->forceFill([
+        'cv_enabled' => ! (bool) $publicSettings->getRawOriginal('cv_enabled'),
         'cv_navigation_label' => 'LEGACY VITA',
         'cv_navigation_position' => 777,
     ])->save();
-    BlogSetting::query()->findOrFail(1)->forceFill([
-        'public_enabled' => ! (bool) BlogSetting::query()->findOrFail(1)->getRawOriginal('public_enabled'),
+    $blogSettings->forceFill([
+        'public_enabled' => ! (bool) $blogSettings->getRawOriginal('public_enabled'),
         'navigation_label' => 'LEGACY BLOG',
         'navigation_position' => 888,
     ])->save();
@@ -82,7 +83,7 @@ it('builds public navigation only from visible canonical sections', function ():
         'show_in_navigation' => true,
         'position' => 200,
     ]);
-    testSingletonSection(SiteSection::TYPE_VITA, [
+    testUniqueSection(SiteSection::TYPE_VITA, [
         'navigation_label' => 'Vita',
         'state' => 'published',
         'show_in_navigation' => true,
@@ -101,8 +102,9 @@ it('builds public navigation only from visible canonical sections', function ():
 });
 
 it('uses the SiteSection as the public availability gate regardless of legacy settings', function (): void {
-    PublicContentSetting::query()->findOrFail(1)->forceFill(['cv_enabled' => false])->save();
-    $vita = testSingletonSection(SiteSection::TYPE_VITA, [
+    $settings = PublicContentSetting::query()->sole();
+    $settings->forceFill(['cv_enabled' => false])->save();
+    $vita = testUniqueSection(SiteSection::TYPE_VITA, [
         'navigation_label' => 'Vita',
         'state' => 'published',
         'show_in_navigation' => true,
@@ -115,7 +117,7 @@ it('uses the SiteSection as the public availability gate regardless of legacy se
         'state' => 'hidden',
         'show_in_navigation' => false,
     ]);
-    PublicContentSetting::query()->findOrFail(1)->forceFill(['cv_enabled' => true])->save();
+    $settings->forceFill(['cv_enabled' => true])->save();
 
     $this->get('/cv')->assertNotFound();
 });

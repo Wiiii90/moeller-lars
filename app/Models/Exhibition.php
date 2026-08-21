@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['slug', 'title', 'state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['slug', 'title', 'state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {
@@ -32,7 +32,12 @@ class Exhibition extends Model
 
     public function mediaUsages(): HasMany
     {
-        return $this->hasMany(ExhibitionMedia::class);
+        $relation = $this->hasMany(ExhibitionMedia::class);
+        $relation->getQuery()
+            ->orderBy('position')
+            ->orderBy('id');
+
+        return $relation;
     }
 
     public function mediaAssets(): BelongsToMany
@@ -82,6 +87,11 @@ class Exhibition extends Model
                 if (! is_string($value) || trim($value) === '') {
                     throw ValidationException::withMessages([$field => 'Published exhibitions require explicit '.$field.'.']);
                 }
+            }
+
+            $openingText = $exhibition->getAttribute('opening_text');
+            if ($openingText !== null && (! is_string($openingText) || trim($openingText) === '' || mb_strlen($openingText) > 500)) {
+                throw ValidationException::withMessages(['opening_text' => 'Opening information must be non-empty text of at most 500 characters.']);
             }
 
             $description = $exhibition->getAttribute('description');

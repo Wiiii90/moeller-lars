@@ -2,8 +2,14 @@
   "media_root": "/var/www/html",
   "profile_media": {
     "legacy_source": "legacy-public-vita",
+    "cv_legacy_id": 1,
     "path": "res/lars-moeller.jpg",
-    "alt_text": "Lars M\u00f6ller"
+    "alt_text": "Lars Möller"
+  },
+  "public_profile": {
+    "public_email": "artist@example.com",
+    "instagram_handle": "artist_handle",
+    "legal_disclaimer": "Verified legacy disclaimer text."
   },
   "categories": [
     {

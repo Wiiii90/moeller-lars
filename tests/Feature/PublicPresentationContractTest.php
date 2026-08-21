@@ -1,23 +1,26 @@
 <?php
 
-it('keeps hierarchical public navigation operable in one expanding fixed header region for mouse touch and keyboard', function () {
-    $presentationCss = file_get_contents(public_path('css/public-presentation.css'));
+it('keeps hierarchical public navigation generic and operable by hover focus and keyboard', function () {
+    $presentationCss = file_get_contents(resource_path('css/public-presentation.css'));
     $appCss = file_get_contents(resource_path('css/app.css'));
     $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
     $source = file_get_contents(resource_path('js/public-navigation.js'));
 
     expect($presentationCss)
         ->toContain('.site-header::after {', 'order: 3;')
-        ->toContain('.site-navigation__submenu-toggle', '.site-navigation__submenu-region', 'grid-template-rows: 0fr;', 'grid-template-rows: 1fr;')
-        ->not->toContain('box-shadow: 0 7px 16px', 'position: fixed', '--submenu-left')
+        ->toContain('.site-navigation__submenu-region', 'grid-template-rows: 0fr;', 'grid-template-rows: 1fr;')
+        ->not->toContain('box-shadow: 0 7px 16px', 'position: fixed', '--submenu-left', 'site-navigation__submenu-toggle')
         ->and($appCss)
         ->toContain('html.public-site-root {', 'body.public-site {', 'body.public-site .site-header {', 'position: relative;')
         ->toContain('body.public-site .site-scroll-region {', 'overflow-y: auto;', 'flex: 1 1 auto;')
         ->and($layout)
         ->toContain('class="public-site-root"', 'class="public-site"', 'class="site-scroll-region"', 'data-site-scroll-region')
+        ->toContain("'resources/css/public-presentation.css'")
+        ->not->toContain("asset('css/public-presentation.css')", 'data-navigation-submenu-toggle', 'site-navigation__submenu-toggle')
         ->and($source)
-        ->toContain("toggle.addEventListener('click'", "event.key === 'ArrowDown'", "['ArrowDown', 'ArrowUp']", "event.key === 'Escape'")
-        ->toContain("event.pointerType === 'mouse'", 'regionInner.append(controls.submenu)', 'shiftByOneItem');
+        ->toContain("event.key === 'ArrowDown'", "['ArrowDown', 'ArrowUp']", "event.key === 'Escape'")
+        ->toContain("event.pointerType === 'mouse'", 'regionInner.append(controls.submenu)', 'shiftByOneItem')
+        ->not->toContain('data-navigation-submenu-toggle', "toggle.addEventListener('click'");
 });
 
 it('keeps gallery sequence markup free from synthetic leading separators', function () {
@@ -32,8 +35,9 @@ it('keeps gallery sequence markup free from synthetic leading separators', funct
 });
 
 it('keeps menu gallery cv and exhibitions on one canonical visible grid', function () {
-    $css = file_get_contents(public_path('css/public-presentation.css'));
+    $css = file_get_contents(resource_path('css/public-presentation.css'));
     $contentCss = file_get_contents(resource_path('css/public-content.css'));
+    $appCss = file_get_contents(resource_path('css/app.css'));
     $gallery = file_get_contents(resource_path('views/pages/artworks/index.blade.php'));
 
     expect($css)
@@ -47,7 +51,9 @@ it('keeps menu gallery cv and exhibitions on one canonical visible grid', functi
         ->toContain('@media (max-width: 760px)', 'padding: var(--public-mobile-inset);')
         ->toContain('@media (max-width: 1040px)', '.site-title {')
         ->and($contentCss)
-        ->not->toContain('Public acceptance grid', '--public-shell-max:', '--public-art-max:')
+        ->not->toContain('--public-shell-max:', '--public-art-max:', '.site-navigation {')
+        ->and($appCss)
+        ->not->toContain('--public-shell-max:', '--public-art-max:', '.site-navigation__item {')
         ->and($gallery)
         ->toContain(':eager="$loop->index < 5"');
 });
@@ -65,13 +71,19 @@ it('separates artwork zoom from artwork detail navigation', function () {
     expect($labelSegment)->not->toContain('data-artwork-viewer-trigger');
 });
 
-it('keeps exhibition dates openings text and image albums in one editorial entry', function () {
+it('keeps exhibition schedule content structured and image albums generic', function () {
     $view = file_get_contents(resource_path('views/pages/exhibitions.blade.php'));
-    $css = file_get_contents(public_path('css/public-presentation.css'));
+    $css = file_get_contents(resource_path('css/public-presentation.css'));
+    $model = file_get_contents(app_path('Models/Exhibition.php'));
+    $resource = file_get_contents(app_path('Filament/Resources/Exhibitions/ExhibitionResource.php'));
 
     expect($view)
-        ->toContain('exhibition-entry__schedule', 'Vernissage', 'exhibition-entry__description-details', 'exhibition-media')
-        ->toContain("preg_match('/\\bVernissage:")
+        ->toContain('exhibition-entry__schedule', '$exhibition->opening_text', 'Vernissage', 'exhibition-entry__description-details', 'exhibition-media')
+        ->not->toContain("preg_match('/\\bVernissage:", 'preg_replace')
+        ->and($model)
+        ->toContain("'opening_text'")
+        ->and($resource)
+        ->toContain("TextInput::make('opening_text')")
         ->and($css)
         ->toContain('.exhibition-entry__schedule', '.exhibition-entry__opening', 'grid-template-columns: repeat(3, minmax(0, 1fr));');
 });

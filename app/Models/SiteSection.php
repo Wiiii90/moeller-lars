@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
+use LogicException;
 
 #[Fillable([
     'type',
@@ -41,7 +42,8 @@ final class SiteSection extends Model
         self::TYPE_EXHIBITIONS,
     ];
 
-    public const SINGLETON_TYPES = [
+    /** Section types whose data model permits exactly one row per type. */
+    public const UNIQUE_TYPES = [
         self::TYPE_HOME,
         self::TYPE_VITA,
         self::TYPE_BLOG,
@@ -87,6 +89,14 @@ final class SiteSection extends Model
         });
     }
 
+    public static function isPublished(string $type): bool
+    {
+        return self::query()
+            ->where('type', $type)
+            ->where('state', 'published')
+            ->exists();
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');
@@ -102,6 +112,18 @@ final class SiteSection extends Model
         return $this->belongsTo(ArtworkCategory::class);
     }
 
+    public function publicPath(): string
+    {
+        return match ($this->getAttribute('type')) {
+            self::TYPE_HOME => '/',
+            self::TYPE_GALLERY => '/'.$this->getAttribute('slug'),
+            self::TYPE_VITA => '/cv',
+            self::TYPE_BLOG => '/blog',
+            self::TYPE_EXHIBITIONS => '/exhibitions',
+            default => throw new LogicException('Unsupported site section type.'),
+        };
+    }
+
     public function publicUrl(): string
     {
         return match ($this->getAttribute('type')) {
@@ -110,7 +132,7 @@ final class SiteSection extends Model
             self::TYPE_VITA => route('cv'),
             self::TYPE_BLOG => route('blog.index'),
             self::TYPE_EXHIBITIONS => route('exhibitions.index'),
-            default => throw new \LogicException('Unsupported site section type.'),
+            default => throw new LogicException('Unsupported site section type.'),
         };
     }
 

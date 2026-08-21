@@ -18,21 +18,17 @@ class PublicCvController extends Controller
 
     public function show(): View
     {
-        abort_unless(
-            SiteSection::query()->where('type', SiteSection::TYPE_VITA)->where('state', 'published')->exists(),
-            404,
-        );
+        abort_unless(SiteSection::isPublished(SiteSection::TYPE_VITA), 404);
 
-        $settings = PublicContentSetting::query()->findOrFail(1);
         $cvEntries = CvEntry::query()
             ->where('state', 'published')
-            ->where('section', 'Biography')
             ->with('imageMediaAsset')
             ->orderBy('position')
+            ->orderBy('id')
             ->get();
 
         return view('pages.cv', [
-            'settings' => $settings,
+            'settings' => PublicContentSetting::query()->sole(),
             'cvEntries' => $cvEntries,
             'richText' => $this->richText,
             'media' => $this->media,

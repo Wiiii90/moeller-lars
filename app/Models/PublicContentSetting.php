@@ -47,10 +47,6 @@ class PublicContentSetting extends Model
     protected static function booted(): void
     {
         static::saving(function (self $setting): void {
-            if ((int) $setting->getAttribute('id') !== 1) {
-                throw new LogicException('The public content setting singleton must use id 1.');
-            }
-
             if ($setting->getAttribute('contact_state') === 'under_construction') {
                 $statusText = $setting->getAttribute('contact_status_text');
                 if (! is_string($statusText) || trim($statusText) === '') {
@@ -120,7 +116,7 @@ class PublicContentSetting extends Model
         });
 
         static::deleting(function (): never {
-            throw new LogicException('The public content setting singleton cannot be deleted.');
+            throw new LogicException('Public content settings cannot be deleted.');
         });
     }
 }

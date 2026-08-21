@@ -1,14 +1,7 @@
+/* Content semantics only. Public shell/layout geometry lives in public-presentation.css. */
+
 .home-artwork {
     padding: 0;
-}
-
-.cv-page,
-.exhibitions-page,
-.blog-page,
-.blog-post,
-.contact-page {
-    width: 100%;
-    margin: 0;
 }
 
 .cv-section,
@@ -17,34 +10,6 @@
 .contact-section,
 .legal-disclaimer {
     min-width: 0;
-}
-
-.cv-section + .public-contact-details,
-.public-contact-details + .contact-section,
-.cv-section + .contact-section,
-.contact-section + .legal-disclaimer,
-.public-contact-details + .legal-disclaimer {
-    margin-top: 2.5rem;
-}
-
-.cv-biography {
-    max-width: 42rem;
-}
-
-.cv-entry {
-    display: block;
-    margin: 0 0 .65rem;
-    padding: 0;
-    border: 0;
-    color: #555;
-    font-size: .82rem;
-    line-height: 1.45;
-}
-
-.cv-entry::after {
-    display: block;
-    clear: both;
-    content: "";
 }
 
 .cv-entry__line {
@@ -69,14 +34,6 @@
     margin: 0;
 }
 
-.cv-entry__image {
-    display: block;
-    width: min(34%, 250px);
-    height: auto;
-    margin: .15rem 1rem .7rem 0;
-    float: left;
-}
-
 .rich-text {
     color: inherit;
     line-height: 1.45;
@@ -91,8 +48,13 @@
     margin: .35rem 0;
 }
 
-.rich-text p:first-child { margin-top: 0; }
-.rich-text p:last-child { margin-bottom: 0; }
+.rich-text p:first-child {
+    margin-top: 0;
+}
+
+.rich-text p:last-child {
+    margin-bottom: 0;
+}
 
 .rich-text ul,
 .rich-text ol {
@@ -102,7 +64,6 @@
 
 .rich-text a,
 .cv-entry a,
-.exhibition-entry a,
 .blog-entry a,
 .blog-post a,
 .contact-section a,
@@ -113,13 +74,19 @@
 }
 
 .rich-text a:hover,
+.rich-text a:focus-visible,
 .cv-entry a:hover,
-.exhibition-entry a:hover,
+.cv-entry a:focus-visible,
 .blog-entry a:hover,
+.blog-entry a:focus-visible,
 .blog-post a:hover,
+.blog-post a:focus-visible,
 .contact-section a:hover,
+.contact-section a:focus-visible,
 .public-contact-details a:hover,
-.legal-disclaimer a:hover {
+.public-contact-details a:focus-visible,
+.legal-disclaimer a:hover,
+.legal-disclaimer a:focus-visible {
     color: #111;
 }
 
@@ -166,7 +133,10 @@
     text-decoration: none;
 }
 
-.blog-entry h3 a:hover { color: #222; }
+.blog-entry h3 a:hover,
+.blog-entry h3 a:focus-visible {
+    color: #222;
+}
 
 .blog-entry__cover,
 .blog-post__cover {
@@ -188,11 +158,6 @@
     line-height: 1.45;
 }
 
-.contact-section {
-    padding-top: 0;
-    border-top: 0;
-}
-
 .contact-status {
     display: block;
     width: 100%;
@@ -205,67 +170,18 @@
     display: none;
 }
 
-.contact-status p { margin: 0; }
+.contact-status p {
+    margin: 0;
+}
 
 .contact-message {
-    width: 95%;
+    width: 100%;
     margin: 0 0 .75rem;
     padding: .4rem 0;
     border: 0;
     background: transparent;
     color: #555;
     line-height: 1.4;
-}
-
-.contact-form {
-    display: block;
-    width: 95%;
-    margin: 0;
-}
-
-.contact-form__field {
-    display: block;
-    margin-bottom: .7rem;
-}
-
-.contact-form label {
-    display: block;
-    margin-bottom: .2rem;
-    color: #555;
-    font-size: .8rem;
-    font-weight: 400;
-    letter-spacing: normal;
-    text-transform: none;
-}
-
-.contact-form input,
-.contact-form textarea {
-    width: 85%;
-    min-width: 0;
-    border: 1px solid #aaa;
-    border-radius: 0;
-    background: #fff;
-    color: #333;
-    font: inherit;
-    line-height: 1.35;
-}
-
-.contact-form input {
-    min-height: 0;
-    padding: .35rem .4rem;
-}
-
-.contact-form textarea {
-    min-height: 170px;
-    padding: .4rem;
-    resize: vertical;
-}
-
-.contact-form input:focus-visible,
-.contact-form textarea:focus-visible,
-.contact-form button:focus-visible {
-    outline: 1px dotted #333;
-    outline-offset: 2px;
 }
 
 .contact-form__error {
@@ -284,44 +200,65 @@
     white-space: nowrap !important;
 }
 
-.contact-form button {
+/* Standalone contact-route fallback; the Vita contact area supplies its editorial form styling. */
+.contact-page .contact-form {
+    display: grid;
+    width: min(100%, 31rem);
+    gap: .9rem;
+}
+
+.contact-page .contact-form__field {
+    margin: 0;
+}
+
+.contact-page .contact-form label {
+    display: block;
+    margin: 0 0 .27rem;
+    color: #706a65;
+    font-size: .66rem;
+    font-weight: 500;
+    letter-spacing: .065em;
+    text-transform: uppercase;
+}
+
+.contact-page .contact-form input,
+.contact-page .contact-form textarea {
+    display: block;
+    width: 100%;
     min-width: 0;
-    min-height: 0;
-    padding: .4rem .75rem;
-    border: 1px solid #888;
+    padding: .58rem .64rem;
+    border: 1px solid #d0ccc8;
     border-radius: 0;
-    background: #eee;
+    background: #fff;
     color: #444;
     font: inherit;
-    font-size: .8rem;
-    text-transform: none;
+    line-height: 1.4;
+    box-shadow: none;
+}
+
+.contact-page .contact-form textarea {
+    min-height: 126px;
+    resize: vertical;
+}
+
+.contact-page .contact-form input:focus-visible,
+.contact-page .contact-form textarea:focus-visible,
+.contact-page .contact-form button:focus-visible {
+    outline: 1px solid #8d857e;
+    outline-offset: 1px;
+}
+
+.contact-page .contact-form button {
+    width: fit-content;
+    padding: .54rem .88rem;
+    border: 1px solid #9a938d;
+    border-radius: 0;
+    background: #fff;
+    color: #555;
+    font: inherit;
+    font-size: .7rem;
+    font-weight: 500;
+    letter-spacing: .045em;
+    text-transform: uppercase;
     cursor: pointer;
-}
-
-.contact-form button:hover {
-    background: #ddd;
-    color: #222;
-}
-
-@media (max-width: 550px) {
-    .cv-entry {
-        margin-bottom: .75rem;
-    }
-
-    .cv-entry__image {
-        width: auto;
-        max-width: 170px;
-        margin: .35rem 0 .7rem;
-        float: none;
-    }
-
-    .contact-form,
-    .contact-message {
-        width: 100%;
-    }
-
-    .contact-form input,
-    .contact-form textarea {
-        width: 100%;
-    }
 }

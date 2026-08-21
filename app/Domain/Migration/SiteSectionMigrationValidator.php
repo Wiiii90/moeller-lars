@@ -14,7 +14,7 @@ final class SiteSectionMigrationValidator
      * @return array{
      *     ok: bool,
      *     source: array{artwork_categories: int},
-     *     target: array{site_sections: int, singleton_sections: int, gallery_sections: int},
+     *     target: array{site_sections: int, unique_sections: int, gallery_sections: int},
      *     errors: list<string>
      * }
      */
@@ -27,7 +27,7 @@ final class SiteSectionMigrationValidator
         /** @var Collection<int, SiteSection> $sections */
         $sections = SiteSection::query()->orderBy('id')->get();
 
-        foreach (SiteSection::SINGLETON_TYPES as $type) {
+        foreach (SiteSection::UNIQUE_TYPES as $type) {
             $count = $sections->where('type', $type)->count();
             if ($count !== 1) {
                 $errors[] = "Expected exactly one {$type} SiteSection; found {$count}.";
@@ -76,7 +76,7 @@ final class SiteSectionMigrationValidator
             ],
             'target' => [
                 'site_sections' => $sections->count(),
-                'singleton_sections' => $sections->whereIn('type', SiteSection::SINGLETON_TYPES)->count(),
+                'unique_sections' => $sections->whereIn('type', SiteSection::UNIQUE_TYPES)->count(),
                 'gallery_sections' => $gallerySections->count(),
             ],
             'errors' => $errors,

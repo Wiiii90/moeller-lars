@@ -18,8 +18,12 @@
                 data-matomo-site-id="{{ $matomoTracking['site_id'] }}"
             >
         @endif
-        @vite(['resources/css/app.css', 'resources/css/public-content.css', 'resources/js/app.js'])
-        <link rel="stylesheet" href="{{ asset('css/public-presentation.css') }}">
+        @vite([
+            'resources/css/app.css',
+            'resources/css/public-content.css',
+            'resources/css/public-presentation.css',
+            'resources/js/app.js',
+        ])
     </head>
     <body class="public-site">
         <header class="site-header">
@@ -51,16 +55,6 @@
                                         data-navigation-parent-link
                                     @endif
                                 >{{ $navigationItem['label'] }}</a>
-                                @if ($navigationItem['children'] !== [])
-                                    <button
-                                        class="site-navigation__submenu-toggle"
-                                        type="button"
-                                        aria-label="Show {{ $navigationItem['label'] }} subcategories"
-                                        aria-expanded="false"
-                                        aria-controls="{{ $submenuId }}"
-                                        data-navigation-submenu-toggle
-                                    ><span aria-hidden="true"></span></button>
-                                @endif
                             </div>
                             @if ($navigationItem['children'] !== [])
                                 <div

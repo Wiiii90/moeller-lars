@@ -7,7 +7,6 @@ use App\Filament\Pages\SitePages;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Resources\BlogSettings\BlogSettingResource;
 use App\Models\BlogPost;
-use App\Models\BlogSetting;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -51,11 +50,7 @@ final class ListBlogPosts extends Page
             Action::make('blogSettings')
                 ->label('Blog page settings')
                 ->icon(Heroicon::OutlinedCog6Tooth)
-                ->url(function (): string {
-                    $settings = BlogSetting::query()->findOrFail(1);
-
-                    return BlogSettingResource::getUrl('edit', ['record' => $settings]);
-                }),
+                ->url(BlogSettingResource::getSettingsUrl()),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
