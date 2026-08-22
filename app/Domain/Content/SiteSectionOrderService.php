@@ -6,19 +6,16 @@ use App\Domain\Admin\AdminAuditService;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
 
 final class SiteSectionOrderService
 {
-    private const REQUEST_CACHE_ATTRIBUTE = 'site-section-order:sibling-ids';
+    /** @var array<string, list<int>> */
+    private array $siblingIds = [];
 
-    public function __construct(
-        private readonly AdminAuditService $audit,
-        private readonly Request $request,
-    ) {}
+    public function __construct(private readonly AdminAuditService $audit) {}
 
     public function canMove(SiteSection $section, string $direction): bool
     {
@@ -112,7 +109,7 @@ final class SiteSectionOrderService
         });
 
         if ($moved) {
-            $this->forgetOrderedSiblingIds($section);
+            unset($this->siblingIds[$this->siblingCacheKey($section)]);
         }
 
         return $moved;
@@ -121,39 +118,17 @@ final class SiteSectionOrderService
     /** @return list<int> */
     private function orderedSiblingIds(SiteSection $section): array
     {
-        $cache = $this->request->attributes->get(self::REQUEST_CACHE_ATTRIBUTE, []);
-        if (! is_array($cache)) {
-            $cache = [];
-        }
-
         $key = $this->siblingCacheKey($section);
-        $cached = $cache[$key] ?? null;
-        if (is_array($cached)) {
-            return array_values(array_map(static fn (mixed $id): int => (int) $id, $cached));
+        if (array_key_exists($key, $this->siblingIds)) {
+            return $this->siblingIds[$key];
         }
 
-        $ids = $this->siblings($section)
+        return $this->siblingIds[$key] = $this->siblings($section)
             ->orderBy('position')
             ->orderBy('id')
             ->pluck('id')
             ->map(static fn ($id): int => (int) $id)
             ->all();
-
-        $cache[$key] = $ids;
-        $this->request->attributes->set(self::REQUEST_CACHE_ATTRIBUTE, $cache);
-
-        return $ids;
-    }
-
-    private function forgetOrderedSiblingIds(SiteSection $section): void
-    {
-        $cache = $this->request->attributes->get(self::REQUEST_CACHE_ATTRIBUTE, []);
-        if (! is_array($cache)) {
-            return;
-        }
-
-        unset($cache[$this->siblingCacheKey($section)]);
-        $this->request->attributes->set(self::REQUEST_CACHE_ATTRIBUTE, $cache);
     }
 
     private function siblingCacheKey(SiteSection $section): string
