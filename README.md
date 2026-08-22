@@ -1,65 +1,81 @@
-# moeller-lars
+# Lars Möller — artist website
 
-Secure rebuild of the Lars Möller artist website.
+[![Verify and build release image](https://github.com/Wiiii90/moeller-lars/actions/workflows/release.yml/badge.svg)](https://github.com/Wiiii90/moeller-lars/actions/workflows/release.yml)
 
-## Product rule
+Laravel application for the rebuilt Lars Möller artist website and its artist-facing administration.
 
-Visitors should experience the existing public website: its visual language,
-meaningful information architecture, artwork order, and core interactions are
-preserved. The rebuild uses clean modern canonical URLs and changes the
-operational layer, not the artistic presentation; legacy PHP/query URL syntax
-is not itself a compatibility requirement.
+The public site keeps the artist's established visual language and content presentation while replacing the legacy PHP/MySQL application, administration, security model, analytics integration, migration tooling, and release process.
 
-The artist receives a purpose-built editorial backend for artworks, exhibitions, CV, blog posts, media, and privacy-conscious visitor statistics.
+## Stack
 
-## Repository boundaries
+- PHP 8.3+ and Laravel 13
+- Filament 5 for `/admin`
+- Blade, Vite, custom CSS and targeted JavaScript for the public site
+- PostgreSQL
+- Pest, PHPStan, Pint and Node's test runner
+- self-hosted Matomo Community/Core for human analytics
+- OCI/Docker release images published to GHCR
 
-This repository is the future production codebase. It deliberately contains no copied credentials, database dumps, production media, or source files from the earlier projects.
+## Repository scope
 
-| Repository | Role in the rebuild | Not reused as production code |
-| --- | --- | --- |
-| `larsmoeller` | visual/behavioural reference, content inventory, deployment evidence | authentication, configuration, direct SQL/PHP admin code |
-| `glassygallery` | ideas for media handling, structured data, role concepts, and CI/CD | visual site builder, unfinished admin shell, current authorization/API implementation |
-| `moeller-lars` | application source, tests, Dockerfile/runtime build, migrations, application configuration templates, CI, immutable application artifact/image, health/readiness and persistence/migration contracts | — |
-| `server-platform` | production runtime/deployment manifests, Compose placement, shared networking, Caddy ingress, host ports, resource limits, platform monitoring, backup/restore automation, and production deployment/rollback orchestration | — |
+This repository owns the application: source code, database migrations, tests, public/admin UI, media rules, migration/reconciliation tooling, Docker image contract and CI.
 
-## Start here
+Production and Validation infrastructure are intentionally separate. Host configuration, ingress, runtime placement, secrets, backups, monitoring, deployment and rollback are owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
 
-- [Project charter](docs/PROJECT-CHARTER.md)
-- [Target architecture](docs/ARCHITECTURE.md)
-- [Migration plan](docs/MIGRATION-PLAN.md)
-- [Source inventory](docs/SOURCE-INVENTORY.md)
+No production credentials, database dumps or authoritative production media belong in this repository.
 
-Development-only Compose remains allowed in `moeller-lars`; production placement and orchestration are owned by `server-platform`.
+## Local development
 
-## Security rule
+The development Compose stack provides the application container and PostgreSQL 17.
 
-Do not place secrets in this repository, including in issues, screenshots, sample data, commits, or CI files. Real deployment configuration belongs in the hosting platform's secret store or a server-local `.env` file.
-
-## Local Docker development
-
-The minimal local environment uses one PHP 8.3 application container and one
-PostgreSQL 17 container. Its credentials are local development defaults only.
-
-Start:
-
-~~~sh
+```sh
 docker compose up -d --build
-docker compose exec app composer install
-docker compose exec app npm install --ignore-scripts
-~~~
+docker compose exec app composer install --no-interaction
+docker compose exec app npm ci --ignore-scripts
+```
 
-Test:
+Run the same core verification used by CI:
 
-~~~sh
+```sh
 docker compose exec app composer test
-docker compose exec app composer format
 docker compose exec app composer analyse
+docker compose exec app vendor/bin/pint --test
+docker compose exec app npm run test:js
 docker compose exec app npm run build
-~~~
+```
 
-Stop:
+Stop the stack with:
 
-~~~sh
+```sh
 docker compose down
-~~~
+```
+
+## Site structure
+
+The editable public site is modeled as typed site nodes:
+
+- **Home** — singleton root presentation
+- **Gallery** — artwork collection, optionally nested
+- **Journal** — Blog or Exhibitions
+- **Custom Page** — structured content/components
+- **Navigation Node** — navigation-only grouping
+
+The domain types, public routing, admin destinations and navigation projection have separate owners; persistence details do not define application behavior.
+
+## Releases
+
+`.github/workflows/release.yml` is the canonical GitHub Actions workflow. It verifies pull requests and, for non-PR runs such as `main`, publishes an immutable image tagged with the exact Git SHA:
+
+```text
+ghcr.io/wiiii90/moeller-lars:<git-sha>
+```
+
+A green CI run or published image does not itself authorize a Production deployment.
+
+## Documentation
+
+Start with [docs/README.md](docs/README.md). It separates current application contracts from migration evidence and historical architecture decisions.
+
+## Security
+
+Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. Security-sensitive findings should not be posted with exploitable details or secret material in public issues.
