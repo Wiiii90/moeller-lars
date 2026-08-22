@@ -1,63 +1,107 @@
-# Production server and operations baseline
+# Server and operations boundary
 
-This document records the verified production-server and platform baseline. It contains no credentials, backup locations, hashes, or other secret values. `Wiiii90/server-platform` is the authoritative platform reference; application-specific integration remains tracked in this repository.
+This repository does not own mutable host topology. [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform) is the authoritative source for Production/Validation placement, ingress, secrets, backups, monitoring, resource limits, deployment and rollback.
 
-## Production host
+This document records only the durable application/platform boundary that `moeller-lars` depends on.
 
-- Provider/plan: Scaleway `dev-play-1` / `DEV1-S`.
-- Region: `AMS1`.
-- Capacity: 2 vCPU, 2 GB RAM, and 50 GB block storage.
-- This current production host remains the working baseline for `moeller-lars`.
-- Current utilization is not a valid downsizing signal: future services may share the host, so capacity decisions must consider the target architecture and service set.
-- For `moeller-lars`, this host has one permanent environment: production. Independent services may share the host later; this does not create a permanent `moeller-lars` staging environment.
+## Environments
 
-## OS and runtime posture
+### Production
 
-- Ubuntu 24.04.4 LTS.
-- Security updates were current at audit completion.
-- Docker Engine and Docker Compose are installed.
+Production is the authoritative public application environment.
 
-## Security containment verified at audit completion
+Requirements:
 
-- UFW defaults to deny inbound and allow outbound.
-- Publicly exposed ports are limited to 22, 80, and 443.
-- MySQL ports 3306 and 33060 are bound to localhost only.
-- Valid TLS is configured for the apex and `www` hostnames with automatic renewal.
-- HTTP redirects to HTTPS and the canonical host behaviour is working.
-- The public `phpinfo` endpoint has been removed.
-- Directory listing is disabled.
-- Sensitive source, vendor, and configuration paths are blocked from public access.
+- exact immutable `moeller-lars` application image;
+- PostgreSQL application database;
+- persistent canonical media originals;
+- HTTPS/canonical-host ingress;
+- runtime secrets supplied outside Git;
+- health monitoring and recoverable backups;
+- controlled migration/deployment/rollback sequencing.
 
-These controls are the verified baseline, not a substitute for ongoing patching, least-privilege review, application security testing, and monitoring.
+Production is not a Git checkout and application deployment is not `git pull`.
 
-## Recovery material
+### Validation
 
-- A manual off-server recovery copy for the webroot and legacy databases was verified.
-- Additional pre-maintenance recovery material exists for configuration, packages, and firewall state.
-- Recovery copies were verified with SHA-256.
-- Automated recurring offsite backups remain future work and are required before treating operations as complete.
+Validation is a separate non-production release-review environment.
 
-Backup locations, credentials, hashes, and secret values are intentionally excluded from this repository.
+It may share physical infrastructure with Production only when platform isolation/resource controls preserve distinct trust boundaries. It must not share writable Production application database, authoritative media paths or application secrets.
 
-## Platform deployment
+Validation may use a deliberately restricted read-only Matomo reporting identity when required for dashboard review while browser tracking is disabled. That does not permit shared application persistence.
 
-- Production is not a Git checkout.
-- Caddy is the public ingress on ports 80/443; legacy Apache listens only on `127.0.0.1:8080`.
-- MySQL is local-only.
-- `/srv/stacks` is platform workload placement, `/srv/data` is persistent data placement, and `/srv/releases/server-platform` is platform release staging.
-- GitHub Actions transports an exact `server-platform` commit through a restricted deploy user and forced-command dispatcher supporting stage, activate, status, exact releases, and rollback.
-- Production is not a Git checkout, does not use `git pull`, and intentionally has no GitHub account, token, or key.
+## Application-owned contract
 
-## Architecture and operations constraints
+`moeller-lars` owns:
 
-- `moeller-lars` has one permanent environment on this host: production; no permanent `moeller-lars` staging environment is required.
-- Temporary isolated release validation remains required before production cutover or high-risk maintenance; it may share this physical host only when isolated and resource constrained.
-- Matomo belongs to the `moeller-lars` system but must be logically isolated from public rendering and normal admin operation. A separate physical server is not required.
-- Server-platform owns the generic production deployment, ingress, placement, resource limits, and runtime lifecycle.
-- Application-specific production deployment contract/integration remains future work through server-platform #4/#5.
-- Automated backup/restore remains server-platform #8/#9/#10; monitoring remains server-platform #3; temporary moeller-lars validation remains server-platform #6.
-- Server/hosting cost is allowed but must be minimized and justified; the project does not assume a new server unless the target requirements make it necessary.
+- application source and migrations;
+- Docker build/runtime interface;
+- exact Git-SHA release identity embedded in the image;
+- `/up` application health endpoint;
+- PostgreSQL migration command/expectations;
+- canonical media persistence declaration;
+- `media:verify` and migration/reconciliation commands;
+- application release smoke behavior;
+- required environment-variable names;
+- CI verification and GHCR image publication.
 
-## Audit acceptance and open work
+The application container listens on its documented internal HTTP interface. Concrete host ports, proxy/container network names and filesystem volume placement are platform details.
 
-The facts above are verified baseline conditions and are safe to use in architecture planning without exposing secrets. Open work is limited to application/platform integration, temporary release validation, recurring backup/restore automation, monitoring, and Matomo workload integration through server-platform.
+## Platform-owned contract
+
+`server-platform` owns:
+
+- VM/provider/OS lifecycle;
+- firewall and SSH exposure;
+- Caddy/public ingress and TLS;
+- container/Compose placement;
+- host paths and persistent-volume mounts;
+- PostgreSQL runtime placement/credentials;
+- Matomo runtime/database/networking;
+- mail-server/runtime integration;
+- secret placement;
+- CPU/RAM/PID/resource limits;
+- logs and retention;
+- recurring offsite backups and restore orchestration;
+- monitoring/alerting;
+- Validation lifecycle;
+- production deployment, activation, status and rollback;
+- legacy runtime retirement.
+
+Mutable operational facts should be maintained there instead of copied into this application repository and allowed to drift.
+
+## Security expectations
+
+The platform contract must provide, at minimum:
+
+- HTTPS canonical ingress;
+- no public database exposure;
+- least-privilege runtime/deploy access;
+- bounded service/resource exposure;
+- secrets outside Git and image layers;
+- recoverable persistent state;
+- monitoring for application/ingress/storage/backup health;
+- a controlled patching/maintenance process.
+
+Application security remains separately responsible for authentication, authorization, CSRF/session policy, rate limiting, input/media validation and safe public/admin behavior.
+
+## Persistence and recovery
+
+Authoritative application state consists of:
+
+- PostgreSQL editorial/domain data;
+- canonical original media.
+
+Generated media variants may be backed up conservatively but are conceptually rebuildable.
+
+Recovery must attach database and media from a consistent recoverable state to an explicitly identified application release and then run the application-level verification described in [RELEASE.md](RELEASE.md).
+
+A backup is not considered proven merely because files exist; the platform restore procedure and application integrity checks must be executable in an isolated recovery context.
+
+## Deployment gate
+
+A successful CI run or GHCR image publication does not authorize Production mutation.
+
+Before Production deployment/cutover, the exact candidate must pass the project release gates, including isolated Validation/browser acceptance where required and current platform backup/rollback readiness.
+
+See [RELEASE.md](RELEASE.md) and [MIGRATION-PLAN.md](MIGRATION-PLAN.md).
