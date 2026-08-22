@@ -4,7 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
-use App\Filament\Pages\SitePages;
+use App\Filament\Pages\HomePresentation;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
@@ -13,29 +13,43 @@ use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\JournalSettings\JournalSettingResource;
 use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
+use Filament\Support\Icons\Heroicon;
+use LogicException;
 
 final class SiteNodePresentation
 {
-    public function workspaceUrl(SiteSection $section, bool $fallbackToPages = true): ?string
+    public function icon(SiteNodeType $type): Heroicon
     {
-        $type = SiteNodeType::fromSection($section);
-        $fallback = $fallbackToPages ? SitePages::getUrl().'#site-section-'.$section->getKey() : null;
-
         return match ($type) {
-            SiteNodeType::Home => ArtworkResource::getUrl('index'),
-            SiteNodeType::Gallery => $this->galleryWorkspaceUrl($section) ?? $fallback,
-            SiteNodeType::CustomPage => $this->customPageWorkspaceUrl($section) ?? $fallback,
+            SiteNodeType::Home => Heroicon::OutlinedHome,
+            SiteNodeType::Gallery => Heroicon::OutlinedPhoto,
+            SiteNodeType::Journal => Heroicon::OutlinedNewspaper,
+            SiteNodeType::CustomPage => Heroicon::OutlinedDocumentText,
+            SiteNodeType::NavigationNode => Heroicon::OutlinedFolder,
+        };
+    }
+
+    public function workspaceUrl(SiteSection $section): ?string
+    {
+        return match ($section->nodeType()) {
+            SiteNodeType::Home => HomePresentation::getUrl(),
+            SiteNodeType::Gallery => ArtworkResource::getUrl('gallery', [
+                'gallery' => $this->galleryId($section),
+            ]),
             SiteNodeType::Journal => $this->journalWorkspaceUrl($section),
+            SiteNodeType::CustomPage => CustomPageSettingResource::getUrl('edit', [
+                'record' => $this->customPageSetting($section),
+            ]),
             SiteNodeType::NavigationNode => null,
         };
     }
 
     public function editorUrl(SiteSection $section): ?string
     {
-        return match (SiteNodeType::fromSection($section)) {
-            SiteNodeType::Gallery => is_numeric($section->getAttribute('artwork_category_id'))
-                ? ArtworkCategoryResource::getUrl('edit', ['record' => (int) $section->getAttribute('artwork_category_id')])
-                : null,
+        return match ($section->nodeType()) {
+            SiteNodeType::Gallery => ArtworkCategoryResource::getUrl('edit', [
+                'record' => $this->galleryId($section),
+            ]),
             SiteNodeType::Journal => JournalSettingResource::getSettingsUrl($section),
             SiteNodeType::Home,
             SiteNodeType::CustomPage,
@@ -43,30 +57,36 @@ final class SiteNodePresentation
         };
     }
 
-    private function galleryWorkspaceUrl(SiteSection $section): ?string
+    private function galleryId(SiteSection $section): int
     {
         $galleryId = $section->getAttribute('artwork_category_id');
+        if (! is_numeric($galleryId)) {
+            throw new LogicException('Gallery site node is missing its Gallery persistence reference.');
+        }
 
-        return is_numeric($galleryId)
-            ? ArtworkResource::getUrl('gallery', ['gallery' => (int) $galleryId])
-            : null;
+        return (int) $galleryId;
     }
 
-    private function customPageWorkspaceUrl(SiteSection $section): ?string
+    private function customPageSetting(SiteSection $section): CustomPageSetting
     {
-        $settings = $section->relationLoaded('customPageSetting')
-            ? $section->getRelation('customPageSetting')
-            : $section->customPageSetting()->first();
+        if (! $section->relationLoaded('customPageSetting')) {
+            throw new LogicException('Custom Page presentation requires customPageSetting to be eager-loaded.');
+        }
 
-        return $settings instanceof CustomPageSetting
-            ? CustomPageSettingResource::getUrl('edit', ['record' => $settings])
-            : null;
+        $settings = $section->getRelation('customPageSetting');
+        if (! $settings instanceof CustomPageSetting) {
+            throw new LogicException('Custom Page site node is missing its required settings record.');
+        }
+
+        return $settings;
     }
 
     private function journalWorkspaceUrl(SiteSection $section): string
     {
-        return JournalTemplate::tryFrom((string) $section->getAttribute('template')) === JournalTemplate::Exhibitions
-            ? ExhibitionResource::getUrl('index', ['section' => $section->getKey()])
-            : BlogPostResource::getUrl('index', ['section' => $section->getKey()]);
+        return match ($section->journalTemplate()) {
+            JournalTemplate::Blog => BlogPostResource::getUrl('index', ['section' => $section->getKey()]),
+            JournalTemplate::Exhibitions => ExhibitionResource::getUrl('index', ['section' => $section->getKey()]),
+            null => throw new LogicException('Journal site node is missing its required template.'),
+        };
     }
 }
