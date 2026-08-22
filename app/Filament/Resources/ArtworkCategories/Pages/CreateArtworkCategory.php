@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\ArtworkCategories\Pages;
 
 use App\Domain\Artwork\ArtworkCategoryEditorialService;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use Filament\Notifications\Notification;
@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreateArtworkCategory extends CreateRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = ArtworkCategoryResource::class;
 
