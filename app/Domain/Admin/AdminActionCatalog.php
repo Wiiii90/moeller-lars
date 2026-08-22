@@ -37,6 +37,7 @@ final class AdminActionCatalog
         'cv_entry.unpublished' => ['label' => 'Unpublished Vita entry', 'area' => 'Vita', 'family' => 'publish'],
         'cv_entry.archived' => ['label' => 'Archived Vita entry', 'area' => 'Vita', 'family' => 'lifecycle'],
         'cv_entry.restored_to_draft' => ['label' => 'Restored Vita entry to draft', 'area' => 'Vita', 'family' => 'lifecycle'],
+        'cv_entry.deleted' => ['label' => 'Deleted Vita entry', 'area' => 'Vita', 'family' => 'lifecycle'],
         'cv_entry.reordered' => ['label' => 'Reordered Vita entries', 'area' => 'Vita', 'family' => 'ordering'],
         'exhibition.created' => ['label' => 'Created exhibition', 'area' => 'Exhibitions', 'family' => 'create'],
         'exhibition.updated' => ['label' => 'Edited exhibition', 'area' => 'Exhibitions', 'family' => 'edit'],
