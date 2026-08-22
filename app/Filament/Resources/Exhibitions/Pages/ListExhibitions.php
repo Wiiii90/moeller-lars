@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Exhibitions\Pages;
 
+use App\Domain\Content\ExhibitionDraftService;
 use App\Domain\Content\JournalEntryOrderService;
 use App\Filament\Concerns\HasJournalSettingsAction;
 use App\Filament\Pages\SitePages;
@@ -11,6 +12,7 @@ use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
+use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
@@ -52,7 +54,20 @@ class ListExhibitions extends Page
             Action::make('addExhibition')
                 ->label('Add exhibition')
                 ->icon(Heroicon::OutlinedPlus)
-                ->url(ExhibitionResource::getUrl('create', ['section' => $this->sectionId])),
+                ->schema(fn (Schema $schema): Schema => ExhibitionResource::form($schema))
+                ->modalHeading('Add exhibition')
+                ->modalSubmitActionLabel('Create draft')
+                ->action(function (array $data): void {
+                    $data['site_section_id'] = $this->sectionId;
+                    app(ExhibitionDraftService::class)->create($data);
+                    $this->loadExhibitions();
+
+                    Notification::make()
+                        ->title('Exhibition draft created')
+                        ->body('The exhibition remains private until it is explicitly published.')
+                        ->success()
+                        ->send();
+                }),
             $this->journalSettingsAction(),
             Action::make('pages')
                 ->label('Back to Pages')
