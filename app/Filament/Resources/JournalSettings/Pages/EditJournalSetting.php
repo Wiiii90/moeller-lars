@@ -4,7 +4,7 @@ namespace App\Filament\Resources\JournalSettings\Pages;
 
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\SafeRichTextRenderer;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\JournalSettings\JournalSettingResource;
 use App\Models\JournalSetting;
@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 final class EditJournalSetting extends EditRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = JournalSettingResource::class;
 
