@@ -1,6 +1,6 @@
 @php
     $path = $section['public_url'] !== null ? (parse_url($section['public_url'], PHP_URL_PATH) ?: '/') : null;
-    $workspaceUrl = $section['workspace_url'] ?: $section['editor_url'];
+    $workspaceUrl = $section['workspace_url'];
     $label = $section['navigation_label'] ?: $section['title'];
     $validParents = collect($parentCandidates)->filter(
         fn (array $candidate): bool => in_array($candidate['id'], $section['valid_parent_ids'], true),
@@ -55,9 +55,6 @@
     </div>
 
     <x-admin.toolbar class="admin-site-node__actions">
-        @if ($section['editor_url'] && $section['editor_url'] !== $workspaceUrl)
-            <a class="admin-action" href="{{ $section['editor_url'] }}">Settings</a>
-        @endif
         @if ($section['can_delete'])
             <button
                 class="admin-action"
