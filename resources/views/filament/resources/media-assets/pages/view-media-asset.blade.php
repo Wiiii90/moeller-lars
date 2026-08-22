@@ -44,11 +44,15 @@
             </div>
 
             <div>
-                <span class="media-inspector__label">Usage / references</span>
+                <span class="media-inspector__label">Used in</span>
                 @if ($usages !== [])
                     <div class="media-inspector__usage-list">
                         @foreach ($usages as $usage)
-                            <a href="{{ $usage['url'] }}"><strong>{{ $usage['type'] }}</strong><span>{{ $usage['label'] }}</span></a>
+                            @if ($usage['url'])
+                                <a href="{{ $usage['url'] }}"><strong>{{ $usage['type'] }}</strong><span>{{ $usage['label'] }}</span></a>
+                            @else
+                                <div><strong>{{ $usage['type'] }}</strong><span>{{ $usage['label'] }}</span></div>
+                            @endif
                         @endforeach
                     </div>
                     @if(count($usages) > 1)<small>Shared asset: deleting the media remains blocked until every reference has been detached explicitly.</small>@endif
