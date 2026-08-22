@@ -75,9 +75,6 @@
     </div>
 
     <div class="artist-page-row__actions">
-        @if ($section['editor_url'] && $section['editor_url'] !== $workspaceUrl)
-            <a class="artist-action" href="{{ $section['editor_url'] }}">Settings</a>
-        @endif
         @if ($section['can_delete'])
             <button
                 class="artist-action"
