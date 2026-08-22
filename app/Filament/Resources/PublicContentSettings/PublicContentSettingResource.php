@@ -55,6 +55,7 @@ class PublicContentSettingResource extends Resource
                 'default' => 1,
                 'xl' => 2,
             ])
+                ->columnSpanFull()
                 ->extraAttributes(['class' => 'artist-general-grid'])
                 ->schema([
                     Fieldset::make('Site identity')
