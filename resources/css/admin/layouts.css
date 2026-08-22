@@ -1,4 +1,14 @@
 /* Feature layouts. Shared Workspace/Section/List/Table/Toolbar rules live in ../admin.css. */
+
+/*
+ * Workspace views own their visible page title. Filament still needs its header
+ * container for native actions, so suppress only the duplicate heading whenever
+ * the page renders the canonical admin workspace primitive.
+ */
+.fi-page:has(.admin-workspace) .fi-header-heading {
+    display: none;
+}
+
 .admin-topbar-sign-out {
     display: inline-flex;
     align-items: center;
