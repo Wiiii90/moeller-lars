@@ -8,6 +8,7 @@ use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
@@ -159,7 +160,7 @@ final class ManageGalleryArtworks extends Page
                     ->image()
                     ->storeFiles(false)
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                    ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024))
+                    ->maxSize((int) ceil(MediaTypePolicy::imageMaxBytes() / 1024))
                     ->helperText('Optional while drafting, but required before publication.')
                     ->columnSpanFull(),
                 TextInput::make('work_year')
