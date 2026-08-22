@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Exhibitions\Pages;
 
 use App\Domain\Content\JournalEntryOrderService;
+use App\Filament\Concerns\HasJournalSettingsAction;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Models\Exhibition;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class ListExhibitions extends Page
 {
+    use HasJournalSettingsAction;
+
     protected static string $resource = ExhibitionResource::class;
 
     protected string $view = 'filament.resources.exhibitions.pages.list-exhibitions';
@@ -50,10 +53,16 @@ class ListExhibitions extends Page
                 ->label('Add exhibition')
                 ->icon(Heroicon::OutlinedPlus)
                 ->url(ExhibitionResource::getUrl('create', ['section' => $this->sectionId])),
+            $this->journalSettingsAction(),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
         ];
+    }
+
+    protected function journalSectionId(): int
+    {
+        return $this->sectionId;
     }
 
     private function loadExhibitions(): void
