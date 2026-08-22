@@ -7,16 +7,12 @@ use App\Filament\Pages\Analytics;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\SitePages;
 use App\Filament\Pages\StorageCapacity;
-use App\Filament\Resources\Artworks\ArtworkResource;
-use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\CustomPageSettings\CustomPageSettingResource;
-use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
+use App\Filament\Support\SiteNodePresentation;
 use App\Filament\Widgets\ArtistDashboard;
 use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
-use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -146,69 +142,31 @@ class AdminPanelProvider extends PanelProvider
     /** @param array<int, list<SiteSection>> $childrenByParent */
     private function siteSectionNavigationItem(SiteSection $section, array $childrenByParent, int $depth): NavigationItem
     {
+        $type = $section->nodeType();
         $label = trim((string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')));
         $children = $childrenByParent[(int) $section->getKey()] ?? [];
-        $url = $this->siteSectionWorkspaceUrl($section);
+        $url = app(SiteNodePresentation::class)->workspaceUrl($section);
 
         $item = NavigationItem::make($label)
             ->key('site-section-'.$section->getKey())
+            ->icon($type->navigationIcon())
             ->url($url)
             ->isActiveWhen(fn (): bool => $url !== null && $this->navigationUrlIsActive($url))
             ->extraAttributes([
                 'data-artist-site-section' => (string) $section->getKey(),
                 'data-artist-site-section-depth' => (string) $depth,
-                'data-artist-site-section-type' => (string) $section->getAttribute('type'),
+                'data-artist-site-section-type' => $type->value,
                 'data-artist-tree-branch' => $children === [] ? 'false' : 'true',
             ]);
 
         if ($children !== []) {
-            $item
-                ->icon(Heroicon::OutlinedFolder)
-                ->childItems(array_map(
-                    fn (SiteSection $child): NavigationItem => $this->siteSectionNavigationItem($child, $childrenByParent, $depth + 1),
-                    $children,
-                ));
+            $item->childItems(array_map(
+                fn (SiteSection $child): NavigationItem => $this->siteSectionNavigationItem($child, $childrenByParent, $depth + 1),
+                $children,
+            ));
         }
 
         return $item;
-    }
-
-    private function siteSectionWorkspaceUrl(SiteSection $section): ?string
-    {
-        $fallback = SitePages::getUrl().'#site-section-'.$section->getKey();
-        $type = (string) $section->getAttribute('type');
-
-        if ($type === SiteSection::TYPE_NAVIGATION_GROUP) {
-            return null;
-        }
-
-        if ($type === SiteSection::TYPE_HOME) {
-            return ArtworkResource::getUrl('index');
-        }
-
-        if ($type === SiteSection::TYPE_GALLERY) {
-            $galleryId = $section->getAttribute('artwork_category_id');
-
-            return is_numeric($galleryId)
-                ? ArtworkResource::getUrl('gallery', ['gallery' => (int) $galleryId])
-                : $fallback;
-        }
-
-        if ($type === SiteSection::TYPE_CUSTOM) {
-            $settings = $section->getRelation('customPageSetting');
-
-            return $settings instanceof CustomPageSetting
-                ? CustomPageSettingResource::getUrl('edit', ['record' => $settings])
-                : $fallback;
-        }
-
-        if ($type === SiteSection::TYPE_JOURNAL) {
-            return $section->getAttribute('template') === SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS
-                ? ExhibitionResource::getUrl('index', ['section' => $section->getKey()])
-                : BlogPostResource::getUrl('index', ['section' => $section->getKey()]);
-        }
-
-        return $fallback;
     }
 
     private function navigationUrlIsActive(string $url): bool
