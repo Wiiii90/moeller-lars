@@ -389,12 +389,16 @@ final class ListMediaAssets extends Page
         }
     }
 
-    /** @param Builder<MediaAsset> $query */
+    /**
+     * @param  Builder<MediaAsset>  $query
+     * @return Builder<MediaAsset>
+     */
     private function orderResults(Builder $query): Builder
     {
-        return $query
-            ->orderByDesc('created_at')
-            ->orderByDesc('id');
+        $query->orderByDesc('created_at');
+        $query->orderByDesc('id');
+
+        return $query;
     }
 
     /** @param array<string, mixed> $arguments */
