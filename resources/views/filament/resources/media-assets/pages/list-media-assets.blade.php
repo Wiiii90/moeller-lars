@@ -1,18 +1,12 @@
 <x-filament-panels::page>
-    <link rel="stylesheet" href="{{ asset('css/media-workspace.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/admin-media.css') }}">
 
-    <div class="artist-workspace media-workspace">
-        <header class="artist-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">Media</p>
-                <h2>Find, reuse and manage media</h2>
-            </div>
-            <div class="artist-workspace__summary">
-                <div><strong>{{ $total }}</strong><span>Matches</span></div>
-                <div><strong>{{ $inUse }}</strong><span>Referenced</span></div>
-                <div><strong>{{ $unused }}</strong><span>Unreferenced</span></div>
-            </div>
-        </header>
+    <x-admin.workspace kicker="Media" title="Find, reuse and manage media" class="media-workspace">
+        <x-slot:summary>
+            <div><strong>{{ $total }}</strong><span>Matches</span></div>
+            <div><strong>{{ $inUse }}</strong><span>Referenced</span></div>
+            <div><strong>{{ $unused }}</strong><span>Unreferenced</span></div>
+        </x-slot:summary>
 
         <section class="media-workspace__controls" aria-label="Media search and filters">
             <label class="media-workspace__search">
@@ -177,5 +171,5 @@
             <span>Page {{ $page }} of {{ $pages }}</span>
             <button class="artist-action" type="button" wire:click="nextPage" @disabled($page >= $pages)>Next</button>
         </footer>
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>
