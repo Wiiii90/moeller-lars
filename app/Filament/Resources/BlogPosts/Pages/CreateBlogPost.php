@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\BlogPosts\Pages;
 
 use App\Domain\Blog\BlogEditorialService;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 final class CreateBlogPost extends CreateRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = BlogPostResource::class;
 
