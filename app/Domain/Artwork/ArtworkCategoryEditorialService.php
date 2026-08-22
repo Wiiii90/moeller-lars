@@ -3,6 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Content\SiteSectionPathPolicy;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\Redirect;
@@ -16,7 +17,7 @@ class ArtworkCategoryEditorialService
 {
     public function __construct(
         private readonly AdminAuditService $adminAuditService,
-        private readonly ArtworkCategoryPathPolicy $pathPolicy,
+        private readonly SiteSectionPathPolicy $pathPolicy,
     ) {}
 
     public function create(array $data): ArtworkCategory
@@ -97,7 +98,7 @@ class ArtworkCategoryEditorialService
 
             $oldPath = '/'.$oldSlug;
             $newPath = '/'.$newSlug;
-            $ownedReason = ArtworkCategoryPathPolicy::CATEGORY_SLUG_REDIRECT_REASON;
+            $ownedReason = SiteSectionPathPolicy::GALLERY_SLUG_REDIRECT_REASON;
 
             Redirect::query()->where('reason', $ownedReason)->where('target_path', $oldPath)->update(['target_path' => $newPath]);
 
@@ -168,7 +169,7 @@ class ArtworkCategoryEditorialService
             $path = '/'.$fresh->getAttribute('slug');
             $this->adminAuditService->record($actor, 'artwork_category.deleted', 'artwork_category', $fresh->getKey());
             Redirect::query()
-                ->where('reason', ArtworkCategoryPathPolicy::CATEGORY_SLUG_REDIRECT_REASON)
+                ->where('reason', SiteSectionPathPolicy::GALLERY_SLUG_REDIRECT_REASON)
                 ->where(fn (Builder $query) => $query->where('source_path', $path)->orWhere('target_path', $path))
                 ->delete();
             $section->delete();
