@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Domain\Artwork\ArtworkCategoryEditorialService;
+use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SitePreviewContext;
@@ -114,9 +114,9 @@ final class SitePages extends Page
 
         try {
             if ($type === SiteNodeType::Gallery) {
-                /** @var ArtworkCategory $category */
-                $category = ArtworkCategory::query()->findOrFail((int) $section->getAttribute('artwork_category_id'));
-                app(ArtworkCategoryEditorialService::class)->delete($category);
+                /** @var ArtworkCategory $gallery */
+                $gallery = ArtworkCategory::query()->findOrFail((int) $section->getAttribute('artwork_category_id'));
+                app(GalleryEditorialService::class)->delete($gallery);
             } else {
                 app(SiteSectionEditorialService::class)->deleteConfigurableSection($section);
             }
@@ -207,7 +207,7 @@ final class SitePages extends Page
 
     private function createGallery(string $title, string $slug): string
     {
-        app(ArtworkCategoryEditorialService::class)->create([
+        app(GalleryEditorialService::class)->create([
             'name' => $title,
             'slug' => $slug,
             'parent_section_id' => null,
