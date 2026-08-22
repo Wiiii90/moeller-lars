@@ -14,6 +14,7 @@ use App\Models\JournalSetting;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
+use App\Routing\SiteNodeRoute;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,7 @@ final class PublicSiteSectionController extends Controller
         private readonly SafeRichTextRenderer $richText,
         private readonly PublicMedia $media,
         private readonly SitePreviewContext $preview,
+        private readonly SiteNodeRoute $siteNodeRoute,
     ) {}
 
     public function show(string $section): View|RedirectResponse
@@ -69,6 +71,7 @@ final class PublicSiteSectionController extends Controller
             'post' => $post,
             'richText' => $this->richText,
             'media' => $this->media,
+            'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 
@@ -101,15 +104,16 @@ final class PublicSiteSectionController extends Controller
             'contactSettings' => PublicContentSetting::contact(),
             'richText' => $this->richText,
             'media' => $this->media,
+            'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 
     private function journal(SiteSection $section): View
     {
-        return match (JournalTemplate::tryFrom((string) $section->getAttribute('template'))) {
+        return match ($section->journalTemplate()) {
             JournalTemplate::Blog => $this->blogJournal($section),
             JournalTemplate::Exhibitions => $this->exhibitionsJournal($section),
-            default => abort(404),
+            null => abort(404),
         };
     }
 
@@ -127,6 +131,7 @@ final class PublicSiteSectionController extends Controller
             'posts' => $posts,
             'richText' => $this->richText,
             'media' => $this->media,
+            'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 
@@ -150,6 +155,7 @@ final class PublicSiteSectionController extends Controller
             'exhibitions' => $exhibitions,
             'richText' => $this->richText,
             'media' => $this->media,
+            'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 
