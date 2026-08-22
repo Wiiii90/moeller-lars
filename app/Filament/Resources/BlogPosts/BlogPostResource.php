@@ -5,7 +5,6 @@ namespace App\Filament\Resources\BlogPosts;
 use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
-use App\Filament\Resources\BlogPosts\Pages\CreateBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\ListBlogPosts;
 use App\Filament\Support\AdminForm;
@@ -170,7 +169,6 @@ final class BlogPostResource extends Resource
     {
         return [
             'index' => ListBlogPosts::route('/'),
-            'create' => CreateBlogPost::route('/create'),
             'edit' => EditBlogPost::route('/{record}/edit'),
         ];
     }
