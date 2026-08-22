@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Contact\ContactDeliveryReadiness;
+use App\Domain\Content\SiteNodeType;
 use App\Mail\WebsiteContactMessage;
 use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
-use App\Models\SiteSection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -63,7 +63,7 @@ class PublicContactController extends Controller
     {
         return CustomPageSetting::query()
             ->whereHas('siteSection', static fn ($query) => $query
-                ->where('type', SiteSection::TYPE_CUSTOM)
+                ->where('type', SiteNodeType::CustomPage->value)
                 ->where('state', 'published'))
             ->get(['blocks'])
             ->contains(function (CustomPageSetting $settings): bool {
