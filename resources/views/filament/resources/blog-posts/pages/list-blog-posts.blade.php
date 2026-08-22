@@ -2,18 +2,12 @@
     @php($published = collect($posts)->where('state', 'published')->count())
     @php($scheduled = collect($posts)->where('state', 'scheduled')->count())
 
-    <div class="artist-workspace">
-        <header class="artist-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">Blog</p>
-                <h2>Editorial queue</h2>
-            </div>
-            <div class="artist-workspace__summary">
-                <div><strong>{{ count($posts) }}</strong><span>Posts</span></div>
-                <div><strong>{{ $published }}</strong><span>Published</span></div>
-                <div><strong>{{ $scheduled }}</strong><span>Scheduled</span></div>
-            </div>
-        </header>
+    <x-admin.workspace kicker="Blog" title="Editorial queue">
+        <x-slot:summary>
+            <div><strong>{{ count($posts) }}</strong><span>Posts</span></div>
+            <div><strong>{{ $published }}</strong><span>Published</span></div>
+            <div><strong>{{ $scheduled }}</strong><span>Scheduled</span></div>
+        </x-slot:summary>
 
         @if ($posts !== [])
             <section class="artist-section-list" aria-label="Blog posts">
@@ -45,5 +39,5 @@
         @else
             <section class="artist-gallery-empty"><p class="artist-workspace__kicker">Empty Blog</p><h3>Write the first post</h3><p>Create a draft now; public Blog visibility remains disabled until it is enabled from Pages.</p></section>
         @endif
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>
