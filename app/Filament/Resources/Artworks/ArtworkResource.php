@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Artworks;
 
 use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\Artworks\Pages\CreateArtwork;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Resources\Artworks\Pages\ListArtworks;
@@ -103,7 +104,7 @@ class ArtworkResource extends Resource
                         ->image()
                         ->storeFiles(false)
                         ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                        ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024))
+                        ->maxSize((int) ceil(MediaTypePolicy::imageMaxBytes() / 1024))
                         ->helperText('Optional while drafting, but required before publication.'),
                 ])
                 ->visible(fn (string $operation): bool => $operation === 'create'),
