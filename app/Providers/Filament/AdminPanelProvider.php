@@ -79,7 +79,7 @@ class AdminPanelProvider extends PanelProvider
     {
         $pagesItem = SitePages::getNavigationItems()[0]
             ->childItems(app(SiteNavigation::class)->items())
-            ->extraAttributes(['data-artist-tree-root' => 'true']);
+            ->extraAttributes(['data-admin-tree-root' => 'true']);
 
         return $builder
             ->items([
