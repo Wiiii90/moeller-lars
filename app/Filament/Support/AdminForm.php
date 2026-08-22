@@ -11,7 +11,7 @@ final class AdminForm
         return Fieldset::make($label)
             ->contained(false)
             ->extraAttributes([
-                'class' => implode(' ', ['admin-form-section', 'artist-editor-form-section', ...$classes]),
+                'class' => implode(' ', ['admin-form-section', ...$classes]),
             ]);
     }
 }
