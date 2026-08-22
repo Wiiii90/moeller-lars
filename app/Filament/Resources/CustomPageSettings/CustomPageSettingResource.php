@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CustomPageSettings;
 
 use App\Domain\Content\SocialLinks;
 use App\Filament\Resources\CustomPageSettings\Pages\EditCustomPageSetting;
+use App\Filament\Support\AdminForm;
 use App\Models\CustomPageSetting;
 use App\Models\MediaAsset;
 use Filament\Forms\Components\MarkdownEditor;
@@ -12,7 +13,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 
@@ -29,13 +29,11 @@ final class CustomPageSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Fieldset::make('Page components')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Page components')
                 ->schema([
                     Repeater::make('blocks')
                         ->label('Components')
-                        ->extraAttributes(['class' => 'artist-component-repeater'])
+                        ->extraAttributes(['class' => 'admin-component-repeater'])
                         ->schema([
                             Select::make('type')
                                 ->options([
@@ -75,7 +73,7 @@ final class CustomPageSettingResource extends Resource
                                 ->visible(fn (callable $get): bool => in_array($get('type'), ['text', 'list'], true)),
                             Repeater::make('items')
                                 ->label('List entries')
-                                ->extraAttributes(['class' => 'artist-component-repeater artist-component-repeater--nested'])
+                                ->extraAttributes(['class' => 'admin-component-repeater admin-component-repeater--nested'])
                                 ->schema([
                                     Toggle::make('visible')
                                         ->label('Visible on public page')
