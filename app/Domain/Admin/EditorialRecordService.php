@@ -79,9 +79,10 @@ final class EditorialRecordService
 
             $fresh->delete();
 
-            $this->audit->record($actor, 'cv_entry.deleted', 'cv_entry', $recordId, [
-                'image_media_asset_id' => is_numeric($mediaAssetId) ? (int) $mediaAssetId : null,
-            ]);
+            $metadata = is_numeric($mediaAssetId)
+                ? ['media_asset_id' => (int) $mediaAssetId]
+                : null;
+            $this->audit->record($actor, 'cv_entry.deleted', 'cv_entry', $recordId, $metadata);
         });
     }
 
