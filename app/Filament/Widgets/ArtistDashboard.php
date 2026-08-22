@@ -6,6 +6,7 @@ use App\Domain\Admin\AdminActivityFeed;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminQuickActionService;
 use App\Domain\Analytics\ArtistReportingService;
+use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaStorageUnits;
 use App\Filament\Pages\Activity;
@@ -114,7 +115,7 @@ final class ArtistDashboard extends Widget implements HasActions, HasSchemas
         $editorialGroups = [$artworkStates, $exhibitionStates, $blogStates];
         $drafts = $this->sumStates($editorialGroups, 'draft');
         $hiddenPages = SiteSection::query()
-            ->where('type', '<>', \App\Domain\Content\SiteNodeType::NavigationNode->value)
+            ->where('type', '<>', SiteNodeType::NavigationNode->value)
             ->where('state', 'hidden')
             ->count();
 
