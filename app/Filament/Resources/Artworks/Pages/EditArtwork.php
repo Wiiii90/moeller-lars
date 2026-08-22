@@ -212,6 +212,35 @@ class EditArtwork extends EditRecord
                     $this->artworkRecord()->refresh();
                     Notification::make()->title('Artwork unpublished')->success()->send();
                 }),
+            Action::make('delete')
+                ->label('Delete')
+                ->color('danger')
+                ->visible(fn (): bool => $this->artworkRecord()->getAttribute('state') !== 'published')
+                ->requiresConfirmation()
+                ->modalDescription('The Artwork and its media usages will be removed. Referenced media assets remain in Media.')
+                ->action(function (): void {
+                    $galleryId = (int) $this->artworkRecord()->getAttribute('artwork_category_id');
+                    $actor = app(AdminAuditService::class)->requireActor();
+
+                    DB::transaction(function () use ($actor): void {
+                        /** @var Artwork $fresh */
+                        $fresh = Artwork::query()->whereKey($this->artworkRecord()->getKey())->lockForUpdate()->firstOrFail();
+                        if ($fresh->getAttribute('state') === 'published') {
+                            throw ValidationException::withMessages(['artwork' => 'Unpublish this Artwork before deleting it.']);
+                        }
+
+                        $artworkId = (int) $fresh->getKey();
+                        $galleryId = (int) $fresh->getAttribute('artwork_category_id');
+                        $fresh->artworkMedia()->delete();
+                        app(AdminAuditService::class)->record($actor, 'artwork.deleted', 'artwork', $artworkId, [
+                            'artwork_category_id' => $galleryId,
+                        ]);
+                        $fresh->delete();
+                    });
+
+                    Notification::make()->title('Artwork deleted')->success()->send();
+                    $this->redirect(ArtworkResource::getUrl('gallery', ['gallery' => $galleryId]));
+                }),
             Action::make('editPrimaryAlt')
                 ->label('Edit image ALT text')
                 ->visible(fn (): bool => $this->primaryArtworkMedia() !== null)
