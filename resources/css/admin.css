@@ -1,8 +1,8 @@
-@import '../../public/css/admin.css';
-@import '../../public/css/admin-layouts.css';
-@import '../../public/css/admin-forms.css';
-@import '../../public/css/admin-analytics.css';
-@import '../../public/css/admin-media.css';
+@import './admin/base.css';
+@import './admin/layouts.css';
+@import './admin/forms.css';
+@import './admin/analytics.css';
+@import './admin/media.css';
 
 :root {
     --admin-text: #181818;
