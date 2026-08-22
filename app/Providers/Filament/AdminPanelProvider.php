@@ -18,7 +18,6 @@ use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
 use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
-use BackedEnum;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
