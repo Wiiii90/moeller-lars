@@ -20,24 +20,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $unifiedStylesheet = app()->environment('production')
-            ? secure_asset('css/filament-unified.css')
-            : asset('css/filament-unified.css');
-        $analyticsStylesheet = app()->environment('production')
-            ? secure_asset('css/filament-analytics.css')
-            : asset('css/filament-analytics.css');
-        $editorialStylesheet = app()->environment('production')
-            ? secure_asset('css/filament-editorial.css')
-            : asset('css/filament-editorial.css');
-        $editorOverlayStylesheet = app()->environment('production')
-            ? secure_asset('css/filament-editor-overlays.css')
-            : asset('css/filament-editor-overlays.css');
+        $adminAsset = static fn (string $path): string => app()->environment('production')
+            ? secure_asset($path)
+            : asset($path);
 
         FilamentAsset::register([
-            Css::make('artist-unified', $unifiedStylesheet),
-            Css::make('analytics-dashboard', $analyticsStylesheet),
-            Css::make('artist-editorial', $editorialStylesheet),
-            Css::make('artist-editor-overlays', $editorOverlayStylesheet),
+            Css::make('admin-system', $adminAsset('css/admin.css')),
+            Css::make('admin-layouts', $adminAsset('css/admin-layouts.css')),
+            Css::make('admin-forms', $adminAsset('css/admin-forms.css')),
+            Css::make('admin-analytics', $adminAsset('css/admin-analytics.css')),
         ]);
 
         FilamentView::registerRenderHook(
