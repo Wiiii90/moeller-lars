@@ -55,16 +55,16 @@ class PublicContentSettingResource extends Resource
                 'default' => 1,
                 'xl' => 2,
             ])
-                ->extraAttributes(['class' => 'artist-general-grid'])
+                ->extraAttributes(['class' => 'admin-settings-grid'])
                 ->schema([
-                    AdminForm::section('Site identity', 'artist-general-section')
+                    AdminForm::section('Site identity')
                         ->schema([
                             MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
                                 ->nullable()
                                 ->helperText('Choose an image from Files. The generated thumbnail variant is used as the browser icon.')
                                 ->columnSpanFull(),
                         ]),
-                    AdminForm::section('Public contact', 'artist-general-section')
+                    AdminForm::section('Public contact')
                         ->schema([
                             TextInput::make('public_email')
                                 ->label('Public email')
@@ -76,7 +76,7 @@ class PublicContentSettingResource extends Resource
                                 ->default(true),
                         ])
                         ->columns(2),
-                    AdminForm::section('Social links', 'artist-general-section')
+                    AdminForm::section('Social links')
                         ->columnSpanFull()
                         ->schema([
                             Repeater::make('social_links')
@@ -106,7 +106,7 @@ class PublicContentSettingResource extends Resource
                                 ->addActionLabel('Add social link')
                                 ->columnSpanFull(),
                         ]),
-                    AdminForm::section('Contact delivery', 'artist-general-section')
+                    AdminForm::section('Contact delivery')
                         ->schema([
                             TextInput::make('contact_recipient_email')
                                 ->label('Private delivery recipient')
@@ -115,7 +115,7 @@ class PublicContentSettingResource extends Resource
                                 ->nullable()
                                 ->helperText('If empty, the server-configured fallback recipient is used.'),
                         ]),
-                    AdminForm::section('Legal', 'artist-general-section')
+                    AdminForm::section('Legal')
                         ->schema([
                             Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
                         ]),
