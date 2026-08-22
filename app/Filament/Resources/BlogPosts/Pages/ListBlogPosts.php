@@ -12,6 +12,7 @@ use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
+use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
@@ -54,7 +55,20 @@ final class ListBlogPosts extends Page
             Action::make('addPost')
                 ->label('Add blog post')
                 ->icon(Heroicon::OutlinedPlus)
-                ->url(BlogPostResource::getUrl('create', ['section' => $this->sectionId])),
+                ->schema(fn (Schema $schema): Schema => BlogPostResource::form($schema))
+                ->modalHeading('Add blog post')
+                ->modalSubmitActionLabel('Create draft')
+                ->action(function (array $data): void {
+                    $data['site_section_id'] = $this->sectionId;
+                    app(BlogEditorialService::class)->createDraft($data);
+                    $this->loadPosts();
+
+                    Notification::make()
+                        ->title('Blog draft created')
+                        ->body('The post remains private until it is explicitly published or scheduled.')
+                        ->success()
+                        ->send();
+                }),
             $this->journalSettingsAction(),
             Action::make('pages')
                 ->label('Back to Pages')
