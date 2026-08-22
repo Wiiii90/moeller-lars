@@ -22,6 +22,7 @@
     $childItems = collect($childItems)->all();
     $hasChildItems = $childItems !== [];
     $alwaysOpen = $attributes->get('data-artist-tree-root') === 'true';
+    $isArtistSiteSection = $attributes->has('data-artist-site-section');
     $startsOpen = $alwaysOpen || $active || $activeChildItems;
 @endphp
 
@@ -72,7 +73,7 @@
                     }}
                 @endif
 
-                @if ((blank($icon) && $grouped) || $subGrouped)
+                @if ((! $isArtistSiteSection) && ((blank($icon) && $grouped) || $subGrouped))
                     <div
                         @if (filled($icon) && $subGrouped && $sidebarCollapsible && (! $subNavigation))
                             x-show="$store.sidebar.isOpen"
