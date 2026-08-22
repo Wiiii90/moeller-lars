@@ -1,17 +1,11 @@
 <x-filament-panels::page>
-    <link rel="stylesheet" href="{{ asset('css/media-workspace.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/admin-media.css') }}">
 
-    <div class="artist-workspace media-inspector">
-        <header class="artist-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">Media preview</p>
-                <h2>{{ $media['filename'] }}</h2>
-            </div>
-            <div class="artist-workspace__summary">
-                <div><strong>{{ $media['usage_count'] }}</strong><span>References</span></div>
-                <div><strong>{{ ucfirst($media['state']) }}</strong><span>Status</span></div>
-            </div>
-        </header>
+    <x-admin.workspace kicker="Media preview" :title="$media['filename']" class="media-inspector">
+        <x-slot:summary>
+            <div><strong>{{ $media['usage_count'] }}</strong><span>References</span></div>
+            <div><strong>{{ ucfirst($media['state']) }}</strong><span>Status</span></div>
+        </x-slot:summary>
 
         <section class="media-inspector__preview" aria-label="Media preview">
             @if ($media['original_url'])
@@ -72,5 +66,5 @@
                 @if ($sequence['gallery_url'])<a class="artist-action" href="{{ $sequence['gallery_url'] }}">Back to Gallery workspace</a>@endif
             </footer>
         @endif
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>
