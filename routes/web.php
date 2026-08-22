@@ -43,3 +43,10 @@ Route::get('/{section}/{slug}', [PublicSiteSectionController::class, 'journalEnt
 Route::get('/{section}', [PublicSiteSectionController::class, 'show'])
     ->where('section', '[a-z0-9]+(?:-[a-z0-9]+)*')
     ->name('site.section');
+
+// The Gallery admin workspace historically generates this route name. Keep it as
+// an alias of the canonical section URL so published Galleries never 500 while
+// building their public-view action.
+Route::get('/{category}', [PublicSiteSectionController::class, 'show'])
+    ->where('category', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('artworks.category');
