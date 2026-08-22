@@ -395,7 +395,7 @@ final class ManageGalleryArtworks extends Page
             'pages_url' => SitePages::getUrl(),
             'all_artworks_url' => ArtworkResource::getUrl('index'),
             'public_url' => $isPublished
-                ? route('artworks.category', ['category' => $category->getAttribute('slug')])
+                ? route('site.section', ['section' => $category->getAttribute('slug')])
                 : null,
         ];
     }
@@ -518,14 +518,14 @@ final class ManageGalleryArtworks extends Page
     ): bool {
         $altText = $primaryAsset?->getAttribute('alt_text');
 
-        return $artwork->getAttribute('state') !== 'archived'
-            && $galleryPublished
+        return filled($artwork->getAttribute('title'))
+            && filled($artwork->getAttribute('slug'))
             && $primaryCount === 1
             && $primaryAsset instanceof MediaAsset
             && $primaryAsset->getAttribute('state') === 'available'
-            && is_string($altText)
-            && trim($altText) !== ''
-            && $thumbnail instanceof MediaVariant;
+            && $thumbnail instanceof MediaVariant
+            && filled($altText)
+            && $galleryPublished;
     }
 
     private function readinessLabel(
@@ -535,42 +535,32 @@ final class ManageGalleryArtworks extends Page
         ?MediaAsset $primaryAsset,
         ?MediaVariant $thumbnail,
     ): string {
-        if ($artwork->getAttribute('state') === 'published') {
-            return 'Published';
+        if (! filled($artwork->getAttribute('title')) || ! filled($artwork->getAttribute('slug'))) {
+            return 'Missing title or URL';
         }
-
-        if ($artwork->getAttribute('state') === 'archived') {
-            return 'Archived';
+        if ($primaryCount !== 1) {
+            return $primaryCount === 0 ? 'Primary image required' : 'Primary image is ambiguous';
         }
-
+        if (! $primaryAsset || $primaryAsset->getAttribute('state') !== 'available') {
+            return 'Primary image unavailable';
+        }
+        if (! filled($primaryAsset->getAttribute('alt_text'))) {
+            return 'Alt text required';
+        }
+        if (! $thumbnail) {
+            return 'Thumbnail processing required';
+        }
         if (! $galleryPublished) {
-            return 'Gallery hidden';
+            return 'Gallery must be published';
         }
 
-        if ($primaryCount !== 1 || ! $primaryAsset instanceof MediaAsset) {
-            return 'Needs primary image';
-        }
-
-        if ($primaryAsset->getAttribute('state') !== 'available') {
-            return 'Image unavailable';
-        }
-
-        $altText = $primaryAsset->getAttribute('alt_text');
-        if (! is_string($altText) || trim($altText) === '') {
-            return 'Needs ALT text';
-        }
-
-        if (! $thumbnail instanceof MediaVariant) {
-            return 'Thumbnail pending';
-        }
-
-        return 'Ready to publish';
+        return 'Ready';
     }
 
     private function firstValidationMessage(ValidationException $exception): string
     {
         $message = collect($exception->errors())->flatten()->first();
 
-        return is_string($message) && $message !== '' ? $message : 'The Gallery assignment is not valid.';
+        return is_string($message) ? $message : 'The requested Gallery change is not valid.';
     }
 }
