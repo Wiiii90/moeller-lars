@@ -83,11 +83,19 @@
                     x-tooltip.html="tooltip"
                 @endif
                 class="fi-sidebar-item-btn"
-                @if ($usesNodeBranchControl)
+                @if ($usesNodeBranchControl && $sidebarCollapsible && (! $subNavigation))
+                    x-bind:style="$store.sidebar.isOpen ? 'padding-inline-start: 2.25rem' : null"
+                @elseif ($usesNodeBranchControl)
                     style="padding-inline-start: 2.25rem;"
                 @endif
             >
-                @if ((! $usesNodeBranchControl) && filled($icon) && ((! $subGrouped) || ($sidebarCollapsible && (! $subNavigation))))
+                @if ($usesNodeBranchControl && $sidebarCollapsible && (! $subNavigation))
+                    {{
+                        \Filament\Support\generate_icon_html(($active && $activeIcon) ? $activeIcon : $icon, attributes: (new \Filament\Support\View\ComponentAttributeBag([
+                            'x-show' => '! $store.sidebar.isOpen',
+                        ]))->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large)
+                    }}
+                @elseif ((! $usesNodeBranchControl) && filled($icon) && ((! $subGrouped) || ($sidebarCollapsible && (! $subNavigation))))
                     {{
                         \Filament\Support\generate_icon_html(($active && $activeIcon) ? $activeIcon : $icon, attributes: (new \Filament\Support\View\ComponentAttributeBag([
                             'x-show' => ($subGrouped && $sidebarCollapsible) ? '! $store.sidebar.isOpen' : false,
