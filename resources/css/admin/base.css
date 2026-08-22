@@ -200,9 +200,12 @@
 }
 
 .admin-sidebar-tree__root {
-    --admin-tree-indent: 2rem;
-    --admin-tree-trunk-x: 1.25rem;
+    --admin-tree-top-indent: 2rem;
+    --admin-tree-top-trunk-x: 1.25rem;
     --admin-tree-row-height: 2.5rem;
+    --admin-tree-icon-slot: 2.5rem;
+    --admin-tree-nested-indent: 3.25rem;
+    --admin-tree-nested-trunk-gap: .5rem;
 }
 
 .admin-sidebar-tree__root > .admin-sidebar-tree__row {
@@ -211,9 +214,9 @@
 
 .admin-sidebar-tree__root > .admin-sidebar-tree__row::after {
     position: absolute;
-    top: calc(50% + .6rem);
-    bottom: -1.25rem;
-    left: var(--admin-tree-trunk-x);
+    top: calc(50% + .75rem);
+    bottom: -.15rem;
+    left: var(--admin-tree-top-trunk-x);
     width: 1px;
     background: var(--admin-line-strong);
     content: "";
@@ -225,8 +228,15 @@
     display: grid;
     gap: 0 !important;
     margin: 0 !important;
-    padding: .15rem 0 0 var(--admin-tree-indent) !important;
     border: 0 !important;
+}
+
+.admin-sidebar-tree__root > .admin-sidebar-tree__children {
+    padding: .15rem 0 0 var(--admin-tree-top-indent) !important;
+}
+
+.admin-sidebar-tree__node > .admin-sidebar-tree__children {
+    padding: 0 0 0 var(--admin-tree-nested-indent) !important;
 }
 
 .admin-sidebar-tree__node {
@@ -243,25 +253,43 @@
     pointer-events: none;
 }
 
-.admin-sidebar-tree__node::before {
-    top: -.2rem;
-    bottom: -.2rem;
-    left: calc(var(--admin-tree-trunk-x) - var(--admin-tree-indent));
+.admin-sidebar-tree__node[data-admin-site-section-depth="0"]::before {
+    top: 0;
+    bottom: 0;
+    left: calc(var(--admin-tree-top-trunk-x) - var(--admin-tree-top-indent));
     width: 1px;
 }
 
-.admin-sidebar-tree__node--first::before {
-    top: -1.25rem;
+.admin-sidebar-tree__node[data-admin-site-section-depth="0"].admin-sidebar-tree__node--last::before {
+    bottom: calc(100% - (var(--admin-tree-row-height) / 2));
 }
 
-.admin-sidebar-tree__node--last::before {
-    bottom: calc(100% - 1.25rem);
+.admin-sidebar-tree__node[data-admin-site-section-depth="0"]::after {
+    top: calc(var(--admin-tree-row-height) / 2);
+    left: calc(var(--admin-tree-top-trunk-x) - var(--admin-tree-top-indent));
+    width: calc(var(--admin-tree-top-indent) - var(--admin-tree-top-trunk-x));
+    height: 1px;
 }
 
-.admin-sidebar-tree__node::after {
-    top: 1.25rem;
-    left: calc(var(--admin-tree-trunk-x) - var(--admin-tree-indent));
-    width: var(--admin-tree-indent);
+.admin-sidebar-tree__node:not([data-admin-site-section-depth="0"])::before {
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--admin-tree-nested-trunk-gap));
+    width: 1px;
+}
+
+.admin-sidebar-tree__node:not([data-admin-site-section-depth="0"]).admin-sidebar-tree__node--first::before {
+    top: calc(-1 * (var(--admin-tree-row-height) / 2));
+}
+
+.admin-sidebar-tree__node:not([data-admin-site-section-depth="0"]).admin-sidebar-tree__node--last::before {
+    bottom: calc(100% - (var(--admin-tree-row-height) / 2));
+}
+
+.admin-sidebar-tree__node:not([data-admin-site-section-depth="0"])::after {
+    top: calc(var(--admin-tree-row-height) / 2);
+    left: calc(-1 * var(--admin-tree-nested-trunk-gap));
+    width: var(--admin-tree-nested-trunk-gap);
     height: 1px;
 }
 
@@ -275,20 +303,24 @@
 }
 
 .admin-sidebar-tree__node--branch > .admin-sidebar-tree__node-row::after {
-    top: 1.25rem;
-    bottom: -1.25rem;
-    left: var(--admin-tree-trunk-x);
-    width: 1px;
+    top: calc(var(--admin-tree-row-height) / 2);
+    left: var(--admin-tree-icon-slot);
+    width: calc(var(--admin-tree-nested-indent) - var(--admin-tree-nested-trunk-gap) - var(--admin-tree-icon-slot));
+    height: 1px;
 }
 
 .admin-sidebar-tree__node-icon {
     position: relative;
     z-index: 1;
     display: grid;
-    width: 2.5rem;
+    width: var(--admin-tree-icon-slot);
     height: var(--admin-tree-row-height);
-    flex: 0 0 2.5rem;
+    flex: 0 0 var(--admin-tree-icon-slot);
     place-items: center;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none !important;
     color: var(--admin-muted);
 }
 
@@ -296,17 +328,26 @@
     color: currentColor;
 }
 
-.admin-sidebar-tree__node-disclosure {
-    border: 0;
-    border-radius: .3rem;
-    background: var(--admin-surface);
-    cursor: pointer;
+.admin-sidebar-tree__node-link {
+    min-width: 0;
+    min-height: var(--admin-tree-row-height);
+    padding: 0 .5rem 0 0 !important;
+    flex: 1 1 auto;
+    gap: 0 !important;
+    background: transparent !important;
 }
 
-.admin-sidebar-tree__node-disclosure:hover,
-.admin-sidebar-tree__node-disclosure:focus-visible,
-.admin-sidebar-tree__node-disclosure[aria-expanded="true"] {
-    background: var(--admin-subtle);
+.admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row > .admin-sidebar-tree__node-link,
+.admin-sidebar-tree__node.fi-sidebar-item-has-active-child-items > .admin-sidebar-tree__node-row > .admin-sidebar-tree__node-link,
+.admin-sidebar-tree__node-row > .admin-sidebar-tree__node-link:hover {
+    background: var(--admin-subtle) !important;
+    color: var(--admin-text);
+}
+
+.admin-sidebar-tree__node-row > .admin-sidebar-tree__node-link:focus-visible {
+    outline: 1px solid var(--admin-line-strong);
+    outline-offset: -1px;
+    background: var(--admin-subtle) !important;
     color: var(--admin-text);
 }
 
@@ -315,32 +356,7 @@
     color: var(--admin-text);
 }
 
-.admin-sidebar-tree__node-link,
-.admin-sidebar-tree__node-label-link,
-.admin-sidebar-tree__node-label-static {
-    min-width: 0;
-    min-height: var(--admin-tree-row-height);
-}
-
-.admin-sidebar-tree__node-link {
-    gap: 0 !important;
-    padding: 0 .5rem 0 0 !important;
-    flex: 1 1 auto;
-}
-
-.admin-sidebar-tree__node-label-link,
-.admin-sidebar-tree__node-label-static {
-    padding-inline: .25rem .5rem !important;
-    flex: 1 1 auto;
-}
-
-.admin-sidebar-tree__node-label-static {
-    cursor: default;
-}
-
-.admin-sidebar-tree__node .fi-sidebar-item-grouped-border,
-.admin-sidebar-tree__node .admin-sidebar-tree__toggle,
-.admin-sidebar-tree__node .admin-sidebar-tree__chevron {
+.admin-sidebar-tree__node .fi-sidebar-item-grouped-border {
     display: none !important;
 }
 
