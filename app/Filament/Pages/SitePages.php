@@ -11,6 +11,7 @@ use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\SiteNodePresentation;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
+use App\Routing\SiteNodeRoute;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -65,7 +66,7 @@ final class SitePages extends Page
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if ($section->nodeType() === SiteNodeType::Home) {
+        if (! $section->nodeType()->canChangePlacement()) {
             return;
         }
 
@@ -77,7 +78,7 @@ final class SitePages extends Page
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if ($section->nodeType() === SiteNodeType::Home) {
+        if (! $section->nodeType()->canChangePlacement()) {
             return;
         }
 
@@ -161,8 +162,8 @@ final class SitePages extends Page
                         ->maxLength(80)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                         ->required(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
-                        ->visible(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? true)
-                        ->helperText('Use lowercase letters, numbers and hyphens. Navigation Nodes have no public URL.'),
+                        ->visible(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
+                        ->helperText('Use lowercase letters, numbers and hyphens.'),
                 ])
                 ->action(function (array $data): void {
                     $type = SiteNodeType::tryFrom((string) ($data['type'] ?? ''));
@@ -266,10 +267,10 @@ final class SitePages extends Page
     private function row(SiteSection $section, int $depth): array
     {
         $type = $section->nodeType();
-        $template = $section->getAttribute('template');
+        $journalTemplate = $section->journalTemplate();
         $hasChildren = $section->relationLoaded('children') && $section->getRelation('children')->isNotEmpty();
         $presentation = app(SiteNodePresentation::class);
-        $workspaceUrl = $presentation->workspaceUrl($section, fallbackToPages: false);
+        $workspaceUrl = $presentation->workspaceUrl($section);
         $editorUrl = $presentation->editorUrl($section);
 
         $validParentIds = collect($this->parentCandidates)
@@ -288,8 +289,8 @@ final class SitePages extends Page
         return [
             'id' => (int) $section->getKey(),
             'type' => $type->value,
-            'template' => $template,
-            'type_label' => $type->label(is_string($template) ? $template : null),
+            'template' => $journalTemplate?->value,
+            'type_label' => $type->label($journalTemplate),
             'title' => (string) $section->getAttribute('title'),
             'navigation_label' => $section->getAttribute('navigation_label'),
             'state' => (string) $section->getAttribute('state'),
@@ -298,11 +299,11 @@ final class SitePages extends Page
             'parent_id' => $section->getAttribute('parent_id'),
             'has_children' => $hasChildren,
             'depth' => $depth,
-            'public_url' => $section->publicUrl(),
+            'public_url' => app(SiteNodeRoute::class)->url($section),
             'can_move_up' => app(SiteSectionOrderService::class)->canMove($section, 'up'),
             'can_move_down' => app(SiteSectionOrderService::class)->canMove($section, 'down'),
             'can_delete' => $type->canDelete(),
-            'fixed_placement' => $type === SiteNodeType::Home,
+            'fixed_placement' => ! $type->canChangePlacement(),
             'can_choose_parent' => $type->canHaveParent() && ! $hasChildren,
             'valid_parent_ids' => $validParentIds,
             'workspace_url' => $workspaceUrl,
