@@ -19,7 +19,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
-use RuntimeException;
+use Illuminate\Validation\ValidationException;
 
 final class ListBlogPosts extends Page
 {
@@ -85,12 +85,13 @@ final class ListBlogPosts extends Page
                     $section = SiteSection::query()->findOrFail($this->sectionId);
 
                     try {
-                        app(SiteSectionEditorialService::class)->deleteSection($section);
-                    } catch (RuntimeException $exception) {
+                        app(SiteSectionEditorialService::class)->deleteConfigurableSection($section);
+                    } catch (ValidationException $exception) {
+                        $message = collect($exception->errors())->flatten()->first();
                         Notification::make()
                             ->danger()
                             ->title('Blog cannot be deleted')
-                            ->body($exception->getMessage())
+                            ->body(is_string($message) ? $message : 'Remove all Blog entries before deleting this Blog.')
                             ->send();
 
                         return;
