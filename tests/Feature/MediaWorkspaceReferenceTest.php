@@ -9,6 +9,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
+use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
@@ -208,6 +209,15 @@ it('keeps library metrics independent of filters and based on available canonica
 });
 
 it('uses the same CV reference definition for filtering display destinations and deletion safety', function (): void {
+    CustomPageSetting::query()->get()->each(function (CustomPageSetting $settings): void {
+        $settings->update([
+            'blocks' => array_values(array_filter(
+                $settings->components(),
+                static fn (array $component): bool => ($component['type'] ?? null) !== 'cv_list',
+            )),
+        ]);
+    });
+
     $asset = workspaceReferenceAsset('cv-reference.jpg');
     $entry = CvEntry::query()->create([
         'section' => 'Biography',
@@ -238,6 +248,10 @@ it('uses the same CV reference definition for filtering display destinations and
     $unassigned = MediaAsset::query();
     $catalog->applyDestinationFilter($unassigned, 'unassigned');
     expect($unassigned->pluck('id')->all())->not->toContain($asset->id);
+
+    $unplacedCustomPage = MediaAsset::query();
+    $catalog->applyDestinationFilter($unplacedCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
+    expect($unplacedCustomPage->pluck('id')->all())->not->toContain($asset->id);
 
     expect(fn () => app(MediaAssetEditorialService::class)->delete($asset))
         ->toThrow(ValidationException::class);
