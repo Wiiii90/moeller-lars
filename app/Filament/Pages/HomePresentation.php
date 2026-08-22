@@ -9,8 +9,10 @@ use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
+use DateTimeInterface;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use LogicException;
 
@@ -77,8 +79,13 @@ final class HomePresentation extends Page
             ->whereHas('siteSection')
             ->with('siteSection')
             ->withCount([
-                'artworks as published_artworks_count' => static fn ($query) => $query->where('state', 'published'),
+                'artworks as published_artworks_count' => static fn (Builder $query): Builder => $query->where('state', 'published'),
             ])
+            ->withMax([
+                'artworks as newest_published_year' => static fn (Builder $query): Builder => $query
+                    ->where('state', 'published')
+                    ->whereNotNull('work_year'),
+            ], 'work_year')
             ->orderBy('name')
             ->get();
 
@@ -93,10 +100,7 @@ final class HomePresentation extends Page
                     'eligible' => (bool) $category->getAttribute('show_on_home'),
                     'state' => (string) ($section?->getAttribute('state') ?? 'hidden'),
                     'published_artworks' => (int) $category->getAttribute('published_artworks_count'),
-                    'newest_year' => $category->artworks()
-                        ->where('state', 'published')
-                        ->whereNotNull('work_year')
-                        ->max('work_year'),
+                    'newest_year' => $category->getAttribute('newest_published_year'),
                     'workspace_url' => ArtworkResource::getUrl('gallery', ['gallery' => $category->getKey()]),
                 ];
             })
@@ -107,9 +111,9 @@ final class HomePresentation extends Page
         $eligible = Artwork::query()
             ->where('state', 'published')
             ->whereNotNull('work_year')
-            ->whereHas('category', static function ($query): void {
+            ->whereHas('category', static function (Builder $query): void {
                 $query->where('show_on_home', true)
-                    ->whereHas('siteSection', static fn ($section) => $section->where('state', 'published'));
+                    ->whereHas('siteSection', static fn (Builder $section): Builder => $section->where('state', 'published'));
             })
             ->with(['category', 'artworkMedia.mediaAsset.variants'])
             ->orderByDesc('work_year')
@@ -135,11 +139,13 @@ final class HomePresentation extends Page
             $category = $artwork->getRelationValue('category');
         }
 
+        $workDate = $artwork->getAttribute('work_date');
+
         return [
             'id' => (int) $artwork->getKey(),
             'title' => (string) $artwork->getAttribute('title'),
             'year' => $artwork->getAttribute('work_year'),
-            'date' => $artwork->getAttribute('work_date')?->format('Y-m-d'),
+            'date' => $workDate instanceof DateTimeInterface ? $workDate->format('Y-m-d') : null,
             'featured' => (bool) $artwork->getAttribute('featured_on_home'),
             'gallery' => $category instanceof ArtworkCategory ? (string) $category->getAttribute('name') : null,
             'thumbnail_url' => ArtworkResource::thumbnailUrl($artwork),
