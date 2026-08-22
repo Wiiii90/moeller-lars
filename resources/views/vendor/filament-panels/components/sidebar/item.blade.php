@@ -24,7 +24,7 @@
     $alwaysOpen = $attributes->get('data-artist-tree-root') === 'true';
     $isArtistSiteSection = $attributes->has('data-artist-site-section');
     $usesNodeBranchControl = $isArtistSiteSection && $hasChildItems && filled($url);
-    $startsOpen = $alwaysOpen || $active || $activeChildItems;
+    $startsOpen = $alwaysOpen || $active || $activeChildItems || ($isArtistSiteSection && $hasChildItems);
 @endphp
 
 <li
@@ -95,10 +95,10 @@
                             'x-show' => '! $store.sidebar.isOpen',
                         ]))->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large)
                     }}
-                @elseif ((! $usesNodeBranchControl) && filled($icon) && ((! $subGrouped) || ($sidebarCollapsible && (! $subNavigation))))
+                @elseif ((! $usesNodeBranchControl) && filled($icon) && ($isArtistSiteSection || ((! $subGrouped) || ($sidebarCollapsible && (! $subNavigation)))))
                     {{
                         \Filament\Support\generate_icon_html(($active && $activeIcon) ? $activeIcon : $icon, attributes: (new \Filament\Support\View\ComponentAttributeBag([
-                            'x-show' => ($subGrouped && $sidebarCollapsible) ? '! $store.sidebar.isOpen' : false,
+                            'x-show' => ((! $isArtistSiteSection) && $subGrouped && $sidebarCollapsible) ? '! $store.sidebar.isOpen' : false,
                         ]))->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large)
                     }}
                 @endif
