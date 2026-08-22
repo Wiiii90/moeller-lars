@@ -22,7 +22,7 @@ beforeEach(function (): void {
     Filament::bootCurrentPanel();
 });
 
-it('renders clickable nested Gallery workspaces in the Pages sidebar', function (): void {
+it('renders clickable typed Gallery nodes in the Pages sidebar', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
     $parent = app(ArtworkCategoryEditorialService::class)->create([
@@ -48,11 +48,12 @@ it('renders clickable nested Gallery workspaces in the Pages sidebar', function 
         ->assertSuccessful()
         ->assertSee('data-artist-tree-branch="true"', false)
         ->assertSee('data-artist-site-section-depth="1"', false)
+        ->assertSee('data-artist-site-section-type="gallery"', false)
         ->assertSee('href="'.e($parentUrl).'"', false)
         ->assertSee('href="'.e($childUrl).'"', false);
 });
 
-it('links Pages rows directly to their content workspaces', function (): void {
+it('links Pages rows directly to their typed content workspaces', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
     $gallery = app(ArtworkCategoryEditorialService::class)->create([
@@ -81,7 +82,43 @@ it('links Pages rows directly to their content workspaces', function (): void {
     }
 });
 
-it('marks route-backed content editors as responsive editor overlays', function (): void {
+it('opens typed Pages destinations without server errors', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+
+    $paintings = app(ArtworkCategoryEditorialService::class)->create([
+        'name' => 'Paintings',
+        'slug' => 'paintings-destination-test',
+        'description' => null,
+        'show_on_home' => false,
+    ]);
+    $paintingsSection = $paintings->siteSection()->firstOrFail();
+
+    $childGallery = app(ArtworkCategoryEditorialService::class)->create([
+        'name' => 'Small Works',
+        'slug' => 'small-works-destination-test',
+        'description' => null,
+        'show_on_home' => false,
+        'parent_section_id' => (int) $paintingsSection->getKey(),
+    ]);
+
+    $sections = app(SiteSectionEditorialService::class);
+    $custom = $sections->createCustomPage('Studio', 'studio-destination-test');
+    $blog = $sections->createJournal('Blog', 'blog-destination-test', SiteSection::JOURNAL_TEMPLATE_BLOG);
+    $exhibitions = $sections->createJournal('Exhibitions', 'exhibitions-destination-test', SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS);
+    $customSettings = CustomPageSetting::query()->where('site_section_id', $custom->getKey())->firstOrFail();
+
+    foreach ([
+        ArtworkResource::getUrl('gallery', ['gallery' => $paintings->getKey()]),
+        ArtworkResource::getUrl('gallery', ['gallery' => $childGallery->getKey()]),
+        CustomPageSettingResource::getUrl('edit', ['record' => $customSettings]),
+        BlogPostResource::getUrl('index', ['section' => $blog->getKey()]),
+        ExhibitionResource::getUrl('index', ['section' => $exhibitions->getKey()]),
+    ] as $url) {
+        $this->get($url)->assertSuccessful();
+    }
+});
+
+it('keeps direct editor routes usable as flat fallback workspaces', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
     $gallery = app(ArtworkCategoryEditorialService::class)->create([
@@ -94,12 +131,10 @@ it('marks route-backed content editors as responsive editor overlays', function 
     $customSettings = CustomPageSetting::query()->where('site_section_id', $custom->getKey())->firstOrFail();
 
     $this->get(ArtworkResource::getUrl('create', ['gallery' => $gallery->getKey()]))
-        ->assertSuccessful()
-        ->assertSee('artist-editor-overlay', false);
+        ->assertSuccessful();
 
     $this->get(CustomPageSettingResource::getUrl('edit', ['record' => $customSettings]))
-        ->assertSuccessful()
-        ->assertSee('artist-editor-overlay', false);
+        ->assertSuccessful();
 });
 
 it('renders migrated CV Custom Page data through the canonical CV structure', function (): void {
