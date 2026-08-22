@@ -14,15 +14,27 @@
     });
 @endphp
 
-<article id="site-section-{{ $section['id'] }}" class="artist-page-row" data-depth="{{ $section['depth'] }}" wire:key="site-section-{{ $section['id'] }}">
+<article
+    id="site-section-{{ $section['id'] }}"
+    class="artist-page-row"
+    data-depth="{{ $section['depth'] }}"
+    data-node-type="{{ $section['type'] }}"
+    data-has-children="{{ $section['has_children'] ? 'true' : 'false' }}"
+    wire:key="site-section-{{ $section['id'] }}"
+>
     <div class="artist-page-row__identity">
-        <span class="artist-workspace__kicker">{{ $section['type_label'] }}</span>
-        @if ($workspaceUrl)
-            <a class="artist-page-row__title" href="{{ $workspaceUrl }}">{{ $label }}</a>
-        @else
-            <strong class="artist-page-row__title">{{ $label }}</strong>
-        @endif
-        <span class="artist-page-row__path">{{ $path ?? 'Navigation only' }}</span>
+        <span class="artist-page-row__node" aria-hidden="true">
+            <x-filament::icon :icon="$section['icon']" class="artist-page-row__node-icon" />
+        </span>
+        <div class="artist-page-row__identity-copy">
+            <span class="artist-workspace__kicker">{{ $section['type_label'] }}</span>
+            @if ($workspaceUrl)
+                <a class="artist-page-row__title" href="{{ $workspaceUrl }}">{{ $label }}</a>
+            @else
+                <strong class="artist-page-row__title">{{ $label }}</strong>
+            @endif
+            <span class="artist-page-row__path">{{ $path ?? 'Navigation only' }}</span>
+        </div>
     </div>
 
     <div class="artist-page-row__placement" aria-label="Placement for {{ $label }}">
