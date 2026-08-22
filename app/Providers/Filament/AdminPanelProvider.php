@@ -48,6 +48,7 @@ class AdminPanelProvider extends PanelProvider
             ->revealablePasswords(false)
             ->brandName('Lars Möller')
             ->homeUrl(fn (): string => route('home'))
+            ->breadcrumbs(false)
             ->colors([
                 'primary' => Color::Amber,
             ])
