@@ -32,7 +32,7 @@ The editable public site is projected through `SiteSection`, while application b
 | Custom Page | yes | yes | no | yes, below Navigation Node |
 | Navigation Node | no | yes | yes | no |
 
-`Home` is the singleton root. It has no slug, cannot be deleted, is always published and is always represented in navigation.
+`Home` is the singleton root. It has no slug, cannot be deleted, is always published and is always represented in navigation. Forward migrations normalize existing installations back to this invariant when necessary.
 
 `App\Domain\Content\JournalTemplate` defines the supported Journal products:
 
@@ -48,6 +48,8 @@ A Journal requires a valid template. Other node types must not carry one.
 The model enforces structural invariants, but raw string constants on the model are persistence/migration values only. Runtime behavior should use `SiteNodeType` and `JournalTemplate`.
 
 `ArtworkCategory` remains the intentionally isolated persistence model behind the application concept **Gallery**. Application/service/UI naming uses Gallery; a database/model rename is not required to achieve a clean domain boundary.
+
+Parent-node and Journal deletion use explicit application restrictions: parents with descendants and Journals with owned entries are not silently cascaded away.
 
 ### Public routing
 
@@ -96,15 +98,21 @@ The theme is rendered lazily through the Filament panel using `@vite('resources/
 
 ### Gallery and artwork
 
-`GalleryEditorialService` is the application service for Gallery persistence and its matching Site Node. `ArtworkDraftService`, `ArtworkEditorialService` and `ArtworkGalleryAssignmentService` own artwork creation, editorial transitions, media attachment, ordering and Gallery movement.
+`GalleryEditorialService` is the application service for Gallery persistence and its matching Site Node. `ArtworkDraftService`, `ArtworkEditorialService` and `ArtworkGalleryAssignmentService` own artwork creation, editorial transitions, media attachment, ordering, Gallery movement and safe draft deletion.
 
-A Gallery has one matching Gallery Site Node. Artwork ordering is explicit and persisted. Moving artwork must preserve media references and obey publication constraints.
+A Gallery has one matching Gallery Site Node. Artwork ordering is explicit and persisted. Moving artwork must preserve media references and obey publication constraints. Normal Gallery renaming keeps the matching navigation identity synchronized unless the navigation label was explicitly customized.
+
+Only unpublished Artwork drafts are directly deletable through the normal editor. Their usage relations are removed, but reusable `MediaAsset` records remain intact.
 
 ### Journals
 
 Blog posts and Exhibitions belong to a Journal Site Node through `site_section_id`. Each Journal has one `JournalSetting` record for listing title/intro.
 
 Blog and Exhibitions remain separate editorial/content models even though they share the Journal placement abstraction.
+
+Blog deletion is lifecycle-aware: published or scheduled posts must first leave that public/scheduled state. Exhibition deletion similarly requires the record not to be published. Deletion preserves reusable MediaAssets.
+
+Exhibition ordering is scoped to the owning Exhibitions Journal rather than globally across all Exhibition records. Separate Journals may therefore legitimately contain equal position values.
 
 ### Custom pages and site-wide settings
 
@@ -168,4 +176,6 @@ The application image is identified by an exact Git SHA and OCI digest. A green 
 
 Tests protect durable product/security/data contracts rather than framework behavior or visual implementation details. Important examples are authentication/authorization, database invariants, site-node rules, migration reconciliation, publication rules, media lifecycle, contact delivery and pure artwork-viewer behavior.
 
-Functional acceptance may add tests for stable CRUD/reorder/delete contracts, but CSS class names, source strings and temporary regression mechanics should not become permanent test architecture.
+The final functional-acceptance suite additionally protects stable Home invariants, Gallery identity persistence, parent/Journal deletion restrictions, root/nested reorder persistence, Artwork draft allocation/move/delete behavior, Blog lifecycle deletion, Journal-scoped Exhibition ordering and reusable-media retention.
+
+CSS class names, source strings and temporary regression mechanics are not permanent test architecture.
