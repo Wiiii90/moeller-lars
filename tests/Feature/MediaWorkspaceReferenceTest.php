@@ -3,18 +3,20 @@
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Filament\Resources\MediaAssets\Pages\ListMediaAssets;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Filament\Support\SiteNodePresentation;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
-use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
+
+use function Pest\Livewire\livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -176,11 +178,12 @@ it('projects real reference locations and filters by broad or specific destinati
     expect($unassigned->pluck('id')->all())->toBe([$other->id]);
 });
 
-it('keeps library metrics independent of filters and based on available canonical assets', function (): void {
+it('keeps library metrics limited to available media types supported by the canonical policy', function (): void {
     $referenced = workspaceReferenceAsset('metric-referenced.jpg', bytes: 4);
     workspaceReferenceAsset('metric-alt-missing.png', 'image/png', alt: null, bytes: 8);
     workspaceReferenceAsset('metric-video.mp4', 'video/mp4', alt: null, bytes: 12);
     workspaceReferenceAsset('metric-quarantined.jpg', state: 'quarantined', alt: null, bytes: 100);
+    workspaceReferenceAsset('metric-unsupported.mp3', 'audio/mpeg', alt: null, bytes: 200);
 
     $category = ArtworkCategory::query()->create(['slug' => 'metric-gallery', 'name' => 'Metric gallery']);
     workspaceReferenceNode(SiteNodeType::Gallery->value, 'Metric gallery', categoryId: $category->id);
@@ -208,18 +211,9 @@ it('keeps library metrics independent of filters and based on available canonica
     ]);
 });
 
-it('uses the same CV reference definition for filtering display destinations and deletion safety', function (): void {
-    CustomPageSetting::query()->get()->each(function (CustomPageSetting $settings): void {
-        $settings->update([
-            'blocks' => array_values(array_filter(
-                $settings->components(),
-                static fn (array $component): bool => ($component['type'] ?? null) !== 'cv_list',
-            )),
-        ]);
-    });
-
+it('keeps CV record pointers referenced without inventing an unrendered Custom Page usage', function (): void {
     $asset = workspaceReferenceAsset('cv-reference.jpg');
-    $entry = CvEntry::query()->create([
+    CvEntry::query()->create([
         'section' => 'Biography',
         'title' => 'Portrait',
         'state' => 'draft',
@@ -228,13 +222,34 @@ it('uses the same CV reference definition for filtering display destinations and
         'image_media_asset_id' => $asset->id,
     ]);
 
+    $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'Biography');
+    $custom->customPageSetting()->create([
+        'blocks' => [
+            [
+                'type' => 'image',
+                'media_asset_id' => $asset->id,
+                'image_decorative' => false,
+            ],
+            ['type' => 'cv_list'],
+        ],
+    ]);
+
     $catalog = app(MediaReferenceCatalog::class);
     $catalog->loadAssetReferences($asset);
+    $references = $catalog->references($asset);
 
-    expect($catalog->references($asset))->toContainEqual([
+    expect($references)->toContainEqual([
+        'type' => 'Custom Page: Biography',
+        'label' => 'Image component',
+        'url' => app(SiteNodePresentation::class)->workspaceUrl($custom->fresh('customPageSetting')),
+    ])->and($references)->toContainEqual([
         'type' => 'CV',
         'label' => 'Portrait',
         'url' => null,
+    ])->and($references)->not->toContainEqual([
+        'type' => 'Custom Page: Biography',
+        'label' => 'Portrait',
+        'url' => app(SiteNodePresentation::class)->workspaceUrl($custom->fresh('customPageSetting')),
     ]);
 
     $referenced = MediaAsset::query();
@@ -245,38 +260,70 @@ it('uses the same CV reference definition for filtering display destinations and
     $catalog->applyReferenceFilter($unreferenced, false);
     expect($unreferenced->pluck('id')->all())->not->toContain($asset->id);
 
-    $unassigned = MediaAsset::query();
-    $catalog->applyDestinationFilter($unassigned, 'unassigned');
-    expect($unassigned->pluck('id')->all())->not->toContain($asset->id);
-
-    $unplacedCustomPage = MediaAsset::query();
-    $catalog->applyDestinationFilter($unplacedCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
-    expect($unplacedCustomPage->pluck('id')->all())->not->toContain($asset->id);
+    $specificCustomPage = MediaAsset::query();
+    $catalog->applyDestinationFilter($specificCustomPage, 'node:'.$custom->id);
+    expect($specificCustomPage->pluck('id')->all())->toContain($asset->id);
 
     expect(fn () => app(MediaAssetEditorialService::class)->delete($asset))
         ->toThrow(ValidationException::class);
+});
 
-    $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'Biography');
+it('does not classify a CV entry image as Custom Page media merely because a CV list is placed', function (): void {
+    $asset = workspaceReferenceAsset('cv-entry-only.jpg');
+    CvEntry::query()->create([
+        'section' => 'Biography',
+        'title' => 'Entry portrait',
+        'state' => 'draft',
+        'position' => 0,
+        'year_text' => '2026',
+        'image_media_asset_id' => $asset->id,
+    ]);
+
+    $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'CV records');
     $custom->customPageSetting()->create(['blocks' => [['type' => 'cv_list']]]);
 
-    $placedCatalog = app(MediaReferenceCatalog::class);
-    $placedAsset = $asset->fresh();
-    $placedCatalog->loadAssetReferences($placedAsset);
-    $placedReferences = $placedCatalog->references($placedAsset);
+    $catalog = app(MediaReferenceCatalog::class);
+    $catalog->loadAssetReferences($asset);
 
-    expect($placedReferences)->toContainEqual([
-        'type' => 'Custom Page: Biography',
-        'label' => (string) $entry->getAttribute('title'),
-        'url' => app(SiteNodePresentation::class)->workspaceUrl($custom->fresh('customPageSetting')),
-    ])->and($placedReferences)->not->toContainEqual([
+    expect($catalog->references($asset))->toContainEqual([
         'type' => 'CV',
-        'label' => 'Portrait',
+        'label' => 'Entry portrait',
         'url' => null,
     ]);
 
+    $specificCustomPage = MediaAsset::query();
+    $catalog->applyDestinationFilter($specificCustomPage, 'node:'.$custom->id);
+    expect($specificCustomPage->pluck('id')->all())->not->toContain($asset->id);
+
     $anyCustomPage = MediaAsset::query();
-    $placedCatalog->applyDestinationFilter($anyCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
-    expect($anyCustomPage->pluck('id')->all())->toContain($asset->id);
+    $catalog->applyDestinationFilter($anyCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
+    expect($anyCustomPage->pluck('id')->all())->not->toContain($asset->id);
+});
+
+it('opens Preview and Edit as workspace actions and saves canonical metadata in place', function (): void {
+    $asset = workspaceReferenceAsset('dialog-image.jpg');
+
+    livewire(ListMediaAssets::class)
+        ->mountAction('preview', ['asset' => $asset->id])
+        ->assertMountedActionModalSee('dialog-image.jpg')
+        ->assertMountedActionModalSee('Metadata')
+        ->assertMountedActionModalSee('Used in');
+
+    livewire(ListMediaAssets::class)
+        ->mountAction('edit', ['asset' => $asset->id])
+        ->fillForm([
+            'alt_text' => 'Updated canonical ALT',
+            'credit' => 'Studio credit',
+            'copyright_notice' => 'All rights reserved',
+        ])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    $asset->refresh();
+    expect($asset->getAttribute('alt_text'))->toBe('Updated canonical ALT')
+        ->and($asset->getAttribute('credit'))->toBe('Studio credit')
+        ->and($asset->getAttribute('copyright_notice'))->toBe('All rights reserved')
+        ->and($asset->getAttribute('state'))->toBe('available');
 });
 
 it('blocks deletion while a Custom Page image component references the asset', function (): void {

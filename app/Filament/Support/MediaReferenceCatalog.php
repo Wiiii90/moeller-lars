@@ -8,7 +8,6 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\ArtworkCategory;
 use App\Models\CustomPageSetting;
-use App\Models\CvEntry;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,9 +20,6 @@ final class MediaReferenceCatalog
 
     /** @var list<int>|null */
     private ?array $directCustomMediaIds = null;
-
-    /** @var list<int>|null */
-    private ?array $cvMediaIds = null;
 
     public function __construct(private readonly SiteNodePresentation $presentation) {}
 
@@ -143,7 +139,9 @@ final class MediaReferenceCatalog
     public function libraryMetrics(): array
     {
         /** @var Builder<MediaAsset> $available */
-        $available = MediaAsset::query()->where('state', 'available');
+        $available = MediaAsset::query()
+            ->where('state', 'available')
+            ->whereIn('mime_type', MediaTypePolicy::acceptedMimeTypes());
         /** @var Builder<MediaAsset> $images */
         $images = (clone $available)->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES);
 
@@ -253,9 +251,6 @@ final class MediaReferenceCatalog
             ];
         }
 
-        $cvEntries = $asset->getRelation('cvEntries');
-        $cvProjectedToPage = false;
-
         foreach ($this->customPageNodes() as $node) {
             $settings = $node->getRelationValue('customPageSetting');
             if (! $settings instanceof CustomPageSetting) {
@@ -269,29 +264,14 @@ final class MediaReferenceCatalog
                     'url' => $this->presentation->workspaceUrl($node),
                 ];
             }
-
-            if (! $this->hasCvList($settings)) {
-                continue;
-            }
-
-            foreach ($cvEntries as $entry) {
-                $cvProjectedToPage = true;
-                $rows[] = [
-                    'type' => 'Custom Page: '.$this->nodeLabel($node),
-                    'label' => (string) $entry->getAttribute('title'),
-                    'url' => $this->presentation->workspaceUrl($node),
-                ];
-            }
         }
 
-        if (! $cvProjectedToPage) {
-            foreach ($cvEntries as $entry) {
-                $rows[] = [
-                    'type' => 'CV',
-                    'label' => (string) $entry->getAttribute('title'),
-                    'url' => null,
-                ];
-            }
+        foreach ($asset->getRelation('cvEntries') as $entry) {
+            $rows[] = [
+                'type' => 'CV',
+                'label' => (string) $entry->getAttribute('title'),
+                'url' => null,
+            ];
         }
 
         foreach ($asset->getRelation('siteIdentitySettings') as $setting) {
@@ -473,27 +453,7 @@ final class MediaReferenceCatalog
             }
         }
 
-        if ($this->hasCvList($settings)) {
-            $mediaIds = array_merge($mediaIds, $this->cvMediaIds());
-        }
-
         return array_values(array_unique($mediaIds));
-    }
-
-    /** @return list<int> */
-    private function cvMediaIds(): array
-    {
-        if ($this->cvMediaIds !== null) {
-            return $this->cvMediaIds;
-        }
-
-        return $this->cvMediaIds = CvEntry::query()
-            ->whereNotNull('image_media_asset_id')
-            ->pluck('image_media_asset_id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
     }
 
     /** @return list<int> */
@@ -526,17 +486,6 @@ final class MediaReferenceCatalog
             if (($component['type'] ?? null) === 'image'
                 && is_numeric($component['media_asset_id'] ?? null)
                 && (int) $component['media_asset_id'] === $mediaAssetId) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function hasCvList(CustomPageSetting $settings): bool
-    {
-        foreach ($settings->components() as $component) {
-            if (($component['type'] ?? null) === 'cv_list') {
                 return true;
             }
         }

@@ -5,14 +5,19 @@ namespace App\Filament\Resources\MediaAssets\Pages;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
+use App\Filament\Support\AdminForm;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
+use Filament\Support\Enums\Width;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Validation\ValidationException;
@@ -121,7 +126,7 @@ final class ListMediaAssets extends Page
 
         $this->reset('directMedia');
         $this->page = 1;
-        $this->directUploadMessage = (string) $asset->getAttribute('original_filename').' is available in Files.';
+        $this->directUploadMessage = (string) $asset->getAttribute('original_filename').' is available in Media Files.';
         $this->loadLibrary();
         Notification::make()->title('File uploaded')->success()->send();
     }
@@ -159,6 +164,77 @@ final class ListMediaAssets extends Page
             $this->page++;
             $this->loadLibrary();
         }
+    }
+
+    public function previewAction(): Action
+    {
+        return Action::make('preview')
+            ->label('Preview')
+            ->modalHeading(fn (array $arguments): string => (string) $this->actionAsset($arguments)->getAttribute('original_filename'))
+            ->modalContent(fn (array $arguments): View => view(
+                'filament.resources.media-assets.partials.preview-dialog',
+                $this->previewDialogData($arguments),
+            ))
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Close')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
+    }
+
+    public function editAction(): Action
+    {
+        return Action::make('edit')
+            ->label('Edit')
+            ->modalHeading(fn (array $arguments): string => 'Edit '.(string) $this->actionAsset($arguments)->getAttribute('original_filename'))
+            ->fillForm(function (array $arguments): array {
+                $asset = $this->actionAsset($arguments);
+
+                return [
+                    'alt_text' => $asset->getAttribute('alt_text'),
+                    'credit' => $asset->getAttribute('credit'),
+                    'copyright_notice' => $asset->getAttribute('copyright_notice'),
+                ];
+            })
+            ->schema([
+                AdminForm::section('Accessibility and credit')
+                    ->schema([
+                        TextInput::make('alt_text')
+                            ->label('Default ALT text')
+                            ->helperText('For images, describe the content and function. Individual usages may override this text.')
+                            ->maxLength(500)
+                            ->nullable(),
+                        TextInput::make('credit')
+                            ->maxLength(240)
+                            ->nullable(),
+                        Textarea::make('copyright_notice')
+                            ->maxLength(500)
+                            ->nullable()
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+            ])
+            ->action(function (array $data, array $arguments): void {
+                $asset = $this->actionAsset($arguments);
+                if ((string) $asset->getAttribute('state') === 'deleted') {
+                    throw ValidationException::withMessages([
+                        'alt_text' => 'Deleted media cannot be edited.',
+                    ]);
+                }
+
+                $asset->fill([
+                    'alt_text' => $data['alt_text'] ?? null,
+                    'credit' => $data['credit'] ?? null,
+                    'copyright_notice' => $data['copyright_notice'] ?? null,
+                ]);
+                $asset->save();
+
+                $this->loadLibrary();
+                Notification::make()->title('File metadata saved')->success()->send();
+            })
+            ->modalSubmitActionLabel('Save')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
     }
 
     protected function getHeaderActions(): array
@@ -208,9 +284,7 @@ final class ListMediaAssets extends Page
         $catalog->eagerLoad($query);
 
         /** @var EloquentCollection<int, MediaAsset> $records */
-        $records = $query
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
+        $records = $this->orderResults($query)
             ->forPage($this->page, self::PER_PAGE)
             ->get();
 
@@ -230,12 +304,6 @@ final class ListMediaAssets extends Page
                 'id' => (int) $asset->getKey(),
                 'filename' => (string) $asset->getAttribute('original_filename'),
                 'state' => $state,
-                'state_detail' => match ($state) {
-                    'available' => 'Ready to reuse',
-                    'quarantined' => 'Held for review',
-                    'deleted' => 'Not reusable',
-                    default => 'Unavailable',
-                },
                 'alt_missing' => MediaTypePolicy::isImage($mime) && blank($asset->getAttribute('alt_text')),
                 'credit' => (string) ($asset->getAttribute('credit') ?? ''),
                 'size' => self::formatBytes((int) $asset->getAttribute('byte_size')),
@@ -253,8 +321,7 @@ final class ListMediaAssets extends Page
                 'thumbnail_width' => $thumbnail?->getAttribute('width'),
                 'thumbnail_height' => $thumbnail?->getAttribute('height'),
                 'created' => $createdAt instanceof DateTimeInterface ? $createdAt->format('Y-m-d') : '—',
-                'edit_url' => $state === 'deleted' ? null : MediaAssetResource::getUrl('edit', ['record' => $asset->getKey()]),
-                'preview_url' => MediaAssetResource::getUrl('view', ['record' => $asset->getKey()]),
+                'editable' => $state !== 'deleted',
             ];
         })->all();
     }
@@ -275,7 +342,8 @@ final class ListMediaAssets extends Page
     private function filteredQuery(MediaReferenceCatalog $catalog): Builder
     {
         /** @var Builder<MediaAsset> $query */
-        $query = MediaAsset::query();
+        $query = MediaAsset::query()
+            ->whereIn('mime_type', MediaTypePolicy::acceptedMimeTypes());
 
         $term = trim($this->search);
         if ($term !== '') {
@@ -319,6 +387,73 @@ final class ListMediaAssets extends Page
         if (in_array($this->type, MediaTypePolicy::acceptedMimeTypes(), true)) {
             $query->where('mime_type', $this->type);
         }
+    }
+
+    /** @param Builder<MediaAsset> $query */
+    private function orderResults(Builder $query): Builder
+    {
+        return $query
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+
+    /** @param array<string, mixed> $arguments */
+    private function actionAsset(array $arguments): MediaAsset
+    {
+        $id = $arguments['asset'] ?? null;
+        abort_unless(is_numeric($id), 404);
+
+        /** @var MediaAsset|null $asset */
+        $asset = MediaAsset::query()->find((int) $id);
+        abort_unless($asset instanceof MediaAsset, 404);
+
+        return $asset;
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     * @return array<string, mixed>
+     */
+    private function previewDialogData(array $arguments): array
+    {
+        $asset = $this->actionAsset($arguments);
+        $catalog = app(MediaReferenceCatalog::class);
+        $catalog->loadAssetReferences($asset);
+        $mime = (string) $asset->getAttribute('mime_type');
+        $state = (string) $asset->getAttribute('state');
+        $createdAt = $asset->getAttribute('created_at');
+        $ids = $this->orderResults($this->filteredQuery($catalog))
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+        $index = array_search((int) $asset->getKey(), $ids, true);
+        $position = $index === false ? null : $index + 1;
+
+        return [
+            'asset' => [
+                'id' => (int) $asset->getKey(),
+                'filename' => (string) $asset->getAttribute('original_filename'),
+                'kind' => MediaTypePolicy::kind($mime),
+                'type_label' => MediaTypePolicy::label($mime),
+                'mime' => $mime,
+                'state' => $state,
+                'preview_url' => $state === 'available' ? route('admin.media.original', $asset) : null,
+                'alt_text' => (string) ($asset->getAttribute('alt_text') ?? ''),
+                'credit' => (string) ($asset->getAttribute('credit') ?? ''),
+                'copyright_notice' => (string) ($asset->getAttribute('copyright_notice') ?? ''),
+                'dimensions' => $asset->getAttribute('width') && $asset->getAttribute('height')
+                    ? $asset->getAttribute('width').'×'.$asset->getAttribute('height')
+                    : '—',
+                'size' => self::formatBytes((int) $asset->getAttribute('byte_size')),
+                'checksum' => (string) $asset->getAttribute('sha256'),
+                'created' => $createdAt instanceof DateTimeInterface ? $createdAt->format('Y-m-d H:i') : '—',
+                'references' => $catalog->references($asset),
+            ],
+            'previousId' => $index !== false && $index > 0 ? $ids[$index - 1] : null,
+            'nextId' => $index !== false && $index < count($ids) - 1 ? $ids[$index + 1] : null,
+            'resultPosition' => $position,
+            'resultTotal' => count($ids),
+        ];
     }
 
     private static function formatBytes(int $bytes): string

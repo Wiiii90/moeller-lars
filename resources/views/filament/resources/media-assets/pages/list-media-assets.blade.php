@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <x-admin.workspace kicker="Media" title="Files" class="media-workspace">
+    <x-admin.workspace title="Media Files" class="media-workspace">
         <x-admin.metrics :columns="6" aria-label="Media library">
             <x-admin.metric label="Files" :value="number_format($libraryFiles)">Available</x-admin.metric>
             <x-admin.metric label="Images" :value="number_format($libraryImages)">Available images</x-admin.metric>
@@ -9,7 +9,7 @@
             <x-admin.metric label="Library size" :value="$librarySize">Available originals</x-admin.metric>
         </x-admin.metrics>
 
-        <x-admin.section kicker="Upload" title="Add a file" class="media-workspace__upload-section">
+        <x-admin.section class="media-workspace__upload-section" aria-label="Upload media">
             <div
                 class="media-workspace__dropzone"
                 x-data="{ uploading: false, progress: 0 }"
@@ -43,7 +43,7 @@
             @endif
         </x-admin.section>
 
-        <x-admin.section kicker="Library" title="Find and reuse files" class="media-workspace__library">
+        <x-admin.section class="media-workspace__library" aria-label="Media library">
             <div class="media-workspace__controls" aria-label="File search and filters">
                 <label class="media-workspace__field media-workspace__search">
                     <span>Search media</span>
@@ -118,7 +118,12 @@
                     <section class="media-workspace__grid" aria-label="Media assets grid">
                         @foreach ($assets as $asset)
                             <article class="media-workspace__grid-item" wire:key="media-grid-{{ $asset['id'] }}">
-                                <a class="media-workspace__visual" href="{{ $asset['preview_url'] }}">
+                                <button
+                                    class="media-workspace__visual"
+                                    type="button"
+                                    wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })"
+                                    aria-label="Preview {{ $asset['filename'] }}"
+                                >
                                     @if ($asset['thumbnail_url'])
                                         <img
                                             src="{{ $asset['thumbnail_url'] }}"
@@ -136,9 +141,14 @@
                                     @elseif ($asset['usage'] === 0)
                                         <em>Unreferenced</em>
                                     @endif
-                                </a>
+                                </button>
                                 <div class="media-workspace__grid-meta">
-                                    <strong title="{{ $asset['filename'] }}">{{ $asset['filename'] }}</strong>
+                                    <button
+                                        class="media-workspace__filename-button"
+                                        type="button"
+                                        wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })"
+                                        title="{{ $asset['filename'] }}"
+                                    ><strong>{{ $asset['filename'] }}</strong></button>
                                     <span>{{ $asset['type_label'] }} · {{ $asset['size'] }}</span>
                                     @if ($asset['references'] !== [])
                                         <small>{{ $asset['references'][0]['type'] }} — {{ $asset['references'][0]['label'] }}@if ($asset['reference_overflow'] > 0) · +{{ $asset['reference_overflow'] }} more @endif</small>
@@ -147,9 +157,9 @@
                                     @endif
                                 </div>
                                 <div class="media-workspace__actions admin-toolbar">
-                                    <a class="admin-action" href="{{ $asset['preview_url'] }}">Preview</a>
-                                    @if ($asset['edit_url'])
-                                        <a class="admin-action" href="{{ $asset['edit_url'] }}">Edit</a>
+                                    <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">Preview</button>
+                                    @if ($asset['editable'])
+                                        <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })">Edit</button>
                                     @endif
                                 </div>
                             </article>
@@ -176,17 +186,25 @@
                                     <tr wire:key="media-row-{{ $asset['id'] }}">
                                         @if ($viewMode === 'list')
                                             <td class="media-workspace__thumb">
-                                                <a href="{{ $asset['preview_url'] }}">
+                                                <button
+                                                    type="button"
+                                                    wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })"
+                                                    aria-label="Preview {{ $asset['filename'] }}"
+                                                >
                                                     @if ($asset['thumbnail_url'])
                                                         <img src="{{ $asset['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
                                                     @else
                                                         <span>{{ strtoupper($asset['kind']) }}</span>
                                                     @endif
-                                                </a>
+                                                </button>
                                             </td>
                                         @endif
                                         <td class="media-workspace__identity">
-                                            <a href="{{ $asset['preview_url'] }}"><strong title="{{ $asset['filename'] }}">{{ $asset['filename'] }}</strong></a>
+                                            <button
+                                                class="media-workspace__filename-button"
+                                                type="button"
+                                                wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })"
+                                            ><strong title="{{ $asset['filename'] }}">{{ $asset['filename'] }}</strong></button>
                                             <small>
                                                 @if ($asset['credit'] !== ''){{ $asset['credit'] }} · @endif
                                                 {{ $asset['created'] }}
@@ -216,14 +234,13 @@
                                         </td>
                                         <td>
                                             <span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span>
-                                            <small>{{ $asset['state_detail'] }}</small>
                                         </td>
                                         <td class="media-workspace__size">{{ $asset['size'] }}</td>
                                         <td class="media-workspace__actions">
                                             <div class="admin-toolbar">
-                                                <a class="admin-action" href="{{ $asset['preview_url'] }}">Preview</a>
-                                                @if ($asset['edit_url'])
-                                                    <a class="admin-action" href="{{ $asset['edit_url'] }}">Edit</a>
+                                                <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">Preview</button>
+                                                @if ($asset['editable'])
+                                                    <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })">Edit</button>
                                                 @endif
                                             </div>
                                         </td>
