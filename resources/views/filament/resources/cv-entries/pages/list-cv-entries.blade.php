@@ -1,17 +1,11 @@
 <x-filament-panels::page>
     @php($published = collect($entries)->where('state', 'published')->count())
 
-    <div class="artist-workspace">
-        <header class="artist-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">Vita / CV</p>
-                <h2>Editorial sequence</h2>
-            </div>
-            <div class="artist-workspace__summary">
-                <div><strong>{{ count($entries) }}</strong><span>Entries</span></div>
-                <div><strong>{{ $published }}</strong><span>Published</span></div>
-            </div>
-        </header>
+    <x-admin.workspace kicker="Vita / CV" title="Editorial sequence">
+        <x-slot:summary>
+            <div><strong>{{ count($entries) }}</strong><span>Entries</span></div>
+            <div><strong>{{ $published }}</strong><span>Published</span></div>
+        </x-slot:summary>
 
         @if ($entries !== [])
             <section class="artist-section-list" aria-label="Vita / CV entries">
@@ -43,5 +37,5 @@
         @else
             <section class="artist-gallery-empty"><p class="artist-workspace__kicker">Empty Vita</p><h3>Add the first entry</h3><p>Start with a biography, education item, award or other Vita entry.</p></section>
         @endif
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>
