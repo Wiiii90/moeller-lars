@@ -1,11 +1,11 @@
 <x-filament-panels::page>
     @php($published = collect($exhibitions)->where('state', 'published')->count())
 
-    <x-admin.workspace kicker="Exhibitions" title="Exhibition programme">
-        <x-slot:summary>
-            <div><strong>{{ count($exhibitions) }}</strong><span>Exhibitions</span></div>
-            <div><strong>{{ $published }}</strong><span>Published</span></div>
-        </x-slot:summary>
+    <x-admin.workspace kicker="Journal" title="Exhibitions">
+        <x-admin.metrics :columns="2">
+            <x-admin.metric label="Exhibitions" :value="count($exhibitions)" />
+            <x-admin.metric label="Published" :value="$published" />
+        </x-admin.metrics>
 
         @if ($exhibitions !== [])
             <x-admin.list aria-label="Exhibitions">
@@ -15,6 +15,9 @@
                             <span class="admin-list__eyebrow">{{ $exhibition['type'] }}</span>
                             <strong>{{ $exhibition['title'] }}</strong>
                             <span>{{ $exhibition['meta'] }}</span>
+                            @if ($exhibition['opening'])
+                                <span>Opening: {{ $exhibition['opening'] }}</span>
+                            @endif
                         </div>
                         <div class="admin-list__meta">
                             <span>{{ ucfirst($exhibition['state']) }}</span>

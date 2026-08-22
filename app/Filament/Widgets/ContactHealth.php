@@ -7,7 +7,6 @@ use App\Domain\Content\SiteNodeType;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\CustomPageSetting;
-use App\Models\PublicContentSetting;
 use Filament\Widgets\Widget;
 
 final class ContactHealth extends Widget
@@ -23,13 +22,12 @@ final class ContactHealth extends Widget
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
-        $contact = PublicContentSetting::contact();
         $delivery = app(ContactDeliveryReadiness::class)->snapshot();
         $placements = $this->placements();
 
-        $formState = match ($contact->getAttribute('contact_state')) {
-            'enabled' => 'Enabled',
-            'under_construction' => 'Under construction',
+        $formState = match (true) {
+            in_array('enabled', $placements['states'], true) => 'Enabled',
+            in_array('under_construction', $placements['states'], true) => 'Under construction',
             default => 'Hidden',
         };
 
@@ -43,11 +41,12 @@ final class ContactHealth extends Widget
         ];
     }
 
-    /** @return array{published:int,forms:int} */
+    /** @return array{published:int,forms:int,states:list<string>} */
     private function placements(): array
     {
         $published = 0;
         $forms = 0;
+        $states = [];
 
         $settings = CustomPageSetting::query()
             ->whereHas('siteSection', static fn ($query) => $query
@@ -57,14 +56,15 @@ final class ContactHealth extends Widget
 
         foreach ($settings as $pageSettings) {
             $pageHasContact = false;
-            foreach ($pageSettings->getAttribute('blocks') ?? [] as $block) {
-                if (! is_array($block) || ($block['type'] ?? null) !== 'contact') {
+            foreach ($pageSettings->components() as $block) {
+                if (($block['type'] ?? null) !== 'contact') {
                     continue;
                 }
 
                 $pageHasContact = true;
                 if (($block['show_form'] ?? true) === true) {
                     $forms++;
+                    $states[] = is_string($block['form_state'] ?? null) ? $block['form_state'] : 'enabled';
                 }
             }
 
@@ -73,6 +73,6 @@ final class ContactHealth extends Widget
             }
         }
 
-        return ['published' => $published, 'forms' => $forms];
+        return ['published' => $published, 'forms' => $forms, 'states' => $states];
     }
 }

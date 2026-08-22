@@ -1,6 +1,7 @@
 @props([
     'generalSettings',
-    'contactSettings',
+    'formState' => 'enabled',
+    'statusText' => null,
     'showStatus' => true,
     'showEmail' => null,
     'showForm' => null,
@@ -49,13 +50,13 @@
         </div>
     @endif
 
-    @if ($showForm && $contactSettings->contact_state === 'under_construction')
-        @if ($showStatus)
+    @if ($showForm && $formState === 'under_construction')
+        @if ($showStatus && is_string($statusText) && trim($statusText) !== '')
             <p class="contact-status contact-status--quiet" role="status">
-                {{ $contactSettings->contact_status_text }}
+                {{ $statusText }}
             </p>
         @endif
-    @elseif ($showForm && $contactSettings->contact_state === 'enabled')
+    @elseif ($showForm && $formState === 'enabled')
         @if (session('contact_success'))
             <p
                 class="contact-message"

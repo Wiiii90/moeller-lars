@@ -12,9 +12,6 @@ use InvalidArgumentException;
 use LogicException;
 
 #[Fillable([
-    'contact_state',
-    'contact_status_text',
-    'contact_icon',
     'contact_recipient_email',
     'public_email',
     'show_public_email',
@@ -22,7 +19,6 @@ use LogicException;
     'show_instagram',
     'social_links',
     'legal_disclaimer',
-    'profile_text_blocks',
     'favicon_media_asset_id',
 ])]
 #[Guarded(['id', 'scope'])]
@@ -30,15 +26,7 @@ class PublicContentSetting extends Model
 {
     public const SCOPE_GENERAL = 'general';
 
-    public const SCOPE_CONTACT = 'contact';
-
-    public const SCOPE_VITA = 'vita';
-
-    public const SCOPES = [
-        self::SCOPE_GENERAL,
-        self::SCOPE_CONTACT,
-        self::SCOPE_VITA,
-    ];
+    public const SCOPES = [self::SCOPE_GENERAL];
 
     protected $table = 'public_content_settings';
 
@@ -50,7 +38,6 @@ class PublicContentSetting extends Model
             'show_public_email' => 'boolean',
             'show_instagram' => 'boolean',
             'social_links' => 'array',
-            'profile_text_blocks' => 'array',
         ];
     }
 
@@ -71,16 +58,6 @@ class PublicContentSetting extends Model
         return self::forScope(self::SCOPE_GENERAL);
     }
 
-    public static function contact(): self
-    {
-        return self::forScope(self::SCOPE_CONTACT);
-    }
-
-    public static function vita(): self
-    {
-        return self::forScope(self::SCOPE_VITA);
-    }
-
     /** @return BelongsTo<MediaAsset, $this> */
     public function faviconMediaAsset(): BelongsTo
     {
@@ -90,41 +67,16 @@ class PublicContentSetting extends Model
     protected static function booted(): void
     {
         static::saving(function (self $setting): void {
-            $scope = (string) $setting->getAttribute('scope');
-            if (! in_array($scope, self::SCOPES, true)) {
+            if ((string) $setting->getAttribute('scope') !== self::SCOPE_GENERAL) {
                 throw ValidationException::withMessages(['scope' => 'The settings scope is invalid.']);
             }
 
-            if ($scope === self::SCOPE_CONTACT) {
-                self::validateContact($setting);
-            }
-
-            if ($scope === self::SCOPE_GENERAL) {
-                self::validateGeneral($setting);
-            }
-
-            if ($scope === self::SCOPE_VITA) {
-                self::validateVita($setting);
-            }
+            self::validateGeneral($setting);
         });
 
         static::deleting(function (): never {
-            throw new LogicException('Typed public content settings cannot be deleted.');
+            throw new LogicException('Global public content settings cannot be deleted.');
         });
-    }
-
-    private static function validateContact(self $setting): void
-    {
-        if ($setting->getAttribute('contact_state') !== 'under_construction') {
-            return;
-        }
-
-        $statusText = $setting->getAttribute('contact_status_text');
-        if (! is_string($statusText) || trim($statusText) === '') {
-            throw ValidationException::withMessages([
-                'contact_status_text' => 'A status text is required while Contact is under construction.',
-            ]);
-        }
     }
 
     private static function validateGeneral(self $setting): void
@@ -202,32 +154,6 @@ class PublicContentSetting extends Model
             throw ValidationException::withMessages([
                 'legal_disclaimer' => 'The legal disclaimer must contain text or be empty.',
             ]);
-        }
-    }
-
-    private static function validateVita(self $setting): void
-    {
-        $blocks = $setting->getAttribute('profile_text_blocks');
-        if ($blocks === null) {
-            return;
-        }
-        if (! is_array($blocks)) {
-            throw ValidationException::withMessages(['profile_text_blocks' => 'Additional CV text blocks must be a list.']);
-        }
-
-        foreach ($blocks as $index => $block) {
-            if (! is_array($block)) {
-                throw ValidationException::withMessages(["profile_text_blocks.$index" => 'Each additional CV text block must be structured content.']);
-            }
-
-            $title = $block['title'] ?? null;
-            $body = $block['body'] ?? null;
-            if (! is_string($title) || trim($title) === '' || mb_strlen($title) > 120) {
-                throw ValidationException::withMessages(["profile_text_blocks.$index.title" => 'Each additional CV text block needs a short title.']);
-            }
-            if (! is_string($body) || trim($body) === '' || mb_strlen($body) > 5000) {
-                throw ValidationException::withMessages(["profile_text_blocks.$index.body" => 'Each additional CV text block needs text.']);
-            }
         }
     }
 }

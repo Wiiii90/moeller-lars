@@ -123,7 +123,9 @@ final class SiteSectionEditorialService
         DB::transaction(function () use ($section, $type, $actor): void {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
-            if ((string) $fresh->getAttribute('state') !== 'hidden' || (bool) $fresh->getAttribute('show_in_navigation')) {
+
+            if ($type !== SiteNodeType::Journal
+                && ((string) $fresh->getAttribute('state') !== 'hidden' || (bool) $fresh->getAttribute('show_in_navigation'))) {
                 throw ValidationException::withMessages(['section' => 'Hide the page and remove it from navigation before deleting it.']);
             }
             if (SiteSection::query()->where('parent_id', $fresh->getKey())->exists()) {

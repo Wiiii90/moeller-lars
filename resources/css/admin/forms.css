@@ -41,6 +41,37 @@
     gap: 0 !important;
 }
 
+.admin-component-image-preview {
+    display: grid;
+    grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: end;
+}
+
+.admin-component-image-preview img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 11rem;
+    object-fit: contain;
+    object-position: left center;
+}
+
+.admin-component-image-preview span,
+.admin-component-records .admin-muted {
+    color: var(--admin-muted);
+    font-size: .76rem;
+}
+
+.admin-component-records {
+    display: grid;
+    gap: .85rem;
+}
+
+.admin-component-records > .admin-toolbar {
+    justify-content: flex-start;
+}
+
 .admin-form-section .fi-fo-table-repeater > table {
     border-radius: 0 !important;
     background: transparent !important;
@@ -71,5 +102,9 @@
 @media (max-width: 760px) {
     .admin-form-section {
         padding: 1.15rem 0 1.35rem !important;
+    }
+
+    .admin-component-image-preview {
+        grid-template-columns: 1fr;
     }
 }

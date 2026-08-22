@@ -67,6 +67,25 @@ final class EditorialRecordService
         return $this->transition($record, 'draft', 'restored_to_draft', onlyFrom: ['archived', 'hidden']);
     }
 
+    public function deleteCv(CvEntry $record): void
+    {
+        $actor = $this->audit->requireActor();
+
+        DB::transaction(function () use ($record, $actor): void {
+            /** @var CvEntry $fresh */
+            $fresh = CvEntry::query()->whereKey($record->getKey())->lockForUpdate()->firstOrFail();
+            $recordId = (int) $fresh->getKey();
+            $mediaAssetId = $fresh->getAttribute('image_media_asset_id');
+
+            $fresh->delete();
+
+            $metadata = is_numeric($mediaAssetId)
+                ? ['media_asset_id' => (int) $mediaAssetId]
+                : null;
+            $this->audit->record($actor, 'cv_entry.deleted', 'cv_entry', $recordId, $metadata);
+        });
+    }
+
     public function deleteExhibition(Exhibition $record): void
     {
         $actor = $this->audit->requireActor();

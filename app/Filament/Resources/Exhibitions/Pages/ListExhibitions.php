@@ -156,6 +156,7 @@ class ListExhibitions extends Page
                 $exhibition->getAttribute('country'),
             ], static fn ($value): bool => is_string($value) && trim($value) !== ''));
             $kind = $exhibition->getAttribute('kind');
+            $opening = $exhibition->getAttribute('opening_text');
 
             return [
                 'id' => (int) $exhibition->getKey(),
@@ -163,6 +164,7 @@ class ListExhibitions extends Page
                 'title' => (string) $exhibition->getAttribute('title'),
                 'date' => (string) $exhibition->getAttribute('date_text'),
                 'meta' => $meta === [] ? 'No venue details' : implode(' · ', $meta),
+                'opening' => is_string($opening) && trim($opening) !== '' ? trim($opening) : null,
                 'state' => (string) $exhibition->getAttribute('state'),
                 'edit_url' => ExhibitionResource::getUrl('edit', ['record' => $exhibition]),
                 'public_url' => $exhibition->getAttribute('state') === 'published' ? ExhibitionResource::publicUrl($exhibition) : null,

@@ -12,8 +12,6 @@ uses(RefreshDatabase::class);
 
 function enablePublishedContactForm(): void
 {
-    PublicContentSetting::contact()->update(['contact_state' => 'enabled']);
-
     $section = SiteSection::query()->create([
         'type' => SiteSection::TYPE_CUSTOM,
         'template' => null,
@@ -32,6 +30,9 @@ function enablePublishedContactForm(): void
     $settings->setAttribute('blocks', [[
         'type' => 'contact',
         'show_form' => true,
+        'show_email' => true,
+        'social_platforms' => [],
+        'form_state' => 'enabled',
     ]]);
     $settings->save();
 }
@@ -135,4 +136,46 @@ it('fails closed when delivery configuration is incomplete', function (): void {
     $this->post('/contact', contactPayload())
         ->assertSessionHasErrors('contact')
         ->assertSessionMissing('contact_success');
+});
+
+it('requires an enabled Contact component on a published Custom Page', function (): void {
+    Mail::fake();
+
+    $this->post('/contact', contactPayload())->assertNotFound();
+
+    $section = SiteSection::query()->create([
+        'type' => SiteSection::TYPE_CUSTOM,
+        'template' => null,
+        'title' => 'Private Contact',
+        'navigation_label' => 'Private Contact',
+        'slug' => 'private-contact',
+        'state' => 'hidden',
+        'position' => 901,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
+    ]);
+    $settings = new CustomPageSetting;
+    $settings->setAttribute('site_section_id', $section->id);
+    $settings->setAttribute('blocks', [[
+        'type' => 'contact',
+        'show_form' => true,
+        'show_email' => false,
+        'social_platforms' => [],
+        'form_state' => 'enabled',
+    ]]);
+    $settings->save();
+
+    $this->post('/contact', contactPayload())->assertNotFound();
+
+    $section->update(['state' => 'published']);
+    $settings->update(['blocks' => [[
+        'type' => 'contact',
+        'show_form' => true,
+        'show_email' => false,
+        'social_platforms' => [],
+        'form_state' => 'hidden',
+    ]]]);
+
+    $this->post('/contact', contactPayload())->assertNotFound();
 });

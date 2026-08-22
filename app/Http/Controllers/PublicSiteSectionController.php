@@ -9,6 +9,8 @@ use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
+use App\Models\CustomPageSetting;
+use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\JournalSetting;
 use App\Models\MediaAsset;
@@ -79,10 +81,11 @@ final class PublicSiteSectionController extends Controller
     {
         $section->load('customPageSetting');
         $settings = $section->getRelation('customPageSetting');
-        abort_unless($settings !== null, 404);
+        abort_unless($settings instanceof CustomPageSetting, 404);
 
-        $blocks = is_array($settings->getAttribute('blocks')) ? $settings->getAttribute('blocks') : [];
+        $blocks = $settings->components();
         $mediaIds = collect($blocks)
+            ->filter(static fn (array $block): bool => ($block['type'] ?? null) === 'image')
             ->pluck('media_asset_id')
             ->filter(fn ($id): bool => is_numeric($id))
             ->map(fn ($id): int => (int) $id)
@@ -96,12 +99,25 @@ final class PublicSiteSectionController extends Controller
             ->get()
             ->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
 
+        $cvEntries = collect();
+        if (collect($blocks)->contains(static fn (array $block): bool => ($block['type'] ?? null) === 'cv_list')) {
+            $cvEntries = CvEntry::query()
+                ->when(
+                    $this->preview->active(),
+                    fn (Builder $query) => $query->where('state', '<>', 'archived'),
+                    fn (Builder $query) => $query->where('state', 'published'),
+                )
+                ->orderBy('position')
+                ->orderBy('id')
+                ->get();
+        }
+
         return view('pages.custom', [
             'section' => $section,
             'blocks' => $blocks,
             'assets' => $assets,
+            'cvEntries' => $cvEntries,
             'generalSettings' => PublicContentSetting::general(),
-            'contactSettings' => PublicContentSetting::contact(),
             'richText' => $this->richText,
             'media' => $this->media,
             'siteNodeRoute' => $this->siteNodeRoute,
