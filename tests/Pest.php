@@ -33,14 +33,3 @@ function testGallerySection(ArtworkCategory $category, array $overrides = []): S
         'artwork_category_id' => (int) $category->getKey(),
     ], $overrides));
 }
-
-/** @param array<string, mixed> $attributes */
-function testUniqueSection(string $type, array $attributes): SiteSection
-{
-    /** @var SiteSection $section */
-    $section = SiteSection::query()->where('type', $type)->sole();
-    $section->fill($attributes);
-    $section->save();
-
-    return $section->fresh();
-}
