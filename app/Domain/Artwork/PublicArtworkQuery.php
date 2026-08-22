@@ -92,6 +92,20 @@ class PublicArtworkQuery
         );
     }
 
+    /** @return Collection<int, Artwork> */
+    public function homeCandidates(int $limit = 12): Collection
+    {
+        /** @var Collection<int, Artwork> $artworks */
+        $artworks = $this->homeQuery()
+            ->orderByDesc('work_year')
+            ->orderByDesc('work_date')
+            ->orderByDesc('id')
+            ->limit(max(1, min($limit, 50)))
+            ->get();
+
+        return $artworks;
+    }
+
     public function publishedBySlug(string $slug): ?Artwork
     {
         return $this->publicQuery()
