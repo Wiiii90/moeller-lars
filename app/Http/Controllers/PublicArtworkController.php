@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Artwork\ArtworkCategoryPathPolicy;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\SitePreviewContext;
+use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Media\PublicMedia;
 use App\Models\ArtworkCategory;
 use App\Models\Redirect;
@@ -46,7 +46,7 @@ class PublicArtworkController extends Controller
             $redirect = Redirect::query()
                 ->where('source_path', '/'.$category)
                 ->where('enabled', true)
-                ->where('reason', ArtworkCategoryPathPolicy::CATEGORY_SLUG_REDIRECT_REASON)
+                ->where('reason', SiteSectionPathPolicy::GALLERY_SLUG_REDIRECT_REASON)
                 ->first();
 
             abort_unless($redirect !== null, 404);
