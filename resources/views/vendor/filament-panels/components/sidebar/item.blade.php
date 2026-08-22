@@ -36,6 +36,9 @@
             x-effect="if (@js($activeChildItems)) adminChildrenOpen = true"
         @endunless
     @endif
+    @if ($isTreeRoot)
+        style="--admin-tree-disclosure-slot: var(--admin-tree-icon-slot); --admin-tree-nested-indent: var(--admin-tree-top-indent); --admin-tree-nested-trunk-x: var(--admin-tree-top-trunk-x);"
+    @endif
     {{
         $attributes->class([
             'fi-sidebar-item',
@@ -52,7 +55,10 @@
     }}
 >
     @if ($isAdminTreeItem)
-        <div class="admin-sidebar-tree__node-row">
+        <div
+            class="admin-sidebar-tree__node-row"
+            style="grid-template-columns: {{ $hasChildItems ? 'var(--admin-tree-icon-slot) var(--admin-tree-disclosure-slot) minmax(0, 1fr)' : 'var(--admin-tree-icon-slot) minmax(0, 1fr)' }};"
+        >
             @if (filled($url))
                 <a
                     {{ \Filament\Support\generate_href_html($url, $shouldOpenUrlInNewTab) }}
@@ -79,13 +85,13 @@
                 </span>
             @endif
 
-            <span
-                class="admin-sidebar-tree__disclosure-slot"
-                @if ($sidebarCollapsible && (! $subNavigation))
-                    x-show="$store.sidebar.isOpen"
-                @endif
-            >
-                @if ($hasChildItems)
+            @if ($hasChildItems)
+                <span
+                    class="admin-sidebar-tree__disclosure-slot"
+                    @if ($sidebarCollapsible && (! $subNavigation))
+                        x-show="$store.sidebar.isOpen"
+                    @endif
+                >
                     <button
                         type="button"
                         class="admin-sidebar-tree__disclosure"
@@ -95,10 +101,8 @@
                     >
                         <span class="admin-sidebar-tree__chevron" aria-hidden="true" x-bind:class="{ 'is-open': adminChildrenOpen }"></span>
                     </button>
-                @else
-                    <span class="admin-sidebar-tree__disclosure-placeholder" aria-hidden="true"></span>
-                @endif
-            </span>
+                </span>
+            @endif
 
             @if (filled($url))
                 <a
