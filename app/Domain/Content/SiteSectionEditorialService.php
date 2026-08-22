@@ -27,7 +27,7 @@ final class SiteSectionEditorialService
 
         return DB::transaction(function () use ($title, $actor): SiteSection {
             $section = SiteSection::query()->create([
-                'type' => SiteSection::TYPE_NAVIGATION_GROUP,
+                'type' => SiteNodeType::NavigationNode->value,
                 'template' => null,
                 'title' => $title,
                 'navigation_label' => $title,
@@ -53,7 +53,7 @@ final class SiteSectionEditorialService
 
         return DB::transaction(function () use ($title, $slug, $actor): SiteSection {
             $section = SiteSection::query()->create([
-                'type' => SiteSection::TYPE_CUSTOM,
+                'type' => SiteNodeType::CustomPage->value,
                 'template' => null,
                 'title' => $title,
                 'navigation_label' => $title,
@@ -80,14 +80,14 @@ final class SiteSectionEditorialService
     {
         $title = $this->validatedTitle($title);
         $slug = $this->validatedSlug($slug);
-        if (! in_array($template, SiteSection::JOURNAL_TEMPLATES, true)) {
+        if (JournalTemplate::tryFrom($template) === null) {
             throw ValidationException::withMessages(['template' => 'Choose Blog or Exhibitions as the Journal template.']);
         }
         $actor = $this->audit->requireActor();
 
         return DB::transaction(function () use ($title, $slug, $template, $actor): SiteSection {
             $section = SiteSection::query()->create([
-                'type' => SiteSection::TYPE_JOURNAL,
+                'type' => SiteNodeType::Journal->value,
                 'template' => $template,
                 'title' => $title,
                 'navigation_label' => $title,
@@ -113,8 +113,8 @@ final class SiteSectionEditorialService
 
     public function deleteConfigurableSection(SiteSection $section): void
     {
-        $type = (string) $section->getAttribute('type');
-        if (! in_array($type, [SiteSection::TYPE_CUSTOM, SiteSection::TYPE_JOURNAL, SiteSection::TYPE_NAVIGATION_GROUP], true)) {
+        $type = $section->nodeType();
+        if (! in_array($type, [SiteNodeType::CustomPage, SiteNodeType::Journal, SiteNodeType::NavigationNode], true)) {
             throw ValidationException::withMessages(['section' => 'This page cannot be deleted from the configurable page workflow.']);
         }
 
@@ -130,10 +130,10 @@ final class SiteSectionEditorialService
                 throw ValidationException::withMessages(['section' => 'Move or delete submenu entries before deleting their parent.']);
             }
 
-            if ($type === SiteSection::TYPE_JOURNAL) {
-                $hasEntries = match ($fresh->getAttribute('template')) {
-                    SiteSection::JOURNAL_TEMPLATE_BLOG => BlogPost::query()->where('site_section_id', $fresh->getKey())->exists(),
-                    SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS => Exhibition::query()->where('site_section_id', $fresh->getKey())->exists(),
+            if ($type === SiteNodeType::Journal) {
+                $hasEntries = match (JournalTemplate::tryFrom((string) $fresh->getAttribute('template'))) {
+                    JournalTemplate::Blog => BlogPost::query()->where('site_section_id', $fresh->getKey())->exists(),
+                    JournalTemplate::Exhibitions => Exhibition::query()->where('site_section_id', $fresh->getKey())->exists(),
                     default => true,
                 };
                 if ($hasEntries) {
@@ -153,7 +153,7 @@ final class SiteSectionEditorialService
         bool $showInNavigation,
         ?int $parentSectionId,
     ): SiteSection {
-        if ((string) $section->getAttribute('type') !== SiteSection::TYPE_GALLERY) {
+        if ($section->nodeType() !== SiteNodeType::Gallery) {
             throw ValidationException::withMessages(['type' => 'Only Gallery sections support Gallery placement controls.']);
         }
 
@@ -169,7 +169,7 @@ final class SiteSectionEditorialService
         if (! in_array($state, ['published', 'hidden'], true)) {
             throw ValidationException::withMessages(['state' => 'The section publication state is invalid.']);
         }
-        if ((string) $section->getAttribute('type') === SiteSection::TYPE_HOME && $parentSectionId !== null) {
+        if ($section->nodeType() === SiteNodeType::Home && $parentSectionId !== null) {
             throw ValidationException::withMessages(['parent_id' => 'Home cannot be nested below another section.']);
         }
 
@@ -259,7 +259,7 @@ final class SiteSectionEditorialService
         if ($parentSectionId === null) {
             return null;
         }
-        if ((string) $section->getAttribute('type') === SiteSection::TYPE_NAVIGATION_GROUP) {
+        if ($section->nodeType() === SiteNodeType::NavigationNode) {
             throw ValidationException::withMessages(['parent_id' => 'Navigation nodes must remain top-level submenu parents.']);
         }
         if ($parentSectionId === (int) $section->getKey()) {
@@ -272,10 +272,8 @@ final class SiteSectionEditorialService
             throw ValidationException::withMessages(['parent_id' => 'The parent must be a top-level section that supports submenu entries.']);
         }
 
-        $childType = (string) $section->getAttribute('type');
-        $parentType = (string) $parent->getAttribute('type');
-        if ($parentType === SiteSection::TYPE_GALLERY && $childType !== SiteSection::TYPE_GALLERY) {
-            throw ValidationException::withMessages(['parent_id' => 'Gallery parents may only contain Gallery sections.']);
+        if (! $section->nodeType()->canBeChildOf($parent->nodeType())) {
+            throw ValidationException::withMessages(['parent_id' => 'The selected parent cannot contain this page type.']);
         }
 
         return $parent;
@@ -312,7 +310,7 @@ final class SiteSectionEditorialService
         }
         $parentId === null ? $query->whereNull('parent_id') : $query->where('parent_id', $parentId);
         if ($parentId === null) {
-            $query->where('type', '<>', SiteSection::TYPE_HOME);
+            $query->where('type', '<>', SiteNodeType::Home->value);
         }
 
         /** @var Collection<int, SiteSection> $siblings */
