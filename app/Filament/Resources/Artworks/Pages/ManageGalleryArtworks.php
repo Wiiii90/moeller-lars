@@ -4,10 +4,11 @@ namespace App\Filament\Resources\Artworks\Pages;
 
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Artwork\ArtworkCategoryEditorialService;
+use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Media\MediaIngestService;
 use App\Filament\Pages\SitePages;
-use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\Artwork;
@@ -16,12 +17,20 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
+use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 final class ManageGalleryArtworks extends Page
 {
@@ -58,6 +67,151 @@ final class ManageGalleryArtworks extends Page
         $this->loadGallery((int) $gallery);
         $this->loadMoveTargets();
         $this->loadArtworks();
+    }
+
+    public function gallerySettingsAction(): Action
+    {
+        return Action::make('gallerySettings')
+            ->label('Settings')
+            ->fillForm(function (): array {
+                /** @var ArtworkCategory $category */
+                $category = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+
+                return [
+                    'name' => (string) $category->getAttribute('name'),
+                    'slug' => (string) $category->getAttribute('slug'),
+                    'description' => $category->getAttribute('description'),
+                    'show_on_home' => (bool) $category->getAttribute('show_on_home'),
+                ];
+            })
+            ->schema([
+                TextInput::make('name')
+                    ->label('Gallery title')
+                    ->required()
+                    ->maxLength(160),
+                TextInput::make('slug')
+                    ->label('Public URL slug')
+                    ->required()
+                    ->maxLength(80)
+                    ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                    ->helperText('Changing this keeps the previous Gallery URL as a redirect.'),
+                Textarea::make('description')
+                    ->rows(5)
+                    ->maxLength(10000)
+                    ->nullable()
+                    ->columnSpanFull(),
+                Toggle::make('show_on_home')
+                    ->label('Eligible for homepage presentation'),
+            ])
+            ->modalHeading('Gallery settings')
+            ->modalSubmitActionLabel('Save changes')
+            ->action(function (array $data): void {
+                /** @var ArtworkCategory $category */
+                $category = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
+                $currentSlug = (string) $category->getAttribute('slug');
+                $service = app(ArtworkCategoryEditorialService::class);
+
+                DB::transaction(function () use ($service, $category, $currentSlug, $data): void {
+                    $service->update($category, [
+                        'name' => $data['name'],
+                        'description' => $data['description'] ?? null,
+                        'show_on_home' => (bool) ($data['show_on_home'] ?? false),
+                    ]);
+
+                    $newSlug = trim((string) ($data['slug'] ?? ''));
+                    if ($newSlug !== $currentSlug) {
+                        $service->changeSlug($category, $newSlug);
+                    }
+                });
+
+                $this->loadGallery((int) $category->getKey());
+                $this->loadMoveTargets();
+                $this->loadArtworks();
+                Notification::make()->title('Gallery settings saved')->success()->send();
+            });
+    }
+
+    public function addArtworkAction(): Action
+    {
+        return Action::make('addArtwork')
+            ->label('Add artwork')
+            ->schema([
+                TextInput::make('title')
+                    ->required()
+                    ->maxLength(240)
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
+                        if (blank($get('slug')) && filled($state)) {
+                            $set('slug', Str::slug($state));
+                        }
+                    }),
+                TextInput::make('slug')
+                    ->label('Public URL slug')
+                    ->required()
+                    ->maxLength(180)
+                    ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                    ->unique('artworks', 'slug'),
+                TextInput::make('medium')->nullable()->maxLength(240),
+                TextInput::make('dimensions')->nullable()->maxLength(240),
+                Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
+                FileUpload::make('primary_media')
+                    ->label('Primary image')
+                    ->image()
+                    ->storeFiles(false)
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024))
+                    ->helperText('Optional while drafting, but required before publication.')
+                    ->columnSpanFull(),
+                TextInput::make('work_year')
+                    ->label('Year')
+                    ->numeric()
+                    ->minValue(1000)
+                    ->maxValue(9999)
+                    ->nullable(),
+                DatePicker::make('work_date')
+                    ->label('Exact date')
+                    ->helperText('If set, the year is derived from this date.')
+                    ->nullable(),
+                Toggle::make('featured_on_home')
+                    ->label('Feature on home when newest year is shared')
+                    ->default(false),
+            ])
+            ->modalHeading('Add artwork')
+            ->modalSubmitActionLabel('Create draft')
+            ->action(function (array $data): void {
+                $primaryMedia = $data['primary_media'] ?? null;
+                if ($primaryMedia !== null && ! $primaryMedia instanceof TemporaryUploadedFile) {
+                    throw ValidationException::withMessages(['primary_media' => 'A valid uploaded image is required.']);
+                }
+
+                $data['artwork_category_id'] = (int) $this->galleryContext['id'];
+                $data['work_date'] = $data['work_date'] ?? null;
+                $artwork = app(ArtworkDraftService::class)->create($data);
+
+                $imageAttached = false;
+                if ($primaryMedia instanceof TemporaryUploadedFile) {
+                    try {
+                        app(ArtworkEditorialService::class)->attachPrimaryMedia($artwork, $primaryMedia);
+                        $imageAttached = true;
+                    } catch (ValidationException) {
+                        Notification::make()
+                            ->title('Artwork created; image needs attention')
+                            ->body('The draft is saved, but the primary image could not be attached.')
+                            ->warning()
+                            ->send();
+                    }
+                }
+
+                $this->loadArtworks();
+
+                if ($primaryMedia === null || $imageAttached) {
+                    Notification::make()
+                        ->title('Artwork draft created')
+                        ->body($imageAttached ? 'The primary image was attached.' : 'Add a primary image before publication.')
+                        ->success()
+                        ->send();
+                }
+            });
     }
 
     public function moveArtwork(int $artworkId, string $direction): void
@@ -240,8 +394,6 @@ final class ManageGalleryArtworks extends Page
             'path' => '/'.ltrim((string) $category->getAttribute('slug'), '/'),
             'pages_url' => SitePages::getUrl(),
             'all_artworks_url' => ArtworkResource::getUrl('index'),
-            'settings_url' => ArtworkCategoryResource::getUrl('edit', ['record' => $category->getKey()]),
-            'create_url' => ArtworkResource::getUrl('create', ['gallery' => $category->getKey()]),
             'public_url' => $isPublished
                 ? route('artworks.category', ['category' => $category->getAttribute('slug')])
                 : null,
