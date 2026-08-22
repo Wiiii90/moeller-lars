@@ -9,11 +9,22 @@
 
         <section class="artist-page-list artist-page-tree" aria-label="Public site structure">
             @foreach ($sections as $section)
-                <div class="artist-page-tree__branch" data-has-children="{{ $section['has_children'] ? 'true' : 'false' }}">
+                <div
+                    class="artist-page-tree__branch"
+                    data-has-children="{{ $section['has_children'] ? 'true' : 'false' }}"
+                    @if ($section['has_children'])
+                        x-data="{ treeOpen: true }"
+                    @endif
+                >
                     @include('filament.pages.partials.site-section-row', ['section' => $section])
 
                     @if ($section['children'] !== [])
-                        <div class="artist-page-tree__children" aria-label="Children of {{ $section['navigation_label'] ?: $section['title'] }}">
+                        <div
+                            class="artist-page-tree__children"
+                            aria-label="Children of {{ $section['navigation_label'] ?: $section['title'] }}"
+                            x-show="treeOpen"
+                            x-cloak
+                        >
                             @foreach ($section['children'] as $child)
                                 @include('filament.pages.partials.site-section-row', ['section' => $child])
                             @endforeach
