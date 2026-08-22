@@ -28,8 +28,8 @@ use Illuminate\Validation\ValidationException;
 final class SiteSection extends Model
 {
     /**
-     * Persistence-facing values retained for callers that still write raw model attributes.
-     * SiteNodeType is the canonical source for behavior, labels, icons and capabilities.
+     * Persistence values retained for migrations and raw database boundaries.
+     * SiteNodeType and JournalTemplate own application behavior.
      */
     public const TYPE_HOME = 'home';
 
@@ -60,10 +60,9 @@ final class SiteSection extends Model
     protected static function booted(): void
     {
         self::saving(function (self $section): void {
-            $type = (string) $section->getAttribute('type');
-            $nodeType = SiteNodeType::tryFrom($type);
+            $nodeType = SiteNodeType::tryFrom((string) $section->getAttribute('type'));
             if ($nodeType === null) {
-                throw ValidationException::withMessages(['type' => 'The site section type is invalid.']);
+                throw ValidationException::withMessages(['type' => 'The site node type is invalid.']);
             }
 
             $template = $section->getAttribute('template');
@@ -76,24 +75,29 @@ final class SiteSection extends Model
             }
 
             if ($nodeType === SiteNodeType::Gallery) {
-                if ($section->getAttribute('artwork_category_id') === null) {
-                    throw ValidationException::withMessages(['artwork_category_id' => 'A Gallery section must reference an artwork category.']);
+                if (! is_numeric($section->getAttribute('artwork_category_id'))) {
+                    throw ValidationException::withMessages(['artwork_category_id' => 'A Gallery site node must reference its Gallery record.']);
                 }
             } elseif ($section->getAttribute('artwork_category_id') !== null) {
-                throw ValidationException::withMessages(['artwork_category_id' => 'Only Gallery sections may reference artwork categories.']);
+                throw ValidationException::withMessages(['artwork_category_id' => 'Only Gallery site nodes may reference a Gallery record.']);
             }
 
-            if (! $nodeType->requiresSlug() && $section->getAttribute('slug') !== null) {
-                throw ValidationException::withMessages(['slug' => 'Navigation nodes do not own a public URL slug.']);
+            $slug = $section->getAttribute('slug');
+            if ($nodeType->requiresSlug()) {
+                if (! is_string($slug) || trim($slug) === '') {
+                    throw ValidationException::withMessages(['slug' => $nodeType->label().' requires a public URL slug.']);
+                }
+            } elseif ($slug !== null) {
+                throw ValidationException::withMessages(['slug' => $nodeType->label().' does not own a public URL slug.']);
             }
 
             $parentId = $section->getAttribute('parent_id');
             if ($parentId !== null) {
                 if (! $nodeType->canHaveParent()) {
-                    throw ValidationException::withMessages(['parent_id' => $nodeType->label().' cannot be nested below another section.']);
+                    throw ValidationException::withMessages(['parent_id' => $nodeType->label().' cannot be nested below another site node.']);
                 }
                 if ($section->exists && (int) $parentId === (int) $section->getKey()) {
-                    throw ValidationException::withMessages(['parent_id' => 'A site section cannot be its own parent.']);
+                    throw ValidationException::withMessages(['parent_id' => 'A site node cannot be its own parent.']);
                 }
 
                 /** @var self|null $parent */
@@ -101,7 +105,7 @@ final class SiteSection extends Model
                 if ($parent !== null) {
                     $parentType = $parent->nodeType();
                     if ($parent->getAttribute('parent_id') !== null || ! $nodeType->canBeChildOf($parentType)) {
-                        throw ValidationException::withMessages(['parent_id' => 'The selected parent cannot contain this page type.']);
+                        throw ValidationException::withMessages(['parent_id' => 'The selected parent cannot contain this site node type.']);
                     }
                 }
             }
@@ -109,7 +113,7 @@ final class SiteSection extends Model
             if ((bool) $section->getAttribute('show_in_navigation')) {
                 $label = $section->getAttribute('navigation_label');
                 if (! is_string($label) || trim($label) === '') {
-                    throw ValidationException::withMessages(['navigation_label' => 'A navigation label is required while this section is shown in navigation.']);
+                    throw ValidationException::withMessages(['navigation_label' => 'A navigation label is required while this site node is shown in navigation.']);
                 }
             }
 
@@ -117,7 +121,7 @@ final class SiteSection extends Model
                 /** @var CustomPageSetting|null $settings */
                 $settings = $section->customPageSetting()->first();
                 if (! $settings instanceof CustomPageSetting) {
-                    throw ValidationException::withMessages(['state' => 'A Custom page needs its component configuration before it can be published.']);
+                    throw ValidationException::withMessages(['state' => 'A Custom Page needs its component configuration before it can be published.']);
                 }
                 $settings->assertReadyForPublic();
             }
@@ -132,6 +136,15 @@ final class SiteSection extends Model
     public function nodeType(): SiteNodeType
     {
         return SiteNodeType::from((string) $this->getAttribute('type'));
+    }
+
+    public function journalTemplate(): ?JournalTemplate
+    {
+        if ($this->nodeType() !== SiteNodeType::Journal) {
+            return null;
+        }
+
+        return JournalTemplate::from((string) $this->getAttribute('template'));
     }
 
     public function parent(): BelongsTo
@@ -167,20 +180,5 @@ final class SiteSection extends Model
     public function canContainChildren(): bool
     {
         return $this->nodeType()->canContainChildren();
-    }
-
-    public function publicPath(): ?string
-    {
-        return $this->nodeType()->publicPath($this);
-    }
-
-    public function publicUrl(): ?string
-    {
-        return $this->nodeType()->publicUrl($this);
-    }
-
-    public function isCurrentRequest(): bool
-    {
-        return $this->nodeType()->isCurrentRequest($this);
     }
 }
