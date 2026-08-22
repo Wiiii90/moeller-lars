@@ -9,6 +9,7 @@ use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
+use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\JournalSetting;
@@ -80,7 +81,7 @@ final class PublicSiteSectionController extends Controller
     {
         $section->load('customPageSetting');
         $settings = $section->getRelation('customPageSetting');
-        abort_unless($settings !== null, 404);
+        abort_unless($settings instanceof CustomPageSetting, 404);
 
         $blocks = $settings->components();
         $mediaIds = collect($blocks)
