@@ -163,7 +163,7 @@ final class SiteSectionOrderService
             return 'parent:'.(int) $parentId;
         }
 
-        return (string) $section->getAttribute('type') === SiteSection::TYPE_HOME
+        return $section->nodeType() === SiteNodeType::Home
             ? 'root:home'
             : 'root:navigation';
     }
@@ -180,10 +180,10 @@ final class SiteSectionOrderService
         }
 
         $query->whereNull('parent_id');
-        if ((string) $section->getAttribute('type') === SiteSection::TYPE_HOME) {
-            $query->where('type', SiteSection::TYPE_HOME);
+        if ($section->nodeType() === SiteNodeType::Home) {
+            $query->where('type', SiteNodeType::Home->value);
         } else {
-            $query->where('type', '<>', SiteSection::TYPE_HOME);
+            $query->where('type', '<>', SiteNodeType::Home->value);
         }
 
         return $query;
