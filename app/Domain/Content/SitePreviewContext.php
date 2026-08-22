@@ -3,12 +3,15 @@
 namespace App\Domain\Content;
 
 use App\Models\SiteSection;
+use App\Routing\SiteNodeRoute;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 final class SitePreviewContext
 {
     public const REQUEST_ATTRIBUTE = 'artist_site_preview';
+
+    public function __construct(private readonly SiteNodeRoute $routes) {}
 
     public function active(): bool
     {
@@ -51,7 +54,7 @@ final class SitePreviewContext
 
     public function previewUrlFor(SiteSection $section): ?string
     {
-        $publicUrl = $section->publicUrl();
+        $publicUrl = $this->routes->url($section);
 
         return $publicUrl === null ? null : $this->previewUrlFromPublicUrl($publicUrl);
     }
