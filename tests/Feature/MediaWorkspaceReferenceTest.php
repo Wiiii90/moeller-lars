@@ -15,8 +15,7 @@ use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
-
-use function Pest\Livewire\livewire;
+use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -303,13 +302,13 @@ it('does not classify a CV entry image as Custom Page media merely because a CV 
 it('opens Preview and Edit as workspace actions and saves canonical metadata in place', function (): void {
     $asset = workspaceReferenceAsset('dialog-image.jpg');
 
-    livewire(ListMediaAssets::class)
+    Livewire::test(ListMediaAssets::class)
         ->mountAction('preview', ['asset' => $asset->id])
         ->assertMountedActionModalSee('dialog-image.jpg')
         ->assertMountedActionModalSee('Metadata')
         ->assertMountedActionModalSee('Used in');
 
-    livewire(ListMediaAssets::class)
+    Livewire::test(ListMediaAssets::class)
         ->mountAction('edit', ['asset' => $asset->id])
         ->fillForm([
             'alt_text' => 'Updated canonical ALT',
