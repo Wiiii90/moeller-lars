@@ -51,15 +51,13 @@ class PublicContentSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Grid::make([
-                'default' => 1,
-                'xl' => 2,
-            ])
+            Grid::make(1)
                 ->columnSpanFull()
                 ->extraAttributes(['class' => 'artist-general-grid'])
                 ->schema([
                     Fieldset::make('Site identity')
                         ->contained(false)
+                        ->columnSpanFull()
                         ->extraAttributes(['class' => 'artist-general-section'])
                         ->schema([
                             MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
@@ -69,6 +67,7 @@ class PublicContentSettingResource extends Resource
                         ]),
                     Fieldset::make('Public contact')
                         ->contained(false)
+                        ->columnSpanFull()
                         ->extraAttributes(['class' => 'artist-general-section'])
                         ->schema([
                             TextInput::make('public_email')
@@ -81,10 +80,22 @@ class PublicContentSettingResource extends Resource
                                 ->default(true),
                         ])
                         ->columns(2),
+                    Fieldset::make('Contact delivery')
+                        ->contained(false)
+                        ->columnSpanFull()
+                        ->extraAttributes(['class' => 'artist-general-section'])
+                        ->schema([
+                            TextInput::make('contact_recipient_email')
+                                ->label('Private delivery recipient')
+                                ->email()
+                                ->maxLength(254)
+                                ->nullable()
+                                ->helperText('If empty, the server-configured fallback recipient is used.'),
+                        ]),
                     Fieldset::make('Social links')
                         ->contained(false)
-                        ->extraAttributes(['class' => 'artist-general-section'])
                         ->columnSpanFull()
+                        ->extraAttributes(['class' => 'artist-general-section'])
                         ->schema([
                             Repeater::make('social_links')
                                 ->label('Profiles')
@@ -113,19 +124,9 @@ class PublicContentSettingResource extends Resource
                                 ->addActionLabel('Add social link')
                                 ->columnSpanFull(),
                         ]),
-                    Fieldset::make('Contact delivery')
-                        ->contained(false)
-                        ->extraAttributes(['class' => 'artist-general-section'])
-                        ->schema([
-                            TextInput::make('contact_recipient_email')
-                                ->label('Private delivery recipient')
-                                ->email()
-                                ->maxLength(254)
-                                ->nullable()
-                                ->helperText('If empty, the server-configured fallback recipient is used.'),
-                        ]),
                     Fieldset::make('Legal')
                         ->contained(false)
+                        ->columnSpanFull()
                         ->extraAttributes(['class' => 'artist-general-section'])
                         ->schema([
                             Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
