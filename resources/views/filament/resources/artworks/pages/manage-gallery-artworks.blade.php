@@ -1,16 +1,6 @@
 <x-filament-panels::page>
-    <div class="artist-workspace artist-gallery-workspace">
-        <header class="artist-workspace__head artist-gallery-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">
-                    Gallery
-                    @if ($galleryContext['parent_name'])
-                        · {{ $galleryContext['parent_name'] }}
-                    @endif
-                </p>
-                <h2>{{ $galleryContext['name'] }}</h2>
-            </div>
-
+    <x-admin.workspace :kicker="$galleryContext['parent_name'] ? 'Gallery · '.$galleryContext['parent_name'] : 'Gallery'" :title="$galleryContext['name']" class="artist-gallery-workspace">
+        <x-slot:actions>
             <nav class="artist-gallery-tools" aria-label="Gallery management">
                 <a class="artist-action" href="{{ $galleryContext['pages_url'] }}">Pages</a>
                 <a class="artist-action" href="{{ $galleryContext['all_artworks_url'] }}">All artworks</a>
@@ -20,7 +10,7 @@
                 @endif
                 <a class="artist-action is-primary" href="{{ $galleryContext['create_url'] }}">Add artwork</a>
             </nav>
-        </header>
+        </x-slot:actions>
 
         @php
             $analyticsAvailable = is_array($analytics)
@@ -154,5 +144,5 @@
                 <a class="artist-action is-primary" href="{{ $galleryContext['create_url'] }}">Add artwork</a>
             </section>
         @endif
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>
