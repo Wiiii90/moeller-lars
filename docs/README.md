@@ -34,6 +34,11 @@ Accepted ADRs are historical decision records and are intentionally not rewritte
 - [ADR-0001: Application stack](adr/ADR-0001-APPLICATION-STACK.md)
 - [ADR-0002: Hosting cost baseline](adr/ADR-0002-HOSTING-COST-BASELINE.md)
 
+## Repository policies
+
+- [Security policy](../SECURITY.md) — private vulnerability-reporting guidance and supported security scope.
+- Pull requests use [`.github/pull_request_template.md`](../.github/pull_request_template.md) to keep verification, migration impact and release/Validation claims explicit.
+
 ## Documentation rules
 
 - Prefer present-tense contracts over implementation diaries.
