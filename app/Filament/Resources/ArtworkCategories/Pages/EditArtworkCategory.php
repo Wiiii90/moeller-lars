@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\ArtworkCategories\Pages;
 
-use App\Domain\Artwork\ArtworkCategoryEditorialService;
+use App\Domain\Artwork\GalleryEditorialService;
 use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
@@ -23,13 +23,13 @@ class EditArtworkCategory extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        return app(ArtworkCategoryEditorialService::class)->update($this->categoryRecord(), $data);
+        return app(GalleryEditorialService::class)->update($this->galleryRecord(), $data);
     }
 
     protected function getRedirectUrl(): string
     {
         return $this->editorReturnUrl(ArtworkResource::getUrl('gallery', [
-            'gallery' => $this->categoryRecord()->getKey(),
+            'gallery' => $this->galleryRecord()->getKey(),
         ]));
     }
 
@@ -41,7 +41,7 @@ class EditArtworkCategory extends EditRecord
                 ->url(SitePages::getUrl()),
             Action::make('manageArtworks')
                 ->label('Artworks')
-                ->url(fn (): string => ArtworkResource::getUrl('gallery', ['gallery' => $this->categoryRecord()->getKey()])),
+                ->url(fn (): string => ArtworkResource::getUrl('gallery', ['gallery' => $this->galleryRecord()->getKey()])),
             Action::make('changeSlug')
                 ->label('Change public slug')
                 ->schema([
@@ -51,21 +51,21 @@ class EditArtworkCategory extends EditRecord
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/'),
                 ])
                 ->action(function (array $data): void {
-                    $this->runCategoryAction(fn () => app(ArtworkCategoryEditorialService::class)->changeSlug($this->categoryRecord(), $data['slug']), 'Public slug changed');
-                    $this->categoryRecord()->refresh();
+                    $this->runGalleryAction(fn () => app(GalleryEditorialService::class)->changeSlug($this->galleryRecord(), $data['slug']), 'Public slug changed');
+                    $this->galleryRecord()->refresh();
                 }),
-            Action::make('deleteCategory')
+            Action::make('deleteGallery')
                 ->label('Delete Gallery')
-                ->visible(fn (): bool => $this->categoryRecord()->siteSection()->where('state', 'hidden')->exists())
+                ->visible(fn (): bool => $this->galleryRecord()->siteSection()->where('state', 'hidden')->exists())
                 ->requiresConfirmation()
                 ->action(function (): void {
-                    $this->runCategoryAction(fn () => app(ArtworkCategoryEditorialService::class)->delete($this->categoryRecord()), 'Gallery deleted');
+                    $this->runGalleryAction(fn () => app(GalleryEditorialService::class)->delete($this->galleryRecord()), 'Gallery deleted');
                     $this->redirect(SitePages::getUrl());
                 }),
         ];
     }
 
-    private function categoryRecord(): ArtworkCategory
+    private function galleryRecord(): ArtworkCategory
     {
         /** @var ArtworkCategory $record */
         $record = $this->getRecord();
@@ -73,18 +73,18 @@ class EditArtworkCategory extends EditRecord
         return $record;
     }
 
-    private function runCategoryAction(callable $callback, string $success): mixed
+    private function runGalleryAction(callable $callback, string $success): mixed
     {
         try {
             $result = $callback();
-            $this->categoryRecord()->refresh();
+            $this->galleryRecord()->refresh();
             Notification::make()->title($success)->success()->send();
 
             return $result;
         } catch (ValidationException $exception) {
             Notification::make()->title('Gallery action failed')->body(collect($exception->errors())->flatten()->first())->danger()->send();
 
-            return $this->categoryRecord();
+            return $this->galleryRecord();
         }
     }
 }
