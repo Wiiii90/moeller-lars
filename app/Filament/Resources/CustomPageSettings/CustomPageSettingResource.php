@@ -17,6 +17,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 
@@ -96,6 +97,7 @@ final class CustomPageSettingResource extends Resource
                         ->label('CV entries')
                         ->content(function (): HtmlString {
                             $service = app(EditorialRecordService::class);
+                            /** @var EloquentCollection<int, CvEntry> $entries */
                             $entries = CvEntry::query()->orderBy('position')->orderBy('id')->get();
                             $rows = $entries->map(function (CvEntry $entry) use ($service): array {
                                 return [
