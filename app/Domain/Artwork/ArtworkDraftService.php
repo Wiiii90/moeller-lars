@@ -57,4 +57,24 @@ final class ArtworkDraftService
             return $artwork;
         });
     }
+
+    public function delete(Artwork $artwork): void
+    {
+        $actor = $this->audit->requireActor();
+
+        DB::transaction(function () use ($artwork, $actor): void {
+            /** @var Artwork $fresh */
+            $fresh = Artwork::query()->whereKey($artwork->getKey())->lockForUpdate()->firstOrFail();
+            if ((string) $fresh->getAttribute('state') !== 'draft') {
+                throw ValidationException::withMessages([
+                    'artwork' => 'Only an unpublished Artwork draft can be deleted.',
+                ]);
+            }
+
+            $artworkId = (int) $fresh->getKey();
+            $fresh->artworkMedia()->delete();
+            $fresh->delete();
+            $this->audit->record($actor, 'artwork.deleted', 'artwork', $artworkId);
+        });
+    }
 }

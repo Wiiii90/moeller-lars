@@ -137,6 +137,12 @@ final class SiteSection extends Model
                 $settings->assertReadyForPublic();
             }
         });
+
+        self::deleting(function (self $section): void {
+            if ($section->nodeType() === SiteNodeType::Home) {
+                throw ValidationException::withMessages(['section' => 'Home cannot be deleted.']);
+            }
+        });
     }
 
     public static function isPublished(string $type): bool

@@ -58,6 +58,7 @@ final class GalleryEditorialService
         return DB::transaction(function () use ($gallery, $validated, $actor): ArtworkCategory {
             /** @var ArtworkCategory $fresh */
             $fresh = ArtworkCategory::query()->whereKey($gallery->getKey())->lockForUpdate()->firstOrFail();
+            $oldName = (string) $fresh->getAttribute('name');
             $fresh->fill($validated);
 
             if (! $fresh->isDirty()) {
@@ -71,6 +72,19 @@ final class GalleryEditorialService
                 SiteSection::query()
                     ->where('type', SiteNodeType::Gallery->value)
                     ->where('artwork_category_id', $fresh->getKey())
+                    ->where(function (Builder $query) use ($oldName): void {
+                        $query->whereNull('navigation_label')->orWhere('navigation_label', $oldName);
+                    })
+                    ->update([
+                        'title' => (string) $fresh->getAttribute('name'),
+                        'navigation_label' => (string) $fresh->getAttribute('name'),
+                        'updated_at' => now(),
+                    ]);
+
+                SiteSection::query()
+                    ->where('type', SiteNodeType::Gallery->value)
+                    ->where('artwork_category_id', $fresh->getKey())
+                    ->where('navigation_label', '<>', (string) $fresh->getAttribute('name'))
                     ->update([
                         'title' => (string) $fresh->getAttribute('name'),
                         'updated_at' => now(),

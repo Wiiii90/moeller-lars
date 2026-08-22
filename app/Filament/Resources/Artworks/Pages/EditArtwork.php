@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Artworks\Pages;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -211,6 +212,18 @@ class EditArtwork extends EditRecord
                     app(ArtworkEditorialService::class)->unpublish($this->artworkRecord());
                     $this->artworkRecord()->refresh();
                     Notification::make()->title('Artwork unpublished')->success()->send();
+                }),
+            Action::make('delete')
+                ->label('Delete')
+                ->color('danger')
+                ->visible(fn (): bool => $this->artworkRecord()->getAttribute('state') === 'draft')
+                ->requiresConfirmation()
+                ->modalDescription('The Artwork and its media usages will be removed. Referenced media assets remain in Media.')
+                ->action(function (): void {
+                    $galleryId = (int) $this->artworkRecord()->getAttribute('artwork_category_id');
+                    app(ArtworkDraftService::class)->delete($this->artworkRecord());
+                    Notification::make()->title('Artwork deleted')->success()->send();
+                    $this->redirect(ArtworkResource::getUrl('gallery', ['gallery' => $galleryId]));
                 }),
             Action::make('editPrimaryAlt')
                 ->label('Edit image ALT text')

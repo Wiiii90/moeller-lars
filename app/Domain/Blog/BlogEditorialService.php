@@ -157,6 +157,27 @@ final class BlogEditorialService
         return $this->order->move($post, $direction);
     }
 
+    public function delete(BlogPost $post): void
+    {
+        $actor = $this->audit->requireActor();
+
+        DB::transaction(function () use ($post, $actor): void {
+            $fresh = $this->locked($post);
+            if (in_array((string) $fresh->getAttribute('state'), ['published', 'scheduled'], true)) {
+                throw ValidationException::withMessages([
+                    'post' => 'Unpublish or cancel the schedule before deleting this Blog post.',
+                ]);
+            }
+
+            $postId = (int) $fresh->getKey();
+            $sectionId = (int) $fresh->getAttribute('site_section_id');
+            $fresh->delete();
+            $this->audit->record($actor, 'blog_post.deleted', 'blog_post', $postId, [
+                'site_section_id' => $sectionId,
+            ]);
+        });
+    }
+
     /** @return Builder<BlogPost> */
     public static function publicQuery(): Builder
     {
