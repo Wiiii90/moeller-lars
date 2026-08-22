@@ -19,12 +19,7 @@ class PublicContactController extends Controller
 
     public function submit(Request $request): RedirectResponse
     {
-        $contactSettings = PublicContentSetting::contact();
-        abort_unless(
-            $contactSettings->getAttribute('contact_state') === 'enabled'
-                && $this->publishedContactFormExists(),
-            404,
-        );
+        abort_unless($this->publishedContactFormExists(), 404);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],
@@ -67,10 +62,10 @@ class PublicContactController extends Controller
                 ->where('state', 'published'))
             ->get(['blocks'])
             ->contains(function (CustomPageSetting $settings): bool {
-                foreach ($settings->getAttribute('blocks') ?? [] as $block) {
-                    if (is_array($block)
-                        && ($block['type'] ?? null) === 'contact'
-                        && ($block['show_form'] ?? true) === true) {
+                foreach ($settings->components() as $block) {
+                    if (($block['type'] ?? null) === 'contact'
+                        && ($block['show_form'] ?? true) === true
+                        && ($block['form_state'] ?? 'enabled') === 'enabled') {
                         return true;
                     }
                 }
