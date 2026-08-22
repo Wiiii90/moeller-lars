@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Artworks\Pages;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\ArtworkEditorialService;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -17,7 +17,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class CreateArtwork extends CreateRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = ArtworkResource::class;
 
