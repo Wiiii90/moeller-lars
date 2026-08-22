@@ -58,6 +58,8 @@
     --artist-soft: var(--artist-admin-subtle);
     --artist-surface: var(--artist-admin-surface);
     display: grid;
+    width: 100%;
+    min-width: 0;
     gap: 0;
 }
 
@@ -98,6 +100,13 @@
     font-weight: 620;
     letter-spacing: -.035em;
     line-height: 1.05;
+}
+
+.artist-general-heading__title .artist-general-heading__kicker {
+    margin-bottom: .2rem;
+    font-size: .66rem;
+    letter-spacing: .12em;
+    line-height: 1.2;
 }
 
 .artist-workspace__head p:not(.artist-workspace__kicker),
@@ -544,37 +553,104 @@
     gap: 2rem;
 }
 
-/* Pages placement workspace. */
+/* Pages is a typed website tree, not a stack of cards. */
 .artist-page-list {
+    width: 100%;
     border-top: 1px solid var(--artist-admin-line-strong);
+}
+
+.artist-page-tree__branch {
+    position: relative;
+}
+
+.artist-page-tree__children {
+    position: relative;
+    margin-left: 1.15rem;
+    padding-left: 2.15rem;
+}
+
+.artist-page-tree__children::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 1px;
+    background: var(--artist-admin-line-strong);
+    content: "";
+}
+
+.artist-page-tree__children > .artist-page-row {
+    position: relative;
+}
+
+.artist-page-tree__children > .artist-page-row::before {
+    position: absolute;
+    top: 50%;
+    left: -2.15rem;
+    width: 2.15rem;
+    height: 1px;
+    background: var(--artist-admin-line-strong);
+    content: "";
+}
+
+.artist-page-tree__children > .artist-page-row:last-child::after {
+    position: absolute;
+    top: 50%;
+    bottom: 0;
+    left: -2.15rem;
+    width: 1px;
+    background: var(--artist-admin-surface, #fff);
+    content: "";
+}
+
+.dark .artist-page-tree__children > .artist-page-row:last-child::after {
+    background: rgb(24, 24, 27);
 }
 
 .artist-page-row {
     display: grid;
-    grid-template-columns: minmax(15rem, 1.45fr) minmax(16rem, 1fr) auto;
-    gap: 1.5rem;
-    min-height: 5.5rem;
+    width: 100%;
+    grid-template-columns: minmax(18rem, 1.55fr) minmax(18rem, 1fr) minmax(10rem, auto);
+    gap: 1.75rem;
+    min-height: 5.75rem;
     padding: 1rem 0;
     align-items: center;
     border-bottom: 1px solid var(--artist-admin-line);
 }
 
 .artist-page-row[data-depth="1"] {
-    position: relative;
-    padding-left: 1.5rem;
-}
-
-.artist-page-row[data-depth="1"]::before {
-    position: absolute;
-    top: .8rem;
-    bottom: .8rem;
-    left: .5rem;
-    width: 1px;
-    background: var(--artist-admin-line-strong);
-    content: "";
+    padding-left: 0;
 }
 
 .artist-page-row__identity {
+    display: grid;
+    grid-template-columns: 2.15rem minmax(0, 1fr);
+    gap: .85rem;
+    min-width: 0;
+    align-items: center;
+}
+
+.artist-page-row__node {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    width: 2.15rem;
+    height: 2.15rem;
+    place-items: center;
+    color: var(--artist-admin-muted);
+}
+
+.artist-page-row__node-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    stroke-width: 1.35;
+}
+
+.artist-page-row[data-has-children="true"] .artist-page-row__node {
+    color: var(--artist-admin-text);
+}
+
+.artist-page-row__identity-copy {
     min-width: 0;
 }
 
@@ -611,6 +687,7 @@ a.artist-page-row__title:focus-visible {
 
 .artist-page-row__placement {
     display: grid;
+    min-width: 0;
     gap: .65rem;
 }
 
@@ -687,7 +764,7 @@ a.artist-page-row__title:focus-visible {
     flex-wrap: wrap;
 }
 
-/* Sidebar tree: Pages stays open; only branches disclose. Parent page labels remain links. */
+/* Sidebar website tree. The icon is the node; lines terminate at the icon. */
 .artist-sidebar-tree__row {
     position: relative;
 }
@@ -752,28 +829,83 @@ a.artist-page-row__title:focus-visible {
 }
 
 .artist-sidebar-tree__children {
-    margin-inline-start: .7rem;
-    padding-inline-start: .65rem;
+    position: relative;
+    margin-inline-start: 1.05rem;
+    padding-inline-start: .9rem;
     border-inline-start: 1px solid var(--artist-admin-line);
+}
+
+.artist-sidebar-tree__children > .fi-sidebar-item {
+    position: relative;
+}
+
+.artist-sidebar-tree__children > .fi-sidebar-item::before {
+    position: absolute;
+    top: 1.05rem;
+    inset-inline-start: -.9rem;
+    width: .9rem;
+    border-top: 1px solid var(--artist-admin-line);
+    content: "";
+}
+
+.artist-sidebar-tree__children > .fi-sidebar-item:last-child::after {
+    position: absolute;
+    top: 1.05rem;
+    bottom: 0;
+    inset-inline-start: -.95rem;
+    width: .15rem;
+    background: var(--artist-admin-surface, #fff);
+    content: "";
+}
+
+.dark .artist-sidebar-tree__children > .fi-sidebar-item:last-child::after {
+    background: rgb(24, 24, 27);
 }
 
 [data-artist-tree-root="true"] > .artist-sidebar-tree__children {
     margin-top: .15rem;
-    margin-inline-start: .3rem;
-    padding-inline-start: .45rem;
-    border-inline-start-color: var(--artist-admin-line);
+    margin-inline-start: 1.05rem;
+    padding-inline-start: .9rem;
+    border-inline-start-color: var(--artist-admin-line-strong);
+}
+
+[data-artist-tree-root="true"] > .artist-sidebar-tree__row::after {
+    position: absolute;
+    top: 1.55rem;
+    bottom: -.45rem;
+    inset-inline-start: 1.05rem;
+    width: 1px;
+    background: var(--artist-admin-line-strong);
+    content: "";
+}
+
+[data-artist-site-section] .fi-sidebar-item-btn {
+    min-height: 2rem;
+}
+
+[data-artist-site-section] .fi-sidebar-item-icon {
+    position: relative;
+    z-index: 2;
+    width: 1rem;
+    height: 1rem;
+    color: var(--artist-admin-muted);
+}
+
+[data-artist-site-section][data-artist-tree-branch="true"] .fi-sidebar-item-icon,
+[data-artist-site-section].fi-active .fi-sidebar-item-icon {
+    color: var(--artist-admin-text);
 }
 
 [data-artist-site-section-depth="1"] > .artist-sidebar-tree__row > .fi-sidebar-item-btn,
 [data-artist-site-section-depth="1"] > .fi-sidebar-item-btn {
-    padding-inline-start: 1.25rem;
+    padding-inline-start: .2rem;
 }
 
 [data-artist-site-section] .fi-sidebar-item-label {
     font-size: .77rem;
 }
 
-/* General settings: uncontained fieldsets and a flat social table. */
+/* General settings: full workspace width, uncontained fieldsets and a flat social table. */
 .fi-page:has(.artist-general-grid) .fi-header {
     padding-bottom: 1.3rem;
     border-bottom: 1px solid var(--artist-admin-line-strong);
@@ -787,10 +919,13 @@ a.artist-page-row__title:focus-visible {
 }
 
 .artist-general-grid {
+    width: 100% !important;
+    max-width: none !important;
     gap: 0 2.5rem !important;
 }
 
 .artist-general-section {
+    min-width: 0;
     margin: 0 !important;
     padding: 1.4rem 0 1.6rem !important;
     border: 0 !important;
@@ -854,7 +989,7 @@ a.artist-page-row__title:focus-visible {
 @media (max-width: 1150px) {
     .artist-section,
     .artist-page-row {
-        grid-template-columns: minmax(12rem, 1.25fr) minmax(10rem, .85fr) auto;
+        grid-template-columns: minmax(15rem, 1.25fr) minmax(13rem, .85fr) auto;
     }
 
     .artist-section__actions,
@@ -906,8 +1041,18 @@ a.artist-page-row__title:focus-visible {
         border-top: 1px solid var(--artist-admin-line);
     }
 
-    .artist-page-row[data-depth="1"] {
-        padding-left: 1.15rem;
+    .artist-page-tree__children {
+        margin-left: .75rem;
+        padding-left: 1.4rem;
+    }
+
+    .artist-page-tree__children > .artist-page-row::before {
+        left: -1.4rem;
+        width: 1.4rem;
+    }
+
+    .artist-page-tree__children > .artist-page-row:last-child::after {
+        left: -1.4rem;
     }
 
     .artist-page-row__actions,
