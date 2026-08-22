@@ -114,7 +114,7 @@ final class ArtistDashboard extends Widget implements HasActions, HasSchemas
         $editorialGroups = [$artworkStates, $exhibitionStates, $blogStates];
         $drafts = $this->sumStates($editorialGroups, 'draft');
         $hiddenPages = SiteSection::query()
-            ->where('type', '<>', SiteSection::TYPE_NAVIGATION_GROUP)
+            ->where('type', '<>', \App\Domain\Content\SiteNodeType::NavigationNode->value)
             ->where('state', 'hidden')
             ->count();
 
