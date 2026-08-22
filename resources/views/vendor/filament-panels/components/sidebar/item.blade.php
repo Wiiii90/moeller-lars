@@ -21,17 +21,20 @@
     $sidebarCollapsible = $sidebarCollapsible && filament()->isSidebarCollapsibleOnDesktop();
     $childItems = collect($childItems)->all();
     $hasChildItems = $childItems !== [];
-    $alwaysOpen = $attributes->get('data-admin-tree-root') === 'true';
+    $isTreeRoot = $attributes->get('data-admin-tree-root') === 'true';
     $isSiteTreeNode = $attributes->get('data-admin-site-section') !== null;
-    $startsOpen = $alwaysOpen || $active || $activeChildItems;
+    $isAdminTreeItem = $isTreeRoot || $isSiteTreeNode;
+    $startsOpen = $active || $activeChildItems;
     $plainLabel = trim(strip_tags($slot->toHtml()));
     $displayIcon = ($active && $activeIcon) ? $activeIcon : $icon;
 @endphp
 
 <li
-    @if ($hasChildItems && (! $isSiteTreeNode))
-        x-data="{ adminChildrenOpen: @js($startsOpen) }"
-        x-effect="if (@js($alwaysOpen || $activeChildItems)) adminChildrenOpen = true"
+    @if ($hasChildItems)
+        x-data="{ adminChildrenOpen: @js($isAdminTreeItem ? true : $startsOpen) }"
+        @unless ($isAdminTreeItem)
+            x-effect="if (@js($activeChildItems)) adminChildrenOpen = true"
+        @endunless
     @endif
     {{
         $attributes->class([
@@ -40,7 +43,7 @@
             'fi-sidebar-item-has-active-child-items' => $activeChildItems,
             'fi-sidebar-item-has-url' => filled($url),
             'admin-sidebar-tree__item' => $hasChildItems,
-            'admin-sidebar-tree__root' => $alwaysOpen,
+            'admin-sidebar-tree__root' => $isTreeRoot,
             'admin-sidebar-tree__node' => $isSiteTreeNode,
             'admin-sidebar-tree__node--first' => $isSiteTreeNode && $first,
             'admin-sidebar-tree__node--last' => $isSiteTreeNode && $last,
@@ -48,8 +51,55 @@
         ])
     }}
 >
-    @if ($isSiteTreeNode)
+    @if ($isAdminTreeItem)
         <div class="admin-sidebar-tree__node-row">
+            @if (filled($url))
+                <a
+                    {{ \Filament\Support\generate_href_html($url, $shouldOpenUrlInNewTab) }}
+                    @if ($active)
+                        aria-current="page"
+                    @endif
+                    aria-label="{{ $plainLabel }}"
+                    x-on:click="window.matchMedia(`(max-width: 1024px)`).matches && $store.sidebar.close()"
+                    class="admin-sidebar-tree__icon-link"
+                >
+                    <span class="admin-sidebar-tree__node-icon" aria-hidden="true">
+                        @if (filled($displayIcon))
+                            {{ \Filament\Support\generate_icon_html($displayIcon, attributes: (new \Filament\Support\View\ComponentAttributeBag)->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large) }}
+                        @endif
+                    </span>
+                </a>
+            @else
+                <span class="admin-sidebar-tree__icon-link admin-sidebar-tree__static" aria-hidden="true">
+                    <span class="admin-sidebar-tree__node-icon">
+                        @if (filled($displayIcon))
+                            {{ \Filament\Support\generate_icon_html($displayIcon, attributes: (new \Filament\Support\View\ComponentAttributeBag)->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large) }}
+                        @endif
+                    </span>
+                </span>
+            @endif
+
+            <span
+                class="admin-sidebar-tree__disclosure-slot"
+                @if ($sidebarCollapsible && (! $subNavigation))
+                    x-show="$store.sidebar.isOpen"
+                @endif
+            >
+                @if ($hasChildItems)
+                    <button
+                        type="button"
+                        class="admin-sidebar-tree__disclosure"
+                        x-on:click.stop="adminChildrenOpen = ! adminChildrenOpen"
+                        x-bind:aria-expanded="adminChildrenOpen.toString()"
+                        aria-label="Toggle {{ $plainLabel }} children"
+                    >
+                        <span class="admin-sidebar-tree__chevron" aria-hidden="true" x-bind:class="{ 'is-open': adminChildrenOpen }"></span>
+                    </button>
+                @else
+                    <span class="admin-sidebar-tree__disclosure-placeholder" aria-hidden="true"></span>
+                @endif
+            </span>
+
             @if (filled($url))
                 <a
                     {{ \Filament\Support\generate_href_html($url, $shouldOpenUrlInNewTab) }}
@@ -58,49 +108,26 @@
                     @endif
                     x-on:click="window.matchMedia(`(max-width: 1024px)`).matches && $store.sidebar.close()"
                     @if ($sidebarCollapsible && (! $subNavigation))
-                        x-bind:aria-label="$store.sidebar.isOpen ? null : @js($plainLabel)"
+                        x-show="$store.sidebar.isOpen"
                     @endif
-                    class="fi-sidebar-item-btn admin-sidebar-tree__node-link"
+                    class="fi-sidebar-item-btn admin-sidebar-tree__node-label-link"
                 >
-                    <span class="admin-sidebar-tree__node-icon" aria-hidden="true">
-                        @if (filled($displayIcon))
-                            {{ \Filament\Support\generate_icon_html($displayIcon, attributes: (new \Filament\Support\View\ComponentAttributeBag)->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large) }}
-                        @endif
-                    </span>
-                    <span
-                        @if ($sidebarCollapsible && (! $subNavigation))
-                            x-show="$store.sidebar.isOpen"
-                            x-transition:enter="fi-transition-enter"
-                            x-transition:enter-start="fi-transition-enter-start"
-                            x-transition:enter-end="fi-transition-enter-end"
-                        @endif
-                        class="fi-sidebar-item-label"
-                    >{{ $slot }}</span>
+                    <span class="fi-sidebar-item-label">{{ $slot }}</span>
 
                     @if (filled($badge))
-                        <span
-                            @if ($sidebarCollapsible && (! $subNavigation))
-                                x-show="$store.sidebar.isOpen"
-                            @endif
-                            class="fi-sidebar-item-badge-ctn"
-                        >
+                        <span class="fi-sidebar-item-badge-ctn">
                             <x-filament::badge :color="$badgeColor" :tooltip="$badgeTooltip">{{ $badge }}</x-filament::badge>
                         </span>
                     @endif
                 </a>
             @else
-                <span class="fi-sidebar-item-btn admin-sidebar-tree__node-link admin-sidebar-tree__static">
-                    <span class="admin-sidebar-tree__node-icon" aria-hidden="true">
-                        @if (filled($displayIcon))
-                            {{ \Filament\Support\generate_icon_html($displayIcon, attributes: (new \Filament\Support\View\ComponentAttributeBag)->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large) }}
-                        @endif
-                    </span>
-                    <span
-                        @if ($sidebarCollapsible && (! $subNavigation))
-                            x-show="$store.sidebar.isOpen"
-                        @endif
-                        class="fi-sidebar-item-label"
-                    >{{ $slot }}</span>
+                <span
+                    @if ($sidebarCollapsible && (! $subNavigation))
+                        x-show="$store.sidebar.isOpen"
+                    @endif
+                    class="fi-sidebar-item-btn admin-sidebar-tree__node-label-static"
+                >
+                    <span class="fi-sidebar-item-label">{{ $slot }}</span>
                 </span>
             @endif
         </div>
@@ -197,7 +224,7 @@
                 </span>
             @endif
 
-            @if ($hasChildItems && (! $alwaysOpen) && filled($url))
+            @if ($hasChildItems && filled($url))
                 <button
                     type="button"
                     class="admin-sidebar-tree__toggle"
@@ -215,10 +242,12 @@
     @if ($hasChildItems)
         <ul
             class="fi-sidebar-sub-group-items admin-sidebar-tree__children"
-            @unless ($alwaysOpen || $isSiteTreeNode)
+            @if ($isAdminTreeItem && $sidebarCollapsible && (! $subNavigation))
+                x-show="adminChildrenOpen && $store.sidebar.isOpen"
+            @else
                 x-show="adminChildrenOpen"
-                x-cloak
-            @endunless
+            @endif
+            x-cloak
         >
             @foreach ($childItems as $childItem)
                 @php
