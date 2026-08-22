@@ -29,7 +29,7 @@
 @endphp
 
 <li
-    @if ($hasChildItems)
+    @if ($hasChildItems && (! $isSiteTreeNode))
         x-data="{ adminChildrenOpen: @js($startsOpen) }"
         x-effect="if (@js($alwaysOpen || $activeChildItems)) adminChildrenOpen = true"
     @endif
@@ -50,60 +50,7 @@
 >
     @if ($isSiteTreeNode)
         <div class="admin-sidebar-tree__node-row">
-            @if ($hasChildItems)
-                <button
-                    type="button"
-                    class="admin-sidebar-tree__node-icon admin-sidebar-tree__node-disclosure"
-                    x-on:click.stop="adminChildrenOpen = ! adminChildrenOpen"
-                    x-bind:aria-expanded="adminChildrenOpen.toString()"
-                    x-bind:aria-label="adminChildrenOpen ? @js('Collapse '.$plainLabel.' children') : @js('Expand '.$plainLabel.' children')"
-                >
-                    @if (filled($displayIcon))
-                        {{ \Filament\Support\generate_icon_html($displayIcon, attributes: (new \Filament\Support\View\ComponentAttributeBag)->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large) }}
-                    @endif
-                </button>
-
-                @if (filled($url))
-                    <a
-                        {{ \Filament\Support\generate_href_html($url, $shouldOpenUrlInNewTab) }}
-                        @if ($active)
-                            aria-current="page"
-                        @endif
-                        x-on:click="window.matchMedia(`(max-width: 1024px)`).matches && $store.sidebar.close()"
-                        class="fi-sidebar-item-btn admin-sidebar-tree__node-label-link"
-                    >
-                        <span
-                            @if ($sidebarCollapsible && (! $subNavigation))
-                                x-show="$store.sidebar.isOpen"
-                                x-transition:enter="fi-transition-enter"
-                                x-transition:enter-start="fi-transition-enter-start"
-                                x-transition:enter-end="fi-transition-enter-end"
-                            @endif
-                            class="fi-sidebar-item-label"
-                        >{{ $slot }}</span>
-
-                        @if (filled($badge))
-                            <span
-                                @if ($sidebarCollapsible && (! $subNavigation))
-                                    x-show="$store.sidebar.isOpen"
-                                @endif
-                                class="fi-sidebar-item-badge-ctn"
-                            >
-                                <x-filament::badge :color="$badgeColor" :tooltip="$badgeTooltip">{{ $badge }}</x-filament::badge>
-                            </span>
-                        @endif
-                    </a>
-                @else
-                    <span class="fi-sidebar-item-btn admin-sidebar-tree__node-label-static">
-                        <span
-                            @if ($sidebarCollapsible && (! $subNavigation))
-                                x-show="$store.sidebar.isOpen"
-                            @endif
-                            class="fi-sidebar-item-label"
-                        >{{ $slot }}</span>
-                    </span>
-                @endif
-            @elseif (filled($url))
+            @if (filled($url))
                 <a
                     {{ \Filament\Support\generate_href_html($url, $shouldOpenUrlInNewTab) }}
                     @if ($active)
@@ -268,7 +215,7 @@
     @if ($hasChildItems)
         <ul
             class="fi-sidebar-sub-group-items admin-sidebar-tree__children"
-            @unless ($alwaysOpen)
+            @unless ($alwaysOpen || $isSiteTreeNode)
                 x-show="adminChildrenOpen"
                 x-cloak
             @endunless
