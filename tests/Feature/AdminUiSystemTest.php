@@ -54,6 +54,65 @@ it('renders clickable typed Gallery nodes in the Pages sidebar', function (): vo
         ->assertSee('href="'.e($childUrl).'"', false);
 });
 
+it('renders an icon for every typed Pages sidebar node and an operable Gallery branch control', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+
+    $paintings = app(ArtworkCategoryEditorialService::class)->create([
+        'name' => 'Paintings',
+        'slug' => 'paintings-icons-test',
+        'description' => null,
+        'show_on_home' => false,
+    ]);
+    $paintingsSection = $paintings->siteSection()->firstOrFail();
+
+    $smallWorks = app(ArtworkCategoryEditorialService::class)->create([
+        'name' => 'Small Works',
+        'slug' => 'small-works-icons-test',
+        'description' => null,
+        'show_on_home' => false,
+        'parent_section_id' => (int) $paintingsSection->getKey(),
+    ]);
+    $smallWorksSection = $smallWorks->siteSection()->firstOrFail();
+
+    $drawings = app(ArtworkCategoryEditorialService::class)->create([
+        'name' => 'Drawings',
+        'slug' => 'drawings-icons-test',
+        'description' => null,
+        'show_on_home' => false,
+    ]);
+    $drawingsSection = $drawings->siteSection()->firstOrFail();
+
+    $sections = app(SiteSectionEditorialService::class);
+    $studio = $sections->createCustomPage('Studio', 'studio-icons-test');
+    $journal = $sections->createJournal('Blog', 'blog-icons-test', SiteSection::JOURNAL_TEMPLATE_BLOG);
+    $navigation = $sections->createNavigationGroup('Archive');
+
+    $response = $this->get(Dashboard::getUrl())->assertSuccessful();
+    $html = $response->getContent();
+
+    $document = new DOMDocument;
+    @$document->loadHTML($html);
+    $xpath = new DOMXPath($document);
+
+    foreach ([
+        $paintingsSection,
+        $smallWorksSection,
+        $drawingsSection,
+        $studio,
+        $journal,
+        $navigation,
+    ] as $section) {
+        $node = $xpath->query('//*[@data-artist-site-section="'.(int) $section->getKey().'"]')->item(0);
+        expect($node)->not->toBeNull();
+        expect($xpath->query('.//*[local-name()="svg"]', $node)->length)->toBeGreaterThan(0);
+    }
+
+    expect($html)
+        ->toContain('aria-label="Toggle Paintings children"')
+        ->toContain('x-on:click.stop="artistChildrenOpen = ! artistChildrenOpen"')
+        ->toContain('x-show="artistChildrenOpen"');
+});
+
 it('links Pages rows directly to their typed content workspaces', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
@@ -84,7 +143,7 @@ it('links Pages rows directly to their typed content workspaces', function (): v
     }
 });
 
-it('opens typed Pages destinations without server errors', function (): void {
+it('opens typed Pages destinations without server errors, including published Galleries', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
     $paintings = app(ArtworkCategoryEditorialService::class)->create([
@@ -102,6 +161,10 @@ it('opens typed Pages destinations without server errors', function (): void {
         'show_on_home' => false,
         'parent_section_id' => (int) $paintingsSection->getKey(),
     ]);
+    $childSection = $childGallery->siteSection()->firstOrFail();
+
+    $paintingsSection->forceFill(['state' => 'published'])->save();
+    $childSection->forceFill(['state' => 'published'])->save();
 
     $sections = app(SiteSectionEditorialService::class);
     $custom = $sections->createCustomPage('Studio', 'studio-destination-test');
