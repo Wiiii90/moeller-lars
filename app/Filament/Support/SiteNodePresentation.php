@@ -5,12 +5,10 @@ namespace App\Filament\Support;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Filament\Pages\HomePresentation;
-use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Resources\CustomPageSettings\CustomPageSettingResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
-use App\Filament\Resources\JournalSettings\JournalSettingResource;
 use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
 use Filament\Support\Icons\Heroicon;
@@ -40,19 +38,6 @@ final class SiteNodePresentation
             SiteNodeType::CustomPage => CustomPageSettingResource::getUrl('edit', [
                 'record' => $this->customPageSetting($section),
             ]),
-            SiteNodeType::NavigationNode => null,
-        };
-    }
-
-    public function editorUrl(SiteSection $section): ?string
-    {
-        return match ($section->nodeType()) {
-            SiteNodeType::Gallery => ArtworkCategoryResource::getUrl('edit', [
-                'record' => $this->galleryId($section),
-            ]),
-            SiteNodeType::Journal => JournalSettingResource::getSettingsUrl($section),
-            SiteNodeType::Home,
-            SiteNodeType::CustomPage,
             SiteNodeType::NavigationNode => null,
         };
     }
