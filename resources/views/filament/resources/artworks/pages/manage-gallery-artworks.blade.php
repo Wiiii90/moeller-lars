@@ -14,11 +14,11 @@
             <nav class="artist-gallery-tools" aria-label="Gallery management">
                 <a class="artist-action" href="{{ $galleryContext['pages_url'] }}">Pages</a>
                 <a class="artist-action" href="{{ $galleryContext['all_artworks_url'] }}">All artworks</a>
-                <a class="artist-action" href="{{ $galleryContext['settings_url'] }}">Settings</a>
+                {{ $this->gallerySettingsAction }}
                 @if ($galleryContext['public_url'])
                     <a class="artist-action" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener">View gallery</a>
                 @endif
-                <a class="artist-action is-primary" href="{{ $galleryContext['create_url'] }}">Add artwork</a>
+                {{ $this->addArtworkAction }}
             </nav>
         </header>
 
@@ -151,8 +151,10 @@
                 <p class="artist-workspace__kicker">Empty Gallery</p>
                 <h3>Add the first artwork</h3>
                 <p>This Gallery is ready. Add an artwork draft and its primary image before publishing it.</p>
-                <a class="artist-action is-primary" href="{{ $galleryContext['create_url'] }}">Add artwork</a>
+                {{ $this->addArtworkAction }}
             </section>
         @endif
     </div>
+
+    <x-filament-actions::modals />
 </x-filament-panels::page>
