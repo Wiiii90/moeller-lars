@@ -4,7 +4,7 @@ namespace App\Filament\Resources\CvEntries\Pages;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\EditorialRichTextValidator;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Models\CvEntry;
 use Filament\Resources\Pages\CreateRecord;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class CreateCvEntry extends CreateRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = CvEntryResource::class;
 
