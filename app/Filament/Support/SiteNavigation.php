@@ -55,10 +55,10 @@ final class SiteNavigation
             ->url($url)
             ->isActiveWhen(fn (): bool => $this->urlIsActive($url))
             ->extraAttributes([
-                'data-artist-site-section' => (string) $section->getKey(),
-                'data-artist-site-section-depth' => (string) $depth,
-                'data-artist-site-section-type' => $type->value,
-                'data-artist-tree-branch' => $children === [] ? 'false' : 'true',
+                'data-admin-site-section' => (string) $section->getKey(),
+                'data-admin-site-section-depth' => (string) $depth,
+                'data-admin-site-section-type' => $type->value,
+                'data-admin-tree-branch' => $children === [] ? 'false' : 'true',
             ]);
 
         if ($children !== []) {
