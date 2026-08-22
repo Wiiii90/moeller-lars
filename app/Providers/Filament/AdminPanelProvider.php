@@ -18,7 +18,6 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationBuilder;
-use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -87,6 +86,9 @@ class AdminPanelProvider extends PanelProvider
             ->group(null)
             ->childItems(app(SiteNavigation::class)->items())
             ->extraAttributes(['data-admin-tree-root' => 'true']);
+        $analyticsItem = Analytics::getNavigationItems()[0]->group(null);
+        $activityItem = Activity::getNavigationItems()[0]->group(null);
+        $storageItem = StorageCapacity::getNavigationItems()[0]->group(null);
 
         return $builder
             ->items([
@@ -98,15 +100,9 @@ class AdminPanelProvider extends PanelProvider
                     ->url(fn (): string => PublicContentSettingResource::getNavigationUrl()),
                 ...MediaAssetResource::getNavigationItems(),
                 $pagesItem,
-            ])
-            ->groups([
-                NavigationGroup::make()
-                    ->label('Insights')
-                    ->items([
-                        ...Analytics::getNavigationItems(),
-                        ...Activity::getNavigationItems(),
-                        ...StorageCapacity::getNavigationItems(),
-                    ]),
+                $analyticsItem,
+                $activityItem,
+                $storageItem,
             ]);
     }
 }
