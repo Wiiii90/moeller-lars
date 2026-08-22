@@ -5,6 +5,7 @@ namespace App\Filament\Resources\BlogPosts\Pages;
 use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Concerns\HasJournalSettingsAction;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
@@ -18,6 +19,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 final class ListBlogPosts extends Page
 {
@@ -72,6 +74,36 @@ final class ListBlogPosts extends Page
                         ->send();
                 }),
             $this->journalSettingsAction(),
+            Action::make('deleteJournal')
+                ->label('Delete Blog')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Delete this Blog?')
+                ->modalDescription('An empty Blog can be removed. Blogs with entries must be emptied first.')
+                ->action(function (): void {
+                    /** @var SiteSection $section */
+                    $section = SiteSection::query()->findOrFail($this->sectionId);
+
+                    try {
+                        app(SiteSectionEditorialService::class)->deleteSection($section);
+                    } catch (RuntimeException $exception) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Blog cannot be deleted')
+                            ->body($exception->getMessage())
+                            ->send();
+
+                        return;
+                    }
+
+                    Notification::make()
+                        ->success()
+                        ->title('Blog deleted')
+                        ->body('You can create a new Blog from Pages at any time.')
+                        ->send();
+
+                    $this->redirect(SitePages::getUrl());
+                }),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
