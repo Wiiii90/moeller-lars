@@ -1,30 +1,85 @@
-# Source inventory
+# Migration source inventory
 
-## larsmoeller: current-site reference
+This file records external/legacy sources still relevant to migration and cutover evidence. It is not an application architecture map.
 
-- Legacy PHP/MySQL public site with artwork categories, landing artwork, Vita/CV text, contact page, and an admin area.
-- Connected to a server-hosted Git remote named `live`; the local clone has no active hook, so any automated deployment logic is expected to live on the server.
-- The Apache rules in the captured legacy source direct traffic to HTTP; this is historical source behaviour, not a target requirement.
-- The source contains security-sensitive legacy patterns. Its credentials and history must stay out of public GitHub until they have been rotated and rewritten.
+## `larsmoeller` — legacy public-site source
 
-### Reviewed Vita source contract
+Purpose: read-only evidence for public content, legacy ordering/presentation, migration provenance and browser comparison.
 
-- Source: legacy `txt/vita.txt` plus the public Vita portrait.
-- Reviewed textual inventory: exactly **31** source rows.
-- Approved canonical partition: exactly **2 Biography** rows in `cv_entries` and **29 Exhibitions** in `exhibitions`.
-- The 29 Exhibition rows are moved out of the CV target; they must not remain duplicated in both canonical tables.
-- The first Biography row carries the portrait relationship. The migrated portrait retains source name/path, byte-size and SHA-256 provenance and is reconciled by `legacy:validate`.
-- The repository stores the reviewed row mapping/import logic and validators, not the private production/Validation database or original source-media corpus.
+Relevant reviewed inputs include:
 
-## glassygallery: useful ideas, not a base
+- legacy artwork records and category/table mapping;
+- public artwork metadata/order;
+- original media and thumbnails used for source reconciliation;
+- `txt/vita.txt` and the public Vita portrait;
+- legacy header/navigation/public presentation evidence;
+- intended Contact form fields/outcome;
+- public metadata/sitemap/robots evidence.
 
-- Separate frontend, admin frontend, API, migrations, media records, user records, and CI/CD documentation.
-- Useful inspiration: media metadata, structured pages, role vocabulary, database migrations, Docker/CI awareness.
-- Not suitable as the base because the UI is a general website customizer rather than a Lars Möller editorial tool; its analytics screen is a placeholder and several API mutations lack consistent authorization safeguards.
+The legacy implementation is not reused as target runtime code. Authentication, sessions, SQL helpers, upload logic, credentials, debug behavior and deployment mechanics remain outside the new application.
 
-## moeller-lars: target
+### Vita source accounting
 
-- Clean Laravel 13/PHP 8.3/PostgreSQL target implementation, tests, migration/reconciliation tooling, and target documentation live here.
-- Production and the platform-owned Validation runtime remain separate in platform topology and persistence. The application repository intentionally does not encode host `/srv` paths or deployment topology.
-- Human analytics are sourced from self-hosted Matomo Community/Core. The application may consume aggregate Reporting API data but does not persist duplicate raw-human analytics or raw visitor identifiers.
-- No legacy source, data dump, production image archive, server-side Matomo token, mail credential, or production configuration is copied here.
+The reviewed Vita textual source contains exactly **31 source rows**.
+
+Approved migration accounting remains:
+
+- **2 Biography/CV source rows** retained as canonical structured migration/editorial data;
+- **29 Exhibition rows** in the Exhibition domain;
+- no duplication of Exhibition rows as public CV entries;
+- the portrait relationship/provenance remains reconciled by source identity, byte size and SHA-256.
+
+The public placement of migrated Vita/CV content is now a **Custom Page**, not a dedicated runtime Site Node type.
+
+## Legacy workshop
+
+The legacy `/workshop` subtree/database is outside the rebuilt artist-site content target.
+
+It is preserved only as required by the legacy rollback/retirement boundary until the platform explicitly retires it. It must not create target Galleries, Site Nodes, content records or media imports unless a later separately approved scope says otherwise.
+
+## `glassygallery` — historical exploration source
+
+`glassygallery` informed early exploration of media metadata, roles, structured data and deployment concerns. It is not a source code or architecture dependency of the current application.
+
+Do not copy its general website-builder UI, API/auth assumptions, placeholder analytics or unfinished admin implementation into `moeller-lars`.
+
+No active documentation should treat `glassygallery` as an alternate implementation path.
+
+## `moeller-lars` — canonical application
+
+This repository is the canonical target application:
+
+- Laravel/PHP application source;
+- PostgreSQL migrations/model;
+- public and admin presentation;
+- domain/editorial services;
+- tests;
+- migration/reconciliation tooling;
+- Docker/release contract;
+- CI and immutable GHCR image publication.
+
+Current site placement is modeled through typed Site Nodes: Home, Gallery, Journal, Custom Page and Navigation Node.
+
+No legacy source tree, production database dump, authoritative production media corpus, Matomo token, mail credential or production secret belongs here.
+
+## `server-platform` — authoritative runtime/operations source
+
+[`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform) owns mutable infrastructure/runtime evidence and operational implementation:
+
+- Production/Validation placement;
+- ingress/TLS/networking;
+- secrets;
+- databases/runtime services;
+- persistent volumes;
+- backups/restores;
+- monitoring;
+- deployment/rollback;
+- host lifecycle and legacy retirement.
+
+`moeller-lars` should link to that contract instead of copying mutable host facts into application docs.
+
+## Retention of migration evidence
+
+`SOURCE-INVENTORY.md`, [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md) and [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md) remain active only while migration/cutover/legacy-retirement evidence is required.
+
+After explicit legacy retirement, review them in a dedicated cleanup and archive/remove details that no longer protect an operational or legal/product requirement.
