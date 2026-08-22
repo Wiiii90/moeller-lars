@@ -31,14 +31,18 @@ function workspaceReferenceAsset(string $filename): MediaAsset
 
 function workspaceReferenceNode(string $type, string $title, ?string $template = null, ?int $categoryId = null): SiteSection
 {
+    static $sequence = 0;
+
+    $sequence++;
+
     return SiteSection::query()->create([
         'type' => $type,
         'template' => $template,
         'title' => $title,
         'navigation_label' => $title,
-        'slug' => str($title)->slug()->toString(),
+        'slug' => str($title)->slug()->append('-workspace-test-'.$sequence)->toString(),
         'state' => 'hidden',
-        'position' => random_int(300, 900),
+        'position' => 900 + $sequence,
         'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => $categoryId,
