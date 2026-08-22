@@ -99,6 +99,18 @@ final class EditBlogPost extends EditRecord
                     fn (): BlogPost => app(BlogEditorialService::class)->restoreDraft($this->post()),
                     'Blog post restored to draft',
                 )),
+            Action::make('delete')
+                ->label('Delete')
+                ->color('danger')
+                ->visible(fn (): bool => ! in_array($this->post()->getAttribute('state'), ['published', 'scheduled'], true))
+                ->requiresConfirmation()
+                ->modalDescription('The Blog post will be removed. Referenced media assets remain in Media.')
+                ->action(function (): void {
+                    $sectionId = (int) $this->post()->getAttribute('site_section_id');
+                    app(BlogEditorialService::class)->delete($this->post());
+                    Notification::make()->title('Blog post deleted')->success()->send();
+                    $this->redirect(BlogPostResource::getUrl('index', ['section' => $sectionId]));
+                }),
         ];
     }
 
