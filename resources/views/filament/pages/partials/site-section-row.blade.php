@@ -1,17 +1,10 @@
 @php
     $path = $section['public_url'] !== null ? (parse_url($section['public_url'], PHP_URL_PATH) ?: '/') : null;
-    $workspaceUrl = $section['content_url'] ?: $section['editor_url'];
+    $workspaceUrl = $section['workspace_url'] ?: $section['editor_url'];
     $label = $section['navigation_label'] ?: $section['title'];
-    $validParents = collect($parentCandidates)->filter(function (array $candidate) use ($section): bool {
-        if ($candidate['id'] === $section['id'] || $section['type'] === 'navigation_group') {
-            return false;
-        }
-        if ($section['type'] === 'gallery') {
-            return in_array($candidate['type'], ['gallery', 'navigation_group'], true);
-        }
-
-        return $candidate['type'] === 'navigation_group';
-    });
+    $validParents = collect($parentCandidates)->filter(
+        fn (array $candidate): bool => in_array($candidate['id'], $section['valid_parent_ids'], true),
+    );
 @endphp
 
 <article id="site-section-{{ $section['id'] }}" class="artist-page-row" data-depth="{{ $section['depth'] }}" wire:key="site-section-{{ $section['id'] }}">
@@ -26,7 +19,7 @@
     </div>
 
     <div class="artist-page-row__placement" aria-label="Placement for {{ $label }}">
-        @if ($section['type'] === 'home')
+        @if ($section['fixed_placement'])
             <span class="artist-page-row__fixed-state">Published · in menu</span>
         @else
             <div class="artist-page-row__toggles">
@@ -45,13 +38,12 @@
             </div>
         @endif
 
-        @if ($section['type'] !== 'home' && $section['type'] !== 'navigation_group')
+        @if ($section['can_choose_parent'])
             <label class="artist-page-row__parent">
                 <span>Parent</span>
                 <select
                     aria-label="Parent section for {{ $label }}"
                     wire:change="moveSectionParent({{ $section['id'] }}, $event.target.value)"
-                    @disabled($section['has_children'])
                 >
                     <option value="" @selected($section['parent_id'] === null)>Top level</option>
                     @foreach ($validParents as $parent)
