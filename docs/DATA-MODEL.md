@@ -41,7 +41,9 @@ Supported runtime types:
 - **Custom Page** — public page backed one-to-one by `CustomPageSetting`; may be nested below a Navigation Node.
 - **Navigation Node** — navigation-only grouping with no public content URL; can contain child nodes.
 
-Only Home is globally unique by node type. Journal templates are not singleton application types.
+Only Home is globally unique by node type. Existing installations are normalized so the canonical Home remains slugless, published, navigation-visible and labeled `Home`.
+
+Parent Site Nodes are not destructively removed while descendants remain. Journals are not removed while they still own entries. These are explicit application restrictions, not incidental database behavior.
 
 ### `custom_page_settings`
 
@@ -63,7 +65,7 @@ Application concept: **Gallery**.
 
 A Gallery stores its persistent identity/content data such as name, slug, description, homepage eligibility and migration provenance. It has exactly one matching Gallery `SiteSection`, which owns public placement, hierarchy, publication/navigation state and site order.
 
-A Gallery has many Artworks.
+A Gallery has many Artworks. When a Gallery is renamed, the normal matching navigation identity follows the Gallery name unless the navigation label has been explicitly customized.
 
 ### `artworks`
 
@@ -82,6 +84,8 @@ Core editorial concepts include:
 New Artwork drafts append to their Gallery. Reordering persists explicit positions. Moving an Artwork appends it to the destination Gallery and must preserve its media usages.
 
 Publication requires valid public metadata/media and a publishable Gallery. The exact invariant is enforced by the application/domain services rather than inferred from UI state.
+
+Only an unpublished Artwork draft is directly deletable through the normal editorial lifecycle. Deleting it removes its Artwork/media-usage relationships but retains the reusable underlying `MediaAsset` records.
 
 ### `artwork_media`
 
@@ -106,6 +110,8 @@ Important concepts:
 
 Public visibility is determined from the post lifecycle together with the publication state of its Journal Site Node. Scheduled visibility is evaluated from `scheduled_at`; it does not require a background promotion job.
 
+Published or scheduled Blog Posts cannot be directly deleted. They must first leave the public/scheduled lifecycle. Deleting an eligible non-public post removes the post/usage relationship while retaining reusable MediaAssets.
+
 ### Exhibitions Journal / `exhibitions`
 
 Every Exhibition belongs to a Journal Site Node whose template is `exhibitions`.
@@ -120,7 +126,11 @@ Important concepts include:
 - optional external/directions links;
 - migration provenance.
 
+Exhibition ordering is scoped to the owning Exhibitions Journal. Separate Journals may legitimately use the same position values; there is no global published-Exhibition position uniqueness contract.
+
 Current/upcoming/past status is derived from normalized dates at read time rather than stored as mutable state.
+
+A published Exhibition cannot be directly deleted. Deleting an eligible non-public Exhibition removes its media usages while retaining reusable MediaAssets.
 
 ### `exhibition_media`
 
@@ -164,7 +174,7 @@ See [MEDIA.md](MEDIA.md) for ingest and storage rules.
 
 ### Audit and admin actions
 
-`audit_events` records durable administrative changes and is append-only at the database boundary. Additional admin action receipt/stat models support operational/admin feedback without replacing the audit trail.
+`audit_events` records durable administrative changes and is append-only at the database boundary. Additional admin action receipt/stat models support operational/admin feedback without replacing the audit trail. Destructive Artwork, Blog and Exhibition lifecycle actions are represented in the audit-action contract.
 
 ### Operational metrics
 
@@ -176,14 +186,18 @@ Laravel framework tables support authenticated admin users and runtime infrastru
 
 ## Deletion rules
 
-Default behavior is conservative:
+The accepted functional contract is conservative and explicit:
 
-- referenced media deletion is blocked;
-- Journal entries reference their owning Site Node restrictively;
-- dangerous parent/content deletion must use an explicit application contract rather than relying on incidental database cascade behavior;
-- normal editorial actions should preserve auditability and avoid silent content loss.
+- Home cannot be deleted.
+- A parent Site Node cannot be deleted while it has descendants.
+- A Journal cannot be deleted while it owns Blog/Exhibition entries.
+- Referenced MediaAssets cannot be destructively deleted.
+- Artwork direct deletion is limited to unpublished drafts; Artwork media usages are removed, reusable MediaAssets are retained.
+- Published or scheduled Blog Posts must leave that lifecycle before deletion; reusable MediaAssets are retained.
+- Published Exhibitions must be unpublished before deletion; Exhibition media usages are removed and reusable MediaAssets are retained.
+- Destructive actions are authorized/audited and must never silently cascade through reusable content.
 
-Where a later functional acceptance decision defines a specific cascade/restrict rule, tests should protect that product contract and this document should be updated only if the durable model changes.
+These rules are protected by focused functional-acceptance tests and should change only through an explicit product/data-contract decision.
 
 ## Migration boundary
 
