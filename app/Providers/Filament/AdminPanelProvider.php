@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\HomePresentation;
 use App\Filament\Pages\SitePages;
 use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\Artworks\ArtworkResource;
@@ -194,7 +195,7 @@ class AdminPanelProvider extends PanelProvider
         }
 
         if ($type === SiteSection::TYPE_HOME) {
-            return ArtworkResource::getUrl('index');
+            return HomePresentation::getUrl();
         }
 
         if ($type === SiteSection::TYPE_GALLERY) {
