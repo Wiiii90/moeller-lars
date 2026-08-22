@@ -3,6 +3,7 @@
 use App\Domain\Artwork\ArtworkCategoryEditorialService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\HomePresentation;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
@@ -73,6 +74,7 @@ it('links Pages rows directly to their typed content workspaces', function (): v
     $response = $this->get(SitePages::getUrl())->assertSuccessful();
 
     foreach ([
+        HomePresentation::getUrl(),
         ArtworkResource::getUrl('gallery', ['gallery' => $gallery->getKey()]),
         CustomPageSettingResource::getUrl('edit', ['record' => $customSettings]),
         BlogPostResource::getUrl('index', ['section' => $blog->getKey()]),
@@ -108,6 +110,7 @@ it('opens typed Pages destinations without server errors', function (): void {
     $customSettings = CustomPageSetting::query()->where('site_section_id', $custom->getKey())->firstOrFail();
 
     foreach ([
+        HomePresentation::getUrl(),
         ArtworkResource::getUrl('gallery', ['gallery' => $paintings->getKey()]),
         ArtworkResource::getUrl('gallery', ['gallery' => $childGallery->getKey()]),
         CustomPageSettingResource::getUrl('edit', ['record' => $customSettings]),
