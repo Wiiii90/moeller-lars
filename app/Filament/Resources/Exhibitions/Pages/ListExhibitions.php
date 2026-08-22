@@ -10,11 +10,15 @@ use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Models\Exhibition;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Str;
 
 class ListExhibitions extends Page
 {
@@ -54,7 +58,60 @@ class ListExhibitions extends Page
             Action::make('addExhibition')
                 ->label('Add exhibition')
                 ->icon(Heroicon::OutlinedPlus)
-                ->schema(fn (Schema $schema): Schema => ExhibitionResource::form($schema))
+                ->schema([
+                    TextInput::make('title')
+                        ->required()
+                        ->maxLength(240)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
+                            if (blank($get('slug')) && filled($state)) {
+                                $set('slug', Str::slug($state));
+                            }
+                        }),
+                    TextInput::make('slug')
+                        ->label('Entry URL slug')
+                        ->required()
+                        ->maxLength(180)
+                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                        ->unique('exhibitions', 'slug'),
+                    TextInput::make('date_text')
+                        ->label('Displayed exhibition dates')
+                        ->required()
+                        ->maxLength(160),
+                    TextInput::make('opening_text')
+                        ->label('Opening / vernissage')
+                        ->maxLength(500)
+                        ->nullable(),
+                    Select::make('kind')
+                        ->options([
+                            'solo' => 'Solo',
+                            'group' => 'Group',
+                        ])
+                        ->nullable(),
+                    DatePicker::make('starts_on')->nullable(),
+                    DatePicker::make('ends_on')->nullable(),
+                    TextInput::make('venue')->maxLength(240)->nullable(),
+                    TextInput::make('city')->maxLength(160)->nullable(),
+                    TextInput::make('country')->maxLength(160)->nullable(),
+                    TextInput::make('location_text')
+                        ->label('Location / address')
+                        ->maxLength(500)
+                        ->nullable()
+                        ->columnSpanFull(),
+                    MarkdownEditor::make('description')
+                        ->label('Description')
+                        ->toolbarButtons([
+                            ['bold', 'italic', 'link'],
+                            ['bulletList', 'orderedList'],
+                            ['undo', 'redo'],
+                        ])
+                        ->helperText('Formatting is limited to emphasis, links and lists so it stays compatible with the public exhibition renderer.')
+                        ->maxLength(10000)
+                        ->nullable()
+                        ->columnSpanFull(),
+                    TextInput::make('external_url')->url()->maxLength(2048)->nullable(),
+                    TextInput::make('directions_url')->label('Directions URL')->url()->maxLength(2048)->nullable(),
+                ])
                 ->modalHeading('Add exhibition')
                 ->modalSubmitActionLabel('Create draft')
                 ->action(function (array $data): void {
@@ -64,7 +121,7 @@ class ListExhibitions extends Page
 
                     Notification::make()
                         ->title('Exhibition draft created')
-                        ->body('The exhibition remains private until it is explicitly published.')
+                        ->body('The exhibition remains private until it is explicitly published. Media can be attached while editing the draft.')
                         ->success()
                         ->send();
                 }),
