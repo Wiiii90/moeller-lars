@@ -84,12 +84,24 @@ final class MediaReferenceCatalog
             return;
         }
 
-        match ($node->nodeType()) {
-            SiteNodeType::Gallery => $this->applyGalleryDestination($query, $node),
-            SiteNodeType::Journal => $this->applyJournalDestination($query, $node),
-            SiteNodeType::CustomPage => $this->applyCustomPageDestination($query, $node),
-            default => $query->whereRaw('1 = 0'),
-        };
+        $type = $node->nodeType();
+        if ($type === SiteNodeType::Gallery) {
+            $this->applyGalleryDestination($query, $node);
+
+            return;
+        }
+        if ($type === SiteNodeType::Journal) {
+            $this->applyJournalDestination($query, $node);
+
+            return;
+        }
+        if ($type === SiteNodeType::CustomPage) {
+            $this->applyCustomPageDestination($query, $node);
+
+            return;
+        }
+
+        $query->whereRaw('1 = 0');
     }
 
     /** @param Builder<MediaAsset> $query */
@@ -167,7 +179,7 @@ final class MediaReferenceCatalog
 
         foreach ($asset->getRelation('exhibitions') as $exhibition) {
             $node = $exhibition->getRelationValue('siteSection');
-            $journalLabel = $node instanceof SiteSection ? $this->nodeLabel($node) : 'Exhibitions';
+            $journalLabel = $node instanceof SiteSection ? $this->nodeLabel($node) : 'Journal';
             $rows[] = [
                 'type' => 'Journal: '.$journalLabel,
                 'label' => (string) $exhibition->getAttribute('title'),
@@ -177,7 +189,7 @@ final class MediaReferenceCatalog
 
         foreach ($asset->getRelation('blogPosts') as $post) {
             $node = $post->getRelationValue('siteSection');
-            $journalLabel = $node instanceof SiteSection ? $this->nodeLabel($node) : 'Blog';
+            $journalLabel = $node instanceof SiteSection ? $this->nodeLabel($node) : 'Journal';
             $rows[] = [
                 'type' => 'Journal: '.$journalLabel,
                 'label' => (string) $post->getAttribute('title'),
@@ -283,15 +295,23 @@ final class MediaReferenceCatalog
     /** @param Builder<MediaAsset> $query */
     private function applyJournalDestination(Builder $query, SiteSection $node): void
     {
-        match ($node->journalTemplate()) {
-            JournalTemplate::Blog => $query->whereHas('blogPosts', static function (Builder $posts) use ($node): void {
+        if ($node->journalTemplate() === JournalTemplate::Blog) {
+            $query->whereHas('blogPosts', static function (Builder $posts) use ($node): void {
                 $posts->where('site_section_id', $node->getKey());
-            }),
-            JournalTemplate::Exhibitions => $query->whereHas('exhibitions', static function (Builder $exhibitions) use ($node): void {
+            });
+
+            return;
+        }
+
+        if ($node->journalTemplate() === JournalTemplate::Exhibitions) {
+            $query->whereHas('exhibitions', static function (Builder $exhibitions) use ($node): void {
                 $exhibitions->where('site_section_id', $node->getKey());
-            }),
-            null => $query->whereRaw('1 = 0'),
-        };
+            });
+
+            return;
+        }
+
+        $query->whereRaw('1 = 0');
     }
 
     /** @param Builder<MediaAsset> $query */
