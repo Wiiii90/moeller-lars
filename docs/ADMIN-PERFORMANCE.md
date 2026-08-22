@@ -1,84 +1,91 @@
 # Artist admin performance budget
 
-This document defines the performance contract for the protected artist admin. It is intentionally about server/query/runtime behavior, not visual design.
+This document defines the durable performance contract for the authenticated artist admin. It is about request/query/runtime behavior, not visual design or a historical performance investigation.
 
-## Current evidence baseline
+## Normal warmed transitions
 
-Validation investigation on 2026-08-21 established the following baseline before this budget was written:
+For representative data on Validation, ordinary warmed navigation and actions should remain comfortably interactive.
 
-- warmed protected admin requests were typically about 125–215 ms server-side;
-- the former Dashboard regression was a client-side lazy-hydration gap, not a slow Dashboard query path, and was removed by rendering the Dashboard widget eagerly;
-- an uncached live Matomo 30-day report completed in about 0.399 s and a subsequent fresh-cache read in about 0.002 s;
-- normal Storage rendering uses a cached capacity snapshot, while upload admission performs an authoritative fresh measurement;
-- normal operational request telemetry is aggregated into at most one synchronous database upsert per request;
-- the production image enables OPcache and runs `php artisan optimize` after runtime environment injection.
+Target server response time for normal warmed Dashboard, Pages, Artwork/Gallery, Media, cached Analytics, cached Storage and ordinary Livewire actions:
 
-The remaining cross-page/browser stall is not yet attributed to one proven root cause. One real Chrome HTTP/2 hard load with Apache `KeepAlive On`, `KeepAliveTimeout 5` and four `mpm_prefork` workers behind Caddy showed five-second-quantized request waves, including static assets and a much longer Media preview queue. A temporary Validation-only A/B changed Apache to `KeepAlive Off`; individual Caddy request durations no longer showed the same obvious five-second quantization, but the browser was still observed to be very slow end-to-end. Therefore that experiment does not establish a user-visible speedup and does not prove Apache keep-alive starvation as the root cause.
+- **target:** <= 500 ms;
+- repeated warmed responses >= 1 s require investigation;
+- repeated warmed responses >= 2 s are a release-blocking regression unless the action is explicitly documented as an external/authoritative operation.
 
-`KeepAlive Off` remains a source-controlled Validation candidate to test because it directly changes the internal Caddy-to-Apache hop implicated by the queueing pattern. Browser wall-clock behavior is authoritative: if the permanent candidate does not clearly improve the real page load/navigation experience, roll Validation back and reject this candidate rather than merging it.
+Browser wall-clock behavior remains authoritative. Fast server timings do not prove good UX if asset/request queueing still makes the page visibly stall.
 
-## Budget
+## Query behavior
 
-### Warm normal admin transitions
+- List/tree rendering must not introduce query counts proportional to rendered rows when required data can be eager-loaded or aggregated.
+- Relationship labels, media thumbnails, usage counts and placement/order affordances should use eager loading, aggregate queries or a bounded request projection rather than per-row lookups.
+- Presentation helpers must not hide database I/O where callers expect a pure projection.
+- Repeated expensive aggregates on one render path should be consolidated or cached when their freshness contract permits it.
+- Performance tests should protect query/fanout behavior, not fragile wall-clock thresholds.
 
-For Dashboard, Pages, Artworks, Gallery, Media, cached Analytics, cached Storage and ordinary Livewire actions on the representative Validation dataset:
+## Site navigation and Pages
 
-- target server response time: **<= 500 ms**;
-- repeated warmed responses **>= 1 s** require investigation before release acceptance;
-- repeated warmed responses **>= 2 s** are a release-blocking regression.
+The typed Site Node tree is projected once from the required SiteSection data and eager-loaded presentation relations.
 
-The budget is for warmed normal navigation. A deliberate external refresh or authoritative storage measurement is measured separately and must not be inserted into unrelated navigation paths.
+- Sidebar and Pages should not independently rebuild incompatible tree/domain rules.
+- SiteNodePresentation remains query-free.
+- Ordering capabilities should reuse a bounded projection rather than issue one query per row/action affordance.
 
-### Query behavior
+## Filesystem and storage accounting
 
-- List/tree rendering must not introduce query counts proportional to the number of rendered rows when the required data can be eager-loaded or aggregated.
-- Relationship labels, thumbnails, usage counts and ordering affordances must use eager loading, aggregate queries or request-scoped summaries rather than per-row lookups.
-- Repeated expensive aggregate queries on one render path should be consolidated or cached when their freshness contract allows it.
-- Performance regression tests should assert behavior or bounded query fanout, not fragile wallclock thresholds.
+- Normal Dashboard/Storage navigation must not recursively walk the complete media filesystem.
+- Display capacity may use a bounded cache/snapshot.
+- Explicit refresh and upload admission may perform authoritative measurement.
+- Upload admission must never trust a stale display cache when enforcing quota.
 
-### Filesystem and storage accounting
+## Media
 
-- Normal Dashboard and Storage navigation must not recursively walk the complete media filesystem.
-- Display capacity may use a bounded cache and explicit refresh.
-- Upload admission remains authoritative and fresh. Performance work must never make quota enforcement depend on a stale display cache.
+- Media list/grid views must be bounded/paginated.
+- Usage counts and thumbnail selection must not create N+1 queries.
+- The inspector/original preview should load expensive media only when requested.
+- Integrity verification and authoritative capacity scans are explicit operations and are not part of ordinary navigation.
 
-### Analytics
+## Analytics
 
-- Matomo remains the canonical human-analytics source.
-- A cached analytics navigation is part of the normal warmed-transition budget.
-- A live cache miss is an external-dependency operation and is measured separately. It must use bounded timeouts and stale-cache fallback rather than making unrelated admin pages depend on Matomo availability.
-- Do not split the existing bulk-report contract into sequential HTTP calls without measurement evidence.
+Matomo remains the canonical human-analytics source.
 
-### Operational telemetry and audit
+- A fresh cached Analytics render belongs to the normal warmed-transition budget.
+- A live Reporting API cache miss is an external-dependency operation and is measured separately.
+- Reporting uses bounded timeouts and may show a bounded stale aggregate/explicit unavailable state as defined by the Analytics contract.
+- Matomo unavailability must not delay unrelated admin pages.
+- Do not replace a bulk-report contract with many sequential external requests without measurement evidence.
 
-- Normal request telemetry may perform at most one synchronous aggregate database write per request.
-- Audit recording, authentication and authorization are not optional performance switches.
-- If additional telemetry is introduced, batch or defer non-critical work rather than adding synchronous per-metric writes.
+## Operational telemetry and audit
 
-### Runtime
+Security and audit correctness are not performance switches.
 
-Production releases assume immutable application code inside the container:
+- Authentication/authorization/audit recording remain mandatory.
+- Normal request telemetry should keep synchronous database work bounded.
+- Additional non-critical telemetry should be aggregated/deferred rather than adding one synchronous write per metric.
 
-- OPcache stays enabled;
-- timestamp validation may stay disabled because a deployment replaces/restarts the release container;
-- Laravel config/route/view/event optimization must happen only after runtime environment configuration is injected;
-- cache changes must not freeze environment-specific secrets or configuration into the image build;
-- Apache keep-alive behavior behind Caddy is currently under Validation investigation. `KeepAlive Off` must not be promoted to the release contract until the source-controlled candidate shows a clear browser-visible improvement.
+## Runtime assumptions
+
+The immutable production image is allowed to optimize for deployed read-only application code:
+
+- OPcache remains enabled in the release runtime;
+- Laravel optimization occurs only after runtime configuration/secrets are injected;
+- build-time optimization must not freeze environment-specific secret values into the image;
+- production/Validation proxy and container resource behavior are platform-owned and must be measured in the deployed topology rather than guessed from local PHP timings.
+
+Exact runtime resource assumptions used by the application image are documented in [RELEASE.md](RELEASE.md).
 
 ## Validation measurement protocol
 
-After performance-sensitive admin work is merged into one candidate SHA, measure the protected Validation deployment of that exact SHA/image.
+For a performance-sensitive release candidate, measure the exact deployed candidate SHA/image:
 
-1. Confirm release SHA/image identity and health.
-2. Use the representative migrated dataset.
-3. Warm the admin once, then record at least five normal transitions for Dashboard, Pages, Artworks, Gallery, Media, Analytics and Storage plus one representative Livewire action.
-4. Record browser wall-clock behavior and server/Caddy timing separately. Fast individual request timings are not sufficient evidence when the page remains visibly blocked.
-5. Measure Analytics once from fresh cache and, separately, once as an intentional live cache miss.
-6. Measure Storage from cache and, separately, an explicit refresh/authoritative measurement.
-7. Include one hard-load/parallel-asset pass and compare end-to-end browser completion with the prior slow baseline, not only per-request Caddy durations.
-8. Review query/filesystem telemetry for any row-scaled fanout or unexpected recursive media scan.
-9. If the candidate does not produce a clear user-visible improvement, roll Validation back to the prior known-good release before continuing diagnosis.
+1. Confirm runtime release identity and health.
+2. Use representative migrated/editorial data.
+3. Warm the admin once.
+4. Measure at least five normal transitions for Dashboard, Pages, Artworks/Gallery, Media, Analytics and Storage plus a representative Livewire mutation.
+5. Record browser wall-clock and server/proxy timing separately.
+6. Measure Analytics fresh-cache behavior separately from an intentional live cache miss.
+7. Measure Storage cached display separately from explicit authoritative refresh/admission behavior.
+8. Include one hard-load/parallel-asset pass.
+9. Review query/filesystem telemetry for row-scaled fanout or unexpected recursive media scans.
+10. Treat a visibly slow candidate as a regression even when individual backend requests look acceptable.
 
-## Integration re-check
-
-Dashboard, Analytics, Media and Storage are active parallel work areas. Re-run the full protocol after those workers are merged because consumer changes can alter query composition even when the underlying services remain unchanged.
+Performance findings should produce a narrowly evidenced fix. Do not introduce architecture changes based only on speculative bottlenecks.

@@ -1,132 +1,52 @@
 # Application release contract
 
-This file is the `moeller-lars` specialization of `Wiiii90/server-platform/docs/APPLICATION-DEPLOYMENT-CONTRACT.md`. Production topology remains owned by `server-platform`.
+This document defines the `moeller-lars` application artifact/runtime contract. Production/Validation deployment topology and operator runbooks are owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
 
-## Immutable release identity
+## Canonical CI workflow
 
-The production unit is the OCI image built from an exact Git commit. A release record must contain:
-
-- repository: `Wiiii90/moeller-lars`;
-- exact source Git SHA;
-- OCI image reference;
-- immutable image digest (`sha256:...`);
-- CI run that built and verified that digest.
-
-The image contains OCI revision metadata and `/app-release.json` with the build SHA. Mutable tags are convenience pointers only and are never sufficient release identity.
-
-## Runtime interface
-
-- protocol: HTTP
-- internal container port: `8080`
-- platform-owned ingress proxies privately to this interface
-- readiness: `GET /up` must return success
-- no production Caddy, host path, network name or public port mapping is owned here
-
-### Media-processing runtime envelope
-
-The application image pins the web/CLI PHP `memory_limit` to `128M`, `upload_max_filesize` to `20M`, and `post_max_size` to `24M`. `MediaIngestService` permits at most 20 MiB per file and 16,000,000 decoded pixels, rejects larger dimensions before GD decoding, streams canonical originals from the upload file instead of retaining a second in-memory copy, and serializes expensive media ingests through the configured cache lock.
-
-The Apache prefork pool is capped at four request workers. The platform must allocate at least 384 MiB to the application container for this runtime envelope. The platform owns the concrete container memory setting; the application owns the PHP/media/worker assumptions that make that setting meaningful.
-
-The frozen legacy corpus includes a 4499×3551 image (15,975,949 pixels), which remains inside the application limit. A bulk legacy import is an isolated one-shot operation, not concurrent web serving, and may be invoked as `php -d memory_limit=256M artisan ...` when required by the migration runbook. Changing the release candidate alone does not require repeating an already validated import.
-
-## Database and migration
-
-- database: PostgreSQL
-- migration command: `php artisan migrate --force`
-- migration execution is separate from container startup and owned by platform deployment sequencing
-- the current migration history is **not classified as data-reversible** for rollback: migrations can contain destructive target-schema transformations whose `down()` method cannot reconstruct removed production data
-- therefore a recoverable PostgreSQL state is required before production migration; rollback after a migrated release may require database restore rather than `migrate:rollback`
-
-A migration failure fails deployment. Traffic must not switch to a release whose required migrations failed.
-
-## Persistent data
-
-Authoritative, non-reproducible data:
-
-- PostgreSQL application database
-- `/var/www/html/storage/app/private/originals` — canonical uploaded originals
-
-Generated/rebuildable data:
-
-- `/var/www/html/storage/app/private/variants` — generated public derivatives; these may be regenerated from canonical originals by application media processing
-- Laravel framework caches/views/sessions are runtime state, not release data
-
-`server-platform` chooses concrete host volumes/paths and backup placement. It is acceptable to persist/backup the complete `storage/app/private` tree even though variants are rebuildable.
-
-### Restore validation order
-
-Backup automation, off-server storage, restore orchestration and the isolated recovery environment are owned by `server-platform`. Application recovery evidence must nevertheless follow this order so database records and media are never validated from different recovery points:
-
-1. Keep public traffic away from the recovery target and restore PostgreSQL from the selected recoverable state.
-2. Restore the canonical `storage/app/private/originals` set from the matching recovery state before application smoke checks. Restoring the complete `storage/app/private` tree, including generated variants, is allowed and is the current conservative recovery baseline.
-3. Attach the restored database and private media to the exact application release being evaluated. Do not run a legacy import as part of backup recovery.
-4. Run `php artisan migrate:status --no-interaction` first. A same-release restore is expected to have no unexpected pending migration. When intentionally recovering and then moving forward to a newer compatible release, establish the recoverable restore point before running that release's `php artisan migrate --force`.
-5. Run `php artisan media:verify`. It checks every media asset and recorded variant against the restored files, including existence/deletion state, byte size, SHA-256, MIME type and public-thumbnail constraints, and returns a non-zero exit status on any integrity failure.
-6. Run `./scripts/release-smoke.sh http://127.0.0.1:8080` and representative controlled media requests before any traffic switch. The restored application is not recovery-ready if either media integrity or application smoke fails.
-
-Variants remain non-authoritative because they derive from canonical originals. Their absence must never cause the original to be silently served as a thumbnail. Until a recovery run has regenerated any omitted derivative and `media:verify` is green, the recovered target must remain out of service. The platform may avoid that regeneration dependency by restoring the backed-up complete private media tree.
-
-For the frozen legacy migration snapshot specifically, `legacy:validate {manifest}` remains an additional migration reconciliation check. It now also validates the canonical `SiteSection` projection. It is not a replacement for the general backup/recovery `media:verify` check and a normal backup restore must not rerun the legacy import merely to obtain validation data.
-
-## Required production configuration
-
-Always required by the production image:
-
-- `APP_ENV=production`
-- `APP_KEY`
-- `APP_URL` using HTTPS
-- `DB_CONNECTION=pgsql`
-- `DB_HOST`
-- `DB_PORT`
-- `DB_DATABASE`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `SESSION_SECURE_COOKIE=true`
-- `MEDIA_DISK=local`
-
-Feature/runtime configuration names include:
-
-- mail: `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`, `CONTACT_TO_ADDRESS`
-- Matomo browser tracking: `MATOMO_TRACKING_ENABLED`, `MATOMO_BASE_URL`, `MATOMO_SITE_ID`
-- Matomo Reporting API: `MATOMO_REPORTING_ENABLED`, `MATOMO_BASE_URL`, `MATOMO_SITE_ID`, `MATOMO_API_TOKEN`, `MATOMO_REPORT_TIMEOUT_SECONDS`
-
-`MATOMO_ENABLED` remains only a legacy compatibility fallback in configuration parsing; new platform configuration must use the separate tracking/reporting flags. No real values belong in Git.
-
-When Matomo browser tracking is enabled the image requires a valid HTTPS `MATOMO_BASE_URL` and positive `MATOMO_SITE_ID`. When Reporting API access is enabled it additionally requires `MATOMO_API_TOKEN`; the token is a server-local credential for a restricted Matomo identity with View access to the intended Website and must never be exposed to browser code. The client sends `token_auth` only in the HTTPS POST body. An unavailable Reporting API produces an explicit dashboard error/stale state and does not break public requests.
-
-Validation and Production are separate runtime/data boundaries. Validation may inspect Production aggregate reporting without generating Production browser events by using exactly:
+The repository has one canonical GitHub Actions workflow:
 
 ```text
-MATOMO_TRACKING_ENABLED=false
-MATOMO_REPORTING_ENABLED=true
+.github/workflows/release.yml
 ```
 
-The platform owns injection of the matching site ID/read-only token. Validation must not enable tracking against the Production Matomo Website during review. Range-level `nb_uniq_visitors` is optional because Matomo may not provide it for arbitrary ranges; the application displays that metric as unavailable rather than manufacturing it by summing daily unique visitors.
+It verifies pull requests and non-PR runs with the application quality gates. For eligible non-PR runs (including `main`), it publishes an immutable GHCR image tagged with the exact Git SHA.
 
-## Administration provisioning
+Canonical image tag:
 
-No production administrator is seeded and no legacy credential is imported. Create the initial administration account explicitly from the deployed application container:
-
-```sh
-php artisan admin:provision
+```text
+ghcr.io/wiiii90/moeller-lars:<40-character-git-sha>
 ```
 
-`--name` and `--email` may be supplied for operator convenience; the password is always entered through a hidden interactive prompt and is never accepted as a command-line option. Provisioning refuses duplicate email addresses and creates the account with `is_admin=true`, which is required by the production Filament panel-access policy.
+The release image is built only after verification succeeds.
 
-## Workers and scheduling
+## Release identity
 
-No background queue worker or application scheduler is required for the current release contract. Contact delivery is synchronous. Scheduled blog visibility is evaluated against `scheduled_at` at read time; no promotion job is required.
+A deployable candidate is identified by all of:
 
-## Build and verification
+- repository `Wiiii90/moeller-lars`;
+- exact source Git SHA;
+- GHCR image tag for that SHA;
+- immutable OCI digest (`sha256:...`);
+- CI run that verified/built it.
 
-Local image build:
+The image embeds the Git SHA in `/app-release.json` (and image revision metadata). Mutable labels/tags alone are never sufficient release identity.
 
-```sh
-docker build --build-arg APP_GIT_SHA="$(git rev-parse HEAD)" -t moeller-lars:"$(git rev-parse HEAD)" .
-```
+A green pull-request CI run does not imply that the PR head image exists, because release-image publication is intentionally skipped for pull-request events.
 
-Application verification before designating a release candidate:
+## Verification gates
+
+The canonical workflow verifies:
+
+- Composer dependency installation;
+- Composer security audit;
+- frontend dependency installation/build;
+- Pest;
+- PHPStan;
+- Pint formatting check;
+- JavaScript tests.
+
+Application-level local equivalents include:
 
 ```sh
 composer test
@@ -134,22 +54,155 @@ composer analyse
 vendor/bin/pint --test
 npm run test:js
 npm run build
-docker build --build-arg APP_GIT_SHA="$(git rev-parse HEAD)" -t moeller-lars:"$(git rev-parse HEAD)" .
 ```
 
-Validation environment smoke contract after platform-provided PostgreSQL, secrets and persistent media are attached:
+No warning suppression or fake build artifact is part of the release contract.
+
+## Runtime interface
+
+- application protocol: HTTP;
+- internal application container port: `8080`;
+- health/readiness endpoint: `GET /up`;
+- platform ingress proxies privately to the application container;
+- concrete public ports, host paths, container network names and proxy topology are not owned here.
+
+The application image must be bootable with runtime environment injected by the platform. Composer/artisan bootstrap must not depend on a pre-existing Vite manifest merely to discover packages/configuration.
+
+## Runtime/media envelope
+
+The current application image configures the PHP/media runtime to safely admit the supported Media policies.
+
+Durable assumptions include:
+
+- image upload ceiling from `MEDIA_IMAGE_MAX_BYTES` (default 20 MiB);
+- video upload ceiling from `MEDIA_VIDEO_MAX_BYTES` (default 100 MiB);
+- image decoding bounded by the application media policy;
+- expensive ingest is serialized/bounded through the media service path;
+- platform container memory/resource limits must remain compatible with the application's documented PHP/media processing envelope.
+
+When a one-shot legacy import requires a deliberately larger CLI memory limit, that is an explicit operator invocation, not a permanent web-runtime setting.
+
+## Database migrations
+
+- database: PostgreSQL;
+- forward migration command: `php artisan migrate --force`;
+- migration execution is a platform deployment step, not implicit container startup behavior;
+- migration failure blocks activation/cutover.
+
+The migration history is **not guaranteed data-reversible**. A rollback across schema/data changes may require restoring the pre-migration recoverable PostgreSQL state rather than running `migrate:rollback`.
+
+Therefore the platform must establish the appropriate recoverable state before a Production migration that could affect rollback compatibility.
+
+## Persistent state
+
+Authoritative non-reproducible application state:
+
+- PostgreSQL application database;
+- canonical media originals under the application's private media storage contract.
+
+Generated/rebuildable state:
+
+- media variants/derivatives;
+- Laravel caches/views and other disposable runtime caches.
+
+The platform chooses actual mount/host paths. This repository documents logical application persistence only.
+
+## Required runtime configuration
+
+Production always requires appropriate values for the normal Laravel/application boundary, including:
+
+- `APP_ENV=production`
+- `APP_KEY`
+- canonical HTTPS `APP_URL`
+- PostgreSQL connection variables
+- secure session/cookie configuration
+- `MEDIA_DISK`
+
+Feature-specific configuration includes:
+
+- media quota/type limits;
+- mail transport and From identity;
+- contact recipient configuration;
+- separate Matomo tracking/reporting enablement;
+- Matomo base URL/site ID and restricted Reporting API token when reporting is enabled.
+
+Real values and credentials never belong in Git.
+
+`.env.example` is the canonical variable-name/default template for local/reference configuration. Platform-owned production values override it outside the repository.
+
+## Matomo configuration
+
+Tracking and reporting are independent capabilities:
+
+```text
+MATOMO_TRACKING_ENABLED
+MATOMO_REPORTING_ENABLED
+```
+
+Production may enable both. Validation may deliberately keep tracking disabled while using an explicitly restricted read-only reporting identity.
+
+Reporting requires bounded timeouts and must not make public/application correctness depend on Matomo availability.
+
+## Administrator provisioning
+
+No legacy admin credential is migrated and no production admin password is seeded in Git/image content.
+
+Provision the initial admin explicitly in the deployed container:
 
 ```sh
-php artisan migrate:status --no-interaction
-php artisan media:verify
-php artisan legacy:validate <reviewed-manifest>
-./scripts/release-smoke.sh http://127.0.0.1:8080
+php artisan admin:provision
 ```
 
-`legacy:validate` is specific to the frozen legacy migration and requires the reviewed manifest to be available in the isolated operator context. It is not a routine application startup command.
+Password input remains interactive/hidden and is not accepted as a command-line argument.
+
+## Workers and scheduling
+
+The current application contract does not require a permanent queue worker or application scheduler for core operation.
+
+Contact delivery is synchronous under the current contract. Blog scheduled visibility is evaluated against persisted schedule timestamps at read time rather than requiring a promotion job.
+
+If a future feature introduces a required worker/scheduler, this release contract and `server-platform` integration must be updated together.
+
+## Validation checks
+
+For an exact deployed Validation candidate:
+
+1. verify `/app-release.json` contains the expected Git SHA;
+2. confirm `/up` succeeds;
+3. run required migrations/migration status checks;
+4. run `php artisan media:verify`;
+5. run `php artisan legacy:validate <reviewed-manifest>` when validating the frozen migration dataset;
+6. run `./scripts/release-smoke.sh http://127.0.0.1:8080` in the appropriate container/operator context;
+7. complete required browser/admin acceptance.
+
+`legacy:validate` is migration-specific and is not a normal startup check.
+
+## Restore verification
+
+After platform restore orchestration attaches a consistent database/media recovery point:
+
+1. keep the recovery target out of public service;
+2. attach the exact application release being evaluated;
+3. inspect migration status before applying any intentional forward migration;
+4. run `media:verify`;
+5. run the application release smoke contract;
+6. regenerate/verify any omitted required derivatives before service activation.
+
+A missing required derivative must never cause the original to be silently substituted as successful public output.
 
 ## Rollback
 
-The initial rebuilt-site deployment has no previous rebuilt-site production image. Legacy production remains the rollback/cutover safety boundary until explicit cutover. For subsequent releases, `server-platform` pins the previous known-good image digest and determines whether its PostgreSQL state remains compatible. If not, rollback requires restore from the pre-migration recoverable state.
+`server-platform` owns the actual rollback command/sequence and retains the previous known-good artifact/digest as appropriate.
 
-The application container never edits the legacy production application or imports/finalizes legacy data automatically at startup.
+Rollback is release/data compatibility dependent:
+
+- if database state remains compatible, the prior image may be reactivated;
+- if a migration changed state incompatibly, rollback requires the appropriate pre-migration restore point.
+
+The application container never rewrites the legacy production application or runs a source import automatically during startup/rollback.
+
+## Production authorization
+
+CI success, image publication and Validation success are release evidence only. They do **not** authorize Production mutation.
+
+Production deployment/cutover requires explicit operator/project approval under the platform readiness/backup/rollback gates described in [MIGRATION-PLAN.md](MIGRATION-PLAN.md).

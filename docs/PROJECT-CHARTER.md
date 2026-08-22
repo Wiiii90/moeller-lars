@@ -1,52 +1,107 @@
 # Project charter
 
-## Goal
+## Product goal
 
-Replace the public Lars Möller website while replacing its administration and operating model completely. The public result must preserve Lars Möller's artistic identity and overall appearance; subtle visual and UX improvements are allowed when they support clarity, accessibility, or reliability.
+`moeller-lars` is the secure, maintainable replacement application for the Lars Möller artist website and its artist-facing administration.
 
-## Non-negotiable public contract
+The public site preserves Lars Möller's artistic identity and established presentation while replacing the legacy application's security model, administration, persistence, analytics integration, migration tooling and release process.
 
-- Preserve public content, artistic identity, and meaningful public information architecture.
-- The rebuilt application uses clean, modern canonical URLs; legacy PHP/query URL syntax is not itself a compatibility requirement.
-- Add a redirect for a legacy URL only when later evidence establishes a concrete SEO or external-link need.
-- The artistic visual language, typography, layout, artwork presentation, and ordering remain recognisably unchanged, with room for reviewed subtle improvements.
-- Existing images, ALT text, page titles, SEO metadata, sitemap, and contact behaviour are inventoried before switching traffic.
-- HTTPS is canonical; HTTP redirects to HTTPS in one hop.
-- Broken legacy behaviour is not a compatibility requirement; intended behaviour is documented and tested explicitly.
-- The artwork viewer is rebuilt reliably, including tested image loading, close/open behaviour, and previous/next navigation. Keyboard and touch navigation may improve the experience without changing its character.
+## Public contract
 
-## Editorial backend
+Non-negotiable principles:
 
-`/admin` is a completely new, consistent artist-facing application. It should support:
+- preserve approved public content, artwork presentation and meaningful information architecture;
+- preserve the site's recognisable artistic visual language rather than redesigning it into a generic portfolio/CMS theme;
+- use clean path-based canonical URLs; legacy PHP/query syntax is not itself a compatibility requirement;
+- keep HTTPS canonical and do not expose debug/admin/development surfaces publicly;
+- preserve meaningful artwork ordering and media/ALT semantics through explicit canonical data;
+- keep the Artwork viewer reliable across desktop/mobile/touch/keyboard interaction;
+- treat broken or unsafe legacy behavior as a defect, not a compatibility requirement;
+- require browser/editorial acceptance in addition to automated route/data checks before Production cutover.
 
-1. Artworks: image upload, title, year, medium, dimensions, description, category, visibility, ordering, and draft/publish state.
-2. Exhibitions: title, venue, location, dates, image, external links, text, and past/current/upcoming state. Exhibitions are a separate content type from CV entries.
-3. CV: structured entries with date ranges, sections, ordering, links, and rich text restricted to a safe editor.
-4. Blog: drafts, scheduled or immediate publishing, cover image, preview, and stable public slug. Blog content is publicly invisible by default and becomes visible only after Lars explicitly enables it.
-5. Media: deduplicated original asset, generated derivatives, ALT text, copyright/credit, and safe deletion checks.
-6. Statistics: visits, landing pages, referrers, device category, and top content, without storing unnecessary personal data.
+## Site structure
 
-## Cost constraint
+The editable public site uses five typed node concepts:
 
-Avoid mandatory paid third-party services and commercial runtime dependencies. Prefer self-hosted or open-source components where practical. Recurring hosting and operational cost is allowed, but must be minimized, documented, and justified against reliability, TLS, backup, analytics, and maintenance requirements.
+- **Home**
+- **Gallery**
+- **Journal** (Blog or Exhibitions)
+- **Custom Page**
+- **Navigation Node**
 
-## Explicit exclusions for the first release
+The migrated CV/Vita and Contact placements are Custom Pages; Blog and Exhibitions are Journal templates. The application does not hard-code those migrated slugs as special runtime page types.
 
-- No general-purpose website builder or free-form layout editor.
-- No public registration, customer accounts, marketplace, or social feed.
-- No migration of legacy authentication or database credentials.
-- No mandatory commercial analytics plugin or SaaS service; the analytics target is self-hosted Matomo Community/Core.
+## Artist administration
 
-## Definition of done
+`/admin` is a purpose-built authenticated editorial application, not a general-purpose site builder.
 
-The new site passes a route/content comparison against the live reference, reliable viewer and admin acceptance tests, a lossless migration reconciliation, and an editorial acceptance pass by Lars. It uses the verified [server and operations baseline](SERVER-OPERATIONS-BASELINE.md), with temporary HTTPS release validation, tested backups, restore, monitoring, rollback, and the Matomo deployment path before production cutover. Production deployment design, hosting cost, TLS, recurring backups, monitoring, and a possible future server/runtime replacement remain in scope; only after those are accepted does the new site replace production traffic.
+Core surfaces:
 
-## Acceptance and test requirements
+1. **Pages / Site Structure** — typed placement, navigation, hierarchy, ordering and publication.
+2. **Home** — homepage Gallery eligibility and current/latest presentation state.
+3. **Galleries / Artworks** — Artwork drafts, metadata, primary media, publication, ordering and Gallery movement.
+4. **Blog Journal** — Blog drafts/publication/scheduling and Journal settings.
+5. **Exhibitions Journal** — Exhibition records, dates/location/media/links and ordering.
+6. **Custom Pages** — structured safe content including migrated CV/Contact surfaces.
+7. **Media** — canonical reusable originals, metadata, previews, usage references and guarded deletion.
+8. **General / Contact** — site identity, public/private contact settings, social links, legal text and delivery readiness without infrastructure secrets.
+9. **Analytics** — privacy-conscious Matomo reporting plus clearly separate operational metrics.
+10. **Activity / Storage / Dashboard** — relevant administrative/audit/capacity overview without becoming an infrastructure control panel.
 
-- Public route, artwork, metadata, and media inventories are machine-checkable before and after migration.
-- Viewer tests cover loading, navigation, keyboard/touch input where implemented, missing media, and mobile layouts.
-- Admin tests cover authentication, authorization, drafts, publication state, separate exhibitions/CV editing, and the blog-disabled default.
-- Migration tests reconcile record counts, original-media checksums, required fields, and representative rendered content.
-- Deployment tests cover HTTPS, HTTP redirect, backup/restore, rollback, temporary HTTPS release validation, and a pre-cutover rehearsal on the verified production baseline.
-- Analytics tests confirm Matomo collection and dashboard visibility without introducing a paid service or storing unnecessary raw identifiers. They also cover traffic sources, geography, devices, content interaction, and separate bot/operational metrics.
-- The chosen deployment documents recurring costs, avoids mandatory commercial runtime dependencies, and demonstrates practical use of self-hosted/open-source components.
+## Security
+
+- `/admin` requires authenticated/authorized access.
+- Authorization is enforced server-side for mutations.
+- CSRF/session/rate-limit protections use the application security boundary rather than UI visibility.
+- Uploads are untrusted until validated.
+- Unsafe rich text/links are rejected or sanitized through canonical policies.
+- Secrets, private dumps and authoritative production media stay outside Git.
+- Legacy authentication, credentials, SQL helpers, sessions and upload code are never reused.
+
+## Media
+
+Canonical uploaded/migrated originals are retained and checksum-addressable through application storage identity. Derivatives are rebuildable.
+
+References are explicit. A media asset cannot be destructively deleted while supported content still references it. Publication must not hide missing required media/ALT/derivative integrity through arbitrary fallbacks.
+
+## Analytics
+
+Self-hosted Matomo Community/Core is the canonical source for human visitor analytics. Application-local aggregates cover operational/error/bot/performance signals only.
+
+No mandatory paid analytics plugin or SaaS is required. Analytics availability must not become a dependency for public rendering or normal admin editing.
+
+## Cost and operational boundary
+
+Avoid mandatory commercial runtime/SaaS dependencies where practical. Hosting/operations cost is allowed but should remain minimized and justified against reliability, backup, security and maintenance requirements.
+
+This repository owns the application/release contract. [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform) owns mutable Production/Validation infrastructure, secrets, ingress, backups, monitoring, deployment and rollback.
+
+## Out of scope
+
+- general-purpose free-form website builder;
+- public user registration/customer accounts;
+- marketplace/social-network functionality;
+- migration of legacy credentials/users/sessions;
+- mandatory commercial analytics/runtime services;
+- infrastructure topology/control surfaces inside the application admin;
+- preserving legacy bugs or unsafe implementation details.
+
+## Release acceptance
+
+A release is not accepted merely because CI is green.
+
+Before Production cutover, the approved exact SHA/image must pass the applicable gates:
+
+- durable automated application/security/data tests;
+- migration/media reconciliation;
+- isolated Validation deployment and release identity verification;
+- representative admin functional acceptance;
+- representative public/browser/viewer comparison;
+- artist/editorial approval;
+- platform backup/restore/rollback/readiness checks.
+
+Production deployment remains an explicit authorized platform action.
+
+## Documentation ownership
+
+Current application contracts live under `docs/` and are indexed by [docs/README.md](README.md). Legacy-source evidence is kept separate and may be retired after explicit legacy retirement rather than allowed to define future application architecture.

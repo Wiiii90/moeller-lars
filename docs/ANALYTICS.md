@@ -1,37 +1,50 @@
 # Analytics contract
 
-This is the operational and design contract for the privacy-conscious,
-self-hosted analytics system. It is application integration guidance against
-the authoritative `Wiiii90/server-platform` Matomo contract.
+This document defines the application boundary for privacy-conscious analytics. Matomo runtime/topology is owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform); this repository owns tracking integration, reporting behavior and application-local operational aggregates.
 
-## Ownership and boundary
+## Source of truth
 
-Matomo On-Premise Community/Core is the source of truth for human visitor
-analytics. Matomo Cloud and mandatory premium/commercial plugins are excluded.
-The Laravel editorial database must not duplicate raw human visitor, pageview,
-or event analytics. `daily_metrics` is limited to lightweight operational
-aggregates and disposable Matomo dashboard cache.
+Self-hosted Matomo Community/Core is the canonical source for **human visitor analytics**.
 
-The platform provides Matomo as a logically isolated service and supplies the
-application's site ID and tracking base URL. Physical deployment, database
-runtime, private networking, persistence, ingress and secrets are owned by
-`server-platform`. A separate Matomo user with `view` access to the intended
-website supplies the reporting token. The token remains outside Git and is sent
-only in the HTTPS POST body of Reporting API requests.
+The Laravel/PostgreSQL application does not duplicate raw Matomo visits, pageviews or visitor-event history. Application-local `daily_metrics`/operational aggregates are reserved for lightweight operational/error/bot/performance signals and bounded disposable reporting cache where appropriate.
 
-Tracking and reporting are separate runtime capabilities. Production normally
-enables both. Validation may enable reporting while keeping tracking disabled,
-so browser review can inspect production aggregate reports without recording
-validation traffic as production traffic.
+Matomo Cloud or mandatory premium/commercial plugins are not required by the product.
 
-Matomo failure must never break public rendering, contact handling, login, or
-normal admin editing.
+## Tracking and reporting are separate
 
-## Human collection and event taxonomy
+Runtime capabilities are configured independently:
 
-Use first-party browser tracking. The public tracker records normal page views,
-link/download tracking and heartbeat pings for more useful visit-duration
-measurement. Artist-specific events add semantic interaction signals:
+- `MATOMO_TRACKING_ENABLED`
+- `MATOMO_REPORTING_ENABLED`
+
+Production may enable both.
+
+Validation may deliberately use:
+
+```text
+MATOMO_TRACKING_ENABLED=false
+MATOMO_REPORTING_ENABLED=true
+```
+
+with a restricted read-only Reporting API identity. This allows dashboard review without recording Validation browser traffic as Production human traffic.
+
+Reporting credentials/tokens remain server-side secrets and are never exposed to browser code or committed to Git.
+
+## Failure isolation
+
+Matomo availability must not be required for:
+
+- public page rendering;
+- Contact submission correctness;
+- admin login/authentication;
+- normal editorial work;
+- Media/Storage/Page operations.
+
+Reporting uses bounded timeouts and bounded caching. Optional report failures may produce explicit unavailable/stale states without taking down the full admin dashboard.
+
+## Human event taxonomy
+
+The public tracker may record normal page views/link/download behavior plus deliberately named artist-site interactions such as:
 
 - `artwork_open`
 - `artwork_zoom_used`
@@ -45,131 +58,99 @@ measurement. Artist-specific events add semantic interaction signals:
 - `instagram_click`
 - `contact_submit_success`
 
-Event category/action/name are used deliberately: category identifies the
-public surface, action identifies the interaction, and event name may identify
-public editorial content such as an artwork, exhibition or blog title. Form
-contents, names, visitor email addresses, admin IDs and other private values
-must never be event values.
+Event values may identify already-public editorial content where useful, but must never include form message contents, visitor names/email addresses, admin IDs, credentials/tokens or other unnecessary personal/private values.
 
-`artwork_zoom_used` is de-duplicated while a work is being viewed rather than
-being emitted for every wheel/pinch increment. Exhibition-view events use a
-meaningful viewport threshold rather than firing merely because an exhibition
-record exists in the HTML.
+High-frequency interactions such as zoom should be de-duplicated/bounded rather than emitted for every wheel/pinch increment.
 
-## Reporting surface
+## Reporting dashboard
 
-`/admin/analytics` is an application-owned artist dashboard backed by Matomo's
-Reporting API rather than a duplicate analytics database. One authenticated
-`API.getBulkRequest` currently collects the required Core reports for the
-selected range.
+`/admin/analytics` is an application-owned artist dashboard backed by Matomo's Reporting API rather than a second analytics database.
 
-The dashboard includes:
+Supported aggregate reporting includes, where Matomo provides it:
 
-- visits, unique visitors, tracked actions, actions per visit, average visit
-  duration and bounce rate with equal previous-period comparison;
-- visit/action trend over today, 7 days, 30 days or 12 months;
-- acquisition channel mix, referring websites, social networks, search engines,
-  campaigns and AI-assistant referrals;
-- country and continent aggregates, new/returning context, weekday and local
-  visit-hour distributions;
-- most-viewed public paths, entry pages, exit pages, downloads, outbound links,
-  site-search keywords and searches with no results;
-- event actions, categories and public content names plus high-level artist
-  interaction counters;
-- visit-duration and pages/actions-per-visit distributions;
+- visits and unique visitors;
+- actions/pageviews and actions per visit;
+- average visit duration and bounce rate;
+- current-range versus previous-range context;
+- trends for Today, 7d, 30d and 12m;
+- acquisition/referrer/channel information;
+- country/continent geography;
 - device class, browser and operating-system aggregates;
-- a visually separate local operational-health section for errors, bots and
-  application response performance.
+- landing/exit/content paths;
+- downloads/outbound links/site search where available;
+- artist interaction events and content attention.
 
-Individual optional Matomo reports may fail or be unavailable without taking
-down the dashboard. The visit summary remains the required baseline. Matomo
-On-Premise may omit `nb_uniq_visitors` for custom rolling `period=range`
-reports unless range-level unique-visitor processing is enabled. That optional,
-potentially expensive metric must not make the dashboard unavailable: the
-affected KPI is shown as unavailable while the remaining aggregate reports,
-charts and geography continue to render. The `Today` preset uses a native
-`period=day` summary. Fresh results are cached briefly and a bounded stale
-aggregate can be displayed when Matomo is temporarily unavailable.
+Human analytics and local operational health remain visually/conceptually distinct.
 
-## Referrers, queries, device and geography
+Matomo may not provide every metric for every arbitrary range. In particular, range-level unique visitor counts may be unavailable depending on Matomo processing/configuration. The application shows such a metric as unavailable rather than manufacturing it from incompatible daily values.
 
-Query strings are removed before Reporting API URL labels are rendered in the
-admin dashboard. Public content reports display path only; external
-referrer/outbound/download labels are reduced to useful host/path information.
-Do not send form values or personal identifiers.
+## Data minimization
 
-Referrer reporting is limited to useful acquisition information. Device
-class/browser/OS aggregation and country/continent geography use Matomo Core
-capabilities. City-level location is not required. Do not add fingerprinting to
-improve accuracy.
+- No clear-IP visitor list in the artist admin.
+- Query strings are removed/reduced before public-path labels are displayed where they could contain unnecessary data.
+- Do not add fingerprinting to improve device/user accuracy.
+- Raw IP/user-agent/security logs, when operationally required, remain in bounded infrastructure logging rather than being copied into editorial analytics tables.
+- Contact form data is not analytics payload.
 
-## Operational and bot metrics
+Consent/cookie behavior depends on the actual deployed Matomo/privacy configuration and applicable legal requirements and must be reviewed before Production. This repository does not make a blanket legal claim that consent is always required or always exempt.
 
-Do not import full server logs into the human analytics site merely to count
-bots. If enabled by server-platform #20, platform ingress/access logs may be
-imported into a separate Matomo site ID for log-derived bots, errors, and
-request-pattern analytics. `moeller-lars` does not own or import platform
-access logs.
+## Operational metrics
 
-Use separate lightweight local aggregation for request counts, status/error
-counts (including 404s), response-time metrics, admin request health, upload
-failures, storage/deployment health, bot-family/request aggregates, and
-suspicious request rates. Raw logs remain an operational/security layer.
+Local application/platform aggregates may cover:
 
-`daily_metrics` must not contain full IP addresses or raw user-agent strings,
-and human analytics must remain visually and conceptually separate from the
-bot/error/performance/security panel.
+- request/status/error counts;
+- response-time summaries;
+- admin request health;
+- upload/storage failures;
+- bot/suspicious-request families;
+- deployment/storage health signals.
 
-## Privacy and identifiers
+They do not become a shadow human visitor analytics database.
 
-The application/admin UI must not expose a clear-IP visitor list. Do not put
-visitor names, email addresses, admin IDs, contact message contents, tokens, or
-other unnecessary identifiers in analytics values. Raw IPs, if genuinely
-required for restricted server/security operations, stay in short-retention
-infrastructure logs and are not copied into application analytics tables.
-Matomo privacy settings must be reviewed before production.
+Full access-log import, if used for operational/bot analysis, is a platform responsibility and must remain separated from the human Matomo Website/reporting identity.
 
-Final cookie/consent behaviour depends on the implemented Matomo configuration
-and applicable legal requirements; it must be verified before production, with
-no blanket claim that consent is universally required or universally exempt.
+## Retention principles
 
-## Initial retention targets
+Retention values are operational/privacy targets, not immutable legal mandates. Prefer the shortest retention that preserves useful product/operations value.
 
-These are operational targets, not immutable legal mandates. Prefer shorter
-retention where equivalent value remains; automated deletion/archive is
-implementation work.
+Typical targets may include:
 
-- Matomo detailed/raw visit data: approximately 90 days.
-- Longer-lived Matomo aggregates: as needed for useful year-over-year/artistic
-  reporting, subject to storage review.
-- Local `daily_metrics`: approximately 24 months.
-- Normal application/server raw logs: 14–30 days.
-- Bot/operational aggregate history: approximately 12 months.
-- Application/archive audit/security data: approximately 3–6 months where
-  appropriate, except where separate requirements require otherwise.
+- detailed Matomo visit data: short/medium retention such as ~90 days;
+- longer-lived aggregate trends when useful for year-over-year reporting;
+- local operational aggregates: bounded historical retention;
+- raw application/ingress logs: short retention appropriate to operations/security.
 
-## Matomo operations
+The authoritative deployed retention configuration belongs to the relevant platform/Matomo configuration, not this prose document.
 
-The platform owns Matomo production runtime, dedicated MariaDB, Caddy,
-persistence, secrets, archiving, health, resource limits, upgrade lifecycle,
-and backup integration. Dashboard reads are cached for approximately 5–15
-minutes. Matomo, API, and log-parser failures are isolated and must not affect
-ordinary application behaviour.
+## Ownership
 
-The application owns tracking integration, privacy decisions, event taxonomy,
-site ID/base URL configuration, reporting client/dashboard, and
-application-level operational aggregates.
+`moeller-lars` owns:
 
-## Cost and hosting
+- browser tracking integration and semantic event taxonomy;
+- tracking/reporting feature flags;
+- Matomo Reporting API client and artist dashboard;
+- safe labeling/data minimization in the application UI;
+- application-local operational aggregates;
+- failure-isolation behavior.
 
-Matomo Community/Core introduces no mandatory commercial software, plugin, or
-SaaS dependency. It does introduce real CPU, RAM, storage, backup, and
-maintenance requirements on the selected infrastructure. The hosting and
-platform decision is recorded in [ADR-0002](adr/ADR-0002-HOSTING-COST-BASELINE.md);
-Matomo runtime placement follows server-platform and resource pressure remains
-a platform review trigger.
+`server-platform` owns:
 
-## Official implementation references
+- Matomo service/database runtime;
+- persistence/backups;
+- networking/ingress;
+- runtime secrets/reporting token injection;
+- resource limits;
+- archiving/retention jobs;
+- upgrades/health/monitoring;
+- platform access/log pipelines.
+
+## Performance
+
+Fresh cached Analytics navigation belongs to the normal admin performance budget. A deliberate live Reporting API cache miss is an external operation and is measured separately.
+
+Prefer bounded/bulk API retrieval over many sequential requests when supported. See [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md).
+
+## Official references
 
 - [Matomo Reporting API](https://developer.matomo.org/guides/reporting-api)
 - [Matomo JavaScript tracker](https://developer.matomo.org/guides/tracking-javascript-guide)
@@ -177,4 +158,3 @@ a platform review trigger.
 - [Matomo API token guidance](https://matomo.org/faq/general/faq_114/)
 - [Matomo privacy configuration](https://matomo.org/faq/general/configure-privacy-settings-in-matomo/)
 - [Matomo IP anonymisation](https://matomo.org/faq/general/how-does-ip-address-anonymisation-work-in-matomo/)
-- [Matomo auto-archiving with cron](https://matomo.org/faq/on-premise/how-to-set-up-auto-archiving-of-your-reports/)

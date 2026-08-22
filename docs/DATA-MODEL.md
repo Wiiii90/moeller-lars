@@ -1,558 +1,215 @@
-# Production data model
+# Data model
 
-This is the clean target model for moeller-lars. PostgreSQL is the selected
-database. This document defines the model only; it does not initialize Laravel,
-implement migrations, or prescribe a production PostgreSQL version or topology.
+This document describes the durable application relationships. Database migrations are the source of truth for exact column types, indexes and constraints; this file intentionally avoids duplicating every migration detail.
+
+PostgreSQL is authoritative for editorial state. Canonical uploaded originals are authoritative binary data.
 
 ## Conventions
 
-- Every table uses a PostgreSQL-generated bigint primary key named id unless
-  stated otherwise. The Laravel foundation owns migration syntax.
-- Timestamps are timestamptz in UTC.
-- Slugs are lowercase, ASCII, URL-safe, and unique within their entity table.
-  A published slug is stable. A deliberate slug change creates a redirect.
-- Editorial states are constrained values where applicable: draft, published,
-  hidden, archived. Blog posts use the lifecycle defined in their section.
-- position is a required non-negative integer for ordered editorial records;
-  lower values render first. For artwork it is the category-relative editorial
-  presentation order and is authoritative over work_date for category galleries.
-  It is established by editorial or migration reconciliation and never inferred
-  from source ID, target ID, insertion order, database order, or another field
-  used as a secondary tie-breaker.
-- Required business data has one canonical source. Missing, duplicate,
-  ambiguous, or contradictory required data is an invariant failure and must
-  not be repaired at runtime by choosing a legacy/raw value, unrelated field,
-  placeholder, alternate media source, or accidental database ordering.
-- Explicit product precedence is not fallback behavior. For example, a nullable
-  usage-specific media ALT override intentionally supersedes the asset-level ALT
-  value when present; otherwise the asset-level value is the canonical source.
-- Foreign keys are restrictive by default. Archive or detach records before
-  deletion.
-- Migrated entities retain legacy_id and legacy_source. New records leave them
-  null. Use a partial unique constraint on (legacy_source, legacy_id) when both
-  are present.
-- The target does not preserve the legacy table-per-category schema.
-
-## Main relationships
-
-- artwork_category has many artwork records.
-- artwork has many artwork_media usage rows and one required primary original
-  media asset when published.
-- media_asset has many media_variant derivative rows.
-- exhibition optionally references one hero media asset.
-- cv_entry optionally references one image media asset.
-- blog_post optionally references one cover media asset.
-- blog_settings is a singleton independent of blog_post state.
-- audit_event optionally records an admin_user actor.
-- daily_metric is an independent lightweight operational aggregate.
-
-## artwork_category
-
-Purpose: a generic, artist-managed artwork grouping entity. It is not a
-table-per-category architecture or a generic taxonomy system. Categories have
-public routes, labels, ordering, and editorial meaning. Legacy category names
-and mappings are migration data only; they do not define application route
-semantics or the maximum category set. Additional categories are normal
-editorial data and require no schema or code change.
-
-Required fields:
-- id bigint primary key
-- slug varchar(80), stable and unique; category identity is editorial data and
-  is not a production application constant.
-- name varchar(160)
-- state: published or hidden, default hidden for newly created categories
-- position integer, default 0, check position >= 0
-- show_in_navigation boolean, default false
-- show_on_home boolean, default false
-- created_at, updated_at
-
-Nullable fields:
-- description text
-- legacy_id bigint
-- legacy_source varchar(160)
-
-Indexes and uniqueness:
-- unique slug
-- partial unique legacy_source, legacy_id where both are non-null
-- index on state, position, id
-- published categories shown in navigation require a unique position
-
-Deletion: referenced categories are not hard-deleted. A category is publicly
-available only while published; hidden is the editor-controlled unavailable
-state. `position` is editorial ordering, `show_in_navigation` controls visible
-category navigation, and `show_on_home` controls home eligibility. Public
-category slugs are stable. A deliberate new-application slug change may create
-a generic redirect record; reserved application paths cannot be category
-slugs. Hard deletion requires a hidden, unreferenced category and an audit
-decision.
-
-## artwork
-
-Purpose: canonical editorial record for one artwork, independent of files.
-
-Required fields:
-- id bigint primary key
-- artwork_category_id bigint, foreign key to artwork_category.id
-- slug varchar(180), stable and globally unique
-- title varchar(240)
-- state: draft, published, hidden, archived
-- position integer, non-negative; explicit display order for the applicable
-  public artwork sequence. The complete publish-ready category order must be
-  unambiguous; no implicit tie is permitted.
-- created_at, updated_at
-
-Nullable fields:
-- medium varchar(240)
-- dimensions varchar(240); preserve legacy presentation text
-- description text, rendered with contextual escaping/sanitization
-- legacy_date_raw varchar(32)
-- work_date date
-- date_precision: unknown, year, month, or day
-- legacy_id bigint
-- legacy_source varchar(160)
-- migration_batch_id varchar(120)
-- migrated_at timestamptz
-- published_at timestamptz
-
-Date rule: convert a legacy YYYYMMDD value to work_date only after its
-semantics are confirmed. If only the year is reliable, retain the raw value
-and use date_precision year; do not invent a day or month. `legacy_date_raw`
-is migration/reconciliation evidence and is never a runtime substitute for a
-missing normalized value.
-
-Indexes and uniqueness:
-- unique slug
-- partial unique legacy_source, legacy_id
-- index on state, artwork_category_id, position
-- index on state, work_date, position
-- foreign key artwork_category_id references artwork_category.id restrictively
-
-Constraints and deletion:
-- published artwork requires a published category and exactly one published
-  primary usage in artwork_media that resolves to an available original
-- work_date must be consistent with date_precision
-- position >= 0
-- position is authoritative for category gallery presentation; `work_date`
-  describes the artwork and never acts as an ordering fallback after position
-- published artwork positions within one category must be unique; duplicate
-  legacy positions are migration/reconciliation exceptions that must be resolved
-  before the affected category is publish-ready
-- gaps in positions are permitted; explicit admin reorder normalizes a complete
-  category to contiguous 0..n-1
-- new artwork appends to its category and a category move appends to the
-  destination
-- normal editorial UI does not expose numeric artwork position input
-- ordering mutations are authorized and audited
-- normally archive rather than delete; media deletion is restricted while used
-
-## media_asset
-
-Purpose: immutable original uploaded or migrated media. Originals are retained
-even when derivatives exist. This table never represents a derivative.
-
-Required fields:
-- id bigint primary key
-- storage_key varchar(500), application-generated and unique
-- original_filename varchar(255), metadata only and never a filesystem path
-- mime_type varchar(120), determined from content and allowlisted
-- byte_size bigint, check byte_size > 0
-- sha256 char(64), lowercase hexadecimal SHA-256 of original bytes
-- state: available, quarantined, or deleted; default quarantined for newly
-  created originals
-- created_at, updated_at
-
-Nullable fields:
-- alt_text varchar(500); public informative images require it, while
-  decorative use must explicitly use an empty value
-- copyright_notice varchar(500)
-- credit varchar(240)
-- width integer, height integer; positive when present
-- metadata jsonb, limited to non-sensitive technical metadata
-- focal_point_x and focal_point_y numeric, each in [0,1], optional only
-
-Provenance fields:
-- legacy_id bigint
-- legacy_source varchar(160)
-- legacy_path varchar(500)
-- legacy_filename varchar(255)
-- legacy_byte_size bigint
-- migration_batch_id varchar(120)
-- migrated_at timestamptz
-
-Indexes and constraints:
-- unique storage_key
-- index on state, mime_type
-- index on sha256 for reconciliation
-- optional unique sha256 for physical deduplication, only if every usage
-  reference is preserved
-
-Asset metadata is plain-text editorial metadata. `alt_text` is the canonical
-asset-level ALT value. `artwork_media.alt_text_override` is an explicitly
-optional usage-specific value that takes precedence when present. Missing
-required public ALT data is an invariant failure; artwork title, filename,
-legacy metadata, or placeholder text is never substituted. Original technical
-identity fields, storage identity, checksums, and provenance are immutable
-through the editorial UI.
-
-Media deletion is logical: the asset and its variants transition to deleted.
-Any artwork_media, exhibition hero, CV image, or blog cover reference blocks
-deletion. Storage cleanup occurs only after the durable database and audit
-transaction commits. Cleanup failure is surfaced explicitly as an operation
-failure; it may leave private orphaned bytes but is never reported as successful
-cleanup and must never reactivate logically deleted media. Integrity
-verification compares stored bytes with persisted size, SHA-256, and content
-MIME and checks available derivative consistency. No hard delete is part of
-normal media editorial workflow. Primary media replacement is an explicit
-atomic editorial operation: it switches an existing primary usage to a newly
-validated available asset without committing an intermediate media-less artwork
-state. The usage-specific ALT override is cleared when the underlying primary
-image changes. An old asset is logically deleted only when no artwork,
-exhibition, CV, or blog reference remains; shared old assets stay available.
-Physical cleanup of an unreferenced replaced asset occurs only after the durable
-database and audit commit. Cleanup failure is surfaced explicitly and must not
-be converted into a warning-success or alternate-success path.
-
-## media_variant
-
-Purpose: generated derivative of one original asset. Variants are disposable
-and never authoritative.
-
-Required fields:
-- id bigint primary key
-- media_asset_id bigint foreign key to the original asset
-- variant_kind varchar(32), such as thumbnail, medium, large, or webp
-- storage_key varchar(500), generated and unique
-- mime_type varchar(120)
-- byte_size bigint, check byte_size > 0
-- sha256 char(64)
-- transform_profile varchar(120), required and versioned
-- state: available, stale, or deleted
-- created_at, updated_at
-
-Nullable fields:
-- width integer, height integer; positive when present
-
-Indexes and constraints:
-- unique media_asset_id, variant_kind, transform_profile
-- index on media_asset_id, state
-- derivative metadata is separate from the original asset and never overwrites
-  its MIME type, dimensions, byte size, or SHA-256
-
-Deletion: variants transition to deleted when their unreferenced original is
-logically deleted; neither the original nor variants are hard-deleted by the
-normal media editorial workflow. Variants may be regenerated without changing
-the original technical identity.
-
-## artwork_media
-
-Purpose: explicit ordered usage references between artworks and original assets.
-It supports a primary image plus future additional views without a generic CMS
-attachment abstraction.
-
-Fields:
-- id bigint primary key
-- artwork_id bigint, required foreign key
-- media_asset_id bigint, required foreign key
-- role: primary or additional
-- position integer, non-negative
-- alt_text_override varchar(500), nullable
-- created_at, updated_at
-- unique artwork_id, media_asset_id
-
-Constraints:
-- unique artwork_id, position
-- at most one primary row per artwork
-- published artwork must have one primary row
-- foreign keys reference artwork.id and media_asset.id restrictively
-- primary usage is the artwork's first-class original-media reference; the
-  required public variant is resolved from that original and never replaced by
-  the original or another derivative when missing
-
-Deletion is restrictive. Removing a usage does not delete the asset.
-Replacement updates the existing primary usage row rather than deleting and
-recreating it.
-
-## exhibition
-
-Purpose: separate structured public/editorial exhibition record. Exhibitions
-are not inferred from or merged into CV entries.
-
-Required fields:
-- id bigint primary key
-- slug varchar(180), stable and unique
-- title varchar(240)
-- state: draft, published, hidden, archived
-- position integer, non-negative
-- created_at, updated_at
-
-Nullable fields:
-- kind varchar(32), exactly solo or group when present
-- venue varchar(240)
-- city varchar(160)
-- country varchar(160)
-- description text
-- external_url varchar(2048), only approved public URL schemes
-- hero_media_asset_id bigint foreign key to media_asset.id
-- starts_on date, ends_on date; if both exist, ends_on >= starts_on
-- date_text varchar(160) for uncertain legacy display text
-- legacy_id bigint
-- legacy_source varchar(160)
-- migration_batch_id varchar(120)
-- migrated_at timestamptz
-- published_at timestamptz
-
-Indexes and deletion:
-- unique slug
-- partial unique legacy_source, legacy_id
-- index on state, starts_on, position, id
-- hero media deletion is restricted
-- normally archive; hard deletion requires an editorial decision
-
-Temporal state is derived at read time, never persisted: a future starts_on is
-upcoming; a date on or between starts_on and ends_on is current; an exhibition
-with only starts_on is current on that date and past afterwards; an end before
-the requested date is past; insufficient date information is unknown.
-
-## cv_entry
-
-Purpose: one structured CV entry from the legacy Vita source or new editorial
-input. It remains a separate entity and workflow from exhibitions.
-
-Required fields:
-- id bigint primary key
-- section varchar(120), controlled values such as education, exhibitions,
-  publications, and awards
-- title varchar(240)
-- state: draft, published, hidden, archived
-- position integer, non-negative within section
-- date_precision: unknown, year, month, or day
-- created_at, updated_at
-
-Nullable fields:
-- organisation varchar(240)
-- location varchar(240)
-- body text, sanitized if rich text is allowed
-- external_url varchar(2048), HTTPS only
-- image_media_asset_id bigint foreign key to media_asset.id
-- year_text varchar(80)
-- starts_on date, ends_on date, only when semantics are confirmed
-- legacy_id bigint
-- legacy_source varchar(160)
-- migration_batch_id varchar(120)
-- migrated_at timestamptz
-- published_at timestamptz
-
-Indexes and deletion:
-- index on state, section, position, id
-- partial unique legacy_source, legacy_id
-- archive rather than delete; retain the legacy vita.txt source as the
-  migration reference and do not collapse its exhibition lines into this table
-- txt/vita.txt remains a migration reference and is not discarded
-- image media deletion is restricted
-
-## blog_post
-
-Purpose: blog post with an independent editorial lifecycle. Public blog
-enablement is controlled by blog_settings, not by blog_post state.
-
-Required fields:
-- id bigint primary key
-- slug varchar(220), stable and unique
-- title varchar(240)
-- body text, required when published
-- state: draft, scheduled, published, unpublished, archived
-- position integer, non-negative
-- created_at, updated_at
-
-Nullable fields:
-- excerpt text
-- cover_media_asset_id bigint foreign key to media_asset.id
-- published_at timestamptz
-- scheduled_at timestamptz
-- legacy_id bigint
-- legacy_source varchar(160)
-- migration_batch_id varchar(120)
-- migrated_at timestamptz
-
-Preview is authenticated admin preview of non-public content. It does not
-require a persistent preview-token column and does not change public
-eligibility. Blog body is rendered only through the project's constrained,
-sanitized content path shared with later rich-text/editor work; raw untrusted
-HTML is never rendered. Immediate publication uses published state plus
-published_at. Scheduled publication uses scheduled state plus scheduled_at.
-
-Indexes and constraints:
-- unique slug
-- partial unique legacy_source, legacy_id
-- index on state, published_at descending, position
-- scheduled requires scheduled_at in the future at scheduling time; published
-  requires non-empty title/body and published_at; unpublished and archived
-  posts are never public
-- PostgreSQL requires body and published_at for published posts and requires
-  scheduled_at for scheduled posts; future-time validation remains application
-  logic
-- a post is publicly eligible only when state is published, published_at is due,
-  and blog_settings.public_enabled is true
-- cover media deletion is restrictive; normally archive posts
-
-## blog_settings
-
-Purpose: singleton controlling whether the blog is public. It is independent
-of individual post draft/published state.
-
-Fields:
-- id smallint primary key, constrained to 1
-- public_enabled boolean, required, default false
-- listing_title varchar(240), nullable
-- listing_intro text, nullable
-- created_at, updated_at
-
-There must be exactly one row. Public blog routes, navigation, sitemap
-entries, and blog_post pages require public_enabled true and an eligible post.
-Migration must create it disabled by default.
-
-## redirect
-
-Purpose: maps retired public paths of the new application to canonical target
-paths. Legacy dispatcher/query URLs are migration evidence only and are not a
-blanket compatibility surface.
-
-Required fields:
-- id bigint primary key
-- source_path varchar(512), normalized internal path only and unique
-- target_path varchar(2048), internal canonical path or approved HTTPS URL
-- status_code smallint: 301, 308, or deliberate temporary 302
-- enabled boolean, default true
-- created_at, updated_at
-
-Nullable fields:
-- reason varchar(240)
-- legacy_id bigint
-- legacy_source varchar(160)
-- migration_batch_id varchar(120)
-- migrated_at timestamptz
-
-Indexes and constraints:
-- index on enabled, source_path
-- reject loops, fragments, unsafe schemes, and source equal to target
-- source paths begin with a single `/` and contain no query string or fragment;
-  targets are normalized internal paths or approved `https://` URLs. Database
-  validation does not perform hostname allowlisting.
-- prefer disabling over deletion after route reconciliation
-
-## admin_user integration boundary
-
-The shared Laravel foundation owns administrator identity, authentication,
-password hashing, sessions, authorization, and account lifecycle. This model
-does not create a competing user table and does not migrate legacy credentials.
-
-The integration contract is an opaque admin_user_id bigint wherever an actor must
-be recorded, referencing the foundation's canonical admin identity with
-ON DELETE SET NULL. The exact table name and key type require foundation-owner
-confirmation. No content table stores passwords, sessions, reset tokens, or
-authorization rules.
-
-## audit_event
-
-Purpose: append-only record of security-relevant and editorial mutations.
-
-Required fields:
-- id bigint primary key
-- action varchar(80), such as artwork.publish or media.delete
-- entity_type varchar(80), allowlisted
-- occurred_at timestamptz
-
-Nullable fields:
-- admin_user_id bigint, integration foreign key with ON DELETE SET NULL
-- entity_id bigint, null for bulk/system events
-- request_id varchar(120)
-- metadata jsonb, redacted before storage
-
-Rules and indexes:
-- application cannot update or delete events
-- never store passwords, tokens, full request bodies, full IPs, or raw personal
-  data in metadata
-- indexes on entity_type, entity_id, occurred_at; admin_user_id, occurred_at;
-  and occurred_at descending
-
-## daily_metric
-
-Purpose: small local operational aggregates for bot requests, HTTP errors,
-response-time bands, upload failures, storage health, deployment status, and
-optional cached Matomo summaries.
-
-It must not store Matomo visitor events, visit identities, page-view logs, full
-IP addresses, or raw user-agent strings. Matomo remains the source of truth for
-human analytics.
-
-Required fields:
-- id bigint primary key
-- metric_date date
-- metric_name varchar(80), allowlisted for bots, errors, performance,
-  security, and operations only
-- source varchar(40): local_log, application, or matomo_cache
-- value numeric, check value >= 0
-- unit varchar(24): count, milliseconds, bytes, or similar
-- calculated_at timestamptz
-
-Nullable fields:
-- dimension_key varchar(160), normalized values such as status:404,
-  bot:googlebot, or path:/artwork
-- sample_count bigint, check sample_count >= 0
-
-Indexes and uniqueness:
-- null-safe unique key on metric_date, metric_name, source, dimension_key
-  (PostgreSQL NULLS NOT DISTINCT semantics)
-- index on metric_date, metric_name
-
-Cached Matomo summaries are disposable and rebuildable. Local metrics must not
-become a parallel human-analytics warehouse.
-
-## Shared migration provenance
-
-The following fields are required on artwork, artwork_category, media_asset,
-exhibition, cv_entry, and blog_post, and may be used on redirect:
-
-- legacy_id bigint nullable: original source identifier
-- legacy_source varchar(160) nullable: for example legacy:paintings,
-  legacy:drawings, legacy:prints, legacy:txt/vita.txt, or legacy:redirects
-- migration_batch_id varchar(120) nullable: importer snapshot/batch identifier
-- migrated_at timestamptz nullable: import or reconciliation time
-
-For media, also retain legacy_path, legacy_filename, and legacy_byte_size.
-Preserve source values exactly. Every clean import must be repeatable and
-idempotent, with counts, ordering exceptions, and SHA-256 reconciliation
-recorded in a migration report. Duplicate or ambiguous imported ordering is an
-explicit migration/editorial exception for review and must be resolved before
-public readiness; it is never repaired by an implicit ID, date, slug, insertion,
-or database ordering choice. Secrets must never enter the report, fixtures, or
-this model.
-
-## Analytics and failure boundary
-
-Matomo On-Premise Community/Core is the source of truth for human analytics.
-The application may read cached Matomo summaries for admin/analytics, but
-daily_metric is limited to bots, errors, performance, deployment/health
-signals, and optional cached dashboard values.
-
-Analytics collection, log aggregation, and dashboard reads are asynchronous or
-failure-tolerant because analytics is explicitly non-critical to the public and
-editorial application path. This resilience boundary must not substitute
-incorrect analytics data: a Matomo outage, archive failure, or local
-metric-parser failure may omit/report analytics state, but must never invent
-successful values or fail public rendering, editorial reads, authentication, or
-content writes.
-
-## Decisions requiring orchestrator review before migrations
-
-1. Confirm the shared Laravel foundation's admin-user table name and key type.
-2. Confirm which legacy date values may become work_date; otherwise retain raw
-   values with unknown precision.
-3. Approve initial category slugs/labels and category-position semantics.
-4. Confirm the media storage adapter and whether SHA-256 uniqueness is used for
-   deduplication or only reconciliation.
-5. Confirm the sanitized rich-text format for descriptions, CV body, and posts.
-6. Confirm retention periods for provenance, audit events, operational metrics,
-   and cached Matomo summaries.
-7. Confirm whether exhibitions and posts need additional explicit media usage
-   tables beyond hero/cover references.
+- Ordered editorial records persist an explicit non-negative `position`; database/insertion order is never a presentation fallback.
+- Published content must satisfy its domain publication prerequisites.
+- Foreign keys are restrictive where deleting a referenced record could lose editorial meaning or media relationships.
+- Migration provenance (`legacy_*`, migration batch/timestamp fields) is evidence only and is not a runtime fallback.
+- Slugs are normalized public identities. Deliberate public slug changes may create redirects.
+- Domain/application naming may differ from an intentionally retained persistence name. In particular, `ArtworkCategory` is the persistence model behind the product concept **Gallery**.
+
+## Site structure
+
+### `site_sections`
+
+`SiteSection` is the persisted public-site/navigation tree projection.
+
+Important persisted concepts:
+
+- `type`
+- optional Journal `template`
+- title and optional navigation label
+- optional public slug
+- publication state
+- navigation visibility
+- explicit position
+- optional parent
+- optional Gallery persistence reference
+
+Application behavior is defined by `SiteNodeType`, not by raw persistence strings.
+
+Supported runtime types:
+
+- **Home** — singleton, no slug, always published, always represented in navigation, cannot be deleted or nested.
+- **Gallery** — public page backed one-to-one by an `ArtworkCategory`; can contain Gallery children and can itself be nested below a Gallery or Navigation Node.
+- **Journal** — public page with template `blog` or `exhibitions`; may be nested below a Navigation Node.
+- **Custom Page** — public page backed one-to-one by `CustomPageSetting`; may be nested below a Navigation Node.
+- **Navigation Node** — navigation-only grouping with no public content URL; can contain child nodes.
+
+Only Home is globally unique by node type. Existing installations are normalized so the canonical Home remains slugless, published, navigation-visible and labeled `Home`.
+
+Parent Site Nodes are not destructively removed while descendants remain. Journals are not removed while they still own entries. These are explicit application restrictions, not incidental database behavior.
+
+### `custom_page_settings`
+
+One-to-one with a Custom Page Site Node.
+
+`blocks` is an ordered JSON list of supported structured components. Current component types include text, list and contact components. Publication validation checks structured content, safe links/rich text and referenced public media.
+
+### `journal_settings`
+
+One-to-one with a Journal Site Node. Stores Journal listing title and introduction independently from individual entries.
+
+## Gallery and artwork
+
+### `artwork_categories`
+
+Persistence model: `ArtworkCategory`.
+
+Application concept: **Gallery**.
+
+A Gallery stores its persistent identity/content data such as name, slug, description, homepage eligibility and migration provenance. It has exactly one matching Gallery `SiteSection`, which owns public placement, hierarchy, publication/navigation state and site order.
+
+A Gallery has many Artworks. When a Gallery is renamed, the normal matching navigation identity follows the Gallery name unless the navigation label has been explicitly customized.
+
+### `artworks`
+
+An Artwork belongs to one Gallery through `artwork_category_id`.
+
+Core editorial concepts include:
+
+- stable slug/title;
+- medium/dimensions/description;
+- normalized year/date metadata;
+- draft/publication state and timestamps;
+- explicit Gallery-relative position;
+- optional homepage tie-break/feature state;
+- migration provenance.
+
+New Artwork drafts append to their Gallery. Reordering persists explicit positions. Moving an Artwork appends it to the destination Gallery and must preserve its media usages.
+
+Publication requires valid public metadata/media and a publishable Gallery. The exact invariant is enforced by the application/domain services rather than inferred from UI state.
+
+Only an unpublished Artwork draft is directly deletable through the normal editorial lifecycle. Deleting it removes its Artwork/media-usage relationships but retains the reusable underlying `MediaAsset` records.
+
+### `artwork_media`
+
+Explicit usage relation between Artwork and canonical `MediaAsset` originals.
+
+It stores role, position and an optional usage-specific ALT override. Removing a usage does not implicitly delete the asset. Primary-media replacement updates the relationship while preserving referential integrity.
+
+## Journals
+
+### Blog Journal / `blog_posts`
+
+Every Blog Post belongs to a Journal Site Node whose template is `blog`.
+
+Important concepts:
+
+- slug/title/body/excerpt;
+- draft, scheduled, published, unpublished or archived state;
+- explicit Journal-relative position;
+- optional cover media;
+- publication/schedule timestamps;
+- migration provenance.
+
+Public visibility is determined from the post lifecycle together with the publication state of its Journal Site Node. Scheduled visibility is evaluated from `scheduled_at`; it does not require a background promotion job.
+
+Published or scheduled Blog Posts cannot be directly deleted. They must first leave the public/scheduled lifecycle. Deleting an eligible non-public post removes the post/usage relationship while retaining reusable MediaAssets.
+
+### Exhibitions Journal / `exhibitions`
+
+Every Exhibition belongs to a Journal Site Node whose template is `exhibitions`.
+
+Important concepts include:
+
+- slug/title;
+- draft/publication state and explicit Journal-relative position;
+- date text plus optional normalized start/end dates;
+- kind, venue, city/country/location text;
+- opening information and constrained rich text;
+- optional external/directions links;
+- migration provenance.
+
+Exhibition ordering is scoped to the owning Exhibitions Journal. Separate Journals may legitimately use the same position values; there is no global published-Exhibition position uniqueness contract.
+
+Current/upcoming/past status is derived from normalized dates at read time rather than stored as mutable state.
+
+A published Exhibition cannot be directly deleted. Deleting an eligible non-public Exhibition removes its media usages while retaining reusable MediaAssets.
+
+### `exhibition_media`
+
+Ordered many-to-many usage relation between Exhibitions and `MediaAsset`, including role and optional ALT override. Referenced media cannot be destructively removed.
+
+## Custom/CV/contact content
+
+The old fixed `vita` and `contact` SiteSection types no longer exist in runtime architecture. Migration converts them to normal **Custom Page** nodes with structured components.
+
+Structured historical CV records remain available through `CvEntry`/migration data where required for reconciliation and editorial workflows, but their site placement is not represented by a dedicated Site Node type.
+
+`PublicContentSetting` provides typed site-wide settings scopes:
+
+- `general` — public email visibility, private contact recipient, social links, legal text and favicon reference;
+- `contact` — contact-surface state/status configuration;
+- `vita` — retained profile/CV support data used by the migrated/custom-page presentation.
+
+These settings are fixed typed records and are not deletable editorial pages.
+
+## Media
+
+### `media_assets`
+
+Canonical original uploaded or migrated asset.
+
+Key durable identity includes generated storage key, original filename, content-derived MIME type, byte size, SHA-256, state, optional dimensions/metadata and editorial ALT/credit/copyright fields.
+
+Available originals are reusable across content. Quarantined/deleted state is explicit. A referenced asset cannot be destructively deleted.
+
+### `media_variants`
+
+Generated derivative of one canonical original. Variants are rebuildable and never authoritative. Missing required public derivatives are explicit integrity/readiness failures, not a reason to serve an arbitrary fallback.
+
+See [MEDIA.md](MEDIA.md) for ingest and storage rules.
+
+## General supporting models
+
+### Redirects
+
+`redirects` stores intentional retired-path mappings for the new application. It is not a blanket compatibility layer for legacy PHP/query URLs. Redirects must not create loops or unsafe targets.
+
+### Audit and admin actions
+
+`audit_events` records durable administrative changes and is append-only at the database boundary. Additional admin action receipt/stat models support operational/admin feedback without replacing the audit trail. Destructive Artwork, Blog and Exhibition lifecycle actions are represented in the audit-action contract.
+
+### Operational metrics
+
+`daily_metrics` and related operational reporting models store application-level aggregates only. Human visitor analytics remain authoritative in Matomo and are not duplicated as raw visit/event rows in PostgreSQL.
+
+### Users/sessions/cache/jobs
+
+Laravel framework tables support authenticated admin users and runtime infrastructure. No legacy user/password/session data is imported.
+
+## Deletion rules
+
+The accepted functional contract is conservative and explicit:
+
+- Home cannot be deleted.
+- A parent Site Node cannot be deleted while it has descendants.
+- A Journal cannot be deleted while it owns Blog/Exhibition entries.
+- Referenced MediaAssets cannot be destructively deleted.
+- Artwork direct deletion is limited to unpublished drafts; Artwork media usages are removed, reusable MediaAssets are retained.
+- Published or scheduled Blog Posts must leave that lifecycle before deletion; reusable MediaAssets are retained.
+- Published Exhibitions must be unpublished before deletion; Exhibition media usages are removed and reusable MediaAssets are retained.
+- Destructive actions are authorized/audited and must never silently cascade through reusable content.
+
+These rules are protected by focused functional-acceptance tests and should change only through an explicit product/data-contract decision.
+
+## Migration boundary
+
+Legacy artwork tables, Vita text/media and legacy SiteSection shapes are migration inputs only.
+
+The configurable-site migration maps the earlier fixed placement types to the current model:
+
+- legacy Home → Home
+- artwork category sections → Gallery
+- legacy Blog → Journal / Blog
+- legacy Exhibitions → Journal / Exhibitions
+- legacy CV/Vita → Custom Page
+- legacy Contact → Custom Page
+
+Protected Validation/Production state evolves through forward Laravel migrations; source import is not rerun destructively against canonical non-empty data.
