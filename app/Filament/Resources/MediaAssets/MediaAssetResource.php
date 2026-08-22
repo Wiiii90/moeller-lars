@@ -31,7 +31,7 @@ class MediaAssetResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Files';
+    protected static ?string $navigationLabel = 'Media Files';
 
     protected static ?int $navigationSort = 2;
 

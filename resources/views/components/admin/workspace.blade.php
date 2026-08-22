@@ -1,12 +1,14 @@
 @props([
-    'kicker',
+    'kicker' => null,
     'title',
 ])
 
 <div {{ $attributes->class(['admin-workspace']) }}>
     <header class="admin-workspace__header">
         <div class="admin-workspace__heading">
-            <p class="admin-workspace__kicker">{{ $kicker }}</p>
+            @if (filled($kicker))
+                <p class="admin-workspace__kicker">{{ $kicker }}</p>
+            @endif
             <h1 class="admin-workspace__title">{{ $title }}</h1>
         </div>
 

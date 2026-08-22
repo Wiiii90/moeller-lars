@@ -16,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,17 +52,17 @@ class PublicContentSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Grid::make([
-                'default' => 1,
-                'xl' => 2,
-            ])
+            Grid::make(1)
                 ->extraAttributes(['class' => 'admin-settings-grid'])
                 ->schema([
                     AdminForm::section('Site identity')
                         ->schema([
                             MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
                                 ->nullable()
-                                ->helperText('Choose an image from Files. The generated thumbnail variant is used as the browser icon.')
+                                ->live()
+                                ->helperText('Choose an image from Files. The existing generated thumbnail is used for browser identity.')
+                                ->columnSpanFull(),
+                            View::make('filament.schemas.components.favicon-preview')
                                 ->columnSpanFull(),
                         ]),
                     AdminForm::section('Public contact')
@@ -70,14 +71,23 @@ class PublicContentSettingResource extends Resource
                                 ->label('Public email')
                                 ->email()
                                 ->maxLength(254)
-                                ->nullable(),
+                                ->nullable()
+                                ->helperText('Address visitors may see when public display is enabled.'),
                             Toggle::make('show_public_email')
-                                ->label('Show public email')
+                                ->label('Show publicly')
                                 ->default(true),
                         ])
                         ->columns(2),
+                    AdminForm::section('Contact delivery')
+                        ->schema([
+                            TextInput::make('contact_recipient_email')
+                                ->label('Private contact recipient')
+                                ->email()
+                                ->maxLength(254)
+                                ->nullable()
+                                ->helperText('Receives contact-form messages. If empty, the server-configured fallback recipient is used.'),
+                        ]),
                     AdminForm::section('Social links')
-                        ->columnSpanFull()
                         ->schema([
                             Repeater::make('social_links')
                                 ->label('Profiles')
@@ -106,18 +116,12 @@ class PublicContentSettingResource extends Resource
                                 ->addActionLabel('Add social link')
                                 ->columnSpanFull(),
                         ]),
-                    AdminForm::section('Contact delivery')
-                        ->schema([
-                            TextInput::make('contact_recipient_email')
-                                ->label('Private delivery recipient')
-                                ->email()
-                                ->maxLength(254)
-                                ->nullable()
-                                ->helperText('If empty, the server-configured fallback recipient is used.'),
-                        ]),
                     AdminForm::section('Legal')
                         ->schema([
-                            Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
+                            Textarea::make('legal_disclaimer')
+                                ->label('Legal disclaimer')
+                                ->rows(4)
+                                ->nullable(),
                         ]),
                 ]),
         ]);

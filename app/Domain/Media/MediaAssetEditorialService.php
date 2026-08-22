@@ -5,6 +5,7 @@ namespace App\Domain\Media;
 use App\Domain\Admin\AdminAuditService;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
+use App\Models\CustomPageSetting;
 use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -143,6 +144,24 @@ class MediaAssetEditorialService
             if (DB::table($table)->where($column, $id)->exists()) {
                 throw ValidationException::withMessages(['media' => 'Referenced media cannot be deleted.']);
             }
+        }
+
+        $referencedByCustomPage = CustomPageSetting::query()
+            ->get(['id', 'blocks'])
+            ->contains(function (CustomPageSetting $settings) use ($id): bool {
+                foreach ($settings->components() as $component) {
+                    if (($component['type'] ?? null) === 'image'
+                        && is_numeric($component['media_asset_id'] ?? null)
+                        && (int) $component['media_asset_id'] === (int) $id) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+
+        if ($referencedByCustomPage) {
+            throw ValidationException::withMessages(['media' => 'Referenced media cannot be deleted.']);
         }
     }
 
