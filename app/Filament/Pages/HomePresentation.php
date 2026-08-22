@@ -110,10 +110,8 @@ final class HomePresentation extends Page
         $eligible = Artwork::query()
             ->where('state', 'published')
             ->whereNotNull('work_year')
-            ->whereHas('category', static function ($query): void {
-                $query->where('show_on_home', true)
-                    ->whereHas('siteSection', static fn ($section) => $section->where('state', 'published'));
-            })
+            ->whereHas('category', static fn ($query) => $query->where('show_on_home', true))
+            ->whereHas('category.siteSection', static fn ($query) => $query->where('state', 'published'))
             ->with(['category', 'artworkMedia.mediaAsset.variants'])
             ->orderByDesc('work_year')
             ->orderByDesc('work_date')
