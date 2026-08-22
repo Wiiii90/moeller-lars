@@ -135,6 +135,42 @@
     flex-wrap: wrap;
 }
 
+.admin-action {
+    display: inline-flex;
+    min-height: 2rem;
+    padding: .38rem .58rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-muted);
+    font: inherit;
+    font-size: .76rem;
+    font-weight: 550;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.admin-action:hover,
+.admin-action:focus-visible {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+}
+
+.admin-action:disabled {
+    opacity: .38;
+    cursor: default;
+}
+
+.admin-action.is-primary {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-surface);
+    color: var(--admin-text);
+}
+
 .admin-empty-state {
     padding: 2rem 0;
     border-block: 1px solid var(--admin-line);
