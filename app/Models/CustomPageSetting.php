@@ -264,7 +264,7 @@ final class CustomPageSetting extends Model
             return [];
         }
 
-        return array_values(array_map(function (mixed $item): array {
+        return array_map(function (mixed $item): array {
             if (! is_array($item)) {
                 return [];
             }
@@ -278,7 +278,7 @@ final class CustomPageSetting extends Model
                 'url' => $this->nullableTrimmedString($item['url'] ?? null),
                 'body' => $item['body'] ?? null,
             ];
-        }, $items));
+        }, $items);
     }
 
     private function nullableTrimmedString(mixed $value): ?string
