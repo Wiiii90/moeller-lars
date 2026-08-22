@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\ArtworkCategories\Pages;
 
-use App\Domain\Artwork\ArtworkCategoryEditorialService;
+use App\Domain\Artwork\GalleryEditorialService;
 use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
@@ -18,7 +18,7 @@ class CreateArtworkCategory extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
-        return app(ArtworkCategoryEditorialService::class)->create($data);
+        return app(GalleryEditorialService::class)->create($data);
     }
 
     protected function getRedirectUrl(): string
