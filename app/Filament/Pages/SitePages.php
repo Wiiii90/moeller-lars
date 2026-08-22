@@ -47,6 +47,8 @@ final class SitePages extends Page
     /** @var list<array{id: int, label: string, type: string}> */
     public array $parentCandidates = [];
 
+    private ?SiteSectionOrderService $orderService = null;
+
     public function mount(): void
     {
         $this->loadSections();
@@ -56,7 +58,7 @@ final class SitePages extends Page
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if (app(SiteSectionOrderService::class)->move($section, $direction)) {
+        if ($this->orderService()->move($section, $direction)) {
             Notification::make()->title('Site order updated')->success()->send();
             $this->loadSections();
         }
@@ -220,6 +222,8 @@ final class SitePages extends Page
 
     private function loadSections(): void
     {
+        $this->orderService = app(SiteSectionOrderService::class);
+
         /** @var Builder<SiteSection> $topLevelQuery */
         $topLevelQuery = SiteSection::query()->whereNull('parent_id');
 
@@ -270,6 +274,7 @@ final class SitePages extends Page
         $journalTemplate = $section->journalTemplate();
         $hasChildren = $section->relationLoaded('children') && $section->getRelation('children')->isNotEmpty();
         $workspaceUrl = app(SiteNodePresentation::class)->workspaceUrl($section);
+        $order = $this->orderService();
 
         $validParentIds = collect($this->parentCandidates)
             ->filter(function (array $candidate) use ($section, $type): bool {
@@ -298,14 +303,19 @@ final class SitePages extends Page
             'has_children' => $hasChildren,
             'depth' => $depth,
             'public_url' => app(SiteNodeRoute::class)->url($section),
-            'can_move_up' => app(SiteSectionOrderService::class)->canMove($section, 'up'),
-            'can_move_down' => app(SiteSectionOrderService::class)->canMove($section, 'down'),
+            'can_move_up' => $order->canMove($section, 'up'),
+            'can_move_down' => $order->canMove($section, 'down'),
             'can_delete' => $type->canDelete(),
             'fixed_placement' => ! $type->canChangePlacement(),
             'can_choose_parent' => $type->canHaveParent() && ! $hasChildren,
             'valid_parent_ids' => $validParentIds,
             'workspace_url' => $workspaceUrl,
         ];
+    }
+
+    private function orderService(): SiteSectionOrderService
+    {
+        return $this->orderService ??= app(SiteSectionOrderService::class);
     }
 
     private function updatePlacement(SiteSection $section, string $state, bool $visible, mixed $parentId): void
