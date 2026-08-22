@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\BlogPosts\Pages;
 
 use App\Domain\Blog\BlogEditorialService;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Models\BlogPost;
 use Filament\Actions\Action;
@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 final class EditBlogPost extends EditRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = BlogPostResource::class;
 
