@@ -17,6 +17,7 @@ use App\Models\BlogPost;
 use App\Models\Exhibition;
 use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
@@ -27,7 +28,7 @@ beforeEach(function (): void {
 
 function acceptanceAsset(string $suffix): MediaAsset
 {
-    return MediaAsset::query()->create([
+    $asset = MediaAsset::query()->create([
         'storage_key' => 'originals/acceptance-'.$suffix.'.jpg',
         'original_filename' => 'acceptance-'.$suffix.'.jpg',
         'mime_type' => 'image/jpeg',
@@ -38,6 +39,19 @@ function acceptanceAsset(string $suffix): MediaAsset
         'width' => 2,
         'height' => 2,
     ]);
+
+    MediaVariant::query()->create([
+        'media_asset_id' => $asset->getKey(),
+        'variant_kind' => 'thumbnail',
+        'storage_key' => 'variants/acceptance-'.$suffix.'.webp',
+        'mime_type' => 'image/webp',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', 'acceptance-variant-'.$suffix),
+        'transform_profile' => 'public-v1',
+        'state' => 'available',
+    ]);
+
+    return $asset;
 }
 
 it('keeps Home singular published navigable and undeletable', function (): void {
