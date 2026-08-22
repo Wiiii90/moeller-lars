@@ -23,9 +23,21 @@
     wire:key="site-section-{{ $section['id'] }}"
 >
     <div class="artist-page-row__identity">
-        <span class="artist-page-row__node" aria-hidden="true">
-            <x-filament::icon :icon="$section['icon']" class="artist-page-row__node-icon" />
-        </span>
+        @if ($section['has_children'])
+            <button
+                class="artist-page-row__node artist-page-row__node--branch"
+                type="button"
+                x-on:click="treeOpen = ! treeOpen"
+                x-bind:aria-expanded="treeOpen.toString()"
+                aria-label="Toggle child pages for {{ $label }}"
+            >
+                <x-filament::icon :icon="$section['icon']" class="artist-page-row__node-icon" />
+            </button>
+        @else
+            <span class="artist-page-row__node" aria-hidden="true">
+                <x-filament::icon :icon="$section['icon']" class="artist-page-row__node-icon" />
+            </span>
+        @endif
         <div class="artist-page-row__identity-copy">
             <span class="artist-workspace__kicker">{{ $section['type_label'] }}</span>
             @if ($workspaceUrl)
