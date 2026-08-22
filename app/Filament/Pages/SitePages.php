@@ -282,6 +282,7 @@ final class SitePages extends Page
                 ->map(fn (SiteSection $child): array => $this->row($child, 1))
                 ->values()
                 ->all();
+            $row['has_children'] = $row['children'] !== [];
             $rows[] = $row;
         }
 
@@ -298,6 +299,14 @@ final class SitePages extends Page
             'id' => (int) $section->getKey(),
             'type' => $type,
             'template' => $template,
+            'icon' => match ($type) {
+                SiteSection::TYPE_HOME => 'heroicon-o-home',
+                SiteSection::TYPE_GALLERY => 'heroicon-o-photo',
+                SiteSection::TYPE_JOURNAL => 'heroicon-o-pencil-square',
+                SiteSection::TYPE_CUSTOM => 'heroicon-o-document-text',
+                SiteSection::TYPE_NAVIGATION_GROUP => 'heroicon-o-folder',
+                default => 'heroicon-o-rectangle-stack',
+            },
             'type_label' => match ($type) {
                 SiteSection::TYPE_HOME => 'Home',
                 SiteSection::TYPE_GALLERY => 'Gallery',
@@ -312,7 +321,7 @@ final class SitePages extends Page
             'visible' => (bool) $section->getAttribute('show_in_navigation'),
             'position' => (int) $section->getAttribute('position'),
             'parent_id' => $section->getAttribute('parent_id'),
-            'has_children' => $section->relationLoaded('children') && $section->getRelation('children')->isNotEmpty(),
+            'has_children' => false,
             'depth' => $depth,
             'public_url' => $section->publicUrl(),
             'can_move_up' => app(SiteSectionOrderService::class)->canMove($section, 'up'),
