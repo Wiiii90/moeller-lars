@@ -24,6 +24,9 @@
     $isTreeRoot = $attributes->get('data-admin-tree-root') === 'true';
     $isSiteTreeNode = $attributes->get('data-admin-site-section') !== null;
     $isAdminTreeItem = $isTreeRoot || $isSiteTreeNode;
+    $adminTreeStateKey = $isTreeRoot
+        ? 'admin.sidebar.pages-tree.root'
+        : ($isSiteTreeNode ? 'admin.sidebar.pages-tree.site-section.'.$attributes->get('data-admin-site-section') : null);
     $startsOpen = $active || $activeChildItems;
     $plainLabel = trim(strip_tags($slot->toHtml()));
     $displayIcon = ($active && $activeIcon) ? $activeIcon : $icon;
@@ -31,10 +34,32 @@
 
 <li
     @if ($hasChildItems)
-        x-data="{ adminChildrenOpen: @js($isAdminTreeItem ? true : $startsOpen) }"
-        @unless ($isAdminTreeItem)
+        @if ($isAdminTreeItem)
+            x-data="{
+                adminTreeStateKey: @js($adminTreeStateKey),
+                adminChildrenOpen: true,
+                init() {
+                    try {
+                        const storedState = window.sessionStorage.getItem(this.adminTreeStateKey)
+                        if (storedState !== null) {
+                            this.adminChildrenOpen = storedState === 'expanded'
+                        }
+                    } catch (error) {}
+                },
+                toggleAdminChildren() {
+                    this.adminChildrenOpen = ! this.adminChildrenOpen
+                    try {
+                        window.sessionStorage.setItem(
+                            this.adminTreeStateKey,
+                            this.adminChildrenOpen ? 'expanded' : 'collapsed',
+                        )
+                    } catch (error) {}
+                },
+            }"
+        @else
+            x-data="{ adminChildrenOpen: @js($startsOpen) }"
             x-effect="if (@js($activeChildItems)) adminChildrenOpen = true"
-        @endunless
+        @endif
     @endif
     @if ($isTreeRoot)
         style="--admin-tree-disclosure-slot: var(--admin-tree-icon-slot); --admin-tree-nested-indent: var(--admin-tree-top-indent); --admin-tree-nested-trunk-x: var(--admin-tree-top-trunk-x);"
@@ -95,7 +120,7 @@
                     <button
                         type="button"
                         class="admin-sidebar-tree__disclosure"
-                        x-on:click.stop="adminChildrenOpen = ! adminChildrenOpen"
+                        x-on:click.stop="toggleAdminChildren()"
                         x-bind:aria-expanded="adminChildrenOpen.toString()"
                         aria-label="Toggle {{ $plainLabel }} children"
                     >
