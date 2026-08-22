@@ -8,34 +8,36 @@
         </x-slot:summary>
 
         @if ($exhibitions !== [])
-            <section class="artist-section-list" aria-label="Exhibitions">
+            <x-admin.list aria-label="Exhibitions">
                 @foreach ($exhibitions as $exhibition)
-                    <article class="artist-section" wire:key="exhibition-{{ $exhibition['id'] }}">
-                        <div class="artist-section__identity">
-                            <span class="artist-section__type">{{ $exhibition['type'] }}</span>
+                    <article class="admin-list__row" wire:key="exhibition-{{ $exhibition['id'] }}">
+                        <div class="admin-list__identity">
+                            <span class="admin-list__eyebrow">{{ $exhibition['type'] }}</span>
                             <strong>{{ $exhibition['title'] }}</strong>
-                            <span class="artist-section__path">{{ $exhibition['meta'] }}</span>
+                            <span>{{ $exhibition['meta'] }}</span>
                         </div>
-                        <div class="artist-section__state">
-                            <span class="{{ $exhibition['state'] === 'published' ? 'is-published' : '' }}">{{ ucfirst($exhibition['state']) }}</span>
+                        <div class="admin-list__meta">
+                            <span>{{ ucfirst($exhibition['state']) }}</span>
                         </div>
-                        <div class="artist-section__count">
+                        <div class="admin-list__count">
                             <strong>{{ $exhibition['date'] }}</strong>
                             <span>Date</span>
                         </div>
-                        <div class="artist-section__actions">
-                            <a class="artist-action is-primary" href="{{ $exhibition['edit_url'] }}">Edit</a>
-                            @if ($exhibition['public_url'])<a class="artist-action" href="{{ $exhibition['public_url'] }}" target="_blank" rel="noopener">View</a>@endif
-                            <span class="artist-section__order" aria-label="Reorder {{ $exhibition['title'] }}">
-                                <button class="artist-action" type="button" wire:click="moveExhibition({{ $exhibition['id'] }}, 'up')" @disabled(! $exhibition['can_move_up']) aria-label="Move {{ $exhibition['title'] }} earlier">↑</button>
-                                <button class="artist-action" type="button" wire:click="moveExhibition({{ $exhibition['id'] }}, 'down')" @disabled(! $exhibition['can_move_down']) aria-label="Move {{ $exhibition['title'] }} later">↓</button>
+                        <div class="admin-toolbar">
+                            <a class="admin-action is-primary" href="{{ $exhibition['edit_url'] }}">Edit</a>
+                            @if ($exhibition['public_url'])<a class="admin-action" href="{{ $exhibition['public_url'] }}" target="_blank" rel="noopener">View</a>@endif
+                            <span class="admin-toolbar" aria-label="Reorder {{ $exhibition['title'] }}">
+                                <button class="admin-action" type="button" wire:click="moveExhibition({{ $exhibition['id'] }}, 'up')" @disabled(! $exhibition['can_move_up']) aria-label="Move {{ $exhibition['title'] }} earlier">↑</button>
+                                <button class="admin-action" type="button" wire:click="moveExhibition({{ $exhibition['id'] }}, 'down')" @disabled(! $exhibition['can_move_down']) aria-label="Move {{ $exhibition['title'] }} later">↓</button>
                             </span>
                         </div>
                     </article>
                 @endforeach
-            </section>
+            </x-admin.list>
         @else
-            <section class="artist-gallery-empty"><p class="artist-workspace__kicker">Empty programme</p><h3>Add the first exhibition</h3><p>Create an exhibition draft, add venue/media details and publish it when ready.</p></section>
+            <x-admin.empty-state kicker="Empty programme" title="Add the first exhibition">
+                <p>Create an exhibition draft, add venue/media details and publish it when ready.</p>
+            </x-admin.empty-state>
         @endif
     </x-admin.workspace>
 </x-filament-panels::page>
