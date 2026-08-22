@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SafeRichTextRenderer;
+use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
@@ -33,13 +35,13 @@ final class PublicSiteSectionController extends Controller
         /** @var SiteSection|null $siteSection */
         $siteSection = $query->first();
 
-        if ($siteSection === null || (string) $siteSection->getAttribute('type') === SiteSection::TYPE_GALLERY) {
+        if ($siteSection === null || $siteSection->nodeType() === SiteNodeType::Gallery) {
             return $this->artworks->category($section);
         }
 
-        return match ((string) $siteSection->getAttribute('type')) {
-            SiteSection::TYPE_CUSTOM => $this->customPage($siteSection),
-            SiteSection::TYPE_JOURNAL => $this->journal($siteSection),
+        return match ($siteSection->nodeType()) {
+            SiteNodeType::CustomPage => $this->customPage($siteSection),
+            SiteNodeType::Journal => $this->journal($siteSection),
             default => abort(404),
         };
     }
@@ -47,8 +49,8 @@ final class PublicSiteSectionController extends Controller
     public function journalEntry(string $section, string $slug): View
     {
         $sectionQuery = SiteSection::query()
-            ->where('type', SiteSection::TYPE_JOURNAL)
-            ->where('template', SiteSection::JOURNAL_TEMPLATE_BLOG)
+            ->where('type', SiteNodeType::Journal->value)
+            ->where('template', JournalTemplate::Blog->value)
             ->where('slug', $section);
         $this->preview->constrainSectionQuery($sectionQuery);
         /** @var SiteSection|null $journal */
@@ -104,9 +106,9 @@ final class PublicSiteSectionController extends Controller
 
     private function journal(SiteSection $section): View
     {
-        return match ((string) $section->getAttribute('template')) {
-            SiteSection::JOURNAL_TEMPLATE_BLOG => $this->blogJournal($section),
-            SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS => $this->exhibitionsJournal($section),
+        return match (JournalTemplate::tryFrom((string) $section->getAttribute('template'))) {
+            JournalTemplate::Blog => $this->blogJournal($section),
+            JournalTemplate::Exhibitions => $this->exhibitionsJournal($section),
             default => abort(404),
         };
     }
