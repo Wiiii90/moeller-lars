@@ -370,7 +370,7 @@ final class SitePages extends Page
         $type = (string) $section->getAttribute('type');
 
         if ($type === SiteSection::TYPE_HOME) {
-            return ArtworkResource::getUrl('index');
+            return HomePresentation::getUrl();
         }
 
         if ($type === SiteSection::TYPE_GALLERY) {
