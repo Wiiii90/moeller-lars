@@ -12,7 +12,6 @@ use App\Models\SiteSection;
 use DateTimeInterface;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use LogicException;
 
@@ -79,10 +78,10 @@ final class HomePresentation extends Page
             ->whereHas('siteSection')
             ->with('siteSection')
             ->withCount([
-                'artworks as published_artworks_count' => static fn (Builder $query): Builder => $query->where('state', 'published'),
+                'artworks as published_artworks_count' => static fn ($query) => $query->where('state', 'published'),
             ])
             ->withMax([
-                'artworks as newest_published_year' => static fn (Builder $query): Builder => $query
+                'artworks as newest_published_year' => static fn ($query) => $query
                     ->where('state', 'published')
                     ->whereNotNull('work_year'),
             ], 'work_year')
@@ -111,9 +110,9 @@ final class HomePresentation extends Page
         $eligible = Artwork::query()
             ->where('state', 'published')
             ->whereNotNull('work_year')
-            ->whereHas('category', static function (Builder $query): void {
+            ->whereHas('category', static function ($query): void {
                 $query->where('show_on_home', true)
-                    ->whereHas('siteSection', static fn (Builder $section): Builder => $section->where('state', 'published'));
+                    ->whereHas('siteSection', static fn ($section) => $section->where('state', 'published'));
             })
             ->with(['category', 'artworkMedia.mediaAsset.variants'])
             ->orderByDesc('work_year')
