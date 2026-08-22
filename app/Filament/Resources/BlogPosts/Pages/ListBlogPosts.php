@@ -3,21 +3,26 @@
 namespace App\Filament\Resources\BlogPosts\Pages;
 
 use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteNodeType;
+use App\Filament\Concerns\HasJournalSettingsAction;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\JournalSettings\JournalSettingResource;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
+use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
 
 final class ListBlogPosts extends Page
 {
+    use HasJournalSettingsAction;
+
     protected static string $resource = BlogPostResource::class;
 
     protected string $view = 'filament.resources.blog-posts.pages.list-blog-posts';
@@ -52,15 +57,30 @@ final class ListBlogPosts extends Page
             Action::make('addPost')
                 ->label('Add blog post')
                 ->icon(Heroicon::OutlinedPlus)
-                ->url(BlogPostResource::getUrl('create', ['section' => $this->sectionId])),
-            Action::make('journalSettings')
-                ->label('Journal settings')
-                ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
-                ->url(JournalSettingResource::getSettingsUrl($this->sectionId)),
+                ->schema(fn (Schema $schema): Schema => BlogPostResource::form($schema))
+                ->modalHeading('Add blog post')
+                ->modalSubmitActionLabel('Create draft')
+                ->action(function (array $data): void {
+                    $data['site_section_id'] = $this->sectionId;
+                    app(BlogEditorialService::class)->createDraft($data);
+                    $this->loadPosts();
+
+                    Notification::make()
+                        ->title('Blog draft created')
+                        ->body('The post remains private until it is explicitly published or scheduled.')
+                        ->success()
+                        ->send();
+                }),
+            $this->journalSettingsAction(),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
         ];
+    }
+
+    protected function journalSectionId(): int
+    {
+        return $this->sectionId;
     }
 
     private function loadPosts(): void
@@ -111,8 +131,8 @@ final class ListBlogPosts extends Page
 
         $exists = SiteSection::query()
             ->whereKey($sectionId)
-            ->where('type', SiteSection::TYPE_JOURNAL)
-            ->where('template', SiteSection::JOURNAL_TEMPLATE_BLOG)
+            ->where('type', SiteNodeType::Journal->value)
+            ->where('template', JournalTemplate::Blog->value)
             ->exists();
         abort_unless($exists, 404);
 
