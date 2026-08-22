@@ -1,17 +1,11 @@
 <x-filament-panels::page>
     @php($published = collect($exhibitions)->where('state', 'published')->count())
 
-    <div class="artist-workspace">
-        <header class="artist-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">Exhibitions</p>
-                <h2>Exhibition programme</h2>
-            </div>
-            <div class="artist-workspace__summary">
-                <div><strong>{{ count($exhibitions) }}</strong><span>Exhibitions</span></div>
-                <div><strong>{{ $published }}</strong><span>Published</span></div>
-            </div>
-        </header>
+    <x-admin.workspace kicker="Exhibitions" title="Exhibition programme">
+        <x-slot:summary>
+            <div><strong>{{ count($exhibitions) }}</strong><span>Exhibitions</span></div>
+            <div><strong>{{ $published }}</strong><span>Published</span></div>
+        </x-slot:summary>
 
         @if ($exhibitions !== [])
             <section class="artist-section-list" aria-label="Exhibitions">
@@ -43,5 +37,5 @@
         @else
             <section class="artist-gallery-empty"><p class="artist-workspace__kicker">Empty programme</p><h3>Add the first exhibition</h3><p>Create an exhibition draft, add venue/media details and publish it when ready.</p></section>
         @endif
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>
