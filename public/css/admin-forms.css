@@ -1,0 +1,84 @@
+/* Shared admin form primitives. Route-backed editors remain normal Filament pages;
+ * dialogs are provided by Filament actions/modals rather than page overlays.
+ */
+.admin-form-section,
+.artist-editor-form-section {
+    margin: 0 !important;
+    padding: 1.35rem 0 1.55rem !important;
+    border: 0 !important;
+    border-top: 1px solid var(--artist-admin-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.admin-form-section legend,
+.admin-form-section .fi-sc-fieldset-label,
+.artist-editor-form-section legend,
+.artist-editor-form-section .fi-sc-fieldset-label {
+    color: var(--artist-admin-text) !important;
+    font-size: .78rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .01em;
+}
+
+.artist-component-repeater .fi-fo-repeater-item {
+    border: 0 !important;
+    border-top: 1px solid var(--artist-admin-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.artist-component-repeater .fi-fo-repeater-item-header {
+    padding: .65rem 0 !important;
+}
+
+.artist-component-repeater .fi-fo-repeater-item-content {
+    padding: 1rem 0 1.25rem !important;
+    border-top-color: var(--artist-admin-line) !important;
+}
+
+.artist-component-repeater .fi-fo-repeater-items {
+    gap: 0 !important;
+}
+
+.admin-form-section .fi-fo-table-repeater > table,
+.artist-editor-form-section .fi-fo-table-repeater > table {
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    border-top: 1px solid var(--artist-admin-line) !important;
+    border-bottom: 1px solid var(--artist-admin-line) !important;
+}
+
+.admin-form-section .fi-fo-table-repeater > table > thead > tr > th,
+.artist-editor-form-section .fi-fo-table-repeater > table > thead > tr > th {
+    border-color: var(--artist-admin-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--artist-admin-muted) !important;
+    font-size: .68rem !important;
+    font-weight: 650 !important;
+}
+
+.admin-form-section .fi-fo-table-repeater > table > tbody,
+.admin-form-section .fi-fo-table-repeater > table > tbody > tr > td,
+.artist-editor-form-section .fi-fo-table-repeater > table > tbody,
+.artist-editor-form-section .fi-fo-table-repeater > table > tbody > tr > td {
+    border-color: var(--artist-admin-line) !important;
+}
+
+.admin-form-section .fi-fo-table-repeater-add,
+.artist-editor-form-section .fi-fo-table-repeater-add {
+    justify-content: flex-start !important;
+}
+
+@media (max-width: 760px) {
+    .admin-form-section,
+    .artist-editor-form-section {
+        padding: 1.15rem 0 1.35rem !important;
+    }
+}
