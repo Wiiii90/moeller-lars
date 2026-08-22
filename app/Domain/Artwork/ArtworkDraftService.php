@@ -72,12 +72,9 @@ final class ArtworkDraftService
             }
 
             $artworkId = (int) $fresh->getKey();
-            $galleryId = (int) $fresh->getAttribute('artwork_category_id');
             $fresh->artworkMedia()->delete();
             $fresh->delete();
-            $this->audit->record($actor, 'artwork.deleted', 'artwork', $artworkId, [
-                'artwork_category_id' => $galleryId,
-            ]);
+            $this->audit->record($actor, 'artwork.deleted', 'artwork', $artworkId);
         });
     }
 }
