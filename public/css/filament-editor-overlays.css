@@ -1,44 +1,37 @@
-/* Route-backed content editors.
- * Create/edit routes keep real URLs and browser history while presenting one
- * shared responsive editor surface inside Filament's content area. Editors must
- * never escape their page stacking context or cover global navigation.
+/* Route-backed editor fallback.
+ * These routes remain addressable for deep links and validation, but they are
+ * normal admin workspaces rather than simulated modal windows. Native Filament
+ * actions own modal interactions from the surrounding collection workspaces.
  */
 .artist-editor-overlay {
-    position: relative;
-    min-height: calc(100dvh - 7rem);
-    padding: .75rem 0 2rem;
+    min-height: 0;
+    padding: 0;
 }
 
 .artist-editor-overlay > .fi-page-header-main-ctn {
     position: relative;
-    width: min(100%, 78rem);
-    max-height: calc(100dvh - 7rem);
-    margin: 0 auto;
-    overflow-x: hidden;
-    overflow-y: auto;
-    border: 1px solid var(--artist-admin-line-strong);
-    border-radius: .65rem;
-    background: #fff;
-    box-shadow: 0 1.35rem 4rem rgba(20, 20, 20, .16);
-}
-
-.dark .artist-editor-overlay > .fi-page-header-main-ctn {
-    background: rgb(24, 24, 27);
-    box-shadow: 0 1.35rem 4rem rgba(0, 0, 0, .42);
+    width: 100%;
+    max-height: none;
+    margin: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
 .artist-editor-overlay .fi-header {
-    position: sticky;
-    top: 0;
-    z-index: 6;
+    position: relative;
+    top: auto;
+    z-index: auto;
     min-height: 0;
-    padding: 1.15rem 1.4rem;
+    padding: .2rem 0 1.35rem;
     border-bottom: 1px solid var(--artist-admin-line-strong);
-    background: #fff;
+    background: transparent;
 }
 
 .dark .artist-editor-overlay .fi-header {
-    background: rgb(24, 24, 27);
+    background: transparent;
 }
 
 .artist-editor-overlay .fi-breadcrumbs {
@@ -47,9 +40,10 @@
 
 .artist-editor-overlay .fi-header-heading {
     color: var(--artist-admin-text);
-    font-size: 1.25rem;
-    font-weight: 650;
-    letter-spacing: -.02em;
+    font-size: clamp(1.65rem, 2vw, 2.25rem);
+    font-weight: 620;
+    letter-spacing: -.035em;
+    line-height: 1.05;
 }
 
 .artist-editor-overlay .fi-header-actions-ctn,
@@ -65,12 +59,9 @@
     font-size: .74rem;
 }
 
-.artist-editor-overlay .fi-page-main {
-    padding: 0;
-}
-
+.artist-editor-overlay .fi-page-main,
 .artist-editor-overlay .fi-page-content {
-    padding: .25rem 1.4rem 0;
+    padding: 0;
 }
 
 .artist-editor-form-section {
@@ -149,23 +140,25 @@
     justify-content: flex-start !important;
 }
 
-/* Filament's sticky action bar belongs to the editor's own scroll surface. */
+/* Route fallbacks keep their actions in the document flow. Real dialogs are
+ * provided by Filament actions in the originating workspace instead of by
+ * visually turning this route into a second window. */
 .artist-editor-overlay .fi-sc-actions.fi-sticky .fi-ac {
-    position: sticky !important;
-    bottom: 0 !important;
-    z-index: 7;
+    position: relative !important;
+    bottom: auto !important;
+    z-index: auto;
     width: auto !important;
-    margin: 0 -1.4rem !important;
-    padding: .9rem 1.4rem !important;
+    margin: 0 !important;
+    padding: .9rem 0 !important;
     border-top: 1px solid var(--artist-admin-line-strong);
     border-radius: 0 !important;
-    background: #fff !important;
+    background: transparent !important;
     box-shadow: none !important;
     --tw-ring-shadow: 0 0 #0000 !important;
 }
 
 .dark .artist-editor-overlay .fi-sc-actions.fi-sticky .fi-ac {
-    background: rgb(24, 24, 27) !important;
+    background: transparent !important;
 }
 
 .artist-editor-overlay .fi-sc-actions.fi-sticky .fi-btn {
@@ -176,14 +169,14 @@
 
 @media (max-width: 760px) {
     .artist-editor-overlay {
-        min-height: 100dvh;
+        min-height: 0;
         margin: 0;
         padding: 0;
     }
 
     .artist-editor-overlay > .fi-page-header-main-ctn {
         width: 100%;
-        min-height: 100dvh;
+        min-height: 0;
         max-height: none;
         margin: 0;
         border: 0;
@@ -192,7 +185,7 @@
     }
 
     .artist-editor-overlay .fi-header {
-        padding: 1rem;
+        padding: 0 0 1rem;
     }
 
     .artist-editor-overlay .fi-header-main-ctn {
@@ -200,12 +193,12 @@
     }
 
     .artist-editor-overlay .fi-page-content {
-        padding: .15rem 1rem 0;
+        padding: 0;
     }
 
     .artist-editor-overlay .fi-sc-actions.fi-sticky .fi-ac {
-        margin: 0 -1rem !important;
-        padding: .85rem 1rem calc(.85rem + env(safe-area-inset-bottom)) !important;
+        margin: 0 !important;
+        padding: .85rem 0 calc(.85rem + env(safe-area-inset-bottom)) !important;
     }
 
     .artist-editor-form-section {
