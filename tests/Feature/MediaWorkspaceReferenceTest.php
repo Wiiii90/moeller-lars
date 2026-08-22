@@ -4,6 +4,7 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Filament\Support\MediaReferenceCatalog;
+use App\Filament\Support\SiteNodePresentation;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
@@ -101,11 +102,11 @@ it('projects real Gallery and Custom Page reference locations and filters by the
     expect($references)->toContainEqual([
         'type' => 'Gallery: Paintings',
         'label' => 'The Red Painting',
-        'url' => app(\App\Filament\Support\SiteNodePresentation::class)->workspaceUrl($gallery),
+        'url' => app(SiteNodePresentation::class)->workspaceUrl($gallery),
     ])->and($references)->toContainEqual([
         'type' => 'Custom Page: CV',
         'label' => 'Image component',
-        'url' => app(\App\Filament\Support\SiteNodePresentation::class)->workspaceUrl($custom->fresh('customPageSetting')),
+        'url' => app(SiteNodePresentation::class)->workspaceUrl($custom->fresh('customPageSetting')),
     ]);
 
     $galleryQuery = MediaAsset::query();
