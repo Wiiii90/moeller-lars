@@ -2,9 +2,6 @@
 
 namespace App\Domain\Content;
 
-use App\Models\SiteSection;
-use Filament\Support\Icons\Heroicon;
-
 enum SiteNodeType: string
 {
     case Home = 'home';
@@ -13,28 +10,19 @@ enum SiteNodeType: string
     case CustomPage = 'custom';
     case NavigationNode = 'navigation_group';
 
-    public static function fromSection(SiteSection $section): self
-    {
-        return self::from((string) $section->getAttribute('type'));
-    }
-
     /** @return array<string, string> */
     public static function creatableOptions(): array
     {
-        return [
-            self::Gallery->value => self::Gallery->label(),
-            self::Journal->value => self::Journal->label(),
-            self::CustomPage->value => self::CustomPage->label(),
-            self::NavigationNode->value => self::NavigationNode->label(),
-        ];
+        return collect(self::cases())
+            ->filter(static fn (self $type): bool => $type->isCreatable())
+            ->mapWithKeys(static fn (self $type): array => [$type->value => $type->label()])
+            ->all();
     }
 
-    public function label(?string $journalTemplate = null): string
+    public function label(?JournalTemplate $journalTemplate = null): string
     {
         if ($this === self::Journal && $journalTemplate !== null) {
-            $template = JournalTemplate::tryFrom($journalTemplate);
-
-            return $template === null ? 'Journal' : 'Journal · '.$template->label();
+            return 'Journal · '.$journalTemplate->label();
         }
 
         return match ($this) {
@@ -46,15 +34,9 @@ enum SiteNodeType: string
         };
     }
 
-    public function navigationIcon(): Heroicon
+    public function isCreatable(): bool
     {
-        return match ($this) {
-            self::Home => Heroicon::OutlinedHome,
-            self::Gallery => Heroicon::OutlinedPhoto,
-            self::Journal => Heroicon::OutlinedNewspaper,
-            self::CustomPage => Heroicon::OutlinedDocumentText,
-            self::NavigationNode => Heroicon::OutlinedFolder,
-        };
+        return $this !== self::Home;
     }
 
     public function hasPublicPage(): bool
@@ -64,7 +46,7 @@ enum SiteNodeType: string
 
     public function requiresSlug(): bool
     {
-        return $this !== self::NavigationNode;
+        return in_array($this, [self::Gallery, self::Journal, self::CustomPage], true);
     }
 
     public function canContainChildren(): bool
@@ -82,51 +64,23 @@ enum SiteNodeType: string
         return $this !== self::Home;
     }
 
+    public function canChangePlacement(): bool
+    {
+        return $this !== self::Home;
+    }
+
     public function canBeChildOf(self $parent): bool
     {
         if (! $this->canHaveParent() || ! $parent->canContainChildren()) {
             return false;
         }
 
-        if ($this === self::Gallery) {
-            return in_array($parent, [self::Gallery, self::NavigationNode], true);
-        }
-
-        return $parent === self::NavigationNode;
-    }
-
-    public function publicPath(SiteSection $section): ?string
-    {
         return match ($this) {
-            self::Home => '/',
-            self::NavigationNode => null,
-            self::Gallery,
+            self::Gallery => in_array($parent, [self::Gallery, self::NavigationNode], true),
             self::Journal,
-            self::CustomPage => '/'.$section->getAttribute('slug'),
-        };
-    }
-
-    public function publicUrl(SiteSection $section): ?string
-    {
-        return match ($this) {
-            self::Home => route('home'),
-            self::NavigationNode => null,
-            self::Gallery,
-            self::Journal,
-            self::CustomPage => route('site.section', ['section' => $section->getAttribute('slug')]),
-        };
-    }
-
-    public function isCurrentRequest(SiteSection $section): bool
-    {
-        return match ($this) {
-            self::Home => request()->routeIs('home', 'preview.home'),
+            self::CustomPage => $parent === self::NavigationNode,
+            self::Home,
             self::NavigationNode => false,
-            self::Gallery,
-            self::CustomPage => request()->routeIs('site.section', 'preview.site.section')
-                && request()->route('section') === $section->getAttribute('slug'),
-            self::Journal => request()->routeIs('site.section', 'preview.site.section', 'journal.show', 'preview.journal.show')
-                && request()->route('section') === $section->getAttribute('slug'),
         };
     }
 }
