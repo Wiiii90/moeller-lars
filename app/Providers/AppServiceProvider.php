@@ -8,6 +8,7 @@ use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\View\View as ViewContract;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,15 +21,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $adminAsset = static fn (string $path): string => app()->environment('production')
-            ? secure_asset($path)
-            : asset($path);
-
         FilamentAsset::register([
-            Css::make('admin-system', $adminAsset('css/admin.css')),
-            Css::make('admin-layouts', $adminAsset('css/admin-layouts.css')),
-            Css::make('admin-forms', $adminAsset('css/admin-forms.css')),
-            Css::make('admin-analytics', $adminAsset('css/admin-analytics.css')),
+            Css::make('admin-theme', Vite::asset('resources/css/admin.css')),
         ]);
 
         FilamentView::registerRenderHook(
