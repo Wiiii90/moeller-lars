@@ -84,6 +84,7 @@ class AdminPanelProvider extends PanelProvider
     private function navigation(NavigationBuilder $builder): NavigationBuilder
     {
         $pagesItem = SitePages::getNavigationItems()[0]
+            ->group(null)
             ->childItems(app(SiteNavigation::class)->items())
             ->extraAttributes(['data-admin-tree-root' => 'true']);
 
@@ -96,12 +97,9 @@ class AdminPanelProvider extends PanelProvider
                     ->sort(1)
                     ->url(fn (): string => PublicContentSettingResource::getNavigationUrl()),
                 ...MediaAssetResource::getNavigationItems(),
+                $pagesItem,
             ])
             ->groups([
-                NavigationGroup::make()
-                    ->label('Website')
-                    ->collapsible()
-                    ->items([$pagesItem]),
                 NavigationGroup::make()
                     ->label('Insights')
                     ->items([
