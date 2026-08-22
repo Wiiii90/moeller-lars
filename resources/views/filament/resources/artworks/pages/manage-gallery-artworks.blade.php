@@ -1,14 +1,14 @@
 <x-filament-panels::page>
-    <x-admin.workspace :kicker="$galleryContext['parent_name'] ? 'Gallery · '.$galleryContext['parent_name'] : 'Gallery'" :title="$galleryContext['name']" class="artist-gallery-workspace">
+    <x-admin.workspace :kicker="$galleryContext['parent_name'] ? 'Gallery · '.$galleryContext['parent_name'] : 'Gallery'" :title="$galleryContext['name']" class="gallery-workspace">
         <x-slot:actions>
-            <nav class="artist-gallery-tools" aria-label="Gallery management">
-                <a class="artist-action" href="{{ $galleryContext['pages_url'] }}">Pages</a>
-                <a class="artist-action" href="{{ $galleryContext['all_artworks_url'] }}">All artworks</a>
-                <a class="artist-action" href="{{ $galleryContext['settings_url'] }}">Settings</a>
+            <nav class="admin-toolbar" aria-label="Gallery management">
+                <a class="admin-action" href="{{ $galleryContext['pages_url'] }}">Pages</a>
+                <a class="admin-action" href="{{ $galleryContext['all_artworks_url'] }}">All artworks</a>
+                {{ $this->gallerySettingsAction }}
                 @if ($galleryContext['public_url'])
-                    <a class="artist-action" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener">View gallery</a>
+                    <a class="admin-action" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener">View Gallery</a>
                 @endif
-                <a class="artist-action is-primary" href="{{ $galleryContext['create_url'] }}">Add artwork</a>
+                {{ $this->addArtworkAction }}
             </nav>
         </x-slot:actions>
 
@@ -35,33 +35,31 @@
         @endphp
 
         @if ($hasAnalyticsSignal)
-            <section aria-label="30-day gallery analytics">
-                <nav class="artist-gallery-tools">
-                    <span><strong>30d analytics</strong></span>
+            <x-admin.section kicker="Insights" title="30-day Gallery analytics">
+                <x-admin.metrics :columns="4">
                     @if (($visits['state'] ?? null) === 'available')
-                        <span>{{ number_format((float) $visits['value']) }} visits</span>
+                        <x-admin.metric label="Visits" :value="number_format((float) $visits['value'])" />
                     @endif
                     @if (($views['state'] ?? null) === 'available')
-                        <span>{{ number_format((float) $views['value']) }} views</span>
+                        <x-admin.metric label="Views" :value="number_format((float) $views['value'])" />
                     @endif
                     @if (($interactions['state'] ?? null) === 'available')
-                        <span>{{ number_format((float) $interactions['value']) }} artwork interactions</span>
+                        <x-admin.metric label="Interactions" :value="number_format((float) $interactions['value'])" />
                     @endif
                     @if ($topWorks !== [])
-                        <span>Top work: {{ $topWorks[0]['title'] }}</span>
+                        <x-admin.metric label="Top work" :value="$topWorks[0]['title']" />
                     @endif
-                    @if (is_array($lastTrend) && is_string($lastTrend['date'] ?? null))
-                        <span>Latest tracked day: {{ $lastTrend['date'] }}</span>
-                    @endif
-                    <a class="artist-action" href="{{ \App\Filament\Pages\Analytics::getUrl() }}">Open Analytics</a>
-                </nav>
-            </section>
+                </x-admin.metrics>
+                <x-slot:actions>
+                    <a class="admin-action" href="{{ \App\Filament\Pages\Analytics::getUrl() }}">Open Analytics</a>
+                </x-slot:actions>
+            </x-admin.section>
         @endif
 
         @if ($artworks !== [])
             @if ($moveTargets !== [])
-                <section aria-label="Batch artwork actions">
-                    <nav class="artist-gallery-tools">
+                <x-admin.section kicker="Batch" title="Move selected artworks">
+                    <div class="admin-toolbar">
                         <span>{{ count($selectedArtworkIds) }} selected</span>
                         <select wire:model="batchTargetGalleryId" aria-label="Move selected artworks to Gallery">
                             <option value="">Move selected to…</option>
@@ -71,27 +69,27 @@
                                 </option>
                             @endforeach
                         </select>
-                        <button class="artist-action" type="button" wire:click="reassignSelectedArtworks" @disabled(count($selectedArtworkIds) === 0)>
+                        <button class="admin-action" type="button" wire:click="reassignSelectedArtworks" @disabled(count($selectedArtworkIds) === 0)>
                             Move selected
                         </button>
-                    </nav>
-                </section>
+                    </div>
+                </x-admin.section>
             @endif
 
-            <section class="artist-contact-sheet" aria-label="Artwork sequence for {{ $galleryContext['name'] }}">
+            <section class="gallery-contact-sheet" aria-label="Artwork sequence for {{ $galleryContext['name'] }}">
                 @foreach ($artworks as $artwork)
-                    <article class="artist-contact-sheet__item" wire:key="gallery-artwork-{{ $artwork['id'] }}">
-                        <div class="artist-contact-sheet__image">
+                    <article class="gallery-contact-sheet__item" wire:key="gallery-artwork-{{ $artwork['id'] }}">
+                        <div class="gallery-contact-sheet__image">
                             @if ($artwork['thumbnail_url'])
                                 <img src="{{ $artwork['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
                             @else
                                 <span>No image</span>
                             @endif
-                            <span class="artist-contact-sheet__sequence">{{ str_pad((string) $artwork['sequence'], 2, '0', STR_PAD_LEFT) }}</span>
+                            <span class="gallery-contact-sheet__sequence">{{ str_pad((string) $artwork['sequence'], 2, '0', STR_PAD_LEFT) }}</span>
                         </div>
 
-                        <div class="artist-contact-sheet__caption">
-                            <div class="artist-contact-sheet__identity">
+                        <div class="gallery-contact-sheet__caption">
+                            <div class="gallery-contact-sheet__identity">
                                 <strong>{{ $artwork['title'] }}</strong>
                                 <span>
                                     @if ($artwork['year']){{ $artwork['year'] }}@endif
@@ -99,29 +97,29 @@
                                     @if ($artwork['dimensions']){{ ($artwork['year'] || $artwork['medium']) ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
                                 </span>
                             </div>
-                            <span class="artist-contact-sheet__state {{ $artwork['state'] === 'published' || $artwork['is_ready'] ? 'is-published' : '' }}">
+                            <span class="gallery-contact-sheet__state {{ $artwork['state'] === 'published' || $artwork['is_ready'] ? 'is-published' : '' }}">
                                 {{ $artwork['state_label'] }} · {{ $artwork['readiness_label'] }}
                             </span>
                         </div>
 
-                        <div class="artist-contact-sheet__actions">
+                        <div class="gallery-contact-sheet__actions admin-toolbar">
                             @if ($moveTargets !== [])
-                                <label class="artist-action">
+                                <label class="admin-action">
                                     <input type="checkbox" wire:model.live="selectedArtworkIds" value="{{ $artwork['id'] }}">
                                     Select
                                 </label>
                             @endif
-                            <a class="artist-action is-primary" href="{{ $artwork['edit_url'] }}">Edit</a>
-                            @if ($artwork['media_preview_url'])<a class="artist-action" href="{{ $artwork['media_preview_url'] }}">Images</a>@endif
-                            @if ($artwork['public_url'])<a class="artist-action" href="{{ $artwork['public_url'] }}" target="_blank" rel="noopener">View</a>@endif
-                            <span class="artist-contact-sheet__order" aria-label="Reorder {{ $artwork['title'] }}">
-                                <button class="artist-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'up')" aria-label="Move {{ $artwork['title'] }} earlier" @disabled(! $artwork['can_move_up'])>↑</button>
-                                <button class="artist-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'down')" aria-label="Move {{ $artwork['title'] }} later" @disabled(! $artwork['can_move_down'])>↓</button>
+                            <a class="admin-action is-primary" href="{{ $artwork['edit_url'] }}">Edit</a>
+                            @if ($artwork['media_preview_url'])<a class="admin-action" href="{{ $artwork['media_preview_url'] }}">Images</a>@endif
+                            @if ($artwork['public_url'])<a class="admin-action" href="{{ $artwork['public_url'] }}" target="_blank" rel="noopener">View</a>@endif
+                            <span class="gallery-contact-sheet__order" aria-label="Reorder {{ $artwork['title'] }}">
+                                <button class="admin-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'up')" aria-label="Move {{ $artwork['title'] }} earlier" @disabled(! $artwork['can_move_up'])>↑</button>
+                                <button class="admin-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'down')" aria-label="Move {{ $artwork['title'] }} later" @disabled(! $artwork['can_move_down'])>↓</button>
                             </span>
                         </div>
 
                         @if ($moveTargets !== [])
-                            <div class="artist-contact-sheet__actions">
+                            <div class="gallery-contact-sheet__actions admin-toolbar">
                                 <select wire:model="moveTargetGalleryIds.{{ $artwork['id'] }}" aria-label="Move {{ $artwork['title'] }} to Gallery">
                                     <option value="">Move to Gallery…</option>
                                     @foreach ($moveTargets as $target)
@@ -130,19 +128,19 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                <button class="artist-action" type="button" wire:click="reassignArtwork({{ $artwork['id'] }})">Move</button>
+                                <button class="admin-action" type="button" wire:click="reassignArtwork({{ $artwork['id'] }})">Move</button>
                             </div>
                         @endif
                     </article>
                 @endforeach
             </section>
         @else
-            <section class="artist-gallery-empty">
-                <p class="artist-workspace__kicker">Empty Gallery</p>
-                <h3>Add the first artwork</h3>
+            <x-admin.empty-state kicker="Empty Gallery" title="Add the first artwork">
                 <p>This Gallery is ready. Add an artwork draft and its primary image before publishing it.</p>
-                <a class="artist-action is-primary" href="{{ $galleryContext['create_url'] }}">Add artwork</a>
-            </section>
+                <x-slot:actions>{{ $this->addArtworkAction }}</x-slot:actions>
+            </x-admin.empty-state>
         @endif
     </x-admin.workspace>
+
+    <x-filament-actions::modals />
 </x-filament-panels::page>
