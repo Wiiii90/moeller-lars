@@ -1,0 +1,220 @@
+@import '../../public/css/admin.css';
+@import '../../public/css/admin-layouts.css';
+@import '../../public/css/admin-forms.css';
+@import '../../public/css/admin-analytics.css';
+@import '../../public/css/admin-media.css';
+
+:root {
+    --admin-text: #181818;
+    --admin-muted: #707070;
+    --admin-faint: #9a9a9a;
+    --admin-line: #dedede;
+    --admin-line-strong: #bdbdbd;
+    --admin-surface: #fff;
+    --admin-subtle: #f7f7f6;
+    --admin-accent: #b45309;
+    --admin-danger: #b42318;
+    --admin-success: #39734d;
+    --admin-section-space: 2rem;
+}
+
+.dark {
+    --admin-text: #f2f2f0;
+    --admin-muted: #aaa9a5;
+    --admin-faint: #7d7c78;
+    --admin-line: rgba(255, 255, 255, .12);
+    --admin-line-strong: rgba(255, 255, 255, .22);
+    --admin-surface: transparent;
+    --admin-subtle: rgba(255, 255, 255, .035);
+    --admin-accent: #d68a2f;
+    --admin-danger: #ef766d;
+    --admin-success: #75b787;
+}
+
+.admin-workspace {
+    display: grid;
+    color: var(--admin-text);
+}
+
+.admin-workspace__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 2rem;
+    align-items: end;
+    padding: .2rem 0 1.7rem;
+    border-bottom: 1px solid var(--admin-line-strong);
+}
+
+.admin-workspace__heading {
+    min-width: 0;
+}
+
+.admin-workspace__kicker,
+.admin-section__kicker,
+.admin-empty-state__kicker {
+    margin: 0;
+    color: var(--admin-accent);
+    font-size: .66rem;
+    font-weight: 750;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.admin-workspace__title {
+    margin: .2rem 0 0;
+    color: var(--admin-text);
+    font-size: clamp(1.65rem, 2vw, 2.25rem);
+    font-weight: 620;
+    letter-spacing: -.035em;
+    line-height: 1.05;
+}
+
+.admin-workspace__summary,
+.admin-metrics {
+    display: grid;
+    grid-template-columns: repeat(var(--admin-metric-columns, 3), minmax(0, 1fr));
+    gap: 1.5rem;
+}
+
+.admin-workspace__summary > div,
+.admin-metric {
+    min-width: 0;
+}
+
+.admin-workspace__summary strong,
+.admin-metric__value {
+    display: block;
+    color: var(--admin-text);
+    font-size: 1.35rem;
+    font-weight: 580;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-workspace__summary span,
+.admin-metric__label {
+    display: block;
+    margin-top: .25rem;
+    color: var(--admin-muted);
+    font-size: .67rem;
+    font-weight: 650;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+}
+
+.admin-workspace__body > * + * {
+    margin-top: 1.75rem;
+}
+
+.admin-section {
+    padding: var(--admin-section-space) 0;
+    border-bottom: 1px solid var(--admin-line-strong);
+}
+
+.admin-section__header {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+}
+
+.admin-section__title,
+.admin-empty-state__title {
+    margin: .2rem 0 0;
+    color: var(--admin-text);
+    font-size: 1.08rem;
+    font-weight: 620;
+}
+
+.admin-toolbar {
+    display: flex;
+    gap: .4rem;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.admin-empty-state {
+    padding: 2rem 0;
+    border-block: 1px solid var(--admin-line);
+}
+
+.admin-empty-state__body {
+    margin-top: .65rem;
+    color: var(--admin-muted);
+}
+
+.admin-empty-state__actions {
+    margin-top: 1rem;
+    justify-content: flex-start;
+}
+
+.admin-metrics {
+    gap: 0;
+    border-bottom: 1px solid var(--admin-line-strong);
+}
+
+.admin-metric {
+    padding: 1.3rem 1rem;
+    border-right: 1px solid var(--admin-line);
+}
+
+.admin-metric:first-child {
+    padding-left: 0;
+}
+
+.admin-metric:last-child {
+    border-right: 0;
+}
+
+.admin-metric__detail {
+    margin-top: .35rem;
+    color: var(--admin-muted);
+    font-size: .72rem;
+}
+
+.admin-list {
+    border-top: 1px solid var(--admin-line);
+}
+
+.admin-list > * {
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-table {
+    width: 100%;
+    overflow-x: auto;
+    border-block: 1px solid var(--admin-line);
+}
+
+.admin-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: .75rem .6rem;
+    border-bottom: 1px solid var(--admin-line);
+    text-align: left;
+    vertical-align: middle;
+}
+
+@media (max-width: 900px) {
+    .admin-workspace__header {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        align-items: start;
+    }
+
+    .admin-workspace__summary,
+    .admin-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-workspace__actions,
+    .admin-toolbar {
+        justify-content: flex-start;
+    }
+}
