@@ -37,6 +37,8 @@ final class ListMediaAssets extends Page
 
     public string $type = 'all';
 
+    public string $reference = 'all';
+
     public string $usedIn = 'all';
 
     public string $state = 'available';
@@ -55,9 +57,17 @@ final class ListMediaAssets extends Page
 
     public int $pages = 1;
 
-    public int $inUse = 0;
+    public int $libraryFiles = 0;
 
-    public int $unused = 0;
+    public int $libraryImages = 0;
+
+    public int $libraryVideos = 0;
+
+    public int $libraryUnreferenced = 0;
+
+    public int $libraryAltMissing = 0;
+
+    public string $librarySize = '0 B';
 
     public function mount(): void
     {
@@ -70,6 +80,11 @@ final class ListMediaAssets extends Page
     }
 
     public function updatedType(): void
+    {
+        $this->refreshFromFirstPage();
+    }
+
+    public function updatedReference(): void
     {
         $this->refreshFromFirstPage();
     }
@@ -123,6 +138,7 @@ final class ListMediaAssets extends Page
     public function resetFilters(): void
     {
         $this->type = 'all';
+        $this->reference = 'all';
         $this->usedIn = 'all';
         $this->state = 'available';
         $this->search = '';
@@ -181,17 +197,10 @@ final class ListMediaAssets extends Page
     {
         $catalog = app(MediaReferenceCatalog::class);
         $this->usedInGroups = $catalog->destinationGroups();
+        $this->loadLibraryMetrics($catalog);
 
         $query = $this->filteredQuery($catalog);
         $this->total = (clone $query)->count();
-
-        $referenced = clone $query;
-        $catalog->applyReferenceFilter($referenced, true);
-        $this->inUse = $referenced->count();
-
-        $unreferenced = clone $query;
-        $catalog->applyReferenceFilter($unreferenced, false);
-        $this->unused = $unreferenced->count();
 
         $this->pages = max(1, (int) ceil($this->total / self::PER_PAGE));
         $this->page = min($this->page, $this->pages);
@@ -250,6 +259,18 @@ final class ListMediaAssets extends Page
         })->all();
     }
 
+    private function loadLibraryMetrics(MediaReferenceCatalog $catalog): void
+    {
+        $metrics = $catalog->libraryMetrics();
+
+        $this->libraryFiles = $metrics['files'];
+        $this->libraryImages = $metrics['images'];
+        $this->libraryVideos = $metrics['videos'];
+        $this->libraryUnreferenced = $metrics['unreferenced'];
+        $this->libraryAltMissing = $metrics['alt_missing'];
+        $this->librarySize = self::formatBytes($metrics['bytes']);
+    }
+
     /** @return Builder<MediaAsset> */
     private function filteredQuery(MediaReferenceCatalog $catalog): Builder
     {
@@ -272,6 +293,11 @@ final class ListMediaAssets extends Page
         }
 
         $this->applyTypeFilter($query);
+
+        if (in_array($this->reference, ['referenced', 'unreferenced'], true)) {
+            $catalog->applyReferenceFilter($query, $this->reference === 'referenced');
+        }
+
         $catalog->applyDestinationFilter($query, $this->usedIn);
 
         return $query;

@@ -84,7 +84,7 @@
 
 .media-workspace__controls {
     display: grid;
-    grid-template-columns: minmax(15rem, 2fr) minmax(8rem, .8fr) minmax(12rem, 1.2fr) minmax(9rem, .8fr) auto;
+    grid-template-columns: minmax(15rem, 2fr) minmax(8rem, .8fr) minmax(9rem, .8fr) minmax(12rem, 1.2fr) minmax(9rem, .8fr) auto;
     gap: .85rem;
     align-items: end;
 }
@@ -418,7 +418,6 @@
     color: var(--admin-text);
     font-size: .78rem;
 }
-
 .media-workspace__grid-meta span,
 .media-workspace__grid-meta small {
     color: var(--admin-muted);

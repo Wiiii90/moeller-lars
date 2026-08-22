@@ -1,9 +1,12 @@
 <x-filament-panels::page>
     <x-admin.workspace kicker="Media" title="Files" class="media-workspace">
-        <x-admin.metrics :columns="3" aria-label="Current library results">
-            <x-admin.metric label="Matches" :value="number_format($total)">Current filters</x-admin.metric>
-            <x-admin.metric label="Referenced" :value="number_format($inUse)">Within these matches</x-admin.metric>
-            <x-admin.metric label="Unreferenced" :value="number_format($unused)">Within these matches</x-admin.metric>
+        <x-admin.metrics :columns="6" aria-label="Media library">
+            <x-admin.metric label="Files" :value="number_format($libraryFiles)">Available</x-admin.metric>
+            <x-admin.metric label="Images" :value="number_format($libraryImages)">Available images</x-admin.metric>
+            <x-admin.metric label="Videos" :value="number_format($libraryVideos)">Available videos</x-admin.metric>
+            <x-admin.metric label="Unreferenced" :value="number_format($libraryUnreferenced)">No canonical consumer</x-admin.metric>
+            <x-admin.metric label="ALT missing" :value="number_format($libraryAltMissing)">Available images</x-admin.metric>
+            <x-admin.metric label="Library size" :value="$librarySize">Available originals</x-admin.metric>
         </x-admin.metrics>
 
         <x-admin.section kicker="Upload" title="Add a file" class="media-workspace__upload-section">
@@ -58,6 +61,15 @@
                         <option value="image/webp">WebP</option>
                         <option value="video/mp4">MP4</option>
                         <option value="video/webm">WebM</option>
+                    </select>
+                </label>
+
+                <label class="media-workspace__field">
+                    <span>Reference</span>
+                    <select wire:model.live="reference">
+                        <option value="all">Any reference</option>
+                        <option value="referenced">Referenced</option>
+                        <option value="unreferenced">Unreferenced</option>
                     </select>
                 </label>
 

@@ -4,6 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
+use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\ArtworkCategory;
 use App\Models\CustomPageSetting;
@@ -21,6 +22,9 @@ final class MediaReferenceCatalog
     /** @var list<int>|null */
     private ?array $directCustomMediaIds = null;
 
+    /** @var list<int>|null */
+    private ?array $cvMediaIds = null;
+
     public function __construct(private readonly SiteNodePresentation $presentation) {}
 
     /** @return list<array{label:string,options:list<array{value:string,label:string}>}> */
@@ -30,6 +34,11 @@ final class MediaReferenceCatalog
             SiteNodeType::Gallery->value => ['label' => 'Galleries', 'options' => []],
             SiteNodeType::Journal->value => ['label' => 'Journals', 'options' => []],
             SiteNodeType::CustomPage->value => ['label' => 'Custom pages', 'options' => []],
+        ];
+        $broadLabels = [
+            SiteNodeType::Gallery->value => 'Any Gallery',
+            SiteNodeType::Journal->value => 'Any Journal',
+            SiteNodeType::CustomPage->value => 'Any Custom Page',
         ];
 
         foreach ($this->nodes() as $node) {
@@ -43,6 +52,18 @@ final class MediaReferenceCatalog
                 'label' => $this->nodeLabel($node),
             ];
         }
+
+        foreach ($groups as $type => &$group) {
+            if ($group['options'] === []) {
+                continue;
+            }
+
+            array_unshift($group['options'], [
+                'value' => 'kind:'.$type,
+                'label' => $broadLabels[$type],
+            ]);
+        }
+        unset($group);
 
         $groups['site'] = [
             'label' => 'Site',
@@ -77,6 +98,20 @@ final class MediaReferenceCatalog
             return;
         }
 
+        if (str_starts_with($destination, 'kind:')) {
+            $type = SiteNodeType::tryFrom(substr($destination, 5));
+            if ($type === null
+                || ! in_array($type, [SiteNodeType::Gallery, SiteNodeType::Journal, SiteNodeType::CustomPage], true)) {
+                $query->whereRaw('1 = 0');
+
+                return;
+            }
+
+            $this->applyKindDestination($query, $type);
+
+            return;
+        }
+
         $node = $this->nodeForDestination($destination);
         if (! $node instanceof SiteSection) {
             $query->whereRaw('1 = 0');
@@ -102,6 +137,27 @@ final class MediaReferenceCatalog
         }
 
         $query->whereRaw('1 = 0');
+    }
+
+    /** @return array{files:int,images:int,videos:int,unreferenced:int,alt_missing:int,bytes:int} */
+    public function libraryMetrics(): array
+    {
+        /** @var Builder<MediaAsset> $available */
+        $available = MediaAsset::query()->where('state', 'available');
+        /** @var Builder<MediaAsset> $images */
+        $images = (clone $available)->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES);
+
+        $unreferenced = clone $available;
+        $this->applyReferenceFilter($unreferenced, false);
+
+        return [
+            'files' => (clone $available)->count(),
+            'images' => (clone $images)->count(),
+            'videos' => (clone $available)->whereIn('mime_type', MediaTypePolicy::VIDEO_MIME_TYPES)->count(),
+            'unreferenced' => $unreferenced->count(),
+            'alt_missing' => (clone $images)->whereRaw("trim(coalesce(alt_text, '')) = ''")->count(),
+            'bytes' => (int) (clone $available)->sum('byte_size'),
+        ];
     }
 
     /** @param Builder<MediaAsset> $query */
@@ -197,6 +253,9 @@ final class MediaReferenceCatalog
             ];
         }
 
+        $cvEntries = $asset->getRelation('cvEntries');
+        $cvProjectedToPage = false;
+
         foreach ($this->customPageNodes() as $node) {
             $settings = $node->getRelationValue('customPageSetting');
             if (! $settings instanceof CustomPageSetting) {
@@ -215,11 +274,22 @@ final class MediaReferenceCatalog
                 continue;
             }
 
-            foreach ($asset->getRelation('cvEntries') as $entry) {
+            foreach ($cvEntries as $entry) {
+                $cvProjectedToPage = true;
                 $rows[] = [
                     'type' => 'Custom Page: '.$this->nodeLabel($node),
                     'label' => (string) $entry->getAttribute('title'),
                     'url' => $this->presentation->workspaceUrl($node),
+                ];
+            }
+        }
+
+        if (! $cvProjectedToPage) {
+            foreach ($cvEntries as $entry) {
+                $rows[] = [
+                    'type' => 'CV',
+                    'label' => (string) $entry->getAttribute('title'),
+                    'url' => null,
                 ];
             }
         }
@@ -278,6 +348,69 @@ final class MediaReferenceCatalog
     }
 
     /** @param Builder<MediaAsset> $query */
+    private function applyKindDestination(Builder $query, SiteNodeType $type): void
+    {
+        if ($type === SiteNodeType::Gallery) {
+            $categoryIds = $this->nodes()
+                ->filter(static fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::Gallery)
+                ->pluck('artwork_category_id')
+                ->filter(static fn (mixed $id): bool => is_numeric($id))
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->values()
+                ->all();
+
+            $categoryIds === []
+                ? $query->whereRaw('1 = 0')
+                : $query->whereHas('artworks', static function (Builder $artworks) use ($categoryIds): void {
+                    $artworks->whereIn('artwork_category_id', $categoryIds);
+                });
+
+            return;
+        }
+
+        if ($type === SiteNodeType::Journal) {
+            $nodeIds = $this->nodes()
+                ->filter(static fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::Journal)
+                ->modelKeys();
+
+            if ($nodeIds === []) {
+                $query->whereRaw('1 = 0');
+
+                return;
+            }
+
+            $query->where(function (Builder $references) use ($nodeIds): void {
+                $references->whereHas('blogPosts', static function (Builder $posts) use ($nodeIds): void {
+                    $posts->whereIn('site_section_id', $nodeIds);
+                })->orWhereHas('exhibitions', static function (Builder $exhibitions) use ($nodeIds): void {
+                    $exhibitions->whereIn('site_section_id', $nodeIds);
+                });
+            });
+
+            return;
+        }
+
+        if ($type === SiteNodeType::CustomPage) {
+            $mediaIds = [];
+            foreach ($this->customPageNodes() as $node) {
+                $settings = $node->getRelationValue('customPageSetting');
+                if ($settings instanceof CustomPageSetting) {
+                    $mediaIds = array_merge($mediaIds, $this->mediaIdsForCustomPage($settings));
+                }
+            }
+
+            $mediaIds = array_values(array_unique($mediaIds));
+            $mediaIds === []
+                ? $query->whereRaw('1 = 0')
+                : $query->whereIn('media_assets.id', $mediaIds);
+
+            return;
+        }
+
+        $query->whereRaw('1 = 0');
+    }
+
+    /** @param Builder<MediaAsset> $query */
     private function applyGalleryDestination(Builder $query, SiteSection $node): void
     {
         $categoryId = $node->getAttribute('artwork_category_id');
@@ -324,6 +457,15 @@ final class MediaReferenceCatalog
             return;
         }
 
+        $mediaIds = $this->mediaIdsForCustomPage($settings);
+        $mediaIds === []
+            ? $query->whereRaw('1 = 0')
+            : $query->whereIn('media_assets.id', $mediaIds);
+    }
+
+    /** @return list<int> */
+    private function mediaIdsForCustomPage(CustomPageSetting $settings): array
+    {
         $mediaIds = [];
         foreach ($settings->components() as $component) {
             if (($component['type'] ?? null) === 'image' && is_numeric($component['media_asset_id'] ?? null)) {
@@ -332,17 +474,26 @@ final class MediaReferenceCatalog
         }
 
         if ($this->hasCvList($settings)) {
-            $mediaIds = array_merge($mediaIds, CvEntry::query()
-                ->whereNotNull('image_media_asset_id')
-                ->pluck('image_media_asset_id')
-                ->map(static fn (mixed $id): int => (int) $id)
-                ->all());
+            $mediaIds = array_merge($mediaIds, $this->cvMediaIds());
         }
 
-        $mediaIds = array_values(array_unique($mediaIds));
-        $mediaIds === []
-            ? $query->whereRaw('1 = 0')
-            : $query->whereIn('media_assets.id', $mediaIds);
+        return array_values(array_unique($mediaIds));
+    }
+
+    /** @return list<int> */
+    private function cvMediaIds(): array
+    {
+        if ($this->cvMediaIds !== null) {
+            return $this->cvMediaIds;
+        }
+
+        return $this->cvMediaIds = CvEntry::query()
+            ->whereNotNull('image_media_asset_id')
+            ->pluck('image_media_asset_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /** @return list<int> */
