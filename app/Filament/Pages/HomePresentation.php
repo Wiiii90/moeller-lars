@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Domain\Artwork\ArtworkCategoryEditorialService;
+use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\SitePreviewContext;
 use App\Filament\Resources\Artworks\ArtworkResource;
@@ -49,7 +49,7 @@ final class HomePresentation extends Page
         /** @var ArtworkCategory $gallery */
         $gallery = ArtworkCategory::query()->findOrFail($galleryId);
 
-        app(ArtworkCategoryEditorialService::class)->update($gallery, [
+        app(GalleryEditorialService::class)->update($gallery, [
             'name' => (string) $gallery->getAttribute('name'),
             'description' => $gallery->getAttribute('description'),
             'show_on_home' => ! (bool) $gallery->getAttribute('show_on_home'),
