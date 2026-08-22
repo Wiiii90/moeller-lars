@@ -158,7 +158,7 @@ it('fails closed when the operator quota is invalid', function (): void {
 
     $snapshot = app(MediaCapacityService::class)->snapshot();
 
-    expect($snapshot->configuration_valid)->toBeFalse();
+    expect($snapshot['configuration_valid'])->toBeFalse();
     expect(fn () => app(MediaCapacityService::class)->assertCanStoreOriginal(1))
         ->toThrow(ValidationException::class);
 });
