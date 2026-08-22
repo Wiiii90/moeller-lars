@@ -109,6 +109,18 @@ class EditExhibition extends EditRecord
                     $this->exhibition()->refresh();
                     Notification::make()->title('Exhibition restored to draft')->success()->send();
                 }),
+            Action::make('delete')
+                ->label('Delete')
+                ->color('danger')
+                ->visible(fn (): bool => $this->exhibition()->getAttribute('state') !== 'published')
+                ->requiresConfirmation()
+                ->modalDescription('The Exhibition and its media usages will be removed. Referenced media assets remain in Media.')
+                ->action(function (): void {
+                    $sectionId = (int) $this->exhibition()->getAttribute('site_section_id');
+                    app(EditorialRecordService::class)->deleteExhibition($this->exhibition());
+                    Notification::make()->title('Exhibition deleted')->success()->send();
+                    $this->redirect(ExhibitionResource::getUrl('index', ['section' => $sectionId]));
+                }),
         ];
     }
 
