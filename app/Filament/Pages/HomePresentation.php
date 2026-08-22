@@ -63,9 +63,10 @@ final class HomePresentation extends Page
     {
         $this->selectionIssue = null;
         $this->currentArtwork = null;
+        $publicArtworks = app(PublicArtworkQuery::class);
 
         try {
-            $current = app(PublicArtworkQuery::class)->latestForHome();
+            $current = $publicArtworks->latestForHome();
             if ($current instanceof Artwork) {
                 $this->currentArtwork = $this->artworkRow($current);
             }
@@ -106,19 +107,7 @@ final class HomePresentation extends Page
             ->values()
             ->all();
 
-        /** @var EloquentCollection<int, Artwork> $eligible */
-        $eligible = Artwork::query()
-            ->where('state', 'published')
-            ->whereNotNull('work_year')
-            ->whereHas('category', static fn ($query) => $query->where('show_on_home', true))
-            ->whereHas('category.siteSection', static fn ($query) => $query->where('state', 'published'))
-            ->with(['category', 'artworkMedia.mediaAsset.variants'])
-            ->orderByDesc('work_year')
-            ->orderByDesc('work_date')
-            ->orderByDesc('id')
-            ->limit(12)
-            ->get();
-
+        $eligible = $publicArtworks->homeCandidates();
         $newestYear = $eligible->max('work_year');
         $this->newestEligibleArtworks = $eligible
             ->filter(static fn (Artwork $artwork): bool => (int) $artwork->getAttribute('work_year') === (int) $newestYear)
