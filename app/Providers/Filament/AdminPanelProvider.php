@@ -18,6 +18,7 @@ use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
 use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
+use BackedEnum;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -152,6 +153,7 @@ class AdminPanelProvider extends PanelProvider
 
         $item = NavigationItem::make($label)
             ->key('site-section-'.$section->getKey())
+            ->icon($this->siteSectionNavigationIcon($section))
             ->url($url)
             ->isActiveWhen(fn (): bool => $url !== null && $this->navigationUrlIsActive($url))
             ->extraAttributes([
@@ -162,15 +164,25 @@ class AdminPanelProvider extends PanelProvider
             ]);
 
         if ($children !== []) {
-            $item
-                ->icon(Heroicon::OutlinedFolder)
-                ->childItems(array_map(
-                    fn (SiteSection $child): NavigationItem => $this->siteSectionNavigationItem($child, $childrenByParent, $depth + 1),
-                    $children,
-                ));
+            $item->childItems(array_map(
+                fn (SiteSection $child): NavigationItem => $this->siteSectionNavigationItem($child, $childrenByParent, $depth + 1),
+                $children,
+            ));
         }
 
         return $item;
+    }
+
+    private function siteSectionNavigationIcon(SiteSection $section): Heroicon
+    {
+        return match ((string) $section->getAttribute('type')) {
+            SiteSection::TYPE_HOME => Heroicon::OutlinedHome,
+            SiteSection::TYPE_GALLERY => Heroicon::OutlinedPhoto,
+            SiteSection::TYPE_JOURNAL => Heroicon::OutlinedPencilSquare,
+            SiteSection::TYPE_CUSTOM => Heroicon::OutlinedDocumentText,
+            SiteSection::TYPE_NAVIGATION_GROUP => Heroicon::OutlinedFolder,
+            default => Heroicon::OutlinedRectangleStack,
+        };
     }
 
     private function siteSectionWorkspaceUrl(SiteSection $section): ?string
