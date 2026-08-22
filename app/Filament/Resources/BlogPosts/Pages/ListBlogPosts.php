@@ -3,9 +3,9 @@
 namespace App\Filament\Resources\BlogPosts\Pages;
 
 use App\Domain\Blog\BlogEditorialService;
+use App\Filament\Concerns\HasJournalSettingsAction;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\JournalSettings\JournalSettingResource;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
 use DateTimeInterface;
@@ -18,6 +18,8 @@ use Illuminate\Support\Str;
 
 final class ListBlogPosts extends Page
 {
+    use HasJournalSettingsAction;
+
     protected static string $resource = BlogPostResource::class;
 
     protected string $view = 'filament.resources.blog-posts.pages.list-blog-posts';
@@ -53,14 +55,16 @@ final class ListBlogPosts extends Page
                 ->label('Add blog post')
                 ->icon(Heroicon::OutlinedPlus)
                 ->url(BlogPostResource::getUrl('create', ['section' => $this->sectionId])),
-            Action::make('journalSettings')
-                ->label('Journal settings')
-                ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
-                ->url(JournalSettingResource::getSettingsUrl($this->sectionId)),
+            $this->journalSettingsAction(),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
         ];
+    }
+
+    protected function journalSectionId(): int
+    {
+        return $this->sectionId;
     }
 
     private function loadPosts(): void
