@@ -16,7 +16,7 @@ class EditPublicContentSetting extends EditRecord
 
     public function getHeading(): string|Htmlable|null
     {
-        return new HtmlString('<span class="artist-general-heading__kicker">Site settings</span><span class="artist-general-heading__title">General</span>');
+        return new HtmlString('<span class="artist-general-heading__title"><span class="artist-general-heading__kicker">Site settings</span>General</span>');
     }
 
     public function getBreadcrumbs(): array
