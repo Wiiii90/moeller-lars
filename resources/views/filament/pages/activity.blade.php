@@ -1,12 +1,5 @@
 <x-filament-panels::page>
-    <div class="artist-workspace">
-        <header class="artist-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">Editorial history</p>
-                <h2>Activity</h2>
-            </div>
-        </header>
-
+    <x-admin.workspace kicker="Editorial history" title="Activity">
         <div class="artist-workspace__footnote" aria-label="Activity filters">
             <div class="artist-media-library__filters" aria-label="Time range">
                 @foreach ($periodOptions as $value => $label)
@@ -63,5 +56,5 @@
                 {{ $paginator->links() }}
             </div>
         @endif
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>
