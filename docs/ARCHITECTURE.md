@@ -1,136 +1,171 @@
-# Target architecture
+# Application architecture
 
-## Selected application stack
+## Scope
 
-The application technology decision is recorded in [ADR-0001: Application stack](adr/ADR-0001-APPLICATION-STACK.md): a Laravel 13/PHP 8.3+ modular monolith with Blade public rendering, custom CSS/targeted vanilla JavaScript, Filament 5 for `/admin`, Eloquent, PostgreSQL, and Pest. The public site is not a SPA; Livewire is limited to admin/Filament use where appropriate.
+`moeller-lars` is a Laravel modular monolith for the public Lars Möller website and the authenticated artist administration. Production infrastructure is deliberately outside this repository and is owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
 
-The ADR selects application technology only. Production platform ownership and deployment are provided by the authoritative [Wiiii90/server-platform](https://github.com/Wiiii90/server-platform) contract; exact PostgreSQL production version and application integration details remain application/platform gates.
+The accepted stack remains [ADR-0001](adr/ADR-0001-APPLICATION-STACK.md): PHP 8.3+, Laravel 13, Blade public rendering, Filament 5 for `/admin`, PostgreSQL, Vite and Pest. The public site is not a SPA.
 
-The selected application must implement the following boundaries.
+## Architectural principles
 
-## Cost constraint
+- One application and one deployable OCI image.
+- Domain behavior is not defined by Filament, HTTP requests or persistence constants.
+- Public routing, admin presentation and persistence have explicit boundaries.
+- Editorial data has one canonical write path per product concept.
+- Fail clearly on invalid required state instead of selecting silent fallbacks.
+- Legacy data is migration input, not a runtime authority.
+- Production topology and secrets remain outside the application repository.
 
-Avoid mandatory paid third-party services and commercial runtime dependencies. Prefer self-hosted or open-source components where practical. Server and hosting cost is allowed, but must be minimized and justified. Deployment/platform decisions should therefore prefer capabilities that can be self-hosted or are already available in the chosen hosting environment, without changing the selected application stack without a separate architecture decision.
+## Site structure
 
-## Components
+The editable public site is projected through `SiteSection`, while application behavior is owned by typed domain definitions.
 
-The system is one Laravel modular monolith plus logically separate
-infrastructure services:
+### Domain types
 
-- public Laravel/Blade application;
-- artist-only Filament `/admin`;
-- PostgreSQL application database;
-- original media storage and disposable generated derivatives;
-- migration/import tooling;
-- Matomo On-Premise analytics;
-- lightweight operational metrics and logging; and
-- deployment, backup, and monitoring operations.
+`App\Domain\Content\SiteNodeType` defines exactly five runtime node types:
 
-This is not a speculative microservice split.
+| Type | Public page | Creatable | Can contain children | Can have parent |
+| --- | --- | --- | --- | --- |
+| Home | `/` | no | no | no |
+| Gallery | yes | yes | yes | yes |
+| Journal | yes | yes | no | yes, below Navigation Node |
+| Custom Page | yes | yes | no | yes, below Navigation Node |
+| Navigation Node | no | yes | yes | no |
 
-## Data ownership
+`Home` is the singleton root. It has no slug, cannot be deleted, is always published and is always represented in navigation.
 
-- PostgreSQL owns editorial/domain data; its detailed model is defined in
-  [DATA-MODEL.md](DATA-MODEL.md).
-- Immutable original media owns authoritative uploaded/migrated binary assets;
-  generated derivatives are disposable and rebuildable.
-- Matomo owns human visitor analytics; `daily_metrics` owns only lightweight
-  operational aggregates and disposable analytics cache, as detailed in
-  [ANALYTICS.md](ANALYTICS.md).
-- Legacy databases and media are migration sources only and never runtime
-  authorities after cutover; migration reconciliation is defined in
-  [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
-- Secrets and production configuration are operational state outside Git.
+`App\Domain\Content\JournalTemplate` defines the supported Journal products:
 
-## Trust boundaries
+- `Blog`
+- `Exhibitions`
 
-- Public visitors have read-only access to published public content plus
-  explicitly public form endpoints.
-- `/admin` is authenticated and separately authorized; server-side
-  authorization is enforced on every mutation.
-- Uploads are untrusted input until validated and quarantined. Legacy
-  migration input is untrusted, read-only source material.
-- Matomo/API failure or compromise must not become a dependency for public or
-  admin correctness.
-- PostgreSQL and internal service interfaces are not publicly exposed, and
-  production secrets are not stored in repository content.
-- Production and Validation are distinct runtime/data trust boundaries. Validation must never share a writable application database or authoritative media path with Production.
+A Journal requires a valid template. Other node types must not carry one.
 
-## Verified production and platform baseline
+### Persistence boundary
 
-The current production host is the working baseline documented in [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md): Scaleway dev-play-1 / DEV1-S in AMS1 with 2 vCPU, 2 GB RAM, 50 GB block storage, and Ubuntu 24.04.4 LTS. The platform may host logically separate shared workloads in addition to `moeller-lars`; current utilization is not a downsizing signal because future services may share it.
+`App\Models\SiteSection` stores the tree projection: type/template, title, navigation label, slug, publication state, position, navigation visibility, parent and optional Gallery persistence reference.
 
-The verified containment baseline includes UFW default-deny inbound rules, localhost-only database bindings, valid TLS/canonical-host handling, disabled directory listing, removed public phpinfo, and blocked sensitive source/vendor/config paths. Public port ownership and the exact currently exposed service set remain platform-owned runtime state and must be verified from `server-platform` evidence rather than copied into application code.
+The model enforces structural invariants, but raw string constants on the model are persistence/migration values only. Runtime behavior should use `SiteNodeType` and `JournalTemplate`.
 
-The verified platform containment and deployment details are maintained by
-`server-platform`; this repository consumes that contract and does not define
-production ingress, `/srv` placement, deployment transport, or host-level
-runtime topology.
+`ArtworkCategory` remains the intentionally isolated persistence model behind the application concept **Gallery**. Application/service/UI naming uses Gallery; a database/model rename is not required to achieve a clean domain boundary.
 
-`moeller-lars` owns application code/tests, Dockerfile/build/runtime contract, migrations, application configuration templates, health/readiness, CI/build artifacts, persistence declarations, and migration expectations. `server-platform` owns Production/Validation manifests, deployed artifact/image references, Compose, networks, Caddy, host ports, resource limits, runtime secret placement, monitoring, backups, and deployment/rollback. Do not duplicate platform implementation here.
+### Public routing
 
-Current platform gates are tracked in `Wiiii90/server-platform`, especially production cutover #11, post-cutover stabilization #12, readiness #14, shared mail #24, application capacity #30, host maintenance #33, bounded log growth #35, and documentation reconciliation #36. Historical closed issues remain evidence but are not active gates.
+`App\Routing\SiteNodeRoute` owns public path, URL and current-route interpretation for site nodes. Domain enums and persistence models do not call `route()` or inspect requests.
 
-## Deployment environments
+Canonical routing is path based:
 
-- **Production** is the only public authoritative application environment.
-- **Validation** is a platform-owned, non-production release-validation environment with isolated PostgreSQL data, isolated media, isolated secrets and separate authenticated ingress. Its lifecycle may be temporary, but while it exists it is a distinct environment and must remain separate from Production.
-- Validation may read Production Matomo aggregate reports through a restricted View-only reporting identity while browser/event tracking remains disabled (`MATOMO_TRACKING_ENABLED=false`, `MATOMO_REPORTING_ENABLED=true`). This does not permit Production database/media writes from Validation.
-- Development and testing occur locally or in CI, never against Production data.
-- The current Scaleway host remains the baseline; `server-platform` owns its physical runtime, ingress and environment lifecycle.
-- A successful Validation review does not itself authorize Production deployment, migration, routing or cutover. Those require the explicit readiness and artist-approval gates.
+- Home: `/`
+- Gallery, Journal and Custom Page: `/{section-slug}`
+- Journal entries: `/{section-slug}/{entry-slug}`
+- Artwork detail: `/artworks/{slug}`
+- Preview equivalents live below `/preview` and remain protected.
+- Navigation Nodes have no public URL.
 
-## Non-functional requirements
+### Admin presentation and navigation
 
-The architecture requires security and least privilege, accessible and
-responsive public pages, reliable artwork-viewer interaction, SEO with stable
-canonical URLs and redirects, graceful analytics failure,
-migration/reconciliation integrity, tested backup/restore and rollback,
-maintainability on a small self-hosted environment, image-heavy-page
-performance appropriate to the site, and no mandatory commercial
-runtime/plugin/SaaS dependency where avoidable.
+`App\Filament\Support\SiteNodePresentation` maps typed site nodes to Filament icons and their one canonical admin workspace. It is query-free; required relations must be loaded before presentation.
 
-The detailed contracts remain in [PUBLIC-IMPLEMENTATION-CONTRACT.md](PUBLIC-IMPLEMENTATION-CONTRACT.md),
-[MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md),
-[SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md), and
-[ANALYTICS.md](ANALYTICS.md).
+`App\Filament\Support\SiteNavigation` owns the admin navigation projection and active-state calculation. `AdminPanelProvider` assembles the panel but does not independently reconstruct the site tree or reinterpret node types.
 
-Exhibitions and CV entries remain separate entities and separate admin workflows
-even when they share presentation primitives. The artwork viewer is a
-first-class public feature with a reliable navigation state, not an incidental
-gallery script.
+Canonical workspaces include:
 
-## Security baseline
+- dedicated Home presentation workspace;
+- Gallery artwork workspace with native settings/add-artwork actions;
+- Blog or Exhibitions Journal workspace with native creation and Journal-settings actions;
+- Custom Page editor;
+- navigation-only nodes with no fake content editor.
 
-- Password hashing using a current adaptive algorithm; no plaintext comparison or storage.
-- Server-side sessions with secure, HttpOnly, SameSite cookies; CSRF protection for every state-changing request.
-- Rate-limited login, password reset, and contact endpoints; optional TOTP MFA for the artist account.
-- Authorization checked on every action, not just in the interface.
-- Allowlisted media types verified from file contents, generated filenames, size limits, image re-encoding, and media served without executable permissions.
-- Environment-only secrets, encrypted backups, dependency updates, structured logs, and a tested restore procedure.
-- TLS certificate, HTTP-to-HTTPS redirect, HSTS after validation, CSP, frame restrictions, and secure response headers.
+Route-backed fake editor overlays and parallel Gallery/Journal resources are not part of the architecture.
 
-## Analytics ownership and operations
+## Admin UI system
 
-The analytics boundary is fixed: self-hosted Matomo Community/Core owns human visitor analytics, while local operational aggregates remain separate. The application consumes a platform-provided Matomo base URL and site ID; optional reporting uses a separate restricted read-only API identity/token outside Git. Runtime topology, networking, persistence and ingress remain owned by `server-platform`. Matomo failure cannot block public or admin application behaviour. The compact taxonomy, privacy, retention, dashboard and operations contract is documented in [ANALYTICS.md](ANALYTICS.md).
+There is one admin theme entrypoint:
 
-The application owns browser tracking integration, event taxonomy, consent/privacy behaviour, site-specific configuration, reporting client/dashboard, and application-local operational aggregates. The platform owns Matomo containers/database, persistence, Caddy, secrets, resource limits, health, archiving, upgrades, and backup integration.
+```text
+resources/css/admin.css
+```
 
-Production operations are part of this architecture, with platform-owned deployment automation, secrets, TLS ingress, monitoring, encrypted recurring backups, restore testing, rollback, and CI/CD integration. Application-specific release identity and persistence/restore expectations are documented in [RELEASE.md](RELEASE.md); deployment/cutover evidence remains in `server-platform`.
+It imports internal modules under `resources/css/admin/`. Admin views do not load page-local stylesheets.
 
-The hosting and cost baseline is recorded in [ADR-0002](adr/ADR-0002-HOSTING-COST-BASELINE.md); it does not decide deployment topology, ingress, OS migration, or other platform items that remain open.
+Shared structural primitives cover workspace/header, sections, toolbars/actions, forms, lists, tables, empty states and metrics. Feature-specific classes such as `media-*` may exist when they express real domain layout, but shared design tokens use the canonical `--admin-*` namespace.
 
-## Architecture acceptance tests
+The theme is rendered lazily through the Filament panel using `@vite('resources/css/admin.css')`; application/bootstrap commands must not require an already-built Vite manifest.
 
-- A written decision record compares viable stacks against the technology decision gate before implementation is locked.
-- Public templates can render the migrated content without depending on the legacy schema.
-- The admin boundary is independently authenticated and authorized; no public route can mutate editorial data.
-- Blog visibility is tested as a separate feature flag: disabled by default, invisible publicly, and enabled only by an explicit artist action.
-- Matomo is deployable and testable in the selected hosting model without a mandatory commercial plugin or SaaS dependency and is the source of truth for human analytics.
-- Analytics failure is tested as isolated from public rendering and normal admin workflows; operational aggregates remain distinguishable from Matomo data.
-- Analytics acceptance covers traffic sources, geography, devices, content interaction, and separate bot/error/performance metrics without exposing unnecessary raw identifiers.
-- Logical separation of analytics from the public application is demonstrated; physical server separation is not required.
-- Validation proves the application contract behind platform HTTPS, isolated data/media, backup/restore, rollback and pre-cutover behaviour before Production cutover; Validation does not share writable Production persistence.
-- Matomo is logically isolated from public rendering and normal admin operation; a separate physical server is not required.
-- CI/CD, recurring offsite backups, monitoring, Docker/Compose placement, and common ingress are verified through the server-platform contract; Kubernetes is not selected.
-- A cost review confirms that mandatory commercial runtime dependencies are avoided where practical, with minimized and justified server/hosting cost.
+## Editorial domains
+
+### Gallery and artwork
+
+`GalleryEditorialService` is the application service for Gallery persistence and its matching Site Node. `ArtworkDraftService`, `ArtworkEditorialService` and `ArtworkGalleryAssignmentService` own artwork creation, editorial transitions, media attachment, ordering and Gallery movement.
+
+A Gallery has one matching Gallery Site Node. Artwork ordering is explicit and persisted. Moving artwork must preserve media references and obey publication constraints.
+
+### Journals
+
+Blog posts and Exhibitions belong to a Journal Site Node through `site_section_id`. Each Journal has one `JournalSetting` record for listing title/intro.
+
+Blog and Exhibitions remain separate editorial/content models even though they share the Journal placement abstraction.
+
+### Custom pages and site-wide settings
+
+A Custom Page has one `CustomPageSetting` record containing an ordered list of supported structured components. Published page media must resolve to valid available media and satisfy public ALT requirements.
+
+`PublicContentSetting` owns typed site-wide settings scopes such as General, Contact and Vita-derived content. SMTP credentials and other server secrets are not editorial settings.
+
+### Media
+
+`MediaAsset` is the authoritative reusable original. `MediaVariant` contains rebuildable derivatives. Usage records connect media to artwork, Exhibitions and other consumers without copying the canonical original.
+
+Ingest validates type/size/content, generates controlled storage identities and performs storage-capacity admission. Destructive deletion is blocked while references exist. See [MEDIA.md](MEDIA.md).
+
+### Analytics
+
+Self-hosted Matomo Community/Core is the canonical source for human visitor analytics. The application owns tracking integration and the admin Reporting API dashboard; local aggregates cover operational/error/bot/performance signals only. Matomo failure must not break public rendering or normal admin work. See [ANALYTICS.md](ANALYTICS.md).
+
+## Security and trust boundaries
+
+- Public visitors can read only published content and use explicitly public form endpoints.
+- `/admin` requires authenticated/authorized access; every mutation is enforced server-side.
+- Uploads and migrated source files are untrusted input.
+- Secrets live in runtime/platform configuration, never Git.
+- Production and Validation must not share writable application database/media state.
+- Legacy authentication, SQL helpers, sessions, uploads and credentials are never runtime dependencies.
+
+## Persistence and migration
+
+PostgreSQL is authoritative for editorial state. Canonical uploaded originals are authoritative binary data. Migrations are forward application changes and are not assumed to be data-reversible.
+
+The legacy importer/validator is a controlled migration boundary. Once reviewed data exists in protected Validation or Production state, schema evolution uses normal forward migrations rather than destructive re-import.
+
+Migration-specific guarantees are documented separately in [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
+
+## Release and platform boundary
+
+The application repository owns:
+
+- source and tests;
+- database migrations;
+- application configuration templates;
+- Dockerfile/runtime interface;
+- health/readiness behavior;
+- immutable GHCR image build;
+- application-level migration/media/release checks.
+
+`server-platform` owns:
+
+- Production and Validation placement;
+- Caddy/ingress and host networking;
+- runtime secrets;
+- persistent volume placement;
+- resource limits;
+- backups/restores;
+- monitoring;
+- deployment, activation and rollback.
+
+The application image is identified by an exact Git SHA and OCI digest. A green CI run does not authorize Production deployment. See [RELEASE.md](RELEASE.md).
+
+## Test philosophy
+
+Tests protect durable product/security/data contracts rather than framework behavior or visual implementation details. Important examples are authentication/authorization, database invariants, site-node rules, migration reconciliation, publication rules, media lifecycle, contact delivery and pure artwork-viewer behavior.
+
+Functional acceptance may add tests for stable CRUD/reorder/delete contracts, but CSS class names, source strings and temporary regression mechanics should not become permanent test architecture.
