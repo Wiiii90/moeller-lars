@@ -1,6 +1,4 @@
 <x-filament-panels::page>
-    <link rel="stylesheet" href="{{ asset('css/admin-media.css') }}">
-
     <x-admin.workspace kicker="Media" title="Find, reuse and manage media" class="media-workspace">
         <x-slot:summary>
             <div><strong>{{ $total }}</strong><span>Matches</span></div>
@@ -8,7 +6,7 @@
             <div><strong>{{ $unused }}</strong><span>Unreferenced</span></div>
         </x-slot:summary>
 
-        <section class="media-workspace__controls" aria-label="Media search and filters">
+        <x-admin.section class="media-workspace__controls" aria-label="Media search and filters">
             <label class="media-workspace__search">
                 <span>Search media</span>
                 <input type="search" wire:model.live.debounce.300ms="search" placeholder="Filename, ALT, credit, copyright or MIME">
@@ -45,16 +43,16 @@
                     <option value="quarantined">Quarantined</option>
                     <option value="deleted">Deleted</option>
                 </select></label>
-                <button class="artist-action" type="button" wire:click="resetFilters">Reset</button>
+                <button class="admin-action" type="button" wire:click="resetFilters">Reset</button>
             </div>
 
-            <div class="media-workspace__view-switcher" aria-label="Media view mode">
+            <div class="media-workspace__view-switcher admin-toolbar" aria-label="Media view mode">
                 <span>View</span>
-                <button class="artist-action {{ $viewMode === 'list' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('list')">List</button>
-                <button class="artist-action {{ $viewMode === 'grid' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('grid')">Grid</button>
-                <button class="artist-action {{ $viewMode === 'dense' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('dense')">Dense</button>
+                <button class="admin-action {{ $viewMode === 'list' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('list')">List</button>
+                <button class="admin-action {{ $viewMode === 'grid' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('grid')">Grid</button>
+                <button class="admin-action {{ $viewMode === 'dense' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('dense')">Dense</button>
             </div>
-        </section>
+        </x-admin.section>
 
         @if ($assets !== [])
             @if ($viewMode === 'grid')
@@ -89,15 +87,15 @@
                                 <span>{{ $asset['type_label'] }} · {{ $asset['size'] }}</span>
                                 <small>{{ $asset['usage_label'] }}</small>
                             </div>
-                            <div class="media-workspace__actions">
-                                <a class="artist-action" href="{{ $asset['preview_url'] }}">Preview</a>
-                                <a class="artist-action" href="{{ $asset['edit_url'] }}">Edit</a>
+                            <div class="media-workspace__actions admin-toolbar">
+                                <a class="admin-action" href="{{ $asset['preview_url'] }}">Preview</a>
+                                <a class="admin-action" href="{{ $asset['edit_url'] }}">Edit</a>
                             </div>
                         </article>
                     @endforeach
                 </section>
             @else
-                <div class="media-workspace__table-wrap {{ $viewMode === 'dense' ? 'is-dense' : '' }}">
+                <x-admin.table class="media-workspace__table-wrap {{ $viewMode === 'dense' ? 'is-dense' : '' }}">
                     <table class="media-workspace__table">
                         <thead>
                             <tr>
@@ -148,28 +146,30 @@
                                     <td><span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span></td>
                                     <td class="media-workspace__size">{{ $asset['size'] }}</td>
                                     <td class="media-workspace__actions">
-                                        <a class="artist-action" href="{{ $asset['preview_url'] }}">Preview</a>
-                                        <a class="artist-action" href="{{ $asset['edit_url'] }}">Edit</a>
+                                        <div class="admin-toolbar">
+                                            <a class="admin-action" href="{{ $asset['preview_url'] }}">Preview</a>
+                                            <a class="admin-action" href="{{ $asset['edit_url'] }}">Edit</a>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
-                </div>
+                </x-admin.table>
             @endif
         @else
-            <section class="artist-gallery-empty">
-                <p class="artist-workspace__kicker">No matches</p>
-                <h3>No media in this view</h3>
+            <x-admin.empty-state kicker="No matches" title="No media in this view">
                 <p>Change the filters or search, or upload a new supported media asset.</p>
-                <button class="artist-action" type="button" wire:click="resetFilters">Clear filters</button>
-            </section>
+                <x-slot:actions>
+                    <button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button>
+                </x-slot:actions>
+            </x-admin.empty-state>
         @endif
 
-        <footer class="media-workspace__pager">
-            <button class="artist-action" type="button" wire:click="previousPage" @disabled($page <= 1)>Previous</button>
+        <footer class="media-workspace__pager admin-toolbar">
+            <button class="admin-action" type="button" wire:click="previousPage" @disabled($page <= 1)>Previous</button>
             <span>Page {{ $page }} of {{ $pages }}</span>
-            <button class="artist-action" type="button" wire:click="nextPage" @disabled($page >= $pages)>Next</button>
+            <button class="admin-action" type="button" wire:click="nextPage" @disabled($page >= $pages)>Next</button>
         </footer>
     </x-admin.workspace>
 </x-filament-panels::page>
