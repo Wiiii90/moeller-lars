@@ -1,20 +1,19 @@
 <x-filament-panels::page>
-    <div class="artist-workspace artist-pages">
-        <header class="artist-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">Site structure</p>
-                <h2>Pages</h2>
-            </div>
-        </header>
+    <x-admin.workspace kicker="Site structure" title="Pages">
+        @if ($sections !== [])
+            <x-admin.list class="admin-site-tree" aria-label="Public site structure">
+                @foreach ($sections as $section)
+                    @include('filament.pages.partials.site-section-row', ['section' => $section])
 
-        <section class="artist-page-list" aria-label="Public site structure">
-            @foreach ($sections as $section)
-                @include('filament.pages.partials.site-section-row', ['section' => $section])
-
-                @foreach ($section['children'] as $child)
-                    @include('filament.pages.partials.site-section-row', ['section' => $child])
+                    @foreach ($section['children'] as $child)
+                        @include('filament.pages.partials.site-section-row', ['section' => $child])
+                    @endforeach
                 @endforeach
-            @endforeach
-        </section>
-    </div>
+            </x-admin.list>
+        @else
+            <x-admin.empty-state kicker="Empty structure" title="No site nodes exist">
+                <p>Add a Gallery, Journal, Custom Page or Navigation Node from the page action.</p>
+            </x-admin.empty-state>
+        @endif
+    </x-admin.workspace>
 </x-filament-panels::page>

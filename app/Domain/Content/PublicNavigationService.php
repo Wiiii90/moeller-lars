@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Models\SiteSection;
+use App\Routing\SiteNodeRoute;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -10,7 +11,10 @@ use Illuminate\Support\Collection;
 
 final class PublicNavigationService
 {
-    public function __construct(private readonly SitePreviewContext $preview) {}
+    public function __construct(
+        private readonly SitePreviewContext $preview,
+        private readonly SiteNodeRoute $routes,
+    ) {}
 
     /**
      * @return Collection<int, array{
@@ -54,10 +58,10 @@ final class PublicNavigationService
             $children = $childSections->map(fn (SiteSection $child): array => [
                 'label' => (string) $child->getAttribute('navigation_label'),
                 'url' => $this->sectionUrl($child),
-                'current' => $child->isCurrentRequest(),
+                'current' => $this->routes->isCurrent($child),
             ])->values()->all();
             $childCurrent = collect($children)->contains(static fn (array $child): bool => $child['current']);
-            $current = $section->isCurrentRequest();
+            $current = $this->routes->isCurrent($section);
 
             return [
                 'position' => (int) $section->getAttribute('position'),
@@ -73,7 +77,7 @@ final class PublicNavigationService
 
     private function sectionUrl(SiteSection $section): ?string
     {
-        $url = $section->publicUrl();
+        $url = $this->routes->url($section);
 
         return $url === null ? null : $this->preview->url($url);
     }

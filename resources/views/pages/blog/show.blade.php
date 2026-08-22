@@ -2,7 +2,7 @@
 
 @section('title', $post->title.' · Lars Möller')
 @section('meta_description', $post->excerpt ?: $post->title)
-@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($section->publicPath().'/'.$post->slug))
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($siteNodeRoute->path($section).'/'.$post->slug))
 
 @section('content')
     <article

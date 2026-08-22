@@ -5,7 +5,7 @@ namespace App\Filament\Resources\CvEntries\Pages;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\EditorialRecordService;
 use App\Domain\Admin\EditorialRichTextValidator;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Models\CvEntry;
 use Filament\Actions\Action;
@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 class EditCvEntry extends EditRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = CvEntryResource::class;
 

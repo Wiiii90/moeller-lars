@@ -4,16 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\CanonicalUrl;
+use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteNodeType;
 use App\Models\Artwork;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
+use App\Routing\SiteNodeRoute;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Response;
 
 final class PublicSeoController extends Controller
 {
-    public function __construct(private readonly CanonicalUrl $canonical) {}
+    public function __construct(
+        private readonly CanonicalUrl $canonical,
+        private readonly SiteNodeRoute $siteNodeRoute,
+    ) {}
 
     public function sitemap(): Response
     {
@@ -25,7 +31,7 @@ final class PublicSeoController extends Controller
             ->get();
 
         $urls = $sections
-            ->map(fn (SiteSection $section): ?string => $section->publicPath())
+            ->map(fn (SiteSection $section): ?string => $this->siteNodeRoute->path($section))
             ->filter(fn (?string $path): bool => $path !== null)
             ->map(fn (string $path): string => $this->canonical->forPath($path))
             ->values()
@@ -43,8 +49,8 @@ final class PublicSeoController extends Controller
 
         /** @var Collection<int, SiteSection> $blogJournals */
         $blogJournals = $sections
-            ->where('type', SiteSection::TYPE_JOURNAL)
-            ->where('template', SiteSection::JOURNAL_TEMPLATE_BLOG)
+            ->where('type', SiteNodeType::Journal->value)
+            ->where('template', JournalTemplate::Blog->value)
             ->values();
 
         foreach ($blogJournals as $journal) {

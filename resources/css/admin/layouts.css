@@ -1,0 +1,287 @@
+/* Feature layouts. Shared Workspace/Section/List/Table/Toolbar rules live in ../admin.css. */
+.admin-topbar-sign-out {
+    display: inline-flex;
+    align-items: center;
+}
+
+@media (min-width: 1024px) {
+    .fi-topbar {
+        position: relative;
+    }
+
+    .fi-topbar-end > .fi-global-search-ctn {
+        position: absolute;
+        left: 50%;
+        width: min(42rem, calc(100% - 24rem));
+        transform: translateX(-50%);
+    }
+
+    .fi-topbar-end > .fi-global-search-ctn .fi-global-search {
+        width: 100%;
+    }
+
+    .fi-topbar .fi-global-search-results-ctn {
+        inset-inline: 0;
+        width: 100%;
+        max-width: none;
+    }
+}
+
+/* Gallery contact sheet */
+.admin-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    padding: 1px;
+    background: var(--admin-line);
+}
+
+.admin-gallery-grid__item {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    background: var(--admin-surface);
+}
+
+.admin-gallery-grid__image {
+    position: relative;
+    display: grid;
+    aspect-ratio: 4 / 3;
+    place-items: center;
+    overflow: hidden;
+    background: var(--admin-subtle);
+}
+
+.admin-gallery-grid__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.admin-gallery-grid__image > span:not(.admin-gallery-grid__sequence) {
+    color: var(--admin-faint);
+    font-size: .72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.admin-gallery-grid__sequence {
+    position: absolute;
+    top: .7rem;
+    left: .7rem;
+    display: inline-flex;
+    min-width: 1.9rem;
+    min-height: 1.9rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--admin-line-strong);
+    background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
+    color: var(--admin-muted);
+    font-size: .68rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .08em;
+}
+
+.dark .admin-gallery-grid__sequence {
+    background: rgba(20, 20, 20, .78);
+}
+
+.admin-gallery-grid__caption {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .75rem;
+    padding: .9rem .9rem .65rem;
+    align-items: start;
+}
+
+.admin-gallery-grid__identity {
+    min-width: 0;
+}
+
+.admin-gallery-grid__identity strong {
+    display: block;
+    overflow: hidden;
+    color: var(--admin-text);
+    font-size: .92rem;
+    font-weight: 550;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-gallery-grid__identity span {
+    display: block;
+    min-height: 1.2em;
+    margin-top: .22rem;
+    overflow: hidden;
+    color: var(--admin-muted);
+    font-size: .74rem;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-gallery-grid__state {
+    display: inline-flex;
+    gap: .35rem;
+    align-items: center;
+    color: var(--admin-muted);
+    font-size: .7rem;
+    white-space: nowrap;
+}
+
+.admin-gallery-grid__state::before {
+    width: .42rem;
+    height: .42rem;
+    border: 1px solid var(--admin-faint);
+    border-radius: 50%;
+    content: "";
+}
+
+.admin-gallery-grid__state.is-published::before {
+    border-color: var(--admin-accent);
+    background: var(--admin-accent);
+}
+
+.admin-gallery-grid__actions {
+    display: flex;
+    gap: .3rem;
+    padding: 0 .65rem .8rem;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+/* Storage */
+.admin-storage__composition {
+    display: grid;
+    grid-template-columns: minmax(15rem, .65fr) minmax(18rem, 1.35fr);
+    gap: clamp(2rem, 6vw, 5rem);
+    align-items: center;
+}
+
+.admin-storage__ring {
+    display: grid;
+    width: min(100%, 22rem);
+    aspect-ratio: 1;
+    place-items: center;
+    justify-self: center;
+    border-radius: 50%;
+    background: conic-gradient(var(--admin-accent) var(--capacity-used), var(--admin-line) 0);
+}
+
+.admin-storage__ring::before {
+    grid-area: 1 / 1;
+    width: 72%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--admin-surface);
+    content: "";
+}
+
+.dark .admin-storage__ring::before {
+    background: rgb(24, 24, 27);
+}
+
+.admin-storage__ring > div {
+    z-index: 1;
+    display: grid;
+    grid-area: 1 / 1;
+    gap: .3rem;
+    text-align: center;
+}
+
+.admin-storage__ring strong {
+    color: var(--admin-text);
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 450;
+    letter-spacing: -.04em;
+}
+
+.admin-storage__ring span {
+    color: var(--admin-muted);
+    font-size: .7rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.admin-storage__numbers {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.admin-storage__primary {
+    display: grid;
+    gap: .3rem;
+    padding-bottom: 1.35rem;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-storage__primary span {
+    color: var(--admin-muted);
+    font-size: .7rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.admin-storage__primary strong {
+    color: var(--admin-text);
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 450;
+    letter-spacing: -.04em;
+}
+
+.admin-storage__primary small {
+    color: var(--admin-muted);
+    font-size: .75rem;
+}
+
+.admin-storage__numbers dl {
+    display: grid;
+    gap: 0;
+    margin: 0;
+}
+
+.admin-storage__numbers dl > div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    padding: .7rem 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-storage__numbers dt {
+    color: var(--admin-muted);
+    font-size: .78rem;
+}
+
+.admin-storage__numbers dd {
+    margin: 0;
+    color: var(--admin-text);
+    font-size: .84rem;
+    font-weight: 550;
+}
+
+.admin-storage__details summary {
+    padding: .75rem 0;
+    color: var(--admin-muted);
+    font-size: .76rem;
+    cursor: pointer;
+}
+
+@media (max-width: 1050px) {
+    .admin-gallery-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .admin-gallery-grid,
+    .admin-storage__composition {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-storage__ring {
+        width: min(75vw, 18rem);
+    }
+}

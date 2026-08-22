@@ -2,19 +2,16 @@
 
 namespace App\Filament\Pages;
 
-use App\Domain\Artwork\ArtworkCategoryEditorialService;
+use App\Domain\Artwork\GalleryEditorialService;
+use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
-use App\Filament\Resources\ArtworkCategories\ArtworkCategoryResource;
-use App\Filament\Resources\Artworks\ArtworkResource;
-use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\CustomPageSettings\CustomPageSettingResource;
-use App\Filament\Resources\Exhibitions\ExhibitionResource;
-use App\Filament\Resources\JournalSettings\JournalSettingResource;
+use App\Filament\Support\SiteNodePresentation;
 use App\Models\ArtworkCategory;
-use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
+use App\Routing\SiteNodeRoute;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -50,6 +47,8 @@ final class SitePages extends Page
     /** @var list<array{id: int, label: string, type: string}> */
     public array $parentCandidates = [];
 
+    private ?SiteSectionOrderService $orderService = null;
+
     public function mount(): void
     {
         $this->loadSections();
@@ -59,7 +58,7 @@ final class SitePages extends Page
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if (app(SiteSectionOrderService::class)->move($section, $direction)) {
+        if ($this->orderService()->move($section, $direction)) {
             Notification::make()->title('Site order updated')->success()->send();
             $this->loadSections();
         }
@@ -69,7 +68,7 @@ final class SitePages extends Page
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if ((string) $section->getAttribute('type') === SiteSection::TYPE_HOME) {
+        if (! $section->nodeType()->canChangePlacement()) {
             return;
         }
 
@@ -81,7 +80,7 @@ final class SitePages extends Page
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if ((string) $section->getAttribute('type') === SiteSection::TYPE_HOME) {
+        if (! $section->nodeType()->canChangePlacement()) {
             return;
         }
 
@@ -110,15 +109,16 @@ final class SitePages extends Page
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if ((string) $section->getAttribute('type') === SiteSection::TYPE_HOME) {
+        $type = $section->nodeType();
+        if (! $type->canDelete()) {
             return;
         }
 
         try {
-            if ((string) $section->getAttribute('type') === SiteSection::TYPE_GALLERY) {
-                /** @var ArtworkCategory $category */
-                $category = ArtworkCategory::query()->findOrFail((int) $section->getAttribute('artwork_category_id'));
-                app(ArtworkCategoryEditorialService::class)->delete($category);
+            if ($type === SiteNodeType::Gallery) {
+                /** @var ArtworkCategory $gallery */
+                $gallery = ArtworkCategory::query()->findOrFail((int) $section->getAttribute('artwork_category_id'));
+                app(GalleryEditorialService::class)->delete($gallery);
             } else {
                 app(SiteSectionEditorialService::class)->deleteConfigurableSection($section);
             }
@@ -136,21 +136,6 @@ final class SitePages extends Page
         $this->loadSections();
     }
 
-    public function toggleGalleryState(int $sectionId): void
-    {
-        $this->toggleSectionState($sectionId);
-    }
-
-    public function toggleGalleryNavigation(int $sectionId): void
-    {
-        $this->toggleSectionNavigation($sectionId);
-    }
-
-    public function moveGallery(int $sectionId, int|string|null $parentSectionId): void
-    {
-        $this->moveSectionParent($sectionId, $parentSectionId);
-    }
-
     protected function getHeaderActions(): array
     {
         return [
@@ -165,41 +150,33 @@ final class SitePages extends Page
                 ->schema([
                     Select::make('type')
                         ->label('Page type')
-                        ->options([
-                            SiteSection::TYPE_GALLERY => 'Gallery',
-                            SiteSection::TYPE_JOURNAL => 'Journal',
-                            SiteSection::TYPE_CUSTOM => 'Custom Page',
-                            SiteSection::TYPE_NAVIGATION_GROUP => 'Navigation Node',
-                        ])
+                        ->options(SiteNodeType::creatableOptions())
                         ->required()
                         ->live(),
                     Select::make('template')
                         ->label('Journal template')
-                        ->options([
-                            SiteSection::JOURNAL_TEMPLATE_BLOG => 'Blog',
-                            SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS => 'Exhibitions',
-                        ])
-                        ->required(fn (callable $get): bool => $get('type') === SiteSection::TYPE_JOURNAL)
-                        ->visible(fn (callable $get): bool => $get('type') === SiteSection::TYPE_JOURNAL),
+                        ->options(JournalTemplate::options())
+                        ->required(fn (callable $get): bool => $get('type') === SiteNodeType::Journal->value)
+                        ->visible(fn (callable $get): bool => $get('type') === SiteNodeType::Journal->value),
                     TextInput::make('title')->label('Title')->required()->maxLength(160),
                     TextInput::make('slug')
                         ->label('Public URL slug')
                         ->maxLength(80)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                        ->required(fn (callable $get): bool => $get('type') !== SiteSection::TYPE_NAVIGATION_GROUP)
-                        ->visible(fn (callable $get): bool => $get('type') !== SiteSection::TYPE_NAVIGATION_GROUP)
-                        ->helperText('Use lowercase letters, numbers and hyphens. Navigation Nodes have no public URL.'),
+                        ->required(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
+                        ->visible(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
+                        ->helperText('Use lowercase letters, numbers and hyphens.'),
                 ])
                 ->action(function (array $data): void {
-                    $type = (string) ($data['type'] ?? '');
+                    $type = SiteNodeType::tryFrom((string) ($data['type'] ?? ''));
                     $title = trim((string) ($data['title'] ?? ''));
                     $slug = trim((string) ($data['slug'] ?? ''));
 
                     $message = match ($type) {
-                        SiteSection::TYPE_NAVIGATION_GROUP => $this->createNavigationNode($title),
-                        SiteSection::TYPE_CUSTOM => $this->createCustomPage($title, $slug),
-                        SiteSection::TYPE_JOURNAL => $this->createJournal($title, $slug, (string) ($data['template'] ?? '')),
-                        SiteSection::TYPE_GALLERY => $this->createGallery($title, $slug),
+                        SiteNodeType::NavigationNode => $this->createNavigationNode($title),
+                        SiteNodeType::CustomPage => $this->createCustomPage($title, $slug),
+                        SiteNodeType::Journal => $this->createJournal($title, $slug, (string) ($data['template'] ?? '')),
+                        SiteNodeType::Gallery => $this->createGallery($title, $slug),
                         default => throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Navigation Node.']),
                     };
 
@@ -232,7 +209,7 @@ final class SitePages extends Page
 
     private function createGallery(string $title, string $slug): string
     {
-        app(ArtworkCategoryEditorialService::class)->create([
+        app(GalleryEditorialService::class)->create([
             'name' => $title,
             'slug' => $slug,
             'parent_section_id' => null,
@@ -245,6 +222,8 @@ final class SitePages extends Page
 
     private function loadSections(): void
     {
+        $this->orderService = app(SiteSectionOrderService::class);
+
         /** @var Builder<SiteSection> $topLevelQuery */
         $topLevelQuery = SiteSection::query()->whereNull('parent_id');
 
@@ -264,11 +243,11 @@ final class SitePages extends Page
             ->get();
 
         $this->parentCandidates = $topLevel
-            ->filter(static fn (SiteSection $section): bool => $section->canContainChildren())
+            ->filter(static fn (SiteSection $section): bool => $section->nodeType()->canContainChildren())
             ->map(static fn (SiteSection $section): array => [
                 'id' => (int) $section->getKey(),
                 'label' => (string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')),
-                'type' => (string) $section->getAttribute('type'),
+                'type' => $section->nodeType()->value,
             ])
             ->values()
             ->all();
@@ -291,36 +270,52 @@ final class SitePages extends Page
     /** @return array<string, mixed> */
     private function row(SiteSection $section, int $depth): array
     {
-        $type = (string) $section->getAttribute('type');
-        $template = $section->getAttribute('template');
+        $type = $section->nodeType();
+        $journalTemplate = $section->journalTemplate();
+        $hasChildren = $section->relationLoaded('children') && $section->getRelation('children')->isNotEmpty();
+        $workspaceUrl = app(SiteNodePresentation::class)->workspaceUrl($section);
+        $order = $this->orderService();
+
+        $validParentIds = collect($this->parentCandidates)
+            ->filter(function (array $candidate) use ($section, $type): bool {
+                if ($candidate['id'] === (int) $section->getKey()) {
+                    return false;
+                }
+
+                $parentType = SiteNodeType::tryFrom($candidate['type']);
+
+                return $parentType !== null && $type->canBeChildOf($parentType);
+            })
+            ->pluck('id')
+            ->all();
 
         return [
             'id' => (int) $section->getKey(),
-            'type' => $type,
-            'template' => $template,
-            'type_label' => match ($type) {
-                SiteSection::TYPE_HOME => 'Home',
-                SiteSection::TYPE_GALLERY => 'Gallery',
-                SiteSection::TYPE_NAVIGATION_GROUP => 'Navigation Node',
-                SiteSection::TYPE_CUSTOM => 'Custom Page',
-                SiteSection::TYPE_JOURNAL => $template === SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS ? 'Journal · Exhibitions' : 'Journal · Blog',
-                default => ucfirst($type),
-            },
+            'type' => $type->value,
+            'template' => $journalTemplate?->value,
+            'type_label' => $type->label($journalTemplate),
             'title' => (string) $section->getAttribute('title'),
             'navigation_label' => $section->getAttribute('navigation_label'),
             'state' => (string) $section->getAttribute('state'),
             'visible' => (bool) $section->getAttribute('show_in_navigation'),
             'position' => (int) $section->getAttribute('position'),
             'parent_id' => $section->getAttribute('parent_id'),
-            'has_children' => $section->relationLoaded('children') && $section->getRelation('children')->isNotEmpty(),
+            'has_children' => $hasChildren,
             'depth' => $depth,
-            'public_url' => $section->publicUrl(),
-            'can_move_up' => app(SiteSectionOrderService::class)->canMove($section, 'up'),
-            'can_move_down' => app(SiteSectionOrderService::class)->canMove($section, 'down'),
-            'can_delete' => $type !== SiteSection::TYPE_HOME,
-            'editor_url' => $this->editorUrl($section),
-            'content_url' => $this->contentUrl($section),
+            'public_url' => app(SiteNodeRoute::class)->url($section),
+            'can_move_up' => $order->canMove($section, 'up'),
+            'can_move_down' => $order->canMove($section, 'down'),
+            'can_delete' => $type->canDelete(),
+            'fixed_placement' => ! $type->canChangePlacement(),
+            'can_choose_parent' => $type->canHaveParent() && ! $hasChildren,
+            'valid_parent_ids' => $validParentIds,
+            'workspace_url' => $workspaceUrl,
         ];
+    }
+
+    private function orderService(): SiteSectionOrderService
+    {
+        return $this->orderService ??= app(SiteSectionOrderService::class);
     }
 
     private function updatePlacement(SiteSection $section, string $state, bool $visible, mixed $parentId): void
@@ -343,51 +338,5 @@ final class SitePages extends Page
         }
 
         $this->loadSections();
-    }
-
-    private function editorUrl(SiteSection $section): ?string
-    {
-        return match ((string) $section->getAttribute('type')) {
-            SiteSection::TYPE_GALLERY => is_numeric($section->getAttribute('artwork_category_id'))
-                ? ArtworkCategoryResource::getUrl('edit', ['record' => (int) $section->getAttribute('artwork_category_id')])
-                : null,
-            SiteSection::TYPE_JOURNAL => JournalSettingResource::getSettingsUrl($section),
-            default => null,
-        };
-    }
-
-    private function contentUrl(SiteSection $section): ?string
-    {
-        $type = (string) $section->getAttribute('type');
-
-        if ($type === SiteSection::TYPE_HOME) {
-            return ArtworkResource::getUrl('index');
-        }
-
-        if ($type === SiteSection::TYPE_GALLERY) {
-            $galleryId = $section->getAttribute('artwork_category_id');
-
-            return is_numeric($galleryId)
-                ? ArtworkResource::getUrl('gallery', ['gallery' => (int) $galleryId])
-                : null;
-        }
-
-        if ($type === SiteSection::TYPE_CUSTOM) {
-            $settings = $section->relationLoaded('customPageSetting')
-                ? $section->getRelation('customPageSetting')
-                : null;
-
-            return $settings instanceof CustomPageSetting
-                ? CustomPageSettingResource::getUrl('edit', ['record' => $settings])
-                : null;
-        }
-
-        if ($type === SiteSection::TYPE_JOURNAL) {
-            return $section->getAttribute('template') === SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS
-                ? ExhibitionResource::getUrl('index', ['section' => $section->getKey()])
-                : BlogPostResource::getUrl('index', ['section' => $section->getKey()]);
-        }
-
-        return null;
     }
 }

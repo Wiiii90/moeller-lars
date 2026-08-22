@@ -14,9 +14,6 @@ use Throwable;
 
 class MediaIngestService
 {
-    /** @deprecated UI callers should use MediaTypePolicy::maxUploadBytes() or the type-specific policy. */
-    public const MAX_BYTES = 20 * 1024 * 1024;
-
     public const MAX_PIXELS = 16_000_000;
 
     public const THUMBNAIL_MAX_EDGE = 960;

@@ -21,14 +21,14 @@
     $sidebarCollapsible = $sidebarCollapsible && filament()->isSidebarCollapsibleOnDesktop();
     $childItems = collect($childItems)->all();
     $hasChildItems = $childItems !== [];
-    $alwaysOpen = $attributes->get('data-artist-tree-root') === 'true';
+    $alwaysOpen = $attributes->get('data-admin-tree-root') === 'true';
     $startsOpen = $alwaysOpen || $active || $activeChildItems;
 @endphp
 
 <li
     @if ($hasChildItems)
-        x-data="{ artistChildrenOpen: @js($startsOpen) }"
-        x-effect="if (@js($alwaysOpen || $activeChildItems)) artistChildrenOpen = true"
+        x-data="{ adminChildrenOpen: @js($startsOpen) }"
+        x-effect="if (@js($alwaysOpen || $activeChildItems)) adminChildrenOpen = true"
     @endif
     {{
         $attributes->class([
@@ -36,11 +36,11 @@
             'fi-active' => $active,
             'fi-sidebar-item-has-active-child-items' => $activeChildItems,
             'fi-sidebar-item-has-url' => filled($url),
-            'artist-sidebar-tree__item' => $hasChildItems,
+            'admin-sidebar-tree__item' => $hasChildItems,
         ])
     }}
 >
-    <div @class(['artist-sidebar-tree__row' => $hasChildItems])>
+    <div @class(['admin-sidebar-tree__row' => $hasChildItems])>
         @if (filled($url))
             <a
                 {{ \Filament\Support\generate_href_html($url, $shouldOpenUrlInNewTab) }}
@@ -113,18 +113,18 @@
         @elseif ($hasChildItems)
             <button
                 type="button"
-                class="fi-sidebar-item-btn artist-sidebar-tree__label-button"
-                x-on:click="artistChildrenOpen = ! artistChildrenOpen"
-                x-bind:aria-expanded="artistChildrenOpen.toString()"
+                class="fi-sidebar-item-btn admin-sidebar-tree__label-button"
+                x-on:click="adminChildrenOpen = ! adminChildrenOpen"
+                x-bind:aria-expanded="adminChildrenOpen.toString()"
             >
                 @if (filled($icon))
                     {{ \Filament\Support\generate_icon_html($icon, attributes: (new \Filament\Support\View\ComponentAttributeBag)->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large) }}
                 @endif
                 <span class="fi-sidebar-item-label">{{ $slot }}</span>
-                <span class="artist-sidebar-tree__chevron artist-sidebar-tree__chevron--embedded" aria-hidden="true" x-bind:class="{ 'is-open': artistChildrenOpen }"></span>
+                <span class="admin-sidebar-tree__chevron admin-sidebar-tree__chevron--embedded" aria-hidden="true" x-bind:class="{ 'is-open': adminChildrenOpen }"></span>
             </button>
         @else
-            <span class="fi-sidebar-item-btn artist-sidebar-tree__static">
+            <span class="fi-sidebar-item-btn admin-sidebar-tree__static">
                 @if (filled($icon))
                     {{ \Filament\Support\generate_icon_html($icon, attributes: (new \Filament\Support\View\ComponentAttributeBag)->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large) }}
                 @endif
@@ -135,22 +135,22 @@
         @if ($hasChildItems && (! $alwaysOpen) && filled($url))
             <button
                 type="button"
-                class="artist-sidebar-tree__toggle"
-                x-on:click.stop="artistChildrenOpen = ! artistChildrenOpen"
-                x-bind:aria-expanded="artistChildrenOpen.toString()"
+                class="admin-sidebar-tree__toggle"
+                x-on:click.stop="adminChildrenOpen = ! adminChildrenOpen"
+                x-bind:aria-expanded="adminChildrenOpen.toString()"
                 aria-label="Toggle {{ trim(strip_tags($slot->toHtml())) }} children"
                 @if ($sidebarCollapsible && (! $subNavigation))
                     x-show="$store.sidebar.isOpen"
                 @endif
-            ><span class="artist-sidebar-tree__chevron" aria-hidden="true" x-bind:class="{ 'is-open': artistChildrenOpen }"></span></button>
+            ><span class="admin-sidebar-tree__chevron" aria-hidden="true" x-bind:class="{ 'is-open': adminChildrenOpen }"></span></button>
         @endif
     </div>
 
     @if ($hasChildItems)
         <ul
-            class="fi-sidebar-sub-group-items artist-sidebar-tree__children"
+            class="fi-sidebar-sub-group-items admin-sidebar-tree__children"
             @unless ($alwaysOpen)
-                x-show="artistChildrenOpen"
+                x-show="adminChildrenOpen"
                 x-cloak
             @endunless
         >

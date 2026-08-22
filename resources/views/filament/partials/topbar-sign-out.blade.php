@@ -1,4 +1,4 @@
-<form class="artist-topbar-sign-out" method="POST" action="{{ filament()->getLogoutUrl() }}">
+<form class="admin-topbar-sign-out" method="POST" action="{{ filament()->getLogoutUrl() }}">
     @csrf
 
     <x-filament::button

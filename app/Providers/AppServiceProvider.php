@@ -3,8 +3,6 @@
 namespace App\Providers;
 
 use App\Domain\Content\PublicSiteContext;
-use Filament\Support\Assets\Css;
-use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\View\View as ViewContract;
@@ -20,26 +18,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $unifiedStylesheet = app()->environment('production')
-            ? secure_asset('css/filament-unified.css')
-            : asset('css/filament-unified.css');
-        $analyticsStylesheet = app()->environment('production')
-            ? secure_asset('css/filament-analytics.css')
-            : asset('css/filament-analytics.css');
-        $editorialStylesheet = app()->environment('production')
-            ? secure_asset('css/filament-editorial.css')
-            : asset('css/filament-editorial.css');
-        $editorOverlayStylesheet = app()->environment('production')
-            ? secure_asset('css/filament-editor-overlays.css')
-            : asset('css/filament-editor-overlays.css');
-
-        FilamentAsset::register([
-            Css::make('artist-unified', $unifiedStylesheet),
-            Css::make('analytics-dashboard', $analyticsStylesheet),
-            Css::make('artist-editorial', $editorialStylesheet),
-            Css::make('artist-editor-overlays', $editorOverlayStylesheet),
-        ]);
-
         FilamentView::registerRenderHook(
             PanelsRenderHook::USER_MENU_BEFORE,
             fn (): ViewContract => view('filament.partials.topbar-sign-out'),

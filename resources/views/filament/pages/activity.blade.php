@@ -1,67 +1,71 @@
 <x-filament-panels::page>
-    <div class="artist-workspace">
-        <header class="artist-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">Editorial history</p>
-                <h2>Activity</h2>
+    <x-admin.workspace kicker="Editorial history" title="Activity">
+        <x-admin.section kicker="Filters" title="Activity scope">
+            <div class="admin-filter-groups" aria-label="Activity filters">
+                <x-admin.toolbar aria-label="Time range">
+                    @foreach ($periodOptions as $value => $label)
+                        <a
+                            class="admin-action {{ $period === $value ? 'is-primary' : '' }}"
+                            href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $value, 'area' => $area, 'family' => $family])) }}"
+                        >{{ $label }}</a>
+                    @endforeach
+                </x-admin.toolbar>
+                <x-admin.toolbar aria-label="Editorial area">
+                    <a class="admin-action {{ $area === null ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'family' => $family])) }}">All areas</a>
+                    @foreach ($areaOptions as $value => $label)
+                        <a class="admin-action {{ $area === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $value, 'family' => $family])) }}">{{ $label }}</a>
+                    @endforeach
+                </x-admin.toolbar>
+                <x-admin.toolbar aria-label="Change type">
+                    <a class="admin-action {{ $family === null ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $area])) }}">All changes</a>
+                    @foreach ($familyOptions as $value => $label)
+                        <a class="admin-action {{ $family === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $area, 'family' => $value])) }}">{{ $label }}</a>
+                    @endforeach
+                </x-admin.toolbar>
             </div>
-        </header>
+        </x-admin.section>
 
-        <div class="artist-workspace__footnote" aria-label="Activity filters">
-            <div class="artist-media-library__filters" aria-label="Time range">
-                @foreach ($periodOptions as $value => $label)
-                    <a
-                        class="artist-action {{ $period === $value ? 'is-primary' : '' }}"
-                        href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $value, 'area' => $area, 'family' => $family])) }}"
-                    >{{ $label }}</a>
-                @endforeach
-            </div>
-            <div class="artist-media-library__filters" aria-label="Editorial area">
-                <a class="artist-action {{ $area === null ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'family' => $family])) }}">All areas</a>
-                @foreach ($areaOptions as $value => $label)
-                    <a class="artist-action {{ $area === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $value, 'family' => $family])) }}">{{ $label }}</a>
-                @endforeach
-            </div>
-            <div class="artist-media-library__filters" aria-label="Change type">
-                <a class="artist-action {{ $family === null ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $area])) }}">All changes</a>
-                @foreach ($familyOptions as $value => $label)
-                    <a class="artist-action {{ $family === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $area, 'family' => $value])) }}">{{ $label }}</a>
-                @endforeach
-            </div>
-        </div>
-
-        <section class="artist-dashboard__activity" aria-label="Administrative activity">
-            <div class="artist-dashboard__section-head"><span>Change</span><span>When</span></div>
-            @forelse ($activity as $event)
-                <article class="artist-dashboard__activity-row">
-                    <span>
-                        <strong>{{ $event['area'] }}</strong>
-                        <small>{{ $event['action'] }} — {{ $event['target'] }} · {{ $event['actor'] }}</small>
-                    </span>
-                    <div class="artist-section__actions">
-                        <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
-                        @if ($event['undo'] !== null)
-                            <button
-                                class="artist-action"
-                                type="button"
-                                wire:click="undo({{ $event['undo']['id'] }})"
-                                wire:confirm="{{ $event['undo']['confirmation'] }}"
-                            >Undo</button>
-                        @endif
-                        @if ($event['url'] !== null)
-                            <a class="artist-action" href="{{ $event['url'] }}">Open</a>
-                        @endif
-                    </div>
-                </article>
-            @empty
-                <p class="artist-dashboard__quiet">No editorial activity matches these filters.</p>
-            @endforelse
-        </section>
+        <x-admin.section kicker="History" title="Administrative activity">
+            @if ($activity !== [])
+                <x-admin.list aria-label="Administrative activity">
+                    @foreach ($activity as $event)
+                        <article class="admin-list__row">
+                            <div class="admin-list__identity">
+                                <span class="admin-list__eyebrow">{{ $event['area'] }}</span>
+                                <strong>{{ $event['action'] }}</strong>
+                                <span>{{ $event['target'] }} · {{ $event['actor'] }}</span>
+                            </div>
+                            <div class="admin-list__meta">
+                                <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
+                            </div>
+                            <div></div>
+                            <x-admin.toolbar>
+                                @if ($event['undo'] !== null)
+                                    <button
+                                        class="admin-action"
+                                        type="button"
+                                        wire:click="undo({{ $event['undo']['id'] }})"
+                                        wire:confirm="{{ $event['undo']['confirmation'] }}"
+                                    >Undo</button>
+                                @endif
+                                @if ($event['url'] !== null)
+                                    <a class="admin-action" href="{{ $event['url'] }}">Open</a>
+                                @endif
+                            </x-admin.toolbar>
+                        </article>
+                    @endforeach
+                </x-admin.list>
+            @else
+                <x-admin.empty-state kicker="No matches" title="No activity matches these filters">
+                    <p>Change the period, editorial area or change type to widen the activity scope.</p>
+                </x-admin.empty-state>
+            @endif
+        </x-admin.section>
 
         @if ($paginator->hasPages())
-            <div class="artist-workspace__footnote">
+            <footer class="admin-workspace__footnote">
                 {{ $paginator->links() }}
-            </div>
+            </footer>
         @endif
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>

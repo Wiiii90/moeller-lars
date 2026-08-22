@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Artwork\ArtworkCategoryPathPolicy;
 use App\Domain\Artwork\PublicArtworkQuery;
+use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SitePreviewContext;
+use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Media\PublicMedia;
 use App\Models\ArtworkCategory;
 use App\Models\Redirect;
@@ -31,7 +32,7 @@ class PublicArtworkController extends Controller
     public function category(string $category): View|RedirectResponse
     {
         $sectionQuery = SiteSection::query()
-            ->where('type', SiteSection::TYPE_GALLERY)
+            ->where('type', SiteNodeType::Gallery->value)
             ->where('slug', $category)
             ->with('artworkCategory');
         $this->preview->constrainSectionQuery($sectionQuery);
@@ -46,7 +47,7 @@ class PublicArtworkController extends Controller
             $redirect = Redirect::query()
                 ->where('source_path', '/'.$category)
                 ->where('enabled', true)
-                ->where('reason', ArtworkCategoryPathPolicy::CATEGORY_SLUG_REDIRECT_REASON)
+                ->where('reason', SiteSectionPathPolicy::GALLERY_SLUG_REDIRECT_REASON)
                 ->first();
 
             abort_unless($redirect !== null, 404);
@@ -73,7 +74,7 @@ class PublicArtworkController extends Controller
         /** @var ArtworkCategory $categoryRecord */
         $categoryRecord = $artwork->getRelationValue('category');
         $sectionQuery = SiteSection::query()
-            ->where('type', SiteSection::TYPE_GALLERY)
+            ->where('type', SiteNodeType::Gallery->value)
             ->where('artwork_category_id', $categoryRecord->getKey());
         $this->preview->constrainSectionQuery($sectionQuery);
         abort_unless($sectionQuery->exists(), 404);

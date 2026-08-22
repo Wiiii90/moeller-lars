@@ -32,7 +32,7 @@ class PublicArtworkQuery
             ->all();
 
         if (count($positions) !== count(array_unique($positions))) {
-            throw new LogicException('Visible artwork positions must be unique within a category.');
+            throw new LogicException('Visible artwork positions must be unique within a Gallery.');
         }
 
         return $artworks;
@@ -90,6 +90,20 @@ class PublicArtworkQuery
             $latest,
             "The newest eligible home date {$latestDate} is ambiguous.",
         );
+    }
+
+    /** @return Collection<int, Artwork> */
+    public function homeCandidates(int $limit = 12): Collection
+    {
+        /** @var Collection<int, Artwork> $artworks */
+        $artworks = $this->homeQuery()
+            ->orderByDesc('work_year')
+            ->orderByDesc('work_date')
+            ->orderByDesc('id')
+            ->limit(max(1, min($limit, 50)))
+            ->get();
+
+        return $artworks;
     }
 
     public function publishedBySlug(string $slug): ?Artwork

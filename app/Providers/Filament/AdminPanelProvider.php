@@ -7,17 +7,12 @@ use App\Filament\Pages\Analytics;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\SitePages;
 use App\Filament\Pages\StorageCapacity;
-use App\Filament\Resources\Artworks\ArtworkResource;
-use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\CustomPageSettings\CustomPageSettingResource;
-use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
+use App\Filament\Support\SiteNavigation;
 use App\Filament\Widgets\ArtistDashboard;
 use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
-use App\Models\CustomPageSetting;
-use App\Models\SiteSection;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -29,9 +24,9 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
@@ -56,6 +51,10 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->renderHook(
+                PanelsRenderHook::STYLES_AFTER,
+                fn (): string => view('filament.partials.admin-theme')->render(),
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([])
@@ -84,8 +83,8 @@ class AdminPanelProvider extends PanelProvider
     private function navigation(NavigationBuilder $builder): NavigationBuilder
     {
         $pagesItem = SitePages::getNavigationItems()[0]
-            ->childItems($this->siteSectionNavigationItems())
-            ->extraAttributes(['data-artist-tree-root' => 'true']);
+            ->childItems(app(SiteNavigation::class)->items())
+            ->extraAttributes(['data-admin-tree-root' => 'true']);
 
         return $builder
             ->items([
@@ -110,132 +109,5 @@ class AdminPanelProvider extends PanelProvider
                         ...StorageCapacity::getNavigationItems(),
                     ]),
             ]);
-    }
-
-    /** @return array<NavigationItem> */
-    private function siteSectionNavigationItems(): array
-    {
-        /** @var EloquentCollection<int, SiteSection> $sections */
-        $sections = SiteSection::query()
-            ->with('customPageSetting')
-            ->orderBy('position')
-            ->orderBy('id')
-            ->get();
-
-        /** @var array<int, list<SiteSection>> $childrenByParent */
-        $childrenByParent = [];
-        foreach ($sections as $section) {
-            $parentId = $section->getAttribute('parent_id');
-            if (is_numeric($parentId)) {
-                $childrenByParent[(int) $parentId][] = $section;
-            }
-        }
-
-        $items = [];
-        foreach ($sections as $section) {
-            if ($section->getAttribute('parent_id') !== null) {
-                continue;
-            }
-
-            $items[] = $this->siteSectionNavigationItem($section, $childrenByParent, 0);
-        }
-
-        return $items;
-    }
-
-    /** @param array<int, list<SiteSection>> $childrenByParent */
-    private function siteSectionNavigationItem(SiteSection $section, array $childrenByParent, int $depth): NavigationItem
-    {
-        $label = trim((string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')));
-        $children = $childrenByParent[(int) $section->getKey()] ?? [];
-        $url = $this->siteSectionWorkspaceUrl($section);
-
-        $item = NavigationItem::make($label)
-            ->key('site-section-'.$section->getKey())
-            ->url($url)
-            ->isActiveWhen(fn (): bool => $url !== null && $this->navigationUrlIsActive($url))
-            ->extraAttributes([
-                'data-artist-site-section' => (string) $section->getKey(),
-                'data-artist-site-section-depth' => (string) $depth,
-                'data-artist-site-section-type' => (string) $section->getAttribute('type'),
-                'data-artist-tree-branch' => $children === [] ? 'false' : 'true',
-            ]);
-
-        if ($children !== []) {
-            $item
-                ->icon(Heroicon::OutlinedFolder)
-                ->childItems(array_map(
-                    fn (SiteSection $child): NavigationItem => $this->siteSectionNavigationItem($child, $childrenByParent, $depth + 1),
-                    $children,
-                ));
-        }
-
-        return $item;
-    }
-
-    private function siteSectionWorkspaceUrl(SiteSection $section): ?string
-    {
-        $fallback = SitePages::getUrl().'#site-section-'.$section->getKey();
-        $type = (string) $section->getAttribute('type');
-
-        if ($type === SiteSection::TYPE_NAVIGATION_GROUP) {
-            return null;
-        }
-
-        if ($type === SiteSection::TYPE_HOME) {
-            return ArtworkResource::getUrl('index');
-        }
-
-        if ($type === SiteSection::TYPE_GALLERY) {
-            $galleryId = $section->getAttribute('artwork_category_id');
-
-            return is_numeric($galleryId)
-                ? ArtworkResource::getUrl('gallery', ['gallery' => (int) $galleryId])
-                : $fallback;
-        }
-
-        if ($type === SiteSection::TYPE_CUSTOM) {
-            $settings = $section->getRelation('customPageSetting');
-
-            return $settings instanceof CustomPageSetting
-                ? CustomPageSettingResource::getUrl('edit', ['record' => $settings])
-                : $fallback;
-        }
-
-        if ($type === SiteSection::TYPE_JOURNAL) {
-            return $section->getAttribute('template') === SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS
-                ? ExhibitionResource::getUrl('index', ['section' => $section->getKey()])
-                : BlogPostResource::getUrl('index', ['section' => $section->getKey()]);
-        }
-
-        return $fallback;
-    }
-
-    private function navigationUrlIsActive(string $url): bool
-    {
-        $target = parse_url($url);
-        $targetPath = $target['path'] ?? null;
-        if (! is_string($targetPath) || $targetPath === '') {
-            return false;
-        }
-
-        $request = original_request();
-        $requestPath = '/'.ltrim($request->path(), '/');
-        if (rtrim($requestPath, '/') !== rtrim($targetPath, '/')) {
-            return false;
-        }
-
-        $query = [];
-        if (isset($target['query'])) {
-            parse_str($target['query'], $query);
-        }
-
-        foreach ($query as $key => $value) {
-            if ((string) $request->query((string) $key) !== (string) $value) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

@@ -6,8 +6,8 @@ use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Media\MediaAssetEditorialService;
-use App\Domain\Media\MediaIngestService;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Domain\Media\MediaTypePolicy;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -27,7 +27,7 @@ use LogicException;
 
 class EditArtwork extends EditRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = ArtworkResource::class;
 
@@ -145,7 +145,7 @@ class EditArtwork extends EditRecord
                         ->required()
                         ->storeFiles(false)
                         ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                        ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024)),
+                        ->maxSize((int) ceil(MediaTypePolicy::imageMaxBytes() / 1024)),
                 ])
                 ->action(function (array $data): void {
                     if (! array_key_exists('media', $data) || ! $data['media'] instanceof TemporaryUploadedFile) {
@@ -171,7 +171,7 @@ class EditArtwork extends EditRecord
                         ->required()
                         ->storeFiles(false)
                         ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                        ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024)),
+                        ->maxSize((int) ceil(MediaTypePolicy::imageMaxBytes() / 1024)),
                 ])
                 ->action(function (array $data): void {
                     if (! array_key_exists('media', $data) || ! $data['media'] instanceof TemporaryUploadedFile) {

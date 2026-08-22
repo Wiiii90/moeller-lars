@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Artworks\RelationManagers;
 
 use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
@@ -61,7 +62,7 @@ class GalleryImagesRelationManager extends RelationManager
                             ->image()
                             ->storeFiles(false)
                             ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                            ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024))
+                            ->maxSize((int) ceil(MediaTypePolicy::imageMaxBytes() / 1024))
                             ->required(),
                     ])
                     ->action(function (array $data): void {

@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\Exhibitions;
 
 use App\Domain\Content\JournalEntryOrderService;
-use App\Filament\Resources\Exhibitions\Pages\CreateExhibition;
+use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteNodeType;
 use App\Filament\Resources\Exhibitions\Pages\EditExhibition;
 use App\Filament\Resources\Exhibitions\Pages\ListExhibitions;
+use App\Filament\Support\AdminForm;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\Exhibition;
 use App\Models\SiteSection;
@@ -21,7 +23,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -49,9 +50,7 @@ class ExhibitionResource extends Resource
         return $schema->components([
             Hidden::make('site_section_id')
                 ->default(fn (): ?int => request()->integer('section') ?: null),
-            Fieldset::make('Exhibition')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Exhibition')
                 ->schema([
                     TextInput::make('title')
                         ->required()
@@ -101,9 +100,7 @@ class ExhibitionResource extends Resource
                     TextInput::make('directions_url')->label('Directions URL')->url()->maxLength(2048)->nullable(),
                 ])
                 ->columns(2),
-            Fieldset::make('Media')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Media')
                 ->schema([
                     Repeater::make('mediaUsages')
                         ->relationship()
@@ -184,8 +181,8 @@ class ExhibitionResource extends Resource
         /** @var SiteSection|null $section */
         $section = $exhibition->siteSection()->first();
         if (! $section instanceof SiteSection
-            || (string) $section->getAttribute('type') !== SiteSection::TYPE_JOURNAL
-            || (string) $section->getAttribute('template') !== SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS) {
+            || $section->nodeType() !== SiteNodeType::Journal
+            || $section->journalTemplate() !== JournalTemplate::Exhibitions) {
             throw new LogicException('Exhibitions must belong to an Exhibitions Journal.');
         }
 
@@ -196,7 +193,6 @@ class ExhibitionResource extends Resource
     {
         return [
             'index' => ListExhibitions::route('/'),
-            'create' => CreateExhibition::route('/create'),
             'edit' => EditExhibition::route('/{record}/edit'),
         ];
     }

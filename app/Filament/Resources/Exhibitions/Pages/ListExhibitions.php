@@ -2,19 +2,30 @@
 
 namespace App\Filament\Resources\Exhibitions\Pages;
 
+use App\Domain\Content\ExhibitionDraftService;
 use App\Domain\Content\JournalEntryOrderService;
+use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteNodeType;
+use App\Filament\Concerns\HasJournalSettingsAction;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Models\Exhibition;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Str;
 
 class ListExhibitions extends Page
 {
+    use HasJournalSettingsAction;
+
     protected static string $resource = ExhibitionResource::class;
 
     protected string $view = 'filament.resources.exhibitions.pages.list-exhibitions';
@@ -49,11 +60,83 @@ class ListExhibitions extends Page
             Action::make('addExhibition')
                 ->label('Add exhibition')
                 ->icon(Heroicon::OutlinedPlus)
-                ->url(ExhibitionResource::getUrl('create', ['section' => $this->sectionId])),
+                ->schema([
+                    TextInput::make('title')
+                        ->required()
+                        ->maxLength(240)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
+                            if (blank($get('slug')) && filled($state)) {
+                                $set('slug', Str::slug($state));
+                            }
+                        }),
+                    TextInput::make('slug')
+                        ->label('Entry URL slug')
+                        ->required()
+                        ->maxLength(180)
+                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                        ->unique('exhibitions', 'slug'),
+                    TextInput::make('date_text')
+                        ->label('Displayed exhibition dates')
+                        ->required()
+                        ->maxLength(160),
+                    TextInput::make('opening_text')
+                        ->label('Opening / vernissage')
+                        ->maxLength(500)
+                        ->nullable(),
+                    Select::make('kind')
+                        ->options([
+                            'solo' => 'Solo',
+                            'group' => 'Group',
+                        ])
+                        ->nullable(),
+                    DatePicker::make('starts_on')->nullable(),
+                    DatePicker::make('ends_on')->nullable(),
+                    TextInput::make('venue')->maxLength(240)->nullable(),
+                    TextInput::make('city')->maxLength(160)->nullable(),
+                    TextInput::make('country')->maxLength(160)->nullable(),
+                    TextInput::make('location_text')
+                        ->label('Location / address')
+                        ->maxLength(500)
+                        ->nullable()
+                        ->columnSpanFull(),
+                    MarkdownEditor::make('description')
+                        ->label('Description')
+                        ->toolbarButtons([
+                            ['bold', 'italic', 'link'],
+                            ['bulletList', 'orderedList'],
+                            ['undo', 'redo'],
+                        ])
+                        ->helperText('Formatting is limited to emphasis, links and lists so it stays compatible with the public exhibition renderer.')
+                        ->maxLength(10000)
+                        ->nullable()
+                        ->columnSpanFull(),
+                    TextInput::make('external_url')->url()->maxLength(2048)->nullable(),
+                    TextInput::make('directions_url')->label('Directions URL')->url()->maxLength(2048)->nullable(),
+                ])
+                ->modalHeading('Add exhibition')
+                ->modalSubmitActionLabel('Create draft')
+                ->action(function (array $data): void {
+                    $data['site_section_id'] = $this->sectionId;
+                    app(ExhibitionDraftService::class)->create($data);
+                    $this->loadExhibitions();
+
+                    Notification::make()
+                        ->title('Exhibition draft created')
+                        ->body('The exhibition remains private until it is explicitly published. Media can be attached while editing the draft.')
+                        ->success()
+                        ->send();
+                }),
+            $this->journalSettingsAction(),
             Action::make('pages')
                 ->label('Back to Pages')
                 ->url(SitePages::getUrl()),
         ];
+    }
+
+    protected function journalSectionId(): int
+    {
+        return $this->sectionId;
     }
 
     private function loadExhibitions(): void
@@ -96,8 +179,8 @@ class ListExhibitions extends Page
 
         $exists = SiteSection::query()
             ->whereKey($sectionId)
-            ->where('type', SiteSection::TYPE_JOURNAL)
-            ->where('template', SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS)
+            ->where('type', SiteNodeType::Journal->value)
+            ->where('template', JournalTemplate::Exhibitions->value)
             ->exists();
         abort_unless($exists, 404);
 

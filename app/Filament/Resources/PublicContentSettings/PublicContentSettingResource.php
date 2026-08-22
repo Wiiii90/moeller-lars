@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PublicContentSettings;
 
 use App\Domain\Content\SocialLinks;
 use App\Filament\Resources\PublicContentSettings\Pages\EditPublicContentSetting;
+use App\Filament\Support\AdminForm;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
@@ -14,7 +15,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -55,20 +55,16 @@ class PublicContentSettingResource extends Resource
                 'default' => 1,
                 'xl' => 2,
             ])
-                ->extraAttributes(['class' => 'artist-general-grid'])
+                ->extraAttributes(['class' => 'admin-settings-grid'])
                 ->schema([
-                    Fieldset::make('Site identity')
-                        ->contained(false)
-                        ->extraAttributes(['class' => 'artist-general-section'])
+                    AdminForm::section('Site identity')
                         ->schema([
                             MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
                                 ->nullable()
                                 ->helperText('Choose an image from Files. The generated thumbnail variant is used as the browser icon.')
                                 ->columnSpanFull(),
                         ]),
-                    Fieldset::make('Public contact')
-                        ->contained(false)
-                        ->extraAttributes(['class' => 'artist-general-section'])
+                    AdminForm::section('Public contact')
                         ->schema([
                             TextInput::make('public_email')
                                 ->label('Public email')
@@ -80,9 +76,7 @@ class PublicContentSettingResource extends Resource
                                 ->default(true),
                         ])
                         ->columns(2),
-                    Fieldset::make('Social links')
-                        ->contained(false)
-                        ->extraAttributes(['class' => 'artist-general-section'])
+                    AdminForm::section('Social links')
                         ->columnSpanFull()
                         ->schema([
                             Repeater::make('social_links')
@@ -112,9 +106,7 @@ class PublicContentSettingResource extends Resource
                                 ->addActionLabel('Add social link')
                                 ->columnSpanFull(),
                         ]),
-                    Fieldset::make('Contact delivery')
-                        ->contained(false)
-                        ->extraAttributes(['class' => 'artist-general-section'])
+                    AdminForm::section('Contact delivery')
                         ->schema([
                             TextInput::make('contact_recipient_email')
                                 ->label('Private delivery recipient')
@@ -123,9 +115,7 @@ class PublicContentSettingResource extends Resource
                                 ->nullable()
                                 ->helperText('If empty, the server-configured fallback recipient is used.'),
                         ]),
-                    Fieldset::make('Legal')
-                        ->contained(false)
-                        ->extraAttributes(['class' => 'artist-general-section'])
+                    AdminForm::section('Legal')
                         ->schema([
                             Textarea::make('legal_disclaimer')->label('Legal disclaimer')->rows(4)->nullable(),
                         ]),

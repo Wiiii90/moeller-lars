@@ -3,6 +3,8 @@
 namespace App\Domain\Media;
 
 use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteNodeType;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\CustomPageSetting;
@@ -10,7 +12,6 @@ use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\PublicContentSetting;
-use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Collection;
 use LogicException;
 
@@ -42,7 +43,7 @@ class PublicMedia
 
         if (CustomPageSetting::query()
             ->whereHas('siteSection', fn ($query) => $query
-                ->where('type', SiteSection::TYPE_CUSTOM)
+                ->where('type', SiteNodeType::CustomPage->value)
                 ->where('state', 'published'))
             ->whereRaw('blocks @> ?::jsonb', [json_encode([['media_asset_id' => (int) $asset->getKey()]], JSON_THROW_ON_ERROR)])
             ->exists()) {
@@ -54,8 +55,8 @@ class PublicMedia
             ->whereHas('exhibition', fn ($query) => $query
                 ->where('state', 'published')
                 ->whereHas('siteSection', fn ($section) => $section
-                    ->where('type', SiteSection::TYPE_JOURNAL)
-                    ->where('template', SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS)
+                    ->where('type', SiteNodeType::Journal->value)
+                    ->where('template', JournalTemplate::Exhibitions->value)
                     ->where('state', 'published')))
             ->exists()) {
             return true;
@@ -64,8 +65,8 @@ class PublicMedia
         return BlogEditorialService::publicQuery()
             ->where('cover_media_asset_id', $asset->getKey())
             ->whereHas('siteSection', fn ($section) => $section
-                ->where('type', SiteSection::TYPE_JOURNAL)
-                ->where('template', SiteSection::JOURNAL_TEMPLATE_BLOG)
+                ->where('type', SiteNodeType::Journal->value)
+                ->where('template', JournalTemplate::Blog->value)
                 ->where('state', 'published'))
             ->exists();
     }

@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\ContactContentSettings\Pages;
 
 use App\Domain\Admin\AdminSettingsService;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\ContactContentSettings\ContactContentSettingResource;
 use App\Models\PublicContentSetting;
@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 
 final class EditContactContentSetting extends EditRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = ContactContentSettingResource::class;
 

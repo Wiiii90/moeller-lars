@@ -3,12 +3,14 @@
 namespace App\Filament\Resources\Artworks;
 
 use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\Artworks\Pages\CreateArtwork;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Resources\Artworks\Pages\ListArtworks;
 use App\Filament\Resources\Artworks\Pages\ManageGalleryArtworks;
 use App\Filament\Resources\Artworks\Pages\ViewArtwork;
 use App\Filament\Resources\Artworks\RelationManagers\GalleryImagesRelationManager;
+use App\Filament\Support\AdminForm;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
@@ -25,7 +27,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
@@ -59,9 +60,7 @@ class ArtworkResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Fieldset::make('Artwork')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Artwork')
                 ->schema([
                     TextInput::make('title')
                         ->required()
@@ -98,22 +97,18 @@ class ArtworkResource extends Resource
                     Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
                 ])
                 ->columns(2),
-            Fieldset::make('Primary image')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Primary image')
                 ->schema([
                     FileUpload::make('primary_media')
                         ->label('Primary image')
                         ->image()
                         ->storeFiles(false)
                         ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                        ->maxSize((int) ceil(MediaIngestService::MAX_BYTES / 1024))
+                        ->maxSize((int) ceil(MediaTypePolicy::imageMaxBytes() / 1024))
                         ->helperText('Optional while drafting, but required before publication.'),
                 ])
                 ->visible(fn (string $operation): bool => $operation === 'create'),
-            Fieldset::make('Date and homepage')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Date and homepage')
                 ->schema([
                     TextInput::make('work_year')
                         ->label('Year')

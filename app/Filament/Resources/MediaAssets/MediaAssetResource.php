@@ -5,6 +5,7 @@ namespace App\Filament\Resources\MediaAssets;
 use App\Filament\Resources\MediaAssets\Pages\EditMediaAsset;
 use App\Filament\Resources\MediaAssets\Pages\ListMediaAssets;
 use App\Filament\Resources\MediaAssets\Pages\ViewMediaAsset;
+use App\Filament\Support\AdminForm;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use BackedEnum;
@@ -13,7 +14,6 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
@@ -43,9 +43,7 @@ class MediaAssetResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Fieldset::make('Accessibility and credit')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Accessibility and credit')
                 ->schema([
                     TextInput::make('alt_text')
                         ->label('Default ALT text')

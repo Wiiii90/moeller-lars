@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Exhibitions\Pages;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\EditorialRecordService;
 use App\Domain\Admin\EditorialRichTextValidator;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Models\Exhibition;
 use Filament\Actions\Action;
@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 class EditExhibition extends EditRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = ExhibitionResource::class;
 

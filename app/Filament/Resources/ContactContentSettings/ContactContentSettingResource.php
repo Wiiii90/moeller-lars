@@ -3,11 +3,11 @@
 namespace App\Filament\Resources\ContactContentSettings;
 
 use App\Filament\Resources\ContactContentSettings\Pages\EditContactContentSetting;
+use App\Filament\Support\AdminForm;
 use App\Models\PublicContentSetting;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -35,9 +35,7 @@ final class ContactContentSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Fieldset::make('Contact presentation')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Contact presentation')
                 ->schema([
                     Select::make('contact_state')
                         ->label('Form state')

@@ -3,12 +3,12 @@
 namespace App\Filament\Resources\VitaContentSettings;
 
 use App\Filament\Resources\VitaContentSettings\Pages\EditVitaContentSetting;
+use App\Filament\Support\AdminForm;
 use App\Models\PublicContentSetting;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -36,13 +36,11 @@ final class VitaContentSettingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Fieldset::make('Additional Vita text')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Additional Vita text')
                 ->schema([
                     Repeater::make('profile_text_blocks')
                         ->label('Text blocks')
-                        ->extraAttributes(['class' => 'artist-component-repeater'])
+                        ->extraAttributes(['class' => 'admin-component-repeater'])
                         ->schema([
                             TextInput::make('title')->required()->maxLength(120),
                             Textarea::make('body')->required()->rows(4)->maxLength(5000),

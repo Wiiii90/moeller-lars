@@ -1,17 +1,9 @@
 <x-filament-panels::page>
-    <link rel="stylesheet" href="{{ asset('css/media-workspace.css') }}">
-
-    <div class="artist-workspace media-inspector">
-        <header class="artist-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">Media preview</p>
-                <h2>{{ $media['filename'] }}</h2>
-            </div>
-            <div class="artist-workspace__summary">
-                <div><strong>{{ $media['usage_count'] }}</strong><span>References</span></div>
-                <div><strong>{{ ucfirst($media['state']) }}</strong><span>Status</span></div>
-            </div>
-        </header>
+    <x-admin.workspace kicker="Media preview" :title="$media['filename']" class="media-inspector">
+        <x-slot:summary>
+            <div><strong>{{ $media['usage_count'] }}</strong><span>References</span></div>
+            <div><strong>{{ ucfirst($media['state']) }}</strong><span>Status</span></div>
+        </x-slot:summary>
 
         <section class="media-inspector__preview" aria-label="Media preview">
             @if ($media['original_url'])
@@ -23,7 +15,7 @@
                 @elseif ($media['is_image'])
                     <img src="{{ $media['original_url'] }}" alt="{{ $media['alt'] }}">
                 @else
-                    <a class="artist-action" href="{{ $media['original_url'] }}">Open media</a>
+                    <a class="admin-action" href="{{ $media['original_url'] }}">Open media</a>
                 @endif
             @else
                 <span>Preview unavailable for {{ $media['state'] }} media</span>
@@ -32,9 +24,9 @@
 
         @if ($sequence)
             <nav class="media-inspector__sequence" aria-label="Artwork media sequence">
-                @if ($sequence['previous_url'])<a class="artist-action" href="{{ $sequence['previous_url'] }}">← Previous</a>@else<span class="artist-action" aria-disabled="true">← Previous</span>@endif
+                @if ($sequence['previous_url'])<a class="admin-action" href="{{ $sequence['previous_url'] }}">← Previous</a>@else<span class="admin-action" aria-disabled="true">← Previous</span>@endif
                 <span>{{ $sequence['position_label'] }} · {{ $sequence['role_label'] }} · {{ $sequence['artwork_title'] }}</span>
-                @if ($sequence['next_url'])<a class="artist-action" href="{{ $sequence['next_url'] }}">Next →</a>@else<span class="artist-action" aria-disabled="true">Next →</span>@endif
+                @if ($sequence['next_url'])<a class="admin-action" href="{{ $sequence['next_url'] }}">Next →</a>@else<span class="admin-action" aria-disabled="true">Next →</span>@endif
             </nav>
         @endif
 
@@ -67,10 +59,12 @@
         </section>
 
         @if ($sequence)
-            <footer class="artist-workspace__footnote">
-                <a class="artist-action" href="{{ $sequence['artwork_url'] }}">Edit artwork</a>
-                @if ($sequence['gallery_url'])<a class="artist-action" href="{{ $sequence['gallery_url'] }}">Back to Gallery workspace</a>@endif
+            <footer class="admin-workspace__footnote">
+                <x-admin.toolbar>
+                    <a class="admin-action" href="{{ $sequence['artwork_url'] }}">Edit artwork</a>
+                    @if ($sequence['gallery_url'])<a class="admin-action" href="{{ $sequence['gallery_url'] }}">Back to Gallery workspace</a>@endif
+                </x-admin.toolbar>
             </footer>
         @endif
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>

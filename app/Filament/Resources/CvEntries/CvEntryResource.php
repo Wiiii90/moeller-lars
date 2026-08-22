@@ -6,6 +6,7 @@ use App\Domain\Admin\EditorialRecordService;
 use App\Filament\Resources\CvEntries\Pages\CreateCvEntry;
 use App\Filament\Resources\CvEntries\Pages\EditCvEntry;
 use App\Filament\Resources\CvEntries\Pages\ListCvEntries;
+use App\Filament\Support\AdminForm;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\CvEntry;
 use BackedEnum;
@@ -17,7 +18,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -43,9 +43,7 @@ class CvEntryResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Fieldset::make('Vita / CV entry')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Vita / CV entry')
                 ->schema([
                     TextInput::make('section')->required()->maxLength(120),
                     TextInput::make('title')->required()->maxLength(240),
@@ -74,9 +72,7 @@ class CvEntryResource extends Resource
                     TextInput::make('external_url')->url()->maxLength(2048)->nullable()->columnSpanFull(),
                 ])
                 ->columns(2),
-            Fieldset::make('Presentation')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Presentation')
                 ->schema([
                     MediaAssetSelect::make('image_media_asset_id', 'imageMediaAsset', 'Image')
                         ->nullable()

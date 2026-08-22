@@ -1,0 +1,75 @@
+/* Shared admin form structure. Route-backed editors are normal Filament pages;
+ * dialogs use native Filament actions/modals.
+ */
+.admin-form-section {
+    margin: 0 !important;
+    padding: 1.35rem 0 1.55rem !important;
+    border: 0 !important;
+    border-top: 1px solid var(--admin-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.admin-form-section legend,
+.admin-form-section .fi-sc-fieldset-label {
+    color: var(--admin-text) !important;
+    font-size: .78rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .01em;
+}
+
+.admin-component-repeater .fi-fo-repeater-item {
+    border: 0 !important;
+    border-top: 1px solid var(--admin-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.admin-component-repeater .fi-fo-repeater-item-header {
+    padding: .65rem 0 !important;
+}
+
+.admin-component-repeater .fi-fo-repeater-item-content {
+    padding: 1rem 0 1.25rem !important;
+    border-top-color: var(--admin-line) !important;
+}
+
+.admin-component-repeater .fi-fo-repeater-items {
+    gap: 0 !important;
+}
+
+.admin-form-section .fi-fo-table-repeater > table {
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    border-top: 1px solid var(--admin-line) !important;
+    border-bottom: 1px solid var(--admin-line) !important;
+}
+
+.admin-form-section .fi-fo-table-repeater > table > thead > tr > th {
+    border-color: var(--admin-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--admin-muted) !important;
+    font-size: .68rem !important;
+    font-weight: 650 !important;
+}
+
+.admin-form-section .fi-fo-table-repeater > table > tbody,
+.admin-form-section .fi-fo-table-repeater > table > tbody > tr > td {
+    border-color: var(--admin-line) !important;
+}
+
+.admin-form-section .fi-fo-table-repeater-add {
+    justify-content: flex-start !important;
+}
+
+@media (max-width: 760px) {
+    .admin-form-section {
+        padding: 1.15rem 0 1.35rem !important;
+    }
+}
