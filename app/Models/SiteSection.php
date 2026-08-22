@@ -91,6 +91,15 @@ final class SiteSection extends Model
                 throw ValidationException::withMessages(['slug' => $nodeType->label().' does not own a public URL slug.']);
             }
 
+            if ($nodeType === SiteNodeType::Home) {
+                if ((string) $section->getAttribute('state') !== 'published') {
+                    throw ValidationException::withMessages(['state' => 'Home is always published.']);
+                }
+                if (! (bool) $section->getAttribute('show_in_navigation')) {
+                    throw ValidationException::withMessages(['show_in_navigation' => 'Home is always present in navigation.']);
+                }
+            }
+
             $parentId = $section->getAttribute('parent_id');
             if ($parentId !== null) {
                 if (! $nodeType->canHaveParent()) {
@@ -102,11 +111,13 @@ final class SiteSection extends Model
 
                 /** @var self|null $parent */
                 $parent = self::query()->find($parentId);
-                if ($parent !== null) {
-                    $parentType = $parent->nodeType();
-                    if ($parent->getAttribute('parent_id') !== null || ! $nodeType->canBeChildOf($parentType)) {
-                        throw ValidationException::withMessages(['parent_id' => 'The selected parent cannot contain this site node type.']);
-                    }
+                if (! $parent instanceof self) {
+                    throw ValidationException::withMessages(['parent_id' => 'The selected parent site node does not exist.']);
+                }
+
+                $parentType = $parent->nodeType();
+                if ($parent->getAttribute('parent_id') !== null || ! $nodeType->canBeChildOf($parentType)) {
+                    throw ValidationException::withMessages(['parent_id' => 'The selected parent cannot contain this site node type.']);
                 }
             }
 
