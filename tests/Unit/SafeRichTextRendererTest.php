@@ -12,9 +12,9 @@ function contentRenderer(): SafeRichTextRenderer
 it('escapes raw text while preserving the supported rich-text subset', function (): void {
     $html = contentRenderer()->render('plain < text & value **strong** [link](https://example.com)')->toHtml();
 
-    expect($html)->toContain('plain &lt; text &amp; value')
-        ->and($html)->toContain('<strong>strong</strong>')
-        ->and($html)->toContain('href="https://example.com"');
+    expect(str_contains($html, 'plain &lt; text &amp; value'))->toBeTrue();
+    expect(str_contains($html, '<strong>strong</strong>'))->toBeTrue();
+    expect(str_contains($html, 'href="https://example.com"'))->toBeTrue();
 });
 
 it('rejects executable raw HTML', function (): void {
@@ -32,6 +32,6 @@ it('rejects unsafe link targets', function (): void {
 it('never turns malformed unsafe Markdown into an anchor', function (): void {
     $html = contentRenderer()->render('[broken](javascript:alert(1)')->toHtml();
 
-    expect($html)->not->toContain('<a')
-        ->and($html)->not->toContain('href=');
+    expect(str_contains($html, '<a'))->toBeFalse();
+    expect(str_contains($html, 'href='))->toBeFalse();
 });
