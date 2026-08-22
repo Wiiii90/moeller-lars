@@ -35,7 +35,9 @@
                         >
                     </figure>
                 @endif
-            @elseif ($type === 'cv_list')
+            @endif
+
+            @if ($type === 'cv_list')
                 <section class="custom-page__component" aria-label="CV entries">
                     <div class="cv-biography">
                         @foreach ($cvEntries as $entry)
@@ -63,7 +65,9 @@
                         @endforeach
                     </div>
                 </section>
-            @elseif ($type === 'text')
+            @endif
+
+            @if ($type === 'text')
                 <section class="custom-page__component">
                     <div class="custom-page__copy">
                         @if (filled($block['title'] ?? null))
@@ -74,7 +78,9 @@
                         @endif
                     </div>
                 </section>
-            @elseif ($type === 'list')
+            @endif
+
+            @if ($type === 'list')
                 <section class="custom-page__component">
                     <div class="custom-page__copy">
                         @if (filled($block['title'] ?? null))
@@ -103,9 +109,13 @@
                         </div>
                     </div>
                 </section>
-            @elseif ($type === 'divider')
+            @endif
+
+            @if ($type === 'divider')
                 <div class="custom-page__divider" aria-hidden="true"></div>
-            @elseif ($type === 'contact')
+            @endif
+
+            @if ($type === 'contact')
                 <div class="custom-page__component custom-page__contact">
                     <x-contact
                         :general-settings="$generalSettings"
