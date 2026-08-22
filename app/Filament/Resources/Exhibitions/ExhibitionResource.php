@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Exhibitions;
 use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
-use App\Filament\Resources\Exhibitions\Pages\CreateExhibition;
 use App\Filament\Resources\Exhibitions\Pages\EditExhibition;
 use App\Filament\Resources\Exhibitions\Pages\ListExhibitions;
 use App\Filament\Support\AdminForm;
@@ -194,7 +193,6 @@ class ExhibitionResource extends Resource
     {
         return [
             'index' => ListExhibitions::route('/'),
-            'create' => CreateExhibition::route('/create'),
             'edit' => EditExhibition::route('/{record}/edit'),
         ];
     }
