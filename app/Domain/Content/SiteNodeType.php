@@ -13,10 +13,14 @@ enum SiteNodeType: string
     /** @return array<string, string> */
     public static function creatableOptions(): array
     {
-        return collect(self::cases())
-            ->filter(static fn (self $type): bool => $type->isCreatable())
-            ->mapWithKeys(static fn (self $type): array => [$type->value => $type->label()])
-            ->all();
+        $options = [];
+        foreach (self::cases() as $type) {
+            if ($type->isCreatable()) {
+                $options[$type->value] = $type->label();
+            }
+        }
+
+        return $options;
     }
 
     public function label(?JournalTemplate $journalTemplate = null): string
