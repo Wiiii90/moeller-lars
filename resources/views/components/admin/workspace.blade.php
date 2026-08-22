@@ -15,6 +15,10 @@
                 {{ $summary }}
             </div>
         @endisset
+
+        @isset($actions)
+            {{ $actions }}
+        @endisset
     </header>
 
     {{ $slot }}
