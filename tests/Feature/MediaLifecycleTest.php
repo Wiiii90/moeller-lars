@@ -1,9 +1,12 @@
 <?php
 
+use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaIntegrityService;
+use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
@@ -76,7 +79,7 @@ function lifecycleAsset(): MediaAsset
 function lifecycleJournal(string $template, string $slug): SiteSection
 {
     return SiteSection::query()->create([
-        'type' => SiteSection::TYPE_JOURNAL,
+        'type' => SiteNodeType::Journal->value,
         'template' => $template,
         'title' => ucfirst($slug),
         'navigation_label' => ucfirst($slug),
@@ -119,7 +122,7 @@ it('rejects invalid image bytes before database or storage writes', function ():
 
 it('rejects uploads over the byte limit before writes', function (): void {
     Storage::fake(config('media.disk'));
-    $upload = UploadedFile::fake()->create('large.jpg', MediaIngestService::MAX_BYTES + 1, 'image/jpeg');
+    $upload = UploadedFile::fake()->create('large.jpg', MediaTypePolicy::imageMaxBytes() + 1, 'image/jpeg');
 
     expect(fn () => app(MediaIngestService::class)->ingest($upload))
         ->toThrow(ValidationException::class);
@@ -224,7 +227,7 @@ it('refuses deletion while media is referenced by current content', function (st
             'position' => 0,
         ]);
     } elseif ($type === 'exhibition') {
-        $journal = lifecycleJournal(SiteSection::JOURNAL_TEMPLATE_EXHIBITIONS, 'media-exhibitions');
+        $journal = lifecycleJournal(JournalTemplate::Exhibitions->value, 'media-exhibitions');
         $exhibition = Exhibition::create([
             'site_section_id' => $journal->id,
             'slug' => 'show',
@@ -239,7 +242,7 @@ it('refuses deletion while media is referenced by current content', function (st
             'position' => 0,
         ]);
     } else {
-        $journal = lifecycleJournal(SiteSection::JOURNAL_TEMPLATE_BLOG, 'media-blog');
+        $journal = lifecycleJournal(JournalTemplate::Blog->value, 'media-blog');
         BlogPost::create([
             'site_section_id' => $journal->id,
             'slug' => 'post',
