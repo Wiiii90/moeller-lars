@@ -269,9 +269,7 @@ final class SitePages extends Page
         $type = $section->nodeType();
         $journalTemplate = $section->journalTemplate();
         $hasChildren = $section->relationLoaded('children') && $section->getRelation('children')->isNotEmpty();
-        $presentation = app(SiteNodePresentation::class);
-        $workspaceUrl = $presentation->workspaceUrl($section);
-        $editorUrl = $presentation->editorUrl($section);
+        $workspaceUrl = app(SiteNodePresentation::class)->workspaceUrl($section);
 
         $validParentIds = collect($this->parentCandidates)
             ->filter(function (array $candidate) use ($section, $type): bool {
@@ -307,7 +305,6 @@ final class SitePages extends Page
             'can_choose_parent' => $type->canHaveParent() && ! $hasChildren,
             'valid_parent_ids' => $validParentIds,
             'workspace_url' => $workspaceUrl,
-            'editor_url' => $editorUrl,
         ];
     }
 
