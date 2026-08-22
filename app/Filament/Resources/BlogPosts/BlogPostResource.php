@@ -3,9 +3,12 @@
 namespace App\Filament\Resources\BlogPosts;
 
 use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SiteNodeType;
 use App\Filament\Resources\BlogPosts\Pages\CreateBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\ListBlogPosts;
+use App\Filament\Support\AdminForm;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
@@ -20,7 +23,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -28,6 +30,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use LogicException;
 use UnitEnum;
 
 final class BlogPostResource extends Resource
@@ -51,9 +54,7 @@ final class BlogPostResource extends Resource
         return $schema->components([
             Hidden::make('site_section_id')
                 ->default(fn (): ?int => request()->integer('section') ?: null),
-            Fieldset::make('Post')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Post')
                 ->schema([
                     TextInput::make('title')->required()->maxLength(240)->live(onBlur: true)
                         ->afterStateUpdated(function (?string $state, callable $set, callable $get): void {
@@ -85,9 +86,7 @@ final class BlogPostResource extends Resource
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
-            Fieldset::make('Publication status')
-                ->contained(false)
-                ->extraAttributes(['class' => 'artist-editor-form-section'])
+            AdminForm::section('Publication status')
                 ->schema([
                     Select::make('state')->options([
                         'draft' => 'Draft',
@@ -156,9 +155,9 @@ final class BlogPostResource extends Resource
         /** @var SiteSection|null $section */
         $section = $post->siteSection()->first();
         if (! $section instanceof SiteSection
-            || (string) $section->getAttribute('type') !== SiteSection::TYPE_JOURNAL
-            || (string) $section->getAttribute('template') !== SiteSection::JOURNAL_TEMPLATE_BLOG) {
-            throw new \LogicException('Blog posts must belong to a Blog Journal.');
+            || $section->nodeType() !== SiteNodeType::Journal
+            || $section->journalTemplate() !== JournalTemplate::Blog) {
+            throw new LogicException('Blog posts must belong to a Blog Journal.');
         }
 
         return route('journal.show', [
