@@ -23,6 +23,7 @@
     $hasChildItems = $childItems !== [];
     $alwaysOpen = $attributes->get('data-artist-tree-root') === 'true';
     $isArtistSiteSection = $attributes->has('data-artist-site-section');
+    $usesNodeBranchControl = $isArtistSiteSection && $hasChildItems && filled($url);
     $startsOpen = $alwaysOpen || $active || $activeChildItems;
 @endphp
 
@@ -42,6 +43,24 @@
     }}
 >
     <div @class(['artist-sidebar-tree__row' => $hasChildItems])>
+        @if ($usesNodeBranchControl)
+            <button
+                type="button"
+                class="artist-sidebar-tree__toggle"
+                style="inset-inline-start: .2rem; inset-inline-end: auto;"
+                x-on:click.stop="artistChildrenOpen = ! artistChildrenOpen"
+                x-bind:aria-expanded="artistChildrenOpen.toString()"
+                aria-label="Toggle {{ trim(strip_tags($slot->toHtml())) }} children"
+                @if ($sidebarCollapsible && (! $subNavigation))
+                    x-show="$store.sidebar.isOpen"
+                @endif
+            >
+                {{
+                    \Filament\Support\generate_icon_html(($active && $activeIcon) ? $activeIcon : $icon, attributes: (new \Filament\Support\View\ComponentAttributeBag)->class(['fi-sidebar-item-icon']), size: \Filament\Support\Enums\IconSize::Large)
+                }}
+            </button>
+        @endif
+
         @if (filled($url))
             <a
                 {{ \Filament\Support\generate_href_html($url, $shouldOpenUrlInNewTab) }}
@@ -64,8 +83,11 @@
                     x-tooltip.html="tooltip"
                 @endif
                 class="fi-sidebar-item-btn"
+                @if ($usesNodeBranchControl)
+                    style="padding-inline-start: 2.25rem;"
+                @endif
             >
-                @if (filled($icon) && ((! $subGrouped) || ($sidebarCollapsible && (! $subNavigation))))
+                @if ((! $usesNodeBranchControl) && filled($icon) && ((! $subGrouped) || ($sidebarCollapsible && (! $subNavigation))))
                     {{
                         \Filament\Support\generate_icon_html(($active && $activeIcon) ? $activeIcon : $icon, attributes: (new \Filament\Support\View\ComponentAttributeBag([
                             'x-show' => ($subGrouped && $sidebarCollapsible) ? '! $store.sidebar.isOpen' : false,
@@ -133,7 +155,7 @@
             </span>
         @endif
 
-        @if ($hasChildItems && (! $alwaysOpen) && filled($url))
+        @if ($hasChildItems && (! $alwaysOpen) && filled($url) && (! $usesNodeBranchControl))
             <button
                 type="button"
                 class="artist-sidebar-tree__toggle"
