@@ -1,15 +1,9 @@
 <x-filament-panels::page>
-    <div class="artist-workspace artist-storage">
-        <header class="artist-workspace__head">
-            <div>
-                <p class="artist-workspace__kicker">Media capacity</p>
-                <h2>Storage allowance</h2>
-            </div>
-            <div class="artist-workspace__summary">
-                <div><strong>{{ $availableAssets }}</strong><span>Assets</span></div>
-                <div><strong>{{ $unusedAssets }}</strong><span>Unused</span></div>
-            </div>
-        </header>
+    <x-admin.workspace kicker="Media capacity" title="Storage allowance" class="artist-storage">
+        <x-slot:summary>
+            <div><strong>{{ $availableAssets }}</strong><span>Assets</span></div>
+            <div><strong>{{ $unusedAssets }}</strong><span>Unused</span></div>
+        </x-slot:summary>
 
         @if (! $capacity['measurement_available'])
             <section class="artist-storage__unavailable">
@@ -92,5 +86,5 @@
             <span>The allowance is operator-controlled and read-only in artist admin.</span>
             <span>Host disks, other workloads and server-wide capacity are intentionally not exposed here.</span>
         </footer>
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>
