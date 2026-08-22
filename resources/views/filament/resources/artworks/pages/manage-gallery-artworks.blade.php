@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <x-admin.workspace :kicker="$galleryContext['parent_name'] ? 'Gallery · '.$galleryContext['parent_name'] : 'Gallery'" :title="$galleryContext['name']" class="gallery-workspace">
+    <x-admin.workspace :kicker="$galleryContext['parent_name'] ? 'Gallery · '.$galleryContext['parent_name'] : 'Gallery'" :title="$galleryContext['name']">
         <x-slot:actions>
             <nav class="admin-toolbar" aria-label="Gallery management">
                 <a class="admin-action" href="{{ $galleryContext['pages_url'] }}">Pages</a>
@@ -76,20 +76,20 @@
                 </x-admin.section>
             @endif
 
-            <section class="gallery-contact-sheet" aria-label="Artwork sequence for {{ $galleryContext['name'] }}">
+            <section class="admin-gallery-grid" aria-label="Artwork sequence for {{ $galleryContext['name'] }}">
                 @foreach ($artworks as $artwork)
-                    <article class="gallery-contact-sheet__item" wire:key="gallery-artwork-{{ $artwork['id'] }}">
-                        <div class="gallery-contact-sheet__image">
+                    <article class="admin-gallery-grid__item" wire:key="gallery-artwork-{{ $artwork['id'] }}">
+                        <div class="admin-gallery-grid__image">
                             @if ($artwork['thumbnail_url'])
                                 <img src="{{ $artwork['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
                             @else
                                 <span>No image</span>
                             @endif
-                            <span class="gallery-contact-sheet__sequence">{{ str_pad((string) $artwork['sequence'], 2, '0', STR_PAD_LEFT) }}</span>
+                            <span class="admin-gallery-grid__sequence">{{ str_pad((string) $artwork['sequence'], 2, '0', STR_PAD_LEFT) }}</span>
                         </div>
 
-                        <div class="gallery-contact-sheet__caption">
-                            <div class="gallery-contact-sheet__identity">
+                        <div class="admin-gallery-grid__caption">
+                            <div class="admin-gallery-grid__identity">
                                 <strong>{{ $artwork['title'] }}</strong>
                                 <span>
                                     @if ($artwork['year']){{ $artwork['year'] }}@endif
@@ -97,12 +97,12 @@
                                     @if ($artwork['dimensions']){{ ($artwork['year'] || $artwork['medium']) ? ' · ' : '' }}{{ $artwork['dimensions'] }}@endif
                                 </span>
                             </div>
-                            <span class="gallery-contact-sheet__state {{ $artwork['state'] === 'published' || $artwork['is_ready'] ? 'is-published' : '' }}">
+                            <span class="admin-gallery-grid__state {{ $artwork['state'] === 'published' || $artwork['is_ready'] ? 'is-published' : '' }}">
                                 {{ $artwork['state_label'] }} · {{ $artwork['readiness_label'] }}
                             </span>
                         </div>
 
-                        <div class="gallery-contact-sheet__actions admin-toolbar">
+                        <div class="admin-gallery-grid__actions admin-toolbar">
                             @if ($moveTargets !== [])
                                 <label class="admin-action">
                                     <input type="checkbox" wire:model.live="selectedArtworkIds" value="{{ $artwork['id'] }}">
@@ -112,14 +112,14 @@
                             <a class="admin-action is-primary" href="{{ $artwork['edit_url'] }}">Edit</a>
                             @if ($artwork['media_preview_url'])<a class="admin-action" href="{{ $artwork['media_preview_url'] }}">Images</a>@endif
                             @if ($artwork['public_url'])<a class="admin-action" href="{{ $artwork['public_url'] }}" target="_blank" rel="noopener">View</a>@endif
-                            <span class="gallery-contact-sheet__order" aria-label="Reorder {{ $artwork['title'] }}">
+                            <span class="admin-toolbar" aria-label="Reorder {{ $artwork['title'] }}">
                                 <button class="admin-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'up')" aria-label="Move {{ $artwork['title'] }} earlier" @disabled(! $artwork['can_move_up'])>↑</button>
                                 <button class="admin-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'down')" aria-label="Move {{ $artwork['title'] }} later" @disabled(! $artwork['can_move_down'])>↓</button>
                             </span>
                         </div>
 
                         @if ($moveTargets !== [])
-                            <div class="gallery-contact-sheet__actions admin-toolbar">
+                            <div class="admin-gallery-grid__actions admin-toolbar">
                                 <select wire:model="moveTargetGalleryIds.{{ $artwork['id'] }}" aria-label="Move {{ $artwork['title'] }} to Gallery">
                                     <option value="">Move to Gallery…</option>
                                     @foreach ($moveTargets as $target)
