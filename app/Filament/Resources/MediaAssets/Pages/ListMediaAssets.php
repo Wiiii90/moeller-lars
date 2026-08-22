@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\MediaAssets\Pages;
 
+use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
@@ -12,6 +13,7 @@ use App\Models\MediaVariant;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -38,13 +40,11 @@ final class ListMediaAssets extends Page
     public array $assets = [];
 
     /** @var list<array{label:string,options:list<array{value:string,label:string}>}> */
-    public array $usedInGroups = [];
+    public array $usageGroups = [];
 
     public string $type = 'all';
 
-    public string $reference = 'all';
-
-    public string $usedIn = 'all';
+    public string $usage = 'all';
 
     public string $state = 'available';
 
@@ -68,9 +68,9 @@ final class ListMediaAssets extends Page
 
     public int $libraryVideos = 0;
 
-    public int $libraryUnreferenced = 0;
+    public int $libraryAudio = 0;
 
-    public int $libraryAltMissing = 0;
+    public int $libraryUnreferenced = 0;
 
     public string $librarySize = '0 B';
 
@@ -89,12 +89,7 @@ final class ListMediaAssets extends Page
         $this->refreshFromFirstPage();
     }
 
-    public function updatedReference(): void
-    {
-        $this->refreshFromFirstPage();
-    }
-
-    public function updatedUsedIn(): void
+    public function updatedUsage(): void
     {
         $this->refreshFromFirstPage();
     }
@@ -143,8 +138,7 @@ final class ListMediaAssets extends Page
     public function resetFilters(): void
     {
         $this->type = 'all';
-        $this->reference = 'all';
-        $this->usedIn = 'all';
+        $this->usage = 'all';
         $this->state = 'available';
         $this->search = '';
         $this->refreshFromFirstPage();
@@ -192,6 +186,7 @@ final class ListMediaAssets extends Page
                 return [
                     'alt_text' => $asset->getAttribute('alt_text'),
                     'credit' => $asset->getAttribute('credit'),
+                    'copyright_notice_mode' => $asset->getAttribute('copyright_notice_mode') ?: MediaAsset::COPYRIGHT_INHERIT,
                     'copyright_notice' => $asset->getAttribute('copyright_notice'),
                 ];
             })
@@ -206,27 +201,35 @@ final class ListMediaAssets extends Page
                         TextInput::make('credit')
                             ->maxLength(240)
                             ->nullable(),
-                        Textarea::make('copyright_notice')
-                            ->maxLength(500)
-                            ->nullable()
-                            ->columnSpanFull(),
                     ])
                     ->columns(2),
+                AdminForm::section('Copyright')
+                    ->schema([
+                        Select::make('copyright_notice_mode')
+                            ->label('Copyright notice')
+                            ->options([
+                                MediaAsset::COPYRIGHT_INHERIT => 'Inherit General default',
+                                MediaAsset::COPYRIGHT_OVERRIDE => 'Use asset override',
+                                MediaAsset::COPYRIGHT_NONE => 'No notice',
+                            ])
+                            ->required()
+                            ->helperText('Inheritance is explicit. No notice suppresses the General default for this file.'),
+                        Textarea::make('copyright_notice')
+                            ->label('Asset copyright override')
+                            ->maxLength(500)
+                            ->nullable()
+                            ->helperText('Used only when Copyright notice is set to Use asset override.')
+                            ->columnSpanFull(),
+                    ]),
             ])
             ->action(function (array $data, array $arguments): void {
                 $asset = $this->actionAsset($arguments);
-                if ((string) $asset->getAttribute('state') === 'deleted') {
-                    throw ValidationException::withMessages([
-                        'alt_text' => 'Deleted media cannot be edited.',
-                    ]);
-                }
-
-                $asset->fill([
+                app(MediaAssetEditorialService::class)->updateMetadata($asset, [
                     'alt_text' => $data['alt_text'] ?? null,
                     'credit' => $data['credit'] ?? null,
+                    'copyright_notice_mode' => $data['copyright_notice_mode'] ?? MediaAsset::COPYRIGHT_INHERIT,
                     'copyright_notice' => $data['copyright_notice'] ?? null,
                 ]);
-                $asset->save();
 
                 $this->loadLibrary();
                 Notification::make()->title('File metadata saved')->success()->send();
@@ -246,9 +249,9 @@ final class ListMediaAssets extends Page
                     FileUpload::make('media')
                         ->required()
                         ->storeFiles(false)
-                        ->acceptedFileTypes(MediaTypePolicy::acceptedMimeTypes())
+                        ->acceptedFileTypes(MediaTypePolicy::uploadAcceptedMimeTypes())
                         ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
-                        ->helperText('JPEG, PNG, WebP, H.264 MP4, or VP8/VP9/AV1 WebM. Type-specific byte limits are operator configured.'),
+                        ->helperText('JPEG, PNG, WebP, H.264 MP4, VP8/VP9/AV1 WebM, MP3, M4A/AAC, Ogg audio, or WAV. Type-specific byte limits are operator configured.'),
                 ])
                 ->action(function (array $data): void {
                     if (! array_key_exists('media', $data) || ! $data['media'] instanceof TemporaryUploadedFile) {
@@ -272,7 +275,7 @@ final class ListMediaAssets extends Page
     private function loadLibrary(): void
     {
         $catalog = app(MediaReferenceCatalog::class);
-        $this->usedInGroups = $catalog->destinationGroups();
+        $this->usageGroups = $catalog->destinationGroups();
         $this->loadLibraryMetrics($catalog);
 
         $query = $this->filteredQuery($catalog);
@@ -333,8 +336,8 @@ final class ListMediaAssets extends Page
         $this->libraryFiles = $metrics['files'];
         $this->libraryImages = $metrics['images'];
         $this->libraryVideos = $metrics['videos'];
+        $this->libraryAudio = $metrics['audio'];
         $this->libraryUnreferenced = $metrics['unreferenced'];
-        $this->libraryAltMissing = $metrics['alt_missing'];
         $this->librarySize = self::formatBytes($metrics['bytes']);
     }
 
@@ -361,12 +364,7 @@ final class ListMediaAssets extends Page
         }
 
         $this->applyTypeFilter($query);
-
-        if (in_array($this->reference, ['referenced', 'unreferenced'], true)) {
-            $catalog->applyReferenceFilter($query, $this->reference === 'referenced');
-        }
-
-        $catalog->applyDestinationFilter($query, $this->usedIn);
+        $catalog->applyUsageFilter($query, $this->usage);
 
         return $query;
     }
@@ -381,6 +379,11 @@ final class ListMediaAssets extends Page
         }
         if ($this->type === 'video') {
             $query->whereIn('mime_type', MediaTypePolicy::VIDEO_MIME_TYPES);
+
+            return;
+        }
+        if ($this->type === 'audio') {
+            $query->whereIn('mime_type', MediaTypePolicy::AUDIO_MIME_TYPES);
 
             return;
         }
@@ -444,7 +447,8 @@ final class ListMediaAssets extends Page
                 'preview_url' => $state === 'available' ? route('admin.media.original', $asset) : null,
                 'alt_text' => (string) ($asset->getAttribute('alt_text') ?? ''),
                 'credit' => (string) ($asset->getAttribute('credit') ?? ''),
-                'copyright_notice' => (string) ($asset->getAttribute('copyright_notice') ?? ''),
+                'copyright_notice' => (string) ($asset->effectiveCopyrightNotice() ?? ''),
+                'copyright_source' => $asset->copyrightNoticeSourceLabel(),
                 'dimensions' => $asset->getAttribute('width') && $asset->getAttribute('height')
                     ? $asset->getAttribute('width').'×'.$asset->getAttribute('height')
                     : '—',

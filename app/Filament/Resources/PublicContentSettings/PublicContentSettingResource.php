@@ -118,6 +118,11 @@ class PublicContentSettingResource extends Resource
                         ]),
                     AdminForm::section('Legal')
                         ->schema([
+                            TextInput::make('default_media_copyright_notice')
+                                ->label('Default media copyright')
+                                ->maxLength(500)
+                                ->nullable()
+                                ->helperText('Inherited by media unless an individual file overrides the notice or explicitly uses no notice.'),
                             Textarea::make('legal_disclaimer')
                                 ->label('Legal disclaimer')
                                 ->rows(4)

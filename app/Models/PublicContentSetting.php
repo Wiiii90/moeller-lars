@@ -20,6 +20,7 @@ use LogicException;
     'social_links',
     'legal_disclaimer',
     'favicon_media_asset_id',
+    'default_media_copyright_notice',
 ])]
 #[Guarded(['id', 'scope'])]
 class PublicContentSetting extends Model
@@ -93,6 +94,18 @@ class PublicContentSetting extends Model
             throw ValidationException::withMessages([
                 'contact_recipient_email' => 'The contact form recipient email address is invalid.',
             ]);
+        }
+
+        $defaultCopyright = $setting->getAttribute('default_media_copyright_notice');
+        if ($defaultCopyright !== null) {
+            if (! is_string($defaultCopyright) || mb_strlen($defaultCopyright) > 500) {
+                throw ValidationException::withMessages([
+                    'default_media_copyright_notice' => 'The default media copyright notice may contain no more than 500 characters.',
+                ]);
+            }
+
+            $defaultCopyright = trim($defaultCopyright);
+            $setting->setAttribute('default_media_copyright_notice', $defaultCopyright === '' ? null : $defaultCopyright);
         }
 
         $socialLinks = $setting->getAttribute('social_links');

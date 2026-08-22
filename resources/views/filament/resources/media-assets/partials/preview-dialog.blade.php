@@ -10,6 +10,16 @@
             <video controls playsinline preload="metadata">
                 <source src="{{ $asset['preview_url'] }}" type="{{ $asset['mime'] }}">
             </video>
+        @elseif ($asset['preview_url'] !== null && $asset['kind'] === 'audio')
+            <div class="media-file-dialog__audio" style="display: grid; width: min(100%, 42rem); gap: 1rem; justify-items: center;">
+                @include('filament.resources.media-assets.partials.media-type-placeholder', [
+                    'kind' => $asset['kind'],
+                    'typeLabel' => $asset['type_label'],
+                ])
+                <audio controls preload="metadata" style="width: min(100%, 36rem);">
+                    <source src="{{ $asset['preview_url'] }}" type="{{ $asset['mime'] }}">
+                </audio>
+            </div>
         @else
             <p>{{ ucfirst($asset['state']) }} media is not available for preview.</p>
         @endif
@@ -57,6 +67,7 @@
                 <div><dt>ALT text</dt><dd>{{ $asset['alt_text'] !== '' ? $asset['alt_text'] : '—' }}</dd></div>
                 <div><dt>Credit</dt><dd>{{ $asset['credit'] !== '' ? $asset['credit'] : '—' }}</dd></div>
                 <div><dt>Copyright</dt><dd>{{ $asset['copyright_notice'] !== '' ? $asset['copyright_notice'] : '—' }}</dd></div>
+                <div><dt>Copyright source</dt><dd>{{ $asset['copyright_source'] }}</dd></div>
             </dl>
         </section>
 

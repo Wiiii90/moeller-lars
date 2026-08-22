@@ -4,6 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
+use App\Domain\Media\MediaReferenceQuery;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\ArtworkCategory;
@@ -18,10 +19,10 @@ final class MediaReferenceCatalog
     /** @var EloquentCollection<int, SiteSection>|null */
     private ?EloquentCollection $nodes = null;
 
-    /** @var list<int>|null */
-    private ?array $directCustomMediaIds = null;
-
-    public function __construct(private readonly SiteNodePresentation $presentation) {}
+    public function __construct(
+        private readonly SiteNodePresentation $presentation,
+        private readonly MediaReferenceQuery $referenceQuery,
+    ) {}
 
     /** @return list<array{label:string,options:list<array{value:string,label:string}>}> */
     public function destinationGroups(): array
@@ -76,6 +77,28 @@ final class MediaReferenceCatalog
     }
 
     /** @param Builder<MediaAsset> $query */
+    public function applyUsageFilter(Builder $query, string $usage): void
+    {
+        if ($usage === 'all') {
+            return;
+        }
+
+        if ($usage === 'in-use') {
+            $this->referenceQuery->apply($query, true);
+
+            return;
+        }
+
+        if ($usage === 'unreferenced') {
+            $this->referenceQuery->apply($query, false);
+
+            return;
+        }
+
+        $this->applyDestinationFilter($query, $usage);
+    }
+
+    /** @param Builder<MediaAsset> $query */
     public function applyDestinationFilter(Builder $query, string $destination): void
     {
         if ($destination === 'all') {
@@ -88,16 +111,9 @@ final class MediaReferenceCatalog
             return;
         }
 
-        if ($destination === 'unassigned') {
-            $this->applyReferenceFilter($query, false);
-
-            return;
-        }
-
         if (str_starts_with($destination, 'kind:')) {
             $type = SiteNodeType::tryFrom(substr($destination, 5));
-            if ($type === null
-                || ! in_array($type, [SiteNodeType::Gallery, SiteNodeType::Journal, SiteNodeType::CustomPage], true)) {
+            if ($type === null || ! in_array($type, [SiteNodeType::Gallery, SiteNodeType::Journal, SiteNodeType::CustomPage], true)) {
                 $query->whereRaw('1 = 0');
 
                 return;
@@ -135,25 +151,23 @@ final class MediaReferenceCatalog
         $query->whereRaw('1 = 0');
     }
 
-    /** @return array{files:int,images:int,videos:int,unreferenced:int,alt_missing:int,bytes:int} */
+    /** @return array{files:int,images:int,videos:int,audio:int,unreferenced:int,bytes:int} */
     public function libraryMetrics(): array
     {
         /** @var Builder<MediaAsset> $available */
         $available = MediaAsset::query()
             ->where('state', 'available')
             ->whereIn('mime_type', MediaTypePolicy::acceptedMimeTypes());
-        /** @var Builder<MediaAsset> $images */
-        $images = (clone $available)->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES);
 
         $unreferenced = clone $available;
-        $this->applyReferenceFilter($unreferenced, false);
+        $this->referenceQuery->apply($unreferenced, false);
 
         return [
             'files' => (clone $available)->count(),
-            'images' => (clone $images)->count(),
+            'images' => (clone $available)->whereIn('mime_type', MediaTypePolicy::IMAGE_MIME_TYPES)->count(),
             'videos' => (clone $available)->whereIn('mime_type', MediaTypePolicy::VIDEO_MIME_TYPES)->count(),
+            'audio' => (clone $available)->whereIn('mime_type', MediaTypePolicy::AUDIO_MIME_TYPES)->count(),
             'unreferenced' => $unreferenced->count(),
-            'alt_missing' => (clone $images)->whereRaw("trim(coalesce(alt_text, '')) = ''")->count(),
             'bytes' => (int) (clone $available)->sum('byte_size'),
         ];
     }
@@ -161,30 +175,7 @@ final class MediaReferenceCatalog
     /** @param Builder<MediaAsset> $query */
     public function applyReferenceFilter(Builder $query, bool $referenced): void
     {
-        $relations = ['artworks', 'exhibitions', 'cvEntries', 'blogPosts', 'siteIdentitySettings'];
-        $directCustomIds = $this->directCustomMediaIds();
-
-        if (! $referenced) {
-            foreach ($relations as $relation) {
-                $query->whereDoesntHave($relation);
-            }
-            if ($directCustomIds !== []) {
-                $query->whereNotIn('media_assets.id', $directCustomIds);
-            }
-
-            return;
-        }
-
-        $query->where(function (Builder $references) use ($relations, $directCustomIds): void {
-            foreach ($relations as $index => $relation) {
-                $index === 0
-                    ? $references->whereHas($relation)
-                    : $references->orWhereHas($relation);
-            }
-            if ($directCustomIds !== []) {
-                $references->orWhereIn('media_assets.id', $directCustomIds);
-            }
-        });
+        $this->referenceQuery->apply($query, $referenced);
     }
 
     /** @param Builder<MediaAsset> $query */
@@ -257,7 +248,7 @@ final class MediaReferenceCatalog
                 continue;
             }
 
-            if ($this->customPageReferencesAsset($settings, (int) $asset->getKey())) {
+            if ($this->referenceQuery->customPageReferencesAsset($settings, (int) $asset->getKey())) {
                 $rows[] = [
                     'type' => 'Custom Page: '.$this->nodeLabel($node),
                     'label' => 'Image component',
@@ -375,7 +366,7 @@ final class MediaReferenceCatalog
             foreach ($this->customPageNodes() as $node) {
                 $settings = $node->getRelationValue('customPageSetting');
                 if ($settings instanceof CustomPageSetting) {
-                    $mediaIds = array_merge($mediaIds, $this->mediaIdsForCustomPage($settings));
+                    $mediaIds = array_merge($mediaIds, $this->referenceQuery->mediaIdsForCustomPage($settings));
                 }
             }
 
@@ -437,60 +428,10 @@ final class MediaReferenceCatalog
             return;
         }
 
-        $mediaIds = $this->mediaIdsForCustomPage($settings);
+        $mediaIds = $this->referenceQuery->mediaIdsForCustomPage($settings);
         $mediaIds === []
             ? $query->whereRaw('1 = 0')
             : $query->whereIn('media_assets.id', $mediaIds);
-    }
-
-    /** @return list<int> */
-    private function mediaIdsForCustomPage(CustomPageSetting $settings): array
-    {
-        $mediaIds = [];
-        foreach ($settings->components() as $component) {
-            if (($component['type'] ?? null) === 'image' && is_numeric($component['media_asset_id'] ?? null)) {
-                $mediaIds[] = (int) $component['media_asset_id'];
-            }
-        }
-
-        return array_values(array_unique($mediaIds));
-    }
-
-    /** @return list<int> */
-    private function directCustomMediaIds(): array
-    {
-        if ($this->directCustomMediaIds !== null) {
-            return $this->directCustomMediaIds;
-        }
-
-        $ids = [];
-        foreach ($this->customPageNodes() as $node) {
-            $settings = $node->getRelationValue('customPageSetting');
-            if (! $settings instanceof CustomPageSetting) {
-                continue;
-            }
-
-            foreach ($settings->components() as $component) {
-                if (($component['type'] ?? null) === 'image' && is_numeric($component['media_asset_id'] ?? null)) {
-                    $ids[] = (int) $component['media_asset_id'];
-                }
-            }
-        }
-
-        return $this->directCustomMediaIds = array_values(array_unique($ids));
-    }
-
-    private function customPageReferencesAsset(CustomPageSetting $settings, int $mediaAssetId): bool
-    {
-        foreach ($settings->components() as $component) {
-            if (($component['type'] ?? null) === 'image'
-                && is_numeric($component['media_asset_id'] ?? null)
-                && (int) $component['media_asset_id'] === $mediaAssetId) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function nodeLabel(SiteSection $node): string

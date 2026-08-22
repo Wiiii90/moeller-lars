@@ -4,8 +4,8 @@
             <x-admin.metric label="Files" :value="number_format($libraryFiles)">Available</x-admin.metric>
             <x-admin.metric label="Images" :value="number_format($libraryImages)">Available images</x-admin.metric>
             <x-admin.metric label="Videos" :value="number_format($libraryVideos)">Available videos</x-admin.metric>
+            <x-admin.metric label="Audio" :value="number_format($libraryAudio)">Available audio</x-admin.metric>
             <x-admin.metric label="Unreferenced" :value="number_format($libraryUnreferenced)">No canonical consumer</x-admin.metric>
-            <x-admin.metric label="ALT missing" :value="number_format($libraryAltMissing)">Available images</x-admin.metric>
             <x-admin.metric label="Library size" :value="$librarySize">Available originals</x-admin.metric>
         </x-admin.metrics>
 
@@ -22,12 +22,12 @@
                     class="media-workspace__file-input"
                     type="file"
                     wire:model="directMedia"
-                    accept="{{ implode(',', \App\Domain\Media\MediaTypePolicy::acceptedMimeTypes()) }}"
+                    accept="{{ implode(',', \App\Domain\Media\MediaTypePolicy::uploadAcceptedMimeTypes()) }}"
                     aria-label="Upload a file"
                 >
                 <div class="media-workspace__dropzone-copy">
                     <strong>Drop a file here or choose from your device</strong>
-                    <span>JPEG, PNG, WebP, H.264 MP4, or VP8/VP9/AV1 WebM. Audio is not supported.</span>
+                    <span>JPEG, PNG, WebP, H.264 MP4, VP8/VP9/AV1 WebM, MP3, M4A/AAC, Ogg audio, or WAV.</span>
                 </div>
                 <div class="media-workspace__upload-progress" x-show="uploading" x-cloak>
                     <progress max="100" x-bind:value="progress"></progress>
@@ -44,7 +44,7 @@
         </x-admin.section>
 
         <x-admin.section class="media-workspace__library" aria-label="Media library">
-            <div class="media-workspace__controls" aria-label="File search and filters">
+            <div class="media-workspace__controls" aria-label="File search and filters" style="grid-template-columns: minmax(15rem, 2fr) minmax(8rem, .8fr) minmax(12rem, 1.2fr) minmax(9rem, .8fr) auto;">
                 <label class="media-workspace__field media-workspace__search">
                     <span>Search media</span>
                     <input type="search" wire:model.live.debounce.300ms="search" placeholder="Filename, ALT, credit, copyright or MIME">
@@ -56,35 +56,32 @@
                         <option value="all">All types</option>
                         <option value="image">All images</option>
                         <option value="video">All video</option>
+                        <option value="audio">All audio</option>
                         <option value="image/jpeg">JPEG</option>
                         <option value="image/png">PNG</option>
                         <option value="image/webp">WebP</option>
                         <option value="video/mp4">MP4</option>
                         <option value="video/webm">WebM</option>
+                        <option value="audio/mpeg">MP3</option>
+                        <option value="audio/mp4">M4A / AAC</option>
+                        <option value="audio/ogg">Ogg audio</option>
+                        <option value="audio/wav">WAV</option>
                     </select>
                 </label>
 
                 <label class="media-workspace__field">
-                    <span>Reference</span>
-                    <select wire:model.live="reference">
-                        <option value="all">Any reference</option>
-                        <option value="referenced">Referenced</option>
+                    <span>Usage</span>
+                    <select wire:model.live="usage">
+                        <option value="all">Any</option>
+                        <option value="in-use">In use</option>
                         <option value="unreferenced">Unreferenced</option>
-                    </select>
-                </label>
-
-                <label class="media-workspace__field">
-                    <span>Used in</span>
-                    <select wire:model.live="usedIn">
-                        <option value="all">Any location</option>
-                        @foreach ($usedInGroups as $group)
+                        @foreach ($usageGroups as $group)
                             <optgroup label="{{ $group['label'] }}">
                                 @foreach ($group['options'] as $option)
                                     <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
                                 @endforeach
                             </optgroup>
                         @endforeach
-                        <option value="unassigned">Unassigned</option>
                     </select>
                 </label>
 
@@ -134,7 +131,10 @@
                                             @if ($asset['thumbnail_height']) height="{{ $asset['thumbnail_height'] }}" @endif
                                         >
                                     @else
-                                        <span>{{ strtoupper($asset['kind']) }}</span>
+                                        @include('filament.resources.media-assets.partials.media-type-placeholder', [
+                                            'kind' => $asset['kind'],
+                                            'typeLabel' => $asset['type_label'],
+                                        ])
                                     @endif
                                     @if ($asset['shared'])
                                         <em>Shared</em>
@@ -194,7 +194,10 @@
                                                     @if ($asset['thumbnail_url'])
                                                         <img src="{{ $asset['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
                                                     @else
-                                                        <span>{{ strtoupper($asset['kind']) }}</span>
+                                                        @include('filament.resources.media-assets.partials.media-type-placeholder', [
+                                                            'kind' => $asset['kind'],
+                                                            'typeLabel' => $asset['type_label'],
+                                                        ])
                                                     @endif
                                                 </button>
                                             </td>

@@ -59,7 +59,7 @@ function workspaceReferenceNode(string $type, string $title, ?string $template =
     ]);
 }
 
-it('builds broad and specific Used in options from canonical site nodes', function (): void {
+it('builds broad and specific Usage destinations from canonical site nodes', function (): void {
     $category = ArtworkCategory::query()->create(['slug' => 'archive', 'name' => 'Archive']);
     $gallery = workspaceReferenceNode(SiteNodeType::Gallery->value, 'Archive', categoryId: $category->id);
     $journal = workspaceReferenceNode(SiteNodeType::Journal->value, 'Studio Notes', JournalTemplate::Blog->value);
@@ -91,7 +91,7 @@ it('builds broad and specific Used in options from canonical site nodes', functi
         );
 });
 
-it('projects real reference locations and filters by broad or specific destinations', function (): void {
+it('uses one canonical Usage path for in-use unreferenced broad and specific destinations', function (): void {
     $galleryAsset = workspaceReferenceAsset('gallery.jpg');
     $journalAsset = workspaceReferenceAsset('journal.jpg');
     $customAsset = workspaceReferenceAsset('custom.jpg');
@@ -157,32 +157,38 @@ it('projects real reference locations and filters by broad or specific destinati
     ]);
 
     $specificGallery = MediaAsset::query();
-    $catalog->applyDestinationFilter($specificGallery, 'node:'.$gallery->id);
+    $catalog->applyUsageFilter($specificGallery, 'node:'.$gallery->id);
     expect($specificGallery->pluck('id')->all())->toBe([$galleryAsset->id]);
 
     $anyGallery = MediaAsset::query();
-    $catalog->applyDestinationFilter($anyGallery, 'kind:'.SiteNodeType::Gallery->value);
+    $catalog->applyUsageFilter($anyGallery, 'kind:'.SiteNodeType::Gallery->value);
     expect($anyGallery->pluck('id')->all())->toBe([$galleryAsset->id]);
 
     $anyJournal = MediaAsset::query();
-    $catalog->applyDestinationFilter($anyJournal, 'kind:'.SiteNodeType::Journal->value);
+    $catalog->applyUsageFilter($anyJournal, 'kind:'.SiteNodeType::Journal->value);
     expect($anyJournal->pluck('id')->all())->toBe([$journalAsset->id]);
 
     $anyCustomPage = MediaAsset::query();
-    $catalog->applyDestinationFilter($anyCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
+    $catalog->applyUsageFilter($anyCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
     expect($anyCustomPage->pluck('id')->all())->toBe([$customAsset->id]);
 
-    $unassigned = MediaAsset::query();
-    $catalog->applyDestinationFilter($unassigned, 'unassigned');
-    expect($unassigned->pluck('id')->all())->toBe([$other->id]);
+    $inUse = MediaAsset::query();
+    $catalog->applyUsageFilter($inUse, 'in-use');
+    expect($inUse->pluck('id')->all())
+        ->toContain($galleryAsset->id, $journalAsset->id, $customAsset->id)
+        ->not->toContain($other->id);
+
+    $unreferenced = MediaAsset::query();
+    $catalog->applyUsageFilter($unreferenced, 'unreferenced');
+    expect($unreferenced->pluck('id')->all())->toBe([$other->id]);
 });
 
-it('keeps library metrics limited to available media types supported by the canonical policy', function (): void {
+it('counts available images videos and audio in the six library metrics', function (): void {
     $referenced = workspaceReferenceAsset('metric-referenced.jpg', bytes: 4);
-    workspaceReferenceAsset('metric-alt-missing.png', 'image/png', alt: null, bytes: 8);
+    workspaceReferenceAsset('metric-image.png', 'image/png', alt: null, bytes: 8);
     workspaceReferenceAsset('metric-video.mp4', 'video/mp4', alt: null, bytes: 12);
+    workspaceReferenceAsset('metric-audio.mp3', 'audio/mpeg', alt: null, bytes: 20);
     workspaceReferenceAsset('metric-quarantined.jpg', state: 'quarantined', alt: null, bytes: 100);
-    workspaceReferenceAsset('metric-unsupported.mp3', 'audio/mpeg', alt: null, bytes: 200);
 
     $category = ArtworkCategory::query()->create(['slug' => 'metric-gallery', 'name' => 'Metric gallery']);
     workspaceReferenceNode(SiteNodeType::Gallery->value, 'Metric gallery', categoryId: $category->id);
@@ -201,12 +207,12 @@ it('keeps library metrics limited to available media types supported by the cano
     ]);
 
     expect(app(MediaReferenceCatalog::class)->libraryMetrics())->toBe([
-        'files' => 3,
+        'files' => 4,
         'images' => 2,
         'videos' => 1,
-        'unreferenced' => 2,
-        'alt_missing' => 1,
-        'bytes' => 24,
+        'audio' => 1,
+        'unreferenced' => 3,
+        'bytes' => 44,
     ]);
 });
 
@@ -252,15 +258,15 @@ it('keeps CV record pointers referenced without inventing an unrendered Custom P
     ]);
 
     $referenced = MediaAsset::query();
-    $catalog->applyReferenceFilter($referenced, true);
+    $catalog->applyUsageFilter($referenced, 'in-use');
     expect($referenced->pluck('id')->all())->toContain($asset->id);
 
     $unreferenced = MediaAsset::query();
-    $catalog->applyReferenceFilter($unreferenced, false);
+    $catalog->applyUsageFilter($unreferenced, 'unreferenced');
     expect($unreferenced->pluck('id')->all())->not->toContain($asset->id);
 
     $specificCustomPage = MediaAsset::query();
-    $catalog->applyDestinationFilter($specificCustomPage, 'node:'.$custom->id);
+    $catalog->applyUsageFilter($specificCustomPage, 'node:'.$custom->id);
     expect($specificCustomPage->pluck('id')->all())->toContain($asset->id);
 
     expect(fn () => app(MediaAssetEditorialService::class)->delete($asset))
@@ -291,11 +297,11 @@ it('does not classify a CV entry image as Custom Page media merely because a CV 
     ]);
 
     $specificCustomPage = MediaAsset::query();
-    $catalog->applyDestinationFilter($specificCustomPage, 'node:'.$custom->id);
+    $catalog->applyUsageFilter($specificCustomPage, 'node:'.$custom->id);
     expect($specificCustomPage->pluck('id')->all())->not->toContain($asset->id);
 
     $anyCustomPage = MediaAsset::query();
-    $catalog->applyDestinationFilter($anyCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
+    $catalog->applyUsageFilter($anyCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
     expect($anyCustomPage->pluck('id')->all())->not->toContain($asset->id);
 });
 
@@ -313,6 +319,7 @@ it('opens Preview and Edit as workspace actions and saves canonical metadata in 
         ->fillForm([
             'alt_text' => 'Updated canonical ALT',
             'credit' => 'Studio credit',
+            'copyright_notice_mode' => MediaAsset::COPYRIGHT_OVERRIDE,
             'copyright_notice' => 'All rights reserved',
         ])
         ->callMountedAction()
@@ -321,6 +328,7 @@ it('opens Preview and Edit as workspace actions and saves canonical metadata in 
     $asset->refresh();
     expect($asset->getAttribute('alt_text'))->toBe('Updated canonical ALT')
         ->and($asset->getAttribute('credit'))->toBe('Studio credit')
+        ->and($asset->getAttribute('copyright_notice_mode'))->toBe(MediaAsset::COPYRIGHT_OVERRIDE)
         ->and($asset->getAttribute('copyright_notice'))->toBe('All rights reserved')
         ->and($asset->getAttribute('state'))->toBe('available');
 });

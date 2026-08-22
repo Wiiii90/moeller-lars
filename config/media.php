@@ -22,5 +22,6 @@ return [
         // Byte limits are operator-configurable. Quota admission remains a separate authoritative check.
         'image_max_bytes' => $positiveBytes(env('MEDIA_IMAGE_MAX_BYTES'), 20 * 1024 * 1024),
         'video_max_bytes' => $positiveBytes(env('MEDIA_VIDEO_MAX_BYTES'), 100 * 1024 * 1024),
+        'audio_max_bytes' => $positiveBytes(env('MEDIA_AUDIO_MAX_BYTES'), 100 * 1024 * 1024),
     ],
 ];
