@@ -4,7 +4,7 @@ namespace App\Filament\Resources\MediaAssets\Pages;
 
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIntegrityService;
-use App\Filament\Concerns\UsesEditorOverlay;
+use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
@@ -16,7 +16,7 @@ use Throwable;
 
 class EditMediaAsset extends EditRecord
 {
-    use UsesEditorOverlay;
+    use UsesAdminEditor;
 
     protected static string $resource = MediaAssetResource::class;
 
