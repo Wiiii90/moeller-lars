@@ -2,7 +2,7 @@
 
 @section('title', $section->title.' · Lars Möller')
 @section('meta_description', $section->title.' by Lars Möller')
-@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($section->publicPath()))
+@section('canonical', app(\App\Domain\Content\CanonicalUrl::class)->forPath($siteNodeRoute->path($section)))
 
 @section('content')
     <section class="exhibitions-page" aria-label="{{ $section->title }}">
