@@ -78,4 +78,4 @@ Start with [docs/README.md](docs/README.md). It separates current application co
 
 ## Security
 
-Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. Security-sensitive findings should not be posted with exploitable details or secret material in public issues.
+Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. Report security-sensitive findings according to [SECURITY.md](SECURITY.md), not through public issues containing exploit details or secret material.
