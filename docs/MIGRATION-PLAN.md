@@ -1,139 +1,139 @@
 # Migration and cutover plan
 
-The application build is no longer in an early vertical-slice phase. The remaining migration work is release-candidate validation, source/target reconciliation, browser/editorial acceptance, production cutover and eventual legacy retirement.
+The application is no longer in an early build phase. Remaining migration work is protected-state reconciliation, browser/editorial acceptance, production-readiness gating, cutover and eventual legacy retirement.
 
-This plan does not define platform implementation. Production/Validation placement, backups, deployment and rollback are owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
+Production/Validation placement, backups, deployment and rollback are owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
 
 ## 1. Source boundary
 
 Migration inputs are read-only legacy evidence:
-
-- legacy artwork database tables and their public ordering;
-- the reviewed Vita/CV source and portrait;
+- legacy Artwork/category tables and ordering;
+- reviewed Vita/CV source + portrait;
 - legacy public media required by the artist-site target;
 - legacy route/presentation evidence used for comparison.
 
-The legacy `/workshop` application/database is outside the artist-site content target. It remains a rollback/retirement concern until the platform explicitly retires it.
+The legacy `/workshop` application/database is outside the artist-site content target. It remains a platform rollback/retirement concern until explicitly retired.
 
-Never commit source database dumps, production media, credentials or secret-bearing configuration.
+Never commit source DB dumps, Production media, credentials or secret-bearing configuration.
 
 ## 2. Canonical target
 
-The target is the current Laravel/PostgreSQL model, not the legacy schema.
+The target is the current Laravel/PostgreSQL application model, not the legacy schema.
 
-Legacy content is normalized into current application concepts:
-
-- artwork categories → **Gallery** persistence plus Gallery Site Nodes;
-- legacy Home → **Home** Site Node;
+Normalization:
+- legacy artwork categories → **Gallery** persistence + Gallery Site Nodes;
+- legacy Home → **Home**;
 - legacy Blog → **Journal / Blog**;
 - legacy Exhibitions → **Journal / Exhibitions**;
-- legacy Vita/CV placement → **Custom Page** with structured migrated content;
-- legacy Contact placement → **Custom Page** with the contact component;
+- legacy CV/Vita placement/content → **Custom Page** composition + retained migration provenance;
+- legacy Contact content/placement → reusable **Contact component** inside Custom Page composition; no standalone Contact runtime node;
 - original media → canonical `MediaAsset` originals with checksum/provenance.
 
-`SiteNodeType` and `JournalTemplate` define runtime behavior. Historical `SiteSection` type strings are not restored as compatibility aliases.
+Historical persistence names are not restored as runtime compatibility aliases.
 
-## 3. Import and reconciliation
+## 3. Vita/CV/Exhibitions reconciliation
 
-A fresh target import must be repeatable and must reconcile:
+The reviewed Vita source contains 31 normalized rows. The accepted target accounting is:
+- 2 Biography rows;
+- 29 first-class Exhibition rows;
+- total source accounting remains 31/31;
+- portrait/profile media provenance remains explicit;
+- Exhibition content must not remain duplicated in CV after normalization.
 
-- artwork counts by source/target grouping;
-- canonical original-media counts, byte sizes and SHA-256 checksums;
-- required media relationships and ALT semantics;
-- explicit artwork/site ordering;
-- Vita/CV/Exhibition source-row accounting;
-- canonical Site Node projection;
-- representative rendered public content.
+Existing protected Validation data is transformed through forward migrations/reconciliation. Do not rerun the source importer into canonical non-empty data merely to apply later schema/domain changes.
 
-The reviewed Vita source contains 31 rows and remains partitioned into the approved canonical content without duplication. The detailed invariant is kept in [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
-
-`php artisan legacy:validate <manifest>` is a migration-reconciliation tool for the frozen source snapshot. It is not a normal application startup action.
+See [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
 
 ## 4. Protected Validation data
 
-Once a reviewed import exists in the protected Validation environment, it is canonical non-production application data.
+A reviewed protected Validation database/media set is canonical non-production application state.
 
-Do not solve schema changes by deleting that database or rerunning the source importer into non-empty canonical tables. Evolve it through normal forward Laravel migrations and read-only reconciliation.
-
-Validation must remain isolated from Production writable state:
-
+Validation remains isolated from Production writable state:
 - separate PostgreSQL data;
 - separate authoritative media;
 - separate application secrets;
-- separate authenticated ingress.
+- authenticated/non-public ingress.
 
-Validation may use explicitly restricted read-only Matomo aggregate reporting while browser tracking remains disabled; this does not permit application-database/media sharing.
+Validation may use a restricted read-only Matomo reporting identity while browser tracking stays disabled. This does not permit application DB/media sharing.
 
 ## 5. Release-candidate validation
 
 For an exact candidate SHA:
 
-1. Complete repository CI.
-2. Produce/verify the immutable GHCR image for that exact SHA.
-3. Update the isolated Validation application through the platform deployment contract.
-4. Confirm `/app-release.json` reports the expected SHA.
-5. Run required forward migrations.
-6. Run `php artisan media:verify`.
-7. Run the migration validator when validating the frozen imported dataset.
-8. Run the application release smoke contract.
-9. Perform browser acceptance across public and admin surfaces.
-10. Resolve every blocking difference before designating the candidate for cutover.
+1. complete repository CI;
+2. produce/verify the immutable GHCR image for that exact SHA;
+3. update isolated Validation through the platform contract;
+4. verify `/app-release.json` release identity;
+5. apply required forward migrations;
+6. run `php artisan media:verify`;
+7. run `legacy:validate` when the frozen migration dataset is part of the gate;
+8. run application smoke checks;
+9. perform required public/admin browser acceptance;
+10. classify blocking findings before the candidate is considered for cutover.
 
-A green data validator is not browser/editorial acceptance. A green CI run is not production authorization.
+A green validator or CI run is not browser/editorial acceptance.
 
-## 6. Browser and editorial acceptance
+## 6. Current browser/editorial gate
 
-Acceptance should exercise representative real workflows rather than only route existence:
+Representative acceptance must cover the current product, not old implementation shapes:
 
-- public Home, Galleries, Artwork viewer/direct routes, Custom Pages and Journals;
-- responsive header/navigation and representative migrated content;
-- admin Pages tree and typed destinations;
-- Home and Gallery workspaces;
-- Artwork create/edit/publish/move/reorder flows;
-- Blog and Exhibitions Journals;
-- General/Contact/Media/Analytics/Storage surfaces;
-- Preview behavior and public/non-public separation.
+### Public
+- Home, Galleries, Artwork detail/viewer;
+- Custom Pages including CV/contact composition;
+- Blog/Exhibitions Journals;
+- responsive navigation and representative migrated content;
+- media delivery/variants and viewer interaction.
 
-The detailed legacy public evidence remains in [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md) until legacy retirement.
+### Admin
+- Dashboard as real site/admin overview rather than Pages/Gallery duplicate;
+- Pages typed tree/navigation;
+- Gallery Contact Sheet and repaired Add/Existing-Media/batch/dialog flows;
+- Files search/upload/preview/reference behavior across supported media kinds;
+- General settings under the canonical event-driven no-timer persistence contract;
+- Analytics real-data/degraded behavior;
+- Storage with real operator-configured allowance;
+- Activity and any persistent Preview/Commit/Settings shell utilities that are part of the accepted candidate;
+- shared dialog/overlay behavior across representative editor flows.
+
+Detailed legacy public evidence remains in [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md) until retirement.
 
 ## 7. Pre-cutover gate
 
 Before Production traffic changes:
+- final application SHA/image/digest recorded;
+- application CI + protected Validation acceptance green enough for the explicitly approved release scope;
+- migration/media reconciliation green;
+- artist/editorial acceptance complete;
+- fresh recoverable Production backup exists;
+- restore/rollback procedure proven/current;
+- intended Production DB/media state confirmed;
+- monitoring/health checks green;
+- required mail/Matomo/DNS/TLS dependencies ready;
+- no unresolved high-severity application/platform blocker.
 
-- final candidate SHA/image/digest are recorded;
-- application CI and Validation acceptance are green;
-- migration/media reconciliation is green;
-- artist/editorial acceptance is complete;
-- a fresh recoverable Production backup exists under the platform contract;
-- restore/rollback procedure is proven and current;
-- Production media/database readiness is confirmed;
-- monitoring and health checks are green;
-- any required DNS/TLS/mail/Matomo dependencies are ready.
-
-Cutover remains an explicit platform/operator action. It is never triggered merely by merging application code.
+Cutover is an explicit platform/operator action and is never triggered by merging application code.
 
 ## 8. Cutover
 
-`server-platform` owns the exact operational sequence. At application level the required guarantees are:
+At application-contract level:
 
 1. preserve a pre-change recoverable state;
 2. deploy the exact approved immutable image;
 3. run required migrations exactly once under the platform gate;
-4. attach the authoritative Production database/media;
-5. verify release identity and `/up`;
+4. attach authoritative Production DB/media;
+5. verify release identity + `/up`;
 6. run media/application smoke checks;
-7. switch/confirm public traffic only after those checks succeed;
-8. retain a rollback path until post-cutover stabilization is accepted.
+7. switch/confirm public traffic only after checks succeed;
+8. retain rollback capability through stabilization.
 
-The application container never mutates the legacy application automatically and never performs a legacy import on startup.
+The application container never mutates the legacy application automatically and never runs a legacy import on startup.
 
-## 9. Post-cutover and legacy retirement
+## 9. Post-cutover and retirement
 
 After cutover:
+- monitor public/admin/contact/analytics health;
+- verify backups include new authoritative PostgreSQL/media state;
+- resolve Production-only findings through normal releases;
+- retire legacy runtime/data only after explicit retirement acceptance and retained recovery requirements are satisfied.
 
-- monitor public/admin health and delivery/analytics integrations;
-- verify backups include the new authoritative PostgreSQL/media state;
-- resolve any production-only findings through normal releases;
-- retire legacy runtime/data only after the explicit platform retirement gate and retained recovery requirements are satisfied.
-
-Once legacy retirement is complete, `LEGACY-PUBLIC-CONTRACT.md`, `SOURCE-INVENTORY.md` and migration-only material can be archived or removed in a dedicated documentation cleanup.
+After legacy retirement, migration-only evidence such as `LEGACY-PUBLIC-CONTRACT.md` and `SOURCE-INVENTORY.md` may be archived/removed in a dedicated cleanup rather than remaining active architecture documentation.
