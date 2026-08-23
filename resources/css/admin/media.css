@@ -1,6 +1,12 @@
+@import './dialogs.css';
+
 .media-workspace__upload-section,
 .media-workspace__library {
     border-bottom-color: var(--admin-line-strong);
+}
+
+.media-workspace__library {
+    --media-task-surface-header-height: 2.25rem;
 }
 
 .media-workspace__dropzone {
@@ -83,31 +89,47 @@
 
 .media-workspace__controls {
     display: grid;
-    grid-template-columns: minmax(15rem, 2fr) minmax(8rem, .8fr) minmax(12rem, 1.2fr) minmax(9rem, .8fr) auto;
+    grid-template-columns:
+        minmax(14rem, 2fr)
+        minmax(7rem, .7fr)
+        minmax(11rem, 1.15fr)
+        minmax(8rem, .75fr)
+        auto
+        auto
+        auto;
     gap: .85rem;
     align-items: end;
 }
 
-.media-workspace__field {
+.media-workspace__field,
+.media-workspace__control-group {
     display: grid;
     min-width: 0;
     gap: .28rem;
+    align-content: end;
 }
 
 .media-workspace__field > span,
+.media-workspace__control-label,
 .media-inspector__label {
     color: var(--admin-muted);
     font-size: .68rem;
     font-weight: 700;
     letter-spacing: .09em;
+    line-height: 1.2;
     text-transform: uppercase;
+}
+
+.media-workspace__control-label.is-placeholder {
+    visibility: hidden;
 }
 
 .media-workspace__field input,
 .media-workspace__field select {
     width: 100%;
     min-width: 0;
-    min-height: 2.35rem;
+    height: var(--admin-control-height);
+    min-height: var(--admin-control-height);
     padding: .45rem .25rem;
     border: 0;
     border-bottom: 1px solid var(--admin-line);
@@ -119,14 +141,75 @@
     outline: none;
 }
 
+.media-workspace__controls .admin-action {
+    min-height: var(--admin-control-height);
+}
+
 .media-workspace__field input:focus,
 .media-workspace__field select:focus {
     border-color: var(--admin-accent);
 }
 
-.media-workspace__control-actions {
-    align-self: end;
-    justify-content: flex-end;
+.media-workspace__control-group > .admin-action {
+    justify-self: start;
+}
+
+.media-workspace__view-group .admin-toolbar {
+    min-height: var(--admin-control-height);
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+}
+
+.media-workspace__multi-action-anchor {
+    position: relative;
+    display: inline-flex;
+    min-height: var(--admin-control-height);
+    align-items: stretch;
+}
+
+.media-workspace__multi-action-menu {
+    position: absolute;
+    top: calc(100% + .3rem);
+    right: 0;
+    z-index: 30;
+    display: grid;
+    min-width: 10rem;
+    padding: .25rem;
+    border: 1px solid var(--admin-line-strong);
+    background: var(--admin-surface);
+    box-shadow: 0 .6rem 1.5rem rgba(0, 0, 0, .12);
+}
+
+.dark .media-workspace__multi-action-menu {
+    background: rgb(24, 24, 27);
+}
+
+.media-workspace__multi-action-menu .admin-action {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.media-workspace__selection-count {
+    display: inline-flex;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    margin-left: .4rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: 999px;
+    font-size: .65rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.media-workspace .admin-action.is-danger {
+    color: var(--admin-danger);
+}
+
+.media-workspace .admin-action.is-danger:hover,
+.media-workspace .admin-action.is-danger:focus-visible {
+    border-color: color-mix(in srgb, var(--admin-danger) 55%, var(--admin-line));
+    color: var(--admin-danger);
 }
 
 .media-workspace__table-wrap {
@@ -137,12 +220,17 @@
 
 .media-workspace__table {
     width: 100%;
-    min-width: 62rem;
+    min-width: 68rem;
     border-collapse: collapse;
 }
 
+.media-workspace__table thead tr {
+    height: var(--media-task-surface-header-height);
+}
+
 .media-workspace__table th {
-    padding: .55rem .6rem;
+    height: var(--media-task-surface-header-height);
+    padding: 0 .6rem;
     border-bottom: 1px solid var(--admin-line);
     color: var(--admin-muted);
     font-size: .64rem;
@@ -165,6 +253,10 @@
 
 .media-workspace__table tbody tr:hover {
     background: var(--admin-subtle);
+}
+
+.media-workspace__table tbody tr.is-selected {
+    background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
 }
 
 .media-workspace__thumb-head,
@@ -332,6 +424,7 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: stretch;
     gap: 1px;
+    margin-top: var(--media-task-surface-header-height);
     padding: 1px;
     background: var(--admin-line);
 }
@@ -344,6 +437,12 @@
     align-self: stretch;
     overflow: hidden;
     background: var(--admin-surface);
+}
+
+.media-workspace__grid-item.is-selected {
+    position: relative;
+    z-index: 1;
+    box-shadow: inset 0 0 0 2px var(--admin-accent);
 }
 
 .media-workspace__visual {
@@ -419,6 +518,7 @@
     color: var(--admin-text);
     font-size: .78rem;
 }
+
 .media-workspace__grid-meta span,
 .media-workspace__grid-meta small {
     color: var(--admin-muted);
@@ -434,6 +534,10 @@
     min-width: 0;
     align-self: end;
     padding: 0 .45rem .55rem;
+}
+
+.media-workspace__grid .media-workspace__actions .admin-action {
+    padding-inline: .42rem;
 }
 
 .media-workspace__pager {
@@ -564,11 +668,12 @@
 
 @media (max-width: 1180px) {
     .media-workspace__controls {
-        grid-template-columns: minmax(14rem, 2fr) repeat(2, minmax(9rem, 1fr));
+        grid-template-columns: minmax(14rem, 2fr) repeat(3, minmax(8rem, 1fr));
     }
 
-    .media-workspace__control-actions {
-        justify-content: flex-start;
+    .media-workspace__view-group,
+    .media-workspace__multi-action {
+        justify-self: start;
     }
 
     .media-workspace__grid {
@@ -582,8 +687,25 @@
         grid-template-columns: 1fr;
     }
 
-    .media-workspace__control-actions {
-        justify-content: flex-start;
+    .media-workspace__control-group,
+    .media-workspace__multi-action-anchor,
+    .media-workspace__view-group .admin-toolbar {
+        width: 100%;
+    }
+
+    .media-workspace__control-group > .admin-action,
+    .media-workspace__multi-action-anchor > .admin-action {
+        width: 100%;
+    }
+
+    .media-workspace__view-group .admin-toolbar .admin-action {
+        flex: 1 1 0;
+    }
+
+    .media-workspace__multi-action-menu {
+        right: auto;
+        left: 0;
+        width: 100%;
     }
 
     .media-workspace__grid {
