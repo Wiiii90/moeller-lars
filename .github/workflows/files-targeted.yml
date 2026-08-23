@@ -1,0 +1,69 @@
+name: Files targeted checks
+
+on:
+  push:
+    branches: [admin/files-final-pass]
+
+permissions:
+  contents: read
+
+jobs:
+  files-targeted:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: moeller_lars_testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moeller_lars_testing"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: moeller_lars_testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      MATOMO_TRACKING_ENABLED: false
+      MATOMO_REPORTING_ENABLED: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, intl, mbstring, pdo_pgsql, zip
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Generate test application key
+        run: echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
+
+      - name: Install frontend dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build admin assets
+        run: npm run build
+
+      - name: Run focused Files regressions
+        run: >-
+          vendor/bin/pest
+          tests/Feature/MediaLifecycleTest.php
+          tests/Feature/MediaWorkspaceReferenceTest.php
+          tests/Feature/MediaFilesFinalPassTest.php
+          tests/Feature/MediaGridContainmentTest.php
+          tests/Feature/AdminDialogViewportContractTest.php
