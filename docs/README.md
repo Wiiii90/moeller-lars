@@ -46,6 +46,7 @@ Accepted ADRs are historical decisions and are intentionally not rewritten to mi
 
 ## Repository policies
 
+- [Agent workflow contract](../AGENTS.md) — branch/integration workflow, worker ownership, Validation safety and admin product rules
 - [Security policy](../SECURITY.md) — private vulnerability-reporting guidance and supported security scope
 - [Contribution policy](../CONTRIBUTING.md) — current external-contribution policy
 - [Pull request template](../.github/pull_request_template.md) — verification, migration impact and release/Validation claims
