@@ -83,5 +83,4 @@ trait GalleryWorkspaceArtworkActions
                 Notification::make()->title('Artwork unpublished')->success()->send();
             });
     }
-
 }

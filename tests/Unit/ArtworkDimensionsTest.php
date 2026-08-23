@@ -23,7 +23,6 @@ it('parses structured dimensions and preserves legacy free-form dimensions as cu
     ]);
 });
 
-
 it('round-trips structured non-default units and a custom legacy override without data loss', function (): void {
     $structured = ArtworkDimensions::split('48 × 32 × 1.5 in');
     expect(ArtworkDimensions::compose(

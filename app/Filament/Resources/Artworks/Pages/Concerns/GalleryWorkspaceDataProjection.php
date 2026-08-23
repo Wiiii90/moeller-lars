@@ -171,5 +171,4 @@ trait GalleryWorkspaceDataProjection
 
         return $hours.'h '.str_pad((string) $minutes, 2, '0', STR_PAD_LEFT).'m';
     }
-
 }

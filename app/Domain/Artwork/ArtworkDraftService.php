@@ -114,7 +114,7 @@ final class ArtworkDraftService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function validatedEditorialData(array $data, ?Artwork $artwork = null): array

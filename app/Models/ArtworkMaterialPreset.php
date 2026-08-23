@@ -8,6 +8,4 @@ use Illuminate\Database\Eloquent\Model;
 
 #[Fillable(['name'])]
 #[Guarded(['id'])]
-class ArtworkMaterialPreset extends Model
-{
-}
+class ArtworkMaterialPreset extends Model {}

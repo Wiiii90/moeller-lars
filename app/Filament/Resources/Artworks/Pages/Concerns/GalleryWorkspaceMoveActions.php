@@ -124,5 +124,4 @@ trait GalleryWorkspaceMoveActions
         $this->loadArtworks();
         Notification::make()->title($count === 1 ? 'Artwork moved' : $count.' artworks moved')->body('Media references remain shared and unchanged.')->success()->send();
     }
-
 }

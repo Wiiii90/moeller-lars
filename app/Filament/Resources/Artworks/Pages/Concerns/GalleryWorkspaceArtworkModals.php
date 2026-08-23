@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Artworks\Pages\Concerns;
 use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
-use App\Models\Artwork;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -128,5 +127,4 @@ trait GalleryWorkspaceArtworkModals
                 Notification::make()->title('Artwork saved')->success()->send();
             });
     }
-
 }

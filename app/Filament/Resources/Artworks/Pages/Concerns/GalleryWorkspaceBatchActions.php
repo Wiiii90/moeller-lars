@@ -109,5 +109,4 @@ trait GalleryWorkspaceBatchActions
                 Notification::make()->title('Selected artworks unpublished')->success()->send();
             });
     }
-
 }

@@ -49,6 +49,7 @@ final class ArtworkMaterialPresetService
                         $existing[$key]->forceFill(['name' => $name])->save();
                     }
                     unset($existing[$key]);
+
                     continue;
                 }
 

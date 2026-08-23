@@ -147,5 +147,4 @@ trait GalleryWorkspaceUploadSettings
                 Notification::make()->title('Material presets saved')->success()->send();
             });
     }
-
 }

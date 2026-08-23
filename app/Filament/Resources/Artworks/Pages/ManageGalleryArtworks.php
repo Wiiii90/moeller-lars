@@ -47,15 +47,15 @@ final class ManageGalleryArtworks extends Page
 
     public ?int $pendingPrimaryMediaAssetId = null;
 
-    use Concerns\GalleryWorkspaceUploadSettings;
-    use Concerns\GalleryWorkspaceArtworkModals;
     use Concerns\GalleryWorkspaceArtworkActions;
+    use Concerns\GalleryWorkspaceArtworkModals;
     use Concerns\GalleryWorkspaceBatchActions;
-    use Concerns\GalleryWorkspaceMoveActions;
-    use Concerns\GalleryWorkspaceFormSupport;
-    use Concerns\GalleryWorkspaceSelectionSupport;
     use Concerns\GalleryWorkspaceDataProjection;
+    use Concerns\GalleryWorkspaceFormSupport;
+    use Concerns\GalleryWorkspaceMoveActions;
     use Concerns\GalleryWorkspaceReadinessSupport;
+    use Concerns\GalleryWorkspaceSelectionSupport;
+    use Concerns\GalleryWorkspaceUploadSettings;
 
     public function mount(int|string $gallery): void
     {
@@ -63,5 +63,4 @@ final class ManageGalleryArtworks extends Page
         $this->loadMoveTargets();
         $this->loadArtworks();
     }
-
 }

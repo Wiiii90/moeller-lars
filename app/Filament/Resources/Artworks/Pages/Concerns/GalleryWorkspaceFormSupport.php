@@ -146,5 +146,4 @@ trait GalleryWorkspaceFormSupport
             ]);
         }
     }
-
 }
