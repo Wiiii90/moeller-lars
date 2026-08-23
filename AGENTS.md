@@ -90,19 +90,19 @@ Current shared composition for normal primary workspaces, where the page actuall
 
 1. one visible heading whose wording matches the navigation destination;
 2. no decorative kicker/eyebrow above that heading;
-3. optional contextual quick actions on the same heading row, aligned on the right;
-4. one restrained six-metric strip;
-5. the page-specific action/filter/control row;
-6. the actual task surface: table, grid, contact sheet, editor, tree, analytics composition, graph, etc.
+3. one restrained six-metric strip;
+4. the page-specific action/filter/control row;
+5. the actual task surface: table, grid, contact sheet, editor, tree, analytics composition, graph, etc.
 
-### Heading-row quick actions
+### No heading quick actions before cutover
 
-- quick actions are optional; a page may ship with none;
-- when present, show at most five compact yellow quick-action buttons on the right side of the heading row;
-- order them from right to left by immediate usefulness/prominence;
-- recommendations should be derived from the page context and recent/relevant activity where practical, surfacing the most likely next actions rather than static decoration;
-- do not invent filler actions merely to occupy the slots;
-- quick actions must use the shared theme/control geometry and must not turn the heading into a toolbar wall.
+Heading-row quick actions are deliberately out of scope until after the initial cutover/release.
+
+- do not add yellow quick-action buttons during the current tranche;
+- do not create activity-driven recommendations or recommendation logic for them;
+- do not invent new product actions merely to populate a heading row;
+- if old quick-action UI remains on a page, remove it when that page is being finalized unless it is a normal page-specific action that belongs elsewhere in the existing workflow;
+- future quick-action exploration, if resumed after cutover, must only surface already-existing valid actions and must not create new functionality by implication.
 
 ### Metric strip
 
