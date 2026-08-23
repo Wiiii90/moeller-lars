@@ -42,6 +42,9 @@ final class ListMediaAssets extends Page
     /** @var list<array{label:string,options:list<array{value:string,label:string}>}> */
     public array $usageGroups = [];
 
+    /** @var list<int> */
+    public array $selectedAssets = [];
+
     public string $type = 'all';
 
     public string $usage = 'all';
@@ -133,6 +136,32 @@ final class ListMediaAssets extends Page
         }
 
         $this->viewMode = $mode;
+    }
+
+    public function toggleAssetSelection(int $assetId): void
+    {
+        $selectable = false;
+        foreach ($this->assets as $asset) {
+            if (($asset['id'] ?? null) === $assetId && ($asset['selectable'] ?? false) === true) {
+                $selectable = true;
+                break;
+            }
+        }
+
+        if (! $selectable) {
+            return;
+        }
+
+        if (in_array($assetId, $this->selectedAssets, true)) {
+            $this->selectedAssets = array_values(array_filter(
+                $this->selectedAssets,
+                static fn (int $selectedId): bool => $selectedId !== $assetId,
+            ));
+
+            return;
+        }
+
+        $this->selectedAssets[] = $assetId;
     }
 
     public function resetFilters(): void
@@ -240,6 +269,98 @@ final class ListMediaAssets extends Page
             ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
     }
 
+    public function deleteAction(): Action
+    {
+        return Action::make('delete')
+            ->label('Delete')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading(fn (array $arguments): string => 'Delete '.(string) $this->actionAsset($arguments)->getAttribute('original_filename').'?')
+            ->modalDescription('The file and generated variants will be removed. Files still referenced by content are protected and cannot be deleted.')
+            ->modalSubmitActionLabel('Delete file')
+            ->action(function (array $arguments): void {
+                $asset = $this->actionAsset($arguments);
+
+                try {
+                    app(MediaAssetEditorialService::class)->delete($asset);
+                } catch (ValidationException $exception) {
+                    Notification::make()
+                        ->title('File not deleted')
+                        ->body($this->validationMessage($exception))
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
+                $this->removeSelection((int) $asset->getKey());
+                $this->loadLibrary();
+                Notification::make()->title('File deleted')->success()->send();
+            });
+    }
+
+    public function deleteSelectedAction(): Action
+    {
+        return Action::make('deleteSelected')
+            ->label('Delete selected')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete selected files?')
+            ->modalDescription('Unreferenced selected files will be removed. Referenced files are protected and will remain in Files.')
+            ->modalSubmitActionLabel('Delete selected')
+            ->action(function (): void {
+                $ids = array_values(array_unique(array_map('intval', $this->selectedAssets)));
+                if ($ids === []) {
+                    Notification::make()->title('No files selected')->warning()->send();
+
+                    return;
+                }
+
+                /** @var EloquentCollection<int, MediaAsset> $records */
+                $records = MediaAsset::query()->whereIn('id', $ids)->get();
+                $recordsById = $records->keyBy(static fn (MediaAsset $asset): int => (int) $asset->getKey());
+                $service = app(MediaAssetEditorialService::class);
+                $deleted = 0;
+                $blocked = [];
+
+                foreach ($ids as $id) {
+                    $asset = $recordsById->get($id);
+                    if (! $asset instanceof MediaAsset) {
+                        continue;
+                    }
+
+                    try {
+                        $service->delete($asset);
+                        $deleted++;
+                    } catch (ValidationException $exception) {
+                        $blocked[$id] = $this->validationMessage($exception);
+                    }
+                }
+
+                $this->selectedAssets = array_map('intval', array_keys($blocked));
+                $this->loadLibrary();
+
+                if ($blocked !== []) {
+                    $blockedCount = count($blocked);
+                    $message = $deleted.' deleted. '.$blockedCount.' '.str('file')->plural($blockedCount).' not deleted: '
+                        .implode(' ', array_values(array_unique($blocked)));
+
+                    Notification::make()
+                        ->title('Some files were not deleted')
+                        ->body($message)
+                        ->warning()
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->title($deleted === 1 ? 'Selected file deleted' : 'Selected files deleted')
+                    ->success()
+                    ->send();
+            });
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -302,6 +423,7 @@ final class ListMediaAssets extends Page
             $mime = (string) $asset->getAttribute('mime_type');
             $createdAt = $asset->getAttribute('created_at');
             $state = (string) $asset->getAttribute('state');
+            $available = $state !== 'deleted';
 
             return [
                 'id' => (int) $asset->getKey(),
@@ -324,9 +446,18 @@ final class ListMediaAssets extends Page
                 'thumbnail_width' => $thumbnail?->getAttribute('width'),
                 'thumbnail_height' => $thumbnail?->getAttribute('height'),
                 'created' => $createdAt instanceof DateTimeInterface ? $createdAt->format('Y-m-d') : '—',
-                'editable' => $state !== 'deleted',
+                'editable' => $available,
+                'selectable' => $available,
+                'deletable' => $available,
             ];
         })->all();
+
+        $selectableIds = collect($this->assets)
+            ->filter(static fn (array $asset): bool => ($asset['selectable'] ?? false) === true)
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+        $this->selectedAssets = array_values(array_intersect($this->selectedAssets, $selectableIds));
     }
 
     private function loadLibraryMetrics(MediaReferenceCatalog $catalog): void
@@ -415,6 +546,21 @@ final class ListMediaAssets extends Page
         abort_unless($asset instanceof MediaAsset, 404);
 
         return $asset;
+    }
+
+    private function removeSelection(int $assetId): void
+    {
+        $this->selectedAssets = array_values(array_filter(
+            $this->selectedAssets,
+            static fn (int $selectedId): bool => $selectedId !== $assetId,
+        ));
+    }
+
+    private function validationMessage(ValidationException $exception): string
+    {
+        $message = collect($exception->errors())->flatten()->first();
+
+        return is_string($message) ? $message : 'The file could not be deleted.';
     }
 
     /**
