@@ -13,6 +13,20 @@ Use, in this order:
 
 Do not reconstruct current requirements from stale issue history, old branches, previous release-candidate SHAs or closed coordination threads.
 
+## Product language
+
+Use the current artist-facing/runtime concepts when describing or changing the product:
+
+- Home;
+- Gallery;
+- Journal with Blog and Exhibitions templates;
+- Custom Page;
+- Navigation Node;
+- Files;
+- reusable Contact component inside Custom Page content.
+
+Legacy names such as `CV`, `Vita`, fixed `SiteSection` types or old persistence/resource names may appear in migration evidence, compatibility code or database/model names. They are not a license to reintroduce those concepts as current admin information architecture or new worker scopes. Biography/career content is composed through the current Custom Page/content model. Preserve migration provenance until its dedicated cleanup is proven safe.
+
 ## Branch and integration workflow
 
 - `main` is protected. Never commit or force-push directly to `main`.
@@ -52,6 +66,21 @@ Issues contain durable current product scope, acceptance criteria, dependencies 
 PRs contain implementation details, changed files, technical decisions, targeted verification and transient branch/CI information.
 
 Do not use issues as worker diaries. Do not routinely post commit SHAs, CI run IDs or branch chatter into issues.
+
+## Existing-work preservation
+
+A page/slice worker is a **finishing worker by default, not a redesign worker**.
+
+Before changing code, identify what the current page already does well and what the current issue/browser review still rejects or leaves incomplete. Preserve accepted structure, workflows, information density and visual direction unless a concrete current requirement requires changing them.
+
+In particular:
+
+- do not rebuild a mostly finished page from its old issue description;
+- do not replace working task-specific UI merely to make it visually uniform;
+- do not broaden scope from a small browser defect into a page rewrite;
+- prefer the smallest coherent change that resolves the current rejected behavior;
+- shared consistency means common geometry, controls, typography, dialogs and interaction rules where appropriate — not identical page layouts;
+- if the user has already accepted a page region or workflow, treat it as locked unless a necessary technical dependency is demonstrated.
 
 ## Admin product contract
 
