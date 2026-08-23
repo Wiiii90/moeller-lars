@@ -4,7 +4,7 @@
 
 `moeller-lars` is the secure, maintainable replacement application for the Lars Möller artist website and its artist-facing administration.
 
-The public site preserves Lars Möller's artistic identity and established presentation while replacing the legacy application's security model, administration, persistence, analytics integration, migration tooling and release process.
+The public site preserves the artist's established visual language and content while replacing the legacy application's security model, administration, persistence, analytics integration, migration tooling and release process.
 
 ## Public contract
 
@@ -21,32 +21,46 @@ Non-negotiable principles:
 
 ## Site structure
 
-The editable public site uses five typed node concepts:
+The editable public site uses five runtime node concepts:
 
 - **Home**
 - **Gallery**
-- **Journal** (Blog or Exhibitions)
+- **Journal** — Blog or Exhibitions template
 - **Custom Page**
 - **Navigation Node**
 
-The migrated CV/Vita and Contact placements are Custom Pages; Blog and Exhibitions are Journal templates. The application does not hard-code those migrated slugs as special runtime page types.
+CV/Vita is represented through structured Custom Page content rather than a special runtime node type. Contact is a reusable structured component that may be composed into a Custom Page; it is **not** a standalone Contact node/admin destination. Blog and Exhibitions are Journal templates.
+
+Historical persistence names may remain where renaming them would add migration risk, but they do not define the artist-facing domain language.
 
 ## Artist administration
 
 `/admin` is a purpose-built authenticated editorial application, not a general-purpose site builder.
 
-Core surfaces:
+Canonical responsibilities:
 
-1. **Pages / Site Structure** — typed placement, navigation, hierarchy, ordering and publication.
-2. **Home** — homepage Gallery eligibility and current/latest presentation state.
-3. **Galleries / Artworks** — Artwork drafts, metadata, primary media, publication, ordering and Gallery movement.
-4. **Blog Journal** — Blog drafts/publication/scheduling and Journal settings.
-5. **Exhibitions Journal** — Exhibition records, dates/location/media/links and ordering.
-6. **Custom Pages** — structured safe content including migrated CV/Contact surfaces.
-7. **Media** — canonical reusable originals, metadata, previews, usage references and guarded deletion.
-8. **General / Contact** — site identity, public/private contact settings, social links, legal text and delivery readiness without infrastructure secrets.
-9. **Analytics** — privacy-conscious Matomo reporting plus clearly separate operational metrics.
-10. **Activity / Storage / Dashboard** — relevant administrative/audit/capacity overview without becoming an infrastructure control panel.
+1. **Dashboard** — concise site/admin overview based on real Analytics, Activity and actionable health; it does not reproduce the Pages tree or Gallery contact sheet.
+2. **Pages** — typed site structure, hierarchy, ordering, navigation and publication.
+3. **Gallery / Artworks** — visual artwork workspace, metadata, primary media, publication, ordering and Gallery assignment/removal.
+4. **Journals** — Blog and Exhibitions collection workspaces.
+5. **Custom Pages** — safe structured component composition, including CV/Vita and reusable Contact content.
+6. **Files** — canonical reusable MediaAsset library for upload, search, preview, metadata, reference inspection and guarded deletion.
+7. **General** — site identity, public/private contact settings, social links and truly global legal/public text; no infrastructure secrets.
+8. **Analytics** — privacy-conscious Matomo reporting plus clearly separate operational aggregates.
+9. **Activity** — durable admin/editorial history.
+10. **Storage** — artist-facing site allowance/usage, not host-wide infrastructure capacity.
+
+Persistent global Preview / Commit / Settings utilities may be added at the shell level, but ordinary form persistence remains independent from the logical Commit/checkpoint concept.
+
+## Admin interaction principles
+
+- one deliberate visible page heading per normal workspace;
+- useful desktop width and one shared workspace axis/gutter system;
+- task-specific layouts instead of one generic card template;
+- no repeated SaaS/LLM card wall or unnecessary explanatory prose;
+- shared dialogs/overlays must behave as real accessible dialogs, not navigation disguised as modal UI;
+- text settings persist on normal change/blur only when changed, with no debounce/timer-based persistence; toggles/selects/media may persist on discrete change;
+- destructive/publication operations remain explicit, authorized and audited.
 
 ## Security
 
@@ -55,20 +69,22 @@ Core surfaces:
 - CSRF/session/rate-limit protections use the application security boundary rather than UI visibility.
 - Uploads are untrusted until validated.
 - Unsafe rich text/links are rejected or sanitized through canonical policies.
-- Secrets, private dumps and authoritative production media stay outside Git.
+- Secrets, private dumps and authoritative Production media stay outside Git.
 - Legacy authentication, credentials, SQL helpers, sessions and upload code are never reused.
 
 ## Media
 
-Canonical uploaded/migrated originals are retained and checksum-addressable through application storage identity. Derivatives are rebuildable.
+`MediaAsset` is the reusable canonical original. Current ingest supports explicitly allowlisted images, video and audio under `MediaTypePolicy`; each consumer still decides which media kinds it can use.
 
-References are explicit. A media asset cannot be destructively deleted while supported content still references it. Publication must not hide missing required media/ALT/derivative integrity through arbitrary fallbacks.
+References are explicit. Detaching a usage does not delete the canonical asset. A referenced asset cannot be destructively deleted. Generated variants are rebuildable and never replace the original as authoritative data.
+
+An Artwork may temporarily be unassigned from a Gallery when its lifecycle permits; Gallery removal must preserve its Artwork and MediaAsset relationships.
 
 ## Analytics
 
 Self-hosted Matomo Community/Core is the canonical source for human visitor analytics. Application-local aggregates cover operational/error/bot/performance signals only.
 
-No mandatory paid analytics plugin or SaaS is required. Analytics availability must not become a dependency for public rendering or normal admin editing.
+No mandatory paid analytics plugin or analytics SaaS is required. Analytics availability must not become a dependency for public rendering or ordinary admin editing.
 
 ## Cost and operational boundary
 
@@ -95,7 +111,7 @@ Before Production cutover, the approved exact SHA/image must pass the applicable
 - durable automated application/security/data tests;
 - migration/media reconciliation;
 - isolated Validation deployment and release identity verification;
-- representative admin functional acceptance;
+- representative admin functional/browser acceptance;
 - representative public/browser/viewer comparison;
 - artist/editorial approval;
 - platform backup/restore/rollback/readiness checks.
@@ -104,4 +120,6 @@ Production deployment remains an explicit authorized platform action.
 
 ## Documentation ownership
 
-Current application contracts live under `docs/` and are indexed by [docs/README.md](README.md). Legacy-source evidence is kept separate and may be retired after explicit legacy retirement rather than allowed to define future application architecture.
+Current application contracts live under `docs/` and are indexed by [docs/README.md](README.md). GitHub Issues track unfinished work and acceptance status; the contract documents should describe the current architecture rather than duplicate issue-history diaries.
+
+Legacy-source evidence is kept separate and may be retired only after explicit legacy retirement.
