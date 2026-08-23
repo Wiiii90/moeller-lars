@@ -47,11 +47,11 @@
             <div class="media-workspace__controls" aria-label="File search and filters">
                 <label class="media-workspace__field media-workspace__search">
                     <span>Search media</span>
-                    <input type="search" wire:model.live.debounce.300ms="search" placeholder="Filename, ALT, credit, copyright or MIME">
+                    <input type="search" wire:model.live.debounce.300ms="search">
                 </label>
 
                 <label class="media-workspace__field">
-                    <span>Type</span>
+                    <span>Filter · Media type</span>
                     <select wire:model.live="type">
                         <option value="all">All types</option>
                         <option value="image">All images</option>
@@ -97,6 +97,7 @@
 
                 <div class="media-workspace__control-actions admin-toolbar" role="group" aria-label="Media controls">
                     <button class="admin-action" type="button" wire:click="resetFilters">Reset</button>
+                    <span class="media-workspace__control-label">View</span>
                     <button class="admin-action {{ $viewMode === 'list' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('list')">List</button>
                     <button class="admin-action {{ $viewMode === 'grid' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('grid')">Grid</button>
                     <button class="admin-action {{ $viewMode === 'dense' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('dense')">Dense</button>
