@@ -3,6 +3,8 @@ name: Files targeted checks
 on:
   push:
     branches: [admin/files-final-pass]
+  pull_request:
+    branches: [integration/admin-v0.3-final]
 
 permissions:
   contents: read
