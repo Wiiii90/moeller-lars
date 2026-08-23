@@ -27,7 +27,7 @@ final class ArtworkDimensions
             return [
                 'height' => self::normalizeNumber($matches[1]),
                 'width' => self::normalizeNumber($matches[2]),
-                'depth' => $matches[3] !== null && $matches[3] !== '' ? self::normalizeNumber($matches[3]) : null,
+                'depth' => $matches[3] !== null ? self::normalizeNumber($matches[3]) : null,
                 'unit' => $matches[4],
                 'custom' => null,
             ];
