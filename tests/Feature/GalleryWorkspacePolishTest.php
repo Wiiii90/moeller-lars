@@ -170,7 +170,6 @@ it('stores reusable Material presets without rewriting historical Artwork materi
         ->and($artwork->fresh()->medium)->toBe('Oil on linen');
 });
 
-
 it('renders the six Gallery metrics and per-artwork analytics from one canonical reporting call', function (): void {
     $gallery = polishGallery();
     $artwork = polishArtwork($gallery, [
@@ -243,19 +242,25 @@ it('renders the six Gallery metrics and per-artwork analytics from one canonical
 });
 
 it('keeps Gallery upload and Edit integration on the canonical media and Filament modal paths', function (): void {
-    $pageSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/ManageGalleryArtworks.php'));
+    $projectionSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/Concerns/GalleryWorkspaceDataProjection.php'));
+    $uploadSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/Concerns/GalleryWorkspaceUploadSettings.php'));
+    $modalSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/Concerns/GalleryWorkspaceArtworkModals.php'));
     $viewSource = file_get_contents(resource_path('views/filament/resources/artworks/pages/manage-gallery-artworks.blade.php'));
 
-    expect($pageSource)->not->toBeFalse()
+    expect($projectionSource)->not->toBeFalse()
+        ->and($uploadSource)->not->toBeFalse()
+        ->and($modalSource)->not->toBeFalse()
         ->and($viewSource)->not->toBeFalse();
 
-    /** @var string $pageSource */
+    /** @var string $projectionSource */
+    /** @var string $uploadSource */
+    /** @var string $modalSource */
     /** @var string $viewSource */
-    expect(substr_count($pageSource, 'app(ArtistReportingService::class)->gallery('))->toBe(1)
-        ->and($pageSource)->toContain('app(MediaIngestService::class)->ingest($upload)')
-        ->and($pageSource)->toContain("Notification::make()->title('Media upload failed')")
-        ->and($pageSource)->toContain("Action::make('editArtwork')")
-        ->and($pageSource)->toContain('ArtworkPrimaryMediaService::class')
+    expect(substr_count($projectionSource, 'app(ArtistReportingService::class)->gallery('))->toBe(1)
+        ->and($uploadSource)->toContain('app(MediaIngestService::class)->ingest($upload)')
+        ->and($uploadSource)->toContain("Notification::make()->title('Media upload failed')")
+        ->and($modalSource)->toContain("Action::make('editArtwork')")
+        ->and($modalSource)->toContain('ArtworkPrimaryMediaService::class')
         ->and($viewSource)->toContain('accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"')
         ->and($viewSource)->not->toContain('audio/')
         ->and($viewSource)->toContain("mountAction('editArtwork'")
