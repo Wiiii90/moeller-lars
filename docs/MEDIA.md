@@ -4,17 +4,28 @@
 
 ## Supported ingest
 
-Current explicit browser-safe allowlist:
+`MediaTypePolicy` owns the canonical allowlist and byte limits.
 
+Current accepted media:
+
+### Images
 - JPEG (`image/jpeg`)
 - PNG (`image/png`)
 - WebP (`image/webp`)
-- MP4 (`video/mp4`) with detected H.264 (`avc1`/`avc3`) video
-- WebM (`video/webm`) with detected VP8, VP9 or AV1 video
 
-Images receive the required generated image derivative(s), including the thumbnail used by current public/admin consumers. Video originals are stored canonically without an implicit transcoding service or generated poster-frame contract.
+### Video
+- MP4 (`video/mp4`) with accepted H.264 video content
+- WebM (`video/webm`) with accepted VP8, VP9 or AV1 video content
 
-Media type is determined from content, not trusted filename extension or browser metadata.
+### Audio
+- MP3 (`audio/mpeg`)
+- M4A/AAC (`audio/mp4`)
+- Ogg (`audio/ogg`)
+- WAV (`audio/wav`)
+
+Upload aliases such as common M4A/WAV/Ogg browser MIME variants are normalized through the ingest policy; the persisted canonical MIME is content-derived.
+
+Media type is determined from content, not trusted filename extension or browser metadata. Container/content validation rejects incompatible payloads, including video content disguised as M4A audio.
 
 ## Upload limits and capacity
 
@@ -22,89 +33,101 @@ Format/safety ceilings are configured in bytes:
 
 - `MEDIA_IMAGE_MAX_BYTES` — default 20 MiB
 - `MEDIA_VIDEO_MAX_BYTES` — default 100 MiB
+- `MEDIA_AUDIO_MAX_BYTES` — default 100 MiB
 
-The canonical application policy is `MediaTypePolicy`; consumers must not duplicate these limits as independent constants.
+Consumers must not duplicate these limits as independent constants.
 
-`MEDIA_STORAGE_QUOTA_BYTES` is the storage-admission ceiling. Every accepted original passes the canonical ingest/capacity path before durable storage. A UI/display cache is never sufficient for authoritative upload admission.
+`MEDIA_STORAGE_QUOTA_BYTES` is the application storage-admission ceiling injected by the operator/platform contract. Every accepted original passes the canonical capacity path before durable storage. Cached display values are never authoritative for upload admission.
 
-Image processing also enforces decoded-pixel/dimension safety before expensive decoding as defined by the release/runtime contract.
+Image processing also enforces decoded-pixel/dimension safety before expensive decoding.
 
 ## Canonical original
 
-For every `MediaAsset`, authoritative technical identity includes the generated storage key, content MIME, byte size and SHA-256.
+For every `MediaAsset`, authoritative technical identity includes generated storage key, content-derived MIME, byte size and SHA-256.
 
-- Original bytes are not replaced by generated derivatives.
-- Technical identity/provenance is not freely editable through the editorial UI.
-- New originals are untrusted until validation succeeds.
-- Invalid/suspicious files are rejected or quarantined according to the ingest path.
-- Storage keys are application generated and are not derived as trusted filesystem paths from user filenames.
+- original bytes are not replaced by generated derivatives;
+- technical identity/provenance is not freely editable through normal editorial UI;
+- new originals are untrusted until validation succeeds;
+- invalid/suspicious files are rejected or quarantined according to the ingest path;
+- storage keys are application-generated and never trusted user filesystem paths.
 
 ## Variants
 
 `MediaVariant` represents a generated derivative of one canonical original.
 
 Variants:
-
 - are rebuildable;
 - never overwrite original metadata;
-- have their own storage identity/checksum/state;
-- must not silently fall back to serving the original when a consumer contract requires a specific derivative.
+- have independent storage identity/checksum/state;
+- must not silently fall back to the original when a consumer requires a derivative.
 
-Missing required public derivatives are integrity/readiness findings until regenerated and verified.
+Current image consumers use generated image derivatives where required. Video/audio ingest does **not** imply a transcoding, poster-frame, waveform or generated-thumbnail contract.
 
 ## Usage references
 
-Current first-class consumers include Artwork, Exhibitions, Custom Page content/site identity and Blog/CV-related usages supported by the application.
+Consumers reference existing `MediaAsset` IDs rather than copying physical files.
 
-Rules:
+Current usage contexts include Artwork, Exhibitions, Blog/Journal content, Custom Page/CV content and site identity. Consumer-specific rules still apply.
 
-- consumers reference existing `MediaAsset` IDs rather than copying files;
-- content-specific type/publication rules still apply (for example favicon/image-only fields);
-- Artwork media usages preserve explicit role/order/ALT semantics;
-- moving an Artwork between Galleries does not duplicate or detach its media references;
-- replacing primary Artwork media is an explicit editorial operation rather than an implicit delete-and-recreate of unrelated records.
+Important rules:
+- moving Artwork between Galleries does not duplicate/detach its MediaAssets;
+- removing Artwork from a Gallery is an Artwork assignment change, not media deletion;
+- replacing primary Artwork media changes the usage relation and preserves reusable assets;
+- shared references remain visible before destructive actions.
+
+Gallery primary Artwork media is visual image/video. Audio being supported in Files does not automatically make audio a primary Gallery visual. Optional Artwork-specific audio is a separate feature contract.
 
 ## ALT and editorial metadata
 
-`MediaAsset.alt_text` is the canonical asset-level ALT value. A usage-specific ALT override is allowed only where the relevant relation explicitly supports it and intentionally takes precedence.
+`MediaAsset.alt_text` is the canonical asset-level ALT value. A usage-specific override is allowed only where the relation explicitly supports it.
 
-Required public ALT data is not manufactured from filenames, IDs or another unrelated field at render time.
+Required public ALT is not manufactured from filenames/IDs at render time.
 
-Credit/copyright fields are editorial metadata and do not alter the immutable technical identity of the original.
+Credit/copyright fields are editorial metadata and do not alter immutable technical identity.
 
 ## Deletion
 
 Normal media deletion is conservative and reference-aware.
 
-- Any supported live reference blocks destructive deletion.
-- Removing one usage does not delete a shared asset.
-- Logical database/audit state commits before physical cleanup is treated as successful.
-- Physical cleanup failure is surfaced as an operation failure and may leave private orphaned bytes for later repair; it must not be converted into a false success or reactivate a deleted asset.
-- Variants follow the lifecycle of their canonical original but remain rebuildable.
+- any supported live reference blocks destructive deletion;
+- removing one usage does not delete a shared asset;
+- logical DB/audit state commits before physical cleanup is treated as successful;
+- physical cleanup failure is surfaced and may leave private orphan bytes for repair; it must not reactivate a deleted record or be misreported as full success;
+- variants follow their canonical original lifecycle but remain rebuildable.
 
-## Media workspace
+## Files workspace
 
-The admin Media workspace is a bounded/paginated library.
+The artist-facing reusable media workspace is **Files**. It is optimized for finding/reusing/managing assets, not for imitating a Gallery contact sheet.
 
-- Search/filter/list/grid modes share canonical query/filter state.
-- Image thumbnails use bounded generated derivatives.
-- Expensive original preview is loaded on demand through authenticated media-preview routes.
-- Usage information uses relationship counts/aggregates rather than per-row lookup fanout.
-- Media uses the single canonical admin theme; it does not load a page-local stylesheet.
+Canonical behavior:
+- compact List as primary high-density mode;
+- optional Grid and Dense modes;
+- search/filter state shared across modes where applicable;
+- direct upload through canonical ingest/quota policy;
+- authenticated image/video/audio preview/player behavior appropriate to the media kind;
+- metadata editing and actual reference-location inspection;
+- image previews use bounded derivatives;
+- expensive original access is on demand;
+- technical hashes/storage paths are not primary artist-facing UI;
+- shared admin theme owns generic geometry; Files-specific layout is limited to actual media-library needs.
 
 ## Public delivery
 
-Public routes expose only media allowed by the requesting public content context. Raw storage paths are never public route parameters.
+Public routes expose media only through an allowed public content context. Raw storage paths are never public route parameters.
 
-Video may exist in the Media library without implying that every public Gallery/Blog/Exhibition surface renders video. A consumer must explicitly support the media type before making it public; no arbitrary codec/transcoding fallback is assumed.
+A MediaAsset being accepted into Files does not mean every public consumer supports it. Each public surface must explicitly support the media kind before rendering it.
+
+For example:
+- Gallery Artwork visual media supports image/video under the Gallery contract;
+- audio remains manual/opt-in wherever a future consumer explicitly supports it;
+- no arbitrary codec/transcoding fallback is assumed.
 
 ## Verification
 
 Durable verification covers:
-
 - allowlisted content/MIME classification;
 - type-specific byte limits;
-- invalid/corrupt input rejection;
+- invalid/corrupt/container-mismatch rejection;
 - canonical checksum/byte-size preservation;
 - storage-key/path safety;
 - storage quota admission;
@@ -112,4 +135,4 @@ Durable verification covers:
 - reference-aware deletion guards;
 - cleanup failure semantics.
 
-`php artisan media:verify` is the release/recovery integrity check for persisted Media records and their files. See [RELEASE.md](RELEASE.md) for its role in Validation/restore checks.
+`php artisan media:verify` is the release/recovery integrity check for persisted Media records and files. See [RELEASE.md](RELEASE.md).

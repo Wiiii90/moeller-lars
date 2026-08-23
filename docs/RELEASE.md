@@ -1,6 +1,6 @@
 # Application release contract
 
-This document defines the `moeller-lars` application artifact/runtime contract. Production/Validation deployment topology and operator runbooks are owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
+This document defines the `moeller-lars` application artifact/runtime contract. Production/Validation topology and operator runbooks are owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
 
 ## Canonical CI workflow
 
@@ -10,43 +10,28 @@ The repository has one canonical GitHub Actions workflow:
 .github/workflows/release.yml
 ```
 
-It verifies pull requests and non-PR runs with the application quality gates. For eligible non-PR runs (including `main`), it publishes an immutable GHCR image tagged with the exact Git SHA.
+It verifies pull requests and eligible non-PR runs. Release-image publication is intentionally skipped for normal PR events; an immutable candidate image is produced only by an eligible verified non-PR run.
 
-Canonical image tag:
+Canonical SHA tag:
 
 ```text
 ghcr.io/wiiii90/moeller-lars:<40-character-git-sha>
 ```
 
-The release image is built only after verification succeeds.
-
-## Release identity
-
-A deployable candidate is identified by all of:
-
-- repository `Wiiii90/moeller-lars`;
-- exact source Git SHA;
-- GHCR image tag for that SHA;
-- immutable OCI digest (`sha256:...`);
-- CI run that verified/built it.
-
-The image embeds the Git SHA in `/app-release.json` (and image revision metadata). Mutable labels/tags alone are never sufficient release identity.
-
-A green pull-request CI run does not imply that the PR head image exists, because release-image publication is intentionally skipped for pull-request events.
+A deployable candidate is identified by exact source SHA, GHCR SHA tag, immutable OCI digest and the CI run that built it. A green PR CI run alone does not mean an image exists.
 
 ## Verification gates
 
-The canonical workflow verifies:
-
+The canonical workflow covers:
 - Composer dependency installation;
 - Composer security audit;
 - frontend dependency installation/build;
 - Pest;
 - PHPStan;
-- Pint formatting check;
+- Pint;
 - JavaScript tests.
 
-Application-level local equivalents include:
+Local equivalents:
 
 ```sh
 composer test
@@ -56,98 +41,82 @@ npm run test:js
 npm run build
 ```
 
-No warning suppression or fake build artifact is part of the release contract.
-
 ## Runtime interface
 
-- application protocol: HTTP;
+- protocol: HTTP;
 - internal application container port: `8080`;
-- health/readiness endpoint: `GET /up`;
+- health endpoint: `GET /up`;
 - platform ingress proxies privately to the application container;
-- concrete public ports, host paths, container network names and proxy topology are not owned here.
+- concrete host ports, Caddy/network names and persistent host paths are platform details.
 
-The application image must be bootable with runtime environment injected by the platform. Composer/artisan bootstrap must not depend on a pre-existing Vite manifest merely to discover packages/configuration.
+The image must boot from runtime environment injection. Application/bootstrap commands must not require a pre-existing Vite manifest simply to discover packages/configuration.
 
-## Runtime/media envelope
+## Media/runtime envelope
 
-The current application image configures the PHP/media runtime to safely admit the supported Media policies.
+Current application media ceilings are configured in bytes:
 
-Durable assumptions include:
+- `MEDIA_IMAGE_MAX_BYTES` — default 20 MiB;
+- `MEDIA_VIDEO_MAX_BYTES` — default 100 MiB;
+- `MEDIA_AUDIO_MAX_BYTES` — default 100 MiB;
+- `MEDIA_STORAGE_QUOTA_BYTES` — operator/platform-injected site allowance when configured.
 
-- image upload ceiling from `MEDIA_IMAGE_MAX_BYTES` (default 20 MiB);
-- video upload ceiling from `MEDIA_VIDEO_MAX_BYTES` (default 100 MiB);
-- image decoding bounded by the application media policy;
-- expensive ingest is serialized/bounded through the media service path;
-- platform container memory/resource limits must remain compatible with the application's documented PHP/media processing envelope.
+The canonical media policy supports explicitly validated image, video and audio content. Image decoding remains bounded by application safety policy. Video/audio support does not imply server-side transcoding.
 
-When a one-shot legacy import requires a deliberately larger CLI memory limit, that is an explicit operator invocation, not a permanent web-runtime setting.
+Platform container memory/CPU/PID limits must remain compatible with the documented PHP/media processing envelope.
 
 ## Database migrations
 
 - database: PostgreSQL;
 - forward migration command: `php artisan migrate --force`;
-- migration execution is a platform deployment step, not implicit container startup behavior;
+- migration execution is a platform deployment step, not an implicit application-container startup side effect;
 - migration failure blocks activation/cutover.
 
-The migration history is **not guaranteed data-reversible**. A rollback across schema/data changes may require restoring the pre-migration recoverable PostgreSQL state rather than running `migrate:rollback`.
-
-Therefore the platform must establish the appropriate recoverable state before a Production migration that could affect rollback compatibility.
+Migration history is not guaranteed data-reversible. If a schema/data migration breaks compatibility with the previous image, rollback may require restoring the matching pre-migration recoverable PostgreSQL/media state rather than `migrate:rollback`.
 
 ## Persistent state
 
 Authoritative non-reproducible application state:
-
-- PostgreSQL application database;
-- canonical media originals under the application's private media storage contract.
+- PostgreSQL application data;
+- canonical private MediaAsset originals.
 
 Generated/rebuildable state:
-
 - media variants/derivatives;
 - Laravel caches/views and other disposable runtime caches.
 
-The platform chooses actual mount/host paths. This repository documents logical application persistence only.
+The platform chooses actual mount/host paths.
 
 ## Required runtime configuration
 
-Production always requires appropriate values for the normal Laravel/application boundary, including:
+Production requires normal Laravel/application runtime values including:
+- `APP_ENV=production`;
+- `APP_KEY`;
+- canonical HTTPS `APP_URL`;
+- PostgreSQL connection;
+- secure session/cookie configuration;
+- `MEDIA_DISK`;
+- media quota/type limits where configured;
+- mail transport + sender identity;
+- Contact recipient/runtime fallback where applicable;
+- Matomo tracking/reporting configuration where enabled.
 
-- `APP_ENV=production`
-- `APP_KEY`
-- canonical HTTPS `APP_URL`
-- PostgreSQL connection variables
-- secure session/cookie configuration
-- `MEDIA_DISK`
+Real secrets/credentials never belong in Git. `.env.example` is the variable-name/default reference only.
 
-Feature-specific configuration includes:
+## Matomo
 
-- media quota/type limits;
-- mail transport and From identity;
-- contact recipient configuration;
-- separate Matomo tracking/reporting enablement;
-- Matomo base URL/site ID and restricted Reporting API token when reporting is enabled.
-
-Real values and credentials never belong in Git.
-
-`.env.example` is the canonical variable-name/default template for local/reference configuration. Platform-owned production values override it outside the repository.
-
-## Matomo configuration
-
-Tracking and reporting are independent capabilities:
+Tracking and Reporting are independent:
 
 ```text
 MATOMO_TRACKING_ENABLED
 MATOMO_REPORTING_ENABLED
 ```
 
-Production may enable both. Validation may deliberately keep tracking disabled while using an explicitly restricted read-only reporting identity.
-
-Reporting requires bounded timeouts and must not make public/application correctness depend on Matomo availability.
+Validation may keep tracking disabled while using an explicitly restricted read-only Reporting API identity. Reporting uses bounded failure behavior and must not become a dependency for public rendering or ordinary admin editing.
 
 ## Administrator provisioning
 
-No legacy admin credential is migrated and no production admin password is seeded in Git/image content.
+No legacy admin credential is migrated or seeded into the image.
 
-Provision the initial admin explicitly in the deployed container:
+Initial provisioning is explicit:
 
 ```sh
 php artisan admin:provision
@@ -157,52 +126,50 @@ Password input remains interactive/hidden and is not accepted as a command-line 
 
 ## Workers and scheduling
 
-The current application contract does not require a permanent queue worker or application scheduler for core operation.
+Core application operation currently requires no permanent queue worker/application scheduler.
 
-Contact delivery is synchronous under the current contract. Blog scheduled visibility is evaluated against persisted schedule timestamps at read time rather than requiring a promotion job.
+Contact delivery is synchronous under the current contract. Scheduled Blog visibility is derived from persisted timestamps.
 
-If a future feature introduces a required worker/scheduler, this release contract and `server-platform` integration must be updated together.
+If a future feature introduces a required worker/scheduler, this document and `server-platform` integration must be updated together.
 
 ## Validation checks
 
-For an exact deployed Validation candidate:
+For an exact deployed candidate:
 
-1. verify `/app-release.json` contains the expected Git SHA;
+1. verify `/app-release.json` reports the expected Git SHA;
 2. confirm `/up` succeeds;
-3. run required migrations/migration status checks;
+3. run/inspect required forward migrations;
 4. run `php artisan media:verify`;
-5. run `php artisan legacy:validate <reviewed-manifest>` when validating the frozen migration dataset;
-6. run `./scripts/release-smoke.sh http://127.0.0.1:8080` in the appropriate container/operator context;
-7. complete required browser/admin acceptance.
+5. run `php artisan legacy:validate <reviewed-manifest>` only when validating the frozen migration dataset;
+6. run the application release smoke contract;
+7. perform the required public/admin browser acceptance for the candidate.
 
-`legacy:validate` is migration-specific and is not a normal startup check.
+A green CI run, migration validator or health endpoint is evidence, not complete product acceptance.
 
 ## Restore verification
 
-After platform restore orchestration attaches a consistent database/media recovery point:
+After platform restore orchestration attaches a consistent recoverable database/media point:
 
 1. keep the recovery target out of public service;
 2. attach the exact application release being evaluated;
-3. inspect migration status before applying any intentional forward migration;
+3. inspect migration state before any intentional forward migration;
 4. run `media:verify`;
-5. run the application release smoke contract;
-6. regenerate/verify any omitted required derivatives before service activation.
+5. run the application smoke contract;
+6. regenerate/verify omitted required derivatives before activation.
 
-A missing required derivative must never cause the original to be silently substituted as successful public output.
+Missing required derivatives must not be silently replaced by originals when a consumer contract requires the derivative.
 
 ## Rollback
 
-`server-platform` owns the actual rollback command/sequence and retains the previous known-good artifact/digest as appropriate.
+`server-platform` owns the actual rollback sequence and prior known-good artifact/digest.
 
-Rollback is release/data compatibility dependent:
+- if current data remains compatible, the prior image may be reactivated;
+- if data/schema changed incompatibly, rollback requires the corresponding recoverable state.
 
-- if database state remains compatible, the prior image may be reactivated;
-- if a migration changed state incompatibly, rollback requires the appropriate pre-migration restore point.
-
-The application container never rewrites the legacy production application or runs a source import automatically during startup/rollback.
+The application never rewrites the legacy Production application or automatically reruns a source import during startup/rollback.
 
 ## Production authorization
 
-CI success, image publication and Validation success are release evidence only. They do **not** authorize Production mutation.
+CI success, image publication and Validation success do **not** authorize Production mutation.
 
-Production deployment/cutover requires explicit operator/project approval under the platform readiness/backup/rollback gates described in [MIGRATION-PLAN.md](MIGRATION-PLAN.md).
+Production deployment/cutover remains an explicit operator/project action under the gates in [MIGRATION-PLAN.md](MIGRATION-PLAN.md).
