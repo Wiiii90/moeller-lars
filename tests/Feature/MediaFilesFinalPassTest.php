@@ -56,8 +56,6 @@ it('batch delete removes unreferenced files and leaves referenced files selected
     $category = ArtworkCategory::query()->create([
         'slug' => 'files-final-pass',
         'name' => 'Files final pass',
-        'state' => 'published',
-        'position' => 0,
     ]);
     $artwork = Artwork::query()->create([
         'artwork_category_id' => $category->id,
