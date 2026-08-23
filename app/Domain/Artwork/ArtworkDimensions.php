@@ -23,11 +23,11 @@ final class ArtworkDimensions
             ];
         }
 
-        if (preg_match('/^([0-9]+(?:[.,][0-9]+)?)\s*[×xX]\s*([0-9]+(?:[.,][0-9]+)?)(?:\s*[×xX]\s*([0-9]+(?:[.,][0-9]+)?))?\s*(cm|mm|in)$/u', $value, $matches) === 1) {
+        if (preg_match('/^([0-9]+(?:[.,][0-9]+)?)\s*[×xX]\s*([0-9]+(?:[.,][0-9]+)?)(?:\s*[×xX]\s*([0-9]+(?:[.,][0-9]+)?))?\s*(cm|mm|in)$/u', $value, $matches, PREG_UNMATCHED_AS_NULL) === 1) {
             return [
                 'height' => self::normalizeNumber($matches[1]),
                 'width' => self::normalizeNumber($matches[2]),
-                'depth' => isset($matches[3]) && $matches[3] !== '' ? self::normalizeNumber($matches[3]) : null,
+                'depth' => $matches[3] !== null && $matches[3] !== '' ? self::normalizeNumber($matches[3]) : null,
                 'unit' => $matches[4],
                 'custom' => null,
             ];
