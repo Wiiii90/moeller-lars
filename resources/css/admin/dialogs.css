@@ -1,0 +1,57 @@
+/*
+ * Shared Filament dialog geometry.
+ * Native Filament remains responsible for open/close state, Escape handling,
+ * focus trapping/restoration and nested interactive components.
+ */
+@media (min-width: 1024px) {
+    /*
+     * A transformed ancestor becomes the containing block for fixed children.
+     * Keep the existing visual workspace shift without trapping viewport modals
+     * inside the admin content column.
+     */
+    .fi-main {
+        position: relative;
+        inset-inline-start: calc(0rem - var(--admin-workspace-visual-shift));
+        transform: none;
+    }
+}
+
+.fi-modal-close-overlay {
+    position: fixed;
+    inset: 0;
+}
+
+.fi-modal-window {
+    max-height: calc(100dvh - 2rem);
+}
+
+.fi-modal-header,
+.fi-modal-footer {
+    flex: 0 0 auto;
+}
+
+.fi-modal-content {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+@supports not (height: 100dvh) {
+    .fi-modal-window {
+        max-height: calc(100vh - 2rem);
+    }
+}
+
+@media (max-width: 760px) {
+    .fi-modal-window {
+        max-height: calc(100dvh - 1rem);
+    }
+
+    @supports not (height: 100dvh) {
+        .fi-modal-window {
+            max-height: calc(100vh - 1rem);
+        }
+    }
+}
