@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PublicContentSettings\Pages;
 use App\Domain\Admin\AdminSettingsService;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\PublicContentSetting;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
@@ -36,7 +37,7 @@ class EditPublicContentSetting extends EditRecord
         return [];
     }
 
-    /** @return array<\Filament\Actions\Action> */
+    /** @return array<Action> */
     protected function getFormActions(): array
     {
         return [];
