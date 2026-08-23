@@ -14,7 +14,10 @@ use Throwable;
 
 class MediaAssetEditorialService
 {
-    public function __construct(private readonly AdminAuditService $adminAuditService) {}
+    public function __construct(
+        private readonly AdminAuditService $adminAuditService,
+        private readonly MediaReferenceQuery $referenceQuery,
+    ) {}
 
     public function updateMetadata(MediaAsset $asset, array $data): MediaAsset
     {
@@ -24,7 +27,7 @@ class MediaAssetEditorialService
             throw ValidationException::withMessages(['media' => 'Deleted media cannot be edited.']);
         }
 
-        $allowed = ['alt_text', 'credit', 'copyright_notice'];
+        $allowed = ['alt_text', 'credit', 'copyright_notice', 'copyright_notice_mode'];
         if (array_diff(array_keys($data), $allowed) !== []) {
             throw ValidationException::withMessages(['media' => 'Only media editorial metadata can be changed.']);
         }
@@ -36,8 +39,25 @@ class MediaAssetEditorialService
         if (array_key_exists('credit', $data)) {
             $values['credit'] = $this->plainText($data['credit'], 240, true);
         }
-        if (array_key_exists('copyright_notice', $data)) {
-            $values['copyright_notice'] = $this->plainText($data['copyright_notice'], 500, true);
+
+        if (array_key_exists('copyright_notice_mode', $data)) {
+            $mode = $data['copyright_notice_mode'];
+            if (! is_string($mode) || ! in_array($mode, MediaAsset::COPYRIGHT_MODES, true)) {
+                throw ValidationException::withMessages([
+                    'copyright_notice_mode' => 'Choose whether copyright is inherited, overridden, or omitted.',
+                ]);
+            }
+
+            $values['copyright_notice_mode'] = $mode;
+            $values['copyright_notice'] = $mode === MediaAsset::COPYRIGHT_OVERRIDE
+                ? $this->plainText($data['copyright_notice'] ?? null, 500, true)
+                : null;
+        } elseif (array_key_exists('copyright_notice', $data)) {
+            $notice = $this->plainText($data['copyright_notice'], 500, true);
+            $values['copyright_notice'] = $notice;
+            $values['copyright_notice_mode'] = $notice === null
+                ? MediaAsset::COPYRIGHT_INHERIT
+                : MediaAsset::COPYRIGHT_OVERRIDE;
         }
 
         return DB::transaction(function () use ($fresh, $values, $actor): MediaAsset {
@@ -131,18 +151,8 @@ class MediaAssetEditorialService
 
     private function ensureUnreferenced(MediaAsset $asset): void
     {
-        $id = $asset->getKey();
-        $references = [
-            ['artwork_media', 'media_asset_id'],
-            ['exhibition_media', 'media_asset_id'],
-            ['cv_entries', 'image_media_asset_id'],
-            ['blog_posts', 'cover_media_asset_id'],
-            ['public_content_settings', 'favicon_media_asset_id'],
-        ];
-        foreach ($references as [$table, $column]) {
-            if (DB::table($table)->where($column, $id)->exists()) {
-                throw ValidationException::withMessages(['media' => 'Referenced media cannot be deleted.']);
-            }
+        if ($this->referenceQuery->isReferenced($asset)) {
+            throw ValidationException::withMessages(['media' => 'Referenced media cannot be deleted.']);
         }
     }
 

@@ -20,10 +20,7 @@ final class MediaAssetSelect
                 name: $relationship,
                 titleAttribute: 'original_filename',
                 modifyQueryUsing: function (Builder $query) use ($imagesOnly): void {
-                    $query->where('state', 'available');
-                    if ($imagesOnly) {
-                        $query->where('mime_type', 'like', 'image/%');
-                    }
+                    self::constrainAvailable($query, $imagesOnly);
                     $query->with('variants');
                     $query->orderBy('original_filename');
                 },
@@ -35,8 +32,45 @@ final class MediaAssetSelect
 
                 return self::optionLabel($record);
             })
-            ->searchable(['original_filename'])
+            ->searchable()
+            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions($search, $imagesOnly))
+            ->searchDebounce(350)
+            ->searchPrompt('Search Media Files by filename')
+            ->noSearchResultsMessage('No matching Media Files')
             ->allowHtml();
+    }
+
+    /** @return array<int, string> */
+    public static function searchOptions(string $search, bool $imagesOnly = false): array
+    {
+        /** @var Builder<MediaAsset> $query */
+        $query = MediaAsset::query();
+        self::constrainAvailable($query, $imagesOnly);
+
+        $term = trim($search);
+        if ($term !== '') {
+            $query->where('original_filename', 'ilike', '%'.$term.'%');
+        }
+
+        /** @var Collection<int, MediaAsset> $assets */
+        $assets = $query
+            ->with('variants')
+            ->orderBy('original_filename')
+            ->limit(30)
+            ->get();
+
+        return $assets
+            ->mapWithKeys(fn (MediaAsset $asset): array => [(int) $asset->getKey() => self::optionLabel($asset)])
+            ->all();
+    }
+
+    /** @param Builder<MediaAsset> $query */
+    private static function constrainAvailable(Builder $query, bool $imagesOnly): void
+    {
+        $query->where('state', 'available');
+        if ($imagesOnly) {
+            $query->where('mime_type', 'like', 'image/%');
+        }
     }
 
     private static function optionLabel(MediaAsset $asset): string

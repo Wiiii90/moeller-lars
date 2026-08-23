@@ -16,7 +16,21 @@
     --admin-accent-strong: #7c2d12;
     --admin-danger: #b42318;
     --admin-success: #39734d;
+    --admin-control-height: 2.5rem;
+    --admin-section-gap: 1rem;
     --admin-section-space: 2rem;
+    --admin-shell-content-inset: 1.5rem;
+    --admin-workspace-max-width: 80rem;
+    --admin-workspace-half-width: 40rem;
+    --admin-workspace-gutter: 2rem;
+    --admin-sidebar-width: 18rem;
+    --admin-sidebar-half-width: 9rem;
+    --admin-header-action-reserve: 10.5rem;
+    --admin-workspace-visual-shift: clamp(
+        0rem,
+        calc(50vw - var(--admin-sidebar-half-width) - var(--admin-workspace-half-width) - var(--admin-workspace-gutter)),
+        var(--admin-sidebar-half-width)
+    );
 }
 
 .dark {
@@ -40,10 +54,11 @@
 
 .admin-workspace__header {
     display: grid;
+    min-height: var(--admin-control-height);
     grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 2rem;
-    align-items: end;
-    padding: .2rem 0 1.7rem;
+    gap: 1.25rem;
+    padding: 0 0 var(--admin-section-gap);
+    align-items: center;
     border-bottom: 1px solid var(--admin-line-strong);
 }
 
@@ -106,7 +121,7 @@
 }
 
 .admin-workspace__body > * + * {
-    margin-top: 1.75rem;
+    margin-top: 0;
 }
 
 .admin-workspace__footnote {
@@ -117,16 +132,16 @@
 }
 
 .admin-section {
-    padding: var(--admin-section-space) 0;
+    padding: var(--admin-section-gap) 0;
     border-bottom: 1px solid var(--admin-line-strong);
 }
 
 .admin-section__header {
     display: flex;
     gap: 2rem;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.2rem;
+    margin-bottom: var(--admin-section-gap);
 }
 
 .admin-section__title,
@@ -215,7 +230,7 @@
 }
 
 .admin-metric {
-    padding: 1.3rem 1rem;
+    padding: 1.05rem 1rem;
     border-right: 1px solid var(--admin-line);
 }
 
@@ -314,6 +329,265 @@
     vertical-align: middle;
 }
 
+.fi-page-header-main-ctn {
+    gap: var(--admin-section-gap);
+}
+
+/*
+ * Workspace pages own the visible heading while Filament owns native header
+ * actions. Collapse the empty duplicate header band and place those actions in
+ * the same visual row as the canonical workspace title.
+ */
+.fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-page-header-main-ctn {
+    position: relative;
+    gap: 0;
+    padding-top: 0;
+}
+
+.fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-header:not(.fi-header-has-breadcrumbs) {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: 0;
+    z-index: 5;
+    width: auto;
+    min-height: var(--admin-control-height);
+    align-items: center;
+}
+
+.fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-header:not(.fi-header-has-breadcrumbs) > div:first-child {
+    display: none;
+}
+
+.fi-header {
+    min-height: var(--admin-control-height);
+    align-items: center;
+}
+
+.fi-header-heading {
+    color: var(--admin-text);
+    font-size: clamp(1.65rem, 2vw, 2.25rem) !important;
+    font-weight: 620 !important;
+    letter-spacing: -.035em;
+    line-height: 1.05;
+}
+
+.fi-header-actions-ctn .fi-btn,
+.admin-topbar-sign-out .fi-btn,
+.fi-global-search .fi-input-wrp,
+.fi-topbar .fi-icon-btn,
+.fi-sidebar-item-btn {
+    min-height: var(--admin-control-height) !important;
+}
+
+.fi-topbar .fi-icon-btn {
+    min-width: var(--admin-control-height) !important;
+}
+
+.admin-workspace__heading > .admin-workspace__title:first-child {
+    margin-top: 0;
+}
+
+/* Media Files final interaction polish. */
+.media-workspace__library {
+    border-bottom: 0;
+}
+
+.media-workspace__thumb button,
+.media-workspace__visual,
+.media-workspace__filename-button {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.media-workspace__thumb button {
+    display: grid;
+    width: 3.6rem;
+    height: 3rem;
+    place-items: center;
+    overflow: hidden;
+    background: var(--admin-subtle);
+}
+
+.media-workspace__visual {
+    width: 100%;
+    text-align: inherit;
+}
+
+.media-workspace__filename-button {
+    display: block;
+    max-width: 100%;
+    text-align: left;
+}
+
+.media-workspace__thumb button:focus-visible,
+.media-workspace__visual:focus-visible,
+.media-workspace__filename-button:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.media-workspace__state.is-available::before {
+    border-color: var(--admin-success);
+    background: var(--admin-success);
+}
+
+.media-workspace__state.is-quarantined::before {
+    border-color: var(--admin-accent);
+    background: var(--admin-accent);
+}
+
+.media-workspace__state.is-deleted::before {
+    border-color: var(--admin-danger);
+    background: var(--admin-danger);
+}
+
+.media-file-dialog__content {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.media-file-dialog__preview {
+    display: grid;
+    min-height: 26rem;
+    max-height: 62vh;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--admin-line);
+    background: var(--admin-subtle);
+}
+
+.media-file-dialog__preview img,
+.media-file-dialog__preview video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: 62vh;
+    object-fit: contain;
+}
+
+.media-file-dialog__preview p,
+.media-file-dialog__empty {
+    margin: 0;
+    color: var(--admin-muted);
+    font-size: .75rem;
+}
+
+.media-file-dialog__sequence {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 1rem;
+    padding-bottom: .85rem;
+    align-items: center;
+    border-bottom: 1px solid var(--admin-line);
+    color: var(--admin-muted);
+    font-size: .72rem;
+}
+
+.media-file-dialog__sequence > span {
+    text-align: center;
+}
+
+.media-file-dialog__details {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.media-file-dialog__details > section {
+    min-width: 0;
+    padding-right: 1.2rem;
+}
+
+.media-file-dialog__details > section + section {
+    padding-right: 0;
+    padding-left: 1.2rem;
+    border-left: 1px solid var(--admin-line);
+}
+
+.media-file-dialog__details h3 {
+    margin: 0 0 .55rem;
+    color: var(--admin-muted);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+}
+
+.media-file-dialog__details dl {
+    display: grid;
+    margin: 0;
+}
+
+.media-file-dialog__details dl > div {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, .4fr) minmax(0, 1fr);
+    gap: .8rem;
+    padding: .46rem 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.media-file-dialog__details dt,
+.media-file-dialog__details dd,
+.media-file-dialog__references strong,
+.media-file-dialog__references span {
+    font-size: .73rem;
+}
+
+.media-file-dialog__details dt,
+.media-file-dialog__references span {
+    color: var(--admin-muted);
+}
+
+.media-file-dialog__details dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--admin-text);
+}
+
+.media-file-dialog__checksum {
+    overflow-wrap: anywhere;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: .67rem !important;
+}
+
+.media-file-dialog__references {
+    display: grid;
+    border-top: 1px solid var(--admin-line);
+}
+
+.media-file-dialog__references a,
+.media-file-dialog__references > div {
+    display: grid;
+    grid-template-columns: minmax(8rem, .55fr) minmax(0, 1fr);
+    gap: .8rem;
+    padding: .6rem 0;
+    border-bottom: 1px solid var(--admin-line);
+    color: inherit;
+    text-decoration: none;
+}
+
+.media-file-dialog__references strong {
+    color: var(--admin-text);
+    font-weight: 600;
+}
+
+.media-file-dialog__references span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (min-width: 901px) {
+    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .admin-workspace__header {
+        padding-inline-end: var(--admin-header-action-reserve);
+    }
+}
+
 @media (max-width: 900px) {
     .admin-workspace__header {
         grid-template-columns: 1fr;
@@ -335,5 +609,62 @@
     .admin-list__row--media {
         grid-template-columns: 1fr;
         gap: .7rem;
+    }
+
+    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .fi-header:not(.fi-header-has-breadcrumbs) {
+        inset-inline: 0;
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .fi-header-actions-ctn {
+        margin-inline-start: auto;
+    }
+
+    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .admin-workspace__header {
+        padding-top: calc(var(--admin-control-height) + var(--admin-section-gap));
+    }
+}
+
+@media (max-width: 760px) {
+    .media-file-dialog {
+        width: calc(100vw - 1rem) !important;
+        max-width: none !important;
+        max-height: calc(100dvh - 1rem);
+    }
+
+    .media-file-dialog__preview {
+        min-height: min(48vh, 24rem);
+        max-height: 52vh;
+    }
+
+    .media-file-dialog__preview img,
+    .media-file-dialog__preview video {
+        max-height: 52vh;
+    }
+
+    .media-file-dialog__details {
+        grid-template-columns: 1fr;
+    }
+
+    .media-file-dialog__details > section,
+    .media-file-dialog__details > section + section {
+        padding-inline: 0;
+    }
+
+    .media-file-dialog__details > section + section {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--admin-line);
+        border-left: 0;
+    }
+
+    .media-file-dialog__sequence {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .media-file-dialog__sequence > span {
+        grid-column: 1 / -1;
+        grid-row: 1;
     }
 }
