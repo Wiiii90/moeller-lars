@@ -28,14 +28,18 @@ final class ArtworkGalleryAssignmentService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $sourceCategoryId = (int) $lockedArtwork->getAttribute('artwork_category_id');
+            $sourceCategoryId = $lockedArtwork->getAttribute('artwork_category_id');
+            $sourceCategoryId = $sourceCategoryId === null ? null : (int) $sourceCategoryId;
             $destinationCategoryId = (int) $destination->getKey();
 
             if ($sourceCategoryId === $destinationCategoryId) {
                 return $lockedArtwork->fresh(['category', 'artworkMedia.mediaAsset']);
             }
 
-            $categoryIds = [$sourceCategoryId, $destinationCategoryId];
+            $categoryIds = array_values(array_unique(array_filter([
+                $sourceCategoryId,
+                $destinationCategoryId,
+            ], static fn (?int $id): bool => $id !== null)));
             sort($categoryIds);
 
             $lockedCategoryCount = ArtworkCategory::query()
@@ -45,7 +49,7 @@ final class ArtworkGalleryAssignmentService
                 ->get()
                 ->count();
 
-            if ($lockedCategoryCount !== 2) {
+            if ($lockedCategoryCount !== count($categoryIds)) {
                 throw ValidationException::withMessages([
                     'gallery' => 'The source or destination Gallery is no longer available.',
                 ]);
@@ -75,8 +79,56 @@ final class ArtworkGalleryAssignmentService
                 'position' => $destinationMaxPosition === null ? 0 : ((int) $destinationMaxPosition) + 1,
             ])->save();
 
-            $this->normalizeGalleryPositions($sourceCategoryId);
+            if ($sourceCategoryId !== null) {
+                $this->normalizeGalleryPositions($sourceCategoryId);
+            }
             $this->normalizeGalleryPositions($destinationCategoryId);
+
+            $this->adminAuditService->record(
+                $actor,
+                'artwork.updated',
+                'artwork',
+                $lockedArtwork->getKey(),
+            );
+
+            return $lockedArtwork->fresh(['category', 'artworkMedia.mediaAsset']);
+        });
+    }
+
+    public function detach(Artwork $artwork): Artwork
+    {
+        $actor = $this->adminAuditService->requireActor();
+
+        return DB::transaction(function () use ($artwork, $actor): Artwork {
+            /** @var Artwork $lockedArtwork */
+            $lockedArtwork = Artwork::query()
+                ->whereKey($artwork->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $sourceCategoryId = $lockedArtwork->getAttribute('artwork_category_id');
+            if ($sourceCategoryId === null) {
+                return $lockedArtwork->fresh(['category', 'artworkMedia.mediaAsset']);
+            }
+
+            if ($lockedArtwork->getAttribute('state') === 'published') {
+                throw ValidationException::withMessages([
+                    'gallery' => 'Unpublish the artwork before removing it from its Gallery.',
+                ]);
+            }
+
+            $sourceCategoryId = (int) $sourceCategoryId;
+            ArtworkCategory::query()
+                ->whereKey($sourceCategoryId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $lockedArtwork->forceFill([
+                'artwork_category_id' => null,
+                'position' => 0,
+            ])->save();
+
+            $this->normalizeGalleryPositions($sourceCategoryId);
 
             $this->adminAuditService->record(
                 $actor,

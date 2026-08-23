@@ -49,6 +49,20 @@ body.public-site #content {
     min-height: 0;
 }
 
+.artwork-card__video,
+.artwork-detail__video {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    margin: 0;
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    outline: 1px solid rgba(50, 47, 44, .14);
+    outline-offset: -1px;
+    background: #111;
+}
+
 .artwork-viewer {
     position: fixed;
     inset: 0;
@@ -148,6 +162,11 @@ body.public-site #content {
     user-select: none;
 }
 
+.artwork-viewer__stage[data-viewer-kind="video"] {
+    cursor: default;
+    touch-action: auto;
+}
+
 .artwork-viewer__image {
     display: block;
     width: auto;
@@ -159,6 +178,16 @@ body.public-site #content {
     will-change: transform;
     user-select: none;
     -webkit-user-drag: none;
+}
+
+.artwork-viewer__video {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    background: #000;
 }
 
 .artwork-viewer__loading,
@@ -175,7 +204,9 @@ body.public-site #content {
 
 [data-viewer-loading][hidden],
 [data-viewer-missing][hidden],
-[data-viewer-image][hidden] {
+[data-viewer-image][hidden],
+[data-viewer-video][hidden],
+.artwork-viewer__controls button[hidden] {
     display: none;
 }
 

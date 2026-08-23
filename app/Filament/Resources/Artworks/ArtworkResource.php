@@ -13,6 +13,7 @@ use App\Filament\Resources\Artworks\RelationManagers\GalleryImagesRelationManage
 use App\Filament\Support\AdminForm;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use App\Models\ArtworkMaterialPreset;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -81,9 +82,12 @@ class ArtworkResource extends Resource
                     Select::make('artwork_category_id')
                         ->label('Gallery')
                         ->relationship('category', 'name')
-                        ->required()
+                        ->required(fn (string $operation): bool => $operation === 'create')
                         ->searchable()
                         ->preload()
+                        ->helperText(fn (string $operation): ?string => $operation === 'create'
+                            ? null
+                            : 'A draft can stay unassigned after Remove from Gallery.')
                         ->default(function (): ?int {
                             $galleryId = request()->integer('gallery');
                             if ($galleryId <= 0) {
@@ -92,20 +96,23 @@ class ArtworkResource extends Resource
 
                             return ArtworkCategory::query()->whereKey($galleryId)->exists() ? $galleryId : null;
                         }),
-                    TextInput::make('medium')->nullable()->maxLength(240),
+                    TextInput::make('medium')
+                        ->label('Material')
+                        ->nullable()
+                        ->maxLength(240)
+                        ->datalist(fn (): array => ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all()),
                     TextInput::make('dimensions')->nullable()->maxLength(240),
                     Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
                 ])
                 ->columns(2),
-            AdminForm::section('Primary image')
+            AdminForm::section('Primary media')
                 ->schema([
                     FileUpload::make('primary_media')
-                        ->label('Primary image')
-                        ->image()
+                        ->label('Primary image or video')
                         ->storeFiles(false)
-                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                        ->maxSize((int) ceil(MediaTypePolicy::imageMaxBytes() / 1024))
-                        ->helperText('Optional while drafting, but required before publication.'),
+                        ->acceptedFileTypes([...MediaTypePolicy::IMAGE_MIME_TYPES, ...MediaTypePolicy::VIDEO_MIME_TYPES])
+                        ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
+                        ->helperText('Optional while drafting. Primary media may be JPEG, PNG, WebP, MP4 or WebM; audio is not allowed.'),
                 ])
                 ->visible(fn (string $operation): bool => $operation === 'create'),
             AdminForm::section('Date and homepage')
@@ -141,7 +148,7 @@ class ArtworkResource extends Resource
                     ->state(fn (Artwork $record): ?string => self::thumbnailUrl($record))
                     ->imageHeight(56),
                 TextColumn::make('title')->searchable()->sortable(),
-                TextColumn::make('category.name')->label('Gallery')->sortable(),
+                TextColumn::make('category.name')->label('Gallery')->placeholder('Unassigned')->sortable(),
                 TextColumn::make('state')->badge()->sortable(),
                 TextColumn::make('work_year')->label('Year')->sortable(),
                 TextColumn::make('position')
@@ -169,7 +176,7 @@ class ArtworkResource extends Resource
                     ->url(fn (Artwork $record): string => route('artworks.show', ['slug' => $record->getAttribute('slug')]))
                     ->openUrlInNewTab()
                     ->visible(fn (Artwork $record): bool => $record->getAttribute('state') === 'published'
-                        && $record->getRelationValue('category')?->getAttribute('state') === 'published'),
+                        && $record->category()->whereHas('siteSection', static fn (Builder $query) => $query->where('state', 'published'))->exists()),
                 ViewAction::make(),
                 EditAction::make(),
             ])

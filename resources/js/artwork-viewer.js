@@ -81,9 +81,20 @@ export function adjacentIndex(index, direction, length) {
     return destination < 0 || destination >= length ? null : destination;
 }
 
+export function normalizeViewerKind(value) {
+    const kind = value || 'image';
+    if (kind !== 'image' && kind !== 'video') {
+        throw new Error('Artwork viewer supports image and video media only.');
+    }
+
+    return kind;
+}
+
 function normalizeItem(element) {
     const key = element.dataset.viewerKey;
     const analyticsKey = element.dataset.viewerAnalyticsKey;
+    const kind = normalizeViewerKind(element.dataset.viewerKind);
+    const mime = element.dataset.viewerMime || '';
     const src = element.dataset.viewerSrc;
     const alt = element.dataset.viewerAlt;
     const title = element.dataset.viewerTitle;
@@ -93,7 +104,7 @@ function normalizeItem(element) {
         throw new Error('Artwork viewer item is missing required canonical data.');
     }
 
-    return { key, analyticsKey, src, alt, title, page };
+    return { key, analyticsKey, kind, mime, src, alt, title, page };
 }
 
 export function initializeArtworkViewer(root = document) {
@@ -105,6 +116,7 @@ export function initializeArtworkViewer(root = document) {
 
     const stage = dialog.querySelector('[data-viewer-stage]');
     const image = dialog.querySelector('[data-viewer-image]');
+    const video = dialog.querySelector('[data-viewer-video]');
     const loading = dialog.querySelector('[data-viewer-loading]');
     const missing = dialog.querySelector('[data-viewer-missing]');
     const close = dialog.querySelector('[data-viewer-close]');
@@ -115,6 +127,11 @@ export function initializeArtworkViewer(root = document) {
     const zoomIn = dialog.querySelector('[data-viewer-zoom-in]');
     const pageLink = dialog.querySelector('[data-viewer-page-link]');
     const title = dialog.querySelector('[data-viewer-title]');
+
+    if (!stage || !image || !video || !loading || !missing || !close || !previous || !next || !zoomOut || !reset || !zoomIn || !pageLink || !title) {
+        throw new Error('Artwork viewer is missing required controls.');
+    }
+
     let items = [];
     let index = 0;
     let state = { scale: 1, x: 0, y: 0 };
@@ -130,6 +147,8 @@ export function initializeArtworkViewer(root = document) {
     let attentionAccumulatedMs = 0;
 
     const currentItem = () => items[index] ?? null;
+    const currentIsImage = () => currentItem()?.kind === 'image';
+    const mediaVisible = () => currentIsImage() ? !image.hidden : !video.hidden;
     const now = () => window.performance?.now?.() ?? Date.now();
 
     const resetAttention = () => {
@@ -146,7 +165,7 @@ export function initializeArtworkViewer(root = document) {
 
     const resumeAttention = () => {
         const item = currentItem();
-        if (!item || image.hidden || !dialog.open || document.visibilityState === 'hidden') return;
+        if (!item || !mediaVisible() || !dialog.open || document.visibilityState === 'hidden') return;
         if (attentionKey !== item.analyticsKey) {
             resetAttention();
             attentionKey = item.analyticsKey;
@@ -189,7 +208,7 @@ export function initializeArtworkViewer(root = document) {
     );
 
     const updateTransform = () => {
-        if (!image || image.hidden || !stage) return;
+        if (!currentIsImage() || image.hidden) return;
 
         const bounds = panBounds();
         const pannable = bounds.maxX > 0 || bounds.maxY > 0;
@@ -206,14 +225,38 @@ export function initializeArtworkViewer(root = document) {
         reset.textContent = state.scale === 1 ? '100%' : `${Math.round(state.scale * 100)}%`;
     };
 
+    const setZoomControls = (visible) => {
+        zoomOut.hidden = !visible;
+        reset.hidden = !visible;
+        zoomIn.hidden = !visible;
+        if (!visible) {
+            zoomOut.disabled = true;
+            zoomIn.disabled = true;
+            reset.disabled = true;
+        }
+    };
+
     const resetState = () => {
         state = { scale: 1, x: 0, y: 0 };
-        if (image) image.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
-        if (stage) {
-            stage.dataset.viewerZoomed = 'false';
-            stage.dataset.viewerPannable = 'false';
-        }
-        updateTransform();
+        image.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
+        stage.dataset.viewerZoomed = 'false';
+        stage.dataset.viewerPannable = 'false';
+        if (currentIsImage()) updateTransform();
+    };
+
+    const clearMedia = () => {
+        image.removeAttribute('src');
+        image.hidden = true;
+        image.style.removeProperty('width');
+        image.style.removeProperty('height');
+        image.style.removeProperty('max-width');
+        image.style.removeProperty('max-height');
+
+        video.pause();
+        video.removeAttribute('src');
+        video.removeAttribute('aria-label');
+        video.hidden = true;
+        video.load();
     };
 
     const showItem = (nextIndex) => {
@@ -221,6 +264,7 @@ export function initializeArtworkViewer(root = document) {
         if (!item) {
             throw new RangeError('Artwork viewer index is outside the canonical sequence.');
         }
+
         index = nextIndex;
         state = { scale: 1, x: 0, y: 0 };
         pointers.clear();
@@ -232,20 +276,22 @@ export function initializeArtworkViewer(root = document) {
         pageLink.hidden = false;
         pageLink.href = item.page;
         expectedSrc = item.src;
-        image.removeAttribute('src');
-        image.hidden = true;
-        image.style.removeProperty('width');
-        image.style.removeProperty('height');
-        image.style.removeProperty('max-width');
-        image.style.removeProperty('max-height');
+        clearMedia();
         missing.hidden = true;
         loading.hidden = false;
-        zoomOut.disabled = true;
-        zoomIn.disabled = true;
-        reset.disabled = true;
-        reset.textContent = '100%';
+        loading.textContent = item.kind === 'video' ? 'Loading video…' : 'Loading image…';
+        stage.dataset.viewerKind = item.kind;
         stage.dataset.viewerZoomed = 'false';
         stage.dataset.viewerPannable = 'false';
+        setZoomControls(item.kind === 'image');
+
+        if (item.kind === 'video') {
+            video.setAttribute('aria-label', item.alt);
+            video.src = item.src;
+            video.load();
+            return;
+        }
+
         image.alt = item.alt;
         image.src = item.src;
     };
@@ -269,13 +315,13 @@ export function initializeArtworkViewer(root = document) {
 
     const trackZoomIfNeeded = () => {
         const item = currentItem();
-        if (!item || state.scale <= MIN_SCALE || zoomTracked.has(item.analyticsKey)) return;
+        if (!item || item.kind !== 'image' || state.scale <= MIN_SCALE || zoomTracked.has(item.analyticsKey)) return;
         zoomTracked.add(item.analyticsKey);
         trackMatomoEvent('Artwork', 'artwork_zoom_used', item.analyticsKey, null, root);
     };
 
     const changeZoom = (nextScale, pointX = 0, pointY = 0) => {
-        if (image.hidden || !expectedSrc) return;
+        if (!currentIsImage() || image.hidden || !expectedSrc) return;
         state = zoomAroundPoint(state, nextScale, pointX, pointY);
         updateTransform();
         trackZoomIfNeeded();
@@ -285,6 +331,7 @@ export function initializeArtworkViewer(root = document) {
         const destination = adjacentIndex(index, direction, items.length);
         if (destination === null) return;
         flushAttention();
+        video.pause();
         showItem(destination);
         const item = currentItem();
         trackMatomoEvent('Artwork', action, item?.analyticsKey ?? null, null, root);
@@ -314,7 +361,8 @@ export function initializeArtworkViewer(root = document) {
     reset.addEventListener('click', resetState);
 
     image.addEventListener('load', () => {
-        if (image.src !== expectedSrc) return;
+        const item = currentItem();
+        if (!item || item.kind !== 'image' || image.src !== expectedSrc) return;
         loading.hidden = true;
         missing.hidden = true;
         image.hidden = false;
@@ -322,27 +370,45 @@ export function initializeArtworkViewer(root = document) {
         resetState();
         resumeAttention();
     });
+
     image.addEventListener('error', () => {
-        if (image.src !== expectedSrc) return;
+        if (!currentIsImage()) return;
         resetAttention();
         loading.hidden = true;
         image.hidden = true;
         missing.hidden = false;
-        zoomOut.disabled = true;
-        zoomIn.disabled = true;
-        reset.disabled = true;
+        setZoomControls(false);
         stage.dataset.viewerPannable = 'false';
     });
 
+    const videoReady = () => {
+        const item = currentItem();
+        if (!item || item.kind !== 'video') return;
+        loading.hidden = true;
+        missing.hidden = true;
+        video.hidden = false;
+        resumeAttention();
+    };
+    video.addEventListener('loadeddata', videoReady);
+    video.addEventListener('canplay', videoReady);
+    video.addEventListener('error', () => {
+        const item = currentItem();
+        if (!item || item.kind !== 'video') return;
+        resetAttention();
+        loading.hidden = true;
+        video.hidden = true;
+        missing.hidden = false;
+    });
+
     stage.addEventListener('wheel', (event) => {
-        if (image.hidden || !expectedSrc) return;
+        if (!currentIsImage() || image.hidden || !expectedSrc) return;
         event.preventDefault();
         const point = stagePoint(event);
         changeZoom(state.scale * (event.deltaY < 0 ? 1.12 : 1 / 1.12), point.x, point.y);
     }, { passive: false });
 
     stage.addEventListener('dblclick', (event) => {
-        if (image.hidden || !expectedSrc) return;
+        if (!currentIsImage() || image.hidden || !expectedSrc) return;
         event.preventDefault();
         if (state.scale > MIN_SCALE) {
             resetState();
@@ -353,6 +419,7 @@ export function initializeArtworkViewer(root = document) {
     });
 
     stage.addEventListener('pointerdown', (event) => {
+        if (!currentIsImage()) return;
         pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
         stage.setPointerCapture?.(event.pointerId);
         if (pointers.size === 1) dragStart = { x: event.clientX, y: event.clientY, panX: state.x, panY: state.y };
@@ -369,8 +436,9 @@ export function initializeArtworkViewer(root = document) {
             };
         }
     });
+
     stage.addEventListener('pointermove', (event) => {
-        if (!pointers.has(event.pointerId)) return;
+        if (!currentIsImage() || !pointers.has(event.pointerId)) return;
         pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
         const values = [...pointers.values()];
         if (values.length >= 2 && pinchStart) {
@@ -390,7 +458,9 @@ export function initializeArtworkViewer(root = document) {
             updateTransform();
         }
     });
+
     const releasePointer = (event) => {
+        if (!pointers.has(event.pointerId)) return;
         pointers.delete(event.pointerId);
         stage.releasePointerCapture?.(event.pointerId);
         if (pointers.size === 1) {
@@ -406,8 +476,10 @@ export function initializeArtworkViewer(root = document) {
 
     dialog.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') return;
-        if (event.key === 'ArrowLeft' && !previous.disabled) { event.preventDefault(); previous.click(); }
-        if (event.key === 'ArrowRight' && !next.disabled) { event.preventDefault(); next.click(); }
+        const nativeVideoKeyboard = !currentIsImage() && event.target === video;
+        if (!nativeVideoKeyboard && event.key === 'ArrowLeft' && !previous.disabled) { event.preventDefault(); previous.click(); }
+        if (!nativeVideoKeyboard && event.key === 'ArrowRight' && !next.disabled) { event.preventDefault(); next.click(); }
+        if (!currentIsImage()) return;
         if (event.key === '+' || event.key === '=') { event.preventDefault(); changeZoom(state.scale * 1.25); }
         if (event.key === '-' || event.key === '_') { event.preventDefault(); changeZoom(state.scale / 1.25); }
         if (event.key === '0') { event.preventDefault(); resetState(); }
@@ -421,13 +493,13 @@ export function initializeArtworkViewer(root = document) {
 
     dialog.addEventListener('close', () => {
         flushAttention();
-        image.removeAttribute('src');
+        clearMedia();
         expectedSrc = '';
         pointers.clear();
         state = { scale: 1, x: 0, y: 0 };
         loading.hidden = true;
-        image.hidden = true;
         missing.hidden = true;
+        stage.dataset.viewerKind = '';
         stage.dataset.viewerZoomed = 'false';
         stage.dataset.viewerPannable = 'false';
         if (trigger?.isConnected && typeof trigger.focus === 'function') trigger.focus();
@@ -440,7 +512,7 @@ export function initializeArtworkViewer(root = document) {
 
     const recalculate = () => {
         resizeFrame = null;
-        if (!dialog.open || image.hidden) return;
+        if (!dialog.open || !currentIsImage() || image.hidden) return;
         fitImageToStage();
         updateTransform();
     };

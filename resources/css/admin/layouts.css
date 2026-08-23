@@ -87,7 +87,8 @@ html:not(.dark) .fi-sidebar-nav {
     background: var(--admin-subtle);
 }
 
-.admin-gallery-grid__image img {
+.admin-gallery-grid__image img,
+.admin-gallery-grid__image video {
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -156,6 +157,15 @@ html:not(.dark) .fi-sidebar-nav {
     white-space: nowrap;
 }
 
+.admin-gallery-grid__analytics {
+    display: block;
+    margin-top: .38rem;
+    color: var(--admin-faint);
+    font-size: .68rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
+}
+
 .admin-gallery-grid__state {
     display: inline-flex;
     gap: .35rem;
@@ -185,6 +195,106 @@ html:not(.dark) .fi-sidebar-nav {
     align-items: center;
     justify-content: flex-end;
     flex-wrap: wrap;
+}
+
+.admin-gallery-upload {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .75rem;
+    padding: 1rem 0;
+    align-items: stretch;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-gallery-upload__dropzone {
+    position: relative;
+    display: flex;
+    min-height: 4.25rem;
+    padding: .8rem 1rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px dashed var(--admin-line-strong);
+    background: var(--admin-subtle);
+}
+
+.admin-gallery-upload__dropzone:focus-within {
+    border-style: solid;
+    border-color: var(--admin-accent);
+}
+
+.admin-gallery-upload__input {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.admin-gallery-upload__copy {
+    display: grid;
+    min-width: 0;
+    gap: .16rem;
+    pointer-events: none;
+}
+
+.admin-gallery-upload__copy strong {
+    color: var(--admin-text);
+    font-size: .82rem;
+    font-weight: 580;
+}
+
+.admin-gallery-upload__copy span,
+.admin-gallery-upload__message {
+    color: var(--admin-muted);
+    font-size: .7rem;
+    line-height: 1.45;
+}
+
+.admin-gallery-upload__progress {
+    display: flex;
+    width: min(12rem, 36%);
+    align-items: center;
+    gap: .55rem;
+    color: var(--admin-muted);
+    font-size: .68rem;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+
+.admin-gallery-upload__progress progress {
+    width: 100%;
+}
+
+.admin-gallery-upload__message {
+    margin: .45rem 0 0;
+}
+
+.admin-gallery-upload__message.is-error {
+    color: var(--admin-danger);
+}
+
+.admin-gallery-workspace-toolbar {
+    display: flex;
+    gap: .8rem 1.25rem;
+    padding: .85rem 0;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--admin-line-strong);
+}
+
+.admin-gallery-workspace-toolbar__batch {
+    justify-content: flex-end;
+}
+
+.admin-gallery-workspace-toolbar__selection {
+    color: var(--admin-muted);
+    font-size: .72rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 /* Storage */
@@ -312,8 +422,19 @@ html:not(.dark) .fi-sidebar-nav {
 
 @media (max-width: 760px) {
     .admin-gallery-grid,
-    .admin-storage__composition {
+    .admin-storage__composition,
+    .admin-gallery-upload {
         grid-template-columns: 1fr;
+    }
+
+    .admin-gallery-workspace-toolbar,
+    .admin-gallery-workspace-toolbar__batch {
+        align-items: stretch;
+        justify-content: flex-start;
+    }
+
+    .admin-gallery-upload__progress {
+        width: 100%;
     }
 
     .admin-storage__ring {
