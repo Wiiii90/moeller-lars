@@ -61,6 +61,17 @@ Agents must not invent server commands, hostnames or platform topology.
 - Never commit secrets, credentials, private Production data or private media.
 - `server-platform` owns runtime topology, host paths, operator quota injection, ingress, backups and operational mail infrastructure.
 
+## Local project-disk hygiene
+
+The Windows project drive uses one clean project directory per project. For this repository the canonical local path is `P:\moeller-lars`.
+
+- never create sibling scratch/copy directories beside the project such as `P:\moeller-lars-*`, `P:\moeller-lars-copy`, temporary clones or generated worker directories;
+- do not create Git worktrees for this repository;
+- project-specific temporary data, snapshots and local-only tooling state must remain inside `P:\moeller-lars` and must stay outside Git;
+- use the existing Laravel `storage/` tree rather than inventing a parallel `.storage/` root;
+- local Validation DB/media snapshots, when intentionally retained, belong under `storage/local-validation-snapshot/`;
+- do not clutter the root of `P:\` with project-derived helper directories.
+
 ## Issue / PR discipline
 
 Issues contain durable current product scope, acceptance criteria, dependencies and blockers.
