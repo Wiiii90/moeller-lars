@@ -2,180 +2,179 @@
 
 ## Scope
 
-`moeller-lars` is a Laravel modular monolith for the public Lars Möller website and the authenticated artist administration. Production infrastructure is deliberately outside this repository and is owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
+`moeller-lars` is a Laravel modular monolith for the public Lars Möller website and the authenticated artist administration. Production/Validation infrastructure is deliberately outside this repository and is owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
 
-The accepted stack remains [ADR-0001](adr/ADR-0001-APPLICATION-STACK.md): PHP 8.3+, Laravel 13, Blade public rendering, Filament 5 for `/admin`, PostgreSQL, Vite and Pest. The public site is not a SPA.
+Accepted stack: PHP 8.3+, Laravel 13, Blade public rendering, Filament 5 for `/admin`, PostgreSQL, Vite and Pest. The public site is not a SPA.
 
 ## Architectural principles
 
-- One application and one deployable OCI image.
-- Domain behavior is not defined by Filament, HTTP requests or persistence constants.
-- Public routing, admin presentation and persistence have explicit boundaries.
-- Editorial data has one canonical write path per product concept.
-- Fail clearly on invalid required state instead of selecting silent fallbacks.
-- Legacy data is migration input, not a runtime authority.
-- Production topology and secrets remain outside the application repository.
+- one application and one deployable OCI image;
+- domain behavior is not defined by Filament, HTTP requests or persistence constants;
+- public routing, admin presentation and persistence have explicit boundaries;
+- one canonical write path per product concept;
+- invalid required state fails clearly instead of silently selecting fallbacks;
+- legacy data is migration input, not runtime authority;
+- Production topology and secrets remain outside this repository.
 
 ## Site structure
 
-The editable public site is projected through `SiteSection`, while application behavior is owned by typed domain definitions.
+The persisted site/navigation tree is represented by `SiteSection`; application behavior is defined by typed domain concepts.
 
-### Domain types
+`App\Domain\Content\SiteNodeType` defines five runtime node types:
 
-`App\Domain\Content\SiteNodeType` defines exactly five runtime node types:
-
-| Type | Public page | Creatable | Can contain children | Can have parent |
+| Type | Public page | Creatable | Children | Parent |
 | --- | --- | --- | --- | --- |
-| Home | `/` | no | no | no |
-| Gallery | yes | yes | yes | yes |
-| Journal | yes | yes | no | yes, below Navigation Node |
-| Custom Page | yes | yes | no | yes, below Navigation Node |
-| Navigation Node | no | yes | yes | no |
+| Home | `/` | no | no | none |
+| Gallery | yes | yes | Gallery children | Gallery or Navigation Node |
+| Journal | yes | yes | no | Navigation Node |
+| Custom Page | yes | yes | no | Navigation Node |
+| Navigation Node | no | yes | yes | none |
 
-`Home` is the singleton root. It has no slug, cannot be deleted, is always published and is always represented in navigation. Forward migrations normalize existing installations back to this invariant when necessary.
+`Home` is the singleton root. `JournalTemplate` currently supports Blog and Exhibitions.
 
-`App\Domain\Content\JournalTemplate` defines the supported Journal products:
+`SiteSection` stores type/template, title/navigation label, slug, publication/navigation state, position, parent and optional Gallery persistence reference. Runtime decisions use `SiteNodeType` / `JournalTemplate`, not raw historical strings.
 
-- `Blog`
-- `Exhibitions`
+`ArtworkCategory` remains the persistence model behind the product concept **Gallery**. A physical model/table rename is not required for clean runtime/admin language.
 
-A Journal requires a valid template. Other node types must not carry one.
+Contact is not a runtime Site Node type. It is a reusable structured component for Custom Page composition. CV/Vita is likewise represented through Custom Page content rather than a dedicated runtime node type.
 
-### Persistence boundary
+## Public routing
 
-`App\Models\SiteSection` stores the tree projection: type/template, title, navigation label, slug, publication state, position, navigation visibility, parent and optional Gallery persistence reference.
-
-The model enforces structural invariants, but raw string constants on the model are persistence/migration values only. Runtime behavior should use `SiteNodeType` and `JournalTemplate`.
-
-`ArtworkCategory` remains the intentionally isolated persistence model behind the application concept **Gallery**. Application/service/UI naming uses Gallery; a database/model rename is not required to achieve a clean domain boundary.
-
-Parent-node and Journal deletion use explicit application restrictions: parents with descendants and Journals with owned entries are not silently cascaded away.
-
-### Public routing
-
-`App\Routing\SiteNodeRoute` owns public path, URL and current-route interpretation for site nodes. Domain enums and persistence models do not call `route()` or inspect requests.
-
-Canonical routing is path based:
+`App\Routing\SiteNodeRoute` owns canonical path/URL interpretation.
 
 - Home: `/`
-- Gallery, Journal and Custom Page: `/{section-slug}`
+- Gallery, Journal, Custom Page: `/{section-slug}`
 - Journal entries: `/{section-slug}/{entry-slug}`
 - Artwork detail: `/artworks/{slug}`
-- Preview equivalents live below `/preview` and remain protected.
+- protected preview equivalents: `/preview/...`
 - Navigation Nodes have no public URL.
 
-### Admin presentation and navigation
+## Admin presentation and navigation
 
-`App\Filament\Support\SiteNodePresentation` maps typed site nodes to Filament icons and their one canonical admin workspace. It is query-free; required relations must be loaded before presentation.
+`SiteNodePresentation` maps typed nodes to their canonical admin workspace. `SiteNavigation` owns the admin tree projection and active-state calculation.
 
-`App\Filament\Support\SiteNavigation` owns the admin navigation projection and active-state calculation. `AdminPanelProvider` assembles the panel but does not independently reconstruct the site tree or reinterpret node types.
+Canonical workspaces:
 
-Canonical workspaces include:
+- Dashboard — site/admin overview, not a Pages/Gallery duplicate;
+- Pages — actual typed site tree;
+- Home — dedicated Home presentation/editorial state;
+- Gallery — visual Artwork contact sheet and Gallery-specific workflows;
+- Journal — Blog or Exhibitions collection workspace;
+- Custom Page — structured component editor;
+- Files — reusable MediaAsset library;
+- General — site-wide identity/contact/social/legal settings;
+- Analytics, Activity and Storage — specialist insight/operations surfaces.
 
-- dedicated Home presentation workspace;
-- Gallery artwork workspace with native settings/add-artwork actions;
-- Blog or Exhibitions Journal workspace with native creation and Journal-settings actions;
-- Custom Page editor;
-- navigation-only nodes with no fake content editor.
-
-Route-backed fake editor overlays and parallel Gallery/Journal resources are not part of the architecture.
+Navigation-only nodes do not get fake editors. Internal Resource/model names must not become the artist-facing IA.
 
 ## Admin UI system
 
-There is one admin theme entrypoint:
+The canonical admin theme entrypoint is:
 
 ```text
 resources/css/admin.css
 ```
 
-It imports internal modules under `resources/css/admin/`. Admin views do not load page-local stylesheets.
+It imports modules under `resources/css/admin/`. Shared tokens/primitives own workspace width/axis, control heights, section rhythm, forms, lists/tables, metrics, actions and empty states. Feature-specific layout classes are allowed only where the task genuinely differs.
 
-Shared structural primitives cover workspace/header, sections, toolbars/actions, forms, lists, tables, empty states and metrics. Feature-specific classes such as `media-*` may exist when they express real domain layout, but shared design tokens use the canonical `--admin-*` namespace.
+Current visual contract:
 
-The theme is rendered lazily through the Filament panel using `@vite('resources/css/admin.css')`; application/bootstrap commands must not require an already-built Vite manifest.
+- one deliberate visible page heading per normal workspace;
+- usable full desktop width with shared gutters/axis;
+- task-specific presentation rather than generic repeated cards;
+- Pages hierarchy remains a tree, Gallery a contact sheet, Files a dense reusable-asset workspace, Analytics an analytical composition, Storage a capacity surface and Activity a history surface.
+
+Dialogs/overlays are a shared system concern. Modal workflows must provide real overlay containment, close/Escape behavior, focus trap/restoration, responsive sizing and correct nested popover/select layering. Page-local faux-dialog workarounds are not architecture.
 
 ## Editorial domains
 
-### Gallery and artwork
+### Gallery and Artwork
 
-`GalleryEditorialService` is the application service for Gallery persistence and its matching Site Node. `ArtworkDraftService`, `ArtworkEditorialService` and `ArtworkGalleryAssignmentService` own artwork creation, editorial transitions, media attachment, ordering, Gallery movement and safe draft deletion.
+`GalleryEditorialService` owns Gallery persistence + matching Site Node. Artwork creation/update/publication, Gallery assignment and media behavior are owned by the Artwork domain services rather than direct Filament writes.
 
-A Gallery has one matching Gallery Site Node. Artwork ordering is explicit and persisted. Moving artwork must preserve media references and obey publication constraints. Normal Gallery renaming keeps the matching navigation identity synchronized unless the navigation label was explicitly customized.
+An Artwork may be **unassigned** from a Gallery (`artwork_category_id = null`) when its lifecycle permits. Detaching from a Gallery is not deletion: the Artwork and its MediaAsset usages remain. Published Artwork must leave the public state before a detach that would violate publication invariants.
 
-Only unpublished Artwork drafts are directly deletable through the normal editor. Their usage relations are removed, but reusable `MediaAsset` records remain intact.
+Gallery ordering is explicit. Moving/reassigning preserves media references. Shared MediaAssets survive detach, move and primary-media replacement unless an independent reference-safe deletion is explicitly performed.
+
+`ArtworkMaterialPreset` is a convenience library for reusable Material suggestions. Removing a preset does not rewrite historical Artwork text.
+
+Structured dimensions support Height × Width with optional Depth and unit, while retaining a safe freeform path for unusual/legacy values.
 
 ### Journals
 
-Blog posts and Exhibitions belong to a Journal Site Node through `site_section_id`. Each Journal has one `JournalSetting` record for listing title/intro.
+Blog Posts and Exhibitions belong to Journal Site Nodes through their owning relationship. Journal settings own collection title/introduction independently from entries.
 
-Blog and Exhibitions remain separate editorial/content models even though they share the Journal placement abstraction.
+Blog and Exhibitions remain separate content models even though placement is shared through Journal.
 
-Blog deletion is lifecycle-aware: published or scheduled posts must first leave that public/scheduled state. Exhibition deletion similarly requires the record not to be published. Deletion preserves reusable MediaAssets.
+Deletion/publication transitions are lifecycle-aware and preserve reusable MediaAssets.
 
-Exhibition ordering is scoped to the owning Exhibitions Journal rather than globally across all Exhibition records. Separate Journals may therefore legitimately contain equal position values.
+### Custom Pages and Contact
 
-### Custom pages and site-wide settings
+A Custom Page owns an ordered structured component list. Supported components include normal content and the reusable Contact component. Publication validation applies safe-link/rich-text/media rules.
 
-A Custom Page has one `CustomPageSetting` record containing an ordered list of supported structured components. Published page media must resolve to valid available media and satisfy public ALT requirements.
+The Contact component owns visitor-facing form presentation and canonical Contact submission behavior. It does not own SMTP/runtime secrets or duplicate General site settings.
 
-`PublicContentSetting` owns typed site-wide settings scopes such as General, Contact and Vita-derived content. SMTP credentials and other server secrets are not editorial settings.
+### General settings
 
-### Media
+`PublicContentSetting::general()` is the canonical site-wide settings record for favicon/site identity, public email + visibility, private Contact recipient, social links and truly global legal/public text.
 
-`MediaAsset` is the authoritative reusable original. `MediaVariant` contains rebuildable derivatives. Usage records connect media to artwork, Exhibitions and other consumers without copying the canonical original.
+Text settings use event-driven persistence: local while typing, persist on normal change/blur only when the normalized value differs from the persisted value. No per-keystroke request and no debounce/timer-based persistence. Toggles/selects/media choices may persist on discrete actual changes.
 
-Ingest validates type/size/content, generates controlled storage identities and performs storage-capacity admission. Destructive deletion is blocked while references exist. See [MEDIA.md](MEDIA.md).
+SMTP credentials, DKIM/TLS secrets and server topology are runtime/platform state, not artist-editable settings.
+
+### Media / Files
+
+`MediaAsset` is the authoritative reusable original. `MediaVariant` contains rebuildable derivatives. Consumers reference MediaAssets; detaching a usage never means deleting the canonical file.
+
+`MediaTypePolicy` owns the explicit allowlist and upload limits. Current canonical ingest supports:
+
+- JPEG, PNG, WebP;
+- MP4/H.264 and WebM VP8/VP9/AV1 video under content verification;
+- MP3, M4A/AAC, Ogg and WAV audio.
+
+Consumer support remains narrower where appropriate. In particular, Gallery primary Artwork media is visual image/video; audio library support does not automatically make audio a Gallery primary medium.
+
+Destructive MediaAsset deletion is blocked while supported live references exist. See [MEDIA.md](MEDIA.md).
 
 ### Analytics
 
-Self-hosted Matomo Community/Core is the canonical source for human visitor analytics. The application owns tracking integration and the admin Reporting API dashboard; local aggregates cover operational/error/bot/performance signals only. Matomo failure must not break public rendering or normal admin work. See [ANALYTICS.md](ANALYTICS.md).
+Self-hosted Matomo Community/Core is the canonical human-analytics source. The application owns semantic tracking + Reporting API presentation. Local aggregates are only for operational/error/bot/performance signals.
+
+Validation may read aggregate reporting through a restricted server-side identity while tracking remains disabled. Matomo failure must not break public rendering or ordinary admin editing. See [ANALYTICS.md](ANALYTICS.md).
+
+### Audit and logical Commit
+
+`audit_events` is the durable append-only administrative history. Normal domain persistence happens independently of any future logical Commit/checkpoint feature.
+
+A shell-level Commit may group already-persisted audited changes into an editorial checkpoint; it is not a Save button and not Git integration.
 
 ## Security and trust boundaries
 
-- Public visitors can read only published content and use explicitly public form endpoints.
-- `/admin` requires authenticated/authorized access; every mutation is enforced server-side.
-- Uploads and migrated source files are untrusted input.
-- Secrets live in runtime/platform configuration, never Git.
-- Production and Validation must not share writable application database/media state.
-- Legacy authentication, SQL helpers, sessions, uploads and credentials are never runtime dependencies.
+- public visitors read only published content and explicitly public endpoints;
+- `/admin` requires authenticated/authorized access; mutations are enforced server-side;
+- uploads and migrated source files are untrusted input;
+- secrets live in runtime/platform configuration, never Git;
+- Production and Validation do not share writable application database/media state;
+- legacy authentication, SQL helpers, sessions, uploads and credentials are never runtime dependencies.
 
 ## Persistence and migration
 
-PostgreSQL is authoritative for editorial state. Canonical uploaded originals are authoritative binary data. Migrations are forward application changes and are not assumed to be data-reversible.
+PostgreSQL is authoritative for editorial state. Canonical uploaded originals are authoritative binary data. Generated variants are rebuildable.
 
-The legacy importer/validator is a controlled migration boundary. Once reviewed data exists in protected Validation or Production state, schema evolution uses normal forward migrations rather than destructive re-import.
+The legacy importer/validator is a controlled migration boundary. Existing protected Validation/Production state evolves through forward Laravel migrations rather than destructive re-import.
 
-Migration-specific guarantees are documented separately in [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
+Migration-specific guarantees are documented in [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
 
 ## Release and platform boundary
 
-The application repository owns:
+This repository owns source/tests, application migrations, configuration templates, Docker/runtime interface, health behavior, immutable GHCR image build and application-level verification.
 
-- source and tests;
-- database migrations;
-- application configuration templates;
-- Dockerfile/runtime interface;
-- health/readiness behavior;
-- immutable GHCR image build;
-- application-level migration/media/release checks.
+`server-platform` owns Production/Validation placement, Caddy/ingress, runtime secrets, persistent volumes, resource limits, backups/restores, monitoring, deployment/activation and rollback.
 
-`server-platform` owns:
-
-- Production and Validation placement;
-- Caddy/ingress and host networking;
-- runtime secrets;
-- persistent volume placement;
-- resource limits;
-- backups/restores;
-- monitoring;
-- deployment, activation and rollback.
-
-The application image is identified by an exact Git SHA and OCI digest. A green CI run does not authorize Production deployment. See [RELEASE.md](RELEASE.md).
+A release is identified by exact Git SHA + immutable OCI digest. CI success does not authorize Production deployment. See [RELEASE.md](RELEASE.md).
 
 ## Test philosophy
 
-Tests protect durable product/security/data contracts rather than framework behavior or visual implementation details. Important examples are authentication/authorization, database invariants, site-node rules, migration reconciliation, publication rules, media lifecycle, contact delivery and pure artwork-viewer behavior.
+Tests protect durable product/security/data contracts: authorization, database invariants, typed Site Node behavior, migration reconciliation, publication rules, media lifecycle, Contact delivery, audit immutability and viewer behavior.
 
-The final functional-acceptance suite additionally protects stable Home invariants, Gallery identity persistence, parent/Journal deletion restrictions, root/nested reorder persistence, Artwork draft allocation/move/delete behavior, Blog lifecycle deletion, Journal-scoped Exhibition ordering and reusable-media retention.
-
-CSS class names, source strings and temporary regression mechanics are not permanent test architecture.
+Do not freeze temporary CSS class names or visual markup through brittle snapshot-style tests when browser/product acceptance is the real requirement.
