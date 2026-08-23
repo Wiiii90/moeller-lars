@@ -3,6 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Models\ArtworkMaterialPreset;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -32,10 +33,13 @@ final class ArtworkMaterialPresetService
         }
 
         DB::transaction(function () use ($normalized): void {
-            /** @var array<string, ArtworkMaterialPreset> $existing */
-            $existing = ArtworkMaterialPreset::query()
+            /** @var EloquentCollection<int, ArtworkMaterialPreset> $presets */
+            $presets = ArtworkMaterialPreset::query()
                 ->lockForUpdate()
-                ->get()
+                ->get();
+
+            /** @var array<string, ArtworkMaterialPreset> $existing */
+            $existing = $presets
                 ->keyBy(static fn (ArtworkMaterialPreset $preset): string => mb_strtolower((string) $preset->getAttribute('name')))
                 ->all();
 
