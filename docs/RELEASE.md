@@ -2,23 +2,48 @@
 
 This document defines the `moeller-lars` application artifact/runtime contract. Production/Validation topology and operator runbooks are owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
 
-## Canonical CI workflow
+## CI workflows
 
-The repository has one canonical GitHub Actions workflow:
+The canonical verification/release workflow is:
 
 ```text
 .github/workflows/release.yml
 ```
 
-It verifies pull requests and eligible non-PR runs. Release-image publication is intentionally skipped for normal PR events; an immutable candidate image is produced only by an eligible verified non-PR run.
+It runs for pull requests targeting `main`, pushes to `main` and explicit `workflow_dispatch` runs. Pull requests targeting an integration branch do not trigger this full release workflow. Release-image publication is skipped for normal PR events; eligible verified non-PR runs build the release image.
 
-Canonical SHA tag:
+A second workflow exists only for rapid protected-Validation browser iteration:
+
+```text
+.github/workflows/preview.yml
+```
+
+`preview.yml` is manually dispatched from the trusted `main` workflow definition and checks out an explicitly requested source ref/SHA. It builds and publishes an exact-SHA image without running the full release verification suite. It does not publish the `release/image` status, does not authorize Production use and is not release qualification.
+
+Canonical SHA tag used by both the release and Validation helper contracts:
 
 ```text
 ghcr.io/wiiii90/moeller-lars:<40-character-git-sha>
 ```
 
-A deployable candidate is identified by exact source SHA, GHCR SHA tag, immutable OCI digest and the CI run that built it. A green PR CI run alone does not mean an image exists.
+Tag existence alone is therefore not release evidence. A deployable release candidate is identified by exact source SHA, immutable OCI digest and a successful canonical `release.yml` run for that source. A green PR run or a successful preview build alone is not release qualification.
+
+## Fast Validation preview loop
+
+For normal implementation work:
+
+1. work on a feature branch and run risk-appropriate targeted checks locally;
+2. push the branch; do not open a PR merely to obtain a browser preview;
+3. run `scripts/validation-preview.ps1 <branch-or-sha>`;
+4. the script resolves the requested ref to an exact SHA, dispatches `preview.yml`, finds the exact new workflow run and waits for it with `gh run watch --exit-status`;
+5. after success, use the existing platform command printed by the script: `sudo server-platform-moeller-lars-validation update <SHA>`;
+6. perform browser acceptance against the existing protected Validation environment.
+
+The preview workflow rejects a source commit that is already reachable from `main`; such commits belong to the canonical release path. Superseded preview runs for the same source are cancelable. Preview images omit release-only SBOM/provenance work; the final release workflow retains it.
+
+When several dependent workers form one product tranche, use an `integration/<tranche>` branch. Worker PRs may target that integration branch without triggering `release.yml`; reconcile there, browser-review the combined exact SHA, then open one final integration PR to `main`. Do not introduce an integration branch for unrelated or single-slice work.
+
+The final PR targeting `main` still receives the complete verification gate below. Pushes to `main` then verify the exact merged commit and build its release image. `main`/release runs are not canceled merely because a newer release run starts.
 
 ## Verification gates
 
