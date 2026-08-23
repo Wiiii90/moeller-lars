@@ -330,6 +330,7 @@
 .media-workspace__grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
     gap: 1px;
     padding: 1px;
     background: var(--admin-line);
@@ -338,24 +339,45 @@
 .media-workspace__grid-item {
     display: grid;
     min-width: 0;
-    grid-template-rows: auto 1fr auto;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-self: stretch;
+    overflow: hidden;
     background: var(--admin-surface);
 }
 
 .media-workspace__visual {
     position: relative;
     display: grid;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
     aspect-ratio: 4 / 3;
     place-items: center;
     overflow: hidden;
+    contain: layout paint;
+    isolation: isolate;
     background: var(--admin-subtle);
     text-decoration: none;
 }
 
-.media-workspace__visual img {
+.media-workspace__visual img,
+.media-workspace__visual video {
+    position: absolute;
+    inset: 0;
+    display: block;
     width: 100%;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
+    object-position: center;
+}
+
+.media-workspace__grid .media-workspace__visual:focus-visible {
+    outline-offset: -2px;
 }
 
 .media-workspace__visual em {
@@ -377,6 +399,10 @@
 
 .media-workspace__grid-meta {
     display: grid;
+    min-width: 0;
+    min-height: 0;
+    align-content: start;
+    overflow: hidden;
     gap: .18rem;
     padding: .65rem;
 }
@@ -405,6 +431,8 @@
 
 .media-workspace__grid .media-workspace__actions {
     display: flex;
+    min-width: 0;
+    align-self: end;
     padding: 0 .45rem .55rem;
 }
 

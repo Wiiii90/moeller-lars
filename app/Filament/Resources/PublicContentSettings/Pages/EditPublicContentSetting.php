@@ -13,7 +13,7 @@ use Throwable;
 
 class EditPublicContentSetting extends EditRecord
 {
-    private const AUTOSAVE_FIELDS = [
+    private const PERSISTED_FIELDS = [
         'favicon_media_asset_id',
         'public_email',
         'show_public_email',
@@ -43,22 +43,25 @@ class EditPublicContentSetting extends EditRecord
         return [];
     }
 
-    public function autosaveField(string $field): void
+    public function persistChangedField(string $field): void
     {
-        if (! in_array($field, self::AUTOSAVE_FIELDS, true) || ! is_array($this->data) || ! array_key_exists($field, $this->data)) {
+        if (! in_array($field, self::PERSISTED_FIELDS, true) || ! is_array($this->data) || ! array_key_exists($field, $this->data)) {
             return;
         }
 
-        $this->clearAutosaveErrors($field);
+        $this->clearPersistenceErrors($field);
 
-        $record = $this->getRecord();
-        if (! $record instanceof PublicContentSetting) {
+        $record = PublicContentSetting::general();
+        $candidate = $this->normalizePersistenceValue($field, $this->data[$field]);
+        $persisted = $this->normalizePersistenceValue($field, $record->getAttribute($field));
+
+        if ($candidate === $persisted) {
             return;
         }
 
         try {
             app(AdminSettingsService::class)->updatePublicContent($record, [
-                $field => $this->data[$field],
+                $field => $candidate,
             ]);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $key => $messages) {
@@ -79,7 +82,7 @@ class EditPublicContentSetting extends EditRecord
         return app(AdminSettingsService::class)->updatePublicContent($record, $data);
     }
 
-    private function clearAutosaveErrors(string $field): void
+    private function clearPersistenceErrors(string $field): void
     {
         $prefix = 'data.'.$field;
 
@@ -88,5 +91,39 @@ class EditPublicContentSetting extends EditRecord
                 $this->resetErrorBag($key);
             }
         }
+    }
+
+    private function normalizePersistenceValue(string $field, mixed $value): mixed
+    {
+        return match ($field) {
+            'favicon_media_asset_id' => is_numeric($value) ? (int) $value : null,
+            'show_public_email' => (bool) $value,
+            'social_links' => $this->normalizeSocialLinks($value),
+            'public_email', 'contact_recipient_email' => $value === '' ? null : $value,
+            'default_media_copyright_notice' => is_string($value)
+                ? (($trimmed = trim($value)) === '' ? null : $trimmed)
+                : $value,
+            'legal_disclaimer' => is_string($value) && trim($value) === '' ? null : $value,
+            default => $value,
+        };
+    }
+
+    private function normalizeSocialLinks(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        return array_values(array_map(static function (mixed $link): mixed {
+            if (! is_array($link)) {
+                return $link;
+            }
+
+            return [
+                'platform' => $link['platform'] ?? null,
+                'url' => $link['url'] ?? null,
+                'visible' => (bool) ($link['visible'] ?? true),
+            ];
+        }, $value));
     }
 }

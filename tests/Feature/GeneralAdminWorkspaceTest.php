@@ -4,6 +4,7 @@ use App\Domain\Admin\AdminSettingsService;
 use App\Filament\Resources\PublicContentSettings\Pages\EditPublicContentSetting;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Filament\Support\MediaAssetSelect;
+use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\User;
@@ -27,6 +28,14 @@ function generalStatusFavicon(): MediaAsset
         'state' => 'available',
         'alt_text' => 'Site favicon',
     ]);
+}
+
+function generalSettingsAuditCount(): int
+{
+    return AuditEvent::query()
+        ->where('action', 'public_content_setting.updated')
+        ->where('entity_type', 'public_content_setting')
+        ->count();
 }
 
 it('renders the six General status cells from the canonical settings record', function (): void {
@@ -87,47 +96,98 @@ it('renders explicit fallback states instead of fake General statistics', functi
         ->assertDontSee('Save changes');
 });
 
-it('autosaves General fields into the single canonical record without a save action', function (): void {
+it('persists one changed text value once and skips unchanged commits and duplicate blur paths', function (): void {
     $settings = PublicContentSetting::general();
     $id = $settings->getKey();
-    $favicon = generalStatusFavicon();
+    app(AdminSettingsService::class)->updatePublicContent($settings, ['public_email' => 'before@example.invalid']);
+    $auditBefore = generalSettingsAuditCount();
 
     $component = Livewire::test(EditPublicContentSetting::class, ['record' => $id])
         ->assertOk()
-        ->assertDontSee('Save changes');
+        ->assertDontSee('Save changes')
+        ->set('data.public_email', 'after@example.invalid');
 
-    $component->set('data.public_email', 'autosave@example.invalid');
-    expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('autosave@example.invalid');
+    expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('after@example.invalid')
+        ->and(generalSettingsAuditCount())->toBe($auditBefore + 1);
 
-    $component->set('data.show_public_email', false);
-    expect(PublicContentSetting::general()->getAttribute('show_public_email'))->toBeFalse();
+    $component->call('persistChangedField', 'public_email')
+        ->call('persistChangedField', 'public_email');
 
-    $component->set('data.favicon_media_asset_id', $favicon->id);
-    expect((int) PublicContentSetting::general()->getAttribute('favicon_media_asset_id'))->toBe((int) $favicon->id);
-
-    $component->set('data.contact_recipient_email', 'recipient@example.invalid');
-    $component->set('data.default_media_copyright_notice', 'Autosaved default copyright');
-    $component->set('data.legal_disclaimer', 'Autosaved legal text');
-
-    $reloaded = PublicContentSetting::general();
-    expect($reloaded->getKey())->toBe($id)
-        ->and($reloaded->getAttribute('scope'))->toBe(PublicContentSetting::SCOPE_GENERAL)
-        ->and($reloaded->getAttribute('contact_recipient_email'))->toBe('recipient@example.invalid')
-        ->and($reloaded->getAttribute('default_media_copyright_notice'))->toBe('Autosaved default copyright')
-        ->and($reloaded->getAttribute('legal_disclaimer'))->toBe('Autosaved legal text')
+    expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('after@example.invalid')
+        ->and(generalSettingsAuditCount())->toBe($auditBefore + 1)
         ->and(PublicContentSetting::query()->where('scope', PublicContentSetting::SCOPE_GENERAL)->count())->toBe(1);
 });
 
-it('keeps invalid autosave input visible as a field error without replacing persisted data', function (): void {
+it('uses only event-driven lazy text persistence with no debounce or timer autosave', function (): void {
+    $resourceSource = file_get_contents(app_path('Filament/Resources/PublicContentSettings/PublicContentSettingResource.php'));
+    $pageSource = file_get_contents(app_path('Filament/Resources/PublicContentSettings/Pages/EditPublicContentSetting.php'));
+    $viewSource = file_get_contents(resource_path('views/filament/resources/public-content-settings/pages/edit-public-content-setting.blade.php'));
+
+    expect($resourceSource)->toBeString()
+        ->and(substr_count($resourceSource, '->lazy()'))->toBe(5)
+        ->and($resourceSource)->not->toContain('live(debounce:')
+        ->and($resourceSource)->not->toContain('debounce(')
+        ->and($resourceSource)->not->toContain('setTimeout')
+        ->and($resourceSource)->not->toContain('wire:model.debounce')
+        ->and($pageSource)->toBeString()
+        ->and($pageSource)->not->toContain('setTimeout')
+        ->and($viewSource)->toBeString()
+        ->and($viewSource)->not->toContain('wire:model.debounce')
+        ->and($resourceSource)->toContain("'x-on:keydown.enter.prevent' => '\$event.target.blur()'");
+});
+
+it('keeps invalid event persistence visible as a field error without replacing persisted data', function (): void {
     $settings = PublicContentSetting::general();
     app(AdminSettingsService::class)->updatePublicContent($settings, ['public_email' => 'valid@example.invalid']);
+    $auditBefore = generalSettingsAuditCount();
 
     Livewire::test(EditPublicContentSetting::class, ['record' => $settings->getKey()])
         ->set('data.public_email', 'not-an-email')
-        ->call('autosaveField', 'public_email')
         ->assertHasErrors(['data.public_email']);
 
-    expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('valid@example.invalid');
+    expect(PublicContentSetting::general()->getAttribute('public_email'))->toBe('valid@example.invalid')
+        ->and(generalSettingsAuditCount())->toBe($auditBefore);
+});
+
+it('persists toggle select and media changes on their real state-change lifecycle', function (): void {
+    $settings = PublicContentSetting::general();
+    app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'show_public_email' => true,
+        'social_links' => [
+            ['platform' => 'facebook', 'url' => 'https://example.invalid/profile', 'visible' => true],
+        ],
+    ]);
+    $favicon = generalStatusFavicon();
+    $auditBefore = generalSettingsAuditCount();
+
+    $component = Livewire::test(EditPublicContentSetting::class, ['record' => $settings->getKey()]);
+
+    $component->set('data.show_public_email', false);
+    expect(PublicContentSetting::general()->getAttribute('show_public_email'))->toBeFalse()
+        ->and(generalSettingsAuditCount())->toBe($auditBefore + 1);
+
+    $component->set('data.favicon_media_asset_id', $favicon->id);
+    expect((int) PublicContentSetting::general()->getAttribute('favicon_media_asset_id'))->toBe((int) $favicon->id)
+        ->and(generalSettingsAuditCount())->toBe($auditBefore + 2);
+
+    $socialState = $component->get('data.social_links');
+    expect($socialState)->toBeArray()->not->toBeEmpty();
+    $itemKey = array_key_first($socialState);
+
+    $component->set("data.social_links.{$itemKey}.platform", 'instagram');
+    expect(PublicContentSetting::general()->getAttribute('social_links')[0]['platform'])->toBe('instagram')
+        ->and(generalSettingsAuditCount())->toBe($auditBefore + 3);
+});
+
+it('keeps a changed text value persisted before the next internal admin navigation', function (): void {
+    $settings = PublicContentSetting::general();
+
+    Livewire::test(EditPublicContentSetting::class, ['record' => $settings->getKey()])
+        ->set('data.default_media_copyright_notice', 'Navigation-safe notice');
+
+    $this->get('/admin/media-files')->assertOk();
+
+    expect(PublicContentSetting::general()->getAttribute('default_media_copyright_notice'))->toBe('Navigation-safe notice');
 });
 
 it('searches favicon choices by filename and keeps the picker image-only and available-only', function (): void {

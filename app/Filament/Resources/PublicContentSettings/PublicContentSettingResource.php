@@ -60,7 +60,7 @@ class PublicContentSettingResource extends Resource
                             MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
                                 ->nullable()
                                 ->live()
-                                ->afterStateUpdated(self::autosave('favicon_media_asset_id'))
+                                ->afterStateUpdated(self::persist('favicon_media_asset_id'))
                                 ->hintIcon(
                                     Heroicon::OutlinedLightBulb,
                                     'Choose an available image from Media Files. Its generated thumbnail is used for browser identity.',
@@ -76,9 +76,9 @@ class PublicContentSettingResource extends Resource
                                 ->email()
                                 ->maxLength(254)
                                 ->nullable()
-                                ->live(debounce: 700)
-                                ->extraInputAttributes(['x-on:blur' => '$wire.autosaveField(\'public_email\')'])
-                                ->afterStateUpdated(self::autosave('public_email'))
+                                ->lazy()
+                                ->extraInputAttributes(self::commitOnEnterAttributes())
+                                ->afterStateUpdated(self::persist('public_email'))
                                 ->hintIcon(
                                     Heroicon::OutlinedLightBulb,
                                     'This address can be shown to visitors when Show publicly is enabled.',
@@ -87,7 +87,7 @@ class PublicContentSettingResource extends Resource
                                 ->label('Show publicly')
                                 ->default(true)
                                 ->live()
-                                ->afterStateUpdated(self::autosave('show_public_email')),
+                                ->afterStateUpdated(self::persist('show_public_email')),
                         ])
                         ->columns(2),
                     AdminForm::section('Contact delivery')
@@ -97,9 +97,9 @@ class PublicContentSettingResource extends Resource
                                 ->email()
                                 ->maxLength(254)
                                 ->nullable()
-                                ->live(debounce: 700)
-                                ->extraInputAttributes(['x-on:blur' => '$wire.autosaveField(\'contact_recipient_email\')'])
-                                ->afterStateUpdated(self::autosave('contact_recipient_email'))
+                                ->lazy()
+                                ->extraInputAttributes(self::commitOnEnterAttributes())
+                                ->afterStateUpdated(self::persist('contact_recipient_email'))
                                 ->hintIcon(
                                     Heroicon::OutlinedLightBulb,
                                     'Receives contact-form messages. If empty, the server-configured fallback recipient is used.',
@@ -113,21 +113,18 @@ class PublicContentSettingResource extends Resource
                                     Select::make('platform')
                                         ->options(SocialLinks::options())
                                         ->required()
-                                        ->live()
-                                        ->afterStateUpdated(self::autosave('social_links')),
+                                        ->live(),
                                     TextInput::make('url')
                                         ->label('Profile URL')
                                         ->url()
                                         ->maxLength(2048)
                                         ->required()
-                                        ->live(debounce: 700)
-                                        ->extraInputAttributes(['x-on:blur' => '$wire.autosaveField(\'social_links\')'])
-                                        ->afterStateUpdated(self::autosave('social_links')),
+                                        ->lazy()
+                                        ->extraInputAttributes(self::commitOnEnterAttributes()),
                                     Toggle::make('visible')
                                         ->label('Visible')
                                         ->default(true)
-                                        ->live()
-                                        ->afterStateUpdated(self::autosave('social_links')),
+                                        ->live(),
                                 ])
                                 ->table([
                                     TableColumn::make('Platform'),
@@ -139,8 +136,7 @@ class PublicContentSettingResource extends Resource
                                 ->reorderableWithButtons()
                                 ->reorderableWithDragAndDrop(false)
                                 ->addActionLabel('Add social link')
-                                ->live()
-                                ->afterStateUpdated(self::autosave('social_links'))
+                                ->afterStateUpdated(self::persist('social_links'))
                                 ->columnSpanFull(),
                         ]),
                     AdminForm::section('Legal / global text')
@@ -149,9 +145,9 @@ class PublicContentSettingResource extends Resource
                                 ->label('Default media copyright')
                                 ->maxLength(500)
                                 ->nullable()
-                                ->live(debounce: 700)
-                                ->extraInputAttributes(['x-on:blur' => '$wire.autosaveField(\'default_media_copyright_notice\')'])
-                                ->afterStateUpdated(self::autosave('default_media_copyright_notice'))
+                                ->lazy()
+                                ->extraInputAttributes(self::commitOnEnterAttributes())
+                                ->afterStateUpdated(self::persist('default_media_copyright_notice'))
                                 ->hintIcon(
                                     Heroicon::OutlinedLightBulb,
                                     'Inherited by media unless an individual file overrides the notice or explicitly uses no notice.',
@@ -160,9 +156,8 @@ class PublicContentSettingResource extends Resource
                                 ->label('Legal disclaimer')
                                 ->rows(4)
                                 ->nullable()
-                                ->live(debounce: 700)
-                                ->extraInputAttributes(['x-on:blur' => '$wire.autosaveField(\'legal_disclaimer\')'])
-                                ->afterStateUpdated(self::autosave('legal_disclaimer')),
+                                ->lazy()
+                                ->afterStateUpdated(self::persist('legal_disclaimer')),
                         ]),
                 ]),
         ]);
@@ -185,12 +180,18 @@ class PublicContentSettingResource extends Resource
         return false;
     }
 
-    private static function autosave(string $field): \Closure
+    private static function persist(string $field): \Closure
     {
         return static function ($livewire) use ($field): void {
             if ($livewire instanceof EditPublicContentSetting) {
-                $livewire->autosaveField($field);
+                $livewire->persistChangedField($field);
             }
         };
+    }
+
+    /** @return array<string, string> */
+    private static function commitOnEnterAttributes(): array
+    {
+        return ['x-on:keydown.enter.prevent' => '$event.target.blur()'];
     }
 }
