@@ -51,7 +51,7 @@
                 </label>
 
                 <label class="media-workspace__field">
-                    <span>Filter · Media type</span>
+                    <span>Type</span>
                     <select wire:model.live="type">
                         <option value="all">All types</option>
                         <option value="image">All images</option>
@@ -95,12 +95,51 @@
                     </select>
                 </label>
 
-                <div class="media-workspace__control-actions admin-toolbar" role="group" aria-label="Media controls">
+                <div class="media-workspace__control-group">
+                    <span class="media-workspace__control-label">Filter</span>
                     <button class="admin-action" type="button" wire:click="resetFilters">Reset</button>
+                </div>
+
+                <div
+                    class="media-workspace__control-group media-workspace__multi-action"
+                    x-data="{ open: false }"
+                    x-on:click.outside="open = false"
+                    x-on:keydown.escape.window="open = false"
+                >
+                    <span class="media-workspace__control-label is-placeholder" aria-hidden="true">Action</span>
+                    <div class="media-workspace__multi-action-anchor">
+                        <button
+                            class="admin-action {{ $selectedAssets !== [] ? 'is-primary' : '' }}"
+                            type="button"
+                            x-on:click="open = ! open"
+                            x-bind:aria-expanded="open.toString()"
+                            aria-haspopup="menu"
+                            @disabled($selectedAssets === [])
+                        >
+                            Multi-action
+                            @if ($selectedAssets !== [])
+                                <span class="media-workspace__selection-count">{{ count($selectedAssets) }}</span>
+                            @endif
+                        </button>
+                        <div class="media-workspace__multi-action-menu" role="menu" x-show="open" x-cloak>
+                            <button
+                                class="admin-action is-danger"
+                                type="button"
+                                role="menuitem"
+                                wire:click="mountAction('deleteSelected')"
+                                x-on:click="open = false"
+                            >Delete selected</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="media-workspace__control-group media-workspace__view-group">
                     <span class="media-workspace__control-label">View</span>
-                    <button class="admin-action {{ $viewMode === 'list' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('list')">List</button>
-                    <button class="admin-action {{ $viewMode === 'grid' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('grid')">Grid</button>
-                    <button class="admin-action {{ $viewMode === 'dense' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('dense')">Dense</button>
+                    <div class="admin-toolbar" role="group" aria-label="Media view">
+                        <button class="admin-action {{ $viewMode === 'list' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('list')">List</button>
+                        <button class="admin-action {{ $viewMode === 'grid' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('grid')">Grid</button>
+                        <button class="admin-action {{ $viewMode === 'dense' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('dense')">Dense</button>
+                    </div>
                 </div>
             </div>
 
@@ -108,7 +147,8 @@
                 @if ($viewMode === 'grid')
                     <section class="media-workspace__grid" aria-label="Media assets grid">
                         @foreach ($assets as $asset)
-                            <article class="media-workspace__grid-item" wire:key="media-grid-{{ $asset['id'] }}">
+                            @php($selected = in_array($asset['id'], $selectedAssets, true))
+                            <article class="media-workspace__grid-item {{ $selected ? 'is-selected' : '' }}" wire:key="media-grid-{{ $asset['id'] }}">
                                 <button
                                     class="media-workspace__visual"
                                     type="button"
@@ -151,10 +191,16 @@
                                     @endif
                                 </div>
                                 <div class="media-workspace__actions admin-toolbar">
+                                    <button
+                                        class="admin-action {{ $selected ? 'is-primary' : '' }}"
+                                        type="button"
+                                        wire:click="toggleAssetSelection({{ $asset['id'] }})"
+                                        aria-pressed="{{ $selected ? 'true' : 'false' }}"
+                                        @disabled(! $asset['selectable'])
+                                    >{{ $selected ? 'Selected' : 'Select' }}</button>
                                     <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">Preview</button>
-                                    @if ($asset['editable'])
-                                        <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })">Edit</button>
-                                    @endif
+                                    <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>Edit</button>
+                                    <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>Delete</button>
                                 </div>
                             </article>
                         @endforeach
@@ -177,7 +223,8 @@
                             </thead>
                             <tbody>
                                 @foreach ($assets as $asset)
-                                    <tr wire:key="media-row-{{ $asset['id'] }}">
+                                    @php($selected = in_array($asset['id'], $selectedAssets, true))
+                                    <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="media-row-{{ $asset['id'] }}">
                                         @if ($viewMode === 'list')
                                             <td class="media-workspace__thumb">
                                                 <button
@@ -235,10 +282,16 @@
                                         <td class="media-workspace__size">{{ $asset['size'] }}</td>
                                         <td class="media-workspace__actions">
                                             <div class="admin-toolbar">
+                                                <button
+                                                    class="admin-action {{ $selected ? 'is-primary' : '' }}"
+                                                    type="button"
+                                                    wire:click="toggleAssetSelection({{ $asset['id'] }})"
+                                                    aria-pressed="{{ $selected ? 'true' : 'false' }}"
+                                                    @disabled(! $asset['selectable'])
+                                                >{{ $selected ? 'Selected' : 'Select' }}</button>
                                                 <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">Preview</button>
-                                                @if ($asset['editable'])
-                                                    <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })">Edit</button>
-                                                @endif
+                                                <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>Edit</button>
+                                                <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>Delete</button>
                                             </div>
                                         </td>
                                     </tr>
