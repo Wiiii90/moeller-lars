@@ -5,6 +5,7 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Models\MediaAsset;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 function audioFixture(string $kind): UploadedFile
 {
@@ -54,5 +55,5 @@ it('rejects an MP4 container with a video track instead of classifying it as M4A
     $upload = UploadedFile::fake()->createWithContent('not-audio.m4a', $bytes);
 
     expect(fn () => app(MediaIngestService::class)->ingest($upload))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 });

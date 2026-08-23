@@ -166,6 +166,7 @@ class MediaAssetEditorialService
             try {
                 if ($disk->exists($key) && ! $disk->delete($key)) {
                     $failed[] = $key;
+
                     continue;
                 }
                 if ($disk->exists($key)) {
