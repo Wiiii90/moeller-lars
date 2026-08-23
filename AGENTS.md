@@ -44,11 +44,13 @@ See `docs/RELEASE.md` for the exact release/preview contract.
 
 For a branch or combined integration candidate:
 
-1. run targeted checks appropriate to the changed area;
+1. run only targeted checks appropriate to the behavior actually changed;
 2. push the exact branch/SHA;
-3. use `scripts/validation-preview.ps1 <branch-or-sha>` to build an exact-SHA preview image;
+3. use `scripts/validation-preview.ps1 <branch-or-sha>` when browser review is needed;
 4. Validation deployment is performed with the existing platform helper printed by that script;
 5. browser acceptance is evidence separate from CI.
+
+Do not rerun broad suites merely because they exist. Full verification belongs to the final PR to `main` unless a concrete risk justifies broader checks earlier.
 
 Agents must not invent server commands, hostnames or platform topology.
 
@@ -67,28 +69,35 @@ PRs contain implementation details, changed files, technical decisions, targeted
 
 Do not use issues as worker diaries. Do not routinely post commit SHAs, CI run IDs or branch chatter into issues.
 
-## Existing-work preservation
+## Iterative redesign discipline
 
-A page/slice worker is a **finishing worker by default, not a redesign worker**.
+The admin is still being redesigned. Existing good work is the starting point, not a frozen artifact and not an invitation to rebuild a page from scratch.
 
-Before changing code, identify what the current page already does well and what the current issue/browser review still rejects or leaves incomplete. Preserve accepted structure, workflows, information density and visual direction unless a concrete current requirement requires changing them.
+Workers should improve the assigned page against the current browser findings while moving reusable improvements into coherent shared systems where that genuinely benefits later pages.
 
-In particular:
-
-- do not rebuild a mostly finished page from its old issue description;
-- do not replace working task-specific UI merely to make it visually uniform;
-- do not broaden scope from a small browser defect into a page rewrite;
-- prefer the smallest coherent change that resolves the current rejected behavior;
-- shared consistency means common geometry, controls, typography, dialogs and interaction rules where appropriate — not identical page layouts;
-- if the user has already accepted a page region or workflow, treat it as locked unless a necessary technical dependency is demonstrated.
+- keep structures and interactions that are already working well unless the current redesign explicitly improves them;
+- do not reimplement old issue descriptions that current code has already solved;
+- do not turn a few concrete defects into a speculative page rewrite;
+- when a better generic primitive can solve the current problem and improve later pages, prefer that over a page-local hack;
+- consistency means shared geometry, typography, controls, labels, spacing, dialogs and interaction behavior where appropriate, while each workspace keeps its task-specific content model;
+- browser feedback in the current issue/user review overrides stale acceptance language.
 
 ## Admin product contract
 
 The artist admin is an editorial tool, not a generic SaaS dashboard.
 
-Preserve these system-level rules unless a current issue explicitly changes them:
+Current shared composition for normal primary workspaces, where the page actually has comparable operational metrics:
 
-- one deliberate visible heading per normal workspace;
+1. one visible heading whose wording matches the navigation destination;
+2. no decorative kicker/eyebrow above that heading;
+3. one restrained six-metric strip;
+4. the page-specific action/filter/control row;
+5. the actual task surface: table, grid, contact sheet, editor, tree, analytics composition, etc.
+
+View switches must not make the task surface visibly jump vertically. When two modes have different internal chrome, compensate with shared spacing/geometry so their content starts on the same visual baseline.
+
+Other system-level rules:
+
 - generous useful desktop width and one shared workspace axis/gutter strategy;
 - task-specific layouts instead of one universal card template;
 - no repeated generic SaaS/LLM card walls;
@@ -105,26 +114,30 @@ Preserve these system-level rules unless a current issue explicitly changes them
 
 Shared/native dialog behavior is owned by #61 and is a cross-page primitive.
 
-Do not create page-local fake dialogs or navigation disguised as modals. Dialog-driven flows must use the shared/native system and preserve:
+Dialogs must behave as browser-window overlays, not as panels constrained to the admin content column.
 
-- real overlay/backdrop behavior;
-- correct width/height/scroll containment;
+Required behavior:
+
+- backdrop/overlay covers the relevant viewport;
+- dialog is centered in the browser viewport, not merely inside the content workspace;
+- width is responsive and bounded by the viewport;
+- height is bounded by the viewport;
+- oversized dialog content gets an internal vertical scroll region so controls remain reachable with wheel/touch/keyboard;
+- header/footer/actions remain usable rather than being pushed outside the clickable viewport;
+- stable z-index/backdrop behavior;
 - Escape/close behavior;
-- focus trap and restoration;
+- focus trap and focus restoration;
 - keyboard accessibility;
-- responsive behavior;
-- correct nested select/popover layering;
-- originating workspace state after close/save.
+- nested selectors/popovers remain above the dialog and usable;
+- originating workspace state remains intact after close/save.
 
-If a page worker discovers a shared dialog defect, fix it only when it is clearly within the shared primitive; otherwise report the blocker rather than cloning a workaround.
+Fix shared dialog defects generically when encountered by the first page that needs them. Do not create a page-local fake modal merely to unblock one worker.
 
 ## Parallel page ownership
 
-Workers should keep their diff inside their assigned page/domain plus directly necessary tests/services.
+Workers should keep their diff inside their assigned page/domain plus directly necessary tests/services, except for deliberately generic shared primitives required by the current redesign.
 
-Do not casually edit global shell/theme files from multiple page branches. Shared visual primitives, shell geometry and dialog infrastructure should be changed deliberately and kept compatible with all admin pages.
-
-For the current tranche, preserve accepted behavior outside the assigned page. In particular, do not redesign accepted Gallery contact-sheet/metrics/analytics, Files density or canonical Site Node architecture just to make a local implementation easier.
+Do not casually edit global shell/theme files from multiple branches for unrelated reasons. If the assigned defect belongs to a shared primitive, make the shared change intentionally and keep it compatible with the other admin pages.
 
 ## Persistence and audit
 
@@ -137,7 +150,7 @@ For the current tranche, preserve accepted behavior outside the assigned page. I
 
 ## Verification
 
-Run the narrowest checks that prove the changed behavior while iterating. Add focused regression coverage for changed domain invariants.
+Run the narrowest checks that prove the changed behavior while iterating. Reuse existing evidence for behavior that was not changed. Add focused regression coverage only for new or modified invariants/interactions that need it.
 
 The final PR to `main` must pass the canonical full gate in `.github/workflows/release.yml`:
 
@@ -158,7 +171,7 @@ A worker handoff should normally contain only:
 - head SHA;
 - PR number/link if opened;
 - actual changes;
-- relevant tests run;
+- relevant targeted checks run;
 - real blockers or browser-acceptance points.
 
 Do not produce long implementation diaries unless specifically requested.
