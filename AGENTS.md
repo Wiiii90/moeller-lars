@@ -90,9 +90,30 @@ Current shared composition for normal primary workspaces, where the page actuall
 
 1. one visible heading whose wording matches the navigation destination;
 2. no decorative kicker/eyebrow above that heading;
-3. one restrained six-metric strip;
-4. the page-specific action/filter/control row;
-5. the actual task surface: table, grid, contact sheet, editor, tree, analytics composition, etc.
+3. optional contextual quick actions on the same heading row, aligned on the right;
+4. one restrained six-metric strip;
+5. the page-specific action/filter/control row;
+6. the actual task surface: table, grid, contact sheet, editor, tree, analytics composition, graph, etc.
+
+### Heading-row quick actions
+
+- quick actions are optional; a page may ship with none;
+- when present, show at most five compact yellow quick-action buttons on the right side of the heading row;
+- order them from right to left by immediate usefulness/prominence;
+- recommendations should be derived from the page context and recent/relevant activity where practical, surfacing the most likely next actions rather than static decoration;
+- do not invent filler actions merely to occupy the slots;
+- quick actions must use the shared theme/control geometry and must not turn the heading into a toolbar wall.
+
+### Metric strip
+
+- use exactly six restrained metric fields on primary workspaces when six meaningful contextual metrics exist;
+- follow the same visual system as Files: one coherent strip, consistent typography, spacing and geometry;
+- metric meanings are page-specific; do not reuse Files metrics mechanically;
+- do not fabricate weak metrics just to fill six slots on pages where the pattern is not semantically appropriate.
+
+### Task area
+
+After the metric strip, the page becomes task-specific. Most workspaces will begin with one compact action/filter/navigation row, often containing filters, tabs, segmented toggles or view controls, followed by the actual content such as a list, table, grid, graph, contact sheet, tree or editor.
 
 View switches must not make the task surface visibly jump vertically. When two modes have different internal chrome, compensate with shared spacing/geometry so their content starts on the same visual baseline.
 
