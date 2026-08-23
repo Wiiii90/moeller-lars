@@ -6,6 +6,8 @@ use App\Domain\Admin\AdminAuditService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 final class ArtworkDraftService
@@ -24,7 +26,8 @@ final class ArtworkDraftService
             throw ValidationException::withMessages(['artwork_category_id' => 'The Gallery is required.']);
         }
 
-        unset($data['primary_media'], $data['position']);
+        $data = $this->validatedEditorialData($data);
+        unset($data['position']);
         $data['artwork_category_id'] = $galleryId;
         $data['state'] = 'draft';
         $data['published_at'] = null;
@@ -58,6 +61,38 @@ final class ArtworkDraftService
         });
     }
 
+    /** @param array<string, mixed> $data */
+    public function update(Artwork $artwork, array $data): Artwork
+    {
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($artwork, $data, $actor): Artwork {
+            /** @var Artwork $fresh */
+            $fresh = Artwork::query()->whereKey($artwork->getKey())->lockForUpdate()->firstOrFail();
+            $payload = $this->validatedEditorialData($data, $fresh);
+
+            if (
+                $fresh->getAttribute('published_at') !== null
+                && array_key_exists('slug', $payload)
+                && (string) $payload['slug'] !== (string) $fresh->getAttribute('slug')
+            ) {
+                throw ValidationException::withMessages([
+                    'slug' => 'The public URL slug is locked after first publication.',
+                ]);
+            }
+
+            $payload['date_precision'] = filled($payload['work_date'] ?? null) ? 'day' : 'unknown';
+            $fresh->fill($payload);
+
+            if ($fresh->isDirty()) {
+                $fresh->save();
+                $this->audit->record($actor, 'artwork.updated', 'artwork', $fresh->getKey());
+            }
+
+            return $fresh->fresh(['category', 'artworkMedia.mediaAsset']);
+        });
+    }
+
     public function delete(Artwork $artwork): void
     {
         $actor = $this->audit->requireActor();
@@ -76,5 +111,46 @@ final class ArtworkDraftService
             $fresh->delete();
             $this->audit->record($actor, 'artwork.deleted', 'artwork', $artworkId);
         });
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function validatedEditorialData(array $data, ?Artwork $artwork = null): array
+    {
+        $allowed = [
+            'artwork_category_id',
+            'slug',
+            'title',
+            'medium',
+            'dimensions',
+            'description',
+            'work_date',
+            'work_year',
+            'featured_on_home',
+        ];
+        $payload = array_intersect_key($data, array_flip($allowed));
+
+        $validator = Validator::make($payload, [
+            'artwork_category_id' => ['required', 'integer', 'min:1'],
+            'slug' => [
+                'required',
+                'string',
+                'max:180',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('artworks', 'slug')->ignore($artwork?->getKey()),
+            ],
+            'title' => ['required', 'string', 'max:240'],
+            'medium' => ['nullable', 'string', 'max:240'],
+            'dimensions' => ['nullable', 'string', 'max:240'],
+            'description' => ['nullable', 'string', 'max:10000'],
+            'work_date' => ['nullable', 'date'],
+            'work_year' => ['nullable', 'integer', 'min:1000', 'max:9999'],
+            'featured_on_home' => ['boolean'],
+        ]);
+        $validator->validate();
+
+        return $payload;
     }
 }

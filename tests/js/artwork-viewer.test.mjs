@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
     adjacentIndex,
     calculateFittedSize,
+    normalizeViewerKind,
     pinchFromGestureStart,
     zoomAroundPoint,
 } from '../../resources/js/artwork-viewer.js';
@@ -41,4 +42,11 @@ test('keeps the pinch anchor stable while scaling', () => {
 
     assert.ok(Math.abs(result.x + 100 * result.scale - 100) < 1e-10);
     assert.ok(Math.abs(result.y + 40 * result.scale - 40) < 1e-10);
+});
+
+test('viewer admits only image and video primary media', () => {
+    assert.equal(normalizeViewerKind(undefined), 'image');
+    assert.equal(normalizeViewerKind('image'), 'image');
+    assert.equal(normalizeViewerKind('video'), 'video');
+    assert.throws(() => normalizeViewerKind('audio'), /image and video media only/);
 });

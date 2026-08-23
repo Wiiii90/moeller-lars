@@ -22,8 +22,9 @@
         </div>
 
         <div class="artwork-viewer__stage" data-viewer-stage>
-            <div class="artwork-viewer__loading" data-viewer-loading role="status" aria-live="polite">Loading image…</div>
+            <div class="artwork-viewer__loading" data-viewer-loading role="status" aria-live="polite">Loading media…</div>
             <img class="artwork-viewer__image" data-viewer-image alt="" draggable="false" hidden>
+            <video class="artwork-viewer__video" data-viewer-video controls playsinline preload="metadata" hidden></video>
             <div class="artwork-viewer__missing" data-viewer-missing role="img" aria-label="Media unavailable" hidden>Media unavailable</div>
         </div>
 

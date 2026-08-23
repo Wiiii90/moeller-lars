@@ -3,7 +3,8 @@
 namespace App\Filament\Resources\Artworks\Pages;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Artwork\ArtworkEditorialService;
+use App\Domain\Artwork\ArtworkPrimaryMediaService;
+use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
@@ -45,7 +46,13 @@ class CreateArtwork extends CreateRecord
         unset($data['primary_media']);
 
         if ($primaryMedia !== null && ! $primaryMedia instanceof TemporaryUploadedFile) {
-            throw ValidationException::withMessages(['primary_media' => 'A valid uploaded image is required.']);
+            throw ValidationException::withMessages(['primary_media' => 'A valid uploaded image or video is required.']);
+        }
+        if ($primaryMedia instanceof TemporaryUploadedFile) {
+            $mime = (string) $primaryMedia->getMimeType();
+            if (! MediaTypePolicy::isImage($mime) && ! MediaTypePolicy::isVideo($mime)) {
+                throw ValidationException::withMessages(['primary_media' => 'Primary media must be an image or video.']);
+            }
         }
 
         /** @var Artwork $artwork */
@@ -78,7 +85,7 @@ class CreateArtwork extends CreateRecord
 
         if ($primaryMedia instanceof TemporaryUploadedFile) {
             try {
-                app(ArtworkEditorialService::class)->attachPrimaryMedia($artwork, $primaryMedia);
+                app(ArtworkPrimaryMediaService::class)->attachUpload($artwork, $primaryMedia);
                 $this->primaryMediaResult = 'attached';
             } catch (ValidationException) {
                 $this->primaryMediaResult = 'failed';
@@ -101,15 +108,15 @@ class CreateArtwork extends CreateRecord
             'attached' => Notification::make()
                 ->success()
                 ->title('Artwork draft created')
-                ->body('The primary image was attached. Add or confirm ALT text before publication.'),
+                ->body('The primary media was attached. Add or confirm ALT text before publication.'),
             'failed' => Notification::make()
                 ->warning()
-                ->title('Artwork draft created; image needs attention')
-                ->body('The draft is saved, but the primary image could not be attached. Add it from the artwork edit page.'),
+                ->title('Artwork draft created; media needs attention')
+                ->body('The draft is saved, but the primary media could not be attached. Add it from the artwork editor.'),
             default => Notification::make()
                 ->success()
                 ->title('Artwork draft created')
-                ->body('No primary image was attached yet. Add one before publication.'),
+                ->body('No primary media was attached yet. Add an image or video before publication.'),
         };
     }
 }

@@ -101,6 +101,38 @@ class PublicMedia
         return $primary;
     }
 
+    public function primaryAsset(Artwork $artwork): MediaAsset
+    {
+        $asset = $this->primaryMedia($artwork)->getRelationValue('mediaAsset');
+        if (($asset instanceof MediaAsset) === false) {
+            throw new LogicException('Published artwork requires an available primary media asset.');
+        }
+
+        $this->assertAvailable($asset);
+
+        return $asset;
+    }
+
+    public function isVideo(Artwork $artwork): bool
+    {
+        return MediaTypePolicy::isVideo((string) $this->primaryAsset($artwork)->getAttribute('mime_type'));
+    }
+
+    public function isImage(Artwork $artwork): bool
+    {
+        return MediaTypePolicy::isImage((string) $this->primaryAsset($artwork)->getAttribute('mime_type'));
+    }
+
+    public function kind(Artwork $artwork): string
+    {
+        return MediaTypePolicy::kind((string) $this->primaryAsset($artwork)->getAttribute('mime_type'));
+    }
+
+    public function mimeType(Artwork $artwork): string
+    {
+        return (string) $this->primaryAsset($artwork)->getAttribute('mime_type');
+    }
+
     public function altText(Artwork $artwork): string
     {
         $media = $this->primaryMedia($artwork);
@@ -110,6 +142,10 @@ class PublicMedia
 
     public function thumbnailVariant(Artwork $artwork): MediaVariant
     {
+        if (! $this->isImage($artwork)) {
+            throw new LogicException('Only image primary media has a public thumbnail variant.');
+        }
+
         return $this->thumbnailVariantForAsset($this->primaryAsset($artwork));
     }
 
@@ -173,18 +209,6 @@ class PublicMedia
         $this->assertAvailable($asset);
 
         return route('media.original', $asset);
-    }
-
-    private function primaryAsset(Artwork $artwork): MediaAsset
-    {
-        $asset = $this->primaryMedia($artwork)->getRelationValue('mediaAsset');
-        if (($asset instanceof MediaAsset) === false) {
-            throw new LogicException('Published artwork requires an available primary media asset.');
-        }
-
-        $this->assertAvailable($asset);
-
-        return $asset;
     }
 
     private function assertAvailable(MediaAsset $asset): void
