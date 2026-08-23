@@ -4,18 +4,11 @@ namespace App\Filament\Resources\MediaAssets\Pages;
 
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\Artworks\ArtworkResource;
-use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\CvEntries\CvEntryResource;
-use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
-use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
+use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
-use App\Models\BlogPost;
-use App\Models\CvEntry;
-use App\Models\Exhibition;
 use App\Models\MediaAsset;
-use App\Models\PublicContentSetting;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -31,10 +24,11 @@ final class ViewMediaAsset extends ViewRecord
     {
         return [
             Action::make('library')
-                ->label('Back to Media')
+                ->label('Back to Files')
                 ->url(MediaAssetResource::getUrl('index')),
             Action::make('edit')
                 ->label('Edit metadata')
+                ->visible(fn (): bool => $this->mediaAssetRecord()->getAttribute('state') !== 'deleted')
                 ->url(fn (): string => MediaAssetResource::getUrl('edit', ['record' => $this->mediaAssetRecord()])),
         ];
     }
@@ -42,10 +36,11 @@ final class ViewMediaAsset extends ViewRecord
     protected function getViewData(): array
     {
         $asset = $this->mediaAssetRecord();
-        $asset->loadMissing(['artworks', 'exhibitions', 'cvEntries', 'blogPosts', 'siteIdentitySettings']);
+        $catalog = app(MediaReferenceCatalog::class);
+        $catalog->loadAssetReferences($asset);
         $available = $asset->getAttribute('state') === 'available';
         $mime = (string) $asset->getAttribute('mime_type');
-        $usages = $this->usageRows($asset);
+        $usages = $catalog->references($asset);
 
         return [
             'media' => [
@@ -149,64 +144,6 @@ final class ViewMediaAsset extends ViewRecord
             'artwork_url' => ArtworkResource::getUrl('edit', ['record' => $artwork->getKey()]),
             'gallery_url' => is_int($categoryId) ? ArtworkResource::getUrl('gallery', ['gallery' => $categoryId]) : null,
         ];
-    }
-
-    /** @return list<array{type:string,label:string,url:string}> */
-    private function usageRows(MediaAsset $asset): array
-    {
-        $rows = [];
-
-        /** @var EloquentCollection<int, Artwork> $artworks */
-        $artworks = $asset->getRelation('artworks');
-        foreach ($artworks as $artwork) {
-            $rows[] = [
-                'type' => 'Artwork',
-                'label' => (string) $artwork->getAttribute('title'),
-                'url' => ArtworkResource::getUrl('edit', ['record' => $artwork->getKey()]),
-            ];
-        }
-
-        /** @var EloquentCollection<int, Exhibition> $exhibitions */
-        $exhibitions = $asset->getRelation('exhibitions');
-        foreach ($exhibitions as $exhibition) {
-            $rows[] = [
-                'type' => 'Exhibition',
-                'label' => (string) $exhibition->getAttribute('title'),
-                'url' => ExhibitionResource::getUrl('edit', ['record' => $exhibition->getKey()]),
-            ];
-        }
-
-        /** @var EloquentCollection<int, CvEntry> $cvEntries */
-        $cvEntries = $asset->getRelation('cvEntries');
-        foreach ($cvEntries as $entry) {
-            $rows[] = [
-                'type' => 'Vita / CV',
-                'label' => (string) $entry->getAttribute('title'),
-                'url' => CvEntryResource::getUrl('edit', ['record' => $entry->getKey()]),
-            ];
-        }
-
-        /** @var EloquentCollection<int, BlogPost> $blogPosts */
-        $blogPosts = $asset->getRelation('blogPosts');
-        foreach ($blogPosts as $post) {
-            $rows[] = [
-                'type' => 'Blog',
-                'label' => (string) $post->getAttribute('title'),
-                'url' => BlogPostResource::getUrl('edit', ['record' => $post->getKey()]),
-            ];
-        }
-
-        /** @var EloquentCollection<int, PublicContentSetting> $settings */
-        $settings = $asset->getRelation('siteIdentitySettings');
-        foreach ($settings as $setting) {
-            $rows[] = [
-                'type' => 'Site identity',
-                'label' => 'Favicon / browser identity',
-                'url' => PublicContentSettingResource::getUrl('edit', ['record' => $setting->getKey()]),
-            ];
-        }
-
-        return $rows;
     }
 
     private function formatBytes(int $bytes): string

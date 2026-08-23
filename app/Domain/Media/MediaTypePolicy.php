@@ -17,6 +17,14 @@ final class MediaTypePolicy
         'video/webm',
     ];
 
+    /** @var list<string> */
+    public const AUDIO_MIME_TYPES = [
+        'audio/mpeg',
+        'audio/mp4',
+        'audio/ogg',
+        'audio/wav',
+    ];
+
     /** @var array<string, string> */
     private const EXTENSIONS = [
         'image/jpeg' => 'jpg',
@@ -24,12 +32,28 @@ final class MediaTypePolicy
         'image/webp' => 'webp',
         'video/mp4' => 'mp4',
         'video/webm' => 'webm',
+        'audio/mpeg' => 'mp3',
+        'audio/mp4' => 'm4a',
+        'audio/ogg' => 'ogg',
+        'audio/wav' => 'wav',
     ];
 
     /** @return list<string> */
     public static function acceptedMimeTypes(): array
     {
         return array_keys(self::EXTENSIONS);
+    }
+
+    /** @return list<string> */
+    public static function uploadAcceptedMimeTypes(): array
+    {
+        return array_values(array_unique([
+            ...self::acceptedMimeTypes(),
+            'audio/x-m4a',
+            'audio/x-wav',
+            'audio/vnd.wave',
+            'application/ogg',
+        ]));
     }
 
     public static function extensionFor(string $mimeType): ?string
@@ -47,6 +71,11 @@ final class MediaTypePolicy
         return in_array($mimeType, self::VIDEO_MIME_TYPES, true);
     }
 
+    public static function isAudio(string $mimeType): bool
+    {
+        return in_array($mimeType, self::AUDIO_MIME_TYPES, true);
+    }
+
     public static function kind(string $mimeType): string
     {
         if (self::isImage($mimeType)) {
@@ -55,6 +84,10 @@ final class MediaTypePolicy
 
         if (self::isVideo($mimeType)) {
             return 'video';
+        }
+
+        if (self::isAudio($mimeType)) {
+            return 'audio';
         }
 
         return 'other';
@@ -68,18 +101,30 @@ final class MediaTypePolicy
             'image/webp' => 'WebP image',
             'video/mp4' => 'MP4 video',
             'video/webm' => 'WebM video',
+            'audio/mpeg' => 'MP3 audio',
+            'audio/mp4' => 'M4A / AAC audio',
+            'audio/ogg' => 'Ogg audio',
+            'audio/wav' => 'WAV audio',
             default => $mimeType,
         };
     }
 
     public static function maxBytesFor(string $mimeType): int
     {
-        return self::isVideo($mimeType) ? self::videoMaxBytes() : self::imageMaxBytes();
+        if (self::isVideo($mimeType)) {
+            return self::videoMaxBytes();
+        }
+
+        if (self::isAudio($mimeType)) {
+            return self::audioMaxBytes();
+        }
+
+        return self::imageMaxBytes();
     }
 
     public static function maxUploadBytes(): int
     {
-        return max(self::imageMaxBytes(), self::videoMaxBytes());
+        return max(self::imageMaxBytes(), self::videoMaxBytes(), self::audioMaxBytes());
     }
 
     public static function imageMaxBytes(): int
@@ -90,5 +135,10 @@ final class MediaTypePolicy
     public static function videoMaxBytes(): int
     {
         return max(1, (int) config('media.upload.video_max_bytes', 100 * 1024 * 1024));
+    }
+
+    public static function audioMaxBytes(): int
+    {
+        return max(1, (int) config('media.upload.audio_max_bytes', 100 * 1024 * 1024));
     }
 }

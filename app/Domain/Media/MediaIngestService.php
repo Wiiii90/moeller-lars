@@ -24,7 +24,7 @@ class MediaIngestService
 
     private const INGEST_LOCK_SECONDS = 120;
 
-    private const VIDEO_PROBE_BYTES = 1024 * 1024;
+    private const MEDIA_PROBE_BYTES = 1024 * 1024;
 
     public function ingest(UploadedFile $upload): MediaAsset
     {
@@ -102,6 +102,7 @@ class MediaIngestService
                     'state' => 'available',
                     'width' => $prepared['width'],
                     'height' => $prepared['height'],
+                    'copyright_notice_mode' => MediaAsset::COPYRIGHT_INHERIT,
                 ]);
                 $asset->save();
 
@@ -164,13 +165,17 @@ class MediaIngestService
             throw $this->validationFailure('The uploaded media could not be read completely.');
         }
 
-        $mime = $this->detectMime($path);
+        $size = $upload->getSize();
+        if (! is_int($size) || $size <= 0) {
+            throw $this->validationFailure('The uploaded media has an invalid size.');
+        }
+
+        $mime = $this->detectMime($path, $size);
         if (MediaTypePolicy::extensionFor($mime) === null) {
             throw $this->validationFailure('The uploaded media type is not allowed.');
         }
 
-        $size = $upload->getSize();
-        if (! is_int($size) || $size <= 0 || $size > MediaTypePolicy::maxBytesFor($mime)) {
+        if ($size > MediaTypePolicy::maxBytesFor($mime)) {
             throw $this->validationFailure('The uploaded media has an invalid size for this media type.');
         }
 
@@ -182,17 +187,13 @@ class MediaIngestService
         if (MediaTypePolicy::isVideo($mime)) {
             $this->validateVideoContainer($path, $mime, $size);
 
-            return [
-                'mime' => $mime,
-                'width' => null,
-                'height' => null,
-                'path' => $path,
-                'size' => $size,
-                'sha256' => $sha256,
-                'thumbnail_bytes' => null,
-                'thumbnail_width' => null,
-                'thumbnail_height' => null,
-            ];
+            return $this->nonImagePrepared($mime, $path, $size, $sha256);
+        }
+
+        if (MediaTypePolicy::isAudio($mime)) {
+            $this->validateAudioContainer($path, $mime, $size);
+
+            return $this->nonImagePrepared($mime, $path, $size, $sha256);
         }
 
         $dimensions = @getimagesize($path);
@@ -232,7 +233,25 @@ class MediaIngestService
         ];
     }
 
-    private function detectMime(string $path): string
+    /**
+     * @return array{mime:string,width:null,height:null,path:string,size:int,sha256:string,thumbnail_bytes:null,thumbnail_width:null,thumbnail_height:null}
+     */
+    private function nonImagePrepared(string $mime, string $path, int $size, string $sha256): array
+    {
+        return [
+            'mime' => $mime,
+            'width' => null,
+            'height' => null,
+            'path' => $path,
+            'size' => $size,
+            'sha256' => $sha256,
+            'thumbnail_bytes' => null,
+            'thumbnail_width' => null,
+            'thumbnail_height' => null,
+        ];
+    }
+
+    private function detectMime(string $path, int $size): string
     {
         $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
         if ($fileInfo === false) {
@@ -240,27 +259,55 @@ class MediaIngestService
         }
 
         try {
-            $mime = finfo_file($fileInfo, $path);
+            $detected = finfo_file($fileInfo, $path);
         } finally {
             finfo_close($fileInfo);
         }
 
-        if (! is_string($mime)) {
+        if (! is_string($detected)) {
             throw $this->validationFailure('The uploaded media type could not be detected.');
         }
 
-        return $mime;
+        [$head, $tail] = $this->mediaProbe($path, $size);
+        $probe = $head.$tail;
+
+        if ($this->isMp4Container($head)) {
+            if ($this->hasH264Track($probe)) {
+                return 'video/mp4';
+            }
+
+            if ($this->hasMp4AudioTrack($probe) && ! $this->hasVideoTrack($probe)) {
+                return 'audio/mp4';
+            }
+        }
+
+        if ($this->isWaveContainer($head)) {
+            return 'audio/wav';
+        }
+
+        if ($this->isOggAudio($head, $probe)) {
+            return 'audio/ogg';
+        }
+
+        if ($detected === 'audio/mpeg' || $this->containsMpegAudioFrame($probe)) {
+            return 'audio/mpeg';
+        }
+
+        return match ($detected) {
+            'audio/x-wav', 'audio/vnd.wave' => 'audio/wav',
+            'audio/x-m4a' => 'audio/mp4',
+            'application/ogg' => 'audio/ogg',
+            default => $detected,
+        };
     }
 
     private function validateVideoContainer(string $path, string $mime, int $size): void
     {
-        [$head, $tail] = $this->videoProbe($path, $size);
+        [$head, $tail] = $this->mediaProbe($path, $size);
         $probe = $head.$tail;
 
         if ($mime === 'video/mp4') {
-            $isMp4 = strlen($head) >= 12 && substr($head, 4, 4) === 'ftyp';
-            $hasH264 = str_contains($probe, 'avc1') || str_contains($probe, 'avc3');
-            if (! $isMp4 || ! $hasH264) {
+            if (! $this->isMp4Container($head) || ! $this->hasH264Track($probe)) {
                 throw $this->validationFailure('MP4 uploads must use a browser-native H.264 video track.');
             }
 
@@ -282,29 +329,51 @@ class MediaIngestService
         throw $this->validationFailure('The uploaded video type is not allowed.');
     }
 
+    private function validateAudioContainer(string $path, string $mime, int $size): void
+    {
+        [$head, $tail] = $this->mediaProbe($path, $size);
+        $probe = $head.$tail;
+
+        $valid = match ($mime) {
+            'audio/mpeg' => $this->containsMpegAudioFrame($probe),
+            'audio/mp4' => $this->isMp4Container($head)
+                && $this->hasMp4AudioTrack($probe)
+                && ! $this->hasVideoTrack($probe),
+            'audio/ogg' => $this->isOggAudio($head, $probe),
+            'audio/wav' => $this->isWaveContainer($head)
+                && str_contains($probe, 'fmt ')
+                && str_contains($probe, 'data'),
+            default => false,
+        };
+
+        if (! $valid) {
+            throw $this->validationFailure('The uploaded audio is not a supported browser-native audio file.');
+        }
+    }
+
     /** @return array{string,string} */
-    private function videoProbe(string $path, int $size): array
+    private function mediaProbe(string $path, int $size): array
     {
         $stream = @fopen($path, 'rb');
         if (! is_resource($stream)) {
-            throw $this->validationFailure('The uploaded video could not be inspected.');
+            throw $this->validationFailure('The uploaded media could not be inspected.');
         }
 
         try {
-            $readLength = min(self::VIDEO_PROBE_BYTES, $size);
+            $readLength = min(self::MEDIA_PROBE_BYTES, $size);
             $head = fread($stream, $readLength);
             if (! is_string($head)) {
-                throw $this->validationFailure('The uploaded video could not be inspected.');
+                throw $this->validationFailure('The uploaded media could not be inspected.');
             }
 
             $tail = '';
-            if ($size > self::VIDEO_PROBE_BYTES) {
-                if (fseek($stream, max(0, $size - self::VIDEO_PROBE_BYTES)) !== 0) {
-                    throw $this->validationFailure('The uploaded video could not be inspected.');
+            if ($size > self::MEDIA_PROBE_BYTES) {
+                if (fseek($stream, max(0, $size - self::MEDIA_PROBE_BYTES)) !== 0) {
+                    throw $this->validationFailure('The uploaded media could not be inspected.');
                 }
-                $tailBytes = fread($stream, self::VIDEO_PROBE_BYTES);
+                $tailBytes = fread($stream, self::MEDIA_PROBE_BYTES);
                 if (! is_string($tailBytes)) {
-                    throw $this->validationFailure('The uploaded video could not be inspected.');
+                    throw $this->validationFailure('The uploaded media could not be inspected.');
                 }
                 $tail = $tailBytes;
             }
@@ -313,6 +382,74 @@ class MediaIngestService
         } finally {
             fclose($stream);
         }
+    }
+
+    private function isMp4Container(string $head): bool
+    {
+        return strlen($head) >= 12 && substr($head, 4, 4) === 'ftyp';
+    }
+
+    private function hasH264Track(string $probe): bool
+    {
+        return str_contains($probe, 'avc1') || str_contains($probe, 'avc3');
+    }
+
+    private function hasMp4AudioTrack(string $probe): bool
+    {
+        return str_contains($probe, 'mp4a');
+    }
+
+    private function hasVideoTrack(string $probe): bool
+    {
+        foreach (['avc1', 'avc3', 'hvc1', 'hev1', 'vp09', 'av01', 'theora'] as $marker) {
+            if (str_contains($probe, $marker)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isWaveContainer(string $head): bool
+    {
+        return strlen($head) >= 12
+            && str_starts_with($head, 'RIFF')
+            && substr($head, 8, 4) === 'WAVE';
+    }
+
+    private function isOggAudio(string $head, string $probe): bool
+    {
+        return str_starts_with($head, 'OggS')
+            && ! str_contains($probe, 'theora')
+            && (str_contains($probe, 'vorbis') || str_contains($probe, 'OpusHead'));
+    }
+
+    private function containsMpegAudioFrame(string $probe): bool
+    {
+        $length = min(strlen($probe), 64 * 1024);
+        for ($index = 0; $index < $length - 3; $index++) {
+            $first = ord($probe[$index]);
+            $second = ord($probe[$index + 1]);
+            $third = ord($probe[$index + 2]);
+
+            if ($first !== 0xFF || ($second & 0xE0) !== 0xE0) {
+                continue;
+            }
+
+            $versionBits = ($second >> 3) & 0x03;
+            $layerBits = ($second >> 1) & 0x03;
+            $bitrateIndex = ($third >> 4) & 0x0F;
+            $sampleRateIndex = ($third >> 2) & 0x03;
+
+            if ($versionBits !== 0x01
+                && $layerBits !== 0x00
+                && ! in_array($bitrateIndex, [0x00, 0x0F], true)
+                && $sampleRateIndex !== 0x03) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function decode(string $path, string $mime): \GdImage
