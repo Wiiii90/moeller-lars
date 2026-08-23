@@ -3,7 +3,7 @@
  */
 .admin-form-section {
     margin: 0 !important;
-    padding: 1.35rem 0 1.55rem !important;
+    padding: var(--admin-section-gap) 0 !important;
     border: 0 !important;
     border-top: 1px solid var(--admin-line) !important;
     border-radius: 0 !important;
@@ -149,10 +149,6 @@
 }
 
 @media (max-width: 760px) {
-    .admin-form-section {
-        padding: 1.15rem 0 1.35rem !important;
-    }
-
     .admin-component-image-preview {
         grid-template-columns: 1fr;
     }

@@ -186,7 +186,6 @@ final class MediaReferenceCatalog
             'artworks.category.siteSection',
             'exhibitions.siteSection',
             'blogPosts.siteSection',
-            'cvEntries',
             'siteIdentitySettings',
         ]);
     }
@@ -197,7 +196,6 @@ final class MediaReferenceCatalog
             'artworks.category.siteSection',
             'exhibitions.siteSection',
             'blogPosts.siteSection',
-            'cvEntries',
             'siteIdentitySettings',
         ]);
     }
@@ -255,14 +253,6 @@ final class MediaReferenceCatalog
                     'url' => $this->presentation->workspaceUrl($node),
                 ];
             }
-        }
-
-        foreach ($asset->getRelation('cvEntries') as $entry) {
-            $rows[] = [
-                'type' => 'CV',
-                'label' => (string) $entry->getAttribute('title'),
-                'url' => null,
-            ];
         }
 
         foreach ($asset->getRelation('siteIdentitySettings') as $setting) {

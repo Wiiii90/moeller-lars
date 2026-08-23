@@ -55,12 +55,14 @@ class PublicContentSettingResource extends Resource
             Grid::make(1)
                 ->extraAttributes(['class' => 'admin-settings-grid'])
                 ->schema([
+                    View::make('filament.schemas.components.general-status-metrics')
+                        ->columnSpanFull(),
                     AdminForm::section('Site identity')
                         ->schema([
                             MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
                                 ->nullable()
                                 ->live()
-                                ->helperText('Choose an image from Files. The existing generated thumbnail is used for browser identity.')
+                                ->helperText('Choose an image from Media Files. The existing generated thumbnail is used for browser identity.')
                                 ->columnSpanFull(),
                             View::make('filament.schemas.components.favicon-preview')
                                 ->columnSpanFull(),
@@ -116,7 +118,7 @@ class PublicContentSettingResource extends Resource
                                 ->addActionLabel('Add social link')
                                 ->columnSpanFull(),
                         ]),
-                    AdminForm::section('Legal')
+                    AdminForm::section('Legal / global text')
                         ->schema([
                             TextInput::make('default_media_copyright_notice')
                                 ->label('Default media copyright')

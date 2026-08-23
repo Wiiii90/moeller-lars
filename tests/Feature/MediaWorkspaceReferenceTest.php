@@ -216,7 +216,7 @@ it('counts available images videos and audio in the six library metrics', functi
     ]);
 });
 
-it('keeps CV record pointers referenced without inventing an unrendered Custom Page usage', function (): void {
+it('projects migrated CV media through the canonical Custom Page usage only', function (): void {
     $asset = workspaceReferenceAsset('cv-reference.jpg');
     CvEntry::query()->create([
         'section' => 'Biography',
@@ -241,21 +241,12 @@ it('keeps CV record pointers referenced without inventing an unrendered Custom P
 
     $catalog = app(MediaReferenceCatalog::class);
     $catalog->loadAssetReferences($asset);
-    $references = $catalog->references($asset);
 
-    expect($references)->toContainEqual([
+    expect($catalog->references($asset))->toBe([[
         'type' => 'Custom Page: Biography',
         'label' => 'Image component',
         'url' => app(SiteNodePresentation::class)->workspaceUrl($custom->fresh('customPageSetting')),
-    ])->and($references)->toContainEqual([
-        'type' => 'CV',
-        'label' => 'Portrait',
-        'url' => null,
-    ])->and($references)->not->toContainEqual([
-        'type' => 'Custom Page: Biography',
-        'label' => 'Portrait',
-        'url' => app(SiteNodePresentation::class)->workspaceUrl($custom->fresh('customPageSetting')),
-    ]);
+    ]]);
 
     $referenced = MediaAsset::query();
     $catalog->applyUsageFilter($referenced, 'in-use');
@@ -273,7 +264,7 @@ it('keeps CV record pointers referenced without inventing an unrendered Custom P
         ->toThrow(ValidationException::class);
 });
 
-it('does not classify a CV entry image as Custom Page media merely because a CV list is placed', function (): void {
+it('ignores legacy CV media pointers that the current Custom Page runtime does not render', function (): void {
     $asset = workspaceReferenceAsset('cv-entry-only.jpg');
     CvEntry::query()->create([
         'section' => 'Biography',
@@ -290,11 +281,16 @@ it('does not classify a CV entry image as Custom Page media merely because a CV 
     $catalog = app(MediaReferenceCatalog::class);
     $catalog->loadAssetReferences($asset);
 
-    expect($catalog->references($asset))->toContainEqual([
-        'type' => 'CV',
-        'label' => 'Entry portrait',
-        'url' => null,
-    ]);
+    expect($catalog->references($asset))->toBe([])
+        ->and($catalog->libraryMetrics()['unreferenced'])->toBe(1);
+
+    $referenced = MediaAsset::query();
+    $catalog->applyUsageFilter($referenced, 'in-use');
+    expect($referenced->pluck('id')->all())->not->toContain($asset->id);
+
+    $unreferenced = MediaAsset::query();
+    $catalog->applyUsageFilter($unreferenced, 'unreferenced');
+    expect($unreferenced->pluck('id')->all())->toContain($asset->id);
 
     $specificCustomPage = MediaAsset::query();
     $catalog->applyUsageFilter($specificCustomPage, 'node:'.$custom->id);
@@ -303,6 +299,9 @@ it('does not classify a CV entry image as Custom Page media merely because a CV 
     $anyCustomPage = MediaAsset::query();
     $catalog->applyUsageFilter($anyCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
     expect($anyCustomPage->pluck('id')->all())->not->toContain($asset->id);
+
+    expect(app(MediaAssetEditorialService::class)->delete($asset))->toBeTrue();
+    expect($asset->fresh()->state)->toBe('deleted');
 });
 
 it('opens Preview and Edit as workspace actions and saves canonical metadata in place', function (): void {

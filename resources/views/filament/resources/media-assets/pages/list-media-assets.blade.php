@@ -44,7 +44,7 @@
         </x-admin.section>
 
         <x-admin.section class="media-workspace__library" aria-label="Media library">
-            <div class="media-workspace__controls" aria-label="File search and filters" style="grid-template-columns: minmax(15rem, 2fr) minmax(8rem, .8fr) minmax(12rem, 1.2fr) minmax(9rem, .8fr) auto;">
+            <div class="media-workspace__controls" aria-label="File search and filters">
                 <label class="media-workspace__field media-workspace__search">
                     <span>Search media</span>
                     <input type="search" wire:model.live.debounce.300ms="search" placeholder="Filename, ALT, credit, copyright or MIME">
@@ -95,15 +95,8 @@
                     </select>
                 </label>
 
-                <button class="admin-action media-workspace__reset" type="button" wire:click="resetFilters">Reset</button>
-            </div>
-
-            <div class="media-workspace__library-bar">
-                <div class="media-workspace__result-context">
-                    <strong>{{ number_format($total) }} {{ $total === 1 ? 'file' : 'files' }}</strong>
-                    <span>Available means validated and reusable, not necessarily publicly published.</span>
-                </div>
-                <div class="media-workspace__view-switcher admin-toolbar" role="group" aria-label="Media view mode">
+                <div class="media-workspace__control-actions admin-toolbar" role="group" aria-label="Media controls">
+                    <button class="admin-action" type="button" wire:click="resetFilters">Reset</button>
                     <button class="admin-action {{ $viewMode === 'list' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('list')">List</button>
                     <button class="admin-action {{ $viewMode === 'grid' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('grid')">Grid</button>
                     <button class="admin-action {{ $viewMode === 'dense' ? 'is-primary' : '' }}" type="button" wire:click="setViewMode('dense')">Dense</button>

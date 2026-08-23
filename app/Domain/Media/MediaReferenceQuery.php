@@ -8,17 +8,19 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class MediaReferenceQuery
 {
+    /** @var list<string> */
+    private const CANONICAL_RELATIONS = ['artworks', 'exhibitions', 'blogPosts', 'siteIdentitySettings'];
+
     /** @var list<int>|null */
     private ?array $directCustomMediaIds = null;
 
     /** @param Builder<MediaAsset> $query */
     public function apply(Builder $query, bool $referenced): void
     {
-        $relations = ['artworks', 'exhibitions', 'cvEntries', 'blogPosts', 'siteIdentitySettings'];
         $directCustomIds = $this->directCustomMediaIds();
 
         if (! $referenced) {
-            foreach ($relations as $relation) {
+            foreach (self::CANONICAL_RELATIONS as $relation) {
                 $query->whereDoesntHave($relation);
             }
             if ($directCustomIds !== []) {
@@ -28,8 +30,8 @@ final class MediaReferenceQuery
             return;
         }
 
-        $query->where(function (Builder $references) use ($relations, $directCustomIds): void {
-            foreach ($relations as $index => $relation) {
+        $query->where(function (Builder $references) use ($directCustomIds): void {
+            foreach (self::CANONICAL_RELATIONS as $index => $relation) {
                 $index === 0
                     ? $references->whereHas($relation)
                     : $references->orWhereHas($relation);

@@ -27,6 +27,8 @@ class MediaAssetResource extends Resource
 {
     protected static ?string $model = MediaAsset::class;
 
+    protected static ?string $slug = 'media-files';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolderOpen;
 
     protected static string|UnitEnum|null $navigationGroup = null;
@@ -67,7 +69,7 @@ class MediaAssetResource extends Resource
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query
                 ->with('variants')
-                ->withCount(['artworks', 'exhibitions', 'cvEntries', 'blogPosts', 'siteIdentitySettings']))
+                ->withCount(['artworks', 'exhibitions', 'blogPosts', 'siteIdentitySettings']))
             ->columns([
                 ImageColumn::make('thumbnail')
                     ->label('')
@@ -87,10 +89,9 @@ class MediaAssetResource extends Resource
                 TextColumn::make('usage')
                     ->label('Used by')
                     ->state(fn (MediaAsset $record): string => sprintf(
-                        '%d artworks · %d exhibitions · %d legacy profile refs · %d journal posts · %d site identity',
+                        '%d artworks · %d exhibitions · %d journal posts · %d site identity',
                         (int) $record->getAttribute('artworks_count'),
                         (int) $record->getAttribute('exhibitions_count'),
-                        (int) $record->getAttribute('cv_entries_count'),
                         (int) $record->getAttribute('blog_posts_count'),
                         (int) $record->getAttribute('site_identity_settings_count'),
                     )),

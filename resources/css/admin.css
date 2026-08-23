@@ -16,7 +16,21 @@
     --admin-accent-strong: #7c2d12;
     --admin-danger: #b42318;
     --admin-success: #39734d;
+    --admin-control-height: 2.5rem;
+    --admin-section-gap: 1rem;
     --admin-section-space: 2rem;
+    --admin-shell-content-inset: 1.5rem;
+    --admin-workspace-max-width: 80rem;
+    --admin-workspace-half-width: 40rem;
+    --admin-workspace-gutter: 2rem;
+    --admin-sidebar-width: 18rem;
+    --admin-sidebar-half-width: 9rem;
+    --admin-header-action-reserve: 10.5rem;
+    --admin-workspace-visual-shift: clamp(
+        0rem,
+        calc(50vw - var(--admin-sidebar-half-width) - var(--admin-workspace-half-width) - var(--admin-workspace-gutter)),
+        var(--admin-sidebar-half-width)
+    );
 }
 
 .dark {
@@ -40,10 +54,11 @@
 
 .admin-workspace__header {
     display: grid;
+    min-height: var(--admin-control-height);
     grid-template-columns: minmax(0, 1fr) auto auto;
-    gap: 2rem;
-    align-items: end;
-    padding: .2rem 0 1.7rem;
+    gap: 1.25rem;
+    padding: 0 0 var(--admin-section-gap);
+    align-items: center;
     border-bottom: 1px solid var(--admin-line-strong);
 }
 
@@ -106,7 +121,7 @@
 }
 
 .admin-workspace__body > * + * {
-    margin-top: 1.75rem;
+    margin-top: 0;
 }
 
 .admin-workspace__footnote {
@@ -117,16 +132,16 @@
 }
 
 .admin-section {
-    padding: var(--admin-section-space) 0;
+    padding: var(--admin-section-gap) 0;
     border-bottom: 1px solid var(--admin-line-strong);
 }
 
 .admin-section__header {
     display: flex;
     gap: 2rem;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.2rem;
+    margin-bottom: var(--admin-section-gap);
 }
 
 .admin-section__title,
@@ -215,7 +230,7 @@
 }
 
 .admin-metric {
-    padding: 1.3rem 1rem;
+    padding: 1.05rem 1rem;
     border-right: 1px solid var(--admin-line);
 }
 
@@ -314,6 +329,10 @@
     vertical-align: middle;
 }
 
+.fi-page-header-main-ctn {
+    gap: var(--admin-section-gap);
+}
+
 /*
  * Workspace pages own the visible heading while Filament owns native header
  * actions. Collapse the empty duplicate header band and place those actions in
@@ -322,19 +341,46 @@
 .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-page-header-main-ctn {
     position: relative;
     gap: 0;
-    padding-top: 1.25rem;
+    padding-top: 0;
 }
 
 .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-header:not(.fi-header-has-breadcrumbs) {
     position: absolute;
-    inset-block-start: 1.25rem;
+    inset-block-start: 0;
     inset-inline-end: 0;
     z-index: 5;
     width: auto;
+    min-height: var(--admin-control-height);
+    align-items: center;
 }
 
 .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-header:not(.fi-header-has-breadcrumbs) > div:first-child {
     display: none;
+}
+
+.fi-header {
+    min-height: var(--admin-control-height);
+    align-items: center;
+}
+
+.fi-header-heading {
+    color: var(--admin-text);
+    font-size: clamp(1.65rem, 2vw, 2.25rem) !important;
+    font-weight: 620 !important;
+    letter-spacing: -.035em;
+    line-height: 1.05;
+}
+
+.fi-header-actions-ctn .fi-btn,
+.admin-topbar-sign-out .fi-btn,
+.fi-global-search .fi-input-wrp,
+.fi-topbar .fi-icon-btn,
+.fi-sidebar-item-btn {
+    min-height: var(--admin-control-height) !important;
+}
+
+.fi-topbar .fi-icon-btn {
+    min-width: var(--admin-control-height) !important;
 }
 
 .admin-workspace__heading > .admin-workspace__title:first-child {
@@ -538,11 +584,7 @@
 
 @media (min-width: 901px) {
     .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .admin-workspace__header {
-        padding-inline-end: 11rem;
-    }
-
-    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace > .admin-workspace__header .admin-workspace__kicker):has(.fi-header-actions-ctn) .fi-header:not(.fi-header-has-breadcrumbs) {
-        inset-block-start: 2rem;
+        padding-inline-end: var(--admin-header-action-reserve);
     }
 }
 
@@ -580,7 +622,7 @@
     }
 
     .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .admin-workspace__header {
-        padding-top: 3.1rem;
+        padding-top: calc(var(--admin-control-height) + var(--admin-section-gap));
     }
 }
 
