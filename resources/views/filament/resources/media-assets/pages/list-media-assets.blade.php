@@ -447,13 +447,23 @@
                     </x-admin.table>
                 @endif
             @elseif ($hasLibraryRecords)
-                <x-admin.empty-state class="media-workspace__empty-state" title="No matching files" minimal>
+                <x-admin.empty-state
+                    class="media-workspace__empty-state"
+                    style="margin-top: var(--media-task-surface-header-height);"
+                    title="No matching files"
+                    minimal
+                >
                     <x-slot:actions>
                         <button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button>
                     </x-slot:actions>
                 </x-admin.empty-state>
             @else
-                <x-admin.empty-state class="media-workspace__empty-state" title="No files added to Media Files" minimal>
+                <x-admin.empty-state
+                    class="media-workspace__empty-state"
+                    style="margin-top: var(--media-task-surface-header-height);"
+                    title="No files added to Media Files"
+                    minimal
+                >
                     <x-slot:actions>
                         <label
                             class="admin-action"
