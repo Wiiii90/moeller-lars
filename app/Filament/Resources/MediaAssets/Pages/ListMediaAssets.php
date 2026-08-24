@@ -12,7 +12,6 @@ use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use DateTimeInterface;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -359,32 +358,6 @@ final class ListMediaAssets extends Page
                     ->success()
                     ->send();
             });
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('upload')
-                ->label('Upload media')
-                ->schema([
-                    FileUpload::make('media')
-                        ->required()
-                        ->storeFiles(false)
-                        ->acceptedFileTypes(MediaTypePolicy::uploadAcceptedMimeTypes())
-                        ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
-                        ->helperText('JPEG, PNG, WebP, H.264 MP4, VP8/VP9/AV1 WebM, MP3, M4A/AAC, Ogg audio, or WAV. Type-specific byte limits are operator configured.'),
-                ])
-                ->action(function (array $data): void {
-                    if (! array_key_exists('media', $data) || ! $data['media'] instanceof TemporaryUploadedFile) {
-                        throw ValidationException::withMessages(['media' => 'A valid media upload is required.']);
-                    }
-
-                    app(MediaIngestService::class)->ingest($data['media']);
-                    $this->page = 1;
-                    $this->loadLibrary();
-                    Notification::make()->title('File uploaded')->success()->send();
-                }),
-        ];
     }
 
     private function refreshFromFirstPage(): void
