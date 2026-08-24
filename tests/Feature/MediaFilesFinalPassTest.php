@@ -36,6 +36,9 @@ it('keeps simple selection visible while switching Files views', function (): vo
         ->assertSet('selectedAssets', [$asset->id])
         ->call('setViewMode', 'dense')
         ->assertSet('viewMode', 'dense')
+        ->assertSet('selectedAssets', [$asset->id])
+        ->call('setViewMode', 'list')
+        ->assertSet('viewMode', 'list')
         ->assertSet('selectedAssets', [$asset->id]);
 });
 
