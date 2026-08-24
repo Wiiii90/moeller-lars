@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <x-admin.workspace kicker="Media capacity" title="Storage allowance" class="admin-storage">
+    <x-admin.workspace title="Storage allowance" class="admin-storage">
         <x-slot:summary>
             <div><strong>{{ $availableAssets }}</strong><span>Assets</span></div>
             <div><strong>{{ $unusedAssets }}</strong><span>Unused</span></div>

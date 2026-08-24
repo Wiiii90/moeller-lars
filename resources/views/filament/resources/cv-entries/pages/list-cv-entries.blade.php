@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     @php($published = collect($entries)->where('state', 'published')->count())
 
-    <x-admin.workspace kicker="Vita / CV" title="Editorial sequence">
+    <x-admin.workspace title="Editorial sequence">
         <x-slot:summary>
             <div><strong>{{ count($entries) }}</strong><span>Entries</span></div>
             <div><strong>{{ $published }}</strong><span>Published</span></div>
@@ -35,9 +35,7 @@
                 @endforeach
             </x-admin.list>
         @else
-            <x-admin.empty-state kicker="Empty Vita" title="Add the first entry">
-                <p>Start with a biography, education item, award or other Vita entry.</p>
-            </x-admin.empty-state>
+            <x-admin.empty-state kicker="Empty Vita" title="No Vita / CV entries" />
         @endif
     </x-admin.workspace>
 </x-filament-panels::page>

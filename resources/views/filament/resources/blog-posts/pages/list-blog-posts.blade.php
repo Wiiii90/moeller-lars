@@ -2,7 +2,7 @@
     @php($published = collect($posts)->where('state', 'published')->count())
     @php($scheduled = collect($posts)->where('state', 'scheduled')->count())
 
-    <x-admin.workspace kicker="Blog" title="Editorial queue">
+    <x-admin.workspace title="Editorial queue">
         <x-slot:summary>
             <div><strong>{{ count($posts) }}</strong><span>Posts</span></div>
             <div><strong>{{ $published }}</strong><span>Published</span></div>
@@ -37,9 +37,7 @@
                 @endforeach
             </x-admin.list>
         @else
-            <x-admin.empty-state kicker="Empty Blog" title="Write the first post">
-                <p>Create a draft now; public Blog visibility remains disabled until it is enabled from Pages.</p>
-            </x-admin.empty-state>
+            <x-admin.empty-state kicker="Empty Blog" title="No blog posts" />
         @endif
     </x-admin.workspace>
 </x-filament-panels::page>

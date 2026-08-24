@@ -4,8 +4,6 @@ namespace App\Filament\Widgets;
 
 use App\Domain\Contact\ContactDeliveryReadiness;
 use App\Domain\Content\SiteNodeType;
-use App\Filament\Pages\SitePages;
-use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\CustomPageSetting;
 use Filament\Widgets\Widget;
 
@@ -36,8 +34,6 @@ final class ContactHealth extends Widget
             'formPlacements' => $placements['forms'],
             'formState' => $formState,
             'delivery' => $delivery,
-            'generalUrl' => PublicContentSettingResource::getNavigationUrl(),
-            'pagesUrl' => SitePages::getUrl(),
         ];
     }
 
