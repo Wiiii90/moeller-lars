@@ -195,6 +195,14 @@ The final PR to `main` must pass the canonical full gate in `.github/workflows/r
 
 CI success alone is not browser/product acceptance for visual or interaction work.
 
+## Worker prompt delivery
+
+When the orchestrator drafts a prompt for the user to hand to a parallel worker, the complete worker prompt must be delivered as one contiguous fenced code block so the ChatGPT UI provides a single Copy button for the whole prompt.
+
+- do not split one worker prompt across prose, blockquotes, multiple code blocks or surrounding fragments that must be assembled manually;
+- keep explanation outside the fenced block only when it is genuinely needed;
+- the text inside the fenced block must be directly copy-pasteable as the complete worker instruction.
+
 ## Handoff
 
 A worker handoff should normally contain only:
