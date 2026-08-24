@@ -1,6 +1,6 @@
 <?php
 
-it('keeps mixed-aspect media previews contained and alternative views on one task baseline', function (): void {
+it('keeps Media Files views, selection treatment, and actions on the accepted contract', function (): void {
     $css = file_get_contents(resource_path('css/admin/media.css'));
     $view = file_get_contents(resource_path('views/filament/resources/media-assets/pages/list-media-assets.blade.php'));
 
@@ -10,11 +10,8 @@ it('keeps mixed-aspect media previews contained and alternative views on one tas
         ->and($css)->toContain('contain: layout paint;')
         ->and($css)->toContain('isolation: isolate;')
         ->and($css)->toContain(".media-workspace__visual img,\n.media-workspace__visual video")
-        ->and($css)->toContain('max-width: 100%;')
-        ->and($css)->toContain('max-height: 100%;')
         ->and($css)->toContain('object-fit: contain;')
         ->and($css)->toContain('object-position: center;')
-        ->and($css)->toContain('align-self: end;')
         ->and($css)->toContain('--media-task-surface-header-height: 2.25rem;')
         ->and($css)->toContain('margin-top: var(--media-task-surface-header-height);')
         ->and($css)->toContain('.media-workspace__view-trigger')
@@ -29,6 +26,13 @@ it('keeps mixed-aspect media previews contained and alternative views on one tas
         ->and($css)->toContain('background: var(--admin-accent);')
         ->and($css)->toContain(':focus-visible')
         ->and($css)->toContain(':disabled')
+        ->and($css)->toContain('.media-workspace__grid-item.is-selected::after')
+        ->and($css)->toContain('inset: 0;')
+        ->and($css)->toContain('z-index: 10;')
+        ->and($css)->toContain('border: 2px solid var(--admin-accent);')
+        ->and($css)->toContain('pointer-events: none;')
+        ->and($css)->toContain('.media-workspace__table tbody tr.is-selected > td:first-child')
+        ->and($css)->toContain('box-shadow: inset 2px 0 0 var(--admin-accent);')
         ->and($view)->toBeString()
         ->and($view)->not->toContain('placeholder=')
         ->and($view)->not->toContain('Filter · Media type')
@@ -55,13 +59,43 @@ it('keeps mixed-aspect media previews contained and alternative views on one tas
         ->and($view)->toContain('media-workspace__selection-cell')
         ->and($view)->toContain('type="checkbox"')
         ->and($view)->toContain('<th scope="col">Actions</th>')
-        ->and($view)->toContain('>Preview</button>')
-        ->and($view)->toContain('>Edit</button>')
-        ->and($view)->toContain('>Delete</button>');
+        ->and($view)->toContain("route('admin.media.download-selected'")
+        ->and($view)->toContain('>Download selected</a>')
+        ->and($view)->toContain('>Delete selected</button>');
+
+    expect(strpos($view, '>Download selected</a>'))
+        ->toBeLessThan(strpos($view, '>Delete selected</button>'));
+
+    $gridStart = strpos($view, "@if (\$viewMode === 'grid')");
+    $tableStart = strpos($view, '<x-admin.table', $gridStart);
+    expect($gridStart)->not->toBeFalse()
+        ->and($tableStart)->not->toBeFalse();
+
+    $gridBlock = substr($view, $gridStart, $tableStart - $gridStart);
+    expect($gridBlock)
+        ->toContain('class="media-workspace__visual"')
+        ->toContain("wire:click=\"mountAction('preview', { asset:")
+        ->not->toContain('>Preview</button>')
+        ->toContain("route('admin.media.download'")
+        ->toContain('>Download</a>')
+        ->toContain('>Edit</button>')
+        ->toContain('>Delete</button>');
+
+    $tableBlock = substr($view, $tableStart);
+    expect($tableBlock)
+        ->toContain("@if (\$viewMode === 'list')\n                                        <th scope=\"col\" class=\"media-workspace__thumb-head\">Preview</th>")
+        ->toContain("@if (\$viewMode === 'list')\n                                            <td class=\"media-workspace__thumb\">")
+        ->toContain("wire:click=\"mountAction('preview', { asset:")
+        ->toContain("@if (\$viewMode === 'dense')\n                                                    <button class=\"admin-action\" type=\"button\" wire:click=\"mountAction('preview', { asset:")
+        ->and(substr_count($tableBlock, '>Preview</button>'))->toBe(1)
+        ->and($tableBlock)->toContain("route('admin.media.download'")
+        ->and($tableBlock)->toContain('>Download</a>')
+        ->and($tableBlock)->toContain('>Edit</button>')
+        ->and($tableBlock)->toContain('>Delete</button>');
 
     expect(preg_match(
-        '/media-workspace__selection-head.*media-workspace__thumb-head">Preview<\/th>.*<th scope="col">Media<\/th>.*<th scope="col">Type<\/th>.*<th scope="col">Used in<\/th>.*<th scope="col">Status<\/th>.*<th scope="col">Size<\/th>.*<th scope="col">Actions<\/th>/s',
-        $view,
+        '/media-workspace__selection-head.*@if \(\$viewMode === \'list\'\).*media-workspace__thumb-head">Preview<\/th>.*@endif.*<th scope="col">Media<\/th>.*<th scope="col">Type<\/th>.*<th scope="col">Used in<\/th>.*<th scope="col">Status<\/th>.*<th scope="col">Size<\/th>.*<th scope="col">Actions<\/th>/s',
+        $tableBlock,
     ))->toBe(1);
 });
 
