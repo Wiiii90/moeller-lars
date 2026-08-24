@@ -21,6 +21,7 @@ use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
@@ -33,7 +34,14 @@ final class ListMediaAssets extends Page
     /** @var list<int> */
     private const PAGE_SIZES = [25, 50, 100];
 
+    /** @var list<string> */
+    private const VIEW_MODES = ['list', 'grid', 'dense'];
+
     private const DEFAULT_PAGE_SIZE = 50;
+
+    private const VIEW_COOKIE = 'admin_media_files_view';
+
+    private const VIEW_COOKIE_MINUTES = 60 * 24 * 365;
 
     protected static string $resource = MediaAssetResource::class;
 
@@ -83,6 +91,10 @@ final class ListMediaAssets extends Page
 
     public function mount(): void
     {
+        $storedView = request()->cookie(self::VIEW_COOKIE);
+        $this->viewMode = is_string($storedView) && in_array($storedView, self::VIEW_MODES, true)
+            ? $storedView
+            : 'list';
         $this->loadLibrary();
     }
 
@@ -190,6 +202,18 @@ final class ListMediaAssets extends Page
             }
 
             $notification->send();
+        } elseif ($added > 0) {
+            Notification::make()
+                ->title($total === 1 ? 'File uploaded' : 'Files uploaded')
+                ->body($this->directUploadSummary($total, $added, $duplicates, 0))
+                ->success()
+                ->send();
+        } elseif ($duplicates > 0) {
+            Notification::make()
+                ->title('Already in Media Files')
+                ->body($total === 1 ? null : $duplicates.' files already exist in Media Files')
+                ->info()
+                ->send();
         }
 
         return [
@@ -202,12 +226,23 @@ final class ListMediaAssets extends Page
 
     public function setViewMode(string $mode): void
     {
-        if (! in_array($mode, ['list', 'grid', 'dense'], true)) {
+        if (! in_array($mode, self::VIEW_MODES, true)) {
             return;
         }
 
         $this->normalizeSelection();
         $this->viewMode = $mode;
+        Cookie::queue(
+            self::VIEW_COOKIE,
+            $mode,
+            self::VIEW_COOKIE_MINUTES,
+            '/admin',
+            null,
+            null,
+            true,
+            false,
+            'lax',
+        );
     }
 
     public function toggleAssetSelection(int $assetId): void
@@ -295,7 +330,10 @@ final class ListMediaAssets extends Page
                 $this->previewDialogData($arguments),
             ))
             ->modalSubmitAction(false)
-            ->modalCancelActionLabel('Close')
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Close')
+                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
+            ->extraModalFooterActions(fn (array $arguments): array => $this->previewFooterActions($arguments))
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
     }
@@ -305,62 +343,17 @@ final class ListMediaAssets extends Page
         return Action::make('edit')
             ->label('Edit')
             ->modalHeading(fn (array $arguments): string => 'Edit '.(string) $this->actionAsset($arguments)->getAttribute('original_filename'))
-            ->fillForm(function (array $arguments): array {
-                $asset = $this->actionAsset($arguments);
-
-                return [
-                    'alt_text' => $asset->getAttribute('alt_text'),
-                    'credit' => $asset->getAttribute('credit'),
-                    'copyright_notice_mode' => $asset->getAttribute('copyright_notice_mode') ?: MediaAsset::COPYRIGHT_INHERIT,
-                    'copyright_notice' => $asset->getAttribute('copyright_notice'),
-                ];
-            })
-            ->schema([
-                AdminForm::section('Accessibility and credit')
-                    ->schema([
-                        TextInput::make('alt_text')
-                            ->label('Default ALT text')
-                            ->helperText('For images, describe the content and function. Individual usages may override this text.')
-                            ->maxLength(500)
-                            ->nullable(),
-                        TextInput::make('credit')
-                            ->maxLength(240)
-                            ->nullable(),
-                    ])
-                    ->columns(2),
-                AdminForm::section('Copyright')
-                    ->schema([
-                        Select::make('copyright_notice_mode')
-                            ->label('Copyright notice')
-                            ->options([
-                                MediaAsset::COPYRIGHT_INHERIT => 'Inherit General default',
-                                MediaAsset::COPYRIGHT_OVERRIDE => 'Use asset override',
-                                MediaAsset::COPYRIGHT_NONE => 'No notice',
-                            ])
-                            ->required()
-                            ->helperText('Inheritance is explicit. No notice suppresses the General default for this file.'),
-                        Textarea::make('copyright_notice')
-                            ->label('Asset copyright override')
-                            ->maxLength(500)
-                            ->nullable()
-                            ->helperText('Used only when Copyright notice is set to Use asset override.')
-                            ->columnSpanFull(),
-                    ]),
-            ])
+            ->fillForm(fn (array $arguments): array => $this->editFormData($this->actionAsset($arguments)))
+            ->schema($this->mediaEditSchema())
             ->action(function (array $data, array $arguments): void {
-                $asset = $this->actionAsset($arguments);
-                app(MediaAssetEditorialService::class)->updateMetadata($asset, [
-                    'alt_text' => $data['alt_text'] ?? null,
-                    'credit' => $data['credit'] ?? null,
-                    'copyright_notice_mode' => $data['copyright_notice_mode'] ?? MediaAsset::COPYRIGHT_INHERIT,
-                    'copyright_notice' => $data['copyright_notice'] ?? null,
-                ]);
-
-                $this->loadLibrary();
-                Notification::make()->title('File metadata saved')->success()->send();
+                $this->saveMetadata($this->actionAsset($arguments), $data);
             })
-            ->modalSubmitActionLabel('Save')
-            ->modalCancelActionLabel('Cancel')
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Save')
+                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
     }
@@ -372,27 +365,23 @@ final class ListMediaAssets extends Page
             ->color('danger')
             ->requiresConfirmation()
             ->modalHeading(fn (array $arguments): string => 'Delete '.(string) $this->actionAsset($arguments)->getAttribute('original_filename').'?')
-            ->modalDescription('The file and generated variants will be removed. Files still referenced by content are protected and cannot be deleted.')
-            ->modalSubmitActionLabel('Delete file')
-            ->action(function (array $arguments): void {
-                $asset = $this->actionAsset($arguments);
-
-                try {
-                    app(MediaAssetEditorialService::class)->delete($asset);
-                } catch (ValidationException $exception) {
-                    Notification::make()
-                        ->title('File not deleted')
-                        ->body($this->validationMessage($exception))
-                        ->danger()
-                        ->send();
-
-                    return;
+            ->modalContent(fn (array $arguments): View => view(
+                'filament.resources.media-assets.partials.delete-dialog',
+                $this->deleteDialogData($this->actionAsset($arguments)),
+            ))
+            ->modalSubmitAction(fn (Action $action, array $arguments): Action => $action
+                ->label($this->hasReferences($this->actionAsset($arguments)) ? 'Delete all' : 'Delete')
+                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
+            ->action(function (Action $action, array $arguments): void {
+                if (! $this->deleteAsset($this->actionAsset($arguments))) {
+                    $action->halt();
                 }
-
-                $this->removeSelection((int) $asset->getKey());
-                $this->loadLibrary();
-                Notification::make()->title('File deleted')->success()->send();
-            });
+            })
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
     }
 
     public function deleteSelectedAction(): Action
@@ -402,8 +391,16 @@ final class ListMediaAssets extends Page
             ->color('danger')
             ->requiresConfirmation()
             ->modalHeading('Delete selected files?')
-            ->modalDescription('Unreferenced selected files will be removed. Referenced files are protected and will remain in Files.')
-            ->modalSubmitActionLabel('Delete selected')
+            ->modalContent(fn (): View => view(
+                'filament.resources.media-assets.partials.delete-selected-dialog',
+                $this->deleteSelectedDialogData(),
+            ))
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Delete all')
+                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
             ->action(function (): void {
                 $this->normalizeSelection();
                 $ids = $this->selectedAssets;
@@ -418,33 +415,53 @@ final class ListMediaAssets extends Page
                 $recordsById = $records->keyBy(static fn (MediaAsset $asset): int => (int) $asset->getKey());
                 $service = app(MediaAssetEditorialService::class);
                 $deleted = 0;
-                $blocked = [];
+                $failed = [];
+                $remaining = [];
 
                 foreach ($ids as $id) {
                     $asset = $recordsById->get($id);
                     if (! $asset instanceof MediaAsset) {
+                        $failed[$id] = 'The file could not be found.';
+                        $remaining[] = $id;
+
                         continue;
                     }
 
                     try {
                         $service->delete($asset);
                         $deleted++;
-                    } catch (ValidationException $exception) {
-                        $blocked[$id] = $this->validationMessage($exception);
+                    } catch (Throwable $exception) {
+                        if (! $exception instanceof ValidationException) {
+                            report($exception);
+                        }
+
+                        $fresh = $asset->fresh();
+                        if ($fresh instanceof MediaAsset && $fresh->getAttribute('state') === 'deleted') {
+                            $deleted++;
+                            $failed[$id] = 'Stored file cleanup could not be completed.';
+
+                            continue;
+                        }
+
+                        $failed[$id] = $exception instanceof ValidationException
+                            ? $this->validationMessage($exception)
+                            : 'The file could not be deleted.';
+                        $remaining[] = $id;
                     }
                 }
 
-                $this->selectedAssets = $this->normalizeSelectedAssets(array_keys($blocked));
+                $this->selectedAssets = $this->normalizeSelectedAssets($remaining);
                 $this->loadLibrary();
 
-                if ($blocked !== []) {
-                    $blockedCount = count($blocked);
-                    $message = $deleted.' deleted. '.$blockedCount.' '.str('file')->plural($blockedCount).' not deleted: '
-                        .implode(' ', array_values(array_unique($blocked)));
+                if ($failed !== []) {
+                    $details = array_slice(array_values(array_unique($failed)), 0, 4);
+                    if (count($failed) > 4) {
+                        $details[] = '+'.(count($failed) - 4).' more';
+                    }
 
                     Notification::make()
-                        ->title('Some files were not deleted')
-                        ->body($message)
+                        ->title('Some selected files need attention')
+                        ->body($deleted.' deleted. '.implode(' ', $details))
                         ->warning()
                         ->send();
 
@@ -452,10 +469,12 @@ final class ListMediaAssets extends Page
                 }
 
                 Notification::make()
-                    ->title($deleted === 1 ? 'Selected file deleted' : 'Selected files deleted')
+                    ->title('Selected files deleted')
                     ->success()
                     ->send();
-            });
+            })
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
     }
 
     private function refreshFromFirstPage(): void
@@ -608,8 +627,13 @@ final class ListMediaAssets extends Page
         $id = $arguments['asset'] ?? null;
         abort_unless(is_numeric($id), 404);
 
+        return $this->assetById((int) $id);
+    }
+
+    private function assetById(int $assetId): MediaAsset
+    {
         /** @var MediaAsset|null $asset */
-        $asset = MediaAsset::query()->find((int) $id);
+        $asset = MediaAsset::query()->find($assetId);
         abort_unless($asset instanceof MediaAsset, 404);
 
         return $asset;
@@ -705,6 +729,247 @@ final class ListMediaAssets extends Page
         $message = collect($exception->errors())->flatten()->first();
 
         return is_string($message) ? $message : 'The file could not be deleted.';
+    }
+
+    /** @return array<int, mixed> */
+    private function mediaEditSchema(): array
+    {
+        return [
+            AdminForm::section('Accessibility and credit')
+                ->schema([
+                    TextInput::make('alt_text')
+                        ->label('Default ALT text')
+                        ->helperText('For images, describe the content and function. Individual usages may override this text.')
+                        ->maxLength(500)
+                        ->nullable(),
+                    TextInput::make('credit')
+                        ->maxLength(240)
+                        ->nullable(),
+                ])
+                ->columns(2),
+            AdminForm::section('Copyright')
+                ->schema([
+                    Select::make('copyright_notice_mode')
+                        ->label('Copyright notice')
+                        ->options([
+                            MediaAsset::COPYRIGHT_INHERIT => 'Inherit General default',
+                            MediaAsset::COPYRIGHT_OVERRIDE => 'Use asset override',
+                            MediaAsset::COPYRIGHT_NONE => 'No notice',
+                        ])
+                        ->required()
+                        ->helperText('Inheritance is explicit. No notice suppresses the General default for this file.'),
+                    Textarea::make('copyright_notice')
+                        ->label('Asset copyright override')
+                        ->maxLength(500)
+                        ->nullable()
+                        ->helperText('Used only when Copyright notice is set to Use asset override.')
+                        ->columnSpanFull(),
+                ]),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function editFormData(MediaAsset $asset): array
+    {
+        return [
+            'alt_text' => $asset->getAttribute('alt_text'),
+            'credit' => $asset->getAttribute('credit'),
+            'copyright_notice_mode' => $asset->getAttribute('copyright_notice_mode') ?: MediaAsset::COPYRIGHT_INHERIT,
+            'copyright_notice' => $asset->getAttribute('copyright_notice'),
+        ];
+    }
+
+    /** @param array<string, mixed> $data */
+    private function saveMetadata(MediaAsset $asset, array $data): void
+    {
+        app(MediaAssetEditorialService::class)->updateMetadata($asset, [
+            'alt_text' => $data['alt_text'] ?? null,
+            'credit' => $data['credit'] ?? null,
+            'copyright_notice_mode' => $data['copyright_notice_mode'] ?? MediaAsset::COPYRIGHT_INHERIT,
+            'copyright_notice' => $data['copyright_notice'] ?? null,
+        ]);
+
+        $this->loadLibrary();
+        Notification::make()->title('File metadata saved')->success()->send();
+    }
+
+    /**
+     * @param array<string, mixed> $arguments
+     * @return list<Action>
+     */
+    private function previewFooterActions(array $arguments): array
+    {
+        $asset = $this->actionAsset($arguments);
+        $assetId = (int) $asset->getKey();
+        $state = (string) $asset->getAttribute('state');
+        $actions = [];
+
+        if ($state === 'available') {
+            $actions[] = Action::make('previewDownload')
+                ->label('Download')
+                ->url(route('admin.media.download', ['mediaAsset' => $assetId]))
+                ->extraAttributes(['class' => 'media-dialog-footer__utility']);
+        }
+
+        if ($state !== 'deleted') {
+            $actions[] = $this->previewEditAction($assetId);
+            $actions[] = $this->previewDeleteAction($assetId);
+        }
+
+        return $actions;
+    }
+
+    private function previewEditAction(int $assetId): Action
+    {
+        return Action::make('previewEdit')
+            ->label('Edit')
+            ->extraAttributes(['class' => 'media-dialog-footer__utility'])
+            ->modalHeading(fn (): string => 'Edit '.(string) $this->assetById($assetId)->getAttribute('original_filename'))
+            ->fillForm(fn (): array => $this->editFormData($this->assetById($assetId)))
+            ->schema($this->mediaEditSchema())
+            ->action(function (array $data) use ($assetId): void {
+                $this->saveMetadata($this->assetById($assetId), $data);
+            })
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Save')
+                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->cancelParentActions()
+                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
+            ->extraModalFooterActions([
+                Action::make('backToPreview')
+                    ->label('Back to preview')
+                    ->extraAttributes(['class' => 'media-dialog-footer__utility'])
+                    ->action(function (): void {})
+                    ->cancelParentActions('previewEdit'),
+            ])
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
+    }
+
+    private function previewDeleteAction(int $assetId): Action
+    {
+        return Action::make('previewDelete')
+            ->label($this->hasReferences($this->assetById($assetId)) ? 'Delete all' : 'Delete')
+            ->color('danger')
+            ->extraAttributes(['class' => 'media-dialog-footer__primary'])
+            ->requiresConfirmation()
+            ->modalHeading(fn (): string => 'Delete '.(string) $this->assetById($assetId)->getAttribute('original_filename').'?')
+            ->modalContent(fn (): View => view(
+                'filament.resources.media-assets.partials.delete-dialog',
+                $this->deleteDialogData($this->assetById($assetId)),
+            ))
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label($this->hasReferences($this->assetById($assetId)) ? 'Delete all' : 'Delete')
+                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
+            ->action(function (Action $action) use ($assetId): void {
+                if (! $this->deleteAsset($this->assetById($assetId))) {
+                    $action->halt();
+                }
+            })
+            ->cancelParentActions()
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
+    }
+
+    private function deleteAsset(MediaAsset $asset): bool
+    {
+        $assetId = (int) $asset->getKey();
+
+        try {
+            app(MediaAssetEditorialService::class)->delete($asset);
+        } catch (Throwable $exception) {
+            if (! $exception instanceof ValidationException) {
+                report($exception);
+            }
+
+            $fresh = $asset->fresh();
+            if ($fresh instanceof MediaAsset && $fresh->getAttribute('state') === 'deleted') {
+                $this->removeSelection($assetId);
+                $this->loadLibrary();
+                Notification::make()
+                    ->title('File cleanup failed')
+                    ->body('The file was removed from Media Files, but stored file cleanup could not be completed.')
+                    ->danger()
+                    ->send();
+
+                return true;
+            }
+
+            Notification::make()
+                ->title('File not deleted')
+                ->body($exception instanceof ValidationException
+                    ? $this->validationMessage($exception)
+                    : 'The file could not be deleted.')
+                ->danger()
+                ->send();
+
+            return false;
+        }
+
+        $this->removeSelection($assetId);
+        $this->loadLibrary();
+        Notification::make()->title('File deleted')->success()->send();
+
+        return true;
+    }
+
+    /** @return array{references:list<array{type:string,label:string,url:?string}>} */
+    private function deleteDialogData(MediaAsset $asset): array
+    {
+        return ['references' => $this->assetReferences($asset)];
+    }
+
+    private function hasReferences(MediaAsset $asset): bool
+    {
+        return $this->assetReferences($asset) !== [];
+    }
+
+    /** @return list<array{type:string,label:string,url:?string}> */
+    private function assetReferences(MediaAsset $asset): array
+    {
+        $catalog = app(MediaReferenceCatalog::class);
+        $catalog->loadAssetReferences($asset);
+
+        return $catalog->references($asset);
+    }
+
+    /** @return array{selectedCount:int,referencedFileCount:int,referenceCount:int,references:list<array{filename:string,type:string,label:string}>} */
+    private function deleteSelectedDialogData(): array
+    {
+        $ids = $this->normalizeSelectedAssets($this->selectedAssets);
+        /** @var EloquentCollection<int, MediaAsset> $records */
+        $records = MediaAsset::query()->whereIn('id', $ids)->get();
+        $catalog = app(MediaReferenceCatalog::class);
+        $referencedFileCount = 0;
+        $references = [];
+
+        foreach ($records as $asset) {
+            $catalog->loadAssetReferences($asset);
+            $assetReferences = $catalog->references($asset);
+            if ($assetReferences !== []) {
+                $referencedFileCount++;
+            }
+
+            foreach ($assetReferences as $reference) {
+                $references[] = [
+                    'filename' => (string) $asset->getAttribute('original_filename'),
+                    'type' => $reference['type'],
+                    'label' => $reference['label'],
+                ];
+            }
+        }
+
+        return [
+            'selectedCount' => $records->count(),
+            'referencedFileCount' => $referencedFileCount,
+            'referenceCount' => count($references),
+            'references' => $references,
+        ];
     }
 
     /**
