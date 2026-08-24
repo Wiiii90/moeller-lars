@@ -29,7 +29,10 @@ final class ListMediaAssets extends Page
 {
     use WithFileUploads;
 
-    private const PER_PAGE = 50;
+    /** @var list<int> */
+    private const PAGE_SIZES = [25, 50, 100];
+
+    private const DEFAULT_PAGE_SIZE = 50;
 
     protected static string $resource = MediaAssetResource::class;
 
@@ -59,6 +62,8 @@ final class ListMediaAssets extends Page
     public ?string $directUploadMessage = null;
 
     public int $page = 1;
+
+    public int $pageSize = self::DEFAULT_PAGE_SIZE;
 
     public int $total = 0;
 
@@ -101,6 +106,13 @@ final class ListMediaAssets extends Page
         $this->refreshFromFirstPage();
     }
 
+    public function updatedPageSize(mixed $value): void
+    {
+        $this->pageSize = $this->normalizePageSize($value);
+        $this->page = 1;
+        $this->loadLibrary();
+    }
+
     public function updatedDirectMedia(): void
     {
         $upload = $this->directMedia;
@@ -134,11 +146,14 @@ final class ListMediaAssets extends Page
             return;
         }
 
+        $this->normalizeSelection();
         $this->viewMode = $mode;
     }
 
     public function toggleAssetSelection(int $assetId): void
     {
+        $this->normalizeSelection();
+
         $selectable = false;
         foreach ($this->assets as $asset) {
             if (($asset['id'] ?? null) === $assetId && ($asset['selectable'] ?? false) === true) {
@@ -152,7 +167,7 @@ final class ListMediaAssets extends Page
         }
 
         if (in_array($assetId, $this->selectedAssets, true)) {
-            $this->selectedAssets = array_values(array_filter(
+            $this->selectedAssets = $this->normalizeSelectedAssets(array_filter(
                 $this->selectedAssets,
                 static fn (int $selectedId): bool => $selectedId !== $assetId,
             ));
@@ -160,7 +175,29 @@ final class ListMediaAssets extends Page
             return;
         }
 
-        $this->selectedAssets[] = $assetId;
+        $this->selectedAssets = $this->normalizeSelectedAssets([...$this->selectedAssets, $assetId]);
+    }
+
+    public function toggleVisibleSelection(): void
+    {
+        $this->normalizeSelection();
+
+        $visibleIds = collect($this->assets)
+            ->filter(static fn (array $asset): bool => ($asset['selectable'] ?? false) === true)
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->values()
+            ->all();
+
+        if ($visibleIds === []) {
+            return;
+        }
+
+        $allVisibleSelected = count(array_intersect($visibleIds, $this->selectedAssets)) === count($visibleIds);
+
+        $this->selectedAssets = $allVisibleSelected
+            ? $this->normalizeSelectedAssets(array_diff($this->selectedAssets, $visibleIds))
+            : $this->normalizeSelectedAssets(array_merge($this->selectedAssets, $visibleIds));
     }
 
     public function resetFilters(): void
@@ -308,7 +345,8 @@ final class ListMediaAssets extends Page
             ->modalDescription('Unreferenced selected files will be removed. Referenced files are protected and will remain in Files.')
             ->modalSubmitActionLabel('Delete selected')
             ->action(function (): void {
-                $ids = array_values(array_unique(array_map('intval', $this->selectedAssets)));
+                $this->normalizeSelection();
+                $ids = $this->selectedAssets;
                 if ($ids === []) {
                     Notification::make()->title('No files selected')->warning()->send();
 
@@ -336,7 +374,7 @@ final class ListMediaAssets extends Page
                     }
                 }
 
-                $this->selectedAssets = array_map('intval', array_keys($blocked));
+                $this->selectedAssets = $this->normalizeSelectedAssets(array_keys($blocked));
                 $this->loadLibrary();
 
                 if ($blocked !== []) {
@@ -368,6 +406,9 @@ final class ListMediaAssets extends Page
 
     private function loadLibrary(): void
     {
+        $this->normalizeSelection();
+        $this->pageSize = $this->normalizePageSize($this->pageSize);
+
         $catalog = app(MediaReferenceCatalog::class);
         $this->usageGroups = $catalog->destinationGroups();
         $this->loadLibraryMetrics($catalog);
@@ -375,14 +416,14 @@ final class ListMediaAssets extends Page
         $query = $this->filteredQuery($catalog);
         $this->total = (clone $query)->count();
 
-        $this->pages = max(1, (int) ceil($this->total / self::PER_PAGE));
+        $this->pages = max(1, (int) ceil($this->total / $this->pageSize));
         $this->page = min($this->page, $this->pages);
 
         $catalog->eagerLoad($query);
 
         /** @var EloquentCollection<int, MediaAsset> $records */
         $records = $this->orderResults($query)
-            ->forPage($this->page, self::PER_PAGE)
+            ->forPage($this->page, $this->pageSize)
             ->get();
 
         $this->assets = $records->map(function (MediaAsset $asset) use ($catalog): array {
@@ -516,10 +557,47 @@ final class ListMediaAssets extends Page
 
     private function removeSelection(int $assetId): void
     {
-        $this->selectedAssets = array_values(array_filter(
+        $this->normalizeSelection();
+        $this->selectedAssets = $this->normalizeSelectedAssets(array_filter(
             $this->selectedAssets,
             static fn (int $selectedId): bool => $selectedId !== $assetId,
         ));
+    }
+
+    private function normalizeSelection(): void
+    {
+        $this->selectedAssets = $this->normalizeSelectedAssets($this->selectedAssets);
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $assetIds
+     * @return list<int>
+     */
+    private function normalizeSelectedAssets(array $assetIds): array
+    {
+        $normalized = [];
+
+        foreach ($assetIds as $assetId) {
+            if (! is_numeric($assetId)) {
+                continue;
+            }
+
+            $id = (int) $assetId;
+            if ($id <= 0) {
+                continue;
+            }
+
+            $normalized[$id] = $id;
+        }
+
+        return array_values($normalized);
+    }
+
+    private function normalizePageSize(mixed $value): int
+    {
+        $pageSize = is_numeric($value) ? (int) $value : self::DEFAULT_PAGE_SIZE;
+
+        return in_array($pageSize, self::PAGE_SIZES, true) ? $pageSize : self::DEFAULT_PAGE_SIZE;
     }
 
     private function validationMessage(ValidationException $exception): string
