@@ -1,13 +1,14 @@
 <div class="media-file-dialog__content">
-    <div class="media-file-dialog__preview">
+    <div class="media-file-dialog__preview" style="min-height: 0; max-height: 52vh; padding: .75rem;">
         @if ($asset['preview_url'] !== null && $asset['kind'] === 'image')
             <img
                 src="{{ $asset['preview_url'] }}"
                 alt="{{ $asset['alt_text'] }}"
                 decoding="async"
+                style="width: auto; height: auto; max-width: 100%; max-height: 50vh; object-fit: contain;"
             >
         @elseif ($asset['preview_url'] !== null && $asset['kind'] === 'video')
-            <video controls playsinline preload="metadata">
+            <video controls playsinline preload="metadata" style="width: 100%; height: auto; max-height: 50vh; object-fit: contain;">
                 <source src="{{ $asset['preview_url'] }}" type="{{ $asset['mime'] }}">
             </video>
         @elseif ($asset['preview_url'] !== null && $asset['kind'] === 'audio')
@@ -53,25 +54,26 @@
         >Next</button>
     </nav>
 
-    <div class="media-file-dialog__details">
-        <section aria-labelledby="media-dialog-metadata-{{ $asset['id'] }}">
+    <div class="media-file-dialog__details" style="grid-template-columns: 1fr;">
+        <section aria-labelledby="media-dialog-metadata-{{ $asset['id'] }}" style="padding-right: 0;">
             <h3 id="media-dialog-metadata-{{ $asset['id'] }}">Metadata</h3>
-            <dl>
+            <dl style="grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1.2rem;">
                 <div><dt>File</dt><dd>{{ $asset['filename'] }}</dd></div>
                 <div><dt>Type</dt><dd>{{ $asset['type_label'] }} · {{ $asset['mime'] }}</dd></div>
                 <div><dt>Dimensions</dt><dd>{{ $asset['dimensions'] }}</dd></div>
                 <div><dt>Size</dt><dd>{{ $asset['size'] }}</dd></div>
                 <div><dt>Status</dt><dd>{{ ucfirst($asset['state']) }}</dd></div>
                 <div><dt>Created</dt><dd>{{ $asset['created'] }}</dd></div>
-                <div><dt>Checksum</dt><dd class="media-file-dialog__checksum">{{ $asset['checksum'] }}</dd></div>
                 <div><dt>ALT text</dt><dd>{{ $asset['alt_text'] !== '' ? $asset['alt_text'] : '—' }}</dd></div>
                 <div><dt>Credit</dt><dd>{{ $asset['credit'] !== '' ? $asset['credit'] : '—' }}</dd></div>
                 <div><dt>Copyright</dt><dd>{{ $asset['copyright_notice'] !== '' ? $asset['copyright_notice'] : '—' }}</dd></div>
                 <div><dt>Copyright source</dt><dd>{{ $asset['copyright_source'] }}</dd></div>
             </dl>
         </section>
+    </div>
 
-        <section aria-labelledby="media-dialog-usage-{{ $asset['id'] }}">
+    <div class="media-file-dialog__details" style="grid-template-columns: 1fr;">
+        <section aria-labelledby="media-dialog-usage-{{ $asset['id'] }}" style="padding-right: 0;">
             <h3 id="media-dialog-usage-{{ $asset['id'] }}">Used in</h3>
             @if ($asset['references'] === [])
                 <p class="media-file-dialog__empty">No canonical references.</p>
