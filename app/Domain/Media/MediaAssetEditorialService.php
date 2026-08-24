@@ -10,6 +10,7 @@ use App\Models\CustomPageSetting;
 use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -156,7 +157,7 @@ class MediaAssetEditorialService
         return true;
     }
 
-    private function removeCanonicalReferences(MediaAsset $asset, mixed $actor): void
+    private function removeCanonicalReferences(MediaAsset $asset, User $actor): void
     {
         $assetId = (int) $asset->getKey();
 
