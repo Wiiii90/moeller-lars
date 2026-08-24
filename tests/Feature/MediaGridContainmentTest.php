@@ -1,8 +1,9 @@
 <?php
 
-it('keeps Media Files views, selection treatment, and actions on the accepted contract', function (): void {
+it('keeps Media Files views, selection treatment, actions, and pagination on the accepted contract', function (): void {
     $css = file_get_contents(resource_path('css/admin/media.css'));
     $view = file_get_contents(resource_path('views/filament/resources/media-assets/pages/list-media-assets.blade.php'));
+    $page = file_get_contents(app_path('Filament/Resources/MediaAssets/Pages/ListMediaAssets.php'));
 
     expect($css)->toBeString()
         ->and($css)->toContain('grid-template-columns: repeat(5, minmax(0, 1fr));')
@@ -37,6 +38,12 @@ it('keeps Media Files views, selection treatment, and actions on the accepted co
         ->and($css)->toContain('.media-workspace__table tbody tr.is-selected > td')
         ->and($css)->toContain('.media-workspace__table tbody tr.is-selected + tr.is-selected > td')
         ->and($css)->toContain('inset 0 -2px 0 var(--admin-accent)')
+        ->and($css)->toContain('.media-workspace__table .media-workspace__actions > .admin-toolbar')
+        ->and($css)->toContain('justify-content: flex-start;')
+        ->and($css)->toContain('.media-workspace__selection-count')
+        ->and($css)->toContain('font-size: .6rem;')
+        ->and($css)->toContain('.media-workspace__pager')
+        ->and($css)->toContain('grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);')
         ->and($view)->toBeString()
         ->and($view)->toContain('placeholder="Filename, ALT, credit…"')
         ->and($view)->not->toContain('Filter · Media type')
@@ -61,10 +68,14 @@ it('keeps Media Files views, selection treatment, and actions on the accepted co
         ->and($view)->toContain('@disabled($selectedAssets === [])')
         ->and($view)->not->toContain('class="sr-only">Selection</span>')
         ->and($view)->toContain('aria-label="Toggle selection for visible files"')
-        ->and($view)->toContain('x-bind:indeterminate="@js($someVisibleSelected)"')
-        ->and($view)->toContain('wire:click.prevent="$set(\'selectedAssets\', @js($pageSelectionTarget))"')
-        ->and(substr_count($view, 'wire:model.live.number="selectedAssets"'))->toBe(2)
-        ->and($view)->not->toContain('wire:click="toggleAssetSelection(')
+        ->and($view)->toContain('wire:click.prevent="toggleVisibleSelection"')
+        ->and($view)->toContain('$el.checked = visibleIds.length > 0 && selectedCount === visibleIds.length;')
+        ->and($view)->toContain('$el.indeterminate = selectedCount > 0 && selectedCount < visibleIds.length;')
+        ->and($view)->toContain("$el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));")
+        ->and(substr_count($view, 'wire:click="toggleAssetSelection('))->toBe(2)
+        ->and(substr_count($view, 'x-bind:checked="$wire.selectedAssets.map(Number).includes('))->toBe(2)
+        ->and($view)->not->toContain('wire:model.live.number="selectedAssets"')
+        ->and($view)->not->toContain('$pageSelectionTarget')
         ->and($view)->not->toContain("'Selected' : 'Select'")
         ->and($view)->not->toContain('>Select</button>')
         ->and($view)->not->toContain('>Selected</button>')
@@ -77,7 +88,21 @@ it('keeps Media Files views, selection treatment, and actions on the accepted co
         ->and($view)->toContain('>Download selected</a>')
         ->and($view)->toContain('>Delete selected</button>')
         ->and($view)->toContain("pathinfo(\$asset['filename'], PATHINFO_FILENAME)")
-        ->and($view)->toContain('title="{{ $asset[\'filename\'] }}"');
+        ->and($view)->toContain('title="{{ $asset[\'filename\'] }}"')
+        ->and($view)->toContain('wire:model.live.number="pageSize"')
+        ->and($view)->toContain('<option value="25">25</option>')
+        ->and($view)->toContain('<option value="50">50</option>')
+        ->and($view)->toContain('<option value="100">100</option>')
+        ->and($view)->toContain('media-workspace__pager-range')
+        ->and($view)->toContain('{{ $resultStart }}–{{ $resultEnd }} of {{ $total }}')
+        ->and($page)->toBeString()
+        ->and($page)->toContain('private const PAGE_SIZES = [25, 50, 100];')
+        ->and($page)->toContain('private const DEFAULT_PAGE_SIZE = 50;')
+        ->and($page)->toContain('public int $pageSize = self::DEFAULT_PAGE_SIZE;')
+        ->and($page)->toContain('public function toggleVisibleSelection(): void')
+        ->and($page)->toContain('private function normalizeSelectedAssets(array $assetIds): array')
+        ->and($page)->toContain('private function normalizePageSize(mixed $value): int')
+        ->and($page)->toContain('->forPage($this->page, $this->pageSize)');
 
     expect(strpos($view, '>Download selected</a>'))
         ->toBeLessThan(strpos($view, '>Delete selected</button>'));
