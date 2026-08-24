@@ -3,6 +3,10 @@
  * Native Filament remains responsible for open/close state, Escape handling,
  * focus trapping/restoration and nested interactive components.
  */
+html {
+    scrollbar-gutter: stable;
+}
+
 @media (min-width: 1024px) {
     /*
      * A transformed ancestor becomes the containing block for fixed children.
