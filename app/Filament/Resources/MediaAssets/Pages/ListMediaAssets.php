@@ -370,7 +370,7 @@ final class ListMediaAssets extends Page
                 $this->deleteDialogData($this->actionAsset($arguments)),
             ))
             ->modalSubmitAction(fn (Action $action, array $arguments): Action => $action
-                ->label($this->hasReferences($this->actionAsset($arguments)) ? 'Delete all' : 'Delete')
+                ->label('Delete')
                 ->extraAttributes(['class' => 'media-dialog-footer__primary']))
             ->modalCancelAction(fn (Action $action): Action => $action
                 ->label('Cancel')
@@ -396,7 +396,7 @@ final class ListMediaAssets extends Page
                 $this->deleteSelectedDialogData(),
             ))
             ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Delete all')
+                ->label('Delete')
                 ->extraAttributes(['class' => 'media-dialog-footer__primary']))
             ->modalCancelAction(fn (Action $action): Action => $action
                 ->label('Cancel')
@@ -851,7 +851,7 @@ final class ListMediaAssets extends Page
     private function previewDeleteAction(int $assetId): Action
     {
         return Action::make('previewDelete')
-            ->label($this->hasReferences($this->assetById($assetId)) ? 'Delete all' : 'Delete')
+            ->label('Delete')
             ->color('danger')
             ->extraAttributes(['class' => 'media-dialog-footer__primary'])
             ->requiresConfirmation()
@@ -861,7 +861,7 @@ final class ListMediaAssets extends Page
                 $this->deleteDialogData($this->assetById($assetId)),
             ))
             ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label($this->hasReferences($this->assetById($assetId)) ? 'Delete all' : 'Delete')
+                ->label('Delete')
                 ->extraAttributes(['class' => 'media-dialog-footer__primary']))
             ->modalCancelAction(fn (Action $action): Action => $action
                 ->label('Cancel')
