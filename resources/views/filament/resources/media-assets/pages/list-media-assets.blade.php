@@ -43,6 +43,7 @@
                 x-on:livewire-upload-error="$wire.set('directMedia', []); showResult('Upload failed')"
             >
                 <input
+                    id="media-files-upload-input"
                     class="media-workspace__file-input"
                     type="file"
                     wire:model="directMedia"
@@ -97,6 +98,11 @@
                 $someVisibleSelected = $visibleSelectedCount > 0 && ! $allVisibleSelected;
                 $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
                 $resultEnd = $total === 0 ? 0 : min($total, $page * $pageSize);
+                $hasLibraryRecords = $assets !== []
+                    || $libraryFiles > 0
+                    || \App\Models\MediaAsset::query()
+                        ->whereIn('mime_type', \App\Domain\Media\MediaTypePolicy::acceptedMimeTypes())
+                        ->exists();
             @endphp
 
             <div class="media-workspace__controls" aria-label="File search and filters">
@@ -440,11 +446,24 @@
                         </table>
                     </x-admin.table>
                 @endif
-            @else
-                <x-admin.empty-state title="No matching files">
-                    <p>Adjust the search or filters, or add a supported file above.</p>
+            @elseif ($hasLibraryRecords)
+                <x-admin.empty-state class="media-workspace__empty-state" title="No matching files" minimal>
                     <x-slot:actions>
                         <button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button>
+                    </x-slot:actions>
+                </x-admin.empty-state>
+            @else
+                <x-admin.empty-state class="media-workspace__empty-state" title="No files added to Media Files" minimal>
+                    <x-slot:actions>
+                        <label
+                            class="admin-action"
+                            for="media-files-upload-input"
+                            role="button"
+                            tabindex="0"
+                            x-data="{}"
+                            x-on:keydown.enter.prevent="$el.click()"
+                            x-on:keydown.space.prevent="$el.click()"
+                        >Add file</label>
                     </x-slot:actions>
                 </x-admin.empty-state>
             @endif
