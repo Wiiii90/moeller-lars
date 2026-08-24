@@ -12,35 +12,75 @@
         <x-admin.section class="media-workspace__upload-section" aria-label="Upload media">
             <div
                 class="media-workspace__dropzone"
-                x-data="{ uploading: false, progress: 0 }"
-                x-on:livewire-upload-start="uploading = true; progress = 0"
-                x-on:livewire-upload-finish="uploading = false; progress = 100"
-                x-on:livewire-upload-error="uploading = false"
+                x-data="{
+                    phase: 'idle',
+                    progress: 0,
+                    fileCount: 0,
+                    result: '',
+                    resultTimer: null,
+                    showResult(message) {
+                        window.clearTimeout(this.resultTimer)
+                        this.result = message
+                        this.phase = 'result'
+                        this.resultTimer = window.setTimeout(() => {
+                            this.phase = 'idle'
+                            this.progress = 0
+                            this.fileCount = 0
+                            this.result = ''
+                        }, 3800)
+                    },
+                }"
+                x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
+                x-on:livewire-upload-start="window.clearTimeout(resultTimer); phase = 'uploading'; progress = 0; result = ''"
                 x-on:livewire-upload-progress="progress = $event.detail.progress"
+                x-on:livewire-upload-finish="
+                    progress = 100
+                    phase = 'processing'
+                    $wire.processDirectMedia()
+                        .then((response) => showResult(response?.summary ?? 'Upload complete'))
+                        .catch(() => showResult('Upload failed'))
+                "
+                x-on:livewire-upload-error="$wire.set('directMedia', []); showResult('Upload failed')"
             >
                 <input
                     class="media-workspace__file-input"
                     type="file"
                     wire:model="directMedia"
+                    x-on:change="fileCount = $event.target.files.length"
+                    x-bind:disabled="phase === 'uploading' || phase === 'processing'"
                     accept="{{ implode(',', \App\Domain\Media\MediaTypePolicy::uploadAcceptedMimeTypes()) }}"
-                    aria-label="Upload a file"
+                    aria-label="Upload media files"
+                    multiple
                 >
                 <div class="media-workspace__dropzone-copy">
-                    <strong>Drop a file here or choose from your device</strong>
-                    <span>JPEG, PNG, WebP, H.264 MP4, VP8/VP9/AV1 WebM, MP3, M4A/AAC, Ogg audio, or WAV.</span>
+                    <strong
+                        x-text="
+                            phase === 'uploading'
+                                ? `Uploading ${fileCount} ${fileCount === 1 ? 'file' : 'files'} · ${progress}%`
+                                : phase === 'processing'
+                                    ? `Processing ${fileCount} ${fileCount === 1 ? 'file' : 'files'}…`
+                                    : phase === 'result'
+                                        ? result
+                                        : 'Drop files here or choose from your device'
+                        "
+                    >Drop files here or choose from your device</strong>
+                    <span x-show="phase === 'idle'">JPEG, PNG, WebP, H.264 MP4, VP8/VP9/AV1 WebM, MP3, M4A/AAC, Ogg audio, or WAV.</span>
                 </div>
-                <div class="media-workspace__upload-progress" x-show="uploading" x-cloak>
-                    <progress max="100" x-bind:value="progress"></progress>
-                    <span x-text="`${progress}%`"></span>
+                <div
+                    class="media-workspace__upload-progress"
+                    x-show="phase === 'uploading'"
+                    x-cloak
+                    role="progressbar"
+                    aria-label="Upload progress"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    x-bind:aria-valuenow="progress"
+                >
+                    <span class="media-workspace__upload-progress-track" aria-hidden="true">
+                        <span class="media-workspace__upload-progress-fill" x-bind:style="`width: ${progress}%`"></span>
+                    </span>
                 </div>
             </div>
-
-            @error('directMedia')
-                <p class="media-workspace__upload-message is-error">{{ $message }}</p>
-            @enderror
-            @if ($directUploadMessage !== null)
-                <p class="media-workspace__upload-message is-success">{{ $directUploadMessage }}</p>
-            @endif
         </x-admin.section>
 
         <x-admin.section class="media-workspace__library" aria-label="Media library">

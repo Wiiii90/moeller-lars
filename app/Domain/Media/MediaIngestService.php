@@ -28,10 +28,7 @@ class MediaIngestService
 
     public function ingest(UploadedFile $upload): MediaAsset
     {
-        $lock = Cache::lock('media-ingest', self::INGEST_LOCK_SECONDS);
-        if (! $lock->get()) {
-            throw $this->validationFailure('Another media upload is currently being processed. Try again shortly.');
-        }
+        $lock = $this->acquireIngestLock();
 
         try {
             return $this->ingestLocked($upload);
@@ -40,10 +37,67 @@ class MediaIngestService
         }
     }
 
+    /** @return array{asset:MediaAsset,duplicate:bool} */
+    public function ingestUnique(UploadedFile $upload): array
+    {
+        $lock = $this->acquireIngestLock();
+
+        try {
+            $prepared = $this->prepareForIngest($upload);
+            $duplicate = MediaAsset::query()
+                ->where('state', 'available')
+                ->where('sha256', $prepared['sha256'])
+                ->where('byte_size', $prepared['size'])
+                ->first();
+
+            if ($duplicate instanceof MediaAsset) {
+                return ['asset' => $duplicate, 'duplicate' => true];
+            }
+
+            return [
+                'asset' => $this->storePreparedLocked($upload, $prepared),
+                'duplicate' => false,
+            ];
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function acquireIngestLock(): mixed
+    {
+        $lock = Cache::lock('media-ingest', self::INGEST_LOCK_SECONDS);
+        if (! $lock->get()) {
+            throw $this->validationFailure('Another media upload is currently being processed. Try again shortly.');
+        }
+
+        return $lock;
+    }
+
     private function ingestLocked(UploadedFile $upload): MediaAsset
     {
+        return $this->storePreparedLocked($upload, $this->prepareForIngest($upload));
+    }
+
+    /**
+     * @return array{mime:string,width:?int,height:?int,path:string,size:int,sha256:string,thumbnail_bytes:?string,thumbnail_width:?int,thumbnail_height:?int}
+     */
+    private function prepareForIngest(UploadedFile $upload): array
+    {
         try {
-            $prepared = $this->prepare($upload);
+            return $this->prepare($upload);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw $this->validationFailure('The uploaded media could not be processed.', $exception);
+        }
+    }
+
+    /**
+     * @param array{mime:string,width:?int,height:?int,path:string,size:int,sha256:string,thumbnail_bytes:?string,thumbnail_width:?int,thumbnail_height:?int} $prepared
+     */
+    private function storePreparedLocked(UploadedFile $upload, array $prepared): MediaAsset
+    {
+        try {
             app(MediaCapacityService::class)->assertCanStoreOriginal($prepared['size']);
         } catch (ValidationException $exception) {
             throw $exception;
@@ -268,6 +322,10 @@ class MediaIngestService
             throw $this->validationFailure('The uploaded media type could not be detected.');
         }
 
+        if (MediaTypePolicy::isImage($detected)) {
+            return $detected;
+        }
+
         [$head, $tail] = $this->mediaProbe($path, $size);
         $probe = $head.$tail;
 
@@ -289,7 +347,7 @@ class MediaIngestService
             return 'audio/ogg';
         }
 
-        if ($detected === 'audio/mpeg' || $this->containsMpegAudioFrame($probe)) {
+        if ($detected === 'audio/mpeg' || $this->hasLeadingMpegAudioSignature($head)) {
             return 'audio/mpeg';
         }
 
@@ -335,7 +393,7 @@ class MediaIngestService
         $probe = $head.$tail;
 
         $valid = match ($mime) {
-            'audio/mpeg' => $this->containsMpegAudioFrame($probe),
+            'audio/mpeg' => $this->containsMpegAudioFrameSequence($probe),
             'audio/mp4' => $this->isMp4Container($head)
                 && $this->hasMp4AudioTrack($probe)
                 && ! $this->hasVideoTrack($probe),
@@ -424,32 +482,96 @@ class MediaIngestService
             && (str_contains($probe, 'vorbis') || str_contains($probe, 'OpusHead'));
     }
 
-    private function containsMpegAudioFrame(string $probe): bool
+    private function hasLeadingMpegAudioSignature(string $head): bool
     {
-        $length = min(strlen($probe), 64 * 1024);
-        for ($index = 0; $index < $length - 3; $index++) {
-            $first = ord($probe[$index]);
-            $second = ord($probe[$index + 1]);
-            $third = ord($probe[$index + 2]);
+        if (str_starts_with($head, 'ID3')) {
+            return $this->containsMpegAudioFrameSequence($head);
+        }
 
-            if ($first !== 0xFF || ($second & 0xE0) !== 0xE0) {
+        $firstFrameLength = $this->mpegAudioFrameLength($head, 0);
+        if ($firstFrameLength === null) {
+            return false;
+        }
+
+        return $this->mpegAudioFrameLength($head, $firstFrameLength) !== null;
+    }
+
+    private function containsMpegAudioFrameSequence(string $probe): bool
+    {
+        $length = min(strlen($probe), self::MEDIA_PROBE_BYTES);
+        for ($index = 0; $index < $length - 7; $index++) {
+            $frameLength = $this->mpegAudioFrameLength($probe, $index);
+            if ($frameLength === null) {
                 continue;
             }
 
-            $versionBits = ($second >> 3) & 0x03;
-            $layerBits = ($second >> 1) & 0x03;
-            $bitrateIndex = ($third >> 4) & 0x0F;
-            $sampleRateIndex = ($third >> 2) & 0x03;
-
-            if ($versionBits !== 0x01
-                && $layerBits !== 0x00
-                && ! in_array($bitrateIndex, [0x00, 0x0F], true)
-                && $sampleRateIndex !== 0x03) {
+            $nextFrame = $index + $frameLength;
+            if ($nextFrame + 4 <= $length && $this->mpegAudioFrameLength($probe, $nextFrame) !== null) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function mpegAudioFrameLength(string $probe, int $offset): ?int
+    {
+        if ($offset < 0 || $offset + 4 > strlen($probe)) {
+            return null;
+        }
+
+        $first = ord($probe[$offset]);
+        $second = ord($probe[$offset + 1]);
+        $third = ord($probe[$offset + 2]);
+
+        if ($first !== 0xFF || ($second & 0xE0) !== 0xE0) {
+            return null;
+        }
+
+        $versionBits = ($second >> 3) & 0x03;
+        $layerBits = ($second >> 1) & 0x03;
+        $bitrateIndex = ($third >> 4) & 0x0F;
+        $sampleRateIndex = ($third >> 2) & 0x03;
+        $padding = ($third >> 1) & 0x01;
+
+        if ($versionBits === 0x01
+            || $layerBits === 0x00
+            || in_array($bitrateIndex, [0x00, 0x0F], true)
+            || $sampleRateIndex === 0x03) {
+            return null;
+        }
+
+        $mpeg1 = $versionBits === 0x03;
+        $layer = match ($layerBits) {
+            0x03 => 1,
+            0x02 => 2,
+            0x01 => 3,
+        };
+        $sampleRates = match ($versionBits) {
+            0x03 => [44_100, 48_000, 32_000],
+            0x02 => [22_050, 24_000, 16_000],
+            0x00 => [11_025, 12_000, 8_000],
+        };
+        $bitRates = $mpeg1
+            ? match ($layer) {
+                1 => [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448],
+                2 => [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384],
+                3 => [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320],
+            }
+            : match ($layer) {
+                1 => [0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
+                2, 3 => [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+            };
+        $sampleRate = $sampleRates[$sampleRateIndex];
+        $bitRate = $bitRates[$bitrateIndex] * 1000;
+
+        if ($layer === 1) {
+            return (intdiv(12 * $bitRate, $sampleRate) + $padding) * 4;
+        }
+
+        $coefficient = $layer === 3 && ! $mpeg1 ? 72 : 144;
+
+        return intdiv($coefficient * $bitRate, $sampleRate) + $padding;
     }
 
     private function decode(string $path, string $mime): \GdImage

@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
+use Throwable;
 
 final class ListMediaAssets extends Page
 {
@@ -57,9 +58,8 @@ final class ListMediaAssets extends Page
 
     public string $search = '';
 
-    public mixed $directMedia = null;
-
-    public ?string $directUploadMessage = null;
+    /** @var list<TemporaryUploadedFile> */
+    public array $directMedia = [];
 
     public int $page = 1;
 
@@ -113,31 +113,91 @@ final class ListMediaAssets extends Page
         $this->loadLibrary();
     }
 
-    public function updatedDirectMedia(): void
+    /** @return array{summary:string,added:int,duplicates:int,failed:int} */
+    public function processDirectMedia(): array
     {
-        $upload = $this->directMedia;
-        $this->directUploadMessage = null;
+        $uploads = array_values(array_filter(
+            $this->directMedia,
+            static fn (mixed $upload): bool => $upload instanceof TemporaryUploadedFile,
+        ));
         $this->resetErrorBag('directMedia');
 
-        if (! $upload instanceof TemporaryUploadedFile) {
-            return;
-        }
-
-        try {
-            $asset = app(MediaIngestService::class)->ingest($upload);
-        } catch (ValidationException $exception) {
-            $message = collect($exception->errors())->flatten()->first();
+        if ($uploads === []) {
             $this->reset('directMedia');
-            $this->addError('directMedia', is_string($message) ? $message : 'The file could not be uploaded.');
 
-            return;
+            return [
+                'summary' => 'Upload failed',
+                'added' => 0,
+                'duplicates' => 0,
+                'failed' => 1,
+            ];
         }
 
+        $service = app(MediaIngestService::class);
+        $added = 0;
+        $duplicates = 0;
+        $failures = [];
+
+        foreach ($uploads as $upload) {
+            try {
+                $result = $service->ingestUnique($upload);
+                if ($result['duplicate']) {
+                    $duplicates++;
+                } else {
+                    $added++;
+                }
+            } catch (ValidationException $exception) {
+                $failures[] = [
+                    'filename' => $this->uploadFilename($upload),
+                    'message' => $this->uploadValidationMessage($exception),
+                ];
+            } catch (Throwable $exception) {
+                report($exception);
+                $failures[] = [
+                    'filename' => $this->uploadFilename($upload),
+                    'message' => 'The file could not be uploaded.',
+                ];
+            }
+        }
+
+        $failed = count($failures);
+        $total = count($uploads);
         $this->reset('directMedia');
-        $this->page = 1;
-        $this->directUploadMessage = (string) $asset->getAttribute('original_filename').' is available in Media Files.';
+
+        if ($added > 0) {
+            $this->page = 1;
+        }
+
         $this->loadLibrary();
-        Notification::make()->title('File uploaded')->success()->send();
+
+        if ($failures !== []) {
+            $details = array_map(
+                static fn (array $failure): string => $failure['filename'].' — '.$failure['message'],
+                array_slice($failures, 0, 4),
+            );
+            if ($failed > 4) {
+                $details[] = '+'.($failed - 4).' more';
+            }
+
+            $notification = Notification::make()
+                ->title(($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed')
+                ->body(implode("\n", $details));
+
+            if (($added + $duplicates) > 0) {
+                $notification->warning();
+            } else {
+                $notification->danger();
+            }
+
+            $notification->send();
+        }
+
+        return [
+            'summary' => $this->directUploadSummary($total, $added, $duplicates, $failed),
+            'added' => $added,
+            'duplicates' => $duplicates,
+            'failed' => $failed,
+        ];
     }
 
     public function setViewMode(string $mode): void
@@ -598,6 +658,46 @@ final class ListMediaAssets extends Page
         $pageSize = is_numeric($value) ? (int) $value : self::DEFAULT_PAGE_SIZE;
 
         return in_array($pageSize, self::PAGE_SIZES, true) ? $pageSize : self::DEFAULT_PAGE_SIZE;
+    }
+
+    private function uploadFilename(TemporaryUploadedFile $upload): string
+    {
+        return basename(str_replace('\\', '/', $upload->getClientOriginalName()));
+    }
+
+    private function uploadValidationMessage(ValidationException $exception): string
+    {
+        $message = collect($exception->errors())->flatten()->first();
+
+        return is_string($message) ? $message : 'The file could not be uploaded.';
+    }
+
+    private function directUploadSummary(int $total, int $added, int $duplicates, int $failed): string
+    {
+        if ($total === 1) {
+            if ($added === 1) {
+                return '1 file added to Media Files';
+            }
+
+            if ($duplicates === 1) {
+                return 'Already in Media Files';
+            }
+
+            return '1 failed';
+        }
+
+        $parts = [];
+        if ($added > 0) {
+            $parts[] = $added.' '.($added === 1 ? 'file' : 'files').' added'.($duplicates === 0 && $failed === 0 ? ' to Media Files' : '');
+        }
+        if ($duplicates > 0) {
+            $parts[] = $duplicates.' already in Media Files';
+        }
+        if ($failed > 0) {
+            $parts[] = $failed.' failed';
+        }
+
+        return implode(' · ', $parts);
     }
 
     private function validationMessage(ValidationException $exception): string

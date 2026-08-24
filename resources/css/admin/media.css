@@ -1172,3 +1172,45 @@
         grid-row: 3;
     }
 }
+
+/* Fixed Media Files upload surface and integrated progress. */
+.media-workspace__dropzone {
+    grid-template-columns: minmax(0, 1fr);
+    box-sizing: border-box;
+    height: 5.25rem;
+    min-height: 5.25rem;
+    overflow: hidden;
+}
+
+.media-workspace__dropzone-copy {
+    min-width: 0;
+}
+
+.media-workspace__upload-progress {
+    position: absolute;
+    right: 1.1rem;
+    bottom: .5rem;
+    left: 1.1rem;
+    z-index: 1;
+    display: block;
+    height: 3px;
+    pointer-events: none;
+}
+
+.media-workspace__upload-progress-track,
+.media-workspace__upload-progress-fill {
+    display: block;
+    height: 100%;
+}
+
+.media-workspace__upload-progress-track {
+    width: 100%;
+    overflow: hidden;
+    background: var(--admin-line);
+}
+
+.media-workspace__upload-progress-fill {
+    width: 0;
+    background: var(--admin-muted);
+    transition: width .12s linear;
+}
