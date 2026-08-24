@@ -198,7 +198,7 @@
     justify-content: center;
     border: 1px solid var(--admin-line-strong);
     border-radius: 999px;
-    font-size: .65rem;
+    font-size: .55rem;
     font-variant-numeric: tabular-nums;
 }
 
@@ -965,8 +965,8 @@
 
 .media-workspace .media-workspace__selection-trigger {
     min-width: 8.5rem;
-    padding-inline: .25rem;
-    justify-content: flex-start;
+    padding-inline: .58rem;
+    justify-content: center;
 }
 
 .media-workspace .media-workspace__filename-button {
@@ -1070,7 +1070,7 @@
 
 .media-workspace__selection-count {
     flex: 0 0 auto;
-    font-size: .6rem;
+    font-size: .55rem;
     line-height: 1;
 }
 
