@@ -58,7 +58,7 @@ trait GalleryWorkspaceDataProjection
         $galleryPublished = $this->galleryContext['state'] === 'published';
         $count = $records->count();
 
-        $this->artworks = $records->values()->map(function (Artwork $artwork, int $index) use ($analyticsRows, $analyticsState, $galleryPublished, $count): array {
+        $projected = $records->values()->map(function (Artwork $artwork, int $index) use ($analyticsRows, $analyticsState, $galleryPublished, $count): array {
             /** @var EloquentCollection<int, ArtworkMedia> $primaries */
             $primaries = $artwork->getRelation('artworkMedia')->where('role', 'primary')->values();
             /** @var ArtworkMedia|null $primary */
@@ -109,13 +109,45 @@ trait GalleryWorkspaceDataProjection
                     'attention' => $analyticsAvailable ? (string) ($analyticsRow['attention_label'] ?? '0s') : '—',
                 ],
             ];
-        })->all();
+        });
 
-        $currentIds = array_column($this->artworks, 'id');
+        $currentIds = $projected->pluck('id')->all();
         $this->selectedArtworkIds = array_values(array_filter(
             $this->selectedArtworkIds,
             static fn (int|string $id): bool => in_array((int) $id, $currentIds, true),
         ));
+
+        $search = mb_strtolower(trim((string) ($this->search ?? '')));
+        $status = (string) ($this->statusFilter ?? 'any');
+        $readiness = (string) ($this->readinessFilter ?? 'any');
+
+        $this->artworks = $projected
+            ->filter(static function (array $artwork) use ($search, $status, $readiness): bool {
+                if ($status !== 'any' && $artwork['state'] !== $status) {
+                    return false;
+                }
+                if ($readiness === 'ready' && ! $artwork['is_ready']) {
+                    return false;
+                }
+                if ($readiness === 'needs-attention' && $artwork['is_ready']) {
+                    return false;
+                }
+                if ($search === '') {
+                    return true;
+                }
+
+                $haystack = mb_strtolower(implode(' ', array_filter([
+                    $artwork['title'] ?? null,
+                    $artwork['medium'] ?? null,
+                    $artwork['year'] ?? null,
+                    $artwork['dimensions'] ?? null,
+                ], static fn (mixed $value): bool => $value !== null && $value !== '')));
+
+                return str_contains($haystack, $search);
+            })
+            ->values()
+            ->all();
+
         $this->metrics = $this->galleryMetrics($records);
     }
 

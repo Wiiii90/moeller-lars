@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Artworks;
 
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
+use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\Pages\CreateArtwork;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Resources\Artworks\Pages\ListArtworks;
@@ -52,6 +53,22 @@ class ArtworkResource extends Resource
     protected static ?string $navigationLabel = 'All artworks';
 
     protected static ?int $navigationSort = 10;
+
+    public static function getUrl(?string $name = null, array $parameters = [], bool $isAbsolute = true, ?string $panel = null, ?Model $tenant = null, bool $shouldGuessMissingParameters = false, ?string $configuration = null): string
+    {
+        if ($name === 'gallery') {
+            return GalleryWorkspace::getUrl(
+                ['gallery' => $parameters['gallery'] ?? null],
+                $isAbsolute,
+                $panel,
+                $tenant,
+                $shouldGuessMissingParameters,
+                $configuration,
+            );
+        }
+
+        return parent::getUrl($name, $parameters, $isAbsolute, $panel, $tenant, $shouldGuessMissingParameters, $configuration);
+    }
 
     public static function getRecordTitleAttribute(): ?string
     {

@@ -2,11 +2,8 @@
 
 namespace App\Filament\Resources\Artworks\Pages\Concerns;
 
-use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
-use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\MediaTypePolicy;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMaterialPreset;
 use Filament\Actions\Action;
@@ -16,57 +13,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 trait GalleryWorkspaceUploadSettings
 {
-    public function updatedDirectPrimaryMedia(): void
-    {
-        $upload = $this->directPrimaryMedia;
-        $this->directUploadMessage = null;
-        $this->resetErrorBag('directPrimaryMedia');
-
-        if (! $upload instanceof TemporaryUploadedFile) {
-            return;
-        }
-
-        $mime = (string) $upload->getMimeType();
-        if (! MediaTypePolicy::isImage($mime) && ! MediaTypePolicy::isVideo($mime)) {
-            $message = 'Gallery primary media must be an image or video. Audio is not supported here.';
-            $this->reset('directPrimaryMedia');
-            $this->addError('directPrimaryMedia', $message);
-            Notification::make()->title('Media upload failed')->body($message)->danger()->send();
-
-            return;
-        }
-
-        try {
-            $asset = app(MediaIngestService::class)->ingest($upload);
-            $audit = app(AdminAuditService::class);
-            $audit->record($audit->requireActor(), 'media.ingested', 'media_asset', $asset->getKey());
-        } catch (ValidationException $exception) {
-            $message = $this->firstValidationMessage($exception);
-            $this->reset('directPrimaryMedia');
-            $this->addError('directPrimaryMedia', $message);
-            Notification::make()->title('Media upload failed')->body($message)->danger()->send();
-
-            return;
-        }
-
-        $this->pendingPrimaryMediaAssetId = (int) $asset->getKey();
-        $this->directUploadMessage = (string) $asset->getAttribute('original_filename').' is now in Media Files and selected for the new artwork.';
-        $this->reset('directPrimaryMedia');
-        Notification::make()->title('Media uploaded')->body('Complete the artwork details to attach it. Canceling leaves the file reusable in Media Files.')->success()->send();
-        $this->mountAction('addArtwork');
-    }
-
-    public function chooseExistingMedia(): void
-    {
-        $this->pendingPrimaryMediaAssetId = null;
-        $this->mountAction('addArtwork');
-    }
-
     public function gallerySettingsAction(): Action
     {
         return Action::make('gallerySettings')

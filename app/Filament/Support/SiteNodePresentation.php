@@ -2,14 +2,11 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
+use App\Filament\Pages\CustomPageWorkspace;
+use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Pages\HomePresentation;
-use App\Filament\Resources\Artworks\ArtworkResource;
-use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\CustomPageSettings\CustomPageSettingResource;
-use App\Filament\Resources\Exhibitions\ExhibitionResource;
-use App\Models\CustomPageSetting;
+use App\Filament\Pages\JournalWorkspace;
 use App\Models\SiteSection;
 use Filament\Support\Icons\Heroicon;
 use LogicException;
@@ -31,12 +28,12 @@ final class SiteNodePresentation
     {
         return match ($section->nodeType()) {
             SiteNodeType::Home => HomePresentation::getUrl(),
-            SiteNodeType::Gallery => ArtworkResource::getUrl('gallery', [
+            SiteNodeType::Gallery => GalleryWorkspace::getUrl([
                 'gallery' => $this->galleryId($section),
             ]),
             SiteNodeType::Journal => $this->journalWorkspaceUrl($section),
-            SiteNodeType::CustomPage => CustomPageSettingResource::getUrl('edit', [
-                'record' => $this->customPageSetting($section),
+            SiteNodeType::CustomPage => CustomPageWorkspace::getUrl([
+                'section' => $section->getKey(),
             ]),
             SiteNodeType::NavigationNode => null,
         };
@@ -52,26 +49,12 @@ final class SiteNodePresentation
         return (int) $galleryId;
     }
 
-    private function customPageSetting(SiteSection $section): CustomPageSetting
-    {
-        if (! $section->relationLoaded('customPageSetting')) {
-            throw new LogicException('Custom Page presentation requires customPageSetting to be eager-loaded.');
-        }
-
-        $settings = $section->getRelation('customPageSetting');
-        if (! $settings instanceof CustomPageSetting) {
-            throw new LogicException('Custom Page site node is missing its required settings record.');
-        }
-
-        return $settings;
-    }
-
     private function journalWorkspaceUrl(SiteSection $section): string
     {
-        return match ($section->journalTemplate()) {
-            JournalTemplate::Blog => BlogPostResource::getUrl('index', ['section' => $section->getKey()]),
-            JournalTemplate::Exhibitions => ExhibitionResource::getUrl('index', ['section' => $section->getKey()]),
-            null => throw new LogicException('Journal site node is missing its required template.'),
-        };
+        if ($section->journalTemplate() === null) {
+            throw new LogicException('Journal site node is missing its required template.');
+        }
+
+        return JournalWorkspace::getUrl(['section' => $section->getKey()]);
     }
 }

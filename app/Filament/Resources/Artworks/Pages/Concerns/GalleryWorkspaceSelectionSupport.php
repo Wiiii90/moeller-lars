@@ -85,8 +85,6 @@ trait GalleryWorkspaceSelectionSupport
     private function clearSelection(): void
     {
         $this->selectedArtworkIds = [];
-        $this->batchTargetGalleryId = null;
-        $this->moveTargetGalleryIds = [];
     }
 
     private function loadGallery(int $galleryId): void
@@ -102,6 +100,9 @@ trait GalleryWorkspaceSelectionSupport
             'slug' => (string) $gallery->getAttribute('slug'),
             'state' => (string) $section->getAttribute('state'),
             'path' => '/'.ltrim((string) $gallery->getAttribute('slug'), '/'),
+            'public_url' => $section->getAttribute('state') === 'published'
+                ? route('site.section', ['section' => $gallery->getAttribute('slug')])
+                : null,
         ];
     }
 

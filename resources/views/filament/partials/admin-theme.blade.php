@@ -1,1 +1,1 @@
-@vite('resources/css/admin.css')
+@vite(['resources/css/admin.css', 'resources/css/admin/gallery.css'])

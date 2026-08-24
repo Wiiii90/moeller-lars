@@ -4,6 +4,7 @@ namespace App\Filament\Resources\BlogPosts\Pages;
 
 use App\Domain\Blog\BlogEditorialService;
 use App\Filament\Concerns\UsesAdminEditor;
+use App\Filament\Pages\JournalWorkspace;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Models\BlogPost;
 use Filament\Resources\Pages\EditRecord;
@@ -36,7 +37,7 @@ final class EditBlogPost extends EditRecord
     {
         $sectionId = (int) $this->post()->getAttribute('site_section_id');
 
-        return $this->editorReturnUrl(BlogPostResource::getUrl('index', ['section' => $sectionId]));
+        return $this->editorReturnUrl(JournalWorkspace::getUrl(['section' => $sectionId]));
     }
 
     private function post(): BlogPost

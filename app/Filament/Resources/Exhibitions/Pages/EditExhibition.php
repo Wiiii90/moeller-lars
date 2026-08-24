@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Exhibitions\Pages;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\EditorialRichTextValidator;
 use App\Filament\Concerns\UsesAdminEditor;
+use App\Filament\Pages\JournalWorkspace;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Models\Exhibition;
 use Filament\Resources\Pages\EditRecord;
@@ -59,7 +60,7 @@ class EditExhibition extends EditRecord
     {
         $sectionId = (int) $this->exhibition()->getAttribute('site_section_id');
 
-        return $this->editorReturnUrl(ExhibitionResource::getUrl('index', ['section' => $sectionId]));
+        return $this->editorReturnUrl(JournalWorkspace::getUrl(['section' => $sectionId]));
     }
 
     private function exhibition(): Exhibition
