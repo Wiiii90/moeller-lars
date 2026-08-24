@@ -89,7 +89,7 @@
 
 .gallery-workspace__controls {
     display: grid;
-    grid-template-columns: minmax(11rem, 1.5fr) minmax(6.4rem, .65fr) minmax(8rem, .8fr) auto repeat(5, auto);
+    grid-template-columns: minmax(11rem, 1.5fr) minmax(6.4rem, .65fr) minmax(8rem, .8fr) auto auto auto;
     gap: .55rem;
     padding: .85rem 0;
     align-items: end;
@@ -148,6 +148,14 @@
 .gallery-workspace__control-group > .fi-btn,
 .gallery-workspace__control-group > div > .admin-action {
     min-height: var(--admin-control-height);
+}
+
+.gallery-workspace__gallery-actions {
+    display: flex;
+    min-width: 0;
+    gap: .35rem;
+    align-items: center;
+    flex-wrap: nowrap;
 }
 
 .gallery-workspace__selection {
@@ -380,8 +388,13 @@
     }
 
     .gallery-workspace__search,
+    .gallery-workspace__gallery,
     .gallery-workspace__selection {
         grid-column: 1 / -1;
+    }
+
+    .gallery-workspace__gallery-actions {
+        flex-wrap: wrap;
     }
 
     .gallery-workspace__selection-menu {

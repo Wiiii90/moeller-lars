@@ -115,28 +115,18 @@
                 <button class="admin-action" type="button" wire:click="resetFilters">Reset</button>
             </div>
 
-            <div class="gallery-workspace__control-group">
-                <span class="gallery-workspace__control-label is-placeholder" aria-hidden="true">Settings</span>
-                <button class="admin-action" type="button" wire:click="mountAction('gallerySettings')">Settings</button>
-            </div>
-
-            <div class="gallery-workspace__control-group">
-                <span class="gallery-workspace__control-label is-placeholder" aria-hidden="true">Add artwork</span>
-                <button class="admin-action" type="button" wire:click="mountAction('addArtwork')">Add artwork</button>
-            </div>
-
-            <div class="gallery-workspace__control-group">
-                <span class="gallery-workspace__control-label is-placeholder" aria-hidden="true">Materials</span>
-                <button class="admin-action" type="button" wire:click="mountAction('materialPresets')">Materials</button>
-            </div>
-
-            <div class="gallery-workspace__control-group">
-                <span class="gallery-workspace__control-label is-placeholder" aria-hidden="true">Preview</span>
-                @if ($galleryContext['public_url'])
-                    <a class="admin-action" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener">Preview</a>
-                @else
-                    <button class="admin-action" type="button" disabled title="Publish the Gallery to open its public URL">Preview</button>
-                @endif
+            <div class="gallery-workspace__control-group gallery-workspace__gallery">
+                <span class="gallery-workspace__control-label">Gallery</span>
+                <div class="gallery-workspace__gallery-actions">
+                    <button class="admin-action" type="button" wire:click="mountAction('gallerySettings')">Settings</button>
+                    <button class="admin-action" type="button" wire:click="mountAction('addArtwork')">Add artwork</button>
+                    <button class="admin-action" type="button" wire:click="mountAction('materialPresets')">Materials</button>
+                    @if ($galleryContext['public_url'])
+                        <a class="admin-action" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener">Preview</a>
+                    @else
+                        <button class="admin-action" type="button" disabled title="Publish the Gallery to open its public URL">Preview</button>
+                    @endif
+                </div>
             </div>
 
             <div class="gallery-workspace__control-group gallery-workspace__selection" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
@@ -194,8 +184,54 @@
                             <div class="admin-gallery-grid__identity">
                                 <div
                                     class="gallery-workspace__title-editor"
-                                    x-data='{ editing: false, saving: false, original: @js($artwork["title"]), value: @js($artwork["title"]), normalize(value) { return value.trim().replace(/\s+/g, " ") }, start() { this.value = this.original; this.editing = true; this.$nextTick(() => this.$refs.input.select()) }, cancel() { this.value = this.original; this.editing = false; this.saving = false }, commit() { if (!this.editing || this.saving) return; const next = this.normalize(this.value); if (next === this.normalize(this.original)) { this.value = this.original; this.editing = false; return; } this.saving = true; $wire.renameArtwork({{ $artwork["id"] }}, next).then((saved) => { if (saved) { this.original = saved; this.value = saved; } else { this.value = this.original; } this.editing = false; this.saving = false; }).catch(() => { this.value = this.original; this.editing = false; this.saving = false; }); } }'
+                                    x-data="{
+                                        editing: false,
+                                        saving: false,
+                                        original: '',
+                                        value: '',
+                                        normalize(value) { return value.trim().replace(/\s+/g, ' ') },
+                                        start() {
+                                            this.value = this.original
+                                            this.editing = true
+                                            this.$nextTick(() => this.$refs.input.select())
+                                        },
+                                        cancel() {
+                                            this.value = this.original
+                                            this.editing = false
+                                            this.saving = false
+                                        },
+                                        commit() {
+                                            if (! this.editing || this.saving) return
+
+                                            const next = this.normalize(this.value)
+                                            if (next === this.normalize(this.original)) {
+                                                this.value = this.original
+                                                this.editing = false
+                                                return
+                                            }
+
+                                            this.saving = true
+                                            $wire.renameArtwork({{ $artwork['id'] }}, next)
+                                                .then((saved) => {
+                                                    if (saved) {
+                                                        this.original = saved
+                                                        this.value = saved
+                                                    } else {
+                                                        this.value = this.original
+                                                    }
+                                                    this.editing = false
+                                                    this.saving = false
+                                                })
+                                                .catch(() => {
+                                                    this.value = this.original
+                                                    this.editing = false
+                                                    this.saving = false
+                                                })
+                                        },
+                                    }"
+                                    x-init="original = $refs.initialTitle.textContent; value = original"
                                 >
+                                    <span x-ref="initialTitle" hidden>{{ $artwork['title'] }}</span>
                                     <button class="gallery-workspace__title-button" type="button" x-show="!editing" x-on:click="start" title="Rename artwork">
                                         <strong x-text="original">{{ $artwork['title'] }}</strong>
                                     </button>
