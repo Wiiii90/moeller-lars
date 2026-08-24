@@ -27,6 +27,7 @@ it('keeps mixed-aspect media previews contained and alternative views on one tas
         ->and($view)->toContain('media-workspace__control-label">Selection</span>')
         ->and($view)->not->toContain('Multi-action')
         ->and(substr_count($view, 'media-workspace__view-trigger'))->toBe(1)
+        ->and($view)->toContain('style="min-width: 4.75rem;"')
         ->and(substr_count($view, "setViewMode('list')"))->toBe(1)
         ->and(substr_count($view, "setViewMode('grid')"))->toBe(1)
         ->and(substr_count($view, "setViewMode('dense')"))->toBe(1)
