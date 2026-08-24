@@ -16,24 +16,12 @@
     }
 }
 
-/*
- * Keep the native Filament modal stack above all normal page/header actions.
- * The overlay and window retain a small local stacking order inside the modal.
- */
-.fi-modal {
-    z-index: 40 !important;
-    isolation: isolate;
-}
-
 .fi-modal-close-overlay {
     position: fixed;
     inset: 0;
-    z-index: 0;
 }
 
 .fi-modal-window {
-    position: relative;
-    z-index: 1;
     max-height: calc(100dvh - 2rem);
 }
 
