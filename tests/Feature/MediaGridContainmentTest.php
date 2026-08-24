@@ -71,7 +71,7 @@ it('keeps Media Files views, selection treatment, actions, and pagination on the
         ->and($view)->toContain('wire:click.prevent="toggleVisibleSelection"')
         ->and($view)->toContain('$el.checked = visibleIds.length > 0 && selectedCount === visibleIds.length;')
         ->and($view)->toContain('$el.indeterminate = selectedCount > 0 && selectedCount < visibleIds.length;')
-        ->and($view)->toContain("$el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));")
+        ->and($view)->toContain("\$el.setAttribute('aria-checked', \$el.indeterminate ? 'mixed' : (\$el.checked ? 'true' : 'false'));")
         ->and(substr_count($view, 'wire:click="toggleAssetSelection('))->toBe(2)
         ->and(substr_count($view, 'x-bind:checked="$wire.selectedAssets.map(Number).includes('))->toBe(2)
         ->and($view)->not->toContain('wire:model.live.number="selectedAssets"')
