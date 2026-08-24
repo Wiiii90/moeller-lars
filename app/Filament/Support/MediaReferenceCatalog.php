@@ -13,6 +13,7 @@ use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
 final class MediaReferenceCatalog
 {
@@ -204,6 +205,12 @@ final class MediaReferenceCatalog
     public function references(MediaAsset $asset): array
     {
         $rows = [];
+        $kind = MediaTypePolicy::kind((string) $asset->getAttribute('mime_type'));
+        $mediaNoun = match ($kind) {
+            'video' => 'video',
+            'audio' => 'audio',
+            default => 'image',
+        };
 
         foreach ($asset->getRelation('artworks') as $artwork) {
             /** @var ArtworkCategory|null $category */
@@ -212,10 +219,13 @@ final class MediaReferenceCatalog
             $galleryLabel = $node instanceof SiteSection
                 ? $this->nodeLabel($node)
                 : trim((string) ($category?->getAttribute('name') ?? 'Gallery'));
+            $pivot = $artwork->getRelationValue('pivot');
+            $role = $pivot instanceof Pivot ? (string) $pivot->getAttribute('role') : 'additional';
+            $roleLabel = $role === 'primary' ? 'Primary '.$mediaNoun : 'Additional '.$mediaNoun;
 
             $rows[] = [
                 'type' => 'Gallery: '.$galleryLabel,
-                'label' => (string) $artwork->getAttribute('title'),
+                'label' => (string) $artwork->getAttribute('title').' — '.$roleLabel,
                 'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
             ];
         }
@@ -223,9 +233,12 @@ final class MediaReferenceCatalog
         foreach ($asset->getRelation('exhibitions') as $exhibition) {
             $node = $exhibition->getRelationValue('siteSection');
             $journalLabel = $node instanceof SiteSection ? $this->nodeLabel($node) : 'Journal';
+            $pivot = $exhibition->getRelationValue('pivot');
+            $role = $pivot instanceof Pivot ? (string) $pivot->getAttribute('role') : 'additional';
+            $roleLabel = $role === 'hero' ? 'Hero '.$mediaNoun : 'Additional '.$mediaNoun;
             $rows[] = [
                 'type' => 'Journal: '.$journalLabel,
-                'label' => (string) $exhibition->getAttribute('title'),
+                'label' => (string) $exhibition->getAttribute('title').' — '.$roleLabel,
                 'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
             ];
         }
@@ -235,7 +248,7 @@ final class MediaReferenceCatalog
             $journalLabel = $node instanceof SiteSection ? $this->nodeLabel($node) : 'Journal';
             $rows[] = [
                 'type' => 'Journal: '.$journalLabel,
-                'label' => (string) $post->getAttribute('title'),
+                'label' => (string) $post->getAttribute('title').' — Cover '.$mediaNoun,
                 'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
             ];
         }
