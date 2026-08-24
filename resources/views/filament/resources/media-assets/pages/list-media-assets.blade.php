@@ -130,7 +130,6 @@
                         <button
                             class="admin-action is-primary media-workspace__view-trigger"
                             type="button"
-                            style="min-width: 4.75rem;"
                             x-on:click="open = ! open"
                             x-bind:aria-expanded="open.toString()"
                             aria-haspopup="menu"
