@@ -162,6 +162,12 @@
                             <span class="media-workspace__selection-count">{{ count($selectedAssets) }}</span>
                         </button>
                         <div class="media-workspace__multi-action-menu" role="menu" x-show="open" x-cloak>
+                            <a
+                                class="admin-action"
+                                role="menuitem"
+                                href="{{ route('admin.media.download-selected', ['ids' => $selectedAssets]) }}"
+                                x-on:click="open = false"
+                            >Download selected</a>
                             <button
                                 class="admin-action is-danger"
                                 type="button"
@@ -231,7 +237,11 @@
                                             aria-label="Toggle selection for {{ $asset['filename'] }}"
                                         >
                                     </label>
-                                    <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">Preview</button>
+                                    @if ($asset['state'] === 'available')
+                                        <a class="admin-action" href="{{ route('admin.media.download', ['mediaAsset' => $asset['id']]) }}">Download</a>
+                                    @else
+                                        <button class="admin-action" type="button" disabled>Download</button>
+                                    @endif
                                     <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>Edit</button>
                                     <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>Delete</button>
                                 </div>
@@ -253,7 +263,9 @@
                                         >
                                         <span class="sr-only">Selection</span>
                                     </th>
-                                    <th scope="col" class="media-workspace__thumb-head">Preview</th>
+                                    @if ($viewMode === 'list')
+                                        <th scope="col" class="media-workspace__thumb-head">Preview</th>
+                                    @endif
                                     <th scope="col">Media</th>
                                     <th scope="col">Type</th>
                                     <th scope="col">Used in</th>
@@ -275,22 +287,24 @@
                                                 aria-label="Toggle selection for {{ $asset['filename'] }}"
                                             >
                                         </td>
-                                        <td class="media-workspace__thumb">
-                                            <button
-                                                type="button"
-                                                wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })"
-                                                aria-label="Preview {{ $asset['filename'] }}"
-                                            >
-                                                @if ($asset['thumbnail_url'])
-                                                    <img src="{{ $asset['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
-                                                @else
-                                                    @include('filament.resources.media-assets.partials.media-type-placeholder', [
-                                                        'kind' => $asset['kind'],
-                                                        'typeLabel' => $asset['type_label'],
-                                                    ])
-                                                @endif
-                                            </button>
-                                        </td>
+                                        @if ($viewMode === 'list')
+                                            <td class="media-workspace__thumb">
+                                                <button
+                                                    type="button"
+                                                    wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })"
+                                                    aria-label="Preview {{ $asset['filename'] }}"
+                                                >
+                                                    @if ($asset['thumbnail_url'])
+                                                        <img src="{{ $asset['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                                    @else
+                                                        @include('filament.resources.media-assets.partials.media-type-placeholder', [
+                                                            'kind' => $asset['kind'],
+                                                            'typeLabel' => $asset['type_label'],
+                                                        ])
+                                                    @endif
+                                                </button>
+                                            </td>
+                                        @endif
                                         <td class="media-workspace__identity">
                                             <button
                                                 class="media-workspace__filename-button"
@@ -330,7 +344,14 @@
                                         <td class="media-workspace__size">{{ $asset['size'] }}</td>
                                         <td class="media-workspace__actions">
                                             <div class="admin-toolbar">
-                                                <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">Preview</button>
+                                                @if ($viewMode === 'dense')
+                                                    <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">Preview</button>
+                                                @endif
+                                                @if ($asset['state'] === 'available')
+                                                    <a class="admin-action" href="{{ route('admin.media.download', ['mediaAsset' => $asset['id']]) }}">Download</a>
+                                                @else
+                                                    <button class="admin-action" type="button" disabled>Download</button>
+                                                @endif
                                                 <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>Edit</button>
                                                 <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>Delete</button>
                                             </div>
