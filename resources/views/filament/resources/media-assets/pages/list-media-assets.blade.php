@@ -6,7 +6,7 @@
             <x-admin.metric label="Videos" :value="number_format($libraryVideos)">Available videos</x-admin.metric>
             <x-admin.metric label="Audio" :value="number_format($libraryAudio)">Available audio</x-admin.metric>
             <x-admin.metric label="Unreferenced" :value="number_format($libraryUnreferenced)">No canonical consumer</x-admin.metric>
-            <x-admin.metric label="Library size" :value="$librarySize">Available originals</x-admin.metric>
+            <x-admin.metric label="Library size" :value="$librarySize">Original files</x-admin.metric>
         </x-admin.metrics>
 
         <x-admin.section class="media-workspace__upload-section" aria-label="Upload media">
