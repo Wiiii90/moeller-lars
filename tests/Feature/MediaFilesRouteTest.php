@@ -7,7 +7,6 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
-use ZipArchive;
 
 beforeEach(function (): void {
     Storage::fake('media-download-test');
