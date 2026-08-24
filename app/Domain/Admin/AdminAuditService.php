@@ -23,7 +23,6 @@ class AdminAuditService
     ];
 
     public function __construct(
-        private readonly AdminActionStatsService $actionStats,
         private readonly AdminActionReceiptService $receipts,
     ) {}
 
@@ -77,20 +76,18 @@ class AdminAuditService
             }
         }
 
-        $occurredAt = now();
         $event = new AuditEvent;
         $event->fill([
             'admin_user_id' => $actor->getKey(),
             'action' => $action,
             'entity_type' => $entityType,
             'entity_id' => $entityId,
-            'occurred_at' => $occurredAt,
+            'occurred_at' => now(),
             'request_id' => null,
             'metadata' => $metadata === [] ? null : $metadata,
         ]);
         $event->save();
 
-        $this->actionStats->record($actor, $action, $occurredAt);
         $this->receipts->recordForAuditEvent($event, $actor);
 
         return $event;

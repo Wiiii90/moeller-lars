@@ -3,14 +3,10 @@
 namespace App\Filament\Resources\CvEntries\Pages;
 
 use App\Domain\Admin\EditorialRecordService;
-use App\Filament\Pages\SitePages;
 use App\Filament\Resources\CvEntries\CvEntryResource;
-use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\CvEntry;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class ListCvEntries extends Page
@@ -36,23 +32,6 @@ class ListCvEntries extends Page
         }
 
         $this->loadEntries();
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('addEntry')
-                ->label('Add Vita / CV entry')
-                ->icon(Heroicon::OutlinedPlus)
-                ->url(CvEntryResource::getUrl('create')),
-            Action::make('contactSettings')
-                ->label('Contact settings')
-                ->icon(Heroicon::OutlinedCog6Tooth)
-                ->url(PublicContentSettingResource::getNavigationUrl()),
-            Action::make('pages')
-                ->label('Back to Pages')
-                ->url(SitePages::getUrl()),
-        ];
     }
 
     private function loadEntries(): void

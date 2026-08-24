@@ -1,15 +1,5 @@
 <x-filament-panels::page>
-    <x-admin.workspace :kicker="$galleryContext['parent_name'] ? 'Gallery · '.$galleryContext['parent_name'] : 'Gallery'" :title="$galleryContext['name']">
-        <x-slot:actions>
-            <nav class="admin-toolbar" aria-label="Gallery navigation">
-                <a class="admin-action" href="{{ $galleryContext['pages_url'] }}">Pages</a>
-                <a class="admin-action" href="{{ $galleryContext['all_artworks_url'] }}">All artworks</a>
-                @if ($galleryContext['public_url'])
-                    <a class="admin-action" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener">View Gallery</a>
-                @endif
-            </nav>
-        </x-slot:actions>
-
+    <x-admin.workspace :title="$galleryContext['name']">
         <x-admin.metrics :columns="6" aria-label="Gallery overview">
             @foreach ($metrics as $metric)
                 <x-admin.metric :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>

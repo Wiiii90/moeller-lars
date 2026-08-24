@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <x-admin.workspace kicker="Media preview" :title="$media['filename']" class="media-inspector">
+    <x-admin.workspace :title="$media['filename']" class="media-inspector">
         <x-slot:summary>
             <div><strong>{{ $media['usage_count'] }}</strong><span>References</span></div>
             <div><strong>{{ ucfirst($media['state']) }}</strong><span>Status</span></div>

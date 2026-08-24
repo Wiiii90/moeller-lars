@@ -1,27 +1,5 @@
 <x-filament-widgets::widget>
-    <x-admin.workspace kicker="Editorial overview" title="Website at a glance" class="admin-dashboard">
-        <x-slot:actions>
-            @foreach ($quickActions as $quickAction)
-                @switch($quickAction['key'])
-                    @case('add_artwork')
-                        {{ $this->addArtworkAction }}
-                        @break
-                    @case('pages')
-                        {{ $this->managePagesAction }}
-                        @break
-                    @case('files')
-                        {{ $this->filesAction }}
-                        @break
-                    @case('general')
-                        {{ $this->generalAction }}
-                        @break
-                    @case('open_site')
-                        {{ $this->openSiteAction }}
-                        @break
-                @endswitch
-            @endforeach
-        </x-slot:actions>
-
+    <x-admin.workspace title="Website at a glance" class="admin-dashboard">
         <div class="admin-dashboard__layout">
             <x-admin.section kicker="Traffic" title="Traffic & engagement" class="admin-dashboard__section">
                 @if (in_array($analytics['status'], ['available', 'stale'], true))
@@ -152,6 +130,4 @@
             </aside>
         </div>
     </x-admin.workspace>
-
-    <x-filament-actions::modals />
 </x-filament-widgets::widget>
