@@ -51,8 +51,10 @@
                     ->map(static fn (mixed $id): int => (int) $id)
                     ->values()
                     ->all();
+                $visibleSelectedCount = count(array_intersect($selectableAssetIds, $selectedAssets));
                 $allVisibleSelected = $selectableAssetIds !== []
-                    && count(array_intersect($selectableAssetIds, $selectedAssets)) === count($selectableAssetIds);
+                    && $visibleSelectedCount === count($selectableAssetIds);
+                $someVisibleSelected = $visibleSelectedCount > 0 && ! $allVisibleSelected;
                 $pageSelectionTarget = $allVisibleSelected
                     ? array_values(array_diff($selectedAssets, $selectableAssetIds))
                     : array_values(array_unique(array_merge($selectedAssets, $selectableAssetIds)));
@@ -241,8 +243,8 @@
                                         <label class="media-workspace__selection-checkbox">
                                             <input
                                                 type="checkbox"
-                                                wire:click="toggleAssetSelection({{ $asset['id'] }})"
-                                                @checked($selected)
+                                                value="{{ $asset['id'] }}"
+                                                wire:model.live.number="selectedAssets"
                                                 @disabled(! $asset['selectable'])
                                                 aria-label="Toggle selection for {{ $asset['filename'] }}"
                                             >
@@ -284,8 +286,10 @@
                                     <th scope="col" class="media-workspace__selection-head">
                                         <input
                                             type="checkbox"
-                                            wire:click="$set('selectedAssets', @js($pageSelectionTarget))"
+                                            wire:click.prevent="$set('selectedAssets', @js($pageSelectionTarget))"
                                             @checked($allVisibleSelected)
+                                            x-bind:indeterminate="@js($someVisibleSelected)"
+                                            aria-checked="{{ $someVisibleSelected ? 'mixed' : ($allVisibleSelected ? 'true' : 'false') }}"
                                             @disabled($selectableAssetIds === [])
                                             aria-label="Toggle selection for visible files"
                                         >
@@ -309,8 +313,8 @@
                                         <td class="media-workspace__selection-cell">
                                             <input
                                                 type="checkbox"
-                                                wire:click="toggleAssetSelection({{ $asset['id'] }})"
-                                                @checked($selected)
+                                                value="{{ $asset['id'] }}"
+                                                wire:model.live.number="selectedAssets"
                                                 @disabled(! $asset['selectable'])
                                                 aria-label="Toggle selection for {{ $asset['filename'] }}"
                                             >
