@@ -11,12 +11,12 @@
                 <source src="{{ $asset['preview_url'] }}" type="{{ $asset['mime'] }}">
             </video>
         @elseif ($asset['preview_url'] !== null && $asset['kind'] === 'audio')
-            <div class="media-file-dialog__audio" style="display: grid; width: min(100%, 42rem); gap: 1rem; justify-items: center;">
+            <div class="media-file-dialog__audio">
                 @include('filament.resources.media-assets.partials.media-type-placeholder', [
                     'kind' => $asset['kind'],
                     'typeLabel' => $asset['type_label'],
                 ])
-                <audio controls preload="metadata" style="width: min(100%, 36rem);">
+                <audio controls preload="metadata">
                     <source src="{{ $asset['preview_url'] }}" type="{{ $asset['mime'] }}">
                 </audio>
             </div>
@@ -53,24 +53,25 @@
         >Next</button>
     </nav>
 
-    <div class="media-file-dialog__details">
+    <div class="media-file-dialog__details media-file-dialog__metadata">
         <section aria-labelledby="media-dialog-metadata-{{ $asset['id'] }}">
             <h3 id="media-dialog-metadata-{{ $asset['id'] }}">Metadata</h3>
-            <dl>
+            <dl class="media-file-dialog__metadata-grid">
                 <div><dt>File</dt><dd>{{ $asset['filename'] }}</dd></div>
                 <div><dt>Type</dt><dd>{{ $asset['type_label'] }} · {{ $asset['mime'] }}</dd></div>
                 <div><dt>Dimensions</dt><dd>{{ $asset['dimensions'] }}</dd></div>
                 <div><dt>Size</dt><dd>{{ $asset['size'] }}</dd></div>
                 <div><dt>Status</dt><dd>{{ ucfirst($asset['state']) }}</dd></div>
                 <div><dt>Created</dt><dd>{{ $asset['created'] }}</dd></div>
-                <div><dt>Checksum</dt><dd class="media-file-dialog__checksum">{{ $asset['checksum'] }}</dd></div>
                 <div><dt>ALT text</dt><dd>{{ $asset['alt_text'] !== '' ? $asset['alt_text'] : '—' }}</dd></div>
                 <div><dt>Credit</dt><dd>{{ $asset['credit'] !== '' ? $asset['credit'] : '—' }}</dd></div>
                 <div><dt>Copyright</dt><dd>{{ $asset['copyright_notice'] !== '' ? $asset['copyright_notice'] : '—' }}</dd></div>
                 <div><dt>Copyright source</dt><dd>{{ $asset['copyright_source'] }}</dd></div>
             </dl>
         </section>
+    </div>
 
+    <div class="media-file-dialog__details media-file-dialog__usage">
         <section aria-labelledby="media-dialog-usage-{{ $asset['id'] }}">
             <h3 id="media-dialog-usage-{{ $asset['id'] }}">Used in</h3>
             @if ($asset['references'] === [])

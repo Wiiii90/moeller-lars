@@ -5,7 +5,13 @@ namespace App\Domain\Media;
 use App\Domain\Admin\AdminAuditService;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
+use App\Models\BlogPost;
+use App\Models\CustomPageSetting;
+use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
+use App\Models\PublicContentSetting;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -117,25 +123,183 @@ class MediaAssetEditorialService
     public function delete(MediaAsset $asset): bool
     {
         $actor = $this->adminAuditService->requireActor();
-        $fresh = $asset->fresh(['variants']);
-        if (! $fresh instanceof MediaAsset) {
-            throw ValidationException::withMessages(['media' => 'Media could not be found.']);
-        }
+        $assetId = (int) $asset->getKey();
+        $keys = [];
 
-        $keys = $this->storageKeys($fresh);
-        if ($fresh->getAttribute('state') !== 'deleted') {
-            $this->ensureUnreferenced($fresh);
-            DB::transaction(function () use ($fresh, $actor): void {
-                $fresh->variants()->update(['state' => 'deleted']);
-                $fresh->setAttribute('state', 'deleted');
-                $fresh->save();
-                $this->adminAuditService->record($actor, 'media.deleted', 'media_asset', $fresh->getKey());
-            });
-        }
+        DB::transaction(function () use ($assetId, $actor, &$keys): void {
+            /** @var MediaAsset|null $locked */
+            $locked = MediaAsset::query()
+                ->whereKey($assetId)
+                ->with('variants')
+                ->lockForUpdate()
+                ->first();
+            if (! $locked instanceof MediaAsset) {
+                throw ValidationException::withMessages(['media' => 'Media could not be found.']);
+            }
+
+            $keys = $this->storageKeys($locked);
+            if ($locked->getAttribute('state') === 'deleted') {
+                return;
+            }
+
+            if ($this->referenceQuery->isReferenced($locked)) {
+                $this->removeCanonicalReferences($locked, $actor);
+            }
+
+            $locked->variants()->update(['state' => 'deleted']);
+            $locked->setAttribute('state', 'deleted');
+            $locked->save();
+            $this->adminAuditService->record($actor, 'media.deleted', 'media_asset', $locked->getKey());
+        });
 
         $this->cleanup($keys);
 
         return true;
+    }
+
+    private function removeCanonicalReferences(MediaAsset $asset, User $actor): void
+    {
+        $assetId = (int) $asset->getKey();
+
+        /** @var EloquentCollection<int, ArtworkMedia> $artworkUsages */
+        $artworkUsages = ArtworkMedia::query()
+            ->where('media_asset_id', $assetId)
+            ->orderBy('artwork_id')
+            ->orderBy('position')
+            ->lockForUpdate()
+            ->get();
+        $publishedPrimaryArtworkIds = $artworkUsages
+            ->filter(static fn (ArtworkMedia $usage): bool => $usage->getAttribute('role') === 'primary')
+            ->pluck('artwork_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+        $artworkIds = $artworkUsages
+            ->pluck('artwork_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($publishedPrimaryArtworkIds !== []) {
+            /** @var EloquentCollection<int, Artwork> $artworks */
+            $artworks = Artwork::query()
+                ->whereIn('id', $publishedPrimaryArtworkIds)
+                ->where('state', 'published')
+                ->lockForUpdate()
+                ->get();
+            foreach ($artworks as $artwork) {
+                $artwork->forceFill(['state' => 'draft'])->save();
+                $this->adminAuditService->record($actor, 'artwork.unpublished', 'artwork', $artwork->getKey());
+            }
+        }
+
+        if ($artworkUsages->isNotEmpty()) {
+            ArtworkMedia::query()->where('media_asset_id', $assetId)->delete();
+            foreach ($artworkIds as $artworkId) {
+                $this->normalizeArtworkAdditionalPositions($artworkId);
+            }
+        }
+
+        /** @var EloquentCollection<int, ExhibitionMedia> $exhibitionUsages */
+        $exhibitionUsages = ExhibitionMedia::query()
+            ->where('media_asset_id', $assetId)
+            ->orderBy('exhibition_id')
+            ->orderBy('position')
+            ->lockForUpdate()
+            ->get();
+        $exhibitionIds = $exhibitionUsages
+            ->pluck('exhibition_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+        if ($exhibitionUsages->isNotEmpty()) {
+            ExhibitionMedia::query()->where('media_asset_id', $assetId)->delete();
+            foreach ($exhibitionIds as $exhibitionId) {
+                $this->normalizeExhibitionAdditionalPositions($exhibitionId);
+            }
+        }
+
+        /** @var EloquentCollection<int, BlogPost> $posts */
+        $posts = BlogPost::query()
+            ->where('cover_media_asset_id', $assetId)
+            ->lockForUpdate()
+            ->get();
+        foreach ($posts as $post) {
+            $post->forceFill(['cover_media_asset_id' => null])->save();
+        }
+
+        /** @var EloquentCollection<int, PublicContentSetting> $settings */
+        $settings = PublicContentSetting::query()
+            ->where('favicon_media_asset_id', $assetId)
+            ->lockForUpdate()
+            ->get();
+        foreach ($settings as $setting) {
+            $setting->setAttribute('favicon_media_asset_id', null);
+            $setting->save();
+        }
+
+        /** @var EloquentCollection<int, CustomPageSetting> $customPages */
+        $customPages = CustomPageSetting::query()->lockForUpdate()->get();
+        foreach ($customPages as $customPage) {
+            $components = $customPage->components();
+            $filtered = array_values(array_filter(
+                $components,
+                static fn (array $component): bool => ! (
+                    ($component['type'] ?? null) === 'image'
+                    && is_numeric($component['media_asset_id'] ?? null)
+                    && (int) $component['media_asset_id'] === $assetId
+                ),
+            ));
+            if (count($filtered) === count($components)) {
+                continue;
+            }
+
+            $customPage->setAttribute('blocks', $filtered);
+            $customPage->save();
+        }
+    }
+
+    private function normalizeArtworkAdditionalPositions(int $artworkId): void
+    {
+        /** @var EloquentCollection<int, ArtworkMedia> $additional */
+        $additional = ArtworkMedia::query()
+            ->where('artwork_id', $artworkId)
+            ->where('role', 'additional')
+            ->orderBy('position')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($additional as $index => $usage) {
+            $position = $index + 1;
+            if ((int) $usage->getAttribute('position') !== $position) {
+                $usage->setAttribute('position', $position);
+                $usage->save();
+            }
+        }
+    }
+
+    private function normalizeExhibitionAdditionalPositions(int $exhibitionId): void
+    {
+        /** @var EloquentCollection<int, ExhibitionMedia> $additional */
+        $additional = ExhibitionMedia::query()
+            ->where('exhibition_id', $exhibitionId)
+            ->where('role', 'additional')
+            ->orderBy('position')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($additional as $index => $usage) {
+            $position = $index + 1;
+            if ((int) $usage->getAttribute('position') !== $position) {
+                $usage->setAttribute('position', $position);
+                $usage->save();
+            }
+        }
     }
 
     /** @return array<string> */
@@ -147,13 +311,6 @@ class MediaAssetEditorialService
         }
 
         return array_values(array_unique(array_filter($keys, static fn (string $key): bool => $key !== '')));
-    }
-
-    private function ensureUnreferenced(MediaAsset $asset): void
-    {
-        if ($this->referenceQuery->isReferenced($asset)) {
-            throw ValidationException::withMessages(['media' => 'Referenced media cannot be deleted.']);
-        }
     }
 
     /** @param array<string> $keys */

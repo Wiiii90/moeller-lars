@@ -3,8 +3,6 @@
 namespace App\Filament\Widgets;
 
 use App\Domain\Admin\AdminActivityFeed;
-use App\Domain\Admin\AdminAuditService;
-use App\Domain\Admin\AdminQuickActionService;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\MediaCapacityService;
@@ -15,29 +13,17 @@ use App\Filament\Pages\SitePages;
 use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
-use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
-use Filament\Actions\Action;
-use Filament\Actions\Concerns\InteractsWithActions;
-use Filament\Actions\Contracts\HasActions;
-use Filament\Forms\Components\Select;
-use Filament\Schemas\Concerns\InteractsWithSchemas;
-use Filament\Schemas\Contracts\HasSchemas;
-use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
-final class ArtistDashboard extends Widget implements HasActions, HasSchemas
+final class ArtistDashboard extends Widget
 {
-    use InteractsWithActions;
-    use InteractsWithSchemas;
-
     protected string $view = 'filament.widgets.artist-dashboard';
 
     protected static ?int $sort = 1;
@@ -45,66 +31,6 @@ final class ArtistDashboard extends Widget implements HasActions, HasSchemas
     protected static bool $isLazy = false;
 
     protected int|string|array $columnSpan = 'full';
-
-    public function addArtworkAction(): Action
-    {
-        return Action::make('addArtwork')
-            ->label('Add artwork')
-            ->icon(Heroicon::OutlinedPlus)
-            ->schema([
-                Select::make('gallery_id')
-                    ->label('Gallery')
-                    ->placeholder('Choose Gallery')
-                    ->options(fn (): array => ArtworkCategory::query()
-                        ->orderBy('position')
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all())
-                    ->helperText('Galleries and their public placement are managed from Pages.')
-                    ->searchable()
-                    ->required(),
-            ])
-            ->action(function (array $data): void {
-                $this->redirect(ArtworkResource::getUrl('create', ['gallery' => (int) $data['gallery_id']]));
-            });
-    }
-
-    public function managePagesAction(): Action
-    {
-        return Action::make('managePages')
-            ->label('Pages')
-            ->icon(Heroicon::OutlinedRectangleStack)
-            ->color('gray')
-            ->url(SitePages::getUrl());
-    }
-
-    public function filesAction(): Action
-    {
-        return Action::make('files')
-            ->label('Files')
-            ->icon(Heroicon::OutlinedFolderOpen)
-            ->color('gray')
-            ->url(MediaAssetResource::getUrl('index'));
-    }
-
-    public function generalAction(): Action
-    {
-        return Action::make('general')
-            ->label('General')
-            ->icon(Heroicon::OutlinedGlobeAlt)
-            ->color('gray')
-            ->url(PublicContentSettingResource::getNavigationUrl());
-    }
-
-    public function openSiteAction(): Action
-    {
-        return Action::make('openSite')
-            ->label('Open public site')
-            ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
-            ->color('gray')
-            ->url(route('home'))
-            ->openUrlInNewTab();
-    }
 
     protected function getViewData(): array
     {
@@ -206,10 +132,8 @@ final class ArtistDashboard extends Widget implements HasActions, HasSchemas
 
         $activity = app(AdminActivityFeed::class)->recent(6);
         $activityUrl = Activity::getUrl();
-        $actor = app(AdminAuditService::class)->requireActor();
-        $quickActions = app(AdminQuickActionService::class)->forUser($actor);
 
-        return compact('analytics', 'editorialStatus', 'attention', 'activity', 'activityUrl', 'quickActions', 'storage');
+        return compact('analytics', 'editorialStatus', 'attention', 'activity', 'activityUrl', 'storage');
     }
 
     /**

@@ -3,14 +3,12 @@
 namespace App\Filament\Resources\CustomPageSettings\Pages;
 
 use App\Domain\Admin\EditorialRecordService;
-use App\Domain\Content\SitePreviewContext;
 use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\CustomPageSettings\CustomPageSettingResource;
 use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
 use App\Models\SiteSection;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
@@ -52,24 +50,6 @@ final class EditCustomPageSetting extends EditRecord
             ->title('CV entry removed')
             ->body('The referenced Media asset was kept.')
             ->send();
-    }
-
-    protected function getHeaderActions(): array
-    {
-        $previewUrl = ($section = $this->pageSection()) instanceof SiteSection
-            ? app(SitePreviewContext::class)->previewUrlFor($section)
-            : null;
-
-        return [
-            Action::make('pages')
-                ->label('Pages')
-                ->url(SitePages::getUrl()),
-            Action::make('preview')
-                ->label('Public Preview')
-                ->url($previewUrl)
-                ->openUrlInNewTab()
-                ->visible(is_string($previewUrl) && $previewUrl !== ''),
-        ];
     }
 
     protected function getRedirectUrl(): string

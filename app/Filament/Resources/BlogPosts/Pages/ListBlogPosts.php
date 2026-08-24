@@ -5,26 +5,17 @@ namespace App\Filament\Resources\BlogPosts\Pages;
 use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
-use App\Domain\Content\SiteSectionEditorialService;
-use App\Filament\Concerns\HasJournalSettingsAction;
-use App\Filament\Pages\SitePages;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
 use DateTimeInterface;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
-use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 final class ListBlogPosts extends Page
 {
-    use HasJournalSettingsAction;
-
     protected static string $resource = BlogPostResource::class;
 
     protected string $view = 'filament.resources.blog-posts.pages.list-blog-posts';
@@ -51,69 +42,6 @@ final class ListBlogPosts extends Page
         }
 
         $this->loadPosts();
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('addPost')
-                ->label('Add blog post')
-                ->icon(Heroicon::OutlinedPlus)
-                ->schema(fn (Schema $schema): Schema => BlogPostResource::form($schema))
-                ->modalHeading('Add blog post')
-                ->modalSubmitActionLabel('Create draft')
-                ->action(function (array $data): void {
-                    $data['site_section_id'] = $this->sectionId;
-                    app(BlogEditorialService::class)->createDraft($data);
-                    $this->loadPosts();
-
-                    Notification::make()
-                        ->title('Blog draft created')
-                        ->body('The post remains private until it is explicitly published or scheduled.')
-                        ->success()
-                        ->send();
-                }),
-            $this->journalSettingsAction(),
-            Action::make('deleteJournal')
-                ->label('Delete Blog')
-                ->color('danger')
-                ->requiresConfirmation()
-                ->modalHeading('Delete this Blog?')
-                ->modalDescription('An empty Blog can be removed. Blogs with entries must be emptied first.')
-                ->action(function (): void {
-                    /** @var SiteSection $section */
-                    $section = SiteSection::query()->findOrFail($this->sectionId);
-
-                    try {
-                        app(SiteSectionEditorialService::class)->deleteConfigurableSection($section);
-                    } catch (ValidationException $exception) {
-                        $message = collect($exception->errors())->flatten()->first();
-                        Notification::make()
-                            ->danger()
-                            ->title('Blog cannot be deleted')
-                            ->body(is_string($message) ? $message : 'Remove all Blog entries before deleting this Blog.')
-                            ->send();
-
-                        return;
-                    }
-
-                    Notification::make()
-                        ->success()
-                        ->title('Blog deleted')
-                        ->body('You can create a new Blog from Pages at any time.')
-                        ->send();
-
-                    $this->redirect(SitePages::getUrl());
-                }),
-            Action::make('pages')
-                ->label('Back to Pages')
-                ->url(SitePages::getUrl()),
-        ];
-    }
-
-    protected function journalSectionId(): int
-    {
-        return $this->sectionId;
     }
 
     private function loadPosts(): void

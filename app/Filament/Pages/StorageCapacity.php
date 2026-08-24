@@ -7,8 +7,6 @@ use App\Domain\Media\MediaStorageBreakdown;
 use App\Domain\Media\MediaStorageUnits;
 use App\Models\MediaAsset;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use UnitEnum;
@@ -41,25 +39,6 @@ final class StorageCapacity extends Page
     public function mount(): void
     {
         $this->loadCapacity();
-    }
-
-    public function refreshCapacity(): void
-    {
-        app(MediaCapacityService::class)->forgetCachedSnapshot();
-        $this->loadCapacity();
-        Notification::make()->title('Storage measurement refreshed')->success()->send();
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('refresh')
-                ->label('Refresh measurement')
-                ->icon(Heroicon::OutlinedArrowPath)
-                ->action(function (): void {
-                    $this->refreshCapacity();
-                }),
-        ];
     }
 
     private function loadCapacity(): void

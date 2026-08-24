@@ -1,10 +1,5 @@
 <x-filament-panels::page>
-    <x-admin.workspace kicker="Homepage" title="Home" class="admin-home-workspace">
-        <x-slot:actions>
-            <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview site</a>
-            <a class="admin-action" href="{{ \App\Filament\Pages\SitePages::getUrl() }}">Pages</a>
-        </x-slot:actions>
-
+    <x-admin.workspace title="Home" class="admin-home-workspace">
         <x-admin.section kicker="Selection" title="Current homepage artwork">
             @if ($selectionIssue)
                 <x-admin.empty-state kicker="Needs attention" title="Homepage selection is ambiguous">
@@ -77,9 +72,7 @@
                     @endforeach
                 </x-admin.list>
             @else
-                <x-admin.empty-state kicker="No Galleries" title="No Gallery sources exist">
-                    <p>Create a Gallery from Pages before configuring homepage sources.</p>
-                </x-admin.empty-state>
+                <x-admin.empty-state kicker="No Galleries" title="No Gallery sources exist" />
             @endif
         </x-admin.section>
 

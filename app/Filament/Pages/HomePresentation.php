@@ -4,7 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\PublicArtworkQuery;
-use App\Domain\Content\SitePreviewContext;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -36,11 +35,8 @@ final class HomePresentation extends Page
 
     public ?string $selectionIssue = null;
 
-    public string $previewUrl = '';
-
     public function mount(): void
     {
-        $this->previewUrl = app(SitePreviewContext::class)->previewSiteUrl();
         $this->loadWorkspace();
     }
 

@@ -41,6 +41,10 @@ Route::get('/admin/media-preview/original/{mediaAsset}', [AdminMediaController::
     ->name('admin.media.original');
 Route::get('/admin/media-preview/variant/{mediaVariant}', [AdminMediaController::class, 'variant'])
     ->name('admin.media.variant');
+Route::get('/admin/media-download/original/{mediaAsset}', [AdminMediaController::class, 'download'])
+    ->name('admin.media.download');
+Route::get('/admin/media-download/selected', [AdminMediaController::class, 'downloadSelected'])
+    ->name('admin.media.download-selected');
 Route::get('/artworks/{slug}', [PublicArtworkController::class, 'show'])->name('artworks.show');
 Route::get('/media/original/{mediaAsset}', [PublicMediaController::class, 'original'])->name('media.original');
 Route::get('/media/variant/{mediaVariant}', [PublicMediaController::class, 'variant'])->name('media.variant');

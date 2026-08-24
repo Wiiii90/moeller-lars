@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <x-admin.workspace kicker="Editorial history" title="Activity">
+    <x-admin.workspace title="Activity">
         <x-admin.section kicker="Filters" title="Activity scope">
             <div class="admin-filter-groups" aria-label="Activity filters">
                 <x-admin.toolbar aria-label="Time range">

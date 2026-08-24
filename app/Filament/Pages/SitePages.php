@@ -3,9 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Artwork\GalleryEditorialService;
-use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
-use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\SiteNodePresentation;
@@ -13,9 +11,6 @@ use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -134,90 +129,6 @@ final class SitePages extends Page
         }
 
         $this->loadSections();
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('previewSite')
-                ->label('Preview site')
-                ->icon(Heroicon::OutlinedEye)
-                ->url(fn (): string => app(SitePreviewContext::class)->previewSiteUrl())
-                ->openUrlInNewTab(),
-            Action::make('addSection')
-                ->label('Add page/section')
-                ->icon(Heroicon::OutlinedPlus)
-                ->schema([
-                    Select::make('type')
-                        ->label('Page type')
-                        ->options(SiteNodeType::creatableOptions())
-                        ->required()
-                        ->live(),
-                    Select::make('template')
-                        ->label('Journal template')
-                        ->options(JournalTemplate::options())
-                        ->required(fn (callable $get): bool => $get('type') === SiteNodeType::Journal->value)
-                        ->visible(fn (callable $get): bool => $get('type') === SiteNodeType::Journal->value),
-                    TextInput::make('title')->label('Title')->required()->maxLength(160),
-                    TextInput::make('slug')
-                        ->label('Public URL slug')
-                        ->maxLength(80)
-                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                        ->required(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
-                        ->visible(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
-                        ->helperText('Use lowercase letters, numbers and hyphens.'),
-                ])
-                ->action(function (array $data): void {
-                    $type = SiteNodeType::tryFrom((string) ($data['type'] ?? ''));
-                    $title = trim((string) ($data['title'] ?? ''));
-                    $slug = trim((string) ($data['slug'] ?? ''));
-
-                    $message = match ($type) {
-                        SiteNodeType::NavigationNode => $this->createNavigationNode($title),
-                        SiteNodeType::CustomPage => $this->createCustomPage($title, $slug),
-                        SiteNodeType::Journal => $this->createJournal($title, $slug, (string) ($data['template'] ?? '')),
-                        SiteNodeType::Gallery => $this->createGallery($title, $slug),
-                        default => throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Navigation Node.']),
-                    };
-
-                    $this->loadSections();
-                    Notification::make()->title($message)->success()->send();
-                }),
-        ];
-    }
-
-    private function createNavigationNode(string $title): string
-    {
-        app(SiteSectionEditorialService::class)->createNavigationGroup($title);
-
-        return 'Navigation Node created';
-    }
-
-    private function createCustomPage(string $title, string $slug): string
-    {
-        app(SiteSectionEditorialService::class)->createCustomPage($title, $slug);
-
-        return 'Custom Page created as hidden';
-    }
-
-    private function createJournal(string $title, string $slug, string $template): string
-    {
-        app(SiteSectionEditorialService::class)->createJournal($title, $slug, $template);
-
-        return 'Journal created as hidden';
-    }
-
-    private function createGallery(string $title, string $slug): string
-    {
-        app(GalleryEditorialService::class)->create([
-            'name' => $title,
-            'slug' => $slug,
-            'parent_section_id' => null,
-            'description' => null,
-            'show_on_home' => false,
-        ]);
-
-        return 'Gallery created as hidden';
     }
 
     private function loadSections(): void

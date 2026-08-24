@@ -36,6 +36,9 @@ it('keeps simple selection visible while switching Files views', function (): vo
         ->assertSet('selectedAssets', [$asset->id])
         ->call('setViewMode', 'dense')
         ->assertSet('viewMode', 'dense')
+        ->assertSet('selectedAssets', [$asset->id])
+        ->call('setViewMode', 'list')
+        ->assertSet('viewMode', 'list')
         ->assertSet('selectedAssets', [$asset->id]);
 });
 
@@ -49,7 +52,7 @@ it('deletes an unreferenced file through the Files delete action', function (): 
     expect($asset->fresh()->state)->toBe('deleted');
 });
 
-it('batch delete removes unreferenced files and leaves referenced files selected', function (): void {
+it('batch delete removes both unreferenced and referenced selected files', function (): void {
     $deletable = filesFinalPassAsset('batch-delete.jpg');
     $referenced = filesFinalPassAsset('batch-referenced.jpg');
 
@@ -76,8 +79,9 @@ it('batch delete removes unreferenced files and leaves referenced files selected
         ->call('toggleAssetSelection', $referenced->id)
         ->mountAction('deleteSelected')
         ->callMountedAction()
-        ->assertSet('selectedAssets', [$referenced->id]);
+        ->assertSet('selectedAssets', []);
 
     expect($deletable->fresh()->state)->toBe('deleted')
-        ->and($referenced->fresh()->state)->toBe('available');
+        ->and($referenced->fresh()->state)->toBe('deleted')
+        ->and(ArtworkMedia::query()->where('media_asset_id', $referenced->id)->exists())->toBeFalse();
 });

@@ -25,7 +25,6 @@
     --admin-workspace-gutter: 2rem;
     --admin-sidebar-width: 18rem;
     --admin-sidebar-half-width: 9rem;
-    --admin-header-action-reserve: 10.5rem;
     --admin-workspace-visual-shift: clamp(
         0rem,
         calc(50vw - var(--admin-sidebar-half-width) - var(--admin-workspace-half-width) - var(--admin-workspace-gutter)),
@@ -55,7 +54,7 @@
 .admin-workspace__header {
     display: grid;
     min-height: var(--admin-control-height);
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 1.25rem;
     padding: 0 0 var(--admin-section-gap);
     align-items: center;
@@ -66,7 +65,6 @@
     min-width: 0;
 }
 
-.admin-workspace__kicker,
 .admin-section__kicker,
 .admin-empty-state__kicker,
 .admin-list__eyebrow {
@@ -333,28 +331,13 @@
     gap: var(--admin-section-gap);
 }
 
-/*
- * Workspace pages own the visible heading while Filament owns native header
- * actions. Collapse the empty duplicate header band and place those actions in
- * the same visual row as the canonical workspace title.
- */
+/* Workspace pages render their canonical heading inside x-admin.workspace. */
 .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-page-header-main-ctn {
-    position: relative;
     gap: 0;
     padding-top: 0;
 }
 
 .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-header:not(.fi-header-has-breadcrumbs) {
-    position: absolute;
-    inset-block-start: 0;
-    inset-inline-end: 0;
-    z-index: 5;
-    width: auto;
-    min-height: var(--admin-control-height);
-    align-items: center;
-}
-
-.fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-header:not(.fi-header-has-breadcrumbs) > div:first-child {
     display: none;
 }
 
@@ -371,7 +354,6 @@
     line-height: 1.05;
 }
 
-.fi-header-actions-ctn .fi-btn,
 .admin-topbar-sign-out .fi-btn,
 .fi-global-search .fi-input-wrp,
 .fi-topbar .fi-icon-btn,
@@ -582,12 +564,6 @@
     white-space: nowrap;
 }
 
-@media (min-width: 901px) {
-    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .admin-workspace__header {
-        padding-inline-end: var(--admin-header-action-reserve);
-    }
-}
-
 @media (max-width: 900px) {
     .admin-workspace__header {
         grid-template-columns: 1fr;
@@ -600,7 +576,6 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .admin-workspace__actions,
     .admin-toolbar {
         justify-content: flex-start;
     }
@@ -609,20 +584,6 @@
     .admin-list__row--media {
         grid-template-columns: 1fr;
         gap: .7rem;
-    }
-
-    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .fi-header:not(.fi-header-has-breadcrumbs) {
-        inset-inline: 0;
-        width: 100%;
-        justify-content: flex-end;
-    }
-
-    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .fi-header-actions-ctn {
-        margin-inline-start: auto;
-    }
-
-    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .admin-workspace__header {
-        padding-top: calc(var(--admin-control-height) + var(--admin-section-gap));
     }
 }
 

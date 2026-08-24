@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     @php($published = collect($exhibitions)->where('state', 'published')->count())
 
-    <x-admin.workspace kicker="Journal" title="Exhibitions">
+    <x-admin.workspace title="Exhibitions">
         <x-admin.metrics :columns="2">
             <x-admin.metric label="Exhibitions" :value="count($exhibitions)" />
             <x-admin.metric label="Published" :value="$published" />
@@ -38,9 +38,7 @@
                 @endforeach
             </x-admin.list>
         @else
-            <x-admin.empty-state kicker="Empty programme" title="Add the first exhibition">
-                <p>Create an exhibition draft, add venue/media details and publish it when ready.</p>
-            </x-admin.empty-state>
+            <x-admin.empty-state kicker="Empty programme" title="No exhibitions" />
         @endif
     </x-admin.workspace>
 </x-filament-panels::page>
