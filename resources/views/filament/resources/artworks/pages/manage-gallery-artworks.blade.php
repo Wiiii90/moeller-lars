@@ -80,12 +80,14 @@
             </div>
         </div>
 
+        @php($reorderEnabled = trim($search) === '' && $statusFilter === 'any' && $readinessFilter === 'any')
+
         <div class="gallery-workspace__controls" aria-label="Gallery controls">
             <label class="gallery-workspace__field gallery-workspace__search">
                 <span>Search artworks</span>
                 <input
                     type="search"
-                    wire:model.change="search"
+                    wire:model.blur="search"
                     x-on:keydown.enter.prevent="$el.blur()"
                     placeholder="Search artworks"
                     autocomplete="off"
@@ -118,13 +120,54 @@
             <div class="gallery-workspace__control-group gallery-workspace__gallery">
                 <span class="gallery-workspace__control-label">Gallery</span>
                 <div class="gallery-workspace__gallery-actions">
-                    <button class="admin-action" type="button" wire:click="mountAction('gallerySettings')">Settings</button>
-                    <button class="admin-action" type="button" wire:click="mountAction('addArtwork')">Add artwork</button>
-                    <button class="admin-action" type="button" wire:click="mountAction('materialPresets')">Materials</button>
+                    <button
+                        class="gallery-workspace__icon-action gallery-workspace__control-icon-action"
+                        type="button"
+                        wire:click="mountAction('gallerySettings')"
+                        title="Gallery settings"
+                        aria-label="Gallery settings"
+                    >
+                        <x-filament::icon icon="heroicon-m-adjustments-horizontal" />
+                    </button>
+                    <button
+                        class="gallery-workspace__icon-action gallery-workspace__control-icon-action"
+                        type="button"
+                        wire:click="mountAction('addArtwork')"
+                        title="Add artwork"
+                        aria-label="Add artwork"
+                    >
+                        <x-filament::icon icon="heroicon-m-plus" />
+                    </button>
+                    <button
+                        class="gallery-workspace__icon-action gallery-workspace__control-icon-action"
+                        type="button"
+                        wire:click="mountAction('materialPresets')"
+                        title="Materials"
+                        aria-label="Materials"
+                    >
+                        <x-filament::icon icon="heroicon-m-swatch" />
+                    </button>
                     @if ($galleryContext['public_url'])
-                        <a class="admin-action" href="{{ $galleryContext['public_url'] }}" target="_blank" rel="noopener">Preview</a>
+                        <a
+                            class="gallery-workspace__icon-action gallery-workspace__control-icon-action"
+                            href="{{ $galleryContext['public_url'] }}"
+                            target="_blank"
+                            rel="noopener"
+                            title="Preview Gallery"
+                            aria-label="Preview Gallery"
+                        >
+                            <x-filament::icon icon="heroicon-m-eye" />
+                        </a>
                     @else
-                        <button class="admin-action" type="button" disabled title="Publish the Gallery to open its public URL">Preview</button>
+                        <button
+                            class="gallery-workspace__icon-action gallery-workspace__control-icon-action"
+                            type="button"
+                            disabled
+                            title="Publish the Gallery to preview it"
+                            aria-label="Preview Gallery unavailable until the Gallery is published"
+                        >
+                            <x-filament::icon icon="heroicon-m-eye" />
+                        </button>
                     @endif
                 </div>
             </div>
@@ -147,8 +190,8 @@
                         @if ($moveTargets !== [])
                             <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('moveSelectedToGallery')">Move to Gallery…</button>
                         @endif
-                        <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('up')">Move selected up</button>
-                        <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')">Move selected down</button>
+                        <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('up')" @disabled(! $reorderEnabled)>Move selected up</button>
+                        <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="moveSelectedArtworks('down')" @disabled(! $reorderEnabled)>Move selected down</button>
                         <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('publishSelectedArtworks')">Publish selected</button>
                         <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('unpublishSelectedArtworks')">Unpublish selected</button>
                         <button class="admin-action" type="button" role="menuitem" x-on:click="open = false" wire:click="mountAction('removeSelectedArtworks')">Remove selected</button>
@@ -159,13 +202,77 @@
         </div>
 
         @if ($artworks !== [])
-            <section class="admin-gallery-grid" aria-label="Artwork sequence for {{ $galleryContext['name'] }}">
+            <section
+                class="admin-gallery-grid"
+                aria-label="Artwork sequence for {{ $galleryContext['name'] }}"
+                data-reorder-enabled="{{ $reorderEnabled ? 'true' : 'false' }}"
+                x-data="{
+                    draggingId: null,
+                    overId: null,
+                    canReorder() {
+                        return this.$root.dataset.reorderEnabled === 'true'
+                    },
+                    orderedIds() {
+                        return Array.from(this.$root.querySelectorAll('[data-gallery-artwork-id]'))
+                            .map((card) => Number(card.dataset.galleryArtworkId))
+                    },
+                    startDrag(id, event) {
+                        if (! this.canReorder()) return
+
+                        this.draggingId = id
+                        this.overId = null
+                        event.dataTransfer.effectAllowed = 'move'
+                        event.dataTransfer.setData('text/plain', String(id))
+                    },
+                    dragOver(id, event) {
+                        if (! this.canReorder() || this.draggingId === null) return
+
+                        event.preventDefault()
+                        event.dataTransfer.dropEffect = 'move'
+                        this.overId = id === this.draggingId ? null : id
+                    },
+                    dropOn(targetId, event) {
+                        if (! this.canReorder() || this.draggingId === null) return
+
+                        event.preventDefault()
+                        const current = this.orderedIds()
+                        const from = current.indexOf(this.draggingId)
+                        const to = current.indexOf(targetId)
+
+                        if (from < 0 || to < 0 || from === to) {
+                            this.endDrag()
+                            return
+                        }
+
+                        const next = [...current]
+                        const [moved] = next.splice(from, 1)
+                        next.splice(to, 0, moved)
+                        this.endDrag()
+                        $wire.reorderArtworks(next)
+                    },
+                    endDrag() {
+                        this.draggingId = null
+                        this.overId = null
+                    },
+                }"
+                x-on:dragend.window="endDrag"
+            >
                 @foreach ($artworks as $artwork)
-                    <article class="admin-gallery-grid__item" wire:key="gallery-artwork-{{ $artwork['id'] }}">
+                    <article
+                        class="admin-gallery-grid__item gallery-workspace__card"
+                        wire:key="gallery-artwork-{{ $artwork['id'] }}"
+                        data-gallery-artwork-id="{{ $artwork['id'] }}"
+                        x-bind:class="{
+                            'is-dragging': draggingId === Number($el.dataset.galleryArtworkId),
+                            'is-drop-target': overId === Number($el.dataset.galleryArtworkId),
+                        }"
+                        x-on:dragover="dragOver(Number($el.dataset.galleryArtworkId), $event)"
+                        x-on:drop="dropOn(Number($el.dataset.galleryArtworkId), $event)"
+                    >
                         @if ($artwork['media_preview_url'])
-                            <a class="admin-gallery-grid__image gallery-workspace__visual" href="{{ $artwork['media_preview_url'] }}" aria-label="Open media preview for {{ $artwork['title'] }}">
+                            <a class="admin-gallery-grid__image gallery-workspace__visual" href="{{ $artwork['media_preview_url'] }}" aria-label="Open media preview for {{ $artwork['title'] }}" draggable="false">
                                 @if ($artwork['thumbnail_url'])
-                                    <img src="{{ $artwork['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                    <img src="{{ $artwork['thumbnail_url'] }}" alt="" loading="lazy" decoding="async" draggable="false">
                                 @elseif ($artwork['primary_kind'] === 'video' && $artwork['primary_original_url'])
                                     <video src="{{ $artwork['primary_original_url'] }}" preload="metadata" muted playsinline aria-label="Video preview for {{ $artwork['title'] }}"></video>
                                 @else
@@ -179,6 +286,20 @@
                                 <span class="admin-gallery-grid__sequence">{{ str_pad((string) $artwork['sequence'], 2, '0', STR_PAD_LEFT) }}</span>
                             </div>
                         @endif
+
+                        <button
+                            class="gallery-workspace__drag-handle"
+                            type="button"
+                            draggable="{{ $reorderEnabled ? 'true' : 'false' }}"
+                            aria-disabled="{{ $reorderEnabled ? 'false' : 'true' }}"
+                            title="{{ $reorderEnabled ? 'Drag to reorder' : 'Clear filters to reorder' }}"
+                            aria-label="{{ $reorderEnabled ? 'Drag '.$artwork['title'].' to reorder' : 'Clear filters to reorder '.$artwork['title'] }}"
+                            x-on:click.prevent
+                            x-on:dragstart.stop="startDrag(Number($el.closest('[data-gallery-artwork-id]').dataset.galleryArtworkId), $event)"
+                            x-on:dragend.stop="endDrag"
+                        >
+                            <x-filament::icon icon="heroicon-m-bars-3" />
+                        </button>
 
                         <div class="admin-gallery-grid__caption">
                             <div class="admin-gallery-grid__identity">
@@ -271,10 +392,19 @@
 
                         <div class="admin-gallery-grid__actions">
                             <label class="gallery-workspace__selection-checkbox">
-                                <input type="checkbox" wire:model.live="selectedArtworkIds" value="{{ $artwork['id'] }}" aria-label="Select {{ $artwork['title'] }}">
+                                <input type="checkbox" wire:model.live="selectedArtworkIds" value="{{ $artwork['id'] }}">
+                                <span>Select</span>
                             </label>
                             <div class="gallery-workspace__card-actions">
-                                <button class="admin-action gallery-workspace__edit-action" type="button" wire:click="mountAction('editArtwork', { artwork: {{ $artwork['id'] }} })">Edit</button>
+                                <button
+                                    class="gallery-workspace__icon-action"
+                                    type="button"
+                                    wire:click="mountAction('editArtwork', { artwork: {{ $artwork['id'] }} })"
+                                    title="Edit artwork"
+                                    aria-label="Edit {{ $artwork['title'] }}"
+                                >
+                                    <x-filament::icon icon="heroicon-m-pencil-square" />
+                                </button>
                                 @if ($artwork['public_url'])
                                     <a class="gallery-workspace__icon-action" href="{{ $artwork['public_url'] }}" target="_blank" rel="noopener" title="View public artwork" aria-label="View {{ $artwork['title'] }} on the public site">
                                         <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" />
@@ -289,8 +419,22 @@
                                         <x-filament::icon icon="heroicon-m-eye" />
                                     </button>
                                 @endif
-                                <button class="admin-action gallery-workspace__order-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'up')" aria-label="Move {{ $artwork['title'] }} earlier" @disabled(! $artwork['can_move_up'])>↑</button>
-                                <button class="admin-action gallery-workspace__order-action" type="button" wire:click="moveArtwork({{ $artwork['id'] }}, 'down')" aria-label="Move {{ $artwork['title'] }} later" @disabled(! $artwork['can_move_down'])>↓</button>
+                                <button
+                                    class="admin-action gallery-workspace__order-action"
+                                    type="button"
+                                    wire:click="moveArtwork({{ $artwork['id'] }}, 'up')"
+                                    title="{{ $reorderEnabled ? 'Move artwork earlier' : 'Clear filters to reorder' }}"
+                                    aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' earlier' : 'Clear filters to reorder '.$artwork['title'] }}"
+                                    @disabled(! $reorderEnabled || ! $artwork['can_move_up'])
+                                >↑</button>
+                                <button
+                                    class="admin-action gallery-workspace__order-action"
+                                    type="button"
+                                    wire:click="moveArtwork({{ $artwork['id'] }}, 'down')"
+                                    title="{{ $reorderEnabled ? 'Move artwork later' : 'Clear filters to reorder' }}"
+                                    aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' later' : 'Clear filters to reorder '.$artwork['title'] }}"
+                                    @disabled(! $reorderEnabled || ! $artwork['can_move_down'])
+                                >↓</button>
                                 @if ($moveTargets !== [])
                                     <button class="gallery-workspace__icon-action" type="button" wire:click="mountAction('moveArtworkToGallery', { artwork: {{ $artwork['id'] }} })" title="Move to Gallery" aria-label="Move {{ $artwork['title'] }} to another Gallery">
                                         <x-filament::icon icon="heroicon-m-arrows-right-left" />
@@ -302,10 +446,10 @@
                                 <button
                                     class="gallery-workspace__icon-action"
                                     type="button"
-                                    wire:click="mountAction('deleteArtwork', { artwork: {{ $artwork['id'] }} })"
-                                    @disabled($artwork['state'] !== 'draft')
-                                    title="{{ $artwork['state'] === 'draft' ? 'Delete artwork' : 'Unpublish before deleting' }}"
-                                    aria-label="Delete {{ $artwork['title'] }}"
+                                    wire:click="mountAction('deletePrimaryMedia', { artwork: {{ $artwork['id'] }} })"
+                                    @disabled(! $artwork['media_preview_url'])
+                                    title="{{ $artwork['media_preview_url'] ? 'Delete media file' : 'No primary media file to delete' }}"
+                                    aria-label="{{ $artwork['media_preview_url'] ? 'Delete primary Media File for '.$artwork['title'] : 'No primary Media File to delete for '.$artwork['title'] }}"
                                 >
                                     <x-filament::icon icon="heroicon-m-trash" />
                                 </button>

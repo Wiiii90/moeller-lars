@@ -158,6 +158,12 @@
     flex-wrap: nowrap;
 }
 
+.gallery-workspace__control-icon-action {
+    width: var(--admin-control-height);
+    height: var(--admin-control-height);
+    flex-basis: var(--admin-control-height);
+}
+
 .gallery-workspace__selection {
     position: relative;
 }
@@ -215,6 +221,61 @@
 .gallery-workspace__visual:focus-visible {
     outline: 2px solid var(--admin-accent);
     outline-offset: -2px;
+}
+
+.gallery-workspace__card {
+    position: relative;
+}
+
+.gallery-workspace__card.is-dragging {
+    opacity: .58;
+}
+
+.gallery-workspace__card.is-drop-target {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+}
+
+.gallery-workspace__drag-handle {
+    position: absolute;
+    top: .55rem;
+    right: .55rem;
+    z-index: 5;
+    display: grid;
+    width: 1.72rem;
+    height: 1.72rem;
+    padding: 0;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--admin-line-strong) 75%, transparent);
+    border-radius: .2rem;
+    background: color-mix(in srgb, var(--admin-subtle) 88%, transparent);
+    color: var(--admin-muted);
+    cursor: grab;
+}
+
+.gallery-workspace__drag-handle svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.gallery-workspace__drag-handle:hover,
+.gallery-workspace__drag-handle:focus-visible {
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+}
+
+.gallery-workspace__drag-handle:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.gallery-workspace__drag-handle:active {
+    cursor: grabbing;
+}
+
+.gallery-workspace__drag-handle[aria-disabled="true"] {
+    opacity: .42;
+    cursor: not-allowed;
 }
 
 .gallery-workspace__title-editor {
@@ -276,11 +337,18 @@
 }
 
 .gallery-workspace__selection-checkbox {
-    display: grid;
-    width: 1.125rem;
-    height: 1.125rem;
-    place-items: center;
+    display: inline-flex;
+    width: auto;
+    min-width: 0;
+    height: 1.78rem;
+    gap: .35rem;
+    align-items: center;
     justify-self: start;
+    color: var(--admin-muted);
+    font-size: .68rem;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
 }
 
 .gallery-workspace__selection-checkbox input[type="checkbox"] {

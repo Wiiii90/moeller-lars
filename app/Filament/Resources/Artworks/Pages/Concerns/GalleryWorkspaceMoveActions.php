@@ -21,6 +21,12 @@ trait GalleryWorkspaceMoveActions
             throw new InvalidArgumentException('Artwork order direction must be up or down.');
         }
 
+        if (! $this->artworkReorderingAvailable()) {
+            Notification::make()->title('Clear filters to reorder')->warning()->send();
+
+            return;
+        }
+
         $orderedIds = $this->orderedArtworkIds();
         $index = array_search($artworkId, $orderedIds, true);
         if ($index === false) {
@@ -38,10 +44,73 @@ trait GalleryWorkspaceMoveActions
         $this->loadArtworks();
     }
 
+    public function reorderArtworks(array $orderedIds): void
+    {
+        if (! $this->artworkReorderingAvailable()) {
+            Notification::make()->title('Clear filters to reorder')->warning()->send();
+
+            return;
+        }
+
+        $normalized = [];
+        foreach ($orderedIds as $id) {
+            if (! is_int($id) && (! is_string($id) || ! ctype_digit($id))) {
+                $this->notifyValidationFailure(
+                    'Gallery order was not updated',
+                    ValidationException::withMessages(['artworks' => 'The artwork order is invalid.']),
+                );
+
+                return;
+            }
+
+            $normalized[] = (int) $id;
+        }
+
+        $current = $this->orderedArtworkIds();
+        $expected = $current;
+        $actual = $normalized;
+        sort($expected);
+        sort($actual);
+
+        if (
+            count($normalized) !== count($current)
+            || count(array_unique($normalized)) !== count($normalized)
+            || $actual !== $expected
+        ) {
+            $this->notifyValidationFailure(
+                'Gallery order was not updated',
+                ValidationException::withMessages(['artworks' => 'The artwork order is invalid.']),
+            );
+
+            return;
+        }
+
+        if ($normalized === $current) {
+            return;
+        }
+
+        try {
+            $this->saveArtworkOrder($normalized);
+        } catch (ValidationException $exception) {
+            $this->notifyValidationFailure('Gallery order was not updated', $exception);
+
+            return;
+        }
+
+        $this->loadArtworks();
+        Notification::make()->title('Gallery order updated')->success()->send();
+    }
+
     public function moveSelectedArtworks(string $direction): void
     {
         if (! in_array($direction, ['up', 'down'], true)) {
             throw new InvalidArgumentException('Artwork order direction must be up or down.');
+        }
+
+        if (! $this->artworkReorderingAvailable()) {
+            Notification::make()->title('Clear filters to reorder')->warning()->send();
+
+            return;
         }
 
         $selectedIds = array_keys($this->selectedArtworkIdSet());
@@ -148,5 +217,12 @@ trait GalleryWorkspaceMoveActions
         $this->clearSelection();
         $this->loadArtworks();
         Notification::make()->title($count === 1 ? 'Artwork moved' : $count.' artworks moved')->body('Media references remain shared and unchanged.')->success()->send();
+    }
+
+    private function artworkReorderingAvailable(): bool
+    {
+        return trim($this->search) === ''
+            && $this->statusFilter === 'any'
+            && $this->readinessFilter === 'any';
     }
 }
