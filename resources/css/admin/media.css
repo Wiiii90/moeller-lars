@@ -259,8 +259,40 @@
     background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
 }
 
+.media-workspace__table tbody tr.is-selected > td {
+    box-shadow:
+        inset 0 2px 0 var(--admin-accent),
+        inset 0 -2px 0 var(--admin-accent);
+}
+
 .media-workspace__table tbody tr.is-selected > td:first-child {
-    box-shadow: inset 2px 0 0 var(--admin-accent);
+    box-shadow:
+        inset 2px 0 0 var(--admin-accent),
+        inset 0 2px 0 var(--admin-accent),
+        inset 0 -2px 0 var(--admin-accent);
+}
+
+.media-workspace__table tbody tr.is-selected > td:last-child {
+    box-shadow:
+        inset -2px 0 0 var(--admin-accent),
+        inset 0 2px 0 var(--admin-accent),
+        inset 0 -2px 0 var(--admin-accent);
+}
+
+.media-workspace__table tbody tr.is-selected + tr.is-selected > td {
+    box-shadow: inset 0 -2px 0 var(--admin-accent);
+}
+
+.media-workspace__table tbody tr.is-selected + tr.is-selected > td:first-child {
+    box-shadow:
+        inset 2px 0 0 var(--admin-accent),
+        inset 0 -2px 0 var(--admin-accent);
+}
+
+.media-workspace__table tbody tr.is-selected + tr.is-selected > td:last-child {
+    box-shadow:
+        inset -2px 0 0 var(--admin-accent),
+        inset 0 -2px 0 var(--admin-accent);
 }
 
 .media-workspace__thumb-head,
@@ -752,15 +784,12 @@
 }
 
 /* Media Files selection and preview finish. */
-.media-workspace__view-trigger {
-    min-width: 4.75rem;
-}
-
 .media-workspace__selection-head,
 .media-workspace__selection-cell {
     width: 2.5rem;
     padding-inline: .5rem !important;
     text-align: center !important;
+    vertical-align: middle;
 }
 
 .media-workspace__selection-checkbox {
@@ -802,7 +831,8 @@
 
 .media-workspace__selection-head input[type="checkbox"]:checked,
 .media-workspace__selection-cell input[type="checkbox"]:checked,
-.media-workspace__selection-checkbox input[type="checkbox"]:checked {
+.media-workspace__selection-checkbox input[type="checkbox"]:checked,
+.media-workspace__selection-head input[type="checkbox"]:indeterminate {
     border-color: var(--admin-accent);
     background: var(--admin-accent);
 }
@@ -811,6 +841,14 @@
 .media-workspace__selection-cell input[type="checkbox"]:checked::before,
 .media-workspace__selection-checkbox input[type="checkbox"]:checked::before {
     transform: translateY(-.04rem) rotate(-45deg) scale(1);
+}
+
+.media-workspace__selection-head input[type="checkbox"]:indeterminate::before {
+    width: .56rem;
+    height: 0;
+    border-bottom: 2px solid currentColor;
+    border-left: 0;
+    transform: none;
 }
 
 .media-workspace__selection-head input[type="checkbox"]:focus-visible,
@@ -895,7 +933,7 @@
     height: 2rem;
     padding: 0;
     place-items: center;
-    border: 0;
+    border: 1px solid transparent;
     border-radius: .2rem;
     background: transparent;
     color: var(--admin-muted);
@@ -904,19 +942,19 @@
 
 .media-workspace__view-option:hover,
 .media-workspace__view-option:focus-visible {
+    border-color: var(--admin-line-strong);
     background: var(--admin-subtle);
     color: var(--admin-text);
-}
-
-.media-workspace__view-option:focus-visible {
-    outline: 2px solid var(--admin-accent);
-    outline-offset: 2px;
 }
 
 .media-workspace__view-option.is-active {
     background: var(--admin-subtle);
-    box-shadow: inset 0 -2px 0 var(--admin-accent);
     color: var(--admin-text);
+}
+
+.media-workspace__view-option.is-active:hover,
+.media-workspace__view-option.is-active:focus-visible {
+    border-color: var(--admin-line-strong);
 }
 
 .media-workspace__view-icon,
@@ -929,49 +967,6 @@
     min-width: 8.5rem;
     padding-inline: .25rem;
     justify-content: flex-start;
-    border-color: transparent !important;
-    background: transparent !important;
-    color: var(--admin-muted);
-}
-
-.media-workspace .media-workspace__selection-trigger:hover,
-.media-workspace .media-workspace__selection-trigger:focus-visible {
-    border-color: transparent !important;
-    background: var(--admin-subtle) !important;
-    color: var(--admin-text);
-}
-
-.media-workspace .media-workspace__selection-trigger:focus-visible {
-    outline: 2px solid var(--admin-accent);
-    outline-offset: 2px;
-}
-
-.media-workspace .media-workspace__selection-trigger:disabled {
-    border-color: transparent !important;
-    background: transparent !important;
-    color: var(--admin-muted);
-    opacity: .55;
-}
-
-.media-workspace__selection-head,
-.media-workspace__selection-cell {
-    vertical-align: middle;
-}
-
-.media-workspace__selection-head input[type="checkbox"],
-.media-workspace__selection-cell input[type="checkbox"] {
-    margin-inline: auto;
-}
-
-.media-workspace__table tbody tr.is-selected {
-    position: relative;
-    z-index: 1;
-    outline: 2px solid var(--admin-accent);
-    outline-offset: -2px;
-}
-
-.media-workspace__table tbody tr.is-selected > td:first-child {
-    box-shadow: none;
 }
 
 .media-workspace .media-workspace__filename-button {
