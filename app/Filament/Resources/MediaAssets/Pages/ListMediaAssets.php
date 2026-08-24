@@ -424,13 +424,6 @@ final class ListMediaAssets extends Page
                 'deletable' => $available,
             ];
         })->all();
-
-        $selectableIds = collect($this->assets)
-            ->filter(static fn (array $asset): bool => ($asset['selectable'] ?? false) === true)
-            ->pluck('id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->all();
-        $this->selectedAssets = array_values(array_intersect($this->selectedAssets, $selectableIds));
     }
 
     private function loadLibraryMetrics(MediaReferenceCatalog $catalog): void
