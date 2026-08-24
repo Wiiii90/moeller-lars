@@ -665,7 +665,10 @@ final class ListMediaAssets extends Page
         if ($bytes < 1024 * 1024 * 1024) {
             return number_format($bytes / (1024 * 1024), 1).' MB';
         }
+        if ($bytes < 1024 * 1024 * 1024 * 1024) {
+            return number_format($bytes / (1024 * 1024 * 1024), 2).' GB';
+        }
 
-        return number_format($bytes / (1024 * 1024 * 1024), 2).' GB';
+        return number_format($bytes / (1024 * 1024 * 1024 * 1024), 2).' TB';
     }
 }
