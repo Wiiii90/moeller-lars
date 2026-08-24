@@ -56,17 +56,12 @@
                 $pageSelectionTarget = $allVisibleSelected
                     ? array_values(array_diff($selectedAssets, $selectableAssetIds))
                     : array_values(array_unique(array_merge($selectedAssets, $selectableAssetIds)));
-                $viewModeLabel = match ($viewMode) {
-                    'grid' => 'Grid',
-                    'dense' => 'Dense',
-                    default => 'List',
-                };
             @endphp
 
             <div class="media-workspace__controls" aria-label="File search and filters">
                 <label class="media-workspace__field media-workspace__search">
                     <span>Search media</span>
-                    <input type="search" wire:model.live.debounce.300ms="search">
+                    <input type="search" wire:model.live.debounce.300ms="search" placeholder="Filename, ALT, credit…">
                 </label>
 
                 <label class="media-workspace__field">
@@ -119,26 +114,39 @@
                     <button class="admin-action" type="button" wire:click="resetFilters">Reset</button>
                 </div>
 
-                <div
-                    class="media-workspace__control-group media-workspace__view-group"
-                    x-data="{ open: false }"
-                    x-on:click.outside="open = false"
-                    x-on:keydown.escape.window="open = false"
-                >
+                <div class="media-workspace__control-group media-workspace__view-group">
                     <span class="media-workspace__control-label">View</span>
-                    <div class="media-workspace__multi-action-anchor">
+                    <div class="media-workspace__view-options" role="group" aria-label="Media view">
                         <button
-                            class="admin-action is-primary media-workspace__view-trigger"
+                            class="media-workspace__view-option {{ $viewMode === 'list' ? 'is-active' : '' }}"
                             type="button"
-                            x-on:click="open = ! open"
-                            x-bind:aria-expanded="open.toString()"
-                            aria-haspopup="menu"
-                        >{{ $viewModeLabel }}</button>
-                        <div class="media-workspace__multi-action-menu" role="menu" x-show="open" x-cloak>
-                            <button class="admin-action" type="button" role="menuitem" wire:click="setViewMode('list')" x-on:click="open = false">List</button>
-                            <button class="admin-action" type="button" role="menuitem" wire:click="setViewMode('grid')" x-on:click="open = false">Grid</button>
-                            <button class="admin-action" type="button" role="menuitem" wire:click="setViewMode('dense')" x-on:click="open = false">Dense</button>
-                        </div>
+                            wire:click="setViewMode('list')"
+                            aria-label="List"
+                            title="List"
+                            aria-pressed="{{ $viewMode === 'list' ? 'true' : 'false' }}"
+                        >
+                            <x-filament::icon icon="heroicon-m-list-bullet" class="media-workspace__view-icon" />
+                        </button>
+                        <button
+                            class="media-workspace__view-option {{ $viewMode === 'grid' ? 'is-active' : '' }}"
+                            type="button"
+                            wire:click="setViewMode('grid')"
+                            aria-label="Grid"
+                            title="Grid"
+                            aria-pressed="{{ $viewMode === 'grid' ? 'true' : 'false' }}"
+                        >
+                            <x-filament::icon icon="heroicon-m-squares-2x2" class="media-workspace__view-icon" />
+                        </button>
+                        <button
+                            class="media-workspace__view-option {{ $viewMode === 'dense' ? 'is-active' : '' }}"
+                            type="button"
+                            wire:click="setViewMode('dense')"
+                            aria-label="Dense"
+                            title="Dense"
+                            aria-pressed="{{ $viewMode === 'dense' ? 'true' : 'false' }}"
+                        >
+                            <x-filament::icon icon="heroicon-m-bars-3" class="media-workspace__view-icon" />
+                        </button>
                     </div>
                 </div>
 
@@ -151,7 +159,7 @@
                     <span class="media-workspace__control-label">Selection</span>
                     <div class="media-workspace__multi-action-anchor">
                         <button
-                            class="admin-action media-workspace__selection-trigger {{ $selectedAssets !== [] ? 'is-primary' : '' }}"
+                            class="admin-action media-workspace__selection-trigger"
                             type="button"
                             x-on:click="open = ! open"
                             x-bind:aria-expanded="open.toString()"
@@ -185,6 +193,7 @@
                     <section class="media-workspace__grid" aria-label="Media assets grid">
                         @foreach ($assets as $asset)
                             @php($selected = in_array($asset['id'], $selectedAssets, true))
+                            @php($displayFilename = pathinfo($asset['filename'], PATHINFO_FILENAME))
                             <article class="media-workspace__grid-item {{ $selected ? 'is-selected' : '' }}" wire:key="media-grid-{{ $asset['id'] }}">
                                 <button
                                     class="media-workspace__visual"
@@ -219,7 +228,7 @@
                                         type="button"
                                         wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })"
                                         title="{{ $asset['filename'] }}"
-                                    ><strong>{{ $asset['filename'] }}</strong></button>
+                                    ><strong>{{ $displayFilename }}</strong></button>
                                     <span>{{ $asset['type_label'] }} · {{ $asset['size'] }}</span>
                                     @if ($asset['references'] !== [])
                                         <small>{{ $asset['references'][0]['type'] }} — {{ $asset['references'][0]['label'] }}@if ($asset['reference_overflow'] > 0) · +{{ $asset['reference_overflow'] }} more @endif</small>
@@ -227,23 +236,42 @@
                                         <small>Unreferenced</small>
                                     @endif
                                 </div>
-                                <div class="media-workspace__actions admin-toolbar">
-                                    <label class="media-workspace__selection-checkbox">
-                                        <input
-                                            type="checkbox"
-                                            wire:click="toggleAssetSelection({{ $asset['id'] }})"
-                                            @checked($selected)
-                                            @disabled(! $asset['selectable'])
-                                            aria-label="Toggle selection for {{ $asset['filename'] }}"
-                                        >
-                                    </label>
-                                    @if ($asset['state'] === 'available')
-                                        <a class="admin-action" href="{{ route('admin.media.download', ['mediaAsset' => $asset['id']]) }}">Download</a>
-                                    @else
-                                        <button class="admin-action" type="button" disabled>Download</button>
-                                    @endif
-                                    <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>Edit</button>
-                                    <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>Delete</button>
+                                <div class="media-workspace__actions media-workspace__grid-actions">
+                                    <div class="media-workspace__grid-actions-left">
+                                        <label class="media-workspace__selection-checkbox">
+                                            <input
+                                                type="checkbox"
+                                                wire:click="toggleAssetSelection({{ $asset['id'] }})"
+                                                @checked($selected)
+                                                @disabled(! $asset['selectable'])
+                                                aria-label="Toggle selection for {{ $asset['filename'] }}"
+                                            >
+                                        </label>
+                                        @if ($asset['state'] === 'available')
+                                            <a
+                                                class="media-workspace__icon-action"
+                                                href="{{ route('admin.media.download', ['mediaAsset' => $asset['id']]) }}"
+                                                aria-label="Download"
+                                                title="Download"
+                                            >
+                                                <x-filament::icon icon="heroicon-m-arrow-down-tray" class="media-workspace__action-icon" />
+                                            </a>
+                                        @else
+                                            <button
+                                                class="media-workspace__icon-action"
+                                                type="button"
+                                                aria-label="Download"
+                                                title="Download"
+                                                disabled
+                                            >
+                                                <x-filament::icon icon="heroicon-m-arrow-down-tray" class="media-workspace__action-icon" />
+                                            </button>
+                                        @endif
+                                    </div>
+                                    <div class="media-workspace__grid-actions-right">
+                                        <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>Edit</button>
+                                        <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>Delete</button>
+                                    </div>
                                 </div>
                             </article>
                         @endforeach
@@ -261,7 +289,6 @@
                                             @disabled($selectableAssetIds === [])
                                             aria-label="Toggle selection for visible files"
                                         >
-                                        <span class="sr-only">Selection</span>
                                     </th>
                                     @if ($viewMode === 'list')
                                         <th scope="col" class="media-workspace__thumb-head">Preview</th>
@@ -277,6 +304,7 @@
                             <tbody>
                                 @foreach ($assets as $asset)
                                     @php($selected = in_array($asset['id'], $selectedAssets, true))
+                                    @php($displayFilename = pathinfo($asset['filename'], PATHINFO_FILENAME))
                                     <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="media-row-{{ $asset['id'] }}">
                                         <td class="media-workspace__selection-cell">
                                             <input
@@ -310,7 +338,8 @@
                                                 class="media-workspace__filename-button"
                                                 type="button"
                                                 wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })"
-                                            ><strong title="{{ $asset['filename'] }}">{{ $asset['filename'] }}</strong></button>
+                                                title="{{ $asset['filename'] }}"
+                                            ><strong>{{ $displayFilename }}</strong></button>
                                             <small>
                                                 @if ($asset['credit'] !== ''){{ $asset['credit'] }} · @endif
                                                 {{ $asset['created'] }}
