@@ -1,23 +1,22 @@
 <div class="media-file-dialog__content">
-    <div class="media-file-dialog__preview" style="min-height: 0; max-height: 52vh; padding: .75rem;">
+    <div class="media-file-dialog__preview">
         @if ($asset['preview_url'] !== null && $asset['kind'] === 'image')
             <img
                 src="{{ $asset['preview_url'] }}"
                 alt="{{ $asset['alt_text'] }}"
                 decoding="async"
-                style="width: auto; height: auto; max-width: 100%; max-height: 50vh; object-fit: contain;"
             >
         @elseif ($asset['preview_url'] !== null && $asset['kind'] === 'video')
-            <video controls playsinline preload="metadata" style="width: 100%; height: auto; max-height: 50vh; object-fit: contain;">
+            <video controls playsinline preload="metadata">
                 <source src="{{ $asset['preview_url'] }}" type="{{ $asset['mime'] }}">
             </video>
         @elseif ($asset['preview_url'] !== null && $asset['kind'] === 'audio')
-            <div class="media-file-dialog__audio" style="display: grid; width: min(100%, 42rem); gap: 1rem; justify-items: center;">
+            <div class="media-file-dialog__audio">
                 @include('filament.resources.media-assets.partials.media-type-placeholder', [
                     'kind' => $asset['kind'],
                     'typeLabel' => $asset['type_label'],
                 ])
-                <audio controls preload="metadata" style="width: min(100%, 36rem);">
+                <audio controls preload="metadata">
                     <source src="{{ $asset['preview_url'] }}" type="{{ $asset['mime'] }}">
                 </audio>
             </div>
@@ -54,10 +53,10 @@
         >Next</button>
     </nav>
 
-    <div class="media-file-dialog__details" style="grid-template-columns: 1fr;">
-        <section aria-labelledby="media-dialog-metadata-{{ $asset['id'] }}" style="padding-right: 0;">
+    <div class="media-file-dialog__details media-file-dialog__metadata">
+        <section aria-labelledby="media-dialog-metadata-{{ $asset['id'] }}">
             <h3 id="media-dialog-metadata-{{ $asset['id'] }}">Metadata</h3>
-            <dl style="grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1.2rem;">
+            <dl class="media-file-dialog__metadata-grid">
                 <div><dt>File</dt><dd>{{ $asset['filename'] }}</dd></div>
                 <div><dt>Type</dt><dd>{{ $asset['type_label'] }} · {{ $asset['mime'] }}</dd></div>
                 <div><dt>Dimensions</dt><dd>{{ $asset['dimensions'] }}</dd></div>
@@ -72,8 +71,8 @@
         </section>
     </div>
 
-    <div class="media-file-dialog__details" style="grid-template-columns: 1fr;">
-        <section aria-labelledby="media-dialog-usage-{{ $asset['id'] }}" style="padding-right: 0;">
+    <div class="media-file-dialog__details media-file-dialog__usage">
+        <section aria-labelledby="media-dialog-usage-{{ $asset['id'] }}">
             <h3 id="media-dialog-usage-{{ $asset['id'] }}">Used in</h3>
             @if ($asset['references'] === [])
                 <p class="media-file-dialog__empty">No canonical references.</p>
