@@ -25,24 +25,31 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Throwable;
 
 final class JournalWorkspace extends Page
 {
+    /** @var list<int> */
+    private const PAGE_SIZES = [25, 50, 100];
+
+    private const DEFAULT_PAGE_SIZE = 50;
+
     protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $slug = 'pages/journal/{section}';
 
     protected static ?string $title = 'Journal';
 
-    protected string $view = 'filament.resources.blog-posts.pages.list-blog-posts';
+    #[Locked]
+    public int $sectionId = 0;
 
-    public int $sectionId;
-
-    public string $template;
+    #[Locked]
+    public string $template = '';
 
     public string $journalTitle = 'Journal';
 
@@ -73,7 +80,7 @@ final class JournalWorkspace extends Page
 
     public int $page = 1;
 
-    public int $pageSize = 25;
+    public int $pageSize = self::DEFAULT_PAGE_SIZE;
 
     public int $total = 0;
 
@@ -92,16 +99,15 @@ final class JournalWorkspace extends Page
         $this->sectionId = (int) $siteSection->getKey();
         $this->template = $template->value;
         $this->loadJournalContext($siteSection);
+        $this->reloadEntries();
+    }
 
-        if ($template === JournalTemplate::Blog) {
-            $this->view = 'filament.resources.blog-posts.pages.list-blog-posts';
-            $this->loadPosts();
-
-            return;
-        }
-
-        $this->view = 'filament.resources.exhibitions.pages.list-exhibitions';
-        $this->loadExhibitions();
+    public function getView(): string
+    {
+        return match ($this->journalTemplate()) {
+            JournalTemplate::Blog => 'filament.resources.blog-posts.pages.list-blog-posts',
+            JournalTemplate::Exhibitions => 'filament.resources.exhibitions.pages.list-exhibitions',
+        };
     }
 
     public function updatedSearch(): void
@@ -119,9 +125,10 @@ final class JournalWorkspace extends Page
         $this->resetPageAndReload();
     }
 
-    public function updatedPageSize(): void
+    public function updatedPageSize(mixed $value): void
     {
-        $this->pageSize = in_array($this->pageSize, [25, 50, 100], true) ? $this->pageSize : 25;
+        $value = (int) $value;
+        $this->pageSize = in_array($value, self::PAGE_SIZES, true) ? $value : self::DEFAULT_PAGE_SIZE;
         $this->resetPageAndReload();
     }
 
@@ -156,7 +163,7 @@ final class JournalWorkspace extends Page
 
     public function toggleVisibleSelection(): void
     {
-        if ($this->isBlog()) {
+        if ($this->journalTemplate() === JournalTemplate::Blog) {
             $visibleIds = collect($this->posts)->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
             $this->selectedPostIds = $this->toggledVisibleSelection($this->selectedPostIds, $visibleIds);
 
@@ -197,6 +204,11 @@ final class JournalWorkspace extends Page
         $this->runEntryAction('Post unpublished', fn () => app(BlogEditorialService::class)->unpublish($this->post($postId)));
     }
 
+    public function archivePost(int $postId): void
+    {
+        $this->runEntryAction('Post archived', fn () => app(BlogEditorialService::class)->archive($this->post($postId)));
+    }
+
     public function restorePostDraft(int $postId): void
     {
         $this->runEntryAction('Post restored to draft', fn () => app(BlogEditorialService::class)->restoreDraft($this->post($postId)));
@@ -223,7 +235,7 @@ final class JournalWorkspace extends Page
             return;
         }
 
-        if ($this->isBlog()) {
+        if ($this->journalTemplate() === JournalTemplate::Blog) {
             $records = $this->selectedPosts();
             if ($direction === 'down') {
                 $records = $records->reverse();
@@ -257,7 +269,15 @@ final class JournalWorkspace extends Page
 
     public function unpublishSelectedPosts(): void
     {
-        $this->runPostBatch('posts unpublished', fn (BlogPost $post) => app(BlogEditorialService::class)->unpublish($post));
+        $this->runPostBatch('posts unpublished', function (BlogPost $post): bool {
+            if ((string) $post->getAttribute('state') !== 'published') {
+                return false;
+            }
+
+            app(BlogEditorialService::class)->unpublish($post);
+
+            return true;
+        });
     }
 
     public function archiveSelectedPosts(): void
@@ -267,7 +287,15 @@ final class JournalWorkspace extends Page
 
     public function restoreSelectedPosts(): void
     {
-        $this->runPostBatch('posts restored to draft', fn (BlogPost $post) => app(BlogEditorialService::class)->restoreDraft($post));
+        $this->runPostBatch('posts restored to draft', function (BlogPost $post): bool {
+            if (! in_array((string) $post->getAttribute('state'), ['scheduled', 'unpublished', 'archived'], true)) {
+                return false;
+            }
+
+            app(BlogEditorialService::class)->restoreDraft($post);
+
+            return true;
+        });
     }
 
     public function publishSelectedExhibitions(): void
@@ -290,7 +318,15 @@ final class JournalWorkspace extends Page
     {
         $this->runExhibitionBatch(
             'exhibitions restored to draft',
-            fn (Exhibition $exhibition) => app(ExhibitionEditorialService::class)->restoreDraft($exhibition),
+            function (Exhibition $exhibition): bool {
+                if ((string) $exhibition->getAttribute('state') !== 'archived') {
+                    return false;
+                }
+
+                app(ExhibitionEditorialService::class)->restoreDraft($exhibition);
+
+                return true;
+            },
         );
     }
 
@@ -320,7 +356,7 @@ final class JournalWorkspace extends Page
                         TextInput::make('navigation_label')
                             ->label('Navigation label')
                             ->required()
-                            ->maxLength(160),
+                            ->maxLength(120),
                         TextInput::make('slug')
                             ->label('Public URL slug')
                             ->required()
@@ -345,7 +381,14 @@ final class JournalWorkspace extends Page
                     ->columns(2),
             ])
             ->modalHeading('Journal settings')
-            ->modalSubmitActionLabel('Save changes')
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Save')
+                ->extraAttributes(['class' => 'admin-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (array $data): void {
                 app(JournalSettingsService::class)->update($this->section(), $data);
                 $this->loadJournalContext();
@@ -360,7 +403,14 @@ final class JournalWorkspace extends Page
             ->label('Add post')
             ->schema(fn (Schema $schema): Schema => BlogPostResource::form($schema))
             ->modalHeading('Add post')
-            ->modalSubmitActionLabel('Create draft')
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Create draft')
+                ->extraAttributes(['class' => 'admin-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 app(BlogEditorialService::class)->createDraft($data);
@@ -394,7 +444,7 @@ final class JournalWorkspace extends Page
                     ->required()
                     ->maxLength(160),
                 TextInput::make('opening_text')
-                    ->label('Opening / vernissage')
+                    ->label('Vernissage')
                     ->maxLength(500)
                     ->nullable(),
                 Select::make('kind')
@@ -427,7 +477,14 @@ final class JournalWorkspace extends Page
                 TextInput::make('directions_url')->label('Directions URL')->url()->maxLength(2048)->nullable(),
             ])
             ->modalHeading('Add exhibition')
-            ->modalSubmitActionLabel('Create draft')
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Create draft')
+                ->extraAttributes(['class' => 'admin-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 app(ExhibitionDraftService::class)->create($data);
@@ -443,8 +500,24 @@ final class JournalWorkspace extends Page
             ->color('danger')
             ->requiresConfirmation()
             ->modalHeading('Delete this post?')
-            ->action(function (array $arguments): void {
-                app(BlogEditorialService::class)->delete($this->post((int) $arguments['post']));
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Delete')
+                ->extraAttributes(['class' => 'admin-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $arguments): void {
+                try {
+                    app(BlogEditorialService::class)->delete($this->post((int) $arguments['post']));
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Post was not deleted', $exception);
+                    $action->halt();
+
+                    return;
+                }
+
                 $this->selectedPostIds = array_values(array_filter(
                     $this->selectedPostIds,
                     static fn (mixed $id): bool => (int) $id !== (int) $arguments['post'],
@@ -462,8 +535,24 @@ final class JournalWorkspace extends Page
             ->requiresConfirmation()
             ->modalHeading('Delete this exhibition?')
             ->modalDescription('Media Files are preserved. Only their Exhibition relationship is removed.')
-            ->action(function (array $arguments): void {
-                app(ExhibitionEditorialService::class)->delete($this->exhibition((int) $arguments['exhibition']));
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Delete')
+                ->extraAttributes(['class' => 'admin-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $arguments): void {
+                try {
+                    app(ExhibitionEditorialService::class)->delete($this->exhibition((int) $arguments['exhibition']));
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Exhibition was not deleted', $exception);
+                    $action->halt();
+
+                    return;
+                }
+
                 $this->selectedExhibitionIds = array_values(array_filter(
                     $this->selectedExhibitionIds,
                     static fn (mixed $id): bool => (int) $id !== (int) $arguments['exhibition'],
@@ -481,6 +570,14 @@ final class JournalWorkspace extends Page
             ->requiresConfirmation()
             ->modalHeading('Delete selected posts?')
             ->modalDescription('Published and scheduled posts are kept and reported as failures.')
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Delete')
+                ->extraAttributes(['class' => 'admin-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (): void {
                 [$succeeded, $failed] = $this->bestEffort(
                     $this->selectedPosts(),
@@ -504,6 +601,14 @@ final class JournalWorkspace extends Page
             ->requiresConfirmation()
             ->modalHeading('Delete selected exhibitions?')
             ->modalDescription('Published exhibitions are kept. Media Files are preserved when other exhibitions are deleted.')
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Delete')
+                ->extraAttributes(['class' => 'admin-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (): void {
                 [$succeeded, $failed] = $this->bestEffort(
                     $this->selectedExhibitions(),
@@ -682,7 +787,7 @@ final class JournalWorkspace extends Page
                 }
 
                 $kind = (string) ($exhibition->getAttribute('kind') ?? '');
-                $opening = $exhibition->getAttribute('opening_text');
+                $vernissage = $exhibition->getAttribute('opening_text');
                 $position = (int) ($positionById->get($id) ?? 0);
                 $state = (string) $exhibition->getAttribute('state');
 
@@ -690,14 +795,14 @@ final class JournalWorkspace extends Page
                     'id' => $id,
                     'title' => (string) $exhibition->getAttribute('title'),
                     'location' => $location,
-                    'type' => match ($kind) {
+                    'format' => match ($kind) {
                         'solo' => 'Solo',
                         'group' => 'Group',
                         default => '—',
                     },
                     'state' => $state,
                     'timing' => (string) $temporalById->get($id, 'unknown'),
-                    'opening' => is_string($opening) && trim($opening) !== '' ? trim($opening) : null,
+                    'vernissage' => is_string($vernissage) && trim($vernissage) !== '' ? trim($vernissage) : null,
                     'date_text' => (string) $exhibition->getAttribute('date_text'),
                     'edit_url' => ExhibitionResource::getUrl('edit', ['record' => $exhibition]),
                     'public_url' => $this->journalPublicUrl !== null && $state === 'published'
@@ -720,11 +825,27 @@ final class JournalWorkspace extends Page
 
     private function reloadEntries(): void
     {
-        $this->isBlog() ? $this->loadPosts() : $this->loadExhibitions();
+        $template = $this->journalTemplate();
+        if ($template === JournalTemplate::Blog) {
+            $this->loadPosts();
+
+            return;
+        }
+
+        if ($template === JournalTemplate::Exhibitions) {
+            $this->loadExhibitions();
+
+            return;
+        }
+
+        abort(404);
     }
 
     private function setPagination(int $total): void
     {
+        $this->pageSize = in_array($this->pageSize, self::PAGE_SIZES, true)
+            ? $this->pageSize
+            : self::DEFAULT_PAGE_SIZE;
         $this->total = $total;
         $this->pages = max(1, (int) ceil($total / $this->pageSize));
         $this->page = min(max(1, $this->page), $this->pages);
@@ -759,6 +880,7 @@ final class JournalWorkspace extends Page
     private function runPostBatch(string $label, callable $action): void
     {
         [$succeeded, $failed] = $this->bestEffort($this->selectedPosts(), $action);
+        $this->selectedPostIds = [];
         $this->notifyBatch($label, $succeeded, $failed);
         $this->loadPosts();
     }
@@ -766,6 +888,7 @@ final class JournalWorkspace extends Page
     private function runExhibitionBatch(string $label, callable $action): void
     {
         [$succeeded, $failed] = $this->bestEffort($this->selectedExhibitions(), $action);
+        $this->selectedExhibitionIds = [];
         $this->notifyBatch($label, $succeeded, $failed);
         $this->loadExhibitions();
     }
@@ -837,6 +960,8 @@ final class JournalWorkspace extends Page
 
     private function post(int $postId): BlogPost
     {
+        abort_unless($this->journalTemplate() === JournalTemplate::Blog, 404);
+
         /** @var BlogPost $post */
         $post = BlogPost::query()
             ->where('site_section_id', $this->sectionId)
@@ -847,6 +972,8 @@ final class JournalWorkspace extends Page
 
     private function exhibition(int $exhibitionId): Exhibition
     {
+        abort_unless($this->journalTemplate() === JournalTemplate::Exhibitions, 404);
+
         /** @var Exhibition $exhibition */
         $exhibition = Exhibition::query()
             ->where('site_section_id', $this->sectionId)
@@ -857,18 +984,23 @@ final class JournalWorkspace extends Page
 
     private function section(): SiteSection
     {
+        $template = $this->journalTemplate();
+
         /** @var SiteSection $section */
         $section = SiteSection::query()
             ->whereKey($this->sectionId)
             ->where('type', SiteNodeType::Journal->value)
-            ->where('template', $this->template)
+            ->where('template', $template->value)
             ->firstOrFail();
 
         return $section;
     }
 
-    private function isBlog(): bool
+    private function journalTemplate(): JournalTemplate
     {
-        return $this->template === JournalTemplate::Blog->value;
+        $template = JournalTemplate::tryFrom($this->template);
+        abort_unless($template instanceof JournalTemplate, 404);
+
+        return $template;
     }
 }

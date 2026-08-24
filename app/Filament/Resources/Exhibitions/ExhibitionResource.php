@@ -72,7 +72,7 @@ class ExhibitionResource extends Resource
                         ->required()
                         ->maxLength(160),
                     TextInput::make('opening_text')
-                        ->label('Opening / vernissage')
+                        ->label('Vernissage')
                         ->maxLength(500)
                         ->nullable(),
                     Select::make('kind')->options([

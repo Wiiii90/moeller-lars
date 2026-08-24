@@ -1,15 +1,14 @@
 /* Journal workspace-specific controls, table, selection and pagination. */
 
-.journal-workspace {
+.journal-workspace__entries {
     --journal-task-surface-header-height: 2.25rem;
+    border-bottom: 0;
 }
 
 .journal-workspace__controls {
     display: grid;
-    gap: .55rem;
-    padding: .85rem 0;
+    gap: .85rem;
     align-items: end;
-    border-bottom: 1px solid var(--admin-line-strong);
 }
 
 .journal-workspace__controls.is-blog {
@@ -31,34 +30,37 @@
 .journal-workspace__field > span,
 .journal-workspace__control-label {
     color: var(--admin-muted);
-    font-size: .61rem;
+    font-size: .68rem;
     font-weight: 700;
-    letter-spacing: .08em;
+    letter-spacing: .09em;
     line-height: 1.2;
     text-transform: uppercase;
-    white-space: nowrap;
 }
 
 .journal-workspace__field input,
 .journal-workspace__field select {
-    box-sizing: border-box;
     width: 100%;
-    height: var(--admin-control-height);
     min-width: 0;
-    padding: .42rem .5rem;
+    height: var(--admin-control-height);
+    min-height: var(--admin-control-height);
+    padding: .45rem .25rem;
     border: 0;
-    border-bottom: 1px solid var(--admin-line-strong);
+    border-bottom: 1px solid var(--admin-line);
     border-radius: 0;
     background: transparent;
     color: var(--admin-text);
     font: inherit;
-    font-size: .75rem;
+    font-size: .78rem;
     outline: none;
+}
+
+.journal-workspace__controls .admin-action {
+    min-height: var(--admin-control-height);
 }
 
 .journal-workspace__field input:focus,
 .journal-workspace__field select:focus {
-    border-bottom-color: var(--admin-accent);
+    border-color: var(--admin-accent);
 }
 
 .journal-workspace__search input::placeholder {
@@ -66,14 +68,14 @@
     opacity: 1;
 }
 
-.journal-workspace__control-group > .admin-action,
-.journal-workspace__control-group > div > .admin-action {
-    min-height: var(--admin-control-height);
+.journal-workspace__control-group > .admin-action {
+    justify-self: start;
 }
 
 .journal-workspace__journal-actions {
     display: flex;
     min-width: 0;
+    min-height: var(--admin-control-height);
     gap: .35rem;
     align-items: center;
     flex-wrap: nowrap;
@@ -82,6 +84,12 @@
 .journal-workspace__selection,
 .journal-workspace__selection-anchor {
     position: relative;
+}
+
+.journal-workspace__selection-anchor {
+    display: inline-flex;
+    min-height: var(--admin-control-height);
+    align-items: stretch;
 }
 
 .journal-workspace__selection-trigger {
@@ -96,8 +104,9 @@
 
 .journal-workspace__selection-count {
     display: inline-flex;
-    min-width: 1.35rem;
-    height: 1.35rem;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    margin-left: .4rem;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--admin-line-strong);
@@ -108,16 +117,16 @@
 
 .journal-workspace__selection-menu {
     position: absolute;
-    top: calc(100% + .35rem);
+    top: calc(100% + .3rem);
     right: 0;
     z-index: 30;
     display: grid;
     width: max-content;
     min-width: 13.5rem;
-    padding: .35rem;
+    padding: .25rem;
     border: 1px solid var(--admin-line-strong);
     background: var(--admin-surface);
-    box-shadow: 0 .7rem 2rem rgba(0, 0, 0, .12);
+    box-shadow: 0 .6rem 1.5rem rgba(0, 0, 0, .12);
 }
 
 .dark .journal-workspace__selection-menu {
@@ -277,8 +286,7 @@
     max-width: 28rem;
 }
 
-.journal-workspace__identity strong,
-.journal-workspace__schedule strong {
+.journal-workspace__identity strong {
     display: block;
     max-width: 100%;
     overflow: hidden;
@@ -289,8 +297,7 @@
     white-space: nowrap;
 }
 
-.journal-workspace__identity small,
-.journal-workspace__schedule small {
+.journal-workspace__identity small {
     display: block;
     margin-top: .17rem;
     color: var(--admin-muted);
@@ -298,10 +305,26 @@
     line-height: 1.4;
 }
 
-.journal-workspace__type,
+.journal-workspace__format,
 .journal-workspace__publication,
 .journal-workspace__schedule {
     white-space: nowrap;
+}
+
+.journal-workspace__schedule em,
+.journal-workspace__schedule span {
+    display: block;
+    color: var(--admin-muted);
+    font-size: .72rem;
+    line-height: 1.4;
+}
+
+.journal-workspace__schedule em {
+    font-weight: 400;
+}
+
+.journal-workspace__schedule em + span {
+    margin-top: .17rem;
 }
 
 .journal-workspace__state {
@@ -415,28 +438,6 @@
     font-size: .72rem;
 }
 
-.journal-workspace__pager-size {
-    display: inline-flex;
-    gap: .45rem;
-    align-items: center;
-}
-
-.journal-workspace__pager-size select {
-    height: 2rem;
-    padding: .2rem .35rem;
-    border: 1px solid var(--admin-line);
-    border-radius: .2rem;
-    background: transparent;
-    color: var(--admin-text);
-    font: inherit;
-}
-
-.journal-workspace__pager-range {
-    min-width: 6.5rem;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-}
-
 @media (max-width: 1180px) {
     .journal-workspace__controls.is-blog,
     .journal-workspace__controls.is-exhibitions {
@@ -474,9 +475,5 @@
         right: auto;
         left: 0;
         width: 100%;
-    }
-
-    .journal-workspace__pager {
-        flex-wrap: wrap;
     }
 }

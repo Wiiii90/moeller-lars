@@ -42,13 +42,15 @@ html {
     scrollbar-gutter: stable;
 }
 
-.media-file-dialog .fi-modal-footer-actions {
+.media-file-dialog .fi-modal-footer-actions,
+.admin-task-dialog .fi-modal-footer-actions {
     width: 100%;
     align-items: center;
     gap: .5rem;
 }
 
-.media-file-dialog .media-dialog-footer__cancel {
+.media-file-dialog .media-dialog-footer__cancel,
+.admin-task-dialog .admin-dialog-footer__cancel {
     order: 10;
     margin-inline-end: auto;
 }
@@ -57,7 +59,8 @@ html {
     order: 20;
 }
 
-.media-file-dialog .media-dialog-footer__primary {
+.media-file-dialog .media-dialog-footer__primary,
+.admin-task-dialog .admin-dialog-footer__primary {
     order: 30;
     margin-inline-start: auto;
 }
@@ -122,16 +125,20 @@ html {
         max-height: calc(100dvh - 1rem);
     }
 
-    .media-file-dialog .fi-modal-footer-actions {
+    .media-file-dialog .fi-modal-footer-actions,
+    .admin-task-dialog .fi-modal-footer-actions {
         flex-wrap: wrap;
     }
 
     .media-file-dialog .media-dialog-footer__cancel,
-    .media-file-dialog .media-dialog-footer__primary {
+    .media-file-dialog .media-dialog-footer__primary,
+    .admin-task-dialog .admin-dialog-footer__cancel,
+    .admin-task-dialog .admin-dialog-footer__primary {
         margin-inline: 0;
     }
 
-    .media-file-dialog .media-dialog-footer__primary {
+    .media-file-dialog .media-dialog-footer__primary,
+    .admin-task-dialog .admin-dialog-footer__primary {
         margin-inline-start: auto;
     }
 
