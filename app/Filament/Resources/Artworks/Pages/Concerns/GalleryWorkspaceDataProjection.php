@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 trait GalleryWorkspaceDataProjection
 {
+    public int $unfilteredArtworkCount = 0;
+
     private function loadArtworks(): void
     {
         /** @var EloquentCollection<int, Artwork> $records */
@@ -29,6 +31,7 @@ trait GalleryWorkspaceDataProjection
             ->orderBy('id')
             ->get();
 
+        $this->unfilteredArtworkCount = $records->count();
         $this->publishedCount = $records->where('state', 'published')->count();
         $analyticsKeys = $records->pluck('analytics_key')
             ->filter(static fn (mixed $key): bool => is_string($key) && trim($key) !== '')

@@ -314,9 +314,17 @@
                     </article>
                 @endforeach
             </section>
+        @elseif ($unfilteredArtworkCount > 0)
+            <x-admin.empty-state title="No matching artworks" minimal>
+                <x-slot:actions>
+                    <button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button>
+                </x-slot:actions>
+            </x-admin.empty-state>
         @else
-            <x-admin.empty-state kicker="No matches" title="No artworks match these filters">
-                <p>Reset the filters or add a new artwork draft.</p>
+            <x-admin.empty-state title="No artworks added to this Gallery" minimal>
+                <x-slot:actions>
+                    <button class="admin-action" type="button" wire:click="mountAction('addArtwork')">Add artwork</button>
+                </x-slot:actions>
             </x-admin.empty-state>
         @endif
     </x-admin.workspace>
