@@ -1,6 +1,7 @@
 <x-filament-panels::page>
     @php
         $componentReorderEnabled = trim($componentSearch) === '' && $componentType === 'any';
+        $componentTargets = collect($components)->pluck('target')->values()->all();
         $cvReorderEnabled = trim($cvSearch) === '' && $cvSection === 'any' && $cvStatus === 'any';
         $selectedCvIds = collect($selectedCvEntryIds)
             ->filter(static fn (mixed $id): bool => is_numeric($id))
@@ -38,7 +39,7 @@
                         type="search"
                         wire:model.blur="componentSearch"
                         x-on:keydown.enter.prevent="$el.blur()"
-                        placeholder="Search components"
+                        placeholder="Heading, list entry, text"
                         autocomplete="off"
                     >
                 </label>
@@ -135,10 +136,101 @@
             </div>
 
             @if ($components !== [])
-                <section class="custom-page-component-sequence" aria-label="Component sequence">
+                <section
+                    class="custom-page-component-sequence"
+                    aria-label="Component sequence"
+                    x-data="{
+                        enabled: @js($componentReorderEnabled),
+                        original: @js($componentTargets),
+                        dragging: null,
+                        over: null,
+                        before: true,
+                        start(event, target) {
+                            if (! this.enabled) {
+                                event.preventDefault();
+                                return;
+                            }
+                            this.dragging = target;
+                            this.over = null;
+                            event.dataTransfer.effectAllowed = 'move';
+                            event.dataTransfer.setData('text/plain', target);
+                        },
+                        hover(event, target) {
+                            if (! this.enabled || this.dragging === null || this.dragging === target) return;
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            this.over = target;
+                            this.before = event.clientY < rect.top + (rect.height / 2);
+                            event.dataTransfer.dropEffect = 'move';
+                        },
+                        leave(event, target) {
+                            if (this.over === target && ! event.currentTarget.contains(event.relatedTarget)) this.over = null;
+                        },
+                        drop(event, target) {
+                            if (! this.enabled || this.dragging === null || this.dragging === target) {
+                                this.finish();
+                                return;
+                            }
+                            const order = [...this.original];
+                            const from = order.indexOf(this.dragging);
+                            if (from < 0) {
+                                this.finish();
+                                return;
+                            }
+                            order.splice(from, 1);
+                            let at = order.indexOf(target);
+                            if (at < 0) {
+                                this.finish();
+                                return;
+                            }
+                            if (! this.before) at += 1;
+                            order.splice(at, 0, this.dragging);
+                            const changed = JSON.stringify(order) !== JSON.stringify(this.original);
+                            this.finish();
+                            if (changed) $wire.reorderComponents(order);
+                        },
+                        finish() {
+                            this.dragging = null;
+                            this.over = null;
+                            this.before = true;
+                        },
+                    }"
+                >
+                    <header class="custom-page-component-sequence__header" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span>Component</span>
+                        <span>Summary</span>
+                        <span>Actions</span>
+                    </header>
+
                     @foreach ($components as $component)
-                        <article class="custom-page-component" wire:key="custom-page-component-{{ $component['index'] }}-{{ $component['type'] }}">
+                        <article
+                            @class(['custom-page-component', 'is-selected' => in_array($component['target'], $selectedComponentTargets, true)])
+                            wire:key="custom-page-component-{{ $component['index'] }}-{{ $component['type'] }}"
+                            data-component-target="{{ $component['target'] }}"
+                            x-bind:class="{
+                                'is-dragging': dragging === @js($component['target']),
+                                'is-drop-target': over === @js($component['target']),
+                                'is-drop-before': over === @js($component['target']) && before,
+                                'is-drop-after': over === @js($component['target']) && ! before,
+                            }"
+                            x-on:dragenter.prevent="hover($event, @js($component['target']))"
+                            x-on:dragover.prevent="hover($event, @js($component['target']))"
+                            x-on:dragleave="leave($event, @js($component['target']))"
+                            x-on:drop.prevent="drop($event, @js($component['target']))"
+                        >
                             <header class="custom-page-component__header">
+                                <button
+                                    class="custom-page-component__drag-handle"
+                                    type="button"
+                                    draggable="{{ $componentReorderEnabled ? 'true' : 'false' }}"
+                                    x-on:dragstart.stop="start($event, @js($component['target']))"
+                                    x-on:dragend.stop="finish()"
+                                    @disabled(! $componentReorderEnabled)
+                                    title="{{ $componentReorderEnabled ? 'Drag to reorder component' : 'Clear filters to reorder' }}"
+                                    aria-label="{{ $componentReorderEnabled ? 'Drag '.$component['type_label'].' component to reorder' : 'Clear filters to reorder '.$component['type_label'].' component' }}"
+                                >⋮⋮</button>
+
                                 <label class="custom-page-component__selection">
                                     <input
                                         type="checkbox"
@@ -148,8 +240,12 @@
                                     >
                                 </label>
 
-                                <strong class="custom-page-component__type">{{ $component['type_label'] }}</strong>
-                                <span class="custom-page-component__summary">{{ $component['summary'] }}</span>
+                                <strong @class(['custom-page-component__type', 'is-divider' => $component['is_divider']])>{{ $component['type_label'] }}</strong>
+                                @if ($component['is_divider'])
+                                    <span class="custom-page-component__divider-preview" aria-label="Divider preview"><span></span></span>
+                                @else
+                                    <span class="custom-page-component__summary">{{ $component['summary'] }}</span>
+                                @endif
 
                                 <div class="custom-page-component__actions admin-toolbar">
                                     @if ($component['is_cv_list'])
@@ -300,7 +396,7 @@
                                                 </thead>
                                                 <tbody>
                                                     @foreach ($cvEntries as $entry)
-                                                        <tr wire:key="custom-page-cv-entry-{{ $entry['id'] }}">
+                                                        <tr @class(['is-selected' => in_array((int) $entry['id'], $selectedCvIds, true)]) wire:key="custom-page-cv-entry-{{ $entry['id'] }}">
                                                             <td class="custom-page-cv__selection-cell">
                                                                 <input type="checkbox" wire:model.live="selectedCvEntryIds" value="{{ $entry['id'] }}" aria-label="Select {{ $entry['title'] }}">
                                                             </td>

@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Domain\Admin\CvEntryEditorialService;
 use App\Domain\Admin\EditorialRecordService;
+use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SocialLinks;
@@ -23,6 +24,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
@@ -59,6 +62,9 @@ final class CustomPageWorkspace extends Page
     public string $pageTitle = '';
 
     public ?string $publicUrl = null;
+
+    /** @var array<string, mixed> */
+    public array $analytics = [];
 
     /** @var list<array{label:string,value:string,description:string}> */
     public array $metrics = [];
@@ -118,6 +124,7 @@ final class CustomPageWorkspace extends Page
 
         $this->sectionId = (int) $siteSection->getKey();
         $this->settingsId = (int) $settings->getKey();
+        $this->loadAnalyticsSnapshot($siteSection);
         $this->reloadWorkspace();
     }
 
@@ -175,6 +182,36 @@ final class CustomPageWorkspace extends Page
         }
     }
 
+    /** @param list<string> $targets */
+    public function reorderComponents(array $targets): void
+    {
+        if (! $this->componentReorderEnabled()) {
+            return;
+        }
+
+        $sequence = [];
+        foreach ($targets as $target) {
+            if (! is_string($target) || ! str_contains($target, ':')) {
+                throw ValidationException::withMessages(['component' => 'The component sequence is invalid.']);
+            }
+
+            [$index, $type] = explode(':', $target, 2);
+            if (! ctype_digit($index) || ! array_key_exists($type, self::COMPONENT_LABELS)) {
+                throw ValidationException::withMessages(['component' => 'The component sequence is invalid.']);
+            }
+
+            $sequence[] = ['index' => (int) $index, 'type' => $type];
+        }
+
+        $changed = app(CustomPageEditorialService::class)->reorderBlocks($this->settings(), $sequence);
+        $this->selectedComponentTargets = [];
+        $this->reloadWorkspace();
+
+        if ($changed) {
+            Notification::make()->title('Component order updated')->success()->send();
+        }
+    }
+
     public function moveSelectedComponents(string $direction): void
     {
         if (! $this->componentReorderEnabled()) {
@@ -211,7 +248,8 @@ final class CustomPageWorkspace extends Page
             ->fillForm(fn (): array => [
                 'type' => 'text',
                 'image_decorative' => false,
-                'form_state' => 'enabled',
+                'form_visibility' => 'visible',
+                'status_text' => null,
                 'show_email' => true,
                 'show_form' => true,
                 'social_platforms' => array_keys(SocialLinks::options()),
@@ -242,7 +280,7 @@ final class CustomPageWorkspace extends Page
     {
         return Action::make('editComponent')
             ->label('Edit')
-            ->fillForm(fn (array $arguments): array => $this->actionComponent($arguments))
+            ->fillForm(fn (array $arguments): array => $this->componentEditorData($this->actionComponent($arguments)))
             ->schema($this->componentEditorSchema(includeTypeSelect: false))
             ->modalHeading(function (array $arguments): string {
                 $block = $this->actionComponent($arguments);
@@ -682,6 +720,17 @@ final class CustomPageWorkspace extends Page
         $this->sendBatchNotification('Update selected CV entries', $success, $skipped, $failed);
     }
 
+    private function loadAnalyticsSnapshot(SiteSection $section): void
+    {
+        $path = app(SiteNodeRoute::class)->path($section);
+        if (! is_string($path) || $path === '') {
+            $this->analytics = [];
+            return;
+        }
+
+        $this->analytics = app(ArtistReportingService::class)->customPage($path, '30d');
+    }
+
     private function reloadWorkspace(): void
     {
         /** @var SiteSection $section */
@@ -731,11 +780,15 @@ final class CustomPageWorkspace extends Page
                 ->all();
 
         $counts = array_fill_keys(array_keys(self::COMPONENT_LABELS), 0);
+        $listEntryCount = 0;
         $projected = [];
         foreach ($blocks as $index => $block) {
             $type = is_string($block['type'] ?? null) ? $block['type'] : '';
             if (isset($counts[$type])) {
                 $counts[$type]++;
+            }
+            if ($type === 'list' && is_array($block['items'] ?? null)) {
+                $listEntryCount += count($block['items']);
             }
 
             $mediaId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
@@ -761,17 +814,19 @@ final class CustomPageWorkspace extends Page
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < count($blocks) - 1,
                 'is_cv_list' => $type === 'cv_list',
+                'is_divider' => $type === 'divider',
             ];
         }
 
         $this->components = $projected;
+        $entries = $listEntryCount + ($this->hasCvList ? $this->cvEntryCount : 0);
         $this->metrics = [
             ['label' => 'Components', 'value' => number_format(count($blocks)), 'description' => 'Page sequence'],
+            ['label' => 'Entries', 'value' => number_format($entries), 'description' => 'CV + list entries'],
             ['label' => 'Images', 'value' => number_format($counts['image']), 'description' => 'Image components'],
-            ['label' => 'Text', 'value' => number_format($counts['text']), 'description' => 'Text components'],
-            ['label' => 'Lists', 'value' => number_format($counts['list']), 'description' => 'List components'],
-            ['label' => 'CV entries', 'value' => number_format($this->hasCvList ? $this->cvEntryCount : 0), 'description' => 'Canonical records'],
-            ['label' => 'Contact', 'value' => number_format($counts['contact']), 'description' => 'Contact components'],
+            ['label' => 'Visits', 'value' => $this->metricValue($this->analytics['page']['visits'] ?? null), 'description' => 'This page · 30d'],
+            ['label' => 'Views', 'value' => $this->metricValue($this->analytics['page']['views'] ?? null), 'description' => 'This page · 30d'],
+            ['label' => 'Contact messages', 'value' => $this->metricValue($this->analytics['contact_messages'] ?? null), 'description' => 'Site-wide successful submissions · 30d'],
         ];
     }
 
@@ -960,120 +1015,131 @@ final class CustomPageWorkspace extends Page
                 ->options(self::COMPONENT_LABELS)
                 ->required()
                 ->live()
+                ->afterStateUpdated(fn (Select $component) => $component
+                    ->getContainer()
+                    ->getComponent('dynamicComponentFields')
+                    ->getChildSchema()
+                    ->fill())
             : Hidden::make('type')->required();
 
         return [
             $typeField,
-            Select::make('media_asset_id')
-                ->label('Image from Media Files')
-                ->options(fn (): array => MediaAsset::query()
-                    ->where('state', 'available')
-                    ->where('mime_type', 'like', 'image/%')
-                    ->orderBy('original_filename')
-                    ->pluck('original_filename', 'id')
-                    ->all())
-                ->searchable()
-                ->required(fn (callable $get): bool => $get('type') === 'image')
-                ->live()
-                ->visible(fn (callable $get): bool => $get('type') === 'image'),
-            Placeholder::make('image_preview')
-                ->label('Preview')
-                ->content(function (callable $get): HtmlString|string {
-                    $mediaId = $get('media_asset_id');
-                    if (! is_numeric($mediaId)) {
-                        return 'Choose an image from Media Files.';
-                    }
-
-                    /** @var MediaAsset|null $asset */
-                    $asset = MediaAsset::query()->find((int) $mediaId);
-                    if (! $asset instanceof MediaAsset) {
-                        return 'The selected image is unavailable.';
-                    }
-
-                    $url = e(route('admin.media.original', ['mediaAsset' => $asset]));
-                    $filename = e((string) $asset->getAttribute('original_filename'));
-
-                    return new HtmlString(
-                        '<div class="custom-page-dialog__image-preview">'
-                        .'<img src="'.$url.'" alt="" loading="lazy">'
-                        .'<span>'.$filename.'</span>'
-                        .'</div>',
-                    );
-                })
-                ->visible(fn (callable $get): bool => $get('type') === 'image'),
-            Toggle::make('image_decorative')
-                ->label('Decorative image')
-                ->default(false)
-                ->visible(fn (callable $get): bool => $get('type') === 'image'),
-            TextInput::make('title')
-                ->label('Heading')
-                ->maxLength(160)
-                ->visible(fn (callable $get): bool => in_array($get('type'), ['text', 'list'], true)),
-            MarkdownEditor::make('body')
-                ->label('Text')
-                ->toolbarButtons([
-                    ['bold', 'italic', 'link'],
-                    ['bulletList', 'orderedList'],
-                    ['undo', 'redo'],
-                ])
-                ->maxLength(20000)
-                ->visible(fn (callable $get): bool => $get('type') === 'text'),
-            Repeater::make('items')
-                ->label('List entries')
-                ->extraAttributes(['class' => 'custom-page-dialog__list-entries'])
-                ->schema([
-                    Toggle::make('visible')->label('Visible on public page')->default(true),
-                    TextInput::make('date')->label('Date / year')->maxLength(120),
-                    TextInput::make('title')->required()->maxLength(240),
-                    TextInput::make('meta')->label('Organisation / context')->maxLength(240),
-                    TextInput::make('location')->maxLength(240),
-                    TextInput::make('url')->label('Optional link')->url()->maxLength(2048),
-                    MarkdownEditor::make('body')
-                        ->label('Details')
-                        ->toolbarButtons([
-                            ['bold', 'italic', 'link'],
-                            ['bulletList', 'orderedList'],
-                            ['undo', 'redo'],
-                        ])
-                        ->maxLength(10000),
-                ])
-                ->defaultItems(0)
-                ->addActionLabel('Add list entry')
-                ->reorderableWithButtons()
-                ->reorderableWithDragAndDrop(false)
-                ->itemLabel(fn (array $state): ?string => isset($state['title']) && is_string($state['title']) ? $state['title'] : null)
-                ->visible(fn (callable $get): bool => $get('type') === 'list'),
-            Select::make('form_state')
-                ->label('Form presentation')
-                ->options([
-                    'enabled' => 'Enabled',
-                    'under_construction' => 'Under construction',
-                    'hidden' => 'Hidden',
-                ])
-                ->default('enabled')
-                ->required(fn (callable $get): bool => $get('type') === 'contact')
-                ->live()
-                ->visible(fn (callable $get): bool => $get('type') === 'contact'),
-            TextInput::make('status_text')
-                ->label('Status text')
-                ->maxLength(500)
-                ->required(fn (callable $get): bool => $get('type') === 'contact' && $get('form_state') === 'under_construction')
-                ->visible(fn (callable $get): bool => $get('type') === 'contact' && $get('form_state') === 'under_construction'),
-            Toggle::make('show_email')
-                ->label('Show public email from General')
-                ->default(true)
-                ->visible(fn (callable $get): bool => $get('type') === 'contact'),
-            Toggle::make('show_form')
-                ->label('Show contact form')
-                ->default(true)
-                ->visible(fn (callable $get): bool => $get('type') === 'contact'),
-            Select::make('social_platforms')
-                ->label('Social links from General')
-                ->options(SocialLinks::options())
-                ->multiple()
-                ->default(array_keys(SocialLinks::options()))
-                ->visible(fn (callable $get): bool => $get('type') === 'contact'),
+            Grid::make(1)
+                ->schema(fn (Get $get): array => $this->componentTypeFields((string) $get('type')))
+                ->key('dynamicComponentFields'),
         ];
+    }
+
+    /** @return list<mixed> */
+    private function componentTypeFields(string $type): array
+    {
+        return match ($type) {
+            'image' => [
+                Select::make('media_asset_id')
+                    ->label('Image from Media Files')
+                    ->options(fn (): array => MediaAsset::query()
+                        ->where('state', 'available')
+                        ->where('mime_type', 'like', 'image/%')
+                        ->orderBy('original_filename')
+                        ->pluck('original_filename', 'id')
+                        ->all())
+                    ->searchable()
+                    ->required()
+                    ->live(),
+                Placeholder::make('image_preview')
+                    ->label('Preview')
+                    ->content(function (Get $get): HtmlString|string {
+                        $mediaId = $get('media_asset_id');
+                        if (! is_numeric($mediaId)) {
+                            return 'Choose an image from Media Files.';
+                        }
+
+                        /** @var MediaAsset|null $asset */
+                        $asset = MediaAsset::query()->find((int) $mediaId);
+                        if (! $asset instanceof MediaAsset) {
+                            return 'The selected image is unavailable.';
+                        }
+
+                        $url = e(route('admin.media.original', ['mediaAsset' => $asset]));
+                        $filename = e((string) $asset->getAttribute('original_filename'));
+
+                        return new HtmlString(
+                            '<div class="custom-page-dialog__image-preview">'
+                            .'<img src="'.$url.'" alt="" loading="lazy">'
+                            .'<span>'.$filename.'</span>'
+                            .'</div>',
+                        );
+                    }),
+                Toggle::make('image_decorative')
+                    ->label('Decorative image')
+                    ->default(false),
+            ],
+            'text' => [
+                TextInput::make('title')
+                    ->label('Heading')
+                    ->maxLength(160),
+                MarkdownEditor::make('body')
+                    ->label('Text')
+                    ->toolbarButtons([
+                        ['bold', 'italic', 'link'],
+                        ['bulletList', 'orderedList'],
+                        ['undo', 'redo'],
+                    ])
+                    ->maxLength(20000),
+            ],
+            'list' => [
+                TextInput::make('title')
+                    ->label('Heading')
+                    ->maxLength(160),
+                Repeater::make('items')
+                    ->label('List entries')
+                    ->extraAttributes(['class' => 'custom-page-dialog__list-entries'])
+                    ->schema([
+                        Toggle::make('visible')->label('Visible on public page')->default(true),
+                        TextInput::make('date')->label('Date / year')->maxLength(120),
+                        TextInput::make('title')->required()->maxLength(240),
+                        TextInput::make('meta')->label('Organisation / context')->maxLength(240),
+                        TextInput::make('location')->maxLength(240),
+                        TextInput::make('url')->label('Optional link')->url()->maxLength(2048),
+                        MarkdownEditor::make('body')
+                            ->label('Details')
+                            ->toolbarButtons([
+                                ['bold', 'italic', 'link'],
+                                ['bulletList', 'orderedList'],
+                                ['undo', 'redo'],
+                            ])
+                            ->maxLength(10000),
+                    ])
+                    ->defaultItems(0)
+                    ->addActionLabel('Add list entry')
+                    ->reorderableWithButtons()
+                    ->reorderableWithDragAndDrop(false)
+                    ->itemLabel(fn (array $state): ?string => isset($state['title']) && is_string($state['title']) ? $state['title'] : null),
+            ],
+            'contact' => [
+                Select::make('form_visibility')
+                    ->label('Form visibility')
+                    ->options([
+                        'visible' => 'Visible',
+                        'hidden' => 'Hidden',
+                    ])
+                    ->default('visible')
+                    ->required(),
+                Hidden::make('status_text'),
+                Toggle::make('show_email')
+                    ->label('Show public email from General')
+                    ->default(true),
+                Toggle::make('show_form')
+                    ->label('Show contact form')
+                    ->default(true),
+                Select::make('social_platforms')
+                    ->label('Social links from General')
+                    ->options(SocialLinks::options())
+                    ->multiple()
+                    ->default(array_keys(SocialLinks::options())),
+            ],
+            default => [],
+        };
     }
 
     /** @return list<mixed> */
@@ -1109,6 +1175,20 @@ final class CustomPageWorkspace extends Page
         ];
     }
 
+    /** @param array<string, mixed> $block */
+    private function componentEditorData(array $block): array
+    {
+        if (($block['type'] ?? null) !== 'contact') {
+            return $block;
+        }
+
+        return [
+            ...$block,
+            'form_visibility' => ($block['form_state'] ?? 'enabled') === 'hidden' ? 'hidden' : 'visible',
+            'status_text' => $block['status_text'] ?? null,
+        ];
+    }
+
     /** @param array<string, mixed> $data */
     private function componentPayload(array $data): array
     {
@@ -1137,7 +1217,7 @@ final class CustomPageWorkspace extends Page
             'divider' => ['type' => 'divider'],
             'contact' => [
                 'type' => 'contact',
-                'form_state' => $data['form_state'] ?? 'enabled',
+                'form_state' => ($data['form_visibility'] ?? 'visible') === 'hidden' ? 'hidden' : 'enabled',
                 'status_text' => $data['status_text'] ?? null,
                 'show_email' => (bool) ($data['show_email'] ?? true),
                 'show_form' => (bool) ($data['show_form'] ?? true),
@@ -1158,9 +1238,10 @@ final class CustomPageWorkspace extends Page
                 .' · '.mb_strlen(trim((string) ($block['body'] ?? ''))).' characters',
             'list' => (is_string($block['title'] ?? null) && trim($block['title']) !== '' ? trim($block['title']) : 'List')
                 .' · '.count(is_array($block['items'] ?? null) ? $block['items'] : []).' entries',
-            'divider' => 'Divider',
-            'contact' => ucfirst(str_replace('_', ' ', (string) ($block['form_state'] ?? 'enabled')))
-                .' · '.((bool) ($block['show_email'] ?? true) ? 'Email shown' : 'Email hidden'),
+            'divider' => '',
+            'contact' => (($block['form_state'] ?? 'enabled') === 'hidden' ? 'Hidden' : 'Visible')
+                .' · '.((bool) ($block['show_email'] ?? true) ? 'Public email shown' : 'Public email hidden')
+                .' · '.((bool) ($block['show_form'] ?? true) ? 'Contact form shown' : 'Contact form hidden'),
             default => 'Component',
         };
     }
@@ -1169,16 +1250,49 @@ final class CustomPageWorkspace extends Page
     private function componentSearchText(array $block, ?string $imageName): string
     {
         $type = is_string($block['type'] ?? null) ? $block['type'] : '';
-        $parts = [self::COMPONENT_LABELS[$type] ?? $type, $imageName, $block['title'] ?? null];
-        if ($type === 'list' && is_array($block['items'] ?? null)) {
-            foreach ($block['items'] as $item) {
-                if (is_array($item)) {
-                    $parts[] = $item['title'] ?? null;
+        $parts = [self::COMPONENT_LABELS[$type] ?? $type];
+
+        if ($type === 'image') {
+            $parts[] = $imageName;
+        } elseif ($type === 'text') {
+            $parts[] = $block['title'] ?? null;
+            $parts[] = $block['body'] ?? null;
+        } elseif ($type === 'list') {
+            $parts[] = $block['title'] ?? null;
+            foreach (is_array($block['items'] ?? null) ? $block['items'] : [] as $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
+                foreach (['date', 'title', 'meta', 'location', 'body'] as $field) {
+                    $parts[] = $item[$field] ?? null;
+                }
+            }
+        } elseif ($type === 'contact') {
+            $visible = ($block['form_state'] ?? 'enabled') !== 'hidden';
+            $parts[] = 'Form visibility';
+            $parts[] = $visible ? 'Visible' : 'Hidden';
+            $parts[] = (bool) ($block['show_email'] ?? true) ? 'Public email visible' : 'Public email hidden';
+            $parts[] = (bool) ($block['show_form'] ?? true) ? 'Contact form visible' : 'Contact form hidden';
+            $parts[] = 'Social links from General';
+            foreach (is_array($block['social_platforms'] ?? null) ? $block['social_platforms'] : [] as $platform) {
+                if (is_string($platform) && SocialLinks::supports($platform)) {
+                    $parts[] = SocialLinks::label($platform);
                 }
             }
         }
 
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
+    }
+
+    private function metricValue(mixed $metric): string
+    {
+        if (! is_array($metric) || ($metric['state'] ?? null) !== 'available' || ! is_numeric($metric['value'] ?? null)) {
+            return '—';
+        }
+
+        $value = (float) $metric['value'];
+
+        return number_format($value, $value === floor($value) ? 0 : 1);
     }
 
     private function cvTransitionApplies(string $state, string $action): bool

@@ -72,6 +72,40 @@ final class CustomPageEditorialService
         });
     }
 
+    /**
+     * Persist a complete browser-projected component sequence after validating every
+     * original index/type target against the locked canonical block list.
+     *
+     * @param list<array{index:int,type:string}> $targets
+     */
+    public function reorderBlocks(CustomPageSetting $settings, array $targets): bool
+    {
+        return DB::transaction(function () use ($settings, $targets): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+
+            if (count($targets) !== count($blocks)) {
+                throw ValidationException::withMessages([
+                    'component' => 'The component sequence changed. Reload the workspace and try again.',
+                ]);
+            }
+
+            $indices = $this->validatedIndices($blocks, $targets);
+            if (count($indices) !== count($blocks)) {
+                throw ValidationException::withMessages([
+                    'component' => 'The component sequence is incomplete.',
+                ]);
+            }
+
+            $next = array_map(
+                static fn (array $target): array => $blocks[$target['index']],
+                $targets,
+            );
+
+            return $this->persist($fresh, $next);
+        });
+    }
+
     public function deleteBlock(
         CustomPageSetting $settings,
         int $index,
@@ -177,16 +211,30 @@ final class CustomPageEditorialService
     {
         $indices = [];
         foreach ($targets as $target) {
+            if (! is_array($target)
+                || ! is_int($target['index'] ?? null)
+                || ! is_string($target['type'] ?? null)) {
+                throw ValidationException::withMessages([
+                    'component' => 'The component sequence is invalid.',
+                ]);
+            }
+
             $index = $target['index'];
             $type = $target['type'];
             $this->assertTarget($blocks, $index, $type);
             $indices[] = $index;
         }
 
-        $indices = array_values(array_unique($indices));
-        sort($indices);
+        $unique = array_values(array_unique($indices));
+        if (count($unique) !== count($indices)) {
+            throw ValidationException::withMessages([
+                'component' => 'The component sequence contains duplicates.',
+            ]);
+        }
 
-        return $indices;
+        sort($unique);
+
+        return $unique;
     }
 
     /** @param list<array<string, mixed>> $blocks */
