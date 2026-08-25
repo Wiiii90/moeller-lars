@@ -11,6 +11,7 @@ use App\Domain\Content\SocialLinks;
 use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
 use App\Models\MediaAsset;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use Filament\Actions\Action;
@@ -65,6 +66,12 @@ final class CustomPageWorkspace extends Page
 
     /** @var array<string, mixed> */
     public array $analytics = [];
+
+    /** @var array<string, string> */
+    public array $componentTypeOptions = self::COMPONENT_LABELS;
+
+    /** @var array<string, string> */
+    public array $availableSocialPlatforms = [];
 
     /** @var list<array{label:string,value:string,description:string}> */
     public array $metrics = [];
@@ -124,6 +131,7 @@ final class CustomPageWorkspace extends Page
 
         $this->sectionId = (int) $siteSection->getKey();
         $this->settingsId = (int) $settings->getKey();
+        $this->loadAvailableSocialPlatforms();
         $this->loadAnalyticsSnapshot($siteSection);
         $this->reloadWorkspace();
     }
@@ -241,6 +249,46 @@ final class CustomPageWorkspace extends Page
         }
     }
 
+    public function setContactToggle(
+        int $index,
+        string $type,
+        string $field,
+        bool $enabled,
+    ): void {
+        app(CustomPageEditorialService::class)->setContactToggle(
+            $this->settings(),
+            $index,
+            $type,
+            $field,
+            $enabled,
+        );
+
+        $this->loadComponentProjection(refreshCvCount: false);
+    }
+
+    public function setContactSocialPlatform(
+        int $index,
+        string $type,
+        string $platform,
+        bool $enabled,
+    ): void {
+        if (! array_key_exists($platform, $this->availableSocialPlatforms)) {
+            throw ValidationException::withMessages([
+                'component' => 'This social platform is not available from General.',
+            ]);
+        }
+
+        app(CustomPageEditorialService::class)->setContactSocialPlatform(
+            $this->settings(),
+            $index,
+            $type,
+            $platform,
+            $enabled,
+        );
+
+        $this->loadComponentProjection(refreshCvCount: false);
+    }
+
     public function addComponentAction(): Action
     {
         return Action::make('addComponent')
@@ -310,6 +358,48 @@ final class CustomPageWorkspace extends Page
                     ->title($changed ? 'Component saved' : 'No component changes')
                     ->success()
                     ->send();
+            });
+    }
+
+    public function changeComponentTypeAction(): Action
+    {
+        return Action::make('changeComponentType')
+            ->label('Change component type')
+            ->requiresConfirmation(fn (array $arguments): bool => $this->componentTypeChangeLosesContent($arguments))
+            ->modalHeading('Change component type?')
+            ->modalDescription(function (array $arguments): string {
+                [$index, $oldType] = $this->actionComponentTarget($arguments);
+                $targetType = $this->actionTargetComponentType($arguments);
+
+                return 'Changing '.(self::COMPONENT_LABELS[$oldType] ?? $oldType)
+                    .' to '.(self::COMPONENT_LABELS[$targetType] ?? $targetType)
+                    .' can remove component-specific content that cannot be carried over.';
+            })
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Change type')
+                ->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
+            ->action(function (array $arguments): void {
+                [$index, $oldType] = $this->actionComponentTarget($arguments);
+                $targetType = $this->actionTargetComponentType($arguments);
+
+                $changed = app(CustomPageEditorialService::class)->convertBlock(
+                    $this->settings(),
+                    $index,
+                    $oldType,
+                    $targetType,
+                );
+
+                $this->selectedComponentTargets = [];
+                $this->reloadWorkspace();
+
+                if ($changed) {
+                    Notification::make()->title('Component type updated')->success()->send();
+                }
             });
     }
 
@@ -720,6 +810,17 @@ final class CustomPageWorkspace extends Page
         $this->sendBatchNotification('Update selected CV entries', $success, $skipped, $failed);
     }
 
+    private function loadAvailableSocialPlatforms(): void
+    {
+        $general = PublicContentSetting::general();
+
+        $this->availableSocialPlatforms = collect(SocialLinks::visible($general->getAttribute('social_links')))
+            ->mapWithKeys(static fn (array $link): array => [
+                $link['platform'] => SocialLinks::label($link['platform']),
+            ])
+            ->all();
+    }
+
     private function loadAnalyticsSnapshot(SiteSection $section): void
     {
         $path = app(SiteNodeRoute::class)->path($section);
@@ -793,7 +894,7 @@ final class CustomPageWorkspace extends Page
 
             $mediaId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
             $imageName = $mediaId !== null ? ($imageNames[$mediaId] ?? null) : null;
-            $summary = $this->componentSummary($block, $imageName);
+            $content = $this->componentContent($block, $imageName);
             $searchText = $this->componentSearchText($block, $imageName);
 
             if ($this->componentType !== 'any' && $type !== $this->componentType) {
@@ -808,13 +909,18 @@ final class CustomPageWorkspace extends Page
                 'index' => $index,
                 'type' => $type,
                 'type_label' => self::COMPONENT_LABELS[$type] ?? 'Component',
-                'summary' => $summary,
+                'content' => $content,
                 'target' => $index.':'.$type,
                 'editable' => ! in_array($type, ['cv_list', 'divider'], true),
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < count($blocks) - 1,
                 'is_cv_list' => $type === 'cv_list',
-                'is_divider' => $type === 'divider',
+                'is_contact' => $type === 'contact',
+                'show_email' => $type === 'contact' ? (bool) ($block['show_email'] ?? true) : false,
+                'show_form' => $type === 'contact' ? (bool) ($block['show_form'] ?? true) : false,
+                'social_platforms' => $type === 'contact' && is_array($block['social_platforms'] ?? null)
+                    ? array_values(array_filter($block['social_platforms'], 'is_string'))
+                    : [],
             ];
         }
 
@@ -979,6 +1085,24 @@ final class CustomPageWorkspace extends Page
         }
 
         return [(int) $index, $type];
+    }
+
+    private function actionTargetComponentType(array $arguments): string
+    {
+        $type = $arguments['targetType'] ?? null;
+        if (! is_string($type) || ! array_key_exists($type, self::COMPONENT_LABELS)) {
+            throw ValidationException::withMessages(['component' => 'Choose a supported component type.']);
+        }
+
+        return $type;
+    }
+
+    private function componentTypeChangeLosesContent(array $arguments): bool
+    {
+        $block = $this->actionComponent($arguments);
+        $targetType = $this->actionTargetComponentType($arguments);
+
+        return app(CustomPageEditorialService::class)->conversionLosesContent($block, $targetType);
     }
 
     /** @return array<string, mixed> */
@@ -1226,24 +1350,71 @@ final class CustomPageWorkspace extends Page
         };
     }
 
-    /** @param array<string, mixed> $block */
-    private function componentSummary(array $block, ?string $imageName): string
+    /**
+     * @param array<string, mixed> $block
+     * @return array{primary:string,secondary:string,meta:string}
+     */
+    private function componentContent(array $block, ?string $imageName): array
     {
         $type = $block['type'] ?? null;
 
-        return match ($type) {
-            'image' => ($imageName ?: 'Image unavailable').' · '.((bool) ($block['image_decorative'] ?? false) ? 'Decorative image' : 'Content image'),
-            'cv_list' => $this->cvEntryCount.' CV '.($this->cvEntryCount === 1 ? 'entry' : 'entries'),
-            'text' => (is_string($block['title'] ?? null) && trim($block['title']) !== '' ? trim($block['title']) : 'Text')
-                .' · '.mb_strlen(trim((string) ($block['body'] ?? ''))).' characters',
-            'list' => (is_string($block['title'] ?? null) && trim($block['title']) !== '' ? trim($block['title']) : 'List')
-                .' · '.count(is_array($block['items'] ?? null) ? $block['items'] : []).' entries',
-            'divider' => '',
-            'contact' => (($block['form_state'] ?? 'enabled') === 'hidden' ? 'Hidden' : 'Visible')
-                .' · '.((bool) ($block['show_email'] ?? true) ? 'Public email shown' : 'Public email hidden')
-                .' · '.((bool) ($block['show_form'] ?? true) ? 'Contact form shown' : 'Contact form hidden'),
-            default => 'Component',
-        };
+        if ($type === 'image') {
+            return [
+                'primary' => $imageName ?: 'Image unavailable',
+                'secondary' => '',
+                'meta' => '',
+            ];
+        }
+
+        if ($type === 'text') {
+            $title = is_string($block['title'] ?? null) ? trim($block['title']) : '';
+            $body = $this->contentExcerpt($block['body'] ?? null);
+
+            return [
+                'primary' => $title !== '' ? $title : $body,
+                'secondary' => $title !== '' ? $body : '',
+                'meta' => '',
+            ];
+        }
+
+        if ($type === 'list') {
+            $title = is_string($block['title'] ?? null) ? trim($block['title']) : '';
+            $items = is_array($block['items'] ?? null) ? array_values(array_filter($block['items'], 'is_array')) : [];
+            $first = $items[0] ?? null;
+            $firstLine = '';
+            if (is_array($first)) {
+                $firstLine = implode(' · ', array_values(array_filter([
+                    is_string($first['date'] ?? null) ? trim($first['date']) : '',
+                    is_string($first['title'] ?? null) ? trim($first['title']) : '',
+                ], static fn (string $value): bool => $value !== '')));
+            }
+
+            return [
+                'primary' => $title,
+                'secondary' => $this->contentExcerpt($firstLine, 120),
+                'meta' => count($items).' '.(count($items) === 1 ? 'entry' : 'entries'),
+            ];
+        }
+
+        return [
+            'primary' => '',
+            'secondary' => '',
+            'meta' => '',
+        ];
+    }
+
+    private function contentExcerpt(mixed $value, int $limit = 170): string
+    {
+        if (! is_string($value)) {
+            return '';
+        }
+
+        $text = preg_replace('/\s+/u', ' ', trim(strip_tags($value))) ?? '';
+        if (mb_strlen($text) <= $limit) {
+            return $text;
+        }
+
+        return rtrim(mb_substr($text, 0, max(1, $limit - 1))).'…';
     }
 
     /** @param array<string, mixed> $block */

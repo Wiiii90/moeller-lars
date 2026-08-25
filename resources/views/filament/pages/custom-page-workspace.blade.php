@@ -48,12 +48,9 @@
                     <span>Type</span>
                     <select wire:model.change="componentType">
                         <option value="any">Any</option>
-                        <option value="image">Image</option>
-                        <option value="cv_list">CV List</option>
-                        <option value="text">Text</option>
-                        <option value="list">List</option>
-                        <option value="divider">Divider</option>
-                        <option value="contact">Contact</option>
+                        @foreach ($componentTypeOptions as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
                     </select>
                 </label>
 
@@ -199,7 +196,7 @@
                         <span></span>
                         <span></span>
                         <span>Component</span>
-                        <span>Summary</span>
+                        <span></span>
                         <span>Actions</span>
                     </header>
 
@@ -220,6 +217,15 @@
                             x-on:drop.prevent="drop($event, @js($component['target']))"
                         >
                             <header class="custom-page-component__header">
+                                <label class="custom-page-component__selection">
+                                    <input
+                                        type="checkbox"
+                                        wire:model.live="selectedComponentTargets"
+                                        value="{{ $component['target'] }}"
+                                        aria-label="Select {{ $component['type_label'] }} component"
+                                    >
+                                </label>
+
                                 <button
                                     class="custom-page-component__drag-handle"
                                     type="button"
@@ -231,21 +237,66 @@
                                     aria-label="{{ $componentReorderEnabled ? 'Drag '.$component['type_label'].' component to reorder' : 'Clear filters to reorder '.$component['type_label'].' component' }}"
                                 >⋮⋮</button>
 
-                                <label class="custom-page-component__selection">
-                                    <input
-                                        type="checkbox"
-                                        wire:model.live="selectedComponentTargets"
-                                        value="{{ $component['target'] }}"
-                                        aria-label="Select {{ $component['type_label'] }} component"
-                                    >
-                                </label>
+                                <select
+                                    class="custom-page-component__type-select"
+                                    aria-label="Component type"
+                                    x-on:change="
+                                        const targetType = $event.target.value;
+                                        $event.target.value = @js($component['type']);
+                                        if (targetType !== @js($component['type'])) {
+                                            $wire.mountAction('changeComponentType', {
+                                                componentIndex: @js($component['index']),
+                                                componentType: @js($component['type']),
+                                                targetType,
+                                            });
+                                        }
+                                    "
+                                >
+                                    @foreach ($componentTypeOptions as $value => $label)
+                                        <option value="{{ $value }}" @selected($component['type'] === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
 
-                                <strong @class(['custom-page-component__type', 'is-divider' => $component['is_divider']])>{{ $component['type_label'] }}</strong>
-                                @if ($component['is_divider'])
-                                    <span class="custom-page-component__divider-preview" aria-label="Divider preview"><span></span></span>
-                                @else
-                                    <span class="custom-page-component__summary">{{ $component['summary'] }}</span>
-                                @endif
+                                <div class="custom-page-component__content">
+                                    @if ($component['is_contact'])
+                                        <div class="custom-page-component__contact-controls" aria-label="Contact component visibility controls">
+                                            <button
+                                                @class(['custom-page-component__quick-toggle', 'is-on' => $component['show_email']])
+                                                type="button"
+                                                aria-pressed="{{ $component['show_email'] ? 'true' : 'false' }}"
+                                                wire:click="setContactToggle({{ $component['index'] }}, '{{ $component['type'] }}', 'show_email', {{ $component['show_email'] ? 'false' : 'true' }})"
+                                            >Public email <span>{{ $component['show_email'] ? 'On' : 'Off' }}</span></button>
+                                            <button
+                                                @class(['custom-page-component__quick-toggle', 'is-on' => $component['show_form']])
+                                                type="button"
+                                                aria-pressed="{{ $component['show_form'] ? 'true' : 'false' }}"
+                                                wire:click="setContactToggle({{ $component['index'] }}, '{{ $component['type'] }}', 'show_form', {{ $component['show_form'] ? 'false' : 'true' }})"
+                                            >Contact form <span>{{ $component['show_form'] ? 'On' : 'Off' }}</span></button>
+
+                                            @foreach ($availableSocialPlatforms as $platform => $label)
+                                                @php($platformEnabled = in_array($platform, $component['social_platforms'], true))
+                                                <button
+                                                    @class(['custom-page-component__quick-toggle', 'is-on' => $platformEnabled])
+                                                    type="button"
+                                                    aria-pressed="{{ $platformEnabled ? 'true' : 'false' }}"
+                                                    wire:click="setContactSocialPlatform({{ $component['index'] }}, '{{ $component['type'] }}', '{{ $platform }}', {{ $platformEnabled ? 'false' : 'true' }})"
+                                                >{{ $label }} <span>{{ $platformEnabled ? 'On' : 'Off' }}</span></button>
+                                            @endforeach
+                                        </div>
+                                    @elseif ($component['content']['primary'] !== '' || $component['content']['secondary'] !== '' || $component['content']['meta'] !== '')
+                                        <div class="custom-page-component__content-copy">
+                                            @if ($component['content']['primary'] !== '')
+                                                <strong>{{ $component['content']['primary'] }}</strong>
+                                            @endif
+                                            @if ($component['content']['secondary'] !== '')
+                                                <span>{{ $component['content']['secondary'] }}</span>
+                                            @endif
+                                            @if ($component['content']['meta'] !== '')
+                                                <small>{{ $component['content']['meta'] }}</small>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
 
                                 <div class="custom-page-component__actions admin-toolbar">
                                     @if ($component['is_cv_list'])

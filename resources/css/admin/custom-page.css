@@ -1,7 +1,14 @@
 /* Custom Page workspace. Keep this file scoped to the canonical admin workspace. */
 
+/* This workspace owns its visible heading and has no Filament header actions. */
+.fi-page:has(.custom-page-workspace) .fi-header {
+    display: none;
+}
+
 .custom-page-workspace__components {
     --custom-page-task-header-height: 2.35rem;
+    padding-bottom: 0;
+    border-bottom: 0;
 }
 
 .custom-page-workspace__controls,
@@ -133,7 +140,7 @@
 .custom-page-component-sequence__header,
 .custom-page-component__header {
     display: grid;
-    grid-template-columns: 2rem 2.5rem minmax(6rem, .6fr) minmax(12rem, 2fr) auto;
+    grid-template-columns: 2.5rem 2rem 8.5rem minmax(14rem, 1fr) auto;
     gap: .75rem;
     align-items: center;
 }
@@ -284,41 +291,112 @@
     outline-offset: 2px;
 }
 
-.custom-page-component__type {
+.custom-page-component__type-select {
+    box-sizing: border-box;
+    width: 8.5rem;
+    height: 2rem;
+    min-width: 0;
+    padding: .3rem 1.7rem .3rem .5rem;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: .2rem;
+    background: transparent;
     color: var(--admin-text);
-    font-size: .78rem;
-    font-weight: 620;
+    font: inherit;
+    font-size: .72rem;
+    line-height: 1;
+    outline: none;
 }
 
-.custom-page-component__type.is-divider {
-    color: var(--admin-muted);
-    font-size: .69rem;
-    font-weight: 520;
+.custom-page-component__type-select:hover,
+.custom-page-component__type-select:focus-visible {
+    border-color: var(--admin-accent);
+    background: var(--admin-subtle);
 }
 
-.custom-page-component__summary,
-.custom-page-component__divider-preview {
+.custom-page-component__content {
     min-width: 0;
 }
 
-.custom-page-component__summary {
+.custom-page-component__content-copy {
+    display: grid;
+    min-width: 0;
+    gap: .12rem;
+}
+
+.custom-page-component__content-copy strong,
+.custom-page-component__content-copy span,
+.custom-page-component__content-copy small {
+    display: block;
+    min-width: 0;
     overflow: hidden;
-    color: var(--admin-muted);
-    font-size: .72rem;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.custom-page-component__divider-preview {
-    display: flex;
-    height: 1.5rem;
-    align-items: center;
+.custom-page-component__content-copy strong {
+    color: var(--admin-text);
+    font-size: .76rem;
+    font-weight: 580;
 }
 
-.custom-page-component__divider-preview > span {
-    display: block;
-    width: 100%;
-    border-top: 1px solid var(--admin-line-strong);
+.custom-page-component__content-copy span {
+    color: var(--admin-muted);
+    font-size: .71rem;
+}
+
+.custom-page-component__content-copy small {
+    color: var(--admin-faint);
+    font-size: .64rem;
+}
+
+.custom-page-component__contact-controls {
+    display: flex;
+    min-width: 0;
+    gap: .35rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.custom-page-component__quick-toggle {
+    display: inline-flex;
+    min-height: 2rem;
+    padding: .34rem .5rem;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-muted);
+    font: inherit;
+    font-size: .69rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.custom-page-component__quick-toggle span {
+    color: var(--admin-faint);
+    font-size: .59rem;
+    font-weight: 650;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.custom-page-component__quick-toggle:hover,
+.custom-page-component__quick-toggle:focus-visible {
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+    outline: none;
+}
+
+.custom-page-component__quick-toggle.is-on {
+    border-color: var(--admin-accent);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+}
+
+.custom-page-component__quick-toggle.is-on span {
+    color: var(--admin-accent-strong);
 }
 
 .custom-page-component__actions {
@@ -591,11 +669,15 @@
 
     .custom-page-component-sequence__header,
     .custom-page-component__header {
-        grid-template-columns: 2rem 2.5rem minmax(6rem, .6fr) minmax(10rem, 1.4fr);
+        grid-template-columns: 2.5rem 2rem 8rem minmax(10rem, 1fr);
     }
 
     .custom-page-component-sequence__header > span:last-child {
         display: none;
+    }
+
+    .custom-page-component__type-select {
+        width: 8rem;
     }
 
     .custom-page-component__actions {
@@ -634,18 +716,27 @@
     }
 
     .custom-page-component__header {
-        grid-template-columns: 2rem 2.5rem minmax(0, 1fr);
+        grid-template-columns: 2.5rem 2rem minmax(0, 1fr);
         gap: .45rem .7rem;
     }
 
-    .custom-page-component__summary,
-    .custom-page-component__divider-preview {
+    .custom-page-component__type-select,
+    .custom-page-component__content,
+    .custom-page-component__actions {
         grid-column: 3;
+    }
+
+    .custom-page-component__type-select {
+        width: 8.5rem;
+    }
+
+    .custom-page-component__content-copy strong,
+    .custom-page-component__content-copy span,
+    .custom-page-component__content-copy small {
         white-space: normal;
     }
 
     .custom-page-component__actions {
-        grid-column: 3;
         min-width: 0;
         justify-content: flex-start;
         flex-wrap: wrap;

@@ -4,12 +4,23 @@ namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Models\CustomPageSetting;
+use App\Models\PublicContentSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class CustomPageEditorialService
 {
+    /** @var list<string> */
+    private const COMPONENT_TYPES = [
+        'image',
+        'cv_list',
+        'text',
+        'list',
+        'divider',
+        'contact',
+    ];
+
     public function __construct(private readonly AdminAuditService $audit) {}
 
     /** @param array<string, mixed> $block */
@@ -43,6 +54,121 @@ final class CustomPageEditorialService
             }
 
             $blocks[$index] = $block;
+
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    public function convertBlock(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        string $targetType,
+    ): bool {
+        $this->assertComponentType($targetType);
+
+        return DB::transaction(function () use ($settings, $index, $expectedType, $targetType): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $index, $expectedType);
+
+            if ($expectedType === $targetType) {
+                return false;
+            }
+
+            $blocks[$index] = $this->convertedBlock($blocks[$index], $targetType);
+
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    /** @param array<string, mixed> $block */
+    public function conversionLosesContent(array $block, string $targetType): bool
+    {
+        $this->assertComponentType($targetType);
+
+        $currentType = is_string($block['type'] ?? null) ? $block['type'] : '';
+        if ($currentType === $targetType) {
+            return false;
+        }
+
+        $next = $this->convertedBlock($block, $targetType);
+        foreach ($block as $key => $value) {
+            if ($key === 'type') {
+                continue;
+            }
+            if (array_key_exists($key, $next) && $next[$key] === $value) {
+                continue;
+            }
+            if ($this->meaningfulValue($value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function setContactToggle(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        string $field,
+        bool $enabled,
+    ): bool {
+        if (! in_array($field, ['show_email', 'show_form'], true)) {
+            throw new InvalidArgumentException('Unsupported Contact toggle.');
+        }
+
+        return DB::transaction(function () use ($settings, $index, $expectedType, $field, $enabled): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $index, $expectedType);
+            if ($expectedType !== 'contact') {
+                throw ValidationException::withMessages([
+                    'component' => 'Only Contact components support this setting.',
+                ]);
+            }
+
+            $blocks[$index][$field] = $enabled;
+
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    public function setContactSocialPlatform(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        string $platform,
+        bool $enabled,
+    ): bool {
+        return DB::transaction(function () use ($settings, $index, $expectedType, $platform, $enabled): bool {
+            $this->assertAvailableSocialPlatform($platform);
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertTarget($blocks, $index, $expectedType);
+            if ($expectedType !== 'contact') {
+                throw ValidationException::withMessages([
+                    'component' => 'Only Contact components support social links.',
+                ]);
+            }
+
+            $selected = array_values(array_filter(
+                is_array($blocks[$index]['social_platforms'] ?? null) ? $blocks[$index]['social_platforms'] : [],
+                static fn (mixed $value): bool => is_string($value),
+            ));
+
+            if ($enabled && ! in_array($platform, $selected, true)) {
+                $selected[] = $platform;
+            }
+            if (! $enabled) {
+                $selected = array_values(array_filter(
+                    $selected,
+                    static fn (string $value): bool => $value !== $platform,
+                ));
+            }
+
+            $blocks[$index]['social_platforms'] = $selected;
 
             return $this->persist($fresh, $blocks);
         });
@@ -244,6 +370,92 @@ final class CustomPageEditorialService
         if (! is_array($block) || ($block['type'] ?? null) !== $expectedType) {
             throw ValidationException::withMessages([
                 'component' => 'This component changed. Reload the workspace and try again.',
+            ]);
+        }
+    }
+
+    /** @param array<string, mixed> $block */
+    private function convertedBlock(array $block, string $targetType): array
+    {
+        $title = in_array($block['type'] ?? null, ['text', 'list'], true)
+            && is_string($block['title'] ?? null)
+            ? $block['title']
+            : null;
+
+        return match ($targetType) {
+            'image' => [
+                'type' => 'image',
+                'media_asset_id' => null,
+                'image_decorative' => false,
+            ],
+            'cv_list' => ['type' => 'cv_list'],
+            'text' => [
+                'type' => 'text',
+                'title' => $title,
+                'body' => null,
+            ],
+            'list' => [
+                'type' => 'list',
+                'title' => $title,
+                'items' => [],
+            ],
+            'divider' => ['type' => 'divider'],
+            'contact' => [
+                'type' => 'contact',
+                'form_state' => 'enabled',
+                'status_text' => null,
+                'show_email' => true,
+                'show_form' => true,
+                'social_platforms' => array_keys(SocialLinks::options()),
+            ],
+        };
+    }
+
+    private function meaningfulValue(mixed $value): bool
+    {
+        if ($value === null || $value === false || $value === '' || $value === []) {
+            return false;
+        }
+
+        if (is_string($value)) {
+            return trim($value) !== '';
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $nested) {
+                if ($this->meaningfulValue($nested)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function assertComponentType(string $type): void
+    {
+        if (! in_array($type, self::COMPONENT_TYPES, true)) {
+            throw ValidationException::withMessages([
+                'component' => 'Choose a supported component type.',
+            ]);
+        }
+    }
+
+    private function assertAvailableSocialPlatform(string $platform): void
+    {
+        if (! SocialLinks::supports($platform)) {
+            throw ValidationException::withMessages([
+                'component' => 'Choose a supported social platform.',
+            ]);
+        }
+
+        $available = collect(SocialLinks::visible(PublicContentSetting::general()->getAttribute('social_links')))
+            ->contains(static fn (array $link): bool => ($link['platform'] ?? null) === $platform);
+        if (! $available) {
+            throw ValidationException::withMessages([
+                'component' => 'This social platform is not available from General.',
             ]);
         }
     }
