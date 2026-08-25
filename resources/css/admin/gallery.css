@@ -158,12 +158,6 @@
     flex-wrap: nowrap;
 }
 
-.gallery-workspace__control-icon-action {
-    width: var(--admin-control-height);
-    height: var(--admin-control-height);
-    flex-basis: var(--admin-control-height);
-}
-
 .gallery-workspace__selection {
     position: relative;
 }
@@ -214,8 +208,24 @@
 }
 
 .gallery-workspace__visual {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--admin-subtle);
     color: inherit;
+    font: inherit;
+    text-align: inherit;
     text-decoration: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+.gallery-workspace__visual.is-reorder-enabled {
+    cursor: grab;
+}
+
+.gallery-workspace__visual.is-reorder-enabled:active {
+    cursor: grabbing;
 }
 
 .gallery-workspace__visual:focus-visible {
@@ -234,48 +244,6 @@
 .gallery-workspace__card.is-drop-target {
     outline: 2px solid var(--admin-accent);
     outline-offset: -2px;
-}
-
-.gallery-workspace__drag-handle {
-    position: absolute;
-    top: .55rem;
-    right: .55rem;
-    z-index: 5;
-    display: grid;
-    width: 1.72rem;
-    height: 1.72rem;
-    padding: 0;
-    place-items: center;
-    border: 1px solid color-mix(in srgb, var(--admin-line-strong) 75%, transparent);
-    border-radius: .2rem;
-    background: color-mix(in srgb, var(--admin-subtle) 88%, transparent);
-    color: var(--admin-muted);
-    cursor: grab;
-}
-
-.gallery-workspace__drag-handle svg {
-    width: 1rem;
-    height: 1rem;
-}
-
-.gallery-workspace__drag-handle:hover,
-.gallery-workspace__drag-handle:focus-visible {
-    background: var(--admin-subtle);
-    color: var(--admin-text);
-}
-
-.gallery-workspace__drag-handle:focus-visible {
-    outline: 2px solid var(--admin-accent);
-    outline-offset: 2px;
-}
-
-.gallery-workspace__drag-handle:active {
-    cursor: grabbing;
-}
-
-.gallery-workspace__drag-handle[aria-disabled="true"] {
-    opacity: .42;
-    cursor: not-allowed;
 }
 
 .gallery-workspace__title-editor {
@@ -397,10 +365,6 @@
     align-items: center;
     justify-content: flex-end;
     flex-wrap: nowrap;
-}
-
-.gallery-workspace__edit-action {
-    flex: 0 0 auto;
 }
 
 .gallery-workspace__icon-action {

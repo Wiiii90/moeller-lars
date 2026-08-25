@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Artworks\Pages\Concerns;
 
 use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Media\MediaTypePolicy;
-use App\Models\ArtworkMaterialPreset;
+use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Models\MediaAsset;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -43,11 +43,7 @@ trait GalleryWorkspaceFormSupport
                     }
                 }),
             $slug,
-            TextInput::make('medium')
-                ->label('Material')
-                ->nullable()
-                ->maxLength(240)
-                ->datalist(fn (): array => ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all()),
+            ArtworkMaterialSelect::make(),
             TextInput::make('dimension_height')->label('Height (H)')->numeric()->minValue(0.01)->nullable(),
             TextInput::make('dimension_width')->label('Width (W)')->numeric()->minValue(0.01)->nullable(),
             TextInput::make('dimension_depth')->label('Depth (D)')->numeric()->minValue(0.01)->nullable()->helperText('Optional.'),

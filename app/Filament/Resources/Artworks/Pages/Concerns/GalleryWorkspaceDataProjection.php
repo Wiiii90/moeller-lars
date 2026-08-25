@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Artworks\Pages\Concerns;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
-use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
@@ -95,9 +94,6 @@ trait GalleryWorkspaceDataProjection
                 'thumbnail_url' => $thumbnail instanceof MediaVariant ? route('admin.media.variant', $thumbnail) : null,
                 'primary_original_url' => $primaryAsset instanceof MediaAsset && $primaryAsset->getAttribute('state') === 'available'
                     ? route('admin.media.original', $primaryAsset)
-                    : null,
-                'media_preview_url' => $primaryAsset instanceof MediaAsset && $primaryAsset->getAttribute('state') === 'available'
-                    ? MediaAssetResource::getUrl('view', ['record' => $primaryAsset->getKey(), 'artwork' => $artwork->getKey()])
                     : null,
                 'public_url' => $galleryPublished && $artwork->getAttribute('state') === 'published'
                     ? route('artworks.show', ['slug' => $artwork->getAttribute('slug')])

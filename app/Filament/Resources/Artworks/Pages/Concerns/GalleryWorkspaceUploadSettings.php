@@ -90,7 +90,13 @@ trait GalleryWorkspaceUploadSettings
                     ->helperText('Removing a preset only removes the suggestion. Existing artworks keep their saved Material text.'),
             ])
             ->modalHeading('Material presets')
-            ->modalSubmitActionLabel('Save presets')
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Save')
+                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action
+                ->label('Cancel')
+                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
+            ->extraModalWindowAttributes(['class' => 'media-file-dialog'])
             ->action(function (array $data): void {
                 app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
                 Notification::make()->title('Material presets saved')->success()->send();
