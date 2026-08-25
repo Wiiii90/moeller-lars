@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\JournalEntryContentRenderer;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SiteNodeType;
@@ -28,6 +29,7 @@ final class PublicSiteSectionController extends Controller
         private readonly PublicArtworkController $artworks,
         private readonly SafeRichTextRenderer $richText,
         private readonly PublicMedia $media,
+        private readonly JournalEntryContentRenderer $journalContent,
         private readonly SitePreviewContext $preview,
         private readonly SiteNodeRoute $siteNodeRoute,
     ) {}
@@ -36,13 +38,8 @@ final class PublicSiteSectionController extends Controller
     {
         $query = SiteSection::query()->where('slug', $section);
         $this->preview->constrainSectionQuery($query);
-        /** @var SiteSection|null $siteSection */
         $siteSection = $query->first();
-
-        if ($siteSection === null || $siteSection->nodeType() === SiteNodeType::Gallery) {
-            return $this->artworks->category($section);
-        }
-
+        if ($siteSection === null || $siteSection->nodeType() === SiteNodeType::Gallery) { return $this->artworks->category($section); }
         return match ($siteSection->nodeType()) {
             SiteNodeType::CustomPage => $this->customPage($siteSection),
             SiteNodeType::Journal => $this->journal($siteSection),
@@ -52,75 +49,35 @@ final class PublicSiteSectionController extends Controller
 
     public function journalEntry(string $section, string $slug): View
     {
-        $sectionQuery = SiteSection::query()
-            ->where('type', SiteNodeType::Journal->value)
-            ->where('template', JournalTemplate::Blog->value)
-            ->where('slug', $section);
+        $sectionQuery = SiteSection::query()->where('type', SiteNodeType::Journal->value)->where('template', JournalTemplate::Blog->value)->where('slug', $section);
         $this->preview->constrainSectionQuery($sectionQuery);
-        /** @var SiteSection|null $journal */
         $journal = $sectionQuery->first();
         abort_unless($journal instanceof SiteSection, 404);
-
-        /** @var BlogPost|null $post */
-        $post = $this->blogPostsQuery($journal)
-            ->where('slug', $slug)
-            ->with('coverMedia.variants')
-            ->first();
+        $post = $this->blogPostsQuery($journal)->where('slug', $slug)->with('mediaUsages.mediaAsset.variants')->first();
         abort_unless($post instanceof BlogPost, 404);
-
         return view('pages.blog.show', [
-            'section' => $journal,
-            'post' => $post,
-            'richText' => $this->richText,
-            'media' => $this->media,
-            'siteNodeRoute' => $this->siteNodeRoute,
+            'section' => $journal, 'post' => $post, 'richText' => $this->richText, 'media' => $this->media,
+            'journalContent' => $this->journalContent, 'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 
     private function customPage(SiteSection $section): View
     {
         $section->load('customPageSetting');
-        $settings = $section->getRelation('customPageSetting');
-        abort_unless($settings instanceof CustomPageSetting, 404);
-
+        $settings = $section->getRelation('customPageSetting'); abort_unless($settings instanceof CustomPageSetting, 404);
         $blocks = $settings->components();
-        $mediaIds = collect($blocks)
-            ->filter(static fn (array $block): bool => ($block['type'] ?? null) === 'image')
-            ->pluck('media_asset_id')
-            ->filter(fn ($id): bool => is_numeric($id))
-            ->map(fn ($id): int => (int) $id)
-            ->unique()
-            ->values();
-
+        $mediaIds = collect($blocks)->filter(fn (array $block): bool => ($block['type'] ?? null) === 'image')->pluck('media_asset_id')
+            ->filter(fn ($id): bool => is_numeric($id))->map(fn ($id): int => (int) $id)->unique()->values();
         /** @var Collection<int, MediaAsset> $assets */
-        $assets = MediaAsset::query()
-            ->whereKey($mediaIds)
-            ->with('variants')
-            ->get()
-            ->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
-
+        $assets = MediaAsset::query()->whereKey($mediaIds)->with('variants')->get()->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
         $cvEntries = collect();
-        if (collect($blocks)->contains(static fn (array $block): bool => ($block['type'] ?? null) === 'cv_list')) {
-            $cvEntries = CvEntry::query()
-                ->when(
-                    $this->preview->active(),
-                    fn (Builder $query) => $query->where('state', '<>', 'archived'),
-                    fn (Builder $query) => $query->where('state', 'published'),
-                )
-                ->orderBy('position')
-                ->orderBy('id')
-                ->get();
+        if (collect($blocks)->contains(fn (array $block): bool => ($block['type'] ?? null) === 'cv_list')) {
+            $cvEntries = CvEntry::query()->when($this->preview->active(), fn (Builder $query) => $query->where('state', '<>', 'archived'), fn (Builder $query) => $query->where('state', 'published'))
+                ->orderBy('position')->orderBy('id')->get();
         }
-
         return view('pages.custom', [
-            'section' => $section,
-            'blocks' => $blocks,
-            'assets' => $assets,
-            'cvEntries' => $cvEntries,
-            'generalSettings' => PublicContentSetting::general(),
-            'richText' => $this->richText,
-            'media' => $this->media,
-            'siteNodeRoute' => $this->siteNodeRoute,
+            'section' => $section, 'blocks' => $blocks, 'assets' => $assets, 'cvEntries' => $cvEntries,
+            'generalSettings' => PublicContentSetting::general(), 'richText' => $this->richText, 'media' => $this->media, 'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 
@@ -135,53 +92,28 @@ final class PublicSiteSectionController extends Controller
 
     private function blogJournal(SiteSection $section): View
     {
-        $posts = $this->blogPostsQuery($section)
-            ->with('coverMedia.variants')
-            ->orderBy('position')
-            ->orderBy('id')
-            ->get();
-
+        $posts = $this->blogPostsQuery($section)->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get();
         return view('pages.blog.index', [
-            'section' => $section,
-            'settings' => JournalSetting::forSection($section),
-            'posts' => $posts,
-            'richText' => $this->richText,
-            'media' => $this->media,
-            'siteNodeRoute' => $this->siteNodeRoute,
+            'section' => $section, 'settings' => JournalSetting::forSection($section), 'posts' => $posts,
+            'richText' => $this->richText, 'media' => $this->media, 'journalContent' => $this->journalContent, 'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 
     private function exhibitionsJournal(SiteSection $section): View
     {
-        $exhibitions = Exhibition::query()
-            ->where('site_section_id', $section->getKey())
-            ->when(
-                $this->preview->active(),
-                fn (Builder $query) => $query->where('state', '<>', 'archived'),
-                fn (Builder $query) => $query->where('state', 'published'),
-            )
-            ->with(['mediaUsages.mediaAsset.variants'])
-            ->orderBy('position')
-            ->orderBy('id')
-            ->get();
-
+        $exhibitions = Exhibition::query()->where('site_section_id', $section->getKey())
+            ->when($this->preview->active(), fn (Builder $query) => $query->where('state', '<>', 'archived'), fn (Builder $query) => $query->where('state', 'published'))
+            ->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get();
         return view('pages.exhibitions', [
-            'section' => $section,
-            'settings' => JournalSetting::forSection($section),
-            'exhibitions' => $exhibitions,
-            'richText' => $this->richText,
-            'media' => $this->media,
-            'siteNodeRoute' => $this->siteNodeRoute,
+            'section' => $section, 'settings' => JournalSetting::forSection($section), 'exhibitions' => $exhibitions,
+            'richText' => $this->richText, 'media' => $this->media, 'journalContent' => $this->journalContent, 'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 
     /** @return Builder<BlogPost> */
     private function blogPostsQuery(SiteSection $section): Builder
     {
-        $query = $this->preview->active()
-            ? BlogPost::query()->where('state', '<>', 'archived')
-            : BlogEditorialService::publicQuery();
-
+        $query = $this->preview->active() ? BlogPost::query()->where('state', '<>', 'archived') : BlogEditorialService::publicQuery();
         return $query->where('site_section_id', $section->getKey());
     }
 }

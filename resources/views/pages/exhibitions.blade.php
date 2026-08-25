@@ -8,126 +8,46 @@
     <section class="exhibitions-page" aria-label="{{ $section->title }}">
         @forelse ($exhibitions as $exhibition)
             @php
-                $description = trim((string) ($exhibition->description ?? ''));
-                $descriptionPlain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($description)));
-                $hasLongDescription = mb_strlen($descriptionPlain) > 280;
-                $descriptionPreview = $hasLongDescription
-                    ? \Illuminate\Support\Str::limit($descriptionPlain, 220)
-                    : null;
+                $timing = $exhibition->temporalState(now());
+                $cover = $exhibition->mediaUsages->firstWhere('role', \App\Models\JournalEntryMedia::ROLE_COVER);
+                $gallery = $exhibition->mediaUsages->where('role', \App\Models\JournalEntryMedia::ROLE_GALLERY)->sortBy('position');
+                $displayDate = $exhibition->displayDate();
+                $vernissage = $exhibition->vernissageDisplay();
+                $address = $exhibition->address();
+                $showDirections = in_array($timing, ['current', 'upcoming'], true);
             @endphp
-
-            <article
-                class="exhibition-entry"
-                data-matomo-event-view="exhibition_view"
-                data-matomo-event-category="Journal"
-                data-matomo-event-name="{{ $exhibition->title }}"
-            >
+            <article class="exhibition-entry" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 <div class="exhibition-entry__schedule" aria-label="Exhibition dates">
-                    @if ($exhibition->opening_text !== null)
-                        <div class="exhibition-entry__opening">
-                            <span class="exhibition-entry__opening-label">Vernissage</span>
-                            <span>{{ $exhibition->opening_text }}</span>
-                        </div>
-                    @endif
-
-                    <div class="exhibition-entry__date">{{ $exhibition->date_text }}</div>
+                    @if ($vernissage !== null)<div class="exhibition-entry__opening"><span class="exhibition-entry__opening-label">Vernissage</span><span>{{ $vernissage }}</span></div>@endif
+                    @if ($displayDate !== null)<div class="exhibition-entry__date">{{ $displayDate }}</div>@endif
                 </div>
-
                 <div class="exhibition-entry__content">
-                    @if ($exhibition->kind !== null)
-                        <p class="exhibition-entry__eyebrow">{{ $exhibition->kind }}</p>
-                    @endif
-
+                    @if ($timing === 'current')<p class="exhibition-entry__timing is-current">Current</p>@endif
                     <h3>{{ $exhibition->title }}</h3>
-
-                    @if ($exhibition->venue !== null || $exhibition->location_text !== null || $exhibition->city !== null || $exhibition->country !== null)
+                    @if ($exhibition->venue !== null || $address !== null)
                         <div class="exhibition-entry__facts">
-                            @if ($exhibition->venue !== null)
-                                <div class="exhibition-entry__fact">
-                                    <span class="exhibition-entry__fact-label">Venue</span>
-                                    <span class="exhibition-entry__fact-value">{{ $exhibition->venue }}</span>
-                                </div>
-                            @endif
-
-                            @if ($exhibition->location_text !== null)
-                                <div class="exhibition-entry__fact">
-                                    <span class="exhibition-entry__fact-label">Location</span>
-                                    <span class="exhibition-entry__fact-value">{{ $exhibition->location_text }}</span>
-                                </div>
-                            @elseif ($exhibition->city !== null || $exhibition->country !== null)
-                                <div class="exhibition-entry__fact">
-                                    <span class="exhibition-entry__fact-label">Location</span>
-                                    <span class="exhibition-entry__fact-value">{{ collect([$exhibition->city, $exhibition->country])->filter(fn ($value) => $value !== null)->implode(', ') }}</span>
-                                </div>
-                            @endif
+                            @if ($exhibition->venue !== null)<div class="exhibition-entry__fact"><span class="exhibition-entry__fact-label">Venue</span><span class="exhibition-entry__fact-value">{{ $exhibition->venue }}</span></div>@endif
+                            @if ($address !== null)<div class="exhibition-entry__fact"><span class="exhibition-entry__fact-label">Address</span><span class="exhibition-entry__fact-value">{{ $address }}</span></div>@endif
                         </div>
                     @endif
-
-                    @if ($description !== '')
-                        @if ($hasLongDescription)
-                            <details class="exhibition-entry__description exhibition-entry__description-details">
-                                <summary>
-                                    <span class="exhibition-entry__description-preview">{{ $descriptionPreview }}</span>
-                                </summary>
-                                <div class="rich-text exhibition-entry__description-full">{!! $richText->render($description) !!}</div>
-                            </details>
-                        @else
-                            <div class="rich-text exhibition-entry__description">{!! $richText->render($description) !!}</div>
-                        @endif
+                    @if ($cover instanceof \App\Models\JournalEntryMedia)
+                        {!! $journalContent->renderMedia($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', $loop->first) !!}
                     @endif
-
-                    @if ($exhibition->external_url !== null || $exhibition->directions_url !== null)
+                    @if (trim((string) ($exhibition->description ?? '')) !== '')
+                        <div class="rich-text journal-entry-content exhibition-entry__description">{!! $journalContent->render($exhibition) !!}</div>
+                    @endif
+                    @if ($gallery->isNotEmpty())
+                        <div class="journal-entry-gallery" aria-label="Exhibition images">@foreach ($gallery as $usage){!! $journalContent->renderMedia($usage, 'journal-entry-media journal-entry-media--gallery') !!}@endforeach</div>
+                    @endif
+                    @if ($exhibition->shouldShowPublicMap(now()))
+                        <div class="exhibition-entry__map">
+                            <iframe src="{{ $exhibition->mapEmbedUrl() }}" title="Map for {{ $exhibition->title }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        </div>
+                    @endif
+                    @if ($exhibition->external_url !== null || ($showDirections && $exhibition->publicDirectionsUrl() !== null))
                         <div class="exhibition-entry__links">
-                            @if ($exhibition->external_url !== null)
-                                <a
-                                    href="{{ $exhibition->external_url }}"
-                                    rel="noopener noreferrer"
-                                    data-matomo-event-category="Journal"
-                                    data-matomo-event-action="exhibition_external_click"
-                                    data-matomo-event-name="{{ $exhibition->title }}"
-                                >More information</a>
-                            @endif
-                            @if ($exhibition->directions_url !== null)
-                                <a
-                                    href="{{ $exhibition->directions_url }}"
-                                    rel="noopener noreferrer"
-                                    data-matomo-event-category="Journal"
-                                    data-matomo-event-action="exhibition_directions_click"
-                                    data-matomo-event-name="{{ $exhibition->title }}"
-                                >Directions</a>
-                            @endif
-                        </div>
-                    @endif
-
-                    @if ($exhibition->mediaUsages->isNotEmpty())
-                        <div class="exhibition-media" aria-label="Exhibition images">
-                            @foreach ($exhibition->mediaUsages as $usage)
-                                @php
-                                    $variant = $media->thumbnailVariantForAsset($usage->mediaAsset);
-                                    $variantWidth = (int) ($variant->getAttribute('width') ?? 0);
-                                    $variantHeight = (int) ($variant->getAttribute('height') ?? 0);
-                                    $prioritizeMedia = $loop->parent->first && $loop->first;
-                                @endphp
-                                <figure class="exhibition-media__item" @if ($usage->role === 'hero') data-role="hero" @endif>
-                                    <img
-                                        src="{{ route('media.variant', $variant) }}"
-                                        alt="{{ $media->altTextForAsset($usage->mediaAsset, $usage->alt_text_override) }}"
-                                        @if ($variantWidth > 0 && $variantHeight > 0)
-                                            width="{{ $variantWidth }}"
-                                            height="{{ $variantHeight }}"
-                                        @endif
-                                        loading="{{ $prioritizeMedia ? 'eager' : 'lazy' }}"
-                                        decoding="async"
-                                        fetchpriority="{{ $prioritizeMedia ? 'high' : 'auto' }}"
-                                    >
-                                    @if ($usage->mediaAsset->credit !== null || $usage->mediaAsset->copyright_notice !== null)
-                                        <figcaption>
-                                            @if ($usage->mediaAsset->credit !== null){{ $usage->mediaAsset->credit }}@endif
-                                            @if ($usage->mediaAsset->copyright_notice !== null){{ $usage->mediaAsset->copyright_notice }}@endif
-                                        </figcaption>
-                                    @endif
-                                </figure>
-                            @endforeach
+                            @if ($exhibition->external_url !== null)<a href="{{ $exhibition->external_url }}" rel="noopener noreferrer" data-matomo-event-category="Journal" data-matomo-event-action="exhibition_external_click" data-matomo-event-name="{{ $exhibition->title }}">More information</a>@endif
+                            @if ($showDirections && $exhibition->publicDirectionsUrl() !== null)<a href="{{ $exhibition->publicDirectionsUrl() }}" rel="noopener noreferrer" data-matomo-event-category="Journal" data-matomo-event-action="exhibition_directions_click" data-matomo-event-name="{{ $exhibition->title }}">Directions</a>@endif
                         </div>
                     @endif
                 </div>

@@ -14,8 +14,7 @@ final class MediaAssetSelect
 {
     public static function make(string $name, string $relationship, string $label, bool $imagesOnly = false): Select
     {
-        return Select::make($name)
-            ->label($label)
+        return self::configure(Select::make($name), $label, $imagesOnly)
             ->relationship(
                 name: $relationship,
                 titleAttribute: 'original_filename',
@@ -26,18 +25,26 @@ final class MediaAssetSelect
                 },
             )
             ->getOptionLabelFromRecordUsing(function (Model $record): string {
-                if (! $record instanceof MediaAsset) {
-                    return '';
+                return $record instanceof MediaAsset ? self::optionLabel($record) : '';
+            });
+    }
+
+    public static function makeId(string $name, string $label, bool $imagesOnly = false): Select
+    {
+        return self::configure(Select::make($name), $label, $imagesOnly)
+            ->getOptionLabelUsing(function (mixed $value) use ($imagesOnly): ?string {
+                $id = filter_var($value, FILTER_VALIDATE_INT);
+                if ($id === false) {
+                    return null;
                 }
 
-                return self::optionLabel($record);
-            })
-            ->searchable()
-            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions($search, $imagesOnly))
-            ->searchDebounce(350)
-            ->searchPrompt('Search Media Files by filename')
-            ->noSearchResultsMessage('No matching Media Files')
-            ->allowHtml();
+                /** @var Builder<MediaAsset> $query */
+                $query = MediaAsset::query()->whereKey((int) $id);
+                self::constrainAvailable($query, $imagesOnly);
+                $asset = $query->with('variants')->first();
+
+                return $asset instanceof MediaAsset ? self::optionLabel($asset) : null;
+            });
     }
 
     /** @return array<int, string> */
@@ -62,6 +69,18 @@ final class MediaAssetSelect
         return $assets
             ->mapWithKeys(fn (MediaAsset $asset): array => [(int) $asset->getKey() => self::optionLabel($asset)])
             ->all();
+    }
+
+    private static function configure(Select $select, string $label, bool $imagesOnly): Select
+    {
+        return $select
+            ->label($label)
+            ->searchable()
+            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions($search, $imagesOnly))
+            ->searchDebounce(350)
+            ->searchPrompt('Search Media Files by filename')
+            ->noSearchResultsMessage('No matching Media Files')
+            ->allowHtml();
     }
 
     /** @param Builder<MediaAsset> $query */
