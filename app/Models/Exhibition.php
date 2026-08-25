@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {
@@ -68,7 +68,6 @@ class Exhibition extends Model
 
     public function temporalState(CarbonInterface $date): string
     {
-        /** @var CarbonInterface|null $startsOn */
         $startsOn = $this->getAttribute('starts_on');
         if ($startsOn === null) {
             return 'unknown';
@@ -80,7 +79,6 @@ class Exhibition extends Model
             return 'upcoming';
         }
 
-        /** @var CarbonInterface|null $endsOn */
         $endsOn = $this->getAttribute('ends_on');
         if ($endsOn !== null) {
             return $date->isAfter(CarbonImmutable::instance($endsOn)->startOfDay()) ? 'past' : 'current';
@@ -120,23 +118,21 @@ class Exhibition extends Model
         }
 
         $legacy = trim((string) ($this->getAttribute('opening_text') ?? ''));
-
         return $legacy !== '' ? $legacy : null;
     }
 
     public function address(): ?string
     {
-        $address = trim((string) ($this->getAttribute('location_text') ?? ''));
-        if ($address !== '') {
-            return $address;
-        }
-
-        $legacy = collect([$this->getAttribute('city'), $this->getAttribute('country')])
-            ->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+        $address = collect([
+            $this->getAttribute('location_text'),
+            $this->getAttribute('city'),
+            $this->getAttribute('country'),
+        ])->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
             ->map(static fn (string $value): string => trim($value))
+            ->unique()
             ->implode(', ');
 
-        return $legacy !== '' ? $legacy : null;
+        return $address !== '' ? $address : null;
     }
 
     public function hasCoordinates(): bool
@@ -172,18 +168,25 @@ class Exhibition extends Model
         ]);
     }
 
-    public function publicDirectionsUrl(): ?string
+    public function publicMapUrl(): ?string
     {
-        if ($this->hasCoordinates()) {
-            return 'https://www.google.com/maps/dir/?'.http_build_query([
-                'api' => 1,
-                'destination' => $this->getAttribute('latitude').','.$this->getAttribute('longitude'),
-            ]);
+        if (! $this->hasCoordinates()) {
+            return null;
         }
 
-        $legacy = trim((string) ($this->getAttribute('directions_url') ?? ''));
+        $latitude = (float) $this->getAttribute('latitude');
+        $longitude = (float) $this->getAttribute('longitude');
 
-        return $legacy !== '' ? $legacy : null;
+        return 'https://www.openstreetmap.org/?'.http_build_query([
+            'mlat' => $latitude,
+            'mlon' => $longitude,
+        ]).'#map=16/'.$latitude.'/'.$longitude;
+    }
+
+    /** Legacy compatibility for older callers; canonical public UI uses publicMapUrl(). */
+    public function publicDirectionsUrl(): ?string
+    {
+        return $this->publicMapUrl();
     }
 
     protected static function booted(): void
@@ -194,22 +197,16 @@ class Exhibition extends Model
             }
 
             if (trim((string) $exhibition->getAttribute('title')) === '') {
-                throw ValidationException::withMessages([
-                    'title' => 'Published exhibitions require a title.',
-                ]);
+                throw ValidationException::withMessages(['title' => 'Published exhibitions require a title.']);
             }
             if ($exhibition->displayDate() === null) {
-                throw ValidationException::withMessages([
-                    'starts_on' => 'Published exhibitions require exhibition dates.',
-                ]);
+                throw ValidationException::withMessages(['starts_on' => 'Published exhibitions require exhibition dates.']);
             }
 
             foreach (['external_url', 'directions_url'] as $field) {
                 $url = $exhibition->getAttribute($field);
                 if ($url !== null && (! is_string($url) || ! app(SafeLinkPolicy::class)->isAllowed($url))) {
-                    throw ValidationException::withMessages([
-                        $field => 'Exhibition links must be safe HTTP or HTTPS URLs.',
-                    ]);
+                    throw ValidationException::withMessages([$field => 'Exhibition links must be safe HTTP or HTTPS URLs.']);
                 }
             }
 

@@ -14,7 +14,8 @@
                 $displayDate = $exhibition->displayDate();
                 $vernissage = $exhibition->vernissageDisplay();
                 $address = $exhibition->address();
-                $showDirections = in_array($timing, ['current', 'upcoming'], true);
+                $showMap = $exhibition->shouldShowPublicMap(now());
+                $mapUrl = $showMap ? $exhibition->publicMapUrl() : null;
             @endphp
             <article class="exhibition-entry" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 <div class="exhibition-entry__schedule" aria-label="Exhibition dates">
@@ -39,15 +40,15 @@
                     @if ($gallery->isNotEmpty())
                         <div class="journal-entry-gallery" aria-label="Exhibition images">@foreach ($gallery as $usage){!! $journalContent->renderMedia($usage, 'journal-entry-media journal-entry-media--gallery') !!}@endforeach</div>
                     @endif
-                    @if ($exhibition->shouldShowPublicMap(now()))
+                    @if ($showMap)
                         <div class="exhibition-entry__map">
                             <iframe src="{{ $exhibition->mapEmbedUrl() }}" title="Map for {{ $exhibition->title }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                         </div>
                     @endif
-                    @if ($exhibition->external_url !== null || ($showDirections && $exhibition->publicDirectionsUrl() !== null))
+                    @if ($exhibition->external_url !== null || $mapUrl !== null)
                         <div class="exhibition-entry__links">
                             @if ($exhibition->external_url !== null)<a href="{{ $exhibition->external_url }}" rel="noopener noreferrer" data-matomo-event-category="Journal" data-matomo-event-action="exhibition_external_click" data-matomo-event-name="{{ $exhibition->title }}">More information</a>@endif
-                            @if ($showDirections && $exhibition->publicDirectionsUrl() !== null)<a href="{{ $exhibition->publicDirectionsUrl() }}" rel="noopener noreferrer" data-matomo-event-category="Journal" data-matomo-event-action="exhibition_directions_click" data-matomo-event-name="{{ $exhibition->title }}">Directions</a>@endif
+                            @if ($mapUrl !== null)<a href="{{ $mapUrl }}" target="_blank" rel="noopener noreferrer" data-matomo-event-category="Journal" data-matomo-event-action="exhibition_map_click" data-matomo-event-name="{{ $exhibition->title }}">Open map</a>@endif
                         </div>
                     @endif
                 </div>

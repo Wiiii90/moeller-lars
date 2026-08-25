@@ -3,10 +3,10 @@
 namespace App\Filament\Resources\BlogPosts\Pages;
 
 use App\Domain\Blog\BlogEditorialService;
-use App\Domain\Content\JournalEntryMediaService;
 use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Pages\JournalWorkspace;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
+use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -14,11 +14,12 @@ use Illuminate\Database\Eloquent\Model;
 final class EditBlogPost extends EditRecord
 {
     use UsesAdminEditor;
+
     protected static string $resource = BlogPostResource::class;
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        return [...$data, ...app(JournalEntryMediaService::class)->editorState($this->post())];
+        return [...$data, ...app(JournalEntryEditorState::class)->for($this->post())];
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
@@ -40,7 +41,9 @@ final class EditBlogPost extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        return $this->editorReturnUrl(JournalWorkspace::getUrl(['section' => (int) $this->post()->getAttribute('site_section_id')]));
+        return $this->editorReturnUrl(JournalWorkspace::getUrl([
+            'section' => (int) $this->post()->getAttribute('site_section_id'),
+        ]));
     }
 
     private function post(): BlogPost

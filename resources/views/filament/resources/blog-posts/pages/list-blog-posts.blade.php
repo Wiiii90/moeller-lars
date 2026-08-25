@@ -14,12 +14,16 @@
         <x-admin.section class="journal-workspace__entries" aria-label="Blog entries">
             <div class="journal-workspace__controls is-blog" aria-label="Blog controls">
                 <label class="journal-workspace__field journal-workspace__search"><span>Search posts</span>
-                    <input type="search" wire:model.blur="search" x-on:keydown.enter.prevent="$el.blur()" placeholder="Title or excerpt" autocomplete="off">
+                    <input type="search" value="{{ $search }}" wire:blur="commitSearch($event.target.value)" x-on:keydown.enter.prevent="$el.blur()" placeholder="Title or excerpt" autocomplete="off">
                 </label>
                 <label class="journal-workspace__field"><span>Status</span>
-                    <select wire:model.change="statusFilter">
-                        <option value="any">Any</option><option value="draft">Draft</option><option value="scheduled">Scheduled</option>
-                        <option value="published">Published</option><option value="unpublished">Unpublished</option><option value="archived">Archived</option>
+                    <select wire:change="commitStatusFilter($event.target.value)">
+                        <option value="any" @selected($statusFilter === 'any')>Any</option>
+                        <option value="draft" @selected($statusFilter === 'draft')>Draft</option>
+                        <option value="scheduled" @selected($statusFilter === 'scheduled')>Scheduled</option>
+                        <option value="published" @selected($statusFilter === 'published')>Published</option>
+                        <option value="unpublished" @selected($statusFilter === 'unpublished')>Unpublished</option>
+                        <option value="archived" @selected($statusFilter === 'archived')>Archived</option>
                     </select>
                 </label>
                 <div class="journal-workspace__control-group"><span class="journal-workspace__control-label">Filter</span><button class="admin-action" type="button" wire:click="resetFilters">Reset</button></div>
@@ -87,8 +91,15 @@
                     @else<x-admin.empty-state title="No posts added to this Blog" minimal><x-slot:actions><button class="admin-action" type="button" wire:click="mountAction('addPost')">Add post</button></x-slot:actions></x-admin.empty-state>@endif
                 @endif
             </x-admin.table>
+
             <footer class="journal-workspace__pager">
-                <label class="journal-workspace__pager-size"><span>Per page</span><select wire:model.live.number="pageSize"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>
+                <label class="journal-workspace__pager-size"><span>Per page</span>
+                    <select wire:change="setPageSize($event.target.value)">
+                        <option value="25" @selected($pageSize === 25)>25</option>
+                        <option value="50" @selected($pageSize === 50)>50</option>
+                        <option value="100" @selected($pageSize === 100)>100</option>
+                    </select>
+                </label>
                 <span class="journal-workspace__pager-range">@if ($total === 0)0 of 0 @else{{ $resultStart }}–{{ $resultEnd }} of {{ $total }}@endif</span>
                 <div class="journal-workspace__pager-actions admin-toolbar"><button class="admin-action" type="button" wire:click="previousPage" @disabled($page <= 1)>Previous</button><button class="admin-action" type="button" wire:click="nextPage" @disabled($page >= $pages)>Next</button></div>
             </footer>
