@@ -299,19 +299,7 @@
                                 role="button"
                                 tabindex="0"
                                 aria-label="Preview {{ $artwork['title'] }}"
-                                x-data="{ didDrag: false }"
-                                x-bind:draggable="(! filtering && {{ $reorderEnabled ? 'true' : 'false' }}).toString()"
-                                x-bind:class="{ 'is-reorder-enabled': ! filtering && {{ $reorderEnabled ? 'true' : 'false' }} }"
-                                x-on:pointerdown="didDrag = false"
-                                x-on:dragstart.stop="didDrag = true; startDrag(Number($el.closest('[data-gallery-artwork-id]').dataset.galleryArtworkId), $event)"
-                                x-on:dragend.stop="endDrag"
-                                x-on:click.prevent="
-                                    if (didDrag) {
-                                        didDrag = false
-                                        return
-                                    }
-                                    openArtwork({{ $artwork['id'] }})
-                                "
+                                x-on:click.prevent="openArtwork({{ $artwork['id'] }})"
                                 x-on:keydown.enter.prevent.stop="openArtwork({{ $artwork['id'] }})"
                                 x-on:keydown.space.prevent.stop="openArtwork({{ $artwork['id'] }})"
                             >
@@ -325,21 +313,55 @@
                                 <span class="admin-gallery-grid__sequence">{{ str_pad((string) $artwork['sequence'], 2, '0', STR_PAD_LEFT) }}</span>
                             </div>
 
-                            @if ($artwork['public_url'])
-                                <a
-                                    class="gallery-workspace__icon-action gallery-workspace__visual-action"
-                                    href="{{ $artwork['public_url'] }}"
-                                    target="_blank"
-                                    rel="noopener"
-                                    draggable="false"
-                                    title="View public artwork"
-                                    aria-label="View {{ $artwork['title'] }} on the public site"
+                            <div class="gallery-workspace__primary-actions" aria-label="Primary actions for {{ $artwork['title'] }}">
+                                <button
+                                    class="gallery-workspace__icon-action gallery-workspace__primary-action"
+                                    type="button"
                                     x-on:pointerdown.stop
-                                    x-on:click.stop
+                                    x-on:click.stop="openArtwork({{ $artwork['id'] }})"
+                                    title="Preview artwork"
+                                    aria-label="Preview {{ $artwork['title'] }}"
                                 >
-                                    <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" />
-                                </a>
-                            @endif
+                                    <x-filament::icon icon="heroicon-m-magnifying-glass-plus" />
+                                </button>
+                                @if ($artwork['state'] === 'published')
+                                    <button
+                                        class="gallery-workspace__icon-action gallery-workspace__primary-action"
+                                        type="button"
+                                        x-on:pointerdown.stop
+                                        x-on:click.stop="mountAfterState('unpublishArtwork', { artwork: {{ $artwork['id'] }} })"
+                                        title="Unpublish artwork"
+                                        aria-label="Unpublish {{ $artwork['title'] }}"
+                                    >
+                                        <x-filament::icon icon="heroicon-m-eye-slash" />
+                                    </button>
+                                @else
+                                    <button
+                                        class="gallery-workspace__icon-action gallery-workspace__primary-action"
+                                        type="button"
+                                        x-on:pointerdown.stop
+                                        x-on:click.stop="mountAfterState('publishArtwork', { artwork: {{ $artwork['id'] }} })"
+                                        title="Publish artwork"
+                                        aria-label="Publish {{ $artwork['title'] }}"
+                                    >
+                                        <x-filament::icon icon="heroicon-m-eye" />
+                                    </button>
+                                @endif
+                                <button
+                                    class="gallery-workspace__icon-action gallery-workspace__primary-action gallery-workspace__drag-handle"
+                                    type="button"
+                                    draggable="{{ $reorderEnabled ? 'true' : 'false' }}"
+                                    aria-disabled="{{ $reorderEnabled ? 'false' : 'true' }}"
+                                    title="{{ $reorderEnabled ? 'Drag to reorder' : 'Clear filters to reorder' }}"
+                                    aria-label="{{ $reorderEnabled ? 'Drag '.$artwork['title'].' to reorder' : 'Clear filters to reorder '.$artwork['title'] }}"
+                                    x-on:pointerdown.stop
+                                    x-on:click.prevent.stop
+                                    x-on:dragstart.stop="startDrag(Number($el.closest('[data-gallery-artwork-id]').dataset.galleryArtworkId), $event)"
+                                    x-on:dragend.stop="endDrag"
+                                >
+                                    <x-filament::icon icon="heroicon-m-arrows-up-down" />
+                                </button>
+                            </div>
 
                             <div class="admin-gallery-grid__caption">
                                 <div class="admin-gallery-grid__identity">
@@ -454,14 +476,18 @@
                                     >
                                         <x-filament::icon icon="heroicon-m-pencil-square" />
                                     </button>
-                                    @if ($artwork['state'] === 'published')
-                                        <button class="gallery-workspace__icon-action" type="button" x-on:click="mountAfterState('unpublishArtwork', { artwork: {{ $artwork['id'] }} })" title="Unpublish artwork" aria-label="Unpublish {{ $artwork['title'] }}">
-                                            <x-filament::icon icon="heroicon-m-eye-slash" />
-                                        </button>
-                                    @else
-                                        <button class="gallery-workspace__icon-action" type="button" x-on:click="mountAfterState('publishArtwork', { artwork: {{ $artwork['id'] }} })" title="Publish artwork" aria-label="Publish {{ $artwork['title'] }}">
-                                            <x-filament::icon icon="heroicon-m-eye" />
-                                        </button>
+                                    @if ($artwork['public_url'])
+                                        <a
+                                            class="gallery-workspace__icon-action"
+                                            href="{{ $artwork['public_url'] }}"
+                                            target="_blank"
+                                            rel="noopener"
+                                            draggable="false"
+                                            title="View public artwork"
+                                            aria-label="View {{ $artwork['title'] }} on the public site"
+                                        >
+                                            <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" />
+                                        </a>
                                     @endif
                                     <button
                                         class="admin-action gallery-workspace__order-action"
