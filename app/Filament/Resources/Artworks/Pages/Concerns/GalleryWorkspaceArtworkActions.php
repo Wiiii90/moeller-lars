@@ -34,7 +34,7 @@ trait GalleryWorkspaceArtworkActions
                     return;
                 }
 
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Artwork removed from Gallery')->success()->send();
             });
     }
@@ -88,7 +88,7 @@ trait GalleryWorkspaceArtworkActions
 
                     $fresh = $asset->fresh();
                     if ($fresh instanceof MediaAsset && $fresh->getAttribute('state') === 'deleted') {
-                        $this->loadArtworks();
+                        $this->refreshWorkspaceAfterMutation();
                         Notification::make()
                             ->title('File cleanup failed')
                             ->body('The file was removed from Media Files, but stored file cleanup could not be completed.')
@@ -113,7 +113,7 @@ trait GalleryWorkspaceArtworkActions
                     return;
                 }
 
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('File deleted')->success()->send();
             });
     }
@@ -131,7 +131,7 @@ trait GalleryWorkspaceArtworkActions
                     return;
                 }
 
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Artwork published')->success()->send();
             });
     }
@@ -143,7 +143,7 @@ trait GalleryWorkspaceArtworkActions
             ->requiresConfirmation()
             ->action(function (array $arguments): void {
                 app(ArtworkPublicationService::class)->unpublish($this->actionArtwork($arguments));
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Artwork unpublished')->success()->send();
             });
     }

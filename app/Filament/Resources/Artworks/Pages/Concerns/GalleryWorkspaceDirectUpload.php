@@ -216,7 +216,7 @@ trait GalleryWorkspaceDirectUpload
 
                 $count = count($rows);
                 $this->pendingBatchArtworkMedia = [];
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()
                     ->title($count.' artworks added')
                     ->body('The new artworks were created as drafts with their uploaded Media Files as primary media.')

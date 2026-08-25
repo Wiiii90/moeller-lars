@@ -35,7 +35,7 @@ trait GalleryWorkspaceBatchActions
 
                 $count = $artworks->count();
                 $this->clearSelection();
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title($count.' selected '.($count === 1 ? 'artwork was' : 'artworks were').' removed')->success()->send();
             });
     }
@@ -64,7 +64,7 @@ trait GalleryWorkspaceBatchActions
 
                 $count = $artworks->count();
                 $this->clearSelection();
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title($count.' '.($count === 1 ? 'artwork deleted' : 'artworks deleted'))->success()->send();
             });
     }
@@ -87,7 +87,7 @@ trait GalleryWorkspaceBatchActions
                     return;
                 }
 
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Selected artworks published')->success()->send();
             });
     }
@@ -105,7 +105,7 @@ trait GalleryWorkspaceBatchActions
                     }
                 });
 
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Selected artworks unpublished')->success()->send();
             });
     }

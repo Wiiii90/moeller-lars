@@ -65,7 +65,7 @@ trait GalleryWorkspaceUploadSettings
 
                 $this->loadGallery((int) $gallery->getKey());
                 $this->loadMoveTargets();
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Gallery settings saved')->success()->send();
             });
     }

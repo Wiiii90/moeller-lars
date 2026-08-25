@@ -48,6 +48,9 @@ final class GalleryWorkspace extends Page
     /** @var list<array<string, mixed>> */
     public array $artworks = [];
 
+    /** @var list<array<string, mixed>> */
+    public array $artworkDataset = [];
+
     /** @var list<array{id:int,name:string,state:string}> */
     public array $moveTargets = [];
 
@@ -65,8 +68,6 @@ final class GalleryWorkspace extends Page
     /** @var list<TemporaryUploadedFile> */
     public array $directPrimaryMedia = [];
 
-    public ?string $directUploadMessage = null;
-
     public ?int $pendingPrimaryMediaAssetId = null;
 
     /** @var list<array{media_asset_id:int,title:string}> */
@@ -82,30 +83,18 @@ final class GalleryWorkspace extends Page
     {
         $this->loadGallery((int) $gallery);
         $this->loadMoveTargets();
-        $this->loadArtworks();
+        $this->loadGalleryDataset();
+        $this->loadGalleryAnalytics();
+        $this->projectArtworks();
+        $this->refreshGalleryMetrics();
     }
 
-    public function updatedSearch(): void
+    public function applyFilters(string $search, string $status, string $readiness): void
     {
-        $this->loadArtworks();
-    }
-
-    public function updatedStatusFilter(): void
-    {
-        $this->loadArtworks();
-    }
-
-    public function updatedReadinessFilter(): void
-    {
-        $this->loadArtworks();
-    }
-
-    public function resetFilters(): void
-    {
-        $this->search = '';
-        $this->statusFilter = 'any';
-        $this->readinessFilter = 'any';
-        $this->loadArtworks();
+        $this->search = $search;
+        $this->statusFilter = in_array($status, ['any', 'published', 'draft'], true) ? $status : 'any';
+        $this->readinessFilter = in_array($readiness, ['any', 'ready', 'needs-attention'], true) ? $readiness : 'any';
+        $this->projectArtworks();
     }
 
     public function renameArtwork(int $artworkId, string $title): ?string
@@ -141,7 +130,7 @@ final class GalleryWorkspace extends Page
             return null;
         }
 
-        $this->loadArtworks();
+        $this->refreshWorkspaceAfterMutation();
         Notification::make()->title('Artwork title saved')->success()->send();
 
         return $normalized;

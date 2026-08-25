@@ -40,8 +40,8 @@ trait GalleryWorkspaceMoveActions
 
         [$orderedIds[$index], $orderedIds[$targetIndex]] = [$orderedIds[$targetIndex], $orderedIds[$index]];
         $this->saveArtworkOrder($orderedIds);
+        $this->refreshWorkspaceAfterMutation();
         Notification::make()->title('Gallery order updated')->success()->send();
-        $this->loadArtworks();
     }
 
     public function reorderArtworks(array $orderedIds): void
@@ -97,7 +97,7 @@ trait GalleryWorkspaceMoveActions
             return;
         }
 
-        $this->loadArtworks();
+        $this->refreshWorkspaceAfterMutation();
         Notification::make()->title('Gallery order updated')->success()->send();
     }
 
@@ -122,7 +122,7 @@ trait GalleryWorkspaceMoveActions
 
         $orderedIds = ArtworkSelectionOrder::moveOneSlot($this->orderedArtworkIds(), $selectedIds, $direction);
         $this->saveArtworkOrder($orderedIds);
-        $this->loadArtworks();
+        $this->refreshWorkspaceAfterMutation();
         Notification::make()->title('Selected artworks reordered')->success()->send();
     }
 
@@ -185,7 +185,7 @@ trait GalleryWorkspaceMoveActions
             static fn (int|string $id): bool => (int) $id !== $artworkId,
         ));
 
-        $this->loadArtworks();
+        $this->refreshWorkspaceAfterMutation();
         Notification::make()->title('Artwork moved')->body('Media references were preserved.')->success()->send();
     }
 
@@ -215,7 +215,7 @@ trait GalleryWorkspaceMoveActions
 
         $count = $artworks->count();
         $this->clearSelection();
-        $this->loadArtworks();
+        $this->refreshWorkspaceAfterMutation();
         Notification::make()->title($count === 1 ? 'Artwork moved' : $count.' artworks moved')->body('Media references remain shared and unchanged.')->success()->send();
     }
 

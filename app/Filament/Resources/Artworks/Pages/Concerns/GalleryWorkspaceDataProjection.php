@@ -15,7 +15,7 @@ trait GalleryWorkspaceDataProjection
 {
     public int $unfilteredArtworkCount = 0;
 
-    private function loadArtworks(): void
+    private function loadGalleryDataset(): void
     {
         /** @var EloquentCollection<int, Artwork> $records */
         $records = Artwork::query()
@@ -32,35 +32,10 @@ trait GalleryWorkspaceDataProjection
 
         $this->unfilteredArtworkCount = $records->count();
         $this->publishedCount = $records->where('state', 'published')->count();
-        $analyticsKeys = $records->pluck('analytics_key')
-            ->filter(static fn (mixed $key): bool => is_string($key) && trim($key) !== '')
-            ->values()
-            ->all();
-
-        // One canonical Matomo-backed report for the Gallery. Per-artwork analytics below are
-        // projected from this same response; there is no per-artwork reporting fan-out.
-        $this->analytics = app(ArtistReportingService::class)->gallery(
-            (string) $this->galleryContext['path'],
-            $analyticsKeys,
-            '30d',
-        );
-
-        $analyticsState = (string) ($this->analytics['artworks']['state'] ?? 'unavailable');
-        $rawAnalyticsRows = $this->analytics['artworks']['rows'] ?? [];
-        $analyticsRows = collect(is_array($rawAnalyticsRows) ? $rawAnalyticsRows : [])
-            ->mapWithKeys(static function (mixed $row): array {
-                if (! is_array($row)) {
-                    return [];
-                }
-
-                $key = (string) ($row['analytics_key'] ?? '');
-
-                return $key === '' ? [] : [$key => $row];
-            });
         $galleryPublished = $this->galleryContext['state'] === 'published';
         $count = $records->count();
 
-        $projected = $records->values()->map(function (Artwork $artwork, int $index) use ($analyticsRows, $analyticsState, $galleryPublished, $count): array {
+        $this->artworkDataset = $records->values()->map(function (Artwork $artwork, int $index) use ($galleryPublished, $count): array {
             /** @var EloquentCollection<int, ArtworkMedia> $primaries */
             $primaries = $artwork->getRelation('artworkMedia')->where('role', 'primary')->values();
             /** @var ArtworkMedia|null $primary */
@@ -75,12 +50,10 @@ trait GalleryWorkspaceDataProjection
                 : null;
             $mime = $primaryAsset instanceof MediaAsset ? (string) $primaryAsset->getAttribute('mime_type') : '';
             $kind = MediaTypePolicy::isVideo($mime) ? 'video' : (MediaTypePolicy::isImage($mime) ? 'image' : 'none');
-            $analyticsRow = $analyticsRows->get((string) $artwork->getAttribute('analytics_key'));
-            $analyticsRow = is_array($analyticsRow) ? $analyticsRow : [];
-            $analyticsAvailable = $analyticsState !== 'unavailable';
 
             return [
                 'id' => (int) $artwork->getKey(),
+                'analytics_key' => (string) ($artwork->getAttribute('analytics_key') ?? ''),
                 'sequence' => $index + 1,
                 'title' => (string) $artwork->getAttribute('title'),
                 'state' => (string) $artwork->getAttribute('state'),
@@ -100,27 +73,53 @@ trait GalleryWorkspaceDataProjection
                     : null,
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < $count - 1,
-                'analytics' => [
-                    'available' => $analyticsAvailable,
-                    'views' => $analyticsAvailable ? (int) ($analyticsRow['detail_views'] ?? 0) : null,
-                    'opens' => $analyticsAvailable ? (int) ($analyticsRow['viewer_opens'] ?? 0) : null,
-                    'zooms' => $analyticsAvailable ? (int) ($analyticsRow['zooms'] ?? 0) : null,
-                    'attention' => $analyticsAvailable ? (string) ($analyticsRow['attention_label'] ?? '0s') : '—',
-                ],
             ];
-        });
+        })->all();
 
-        $currentIds = $projected->pluck('id')->all();
+        $currentIds = collect($this->artworkDataset)->pluck('id')->all();
         $this->selectedArtworkIds = array_values(array_filter(
             $this->selectedArtworkIds,
             static fn (int|string $id): bool => in_array((int) $id, $currentIds, true),
         ));
+    }
 
-        $search = mb_strtolower(trim((string) ($this->search ?? '')));
-        $status = (string) ($this->statusFilter ?? 'any');
-        $readiness = (string) ($this->readinessFilter ?? 'any');
+    private function loadGalleryAnalytics(): void
+    {
+        $analyticsKeys = collect($this->artworkDataset)
+            ->pluck('analytics_key')
+            ->filter(static fn (mixed $key): bool => is_string($key) && trim($key) !== '')
+            ->values()
+            ->all();
 
-        $this->artworks = $projected
+        // Analytics is an initial workspace snapshot. Filters, selection, preview and
+        // normal mutations reuse it instead of turning UI interactions into Matomo calls.
+        $this->analytics = app(ArtistReportingService::class)->gallery(
+            (string) $this->galleryContext['path'],
+            $analyticsKeys,
+            '30d',
+        );
+    }
+
+    private function projectArtworks(): void
+    {
+        $analyticsState = (string) (($this->analytics ?? [])['artworks']['state'] ?? 'unavailable');
+        $rawAnalyticsRows = ($this->analytics ?? [])['artworks']['rows'] ?? [];
+        $analyticsRows = collect(is_array($rawAnalyticsRows) ? $rawAnalyticsRows : [])
+            ->mapWithKeys(static function (mixed $row): array {
+                if (! is_array($row)) {
+                    return [];
+                }
+
+                $key = (string) ($row['analytics_key'] ?? '');
+
+                return $key === '' ? [] : [$key => $row];
+            });
+        $analyticsAvailable = $analyticsState !== 'unavailable';
+        $search = mb_strtolower(trim($this->search));
+        $status = $this->statusFilter;
+        $readiness = $this->readinessFilter;
+
+        $this->artworks = collect($this->artworkDataset)
             ->filter(static function (array $artwork) use ($search, $status, $readiness): bool {
                 if ($status !== 'any' && $artwork['state'] !== $status) {
                     return false;
@@ -144,14 +143,38 @@ trait GalleryWorkspaceDataProjection
 
                 return str_contains($haystack, $search);
             })
+            ->map(static function (array $artwork) use ($analyticsRows, $analyticsAvailable): array {
+                $analyticsRow = $analyticsRows->get((string) ($artwork['analytics_key'] ?? ''));
+                $analyticsRow = is_array($analyticsRow) ? $analyticsRow : [];
+                unset($artwork['analytics_key']);
+                $artwork['analytics'] = [
+                    'available' => $analyticsAvailable,
+                    'views' => $analyticsAvailable ? (int) ($analyticsRow['detail_views'] ?? 0) : null,
+                    'opens' => $analyticsAvailable ? (int) ($analyticsRow['viewer_opens'] ?? 0) : null,
+                    'zooms' => $analyticsAvailable ? (int) ($analyticsRow['zooms'] ?? 0) : null,
+                    'attention' => $analyticsAvailable ? (string) ($analyticsRow['attention_label'] ?? '0s') : '—',
+                ];
+
+                return $artwork;
+            })
             ->values()
             ->all();
-
-        $this->metrics = $this->galleryMetrics($records);
     }
 
-    /** @param EloquentCollection<int, Artwork> $records */
-    private function galleryMetrics(EloquentCollection $records): array
+    private function refreshWorkspaceAfterMutation(): void
+    {
+        $this->loadGalleryDataset();
+        $this->projectArtworks();
+        $this->refreshGalleryMetrics();
+    }
+
+    private function refreshGalleryMetrics(): void
+    {
+        $this->metrics = $this->galleryMetrics();
+    }
+
+    /** @return list<array{label:string,value:string,description:string}> */
+    private function galleryMetrics(): array
     {
         $analytics = $this->analytics ?? [];
         $rowsState = (string) ($analytics['artworks']['state'] ?? 'unavailable');
@@ -169,7 +192,7 @@ trait GalleryWorkspaceDataProjection
         $attentionSeconds = $rowsState === 'unavailable' ? null : array_sum(array_map(static fn (array $row): float => (float) ($row['attention_seconds'] ?? 0), $rows));
 
         return [
-            ['label' => 'Artworks', 'value' => number_format($records->count()), 'description' => 'In this Gallery'],
+            ['label' => 'Artworks', 'value' => number_format($this->unfilteredArtworkCount), 'description' => 'In this Gallery'],
             ['label' => 'Published', 'value' => number_format($this->publishedCount), 'description' => 'Currently public'],
             ['label' => 'Visits', 'value' => $this->metricValue($analytics['page']['visits'] ?? null), 'description' => 'Gallery · 30d'],
             ['label' => 'Views', 'value' => $this->metricValue($analytics['page']['views'] ?? null), 'description' => 'Gallery · 30d'],
