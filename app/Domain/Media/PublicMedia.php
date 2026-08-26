@@ -3,12 +3,14 @@
 namespace App\Domain\Media;
 
 use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\CustomPageSetting;
 use App\Models\ExhibitionMedia;
+use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\PublicContentSetting;
@@ -47,6 +49,10 @@ class PublicMedia
                 ->where('state', 'published'))
             ->whereRaw('blocks @> ?::jsonb', [json_encode([['media_asset_id' => (int) $asset->getKey()]], JSON_THROW_ON_ERROR)])
             ->exists()) {
+            return true;
+        }
+
+        if ($this->activeHomeReferencesAsset((int) $asset->getKey())) {
             return true;
         }
 
@@ -209,6 +215,30 @@ class PublicMedia
         $this->assertAvailable($asset);
 
         return route('media.original', $asset);
+    }
+
+    private function activeHomeReferencesAsset(int $mediaAssetId): bool
+    {
+        /** @var HomePresentationSetting|null $settings */
+        $settings = HomePresentationSetting::query()->first(['id', 'template', 'configuration']);
+        if (! $settings instanceof HomePresentationSetting) {
+            return false;
+        }
+
+        $template = $settings->template();
+        if (! in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
+            return false;
+        }
+
+        foreach ($settings->components($template) as $component) {
+            if (($component['type'] ?? null) === 'image'
+                && is_numeric($component['media_asset_id'] ?? null)
+                && (int) $component['media_asset_id'] === $mediaAssetId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function assertAvailable(MediaAsset $asset): void

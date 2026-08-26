@@ -40,6 +40,31 @@ final class MediaAssetSelect
             ->allowHtml();
     }
 
+    public static function makeId(string $name, string $label, bool $imagesOnly = false): Select
+    {
+        return Select::make($name)
+            ->label($label)
+            ->searchable()
+            ->getSearchResultsUsing(fn (string $search): array => self::searchOptions($search, $imagesOnly))
+            ->getOptionLabelUsing(function (mixed $value) use ($imagesOnly): ?string {
+                $id = filter_var($value, FILTER_VALIDATE_INT);
+                if ($id === false) {
+                    return null;
+                }
+
+                /** @var Builder<MediaAsset> $query */
+                $query = MediaAsset::query()->whereKey((int) $id);
+                self::constrainAvailable($query, $imagesOnly);
+                $asset = $query->with('variants')->first();
+
+                return $asset instanceof MediaAsset ? self::optionLabel($asset) : null;
+            })
+            ->searchDebounce(350)
+            ->searchPrompt('Search Media Files by filename')
+            ->noSearchResultsMessage('No matching Media Files')
+            ->allowHtml();
+    }
+
     /** @return array<int, string> */
     public static function searchOptions(string $search, bool $imagesOnly = false): array
     {

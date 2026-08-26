@@ -2,7 +2,9 @@
 
 namespace App\Domain\Media;
 
+use App\Domain\Content\HomeTemplate;
 use App\Models\CustomPageSetting;
+use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -14,30 +16,36 @@ final class MediaReferenceQuery
     /** @var list<int>|null */
     private ?array $directCustomMediaIds = null;
 
+    /** @var list<int>|null */
+    private ?array $directHomeMediaIds = null;
+
     /** @param Builder<MediaAsset> $query */
     public function apply(Builder $query, bool $referenced): void
     {
-        $directCustomIds = $this->directCustomMediaIds();
+        $directIds = array_values(array_unique(array_merge(
+            $this->directCustomMediaIds(),
+            $this->directHomeMediaIds(),
+        )));
 
         if (! $referenced) {
             foreach (self::CANONICAL_RELATIONS as $relation) {
                 $query->whereDoesntHave($relation);
             }
-            if ($directCustomIds !== []) {
-                $query->whereNotIn('media_assets.id', $directCustomIds);
+            if ($directIds !== []) {
+                $query->whereNotIn('media_assets.id', $directIds);
             }
 
             return;
         }
 
-        $query->where(function (Builder $references) use ($directCustomIds): void {
+        $query->where(function (Builder $references) use ($directIds): void {
             foreach (self::CANONICAL_RELATIONS as $index => $relation) {
                 $index === 0
                     ? $references->whereHas($relation)
                     : $references->orWhereHas($relation);
             }
-            if ($directCustomIds !== []) {
-                $references->orWhereIn('media_assets.id', $directCustomIds);
+            if ($directIds !== []) {
+                $references->orWhereIn('media_assets.id', $directIds);
             }
         });
     }
@@ -70,6 +78,26 @@ final class MediaReferenceQuery
     }
 
     /** @return list<int> */
+    public function mediaIdsForHome(HomePresentationSetting $settings): array
+    {
+        $mediaIds = [];
+        foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $template) {
+            foreach ($settings->components($template) as $component) {
+                if (($component['type'] ?? null) === 'image' && is_numeric($component['media_asset_id'] ?? null)) {
+                    $mediaIds[] = (int) $component['media_asset_id'];
+                }
+            }
+        }
+
+        return array_values(array_unique($mediaIds));
+    }
+
+    public function homeReferencesAsset(HomePresentationSetting $settings, int $mediaAssetId): bool
+    {
+        return in_array($mediaAssetId, $this->mediaIdsForHome($settings), true);
+    }
+
+    /** @return list<int> */
     private function directCustomMediaIds(): array
     {
         if ($this->directCustomMediaIds !== null) {
@@ -82,5 +110,20 @@ final class MediaReferenceQuery
         }
 
         return $this->directCustomMediaIds = array_values(array_unique($ids));
+    }
+
+    /** @return list<int> */
+    private function directHomeMediaIds(): array
+    {
+        if ($this->directHomeMediaIds !== null) {
+            return $this->directHomeMediaIds;
+        }
+
+        $ids = [];
+        foreach (HomePresentationSetting::query()->get(['id', 'configuration']) as $settings) {
+            $ids = array_merge($ids, $this->mediaIdsForHome($settings));
+        }
+
+        return $this->directHomeMediaIds = array_values(array_unique($ids));
     }
 }
