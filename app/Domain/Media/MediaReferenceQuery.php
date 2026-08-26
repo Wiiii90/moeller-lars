@@ -3,7 +3,6 @@
 namespace App\Domain\Media;
 
 use App\Domain\Content\HomeTemplate;
-use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SiteNodeType;
 use App\Models\BlogPost;
@@ -90,38 +89,38 @@ final class MediaReferenceQuery
             return [];
         }
 
-        $template = $section->journalTemplate();
-        if ($template === JournalTemplate::Blog) {
-            $entries = BlogPost::query()
-                ->where('site_section_id', $section->getKey());
-            $entryIds = (clone $entries)->pluck('id')->all();
-            $structured = JournalEntryMedia::query()
-                ->whereIn('blog_post_id', $entryIds)
-                ->pluck('media_asset_id')
-                ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
-                ->map(static fn (mixed $id): int => (int) $id)
-                ->all();
-            $richText = $this->richTextIds((clone $entries)->whereNotNull('body')->pluck('body'));
+        $sectionId = (int) $section->getKey();
 
-            return array_values(array_unique(array_merge($structured, $richText)));
-        }
+        $blogEntries = BlogPost::query()->where('site_section_id', $sectionId);
+        $blogEntryIds = (clone $blogEntries)->pluck('id')->all();
+        $blogStructured = JournalEntryMedia::query()
+            ->whereIn('blog_post_id', $blogEntryIds)
+            ->pluck('media_asset_id')
+            ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+        $blogRichText = $this->richTextIds(
+            (clone $blogEntries)->whereNotNull('body')->pluck('body'),
+        );
 
-        if ($template === JournalTemplate::Exhibitions) {
-            $entries = Exhibition::query()
-                ->where('site_section_id', $section->getKey());
-            $entryIds = (clone $entries)->pluck('id')->all();
-            $structured = JournalEntryMedia::query()
-                ->whereIn('exhibition_id', $entryIds)
-                ->pluck('media_asset_id')
-                ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
-                ->map(static fn (mixed $id): int => (int) $id)
-                ->all();
-            $richText = $this->richTextIds((clone $entries)->whereNotNull('description')->pluck('description'));
+        $exhibitionEntries = Exhibition::query()->where('site_section_id', $sectionId);
+        $exhibitionEntryIds = (clone $exhibitionEntries)->pluck('id')->all();
+        $exhibitionStructured = JournalEntryMedia::query()
+            ->whereIn('exhibition_id', $exhibitionEntryIds)
+            ->pluck('media_asset_id')
+            ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+        $exhibitionRichText = $this->richTextIds(
+            (clone $exhibitionEntries)->whereNotNull('description')->pluck('description'),
+        );
 
-            return array_values(array_unique(array_merge($structured, $richText)));
-        }
-
-        return [];
+        return array_values(array_unique(array_merge(
+            $blogStructured,
+            $blogRichText,
+            $exhibitionStructured,
+            $exhibitionRichText,
+        )));
     }
 
     /** @param iterable<SiteSection> $sections
