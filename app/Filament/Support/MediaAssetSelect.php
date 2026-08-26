@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Model;
 
 final class MediaAssetSelect
 {
+    private const OPTION_LABEL_CACHE = 'admin.media_asset_select.option_labels';
+
     public static function make(string $name, string $relationship, string $label, bool $imagesOnly = false): Select
     {
         return self::configure(Select::make($name), $label, $imagesOnly)
@@ -25,7 +27,13 @@ final class MediaAssetSelect
                 },
             )
             ->getOptionLabelFromRecordUsing(function (Model $record): string {
-                return $record instanceof MediaAsset ? self::optionLabel($record) : '';
+                if (! $record instanceof MediaAsset) {
+                    return '';
+                }
+
+                self::primeOptionLabel($record);
+
+                return self::optionLabel($record);
             });
     }
 
@@ -38,12 +46,22 @@ final class MediaAssetSelect
                     return null;
                 }
 
+                $cached = self::cachedOptionLabel((int) $id);
+                if ($cached !== null) {
+                    return $cached;
+                }
+
                 /** @var Builder<MediaAsset> $query */
                 $query = MediaAsset::query()->whereKey((int) $id);
                 self::constrainAvailable($query, $imagesOnly);
                 $asset = $query->with('variants')->first();
+                if (! $asset instanceof MediaAsset) {
+                    return null;
+                }
 
-                return $asset instanceof MediaAsset ? self::optionLabel($asset) : null;
+                self::primeOptionLabel($asset);
+
+                return self::optionLabel($asset);
             });
     }
 
@@ -60,15 +78,35 @@ final class MediaAssetSelect
         }
 
         /** @var Collection<int, MediaAsset> $assets */
-        $assets = $query
-            ->with('variants')
-            ->orderBy('original_filename')
-            ->limit(30)
-            ->get();
+        $assets = $query->with('variants')->orderBy('original_filename')->limit(30)->get();
+        foreach ($assets as $asset) {
+            self::primeOptionLabel($asset);
+        }
 
         return $assets
             ->mapWithKeys(fn (MediaAsset $asset): array => [(int) $asset->getKey() => self::optionLabel($asset)])
             ->all();
+    }
+
+    public static function primeOptionLabel(MediaAsset $asset): void
+    {
+        $asset->loadMissing('variants');
+        $cache = request()->attributes->get(self::OPTION_LABEL_CACHE, []);
+        if (! is_array($cache)) {
+            $cache = [];
+        }
+
+        $cache[(int) $asset->getKey()] = self::optionLabel($asset);
+        request()->attributes->set(self::OPTION_LABEL_CACHE, $cache);
+    }
+
+    private static function cachedOptionLabel(int $id): ?string
+    {
+        $cache = request()->attributes->get(self::OPTION_LABEL_CACHE, []);
+
+        return is_array($cache) && array_key_exists($id, $cache) && is_string($cache[$id])
+            ? $cache[$id]
+            : null;
     }
 
     private static function configure(Select $select, string $label, bool $imagesOnly): Select
@@ -95,7 +133,6 @@ final class MediaAssetSelect
     private static function optionLabel(MediaAsset $asset): string
     {
         $asset->loadMissing('variants');
-
         $filename = e((string) $asset->getAttribute('original_filename'));
         $dimensions = $asset->getAttribute('width') && $asset->getAttribute('height')
             ? e($asset->getAttribute('width').'×'.$asset->getAttribute('height'))
@@ -113,8 +150,6 @@ final class MediaAssetSelect
             ? '<img src="'.e(route('admin.media.variant', $variant)).'" alt="" width="44" height="44" loading="lazy" decoding="async">'
             : '<span aria-hidden="true">[preview pending]</span>';
 
-        return $preview
-            .' <strong>'.$filename.'</strong>'
-            .' <small>· '.$dimensions.'</small>';
+        return $preview.' <strong>'.$filename.'</strong>'.' <small>· '.$dimensions.'</small>';
     }
 }

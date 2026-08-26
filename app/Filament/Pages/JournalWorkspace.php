@@ -3,21 +3,23 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Blog\BlogEditorialService;
-use App\Domain\Content\ExhibitionDraftService;
 use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
-use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\Exhibitions\ExhibitionResource;
+use App\Domain\Media\PublicMedia;
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
+use App\Models\JournalEntryMedia;
 use App\Models\JournalSetting;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
+use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -27,6 +29,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -50,6 +53,7 @@ final class JournalWorkspace extends Page
 
     public string $journalTitle = 'Journal';
     public ?string $journalPublicUrl = null;
+    public string $journalSlug = '';
     public array $metrics = [];
     public array $posts = [];
     public array $exhibitions = [];
@@ -87,37 +91,34 @@ final class JournalWorkspace extends Page
         };
     }
 
-    public function commitSearch(string $value): void
+    public function updatedSearch(): void
     {
-        $this->search = trim($value);
-        $this->page = 1;
-        $this->reloadEntries(false);
+        $this->refreshFromFirstPage();
     }
 
-    public function commitStatusFilter(string $value): void
+    public function updatedStatusFilter(): void
     {
         $allowed = $this->journalTemplate() === JournalTemplate::Blog
             ? ['any', 'draft', 'scheduled', 'published', 'unpublished', 'archived']
             : ['any', 'draft', 'published', 'archived'];
-        $this->statusFilter = in_array($value, $allowed, true) ? $value : 'any';
-        $this->page = 1;
-        $this->reloadEntries(false);
+        if (! in_array($this->statusFilter, $allowed, true)) {
+            $this->statusFilter = 'any';
+        }
+        $this->refreshFromFirstPage();
     }
 
-    public function commitTimingFilter(string $value): void
+    public function updatedTimingFilter(): void
     {
-        $allowed = ['any', 'upcoming', 'current', 'past', 'unknown'];
-        $this->timingFilter = in_array($value, $allowed, true) ? $value : 'any';
-        $this->page = 1;
-        $this->reloadEntries(false);
+        if (! in_array($this->timingFilter, ['any', 'upcoming', 'current', 'past', 'unknown'], true)) {
+            $this->timingFilter = 'any';
+        }
+        $this->refreshFromFirstPage();
     }
 
-    public function setPageSize(mixed $value): void
+    public function updatedPageSize(mixed $value): void
     {
-        $value = (int) $value;
-        $this->pageSize = in_array($value, self::PAGE_SIZES, true) ? $value : self::DEFAULT_PAGE_SIZE;
-        $this->page = 1;
-        $this->reloadEntries(false);
+        $this->pageSize = $this->normalizePageSize($value);
+        $this->refreshFromFirstPage();
     }
 
     public function resetFilters(): void
@@ -125,8 +126,7 @@ final class JournalWorkspace extends Page
         $this->search = '';
         $this->statusFilter = 'any';
         $this->timingFilter = 'any';
-        $this->page = 1;
-        $this->reloadEntries(false);
+        $this->refreshFromFirstPage();
     }
 
     public function previousPage(): void
@@ -145,21 +145,31 @@ final class JournalWorkspace extends Page
         }
     }
 
+    public function togglePostSelection(int $id): void
+    {
+        $this->selectedPostIds = $this->toggleSelection($this->selectedPostIds, $id);
+    }
+
+    public function toggleExhibitionSelection(int $id): void
+    {
+        $this->selectedExhibitionIds = $this->toggleSelection($this->selectedExhibitionIds, $id);
+    }
+
     public function toggleVisibleSelection(): void
     {
         if ($this->journalTemplate() === JournalTemplate::Blog) {
-            $ids = collect($this->posts)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
-            $this->selectedPostIds = $this->toggledVisibleSelection($this->selectedPostIds, $ids);
+            $visible = collect($this->posts)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
+            $this->selectedPostIds = $this->toggledVisibleSelection($this->selectedPostIds, $visible);
             return;
         }
 
-        $ids = collect($this->exhibitions)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
-        $this->selectedExhibitionIds = $this->toggledVisibleSelection($this->selectedExhibitionIds, $ids);
+        $visible = collect($this->exhibitions)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
+        $this->selectedExhibitionIds = $this->toggledVisibleSelection($this->selectedExhibitionIds, $visible);
     }
 
-    public function movePost(int $postId, string $direction): void
+    public function movePost(int $id, string $direction): void
     {
-        if (app(BlogEditorialService::class)->move($this->post($postId), $direction)) {
+        if (app(BlogEditorialService::class)->move($this->post($id), $direction)) {
             Notification::make()->title('Journal order updated')->success()->send();
         }
         $this->loadPosts(false);
@@ -266,27 +276,6 @@ final class JournalWorkspace extends Page
         });
     }
 
-    public function publishSelectedExhibitions(): void
-    {
-        $this->runExhibitionBatch('exhibitions published', fn (Exhibition $entry) => app(ExhibitionEditorialService::class)->publish($entry));
-    }
-
-    public function archiveSelectedExhibitions(): void
-    {
-        $this->runExhibitionBatch('exhibitions archived', fn (Exhibition $entry) => app(ExhibitionEditorialService::class)->archive($entry));
-    }
-
-    public function restoreSelectedExhibitions(): void
-    {
-        $this->runExhibitionBatch('exhibitions restored', function (Exhibition $entry): bool {
-            if ($entry->getAttribute('state') !== 'archived') {
-                return false;
-            }
-            app(ExhibitionEditorialService::class)->restore($entry);
-            return true;
-        });
-    }
-
     public function journalSettingsAction(): Action
     {
         return Action::make('journalSettings')
@@ -294,6 +283,7 @@ final class JournalWorkspace extends Page
             ->fillForm(function (): array {
                 $section = $this->section();
                 $settings = JournalSetting::forSection($section);
+
                 return [
                     'title' => $section->getAttribute('title'),
                     'navigation_label' => $section->getAttribute('navigation_label'),
@@ -316,8 +306,8 @@ final class JournalWorkspace extends Page
                 ])->columns(2),
             ])
             ->modalHeading('Journal settings')
-            ->modalSubmitAction(fn (Action $action): Action => $action->label('Save')->extraAttributes(['class' => 'admin-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
+            ->modalSubmitActionLabel('Save')
+            ->modalCancelActionLabel('Cancel')
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (array $data): void {
@@ -330,9 +320,15 @@ final class JournalWorkspace extends Page
 
     public function addPostAction(): Action
     {
-        return $this->editorAction(Action::make('addPost')->label('Add post'), 'Add post', 'Create draft')
+        return Action::make('addPost')
+            ->label('Add post')
             ->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
+            ->modalHeading('Add post')
+            ->modalSubmitActionLabel('Create draft')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try {
@@ -349,16 +345,24 @@ final class JournalWorkspace extends Page
 
     public function editPostAction(): Action
     {
-        return $this->editorAction(Action::make('editPost')->label('Edit'), 'Edit post', 'Save')
+        return Action::make('editPost')
+            ->label('Edit')
             ->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->fillForm(function (array $arguments): array {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
+
                 return [...$post->attributesToArray(), ...app(JournalEntryEditorState::class)->for($post)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
+            ->modalHeading('Edit post')
+            ->modalSubmitActionLabel('Save')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (Action $action, array $data, array $arguments): void {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
-                $data = [...$data,
+                $data = [
+                    ...$data,
                     'site_section_id' => $this->sectionId,
                     'state' => $post->getAttribute('state'),
                     'position' => $post->getAttribute('position'),
@@ -384,9 +388,9 @@ final class JournalWorkspace extends Page
             ->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema([DateTimePicker::make('scheduled_at')->label('Publish at')->seconds(false)->required()])
             ->modalHeading('Schedule publication')
+            ->modalSubmitActionLabel('Schedule')
+            ->modalCancelActionLabel('Cancel')
             ->modalWidth(Width::Large)
-            ->modalSubmitAction(fn (Action $action): Action => $action->label('Schedule')->extraAttributes(['class' => 'admin-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
             ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (Action $action, array $data, array $arguments): void {
                 try {
@@ -403,13 +407,19 @@ final class JournalWorkspace extends Page
 
     public function addExhibitionAction(): Action
     {
-        return $this->editorAction(Action::make('addExhibition')->label('Add exhibition'), 'Add exhibition', 'Create draft')
+        return Action::make('addExhibition')
+            ->label('Add exhibition')
             ->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
+            ->modalHeading('Add exhibition')
+            ->modalSubmitActionLabel('Create draft')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try {
-                    app(ExhibitionDraftService::class)->create($data);
+                    app(ExhibitionEditorialService::class)->createDraft($data);
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Exhibition was not created', $exception);
                     $action->halt();
@@ -422,13 +432,20 @@ final class JournalWorkspace extends Page
 
     public function editExhibitionAction(): Action
     {
-        return $this->editorAction(Action::make('editExhibition')->label('Edit'), 'Edit exhibition', 'Save')
+        return Action::make('editExhibition')
+            ->label('Edit')
             ->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
             ->fillForm(function (array $arguments): array {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
+
                 return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
+            ->modalHeading('Edit exhibition')
+            ->modalSubmitActionLabel('Save')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (Action $action, array $data, array $arguments): void {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
                 $data['site_section_id'] = $this->sectionId;
@@ -446,68 +463,115 @@ final class JournalWorkspace extends Page
 
     public function deletePostAction(): Action
     {
-        return $this->deleteAction('deletePost', 'Delete this post?', function (Action $action, array $arguments): void {
-            try {
-                app(BlogEditorialService::class)->delete($this->post((int) ($arguments['post'] ?? 0)));
-            } catch (ValidationException $exception) {
-                $this->notifyValidationFailure('Post was not deleted', $exception);
-                $action->halt();
-                return;
-            }
-            $postId = (int) ($arguments['post'] ?? 0);
-            $this->selectedPostIds = array_values(array_filter($this->selectedPostIds, fn (mixed $id): bool => (int) $id !== $postId));
-            $this->loadPosts();
-            Notification::make()->title('Post deleted')->success()->send();
-        });
+        return Action::make('deletePost')
+            ->label('Delete')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete this post?')
+            ->modalDescription('Media Files are preserved. Only this Journal entry and its references are removed.')
+            ->modalSubmitActionLabel('Delete')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $arguments): void {
+                $id = (int) ($arguments['post'] ?? 0);
+                try {
+                    app(BlogEditorialService::class)->delete($this->post($id));
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Post was not deleted', $exception);
+                    $action->halt();
+                    return;
+                }
+                $this->selectedPostIds = array_values(array_filter($this->selectedPostIds, fn (mixed $selected): bool => (int) $selected !== $id));
+                $this->loadPosts();
+                Notification::make()->title('Post deleted')->success()->send();
+            });
     }
 
     public function deleteExhibitionAction(): Action
     {
-        return $this->deleteAction('deleteExhibition', 'Delete this exhibition?', function (Action $action, array $arguments): void {
-            try {
-                app(ExhibitionEditorialService::class)->delete($this->exhibition((int) ($arguments['exhibition'] ?? 0)));
-            } catch (ValidationException $exception) {
-                $this->notifyValidationFailure('Exhibition was not deleted', $exception);
-                $action->halt();
-                return;
-            }
-            $entryId = (int) ($arguments['exhibition'] ?? 0);
-            $this->selectedExhibitionIds = array_values(array_filter($this->selectedExhibitionIds, fn (mixed $id): bool => (int) $id !== $entryId));
-            $this->loadExhibitions();
-            Notification::make()->title('Exhibition deleted')->success()->send();
-        }, 'Media Files are preserved. Only Journal references are removed.');
+        return Action::make('deleteExhibition')
+            ->label('Delete')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete this exhibition?')
+            ->modalDescription('Media Files are preserved. Only this Journal entry and its references are removed.')
+            ->modalSubmitActionLabel('Delete')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $arguments): void {
+                $id = (int) ($arguments['exhibition'] ?? 0);
+                try {
+                    app(ExhibitionEditorialService::class)->delete($this->exhibition($id));
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Exhibition was not deleted', $exception);
+                    $action->halt();
+                    return;
+                }
+                $this->selectedExhibitionIds = array_values(array_filter($this->selectedExhibitionIds, fn (mixed $selected): bool => (int) $selected !== $id));
+                $this->loadExhibitions();
+                Notification::make()->title('Exhibition deleted')->success()->send();
+            });
     }
 
     public function deleteSelectedPostsAction(): Action
     {
-        return $this->deleteAction('deleteSelectedPosts', 'Delete selected posts?', function (): void {
-            [$ok, $failed] = $this->bestEffort($this->selectedPosts(), function (BlogPost $post): bool {
-                app(BlogEditorialService::class)->delete($post);
-                return true;
+        return Action::make('deleteSelectedPosts')
+            ->label('Delete selected')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete selected posts?')
+            ->modalDescription('Published and scheduled posts are kept. Media Files are preserved.')
+            ->modalSubmitActionLabel('Delete')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (): void {
+                [$ok, $failed] = $this->bestEffort($this->selectedPosts(), function (BlogPost $post): bool {
+                    app(BlogEditorialService::class)->delete($post);
+                    return true;
+                });
+                $this->selectedPostIds = [];
+                $this->notifyBatch('posts deleted', $ok, $failed);
+                $this->loadPosts();
             });
-            $this->selectedPostIds = [];
-            $this->notifyBatch('posts deleted', $ok, $failed);
-            $this->loadPosts();
-        }, 'Published and scheduled posts are kept and reported as failures.');
     }
 
     public function deleteSelectedExhibitionsAction(): Action
     {
-        return $this->deleteAction('deleteSelectedExhibitions', 'Delete selected exhibitions?', function (): void {
-            [$ok, $failed] = $this->bestEffort($this->selectedExhibitions(), function (Exhibition $entry): bool {
-                app(ExhibitionEditorialService::class)->delete($entry);
-                return true;
+        return Action::make('deleteSelectedExhibitions')
+            ->label('Delete selected')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete selected exhibitions?')
+            ->modalDescription('Published exhibitions are kept. Media Files are preserved.')
+            ->modalSubmitActionLabel('Delete')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (): void {
+                [$ok, $failed] = $this->bestEffort($this->selectedExhibitions(), function (Exhibition $entry): bool {
+                    app(ExhibitionEditorialService::class)->delete($entry);
+                    return true;
+                });
+                $this->selectedExhibitionIds = [];
+                $this->notifyBatch('exhibitions deleted', $ok, $failed);
+                $this->loadExhibitions();
             });
-            $this->selectedExhibitionIds = [];
-            $this->notifyBatch('exhibitions deleted', $ok, $failed);
-            $this->loadExhibitions();
-        }, 'Published exhibitions are kept. Media Files are preserved.');
+    }
+
+    private function refreshFromFirstPage(): void
+    {
+        $this->page = 1;
+        $this->reloadEntries(false);
     }
 
     private function loadJournalContext(?SiteSection $section = null): void
     {
         $section ??= $this->section();
         $this->journalTitle = (string) $section->getAttribute('title');
+        $this->journalSlug = (string) $section->getAttribute('slug');
         $this->journalPublicUrl = $section->getAttribute('state') === 'published'
             ? app(SiteNodeRoute::class)->url($section)
             : null;
@@ -515,146 +579,229 @@ final class JournalWorkspace extends Page
 
     private function loadPosts(bool $refreshMetrics = true): void
     {
-        $records = BlogPost::query()->where('site_section_id', $this->sectionId)->orderBy('position')->orderBy('id')->get();
-        $this->unfilteredEntryCount = $records->count();
-        $publicIds = $this->journalPublicUrl
-            ? BlogEditorialService::publicQuery()->where('site_section_id', $this->sectionId)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all()
-            : [];
-
         if ($refreshMetrics) {
-            $this->metrics = [
-                ['label' => 'Posts', 'value' => $records->count()],
-                ['label' => 'Public', 'value' => count($publicIds)],
-                ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count()],
-                ['label' => 'Scheduled', 'value' => $records->where('state', 'scheduled')->count()],
-                ['label' => 'Unpublished', 'value' => $records->where('state', 'unpublished')->count()],
-                ['label' => 'Archived', 'value' => $records->where('state', 'archived')->count()],
-            ];
+            $this->loadPostMetrics();
         }
 
-        $search = Str::lower(trim($this->search));
-        $filtered = $records->filter(function (BlogPost $post) use ($search): bool {
-            if ($this->statusFilter !== 'any' && $post->getAttribute('state') !== $this->statusFilter) {
-                return false;
-            }
-            if ($search === '') {
-                return true;
-            }
-            return Str::contains(Str::lower((string) $post->getAttribute('title').' '.(string) ($post->getAttribute('excerpt') ?? '')), $search);
-        })->values();
+        $query = BlogPost::query()->where('site_section_id', $this->sectionId);
+        if ($this->statusFilter !== 'any') {
+            $query->where('state', $this->statusFilter);
+        }
+        $term = trim($this->search);
+        if ($term !== '') {
+            $query->where(function (Builder $search) use ($term): void {
+                $search->where('title', 'ilike', '%'.$term.'%')
+                    ->orWhere('excerpt', 'ilike', '%'.$term.'%');
+            });
+        }
 
-        $this->setPagination($filtered->count());
-        $last = $records->count() - 1;
-        $positions = $records->values()->mapWithKeys(fn (BlogPost $post, int $index): array => [(int) $post->getKey() => $index]);
-        $this->posts = $filtered->slice(($this->page - 1) * $this->pageSize, $this->pageSize)->values()
-            ->map(function (BlogPost $post) use ($last, $positions, $publicIds): array {
-                $id = (int) $post->getKey();
-                $state = (string) $post->getAttribute('state');
-                $published = $post->getAttribute('published_at');
-                $scheduled = $post->getAttribute('scheduled_at');
-                $publication = match (true) {
-                    $state === 'scheduled' && $scheduled instanceof DateTimeInterface => 'Scheduled '.$scheduled->format('M j, Y').' · '.$scheduled->format('H:i'),
-                    $published instanceof DateTimeInterface => $published->format('M j, Y'),
-                    default => 'Not published',
-                };
-                return [
-                    'id' => $id,
-                    'title' => (string) $post->getAttribute('title'),
-                    'excerpt' => filled($post->getAttribute('excerpt')) ? Str::limit(trim((string) $post->getAttribute('excerpt')), 140) : null,
-                    'publication' => $publication,
-                    'state' => $state,
-                    'public_url' => in_array($id, $publicIds, true) ? BlogPostResource::publicUrl($post) : null,
-                    'can_move_up' => (int) $positions->get($id, 0) > 0,
-                    'can_move_down' => (int) $positions->get($id, 0) < $last,
-                    'can_delete' => ! in_array($state, ['published', 'scheduled'], true),
-                    'delete_help' => in_array($state, ['published', 'scheduled'], true) ? 'Unpublish or cancel schedule before deleting' : null,
-                ];
-            })->all();
+        $this->total = (clone $query)->count();
+        $this->setPagination($this->total);
+        $bounds = BlogPost::query()->where('site_section_id', $this->sectionId)
+            ->selectRaw('MIN(position) AS min_position, MAX(position) AS max_position')
+            ->first();
+        $minPosition = is_numeric($bounds?->getAttribute('min_position')) ? (int) $bounds->getAttribute('min_position') : 0;
+        $maxPosition = is_numeric($bounds?->getAttribute('max_position')) ? (int) $bounds->getAttribute('max_position') : 0;
+
+        $query->with(['mediaUsages' => function ($usages): void {
+            $usages->where('role', JournalEntryMedia::ROLE_COVER)->with('mediaAsset.variants');
+        }]);
+
+        /** @var EloquentCollection<int, BlogPost> $records */
+        $records = $query->orderBy('position')->orderBy('id')->forPage($this->page, $this->pageSize)->get();
+        $now = now();
+        $this->posts = $records->map(function (BlogPost $post) use ($minPosition, $maxPosition, $now): array {
+            $state = (string) $post->getAttribute('state');
+            $published = $post->getAttribute('published_at');
+            $scheduled = $post->getAttribute('scheduled_at');
+            $publication = match (true) {
+                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => 'Scheduled '.$scheduled->format('M j, Y').' · '.$scheduled->format('H:i'),
+                $published instanceof DateTimeInterface => $published->format('M j, Y'),
+                default => 'Not published',
+            };
+            $position = (int) $post->getAttribute('position');
+
+            return [
+                'id' => (int) $post->getKey(),
+                'title' => (string) $post->getAttribute('title'),
+                'excerpt' => filled($post->getAttribute('excerpt')) ? Str::limit(trim((string) $post->getAttribute('excerpt')), 140) : null,
+                'publication' => $publication,
+                'state' => $state,
+                'thumbnail_url' => $this->coverThumbnailUrl($post),
+                'public_url' => $this->journalPublicUrl !== null && $this->postIsPublic($post, $now)
+                    ? route('journal.show', ['section' => $this->journalSlug, 'slug' => $post->getAttribute('slug')])
+                    : null,
+                'can_move_up' => $position > $minPosition,
+                'can_move_down' => $position < $maxPosition,
+                'can_delete' => ! in_array($state, ['published', 'scheduled'], true),
+                'delete_help' => in_array($state, ['published', 'scheduled'], true)
+                    ? 'Unpublish or cancel schedule before deleting'
+                    : null,
+            ];
+        })->all();
     }
 
     private function loadExhibitions(bool $refreshMetrics = true): void
     {
-        $records = Exhibition::query()->where('site_section_id', $this->sectionId)->orderBy('position')->orderBy('id')->get();
-        $this->unfilteredEntryCount = $records->count();
-        $today = now();
-        $timing = $records->mapWithKeys(fn (Exhibition $entry): array => [(int) $entry->getKey() => $entry->temporalState($today)]);
-
         if ($refreshMetrics) {
-            $this->metrics = [
-                ['label' => 'Exhibitions', 'value' => $records->count()],
-                ['label' => 'Published', 'value' => $records->where('state', 'published')->count()],
-                ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count()],
-                ['label' => 'Upcoming', 'value' => $timing->filter(fn (string $state): bool => $state === 'upcoming')->count()],
-                ['label' => 'Current', 'value' => $timing->filter(fn (string $state): bool => $state === 'current')->count()],
-                ['label' => 'Past', 'value' => $timing->filter(fn (string $state): bool => $state === 'past')->count()],
-            ];
+            $this->loadExhibitionMetrics();
         }
 
-        $search = Str::lower(trim($this->search));
-        $filtered = $records->filter(function (Exhibition $entry) use ($search, $timing): bool {
-            if ($this->statusFilter !== 'any' && $entry->getAttribute('state') !== $this->statusFilter) {
-                return false;
-            }
-            if ($this->timingFilter !== 'any' && $timing->get((int) $entry->getKey()) !== $this->timingFilter) {
-                return false;
-            }
-            if ($search === '') {
-                return true;
-            }
-            $haystack = implode(' ', [
-                (string) $entry->getAttribute('title'),
-                (string) ($entry->getAttribute('venue') ?? ''),
-                (string) ($entry->address() ?? ''),
-                (string) ($entry->displayDate() ?? ''),
-                (string) ($entry->vernissageDisplay() ?? ''),
-            ]);
-            return Str::contains(Str::lower($haystack), $search);
-        })->values();
+        $query = Exhibition::query()->where('site_section_id', $this->sectionId);
+        if ($this->statusFilter !== 'any') {
+            $query->where('state', $this->statusFilter);
+        }
+        $this->applyTimingFilter($query);
+        $term = trim($this->search);
+        if ($term !== '') {
+            $query->where(function (Builder $search) use ($term): void {
+                $search->where('title', 'ilike', '%'.$term.'%')
+                    ->orWhere('venue', 'ilike', '%'.$term.'%')
+                    ->orWhere('location_text', 'ilike', '%'.$term.'%')
+                    ->orWhere('city', 'ilike', '%'.$term.'%')
+                    ->orWhere('country', 'ilike', '%'.$term.'%')
+                    ->orWhere('date_text', 'ilike', '%'.$term.'%');
+            });
+        }
 
-        $this->setPagination($filtered->count());
-        $last = $records->count() - 1;
-        $positions = $records->values()->mapWithKeys(fn (Exhibition $entry, int $index): array => [(int) $entry->getKey() => $index]);
-        $this->exhibitions = $filtered->slice(($this->page - 1) * $this->pageSize, $this->pageSize)->values()
-            ->map(function (Exhibition $entry) use ($last, $positions, $timing): array {
-                $id = (int) $entry->getKey();
-                $state = (string) $entry->getAttribute('state');
-                $location = collect([$entry->getAttribute('venue'), $entry->address()])
-                    ->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')
-                    ->unique()->implode(' · ');
-                return [
-                    'id' => $id,
-                    'title' => (string) $entry->getAttribute('title'),
-                    'location' => $location !== '' ? $location : null,
-                    'state' => $state,
-                    'timing' => (string) $timing->get($id, 'unknown'),
-                    'vernissage' => $entry->vernissageDisplay(),
-                    'date_text' => $entry->displayDate() ?? '',
-                    'public_url' => $this->journalPublicUrl && $state === 'published' ? ExhibitionResource::publicUrl($entry) : null,
-                    'can_move_up' => (int) $positions->get($id, 0) > 0,
-                    'can_move_down' => (int) $positions->get($id, 0) < $last,
-                    'can_delete' => $state !== 'published',
-                    'delete_help' => $state === 'published' ? 'Archive this exhibition before deleting' : null,
-                ];
-            })->all();
+        $this->total = (clone $query)->count();
+        $this->setPagination($this->total);
+        $bounds = Exhibition::query()->where('site_section_id', $this->sectionId)
+            ->selectRaw('MIN(position) AS min_position, MAX(position) AS max_position')
+            ->first();
+        $minPosition = is_numeric($bounds?->getAttribute('min_position')) ? (int) $bounds->getAttribute('min_position') : 0;
+        $maxPosition = is_numeric($bounds?->getAttribute('max_position')) ? (int) $bounds->getAttribute('max_position') : 0;
+
+        /** @var EloquentCollection<int, Exhibition> $records */
+        $records = $query->orderBy('position')->orderBy('id')->forPage($this->page, $this->pageSize)->get();
+        $now = now();
+        $this->exhibitions = $records->map(function (Exhibition $entry) use ($minPosition, $maxPosition, $now): array {
+            $state = (string) $entry->getAttribute('state');
+            $position = (int) $entry->getAttribute('position');
+            $location = collect([$entry->getAttribute('venue'), $entry->address()])
+                ->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+                ->unique()
+                ->implode(' · ');
+
+            return [
+                'id' => (int) $entry->getKey(),
+                'title' => (string) $entry->getAttribute('title'),
+                'location' => $location !== '' ? $location : null,
+                'state' => $state,
+                'timing' => $entry->temporalState($now),
+                'vernissage' => $entry->vernissageDisplay(),
+                'date_text' => $entry->displayDate() ?? '',
+                'public_url' => $this->journalPublicUrl !== null && $state === 'published' ? $this->journalPublicUrl : null,
+                'can_move_up' => $position > $minPosition,
+                'can_move_down' => $position < $maxPosition,
+                'can_delete' => $state !== 'published',
+                'delete_help' => $state === 'published' ? 'Archive this exhibition before deleting' : null,
+            ];
+        })->all();
     }
 
-    private function editorAction(Action $action, string $heading, string $submit): Action
+    private function loadPostMetrics(): void
     {
-        return $action->modalHeading($heading)
-            ->modalSubmitAction(fn (Action $submitAction): Action => $submitAction->label($submit)->extraAttributes(['class' => 'admin-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $cancelAction): Action => $cancelAction->label('Cancel')->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
-            ->modalWidth(Width::SevenExtraLarge)
-            ->extraModalWindowAttributes(['class' => 'admin-task-dialog']);
+        /** @var EloquentCollection<int, BlogPost> $records */
+        $records = BlogPost::query()->where('site_section_id', $this->sectionId)
+            ->get(['id', 'state', 'published_at', 'scheduled_at']);
+        $this->unfilteredEntryCount = $records->count();
+        $now = now();
+
+        $this->metrics = [
+            ['label' => 'Posts', 'value' => $records->count()],
+            ['label' => 'Public', 'value' => $records->filter(fn (BlogPost $post): bool => $this->postIsPublic($post, $now))->count()],
+            ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count()],
+            ['label' => 'Scheduled', 'value' => $records->where('state', 'scheduled')->count()],
+            ['label' => 'Unpublished', 'value' => $records->where('state', 'unpublished')->count()],
+            ['label' => 'Archived', 'value' => $records->where('state', 'archived')->count()],
+        ];
     }
 
-    private function deleteAction(string $name, string $heading, callable $callback, ?string $description = null): Action
+    private function loadExhibitionMetrics(): void
     {
-        $action = Action::make($name)->label('Delete')->color('danger')->requiresConfirmation()
-            ->modalHeading($heading)->modalWidth(Width::Large)
-            ->modalSubmitAction(fn (Action $submitAction): Action => $submitAction->label('Delete')->extraAttributes(['class' => 'admin-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $cancelAction): Action => $cancelAction->label('Cancel')->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
-            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])->action($callback);
-        return $description !== null ? $action->modalDescription($description) : $action;
+        /** @var EloquentCollection<int, Exhibition> $records */
+        $records = Exhibition::query()->where('site_section_id', $this->sectionId)
+            ->get(['id', 'state', 'starts_on', 'ends_on']);
+        $this->unfilteredEntryCount = $records->count();
+        $now = now();
+        $timing = $records->map(fn (Exhibition $entry): string => $entry->temporalState($now));
+
+        $this->metrics = [
+            ['label' => 'Exhibitions', 'value' => $records->count()],
+            ['label' => 'Published', 'value' => $records->where('state', 'published')->count()],
+            ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count()],
+            ['label' => 'Upcoming', 'value' => $timing->filter(fn (string $value): bool => $value === 'upcoming')->count()],
+            ['label' => 'Current', 'value' => $timing->filter(fn (string $value): bool => $value === 'current')->count()],
+            ['label' => 'Past', 'value' => $timing->filter(fn (string $value): bool => $value === 'past')->count()],
+        ];
+    }
+
+    /** @param Builder<Exhibition> $query */
+    private function applyTimingFilter(Builder $query): void
+    {
+        $today = now()->toDateString();
+        if ($this->timingFilter === 'upcoming') {
+            $query->whereDate('starts_on', '>', $today);
+            return;
+        }
+        if ($this->timingFilter === 'unknown') {
+            $query->whereNull('starts_on');
+            return;
+        }
+        if ($this->timingFilter === 'current') {
+            $query->whereNotNull('starts_on')->whereDate('starts_on', '<=', $today)
+                ->where(function (Builder $current) use ($today): void {
+                    $current->where(function (Builder $range) use ($today): void {
+                        $range->whereNotNull('ends_on')->whereDate('ends_on', '>=', $today);
+                    })->orWhere(function (Builder $singleDay) use ($today): void {
+                        $singleDay->whereNull('ends_on')->whereDate('starts_on', '=', $today);
+                    });
+                });
+            return;
+        }
+        if ($this->timingFilter === 'past') {
+            $query->whereNotNull('starts_on')->where(function (Builder $past) use ($today): void {
+                $past->where(function (Builder $range) use ($today): void {
+                    $range->whereNotNull('ends_on')->whereDate('ends_on', '<', $today);
+                })->orWhere(function (Builder $singleDay) use ($today): void {
+                    $singleDay->whereNull('ends_on')->whereDate('starts_on', '<', $today);
+                });
+            });
+        }
+    }
+
+    private function coverThumbnailUrl(BlogPost $post): ?string
+    {
+        $usage = $post->getRelationValue('mediaUsages')->first();
+        if (! $usage instanceof JournalEntryMedia) {
+            return null;
+        }
+        $asset = $usage->getRelationValue('mediaAsset');
+        if (! $asset instanceof MediaAsset) {
+            return null;
+        }
+        $variant = $asset->getRelationValue('variants')->first(
+            fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === PublicMedia::THUMBNAIL_KIND
+                && $candidate->getAttribute('transform_profile') === PublicMedia::PUBLIC_TRANSFORM_PROFILE
+                && $candidate->getAttribute('state') === 'available',
+        );
+
+        return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
+    }
+
+    private function postIsPublic(BlogPost $post, CarbonInterface $now): bool
+    {
+        $state = (string) $post->getAttribute('state');
+        $published = $post->getAttribute('published_at');
+        if ($state === 'published' && $published instanceof CarbonInterface) {
+            return $published->lessThanOrEqualTo($now);
+        }
+        $scheduled = $post->getAttribute('scheduled_at');
+
+        return $state === 'scheduled'
+            && $scheduled instanceof CarbonInterface
+            && $scheduled->lessThanOrEqualTo($now);
     }
 
     private function reloadEntries(bool $refreshMetrics = true): void
@@ -668,10 +815,27 @@ final class JournalWorkspace extends Page
 
     private function setPagination(int $total): void
     {
-        $this->pageSize = in_array($this->pageSize, self::PAGE_SIZES, true) ? $this->pageSize : self::DEFAULT_PAGE_SIZE;
+        $this->pageSize = $this->normalizePageSize($this->pageSize);
         $this->total = $total;
         $this->pages = max(1, (int) ceil($total / $this->pageSize));
         $this->page = min(max(1, $this->page), $this->pages);
+    }
+
+    private function normalizePageSize(mixed $value): int
+    {
+        $size = is_numeric($value) ? (int) $value : self::DEFAULT_PAGE_SIZE;
+
+        return in_array($size, self::PAGE_SIZES, true) ? $size : self::DEFAULT_PAGE_SIZE;
+    }
+
+    private function toggleSelection(array $selected, int $id): array
+    {
+        $ids = collect($selected)->map(fn (mixed $value): int => (int) $value)->unique()->values();
+        if ($ids->containsStrict($id)) {
+            return $ids->reject(fn (int $value): bool => $value === $id)->values()->all();
+        }
+
+        return $ids->push($id)->unique()->values()->all();
     }
 
     private function toggledVisibleSelection(array $selected, array $visible): array
@@ -681,14 +845,15 @@ final class JournalWorkspace extends Page
         if ($allVisibleSelected) {
             return $selectedIds->reject(fn (int $id): bool => in_array($id, $visible, true))->values()->all();
         }
+
         return $selectedIds->merge($visible)->unique()->values()->all();
     }
 
-    private function runEntryAction(string $title, callable $action): void
+    private function runEntryAction(string $successTitle, callable $action): void
     {
         try {
             $action();
-            Notification::make()->title($title)->success()->send();
+            Notification::make()->title($successTitle)->success()->send();
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Journal entry unchanged', $exception);
         }
@@ -703,14 +868,6 @@ final class JournalWorkspace extends Page
         $this->loadPosts();
     }
 
-    private function runExhibitionBatch(string $label, callable $action): void
-    {
-        [$ok, $failed] = $this->bestEffort($this->selectedExhibitions(), $action);
-        $this->selectedExhibitionIds = [];
-        $this->notifyBatch($label, $ok, $failed);
-        $this->loadExhibitions();
-    }
-
     private function bestEffort(iterable $records, callable $action): array
     {
         $ok = 0;
@@ -722,10 +879,14 @@ final class JournalWorkspace extends Page
                 } else {
                     $ok++;
                 }
-            } catch (Throwable) {
+            } catch (ValidationException $exception) {
+                $failed++;
+            } catch (Throwable $exception) {
+                report($exception);
                 $failed++;
             }
         }
+
         return [$ok, $failed];
     }
 
@@ -748,39 +909,46 @@ final class JournalWorkspace extends Page
     private function selectedPosts(): EloquentCollection
     {
         $ids = collect($this->selectedPostIds)->map(fn (mixed $id): int => (int) $id)->unique()->all();
+
         return BlogPost::query()->where('site_section_id', $this->sectionId)->whereKey($ids)->orderBy('position')->orderBy('id')->get();
     }
 
     private function selectedExhibitions(): EloquentCollection
     {
         $ids = collect($this->selectedExhibitionIds)->map(fn (mixed $id): int => (int) $id)->unique()->all();
+
         return Exhibition::query()->where('site_section_id', $this->sectionId)->whereKey($ids)->orderBy('position')->orderBy('id')->get();
     }
 
     private function post(int $id): BlogPost
     {
         abort_unless($this->journalTemplate() === JournalTemplate::Blog, 404);
+
         return BlogPost::query()->where('site_section_id', $this->sectionId)->findOrFail($id);
     }
 
     private function exhibition(int $id): Exhibition
     {
         abort_unless($this->journalTemplate() === JournalTemplate::Exhibitions, 404);
+
         return Exhibition::query()->where('site_section_id', $this->sectionId)->findOrFail($id);
     }
 
     private function section(): SiteSection
     {
         $template = $this->journalTemplate();
+
         return SiteSection::query()->whereKey($this->sectionId)
             ->where('type', SiteNodeType::Journal->value)
-            ->where('template', $template->value)->firstOrFail();
+            ->where('template', $template->value)
+            ->firstOrFail();
     }
 
     private function journalTemplate(): JournalTemplate
     {
         $template = JournalTemplate::tryFrom($this->template);
         abort_unless($template instanceof JournalTemplate, 404);
+
         return $template;
     }
 }

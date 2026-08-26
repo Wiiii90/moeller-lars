@@ -138,11 +138,9 @@ final class BlogEditorialService
             }
             $postId = (int) $fresh->getKey();
             $sectionId = (int) $fresh->getAttribute('site_section_id');
-            $usageCount = $fresh->mediaUsages()->count();
             $fresh->delete();
             $this->audit->record($actor, 'blog_post.deleted', 'blog_post', $postId, [
                 'site_section_id' => $sectionId,
-                'detached_media_usages' => $usageCount,
             ]);
         });
     }
