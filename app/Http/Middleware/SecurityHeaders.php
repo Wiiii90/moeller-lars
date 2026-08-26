@@ -31,6 +31,7 @@ final class SecurityHeaders
         $scriptSources = ["'self'"];
         $connectSources = ["'self'"];
         $imageSources = ["'self'", 'data:'];
+        $frameSources = ["'self'", 'https://www.openstreetmap.org'];
 
         if ((bool) config('analytics.matomo.tracking_enabled')) {
             $baseUrl = config('analytics.matomo.base_url');
@@ -62,6 +63,7 @@ final class SecurityHeaders
             'img-src '.implode(' ', $imageSources),
             "font-src 'self' data:",
             'connect-src '.implode(' ', $connectSources),
+            'frame-src '.implode(' ', $frameSources),
             "object-src 'none'",
             "base-uri 'self'",
             "frame-ancestors 'none'",

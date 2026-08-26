@@ -2,13 +2,14 @@
 
 namespace App\Domain\Media;
 
-use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SiteNodeType;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\CustomPageSetting;
-use App\Models\ExhibitionMedia;
+use App\Models\CvEntry;
+use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\PublicContentSetting;
@@ -18,7 +19,6 @@ use LogicException;
 class PublicMedia
 {
     public const THUMBNAIL_KIND = 'thumbnail';
-
     public const PUBLIC_TRANSFORM_PROFILE = 'public-v1';
 
     public function isPublicAsset(MediaAsset $asset): bool
@@ -50,24 +50,52 @@ class PublicMedia
             return true;
         }
 
-        if (ExhibitionMedia::query()
-            ->where('media_asset_id', $asset->getKey())
-            ->whereHas('exhibition', fn ($query) => $query
-                ->where('state', 'published')
-                ->whereHas('siteSection', fn ($section) => $section
-                    ->where('type', SiteNodeType::Journal->value)
-                    ->where('template', JournalTemplate::Exhibitions->value)
-                    ->where('state', 'published')))
-            ->exists()) {
+        $publishedCustomPages = CustomPageSetting::query()
+            ->whereHas('siteSection', fn ($query) => $query
+                ->where('type', SiteNodeType::CustomPage->value)
+                ->where('state', 'published'))
+            ->get(['id', 'blocks']);
+
+        foreach ($publishedCustomPages as $settings) {
+            if (in_array(
+                (int) $asset->getKey(),
+                RichTextMediaReference::idsFromCustomPageBlocks($settings->components()),
+                true,
+            )) {
+                return true;
+            }
+        }
+
+        $richTextReference = RichTextMediaReference::markdown((int) $asset->getKey());
+        if (CvEntry::query()
+            ->where('state', 'published')
+            ->where('body', 'like', '%'.$richTextReference.'%')
+            ->exists()
+            && CustomPageSetting::query()
+                ->whereHas('siteSection', fn ($query) => $query
+                    ->where('type', SiteNodeType::CustomPage->value)
+                    ->where('state', 'published'))
+                ->whereRaw('blocks @> ?::jsonb', [json_encode([['type' => 'cv_list']], JSON_THROW_ON_ERROR)])
+                ->exists()) {
             return true;
         }
 
-        return BlogEditorialService::publicQuery()
-            ->where('cover_media_asset_id', $asset->getKey())
-            ->whereHas('siteSection', fn ($section) => $section
-                ->where('type', SiteNodeType::Journal->value)
-                ->where('template', JournalTemplate::Blog->value)
-                ->where('state', 'published'))
+        return JournalEntryMedia::query()
+            ->where('media_asset_id', $asset->getKey())
+            ->where(function ($usage): void {
+                $usage->whereHas('blogPost', fn ($posts) => $posts
+                    ->publiclyVisible()
+                    ->whereHas('siteSection', fn ($section) => $section
+                        ->where('type', SiteNodeType::Journal->value)
+                        ->where('template', JournalTemplate::Blog->value)
+                        ->where('state', 'published')))
+                    ->orWhereHas('exhibition', fn ($entries) => $entries
+                        ->where('state', 'published')
+                        ->whereHas('siteSection', fn ($section) => $section
+                            ->where('type', SiteNodeType::Journal->value)
+                            ->where('template', JournalTemplate::Exhibitions->value)
+                            ->where('state', 'published')));
+            })
             ->exists();
     }
 
@@ -77,34 +105,28 @@ class PublicMedia
             return false;
         }
 
-        /** @var MediaAsset|null $asset */
         $asset = $variant->getRelationValue('mediaAsset');
 
-        return $asset !== null && $this->isPublicAsset($asset);
+        return $asset instanceof MediaAsset && $this->isPublicAsset($asset);
     }
 
     public function primaryMedia(Artwork $artwork): ArtworkMedia
     {
-        /** @var Collection<int, ArtworkMedia> $mediaRows */
-        $mediaRows = $artwork->getRelationValue('artworkMedia');
-        $primaries = $mediaRows->filter(
-            static fn (ArtworkMedia $media): bool => $media->getAttribute('role') === 'primary',
-        )->values();
+        /** @var Collection<int, ArtworkMedia> $rows */
+        $rows = $artwork->getRelationValue('artworkMedia');
+        $primaries = $rows->filter(fn (ArtworkMedia $row): bool => $row->getAttribute('role') === 'primary')->values();
 
         if ($primaries->count() !== 1) {
             throw new LogicException('Published artwork must have exactly one primary media usage.');
         }
 
-        /** @var ArtworkMedia $primary */
-        $primary = $primaries->first();
-
-        return $primary;
+        return $primaries->first();
     }
 
     public function primaryAsset(Artwork $artwork): MediaAsset
     {
         $asset = $this->primaryMedia($artwork)->getRelationValue('mediaAsset');
-        if (($asset instanceof MediaAsset) === false) {
+        if (! $asset instanceof MediaAsset) {
             throw new LogicException('Published artwork requires an available primary media asset.');
         }
 
@@ -135,9 +157,9 @@ class PublicMedia
 
     public function altText(Artwork $artwork): string
     {
-        $media = $this->primaryMedia($artwork);
+        $usage = $this->primaryMedia($artwork);
 
-        return $this->altTextForAsset($this->primaryAsset($artwork), $media->getAttribute('alt_text_override'));
+        return $this->altTextForAsset($this->primaryAsset($artwork), $usage->getAttribute('alt_text_override'));
     }
 
     public function thumbnailVariant(Artwork $artwork): MediaVariant
@@ -162,41 +184,36 @@ class PublicMedia
     public function altTextForAsset(MediaAsset $asset, mixed $override = null): string
     {
         if ($override !== null) {
-            if (is_string($override) === false || trim($override) === '') {
+            if (! is_string($override) || trim($override) === '') {
                 throw new LogicException('Media ALT override must be non-empty text when provided.');
             }
 
             return $override;
         }
 
-        $altText = $asset->getAttribute('alt_text');
-        if (is_string($altText) === false || trim($altText) === '') {
+        $alt = $asset->getAttribute('alt_text');
+        if (! is_string($alt) || trim($alt) === '') {
             throw new LogicException('Public media requires explicit ALT text.');
         }
 
-        return $altText;
+        return $alt;
     }
 
     public function thumbnailVariantForAsset(MediaAsset $asset): MediaVariant
     {
         $this->assertAvailable($asset);
         $asset->loadMissing('variants');
-
-        /** @var Collection<int, MediaVariant> $variants */
-        $variants = $asset->getRelationValue('variants');
-        $matching = $variants->filter(fn (MediaVariant $variant): bool => $variant->getAttribute('variant_kind') === self::THUMBNAIL_KIND
-            && $variant->getAttribute('transform_profile') === self::PUBLIC_TRANSFORM_PROFILE
-            && $variant->getAttribute('state') === 'available'
+        $matching = $asset->getRelationValue('variants')->filter(
+            fn (MediaVariant $variant): bool => $variant->getAttribute('variant_kind') === self::THUMBNAIL_KIND
+                && $variant->getAttribute('transform_profile') === self::PUBLIC_TRANSFORM_PROFILE
+                && $variant->getAttribute('state') === 'available',
         )->values();
 
         if ($matching->count() !== 1) {
             throw new LogicException('Public media requires exactly one available public thumbnail.');
         }
 
-        /** @var MediaVariant $variant */
-        $variant = $matching->first();
-
-        return $variant;
+        return $matching->first();
     }
 
     public function thumbnailUrlForAsset(MediaAsset $asset): string

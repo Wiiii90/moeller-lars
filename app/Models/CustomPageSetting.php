@@ -24,6 +24,13 @@ final class CustomPageSetting extends Model
         'contact',
     ];
 
+    public const DIVIDER_VARIANTS = [
+        'thin',
+        'subtle',
+        'strong',
+        'dotted',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -98,7 +105,12 @@ final class CustomPageSetting extends Model
                     'title' => $this->nullableTrimmedString($block['title'] ?? null),
                     'items' => $this->normalizeListItems($block['items'] ?? []),
                 ],
-                'divider' => ['type' => 'divider'],
+                'divider' => [
+                    'type' => 'divider',
+                    'variant' => in_array($block['variant'] ?? null, self::DIVIDER_VARIANTS, true)
+                        ? $block['variant']
+                        : 'thin',
+                ],
                 'contact' => [
                     'type' => 'contact',
                     'show_email' => (bool) ($block['show_email'] ?? true),
@@ -148,11 +160,18 @@ final class CustomPageSetting extends Model
                 if ($title !== null && (! is_string($title) || mb_strlen($title) > 160)) {
                     throw ValidationException::withMessages(['blocks' => 'Text component headings must be short text.']);
                 }
-                $this->validateRichText($block['body'] ?? null, 'blocks.'.$blockIndex.'.body');
+                $this->validateRichText($block['body'] ?? null, 'blocks.'.$blockIndex.'.body', $requirePublicMedia);
             }
 
             if ($type === 'list') {
-                $this->validateListComponent($block, $blockIndex);
+                $this->validateListComponent($block, $blockIndex, $requirePublicMedia);
+            }
+
+            if ($type === 'divider') {
+                $variant = $block['variant'] ?? 'thin';
+                if (! is_string($variant) || ! in_array($variant, self::DIVIDER_VARIANTS, true)) {
+                    throw ValidationException::withMessages(['blocks' => 'Divider style is invalid.']);
+                }
             }
 
             if ($type === 'contact') {
@@ -165,6 +184,14 @@ final class CustomPageSetting extends Model
     private function validateImageComponent(array $block, bool $requirePublicMedia): void
     {
         $mediaId = $block['media_asset_id'] ?? null;
+        if ($mediaId === null) {
+            if ($requirePublicMedia) {
+                throw ValidationException::withMessages(['blocks' => 'Published image components must reference an image from Media.']);
+            }
+
+            return;
+        }
+
         if (filter_var($mediaId, FILTER_VALIDATE_INT) === false) {
             throw ValidationException::withMessages(['blocks' => 'Image components must reference an image from Media.']);
         }
@@ -194,7 +221,7 @@ final class CustomPageSetting extends Model
     }
 
     /** @param array<string, mixed> $block */
-    private function validateListComponent(array $block, int $blockIndex): void
+    private function validateListComponent(array $block, int $blockIndex, bool $requirePublicMedia): void
     {
         $title = $block['title'] ?? null;
         if ($title !== null && (! is_string($title) || mb_strlen($title) > 160)) {
@@ -219,7 +246,11 @@ final class CustomPageSetting extends Model
                 throw ValidationException::withMessages(['blocks' => 'Each list entry requires a short title.']);
             }
 
-            $this->validateRichText($item['body'] ?? null, 'blocks.'.$blockIndex.'.items.'.$itemIndex.'.body');
+            $this->validateRichText(
+                $item['body'] ?? null,
+                'blocks.'.$blockIndex.'.items.'.$itemIndex.'.body',
+                $requirePublicMedia,
+            );
             $this->validateUrl($item['url'] ?? null, 'blocks.'.$blockIndex.'.items.'.$itemIndex.'.url');
         }
     }
@@ -292,7 +323,7 @@ final class CustomPageSetting extends Model
         return $value === '' ? null : $value;
     }
 
-    private function validateRichText(mixed $value, string $field): void
+    private function validateRichText(mixed $value, string $field, bool $requirePublicMedia): void
     {
         if ($value === null || $value === '') {
             return;
@@ -301,7 +332,11 @@ final class CustomPageSetting extends Model
             throw ValidationException::withMessages([$field => 'Component rich text must be text.']);
         }
 
-        app(SafeRichTextRenderer::class)->assertValid($value);
+        app(SafeRichTextRenderer::class)->assertValid(
+            $value,
+            allowEmbeddedMedia: true,
+            requirePublicMedia: $requirePublicMedia,
+        );
     }
 
     private function validateUrl(mixed $value, string $field): void

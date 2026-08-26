@@ -3,43 +3,73 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Blog\BlogEditorialService;
-use App\Domain\Content\JournalEntryOrderService;
+use App\Domain\Content\ExhibitionEditorialService;
+use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
-use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\Exhibitions\ExhibitionResource;
+use App\Domain\Media\PublicMedia;
+use App\Filament\Support\AdminForm;
+use App\Filament\Support\JournalEntryEditorSchema;
+use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
+use App\Models\JournalEntryMedia;
+use App\Models\JournalSetting;
+use App\Models\MediaAsset;
+use App\Models\MediaVariant;
 use App\Models\SiteSection;
+use App\Routing\SiteNodeRoute;
+use Carbon\CarbonInterface;
 use DateTimeInterface;
+use Filament\Actions\Action;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
+use Throwable;
 
 final class JournalWorkspace extends Page
 {
+    private const PAGE_SIZES = [25, 50, 100];
+    private const DEFAULT_PAGE_SIZE = 50;
+
     protected static bool $shouldRegisterNavigation = false;
-
     protected static ?string $slug = 'pages/journal/{section}';
-
     protected static ?string $title = 'Journal';
 
-    protected string $view = 'filament.resources.blog-posts.pages.list-blog-posts';
+    #[Locked]
+    public int $sectionId = 0;
 
-    public int $sectionId;
+    #[Locked]
+    public string $template = '';
 
-    public string $template;
-
-    /** @var list<array<string, mixed>> */
+    public string $journalTitle = 'Journal';
+    public ?string $journalPublicUrl = null;
+    public string $journalSlug = '';
+    public array $metrics = [];
     public array $posts = [];
-
-    /** @var list<array<string, mixed>> */
     public array $exhibitions = [];
+    public int $unfilteredEntryCount = 0;
+    public string $search = '';
+    public string $statusFilter = 'any';
+    public string $timingFilter = 'any';
+    public array $selectedPostIds = [];
+    public array $selectedExhibitionIds = [];
+    public int $page = 1;
+    public int $pageSize = self::DEFAULT_PAGE_SIZE;
+    public int $total = 0;
+    public int $pages = 1;
 
     public function mount(int|string $section): void
     {
-        /** @var SiteSection $siteSection */
         $siteSection = SiteSection::query()
             ->whereKey((int) $section)
             ->where('type', SiteNodeType::Journal->value)
@@ -49,117 +79,876 @@ final class JournalWorkspace extends Page
 
         $this->sectionId = (int) $siteSection->getKey();
         $this->template = $template->value;
+        $this->loadJournalContext($siteSection);
+        $this->reloadEntries();
+    }
 
-        if ($template === JournalTemplate::Blog) {
-            $this->view = 'filament.resources.blog-posts.pages.list-blog-posts';
-            $this->loadPosts();
+    public function getView(): string
+    {
+        return match ($this->journalTemplate()) {
+            JournalTemplate::Blog => 'filament.resources.blog-posts.pages.list-blog-posts',
+            JournalTemplate::Exhibitions => 'filament.resources.exhibitions.pages.list-exhibitions',
+        };
+    }
 
+    public function updatedSearch(): void
+    {
+        $this->refreshFromFirstPage();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $allowed = $this->journalTemplate() === JournalTemplate::Blog
+            ? ['any', 'draft', 'scheduled', 'published', 'unpublished', 'archived']
+            : ['any', 'draft', 'published', 'archived'];
+        if (! in_array($this->statusFilter, $allowed, true)) {
+            $this->statusFilter = 'any';
+        }
+        $this->refreshFromFirstPage();
+    }
+
+    public function updatedTimingFilter(): void
+    {
+        if (! in_array($this->timingFilter, ['any', 'upcoming', 'current', 'past', 'unknown'], true)) {
+            $this->timingFilter = 'any';
+        }
+        $this->refreshFromFirstPage();
+    }
+
+    public function updatedPageSize(mixed $value): void
+    {
+        $this->pageSize = $this->normalizePageSize($value);
+        $this->refreshFromFirstPage();
+    }
+
+    public function resetFilters(): void
+    {
+        $this->search = '';
+        $this->statusFilter = 'any';
+        $this->timingFilter = 'any';
+        $this->refreshFromFirstPage();
+    }
+
+    public function previousPage(): void
+    {
+        if ($this->page > 1) {
+            $this->page--;
+            $this->reloadEntries(false);
+        }
+    }
+
+    public function nextPage(): void
+    {
+        if ($this->page < $this->pages) {
+            $this->page++;
+            $this->reloadEntries(false);
+        }
+    }
+
+    public function togglePostSelection(int $id): void
+    {
+        $this->selectedPostIds = $this->toggleSelection($this->selectedPostIds, $id);
+    }
+
+    public function toggleExhibitionSelection(int $id): void
+    {
+        $this->selectedExhibitionIds = $this->toggleSelection($this->selectedExhibitionIds, $id);
+    }
+
+    public function toggleVisibleSelection(): void
+    {
+        if ($this->journalTemplate() === JournalTemplate::Blog) {
+            $visible = collect($this->posts)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
+            $this->selectedPostIds = $this->toggledVisibleSelection($this->selectedPostIds, $visible);
             return;
         }
 
-        $this->view = 'filament.resources.exhibitions.pages.list-exhibitions';
-        $this->loadExhibitions();
+        $visible = collect($this->exhibitions)->pluck('id')->map(fn (mixed $id): int => (int) $id)->all();
+        $this->selectedExhibitionIds = $this->toggledVisibleSelection($this->selectedExhibitionIds, $visible);
     }
 
-    public function movePost(int $postId, string $direction): void
+    public function movePost(int $id, string $direction): void
     {
-        /** @var BlogPost $post */
-        $post = BlogPost::query()
-            ->where('site_section_id', $this->sectionId)
-            ->findOrFail($postId);
-        if (app(BlogEditorialService::class)->move($post, $direction)) {
+        if (app(BlogEditorialService::class)->move($this->post($id), $direction)) {
             Notification::make()->title('Journal order updated')->success()->send();
         }
-
-        $this->loadPosts();
+        $this->loadPosts(false);
     }
 
-    public function moveExhibition(int $exhibitionId, string $direction): void
+    public function moveExhibition(int $id, string $direction): void
     {
-        /** @var Exhibition $exhibition */
-        $exhibition = Exhibition::query()
-            ->where('site_section_id', $this->sectionId)
-            ->findOrFail($exhibitionId);
-        if (app(JournalEntryOrderService::class)->move($exhibition, $direction)) {
+        if (app(ExhibitionEditorialService::class)->move($this->exhibition($id), $direction)) {
             Notification::make()->title('Exhibition order updated')->success()->send();
         }
-
-        $this->loadExhibitions();
+        $this->loadExhibitions(false);
     }
 
-    private function loadPosts(): void
+    public function publishPost(int $id): void
     {
-        $publicIds = BlogEditorialService::publicQuery()
-            ->where('site_section_id', $this->sectionId)
-            ->pluck('id')
-            ->map(static fn ($id): int => (int) $id)
-            ->all();
+        $this->runEntryAction('Post published', fn () => app(BlogEditorialService::class)->publish($this->post($id)));
+    }
+
+    public function unpublishPost(int $id): void
+    {
+        $this->runEntryAction('Post unpublished', fn () => app(BlogEditorialService::class)->unpublish($this->post($id)));
+    }
+
+    public function archivePost(int $id): void
+    {
+        $this->runEntryAction('Post archived', fn () => app(BlogEditorialService::class)->archive($this->post($id)));
+    }
+
+    public function restorePostDraft(int $id): void
+    {
+        $this->runEntryAction('Post restored to draft', fn () => app(BlogEditorialService::class)->restoreDraft($this->post($id)));
+    }
+
+    public function publishExhibition(int $id): void
+    {
+        $this->runEntryAction('Exhibition published', fn () => app(ExhibitionEditorialService::class)->publish($this->exhibition($id)));
+    }
+
+    public function archiveExhibition(int $id): void
+    {
+        $this->runEntryAction('Exhibition archived', fn () => app(ExhibitionEditorialService::class)->archive($this->exhibition($id)));
+    }
+
+    public function restoreExhibition(int $id): void
+    {
+        $this->runEntryAction('Exhibition restored', fn () => app(ExhibitionEditorialService::class)->restore($this->exhibition($id)));
+    }
+
+    public function moveSelectedEntries(string $direction): void
+    {
+        if (! in_array($direction, ['up', 'down'], true)) {
+            return;
+        }
+
+        if ($this->journalTemplate() === JournalTemplate::Blog) {
+            $records = $this->selectedPosts();
+            if ($direction === 'down') {
+                $records = $records->reverse();
+            }
+            [$ok, $failed] = $this->bestEffort($records, fn (BlogPost $post): bool => app(BlogEditorialService::class)->move($post, $direction));
+            $this->notifyBatch('posts reordered', $ok, $failed);
+            $this->loadPosts(false);
+            return;
+        }
+
+        $records = $this->selectedExhibitions();
+        if ($direction === 'down') {
+            $records = $records->reverse();
+        }
+        [$ok, $failed] = $this->bestEffort($records, fn (Exhibition $entry): bool => app(ExhibitionEditorialService::class)->move($entry, $direction));
+        $this->notifyBatch('exhibitions reordered', $ok, $failed);
+        $this->loadExhibitions(false);
+    }
+
+    public function publishSelectedPosts(): void
+    {
+        $this->runPostBatch('posts published', fn (BlogPost $post) => app(BlogEditorialService::class)->publish($post));
+    }
+
+    public function unpublishSelectedPosts(): void
+    {
+        $this->runPostBatch('posts unpublished', function (BlogPost $post): bool {
+            if ($post->getAttribute('state') !== 'published') {
+                return false;
+            }
+            app(BlogEditorialService::class)->unpublish($post);
+            return true;
+        });
+    }
+
+    public function archiveSelectedPosts(): void
+    {
+        $this->runPostBatch('posts archived', fn (BlogPost $post) => app(BlogEditorialService::class)->archive($post));
+    }
+
+    public function restoreSelectedPosts(): void
+    {
+        $this->runPostBatch('posts restored to draft', function (BlogPost $post): bool {
+            if (! in_array((string) $post->getAttribute('state'), ['scheduled', 'unpublished', 'archived'], true)) {
+                return false;
+            }
+            app(BlogEditorialService::class)->restoreDraft($post);
+            return true;
+        });
+    }
+
+    public function journalSettingsAction(): Action
+    {
+        return Action::make('journalSettings')
+            ->label('Settings')
+            ->fillForm(function (): array {
+                $section = $this->section();
+                $settings = JournalSetting::forSection($section);
+
+                return [
+                    'title' => $section->getAttribute('title'),
+                    'navigation_label' => $section->getAttribute('navigation_label'),
+                    'slug' => $section->getAttribute('slug'),
+                    'listing_title' => $settings->getAttribute('listing_title'),
+                    'listing_intro' => $settings->getAttribute('listing_intro'),
+                ];
+            })
+            ->schema([
+                AdminForm::section('Journal')->schema([
+                    TextInput::make('title')->label('Journal title')->required()->maxLength(160),
+                    TextInput::make('navigation_label')->label('Navigation label')->required()->maxLength(120),
+                    TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
+                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                        ->helperText('Changing this changes the public Journal URL.'),
+                    TextInput::make('listing_title')->label('Listing title')->maxLength(240)->nullable(),
+                    MarkdownEditor::make('listing_intro')->label('Listing introduction')
+                        ->toolbarButtons([['bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']])
+                        ->maxLength(10000)->nullable()->columnSpanFull(),
+                ])->columns(2),
+            ])
+            ->modalHeading('Journal settings')
+            ->modalSubmitActionLabel('Save')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (array $data): void {
+                app(JournalSettingsService::class)->update($this->section(), $data);
+                $this->loadJournalContext();
+                $this->reloadEntries(false);
+                Notification::make()->title('Journal settings saved')->success()->send();
+            });
+    }
+
+    public function addPostAction(): Action
+    {
+        return Action::make('addPost')
+            ->label('Add post')
+            ->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
+            ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
+            ->modalHeading('Add post')
+            ->modalSubmitActionLabel('Create draft')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $data): void {
+                $data['site_section_id'] = $this->sectionId;
+                try {
+                    app(BlogEditorialService::class)->createDraft($data);
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Post was not created', $exception);
+                    $action->halt();
+                    return;
+                }
+                $this->loadPosts();
+                Notification::make()->title('Post draft created')->success()->send();
+            });
+    }
+
+    public function editPostAction(): Action
+    {
+        return Action::make('editPost')
+            ->label('Edit')
+            ->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
+            ->fillForm(function (array $arguments): array {
+                $post = $this->post((int) ($arguments['post'] ?? 0));
+
+                return [...$post->attributesToArray(), ...app(JournalEntryEditorState::class)->for($post)];
+            })
+            ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
+            ->modalHeading('Edit post')
+            ->modalSubmitActionLabel('Save')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $data, array $arguments): void {
+                $post = $this->post((int) ($arguments['post'] ?? 0));
+                $data = [
+                    ...$data,
+                    'site_section_id' => $this->sectionId,
+                    'state' => $post->getAttribute('state'),
+                    'position' => $post->getAttribute('position'),
+                    'published_at' => $post->getAttribute('published_at'),
+                    'scheduled_at' => $post->getAttribute('scheduled_at'),
+                ];
+                try {
+                    app(BlogEditorialService::class)->update($post, $data);
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Post unchanged', $exception);
+                    $action->halt();
+                    return;
+                }
+                $this->loadPosts(false);
+                Notification::make()->title('Post saved')->success()->send();
+            });
+    }
+
+    public function schedulePostAction(): Action
+    {
+        return Action::make('schedulePost')
+            ->label('Schedule publication')
+            ->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
+            ->schema([DateTimePicker::make('scheduled_at')->label('Publish at')->seconds(false)->required()])
+            ->modalHeading('Schedule publication')
+            ->modalSubmitActionLabel('Schedule')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $data, array $arguments): void {
+                try {
+                    app(BlogEditorialService::class)->schedule($this->post((int) ($arguments['post'] ?? 0)), $data['scheduled_at'] ?? null);
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Post was not scheduled', $exception);
+                    $action->halt();
+                    return;
+                }
+                $this->loadPosts();
+                Notification::make()->title('Publication scheduled')->success()->send();
+            });
+    }
+
+    public function addExhibitionAction(): Action
+    {
+        return Action::make('addExhibition')
+            ->label('Add exhibition')
+            ->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
+            ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
+            ->modalHeading('Add exhibition')
+            ->modalSubmitActionLabel('Create draft')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $data): void {
+                $data['site_section_id'] = $this->sectionId;
+                try {
+                    app(ExhibitionEditorialService::class)->createDraft($data);
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Exhibition was not created', $exception);
+                    $action->halt();
+                    return;
+                }
+                $this->loadExhibitions();
+                Notification::make()->title('Exhibition draft created')->success()->send();
+            });
+    }
+
+    public function editExhibitionAction(): Action
+    {
+        return Action::make('editExhibition')
+            ->label('Edit')
+            ->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
+            ->fillForm(function (array $arguments): array {
+                $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
+
+                return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
+            })
+            ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
+            ->modalHeading('Edit exhibition')
+            ->modalSubmitActionLabel('Save')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $data, array $arguments): void {
+                $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
+                $data['site_section_id'] = $this->sectionId;
+                try {
+                    app(ExhibitionEditorialService::class)->update($entry, $data);
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Exhibition unchanged', $exception);
+                    $action->halt();
+                    return;
+                }
+                $this->loadExhibitions(false);
+                Notification::make()->title('Exhibition saved')->success()->send();
+            });
+    }
+
+    public function deletePostAction(): Action
+    {
+        return Action::make('deletePost')
+            ->label('Delete')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete this post?')
+            ->modalDescription('Media Files are preserved. Only this Journal entry and its references are removed.')
+            ->modalSubmitActionLabel('Delete')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $arguments): void {
+                $id = (int) ($arguments['post'] ?? 0);
+                try {
+                    app(BlogEditorialService::class)->delete($this->post($id));
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Post was not deleted', $exception);
+                    $action->halt();
+                    return;
+                }
+                $this->selectedPostIds = array_values(array_filter($this->selectedPostIds, fn (mixed $selected): bool => (int) $selected !== $id));
+                $this->loadPosts();
+                Notification::make()->title('Post deleted')->success()->send();
+            });
+    }
+
+    public function deleteExhibitionAction(): Action
+    {
+        return Action::make('deleteExhibition')
+            ->label('Delete')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete this exhibition?')
+            ->modalDescription('Media Files are preserved. Only this Journal entry and its references are removed.')
+            ->modalSubmitActionLabel('Delete')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (Action $action, array $arguments): void {
+                $id = (int) ($arguments['exhibition'] ?? 0);
+                try {
+                    app(ExhibitionEditorialService::class)->delete($this->exhibition($id));
+                } catch (ValidationException $exception) {
+                    $this->notifyValidationFailure('Exhibition was not deleted', $exception);
+                    $action->halt();
+                    return;
+                }
+                $this->selectedExhibitionIds = array_values(array_filter($this->selectedExhibitionIds, fn (mixed $selected): bool => (int) $selected !== $id));
+                $this->loadExhibitions();
+                Notification::make()->title('Exhibition deleted')->success()->send();
+            });
+    }
+
+    public function deleteSelectedPostsAction(): Action
+    {
+        return Action::make('deleteSelectedPosts')
+            ->label('Delete selected')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete selected posts?')
+            ->modalDescription('Published and scheduled posts are kept. Media Files are preserved.')
+            ->modalSubmitActionLabel('Delete')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (): void {
+                [$ok, $failed] = $this->bestEffort($this->selectedPosts(), function (BlogPost $post): bool {
+                    app(BlogEditorialService::class)->delete($post);
+                    return true;
+                });
+                $this->selectedPostIds = [];
+                $this->notifyBatch('posts deleted', $ok, $failed);
+                $this->loadPosts();
+            });
+    }
+
+    public function deleteSelectedExhibitionsAction(): Action
+    {
+        return Action::make('deleteSelectedExhibitions')
+            ->label('Delete selected')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete selected exhibitions?')
+            ->modalDescription('Published exhibitions are kept. Media Files are preserved.')
+            ->modalSubmitActionLabel('Delete')
+            ->modalCancelActionLabel('Cancel')
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->action(function (): void {
+                [$ok, $failed] = $this->bestEffort($this->selectedExhibitions(), function (Exhibition $entry): bool {
+                    app(ExhibitionEditorialService::class)->delete($entry);
+                    return true;
+                });
+                $this->selectedExhibitionIds = [];
+                $this->notifyBatch('exhibitions deleted', $ok, $failed);
+                $this->loadExhibitions();
+            });
+    }
+
+    private function refreshFromFirstPage(): void
+    {
+        $this->page = 1;
+        $this->reloadEntries(false);
+    }
+
+    private function loadJournalContext(?SiteSection $section = null): void
+    {
+        $section ??= $this->section();
+        $this->journalTitle = (string) $section->getAttribute('title');
+        $this->journalSlug = (string) $section->getAttribute('slug');
+        $this->journalPublicUrl = $section->getAttribute('state') === 'published'
+            ? app(SiteNodeRoute::class)->url($section)
+            : null;
+    }
+
+    private function loadPosts(bool $refreshMetrics = true): void
+    {
+        if ($refreshMetrics) {
+            $this->loadPostMetrics();
+        }
+
+        $query = BlogPost::query()->where('site_section_id', $this->sectionId);
+        if ($this->statusFilter !== 'any') {
+            $query->where('state', $this->statusFilter);
+        }
+        $term = trim($this->search);
+        if ($term !== '') {
+            $query->where(function (Builder $search) use ($term): void {
+                $search->where('title', 'ilike', '%'.$term.'%')
+                    ->orWhere('excerpt', 'ilike', '%'.$term.'%');
+            });
+        }
+
+        $this->total = (clone $query)->count();
+        $this->setPagination($this->total);
+        $bounds = BlogPost::query()->where('site_section_id', $this->sectionId)
+            ->selectRaw('MIN(position) AS min_position, MAX(position) AS max_position')
+            ->first();
+        $minPosition = is_numeric($bounds?->getAttribute('min_position')) ? (int) $bounds->getAttribute('min_position') : 0;
+        $maxPosition = is_numeric($bounds?->getAttribute('max_position')) ? (int) $bounds->getAttribute('max_position') : 0;
+
+        $query->with(['mediaUsages' => function ($usages): void {
+            $usages->where('role', JournalEntryMedia::ROLE_COVER)->with('mediaAsset.variants');
+        }]);
 
         /** @var EloquentCollection<int, BlogPost> $records */
-        $records = BlogPost::query()
-            ->where('site_section_id', $this->sectionId)
-            ->orderBy('position')
-            ->orderBy('id')
-            ->get();
-        $lastIndex = $records->count() - 1;
-
-        $this->posts = $records->values()->map(static function (BlogPost $post, int $index) use ($lastIndex, $publicIds): array {
+        $records = $query->orderBy('position')->orderBy('id')->forPage($this->page, $this->pageSize)->get();
+        $now = now();
+        $this->posts = $records->map(function (BlogPost $post) use ($minPosition, $maxPosition, $now): array {
             $state = (string) $post->getAttribute('state');
-            $publishedAt = $post->getAttribute('published_at');
-            $scheduledAt = $post->getAttribute('scheduled_at');
-            $date = match (true) {
-                $state === 'scheduled' && $scheduledAt instanceof DateTimeInterface => 'Scheduled '.$scheduledAt->format('M j, Y'),
-                $publishedAt instanceof DateTimeInterface => $publishedAt->format('M j, Y'),
+            $published = $post->getAttribute('published_at');
+            $scheduled = $post->getAttribute('scheduled_at');
+            $publication = match (true) {
+                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => 'Scheduled '.$scheduled->format('M j, Y').' · '.$scheduled->format('H:i'),
+                $published instanceof DateTimeInterface => $published->format('M j, Y'),
                 default => 'Not published',
             };
-            $excerpt = $post->getAttribute('excerpt');
+            $position = (int) $post->getAttribute('position');
 
             return [
                 'id' => (int) $post->getKey(),
                 'title' => (string) $post->getAttribute('title'),
-                'meta' => is_string($excerpt) && trim($excerpt) !== '' ? Str::limit(trim($excerpt), 120) : 'No excerpt',
-                'date' => $date,
+                'excerpt' => filled($post->getAttribute('excerpt')) ? Str::limit(trim((string) $post->getAttribute('excerpt')), 140) : null,
+                'publication' => $publication,
                 'state' => $state,
-                'edit_url' => BlogPostResource::getUrl('edit', ['record' => $post]),
-                'public_url' => in_array((int) $post->getKey(), $publicIds, true) ? BlogPostResource::publicUrl($post) : null,
-                'can_move_up' => $index > 0,
-                'can_move_down' => $index < $lastIndex,
+                'thumbnail_url' => $this->coverThumbnailUrl($post),
+                'public_url' => $this->journalPublicUrl !== null && $this->postIsPublic($post, $now)
+                    ? route('journal.show', ['section' => $this->journalSlug, 'slug' => $post->getAttribute('slug')])
+                    : null,
+                'can_move_up' => $position > $minPosition,
+                'can_move_down' => $position < $maxPosition,
+                'can_delete' => ! in_array($state, ['published', 'scheduled'], true),
+                'delete_help' => in_array($state, ['published', 'scheduled'], true)
+                    ? 'Unpublish or cancel schedule before deleting'
+                    : null,
             ];
         })->all();
     }
 
-    private function loadExhibitions(): void
+    private function loadExhibitions(bool $refreshMetrics = true): void
     {
-        /** @var EloquentCollection<int, Exhibition> $records */
-        $records = Exhibition::query()
-            ->where('site_section_id', $this->sectionId)
-            ->orderBy('position')
-            ->orderBy('id')
-            ->get();
-        $lastIndex = $records->count() - 1;
+        if ($refreshMetrics) {
+            $this->loadExhibitionMetrics();
+        }
 
-        $this->exhibitions = $records->values()->map(static function (Exhibition $exhibition, int $index) use ($lastIndex): array {
-            $meta = array_values(array_filter([
-                $exhibition->getAttribute('venue'),
-                $exhibition->getAttribute('city'),
-                $exhibition->getAttribute('country'),
-            ], static fn ($value): bool => is_string($value) && trim($value) !== ''));
-            $kind = $exhibition->getAttribute('kind');
-            $opening = $exhibition->getAttribute('opening_text');
+        $query = Exhibition::query()->where('site_section_id', $this->sectionId);
+        if ($this->statusFilter !== 'any') {
+            $query->where('state', $this->statusFilter);
+        }
+        $this->applyTimingFilter($query);
+        $term = trim($this->search);
+        if ($term !== '') {
+            $query->where(function (Builder $search) use ($term): void {
+                $search->where('title', 'ilike', '%'.$term.'%')
+                    ->orWhere('venue', 'ilike', '%'.$term.'%')
+                    ->orWhere('location_text', 'ilike', '%'.$term.'%')
+                    ->orWhere('city', 'ilike', '%'.$term.'%')
+                    ->orWhere('country', 'ilike', '%'.$term.'%')
+                    ->orWhere('date_text', 'ilike', '%'.$term.'%');
+            });
+        }
+
+        $this->total = (clone $query)->count();
+        $this->setPagination($this->total);
+        $bounds = Exhibition::query()->where('site_section_id', $this->sectionId)
+            ->selectRaw('MIN(position) AS min_position, MAX(position) AS max_position')
+            ->first();
+        $minPosition = is_numeric($bounds?->getAttribute('min_position')) ? (int) $bounds->getAttribute('min_position') : 0;
+        $maxPosition = is_numeric($bounds?->getAttribute('max_position')) ? (int) $bounds->getAttribute('max_position') : 0;
+
+        /** @var EloquentCollection<int, Exhibition> $records */
+        $records = $query->orderBy('position')->orderBy('id')->forPage($this->page, $this->pageSize)->get();
+        $now = now();
+        $this->exhibitions = $records->map(function (Exhibition $entry) use ($minPosition, $maxPosition, $now): array {
+            $state = (string) $entry->getAttribute('state');
+            $position = (int) $entry->getAttribute('position');
+            $location = collect([$entry->getAttribute('venue'), $entry->address()])
+                ->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+                ->unique()
+                ->implode(' · ');
 
             return [
-                'id' => (int) $exhibition->getKey(),
-                'type' => is_string($kind) && $kind !== '' ? ucfirst($kind).' exhibition' : 'Exhibition',
-                'title' => (string) $exhibition->getAttribute('title'),
-                'date' => (string) $exhibition->getAttribute('date_text'),
-                'meta' => $meta === [] ? 'No venue details' : implode(' · ', $meta),
-                'opening' => is_string($opening) && trim($opening) !== '' ? trim($opening) : null,
-                'state' => (string) $exhibition->getAttribute('state'),
-                'edit_url' => ExhibitionResource::getUrl('edit', ['record' => $exhibition]),
-                'public_url' => $exhibition->getAttribute('state') === 'published' ? ExhibitionResource::publicUrl($exhibition) : null,
-                'can_move_up' => $index > 0,
-                'can_move_down' => $index < $lastIndex,
+                'id' => (int) $entry->getKey(),
+                'title' => (string) $entry->getAttribute('title'),
+                'location' => $location !== '' ? $location : null,
+                'state' => $state,
+                'timing' => $entry->temporalState($now),
+                'vernissage' => $entry->vernissageDisplay(),
+                'date_text' => $entry->displayDate() ?? '',
+                'public_url' => $this->journalPublicUrl !== null && $state === 'published' ? $this->journalPublicUrl : null,
+                'can_move_up' => $position > $minPosition,
+                'can_move_down' => $position < $maxPosition,
+                'can_delete' => $state !== 'published',
+                'delete_help' => $state === 'published' ? 'Archive this exhibition before deleting' : null,
             ];
         })->all();
+    }
+
+    private function loadPostMetrics(): void
+    {
+        /** @var EloquentCollection<int, BlogPost> $records */
+        $records = BlogPost::query()->where('site_section_id', $this->sectionId)
+            ->get(['id', 'state', 'published_at', 'scheduled_at']);
+        $this->unfilteredEntryCount = $records->count();
+        $now = now();
+
+        $this->metrics = [
+            ['label' => 'Posts', 'value' => $records->count()],
+            ['label' => 'Public', 'value' => $records->filter(fn (BlogPost $post): bool => $this->postIsPublic($post, $now))->count()],
+            ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count()],
+            ['label' => 'Scheduled', 'value' => $records->where('state', 'scheduled')->count()],
+            ['label' => 'Unpublished', 'value' => $records->where('state', 'unpublished')->count()],
+            ['label' => 'Archived', 'value' => $records->where('state', 'archived')->count()],
+        ];
+    }
+
+    private function loadExhibitionMetrics(): void
+    {
+        /** @var EloquentCollection<int, Exhibition> $records */
+        $records = Exhibition::query()->where('site_section_id', $this->sectionId)
+            ->get(['id', 'state', 'starts_on', 'ends_on']);
+        $this->unfilteredEntryCount = $records->count();
+        $now = now();
+        $timing = $records->map(fn (Exhibition $entry): string => $entry->temporalState($now));
+
+        $this->metrics = [
+            ['label' => 'Exhibitions', 'value' => $records->count()],
+            ['label' => 'Published', 'value' => $records->where('state', 'published')->count()],
+            ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count()],
+            ['label' => 'Upcoming', 'value' => $timing->filter(fn (string $value): bool => $value === 'upcoming')->count()],
+            ['label' => 'Current', 'value' => $timing->filter(fn (string $value): bool => $value === 'current')->count()],
+            ['label' => 'Past', 'value' => $timing->filter(fn (string $value): bool => $value === 'past')->count()],
+        ];
+    }
+
+    /** @param Builder<Exhibition> $query */
+    private function applyTimingFilter(Builder $query): void
+    {
+        $today = now()->toDateString();
+        if ($this->timingFilter === 'upcoming') {
+            $query->whereDate('starts_on', '>', $today);
+            return;
+        }
+        if ($this->timingFilter === 'unknown') {
+            $query->whereNull('starts_on');
+            return;
+        }
+        if ($this->timingFilter === 'current') {
+            $query->whereNotNull('starts_on')->whereDate('starts_on', '<=', $today)
+                ->where(function (Builder $current) use ($today): void {
+                    $current->where(function (Builder $range) use ($today): void {
+                        $range->whereNotNull('ends_on')->whereDate('ends_on', '>=', $today);
+                    })->orWhere(function (Builder $singleDay) use ($today): void {
+                        $singleDay->whereNull('ends_on')->whereDate('starts_on', '=', $today);
+                    });
+                });
+            return;
+        }
+        if ($this->timingFilter === 'past') {
+            $query->whereNotNull('starts_on')->where(function (Builder $past) use ($today): void {
+                $past->where(function (Builder $range) use ($today): void {
+                    $range->whereNotNull('ends_on')->whereDate('ends_on', '<', $today);
+                })->orWhere(function (Builder $singleDay) use ($today): void {
+                    $singleDay->whereNull('ends_on')->whereDate('starts_on', '<', $today);
+                });
+            });
+        }
+    }
+
+    private function coverThumbnailUrl(BlogPost $post): ?string
+    {
+        $usage = $post->getRelationValue('mediaUsages')->first();
+        if (! $usage instanceof JournalEntryMedia) {
+            return null;
+        }
+        $asset = $usage->getRelationValue('mediaAsset');
+        if (! $asset instanceof MediaAsset) {
+            return null;
+        }
+        $variant = $asset->getRelationValue('variants')->first(
+            fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === PublicMedia::THUMBNAIL_KIND
+                && $candidate->getAttribute('transform_profile') === PublicMedia::PUBLIC_TRANSFORM_PROFILE
+                && $candidate->getAttribute('state') === 'available',
+        );
+
+        return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
+    }
+
+    private function postIsPublic(BlogPost $post, CarbonInterface $now): bool
+    {
+        $state = (string) $post->getAttribute('state');
+        $published = $post->getAttribute('published_at');
+        if ($state === 'published' && $published instanceof CarbonInterface) {
+            return $published->lessThanOrEqualTo($now);
+        }
+        $scheduled = $post->getAttribute('scheduled_at');
+
+        return $state === 'scheduled'
+            && $scheduled instanceof CarbonInterface
+            && $scheduled->lessThanOrEqualTo($now);
+    }
+
+    private function reloadEntries(bool $refreshMetrics = true): void
+    {
+        if ($this->journalTemplate() === JournalTemplate::Blog) {
+            $this->loadPosts($refreshMetrics);
+            return;
+        }
+        $this->loadExhibitions($refreshMetrics);
+    }
+
+    private function setPagination(int $total): void
+    {
+        $this->pageSize = $this->normalizePageSize($this->pageSize);
+        $this->total = $total;
+        $this->pages = max(1, (int) ceil($total / $this->pageSize));
+        $this->page = min(max(1, $this->page), $this->pages);
+    }
+
+    private function normalizePageSize(mixed $value): int
+    {
+        $size = is_numeric($value) ? (int) $value : self::DEFAULT_PAGE_SIZE;
+
+        return in_array($size, self::PAGE_SIZES, true) ? $size : self::DEFAULT_PAGE_SIZE;
+    }
+
+    private function toggleSelection(array $selected, int $id): array
+    {
+        $ids = collect($selected)->map(fn (mixed $value): int => (int) $value)->unique()->values();
+        if ($ids->containsStrict($id)) {
+            return $ids->reject(fn (int $value): bool => $value === $id)->values()->all();
+        }
+
+        return $ids->push($id)->unique()->values()->all();
+    }
+
+    private function toggledVisibleSelection(array $selected, array $visible): array
+    {
+        $selectedIds = collect($selected)->map(fn (mixed $id): int => (int) $id)->unique()->values();
+        $allVisibleSelected = $visible !== [] && collect($visible)->every(fn (int $id): bool => $selectedIds->containsStrict($id));
+        if ($allVisibleSelected) {
+            return $selectedIds->reject(fn (int $id): bool => in_array($id, $visible, true))->values()->all();
+        }
+
+        return $selectedIds->merge($visible)->unique()->values()->all();
+    }
+
+    private function runEntryAction(string $successTitle, callable $action): void
+    {
+        try {
+            $action();
+            Notification::make()->title($successTitle)->success()->send();
+        } catch (ValidationException $exception) {
+            $this->notifyValidationFailure('Journal entry unchanged', $exception);
+        }
+        $this->reloadEntries();
+    }
+
+    private function runPostBatch(string $label, callable $action): void
+    {
+        [$ok, $failed] = $this->bestEffort($this->selectedPosts(), $action);
+        $this->selectedPostIds = [];
+        $this->notifyBatch($label, $ok, $failed);
+        $this->loadPosts();
+    }
+
+    private function bestEffort(iterable $records, callable $action): array
+    {
+        $ok = 0;
+        $failed = 0;
+        foreach ($records as $record) {
+            try {
+                if ($action($record) === false) {
+                    $failed++;
+                } else {
+                    $ok++;
+                }
+            } catch (ValidationException $exception) {
+                $failed++;
+            } catch (Throwable $exception) {
+                report($exception);
+                $failed++;
+            }
+        }
+
+        return [$ok, $failed];
+    }
+
+    private function notifyBatch(string $label, int $ok, int $failed): void
+    {
+        $notification = Notification::make()->title(ucfirst($label))
+            ->body($ok.' succeeded'.($failed > 0 ? ' · '.$failed.' failed' : ''));
+        $failed > 0 ? $notification->warning() : $notification->success();
+        $notification->send();
+    }
+
+    private function notifyValidationFailure(string $title, ValidationException $exception): void
+    {
+        $message = collect($exception->errors())->flatten()->first();
+        Notification::make()->title($title)
+            ->body(is_string($message) ? $message : 'The requested Journal change is not valid.')
+            ->danger()->send();
+    }
+
+    private function selectedPosts(): EloquentCollection
+    {
+        $ids = collect($this->selectedPostIds)->map(fn (mixed $id): int => (int) $id)->unique()->all();
+
+        return BlogPost::query()->where('site_section_id', $this->sectionId)->whereKey($ids)->orderBy('position')->orderBy('id')->get();
+    }
+
+    private function selectedExhibitions(): EloquentCollection
+    {
+        $ids = collect($this->selectedExhibitionIds)->map(fn (mixed $id): int => (int) $id)->unique()->all();
+
+        return Exhibition::query()->where('site_section_id', $this->sectionId)->whereKey($ids)->orderBy('position')->orderBy('id')->get();
+    }
+
+    private function post(int $id): BlogPost
+    {
+        abort_unless($this->journalTemplate() === JournalTemplate::Blog, 404);
+
+        return BlogPost::query()->where('site_section_id', $this->sectionId)->findOrFail($id);
+    }
+
+    private function exhibition(int $id): Exhibition
+    {
+        abort_unless($this->journalTemplate() === JournalTemplate::Exhibitions, 404);
+
+        return Exhibition::query()->where('site_section_id', $this->sectionId)->findOrFail($id);
+    }
+
+    private function section(): SiteSection
+    {
+        $template = $this->journalTemplate();
+
+        return SiteSection::query()->whereKey($this->sectionId)
+            ->where('type', SiteNodeType::Journal->value)
+            ->where('template', $template->value)
+            ->firstOrFail();
+    }
+
+    private function journalTemplate(): JournalTemplate
+    {
+        $template = JournalTemplate::tryFrom($this->template);
+        abort_unless($template instanceof JournalTemplate, 404);
+
+        return $template;
     }
 }

@@ -3,11 +3,13 @@
 namespace App\Domain\Media;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Content\JournalEntryMediaService;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\ExhibitionMedia;
+use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\User;
@@ -23,6 +25,7 @@ class MediaAssetEditorialService
     public function __construct(
         private readonly AdminAuditService $adminAuditService,
         private readonly MediaReferenceQuery $referenceQuery,
+        private readonly JournalEntryMediaService $journalMedia,
     ) {}
 
     public function updateMetadata(MediaAsset $asset, array $data): MediaAsset
@@ -45,7 +48,6 @@ class MediaAssetEditorialService
         if (array_key_exists('credit', $data)) {
             $values['credit'] = $this->plainText($data['credit'], 240, true);
         }
-
         if (array_key_exists('copyright_notice_mode', $data)) {
             $mode = $data['copyright_notice_mode'];
             if (! is_string($mode) || ! in_array($mode, MediaAsset::COPYRIGHT_MODES, true)) {
@@ -53,7 +55,6 @@ class MediaAssetEditorialService
                     'copyright_notice_mode' => 'Choose whether copyright is inherited, overridden, or omitted.',
                 ]);
             }
-
             $values['copyright_notice_mode'] = $mode;
             $values['copyright_notice'] = $mode === MediaAsset::COPYRIGHT_OVERRIDE
                 ? $this->plainText($data['copyright_notice'] ?? null, 500, true)
@@ -145,6 +146,7 @@ class MediaAssetEditorialService
             if ($this->referenceQuery->isReferenced($locked)) {
                 $this->removeCanonicalReferences($locked, $actor);
             }
+            $this->removeLegacyJournalReferences($locked);
 
             $locked->variants()->update(['state' => 'deleted']);
             $locked->setAttribute('state', 'deleted');
@@ -202,34 +204,18 @@ class MediaAssetEditorialService
             }
         }
 
-        /** @var EloquentCollection<int, ExhibitionMedia> $exhibitionUsages */
-        $exhibitionUsages = ExhibitionMedia::query()
+        $affectedInlineBlogIds = JournalEntryMedia::query()
             ->where('media_asset_id', $assetId)
-            ->orderBy('exhibition_id')
-            ->orderBy('position')
-            ->lockForUpdate()
-            ->get();
-        $exhibitionIds = $exhibitionUsages
-            ->pluck('exhibition_id')
+            ->where('role', JournalEntryMedia::ROLE_INLINE)
+            ->whereNotNull('blog_post_id')
+            ->pluck('blog_post_id')
             ->map(static fn (mixed $id): int => (int) $id)
             ->unique()
             ->values()
             ->all();
-        if ($exhibitionUsages->isNotEmpty()) {
-            ExhibitionMedia::query()->where('media_asset_id', $assetId)->delete();
-            foreach ($exhibitionIds as $exhibitionId) {
-                $this->normalizeExhibitionAdditionalPositions($exhibitionId);
-            }
-        }
 
-        /** @var EloquentCollection<int, BlogPost> $posts */
-        $posts = BlogPost::query()
-            ->where('cover_media_asset_id', $assetId)
-            ->lockForUpdate()
-            ->get();
-        foreach ($posts as $post) {
-            $post->forceFill(['cover_media_asset_id' => null])->save();
-        }
+        $this->journalMedia->detachAsset($asset);
+        $this->repairBlogLifecycleAfterInlineDetach($affectedInlineBlogIds, $actor);
 
         /** @var EloquentCollection<int, PublicContentSetting> $settings */
         $settings = PublicContentSetting::query()
@@ -262,18 +248,87 @@ class MediaAssetEditorialService
         }
     }
 
+    /** @param list<int> $blogPostIds */
+    private function repairBlogLifecycleAfterInlineDetach(array $blogPostIds, User $actor): void
+    {
+        if ($blogPostIds === []) {
+            return;
+        }
+
+        /** @var EloquentCollection<int, BlogPost> $posts */
+        $posts = BlogPost::query()
+            ->whereIn('id', $blogPostIds)
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($posts as $post) {
+            $state = (string) $post->getAttribute('state');
+            if (! in_array($state, ['published', 'scheduled'], true)) {
+                continue;
+            }
+            if (trim((string) ($post->getAttribute('body') ?? '')) !== '') {
+                continue;
+            }
+
+            $post->setAttribute('state', $state === 'published' ? 'unpublished' : 'draft');
+            $post->setAttribute('scheduled_at', null);
+            $post->save();
+            $this->adminAuditService->record(
+                $actor,
+                $state === 'published' ? 'blog_post.unpublished' : 'blog_post.restored_to_draft',
+                'blog_post',
+                $post->getKey(),
+                ['reason' => 'referenced_inline_media_deleted'],
+            );
+        }
+    }
+
+    private function removeLegacyJournalReferences(MediaAsset $asset): void
+    {
+        $assetId = (int) $asset->getKey();
+
+        /** @var EloquentCollection<int, BlogPost> $posts */
+        $posts = BlogPost::query()
+            ->where('cover_media_asset_id', $assetId)
+            ->lockForUpdate()
+            ->get();
+        foreach ($posts as $post) {
+            $post->forceFill(['cover_media_asset_id' => null])->save();
+        }
+
+        /** @var EloquentCollection<int, ExhibitionMedia> $legacy */
+        $legacy = ExhibitionMedia::query()
+            ->where('media_asset_id', $assetId)
+            ->orderBy('exhibition_id')
+            ->orderBy('position')
+            ->lockForUpdate()
+            ->get();
+        $exhibitionIds = $legacy
+            ->pluck('exhibition_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($legacy->isNotEmpty()) {
+            ExhibitionMedia::query()->where('media_asset_id', $assetId)->delete();
+            foreach ($exhibitionIds as $exhibitionId) {
+                $this->normalizeLegacyExhibitionPositions($exhibitionId);
+            }
+        }
+    }
+
     private function normalizeArtworkAdditionalPositions(int $artworkId): void
     {
-        /** @var EloquentCollection<int, ArtworkMedia> $additional */
-        $additional = ArtworkMedia::query()
+        /** @var EloquentCollection<int, ArtworkMedia> $rows */
+        $rows = ArtworkMedia::query()
             ->where('artwork_id', $artworkId)
             ->where('role', 'additional')
             ->orderBy('position')
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
-
-        foreach ($additional as $index => $usage) {
+        foreach ($rows as $index => $usage) {
             $position = $index + 1;
             if ((int) $usage->getAttribute('position') !== $position) {
                 $usage->setAttribute('position', $position);
@@ -282,18 +337,17 @@ class MediaAssetEditorialService
         }
     }
 
-    private function normalizeExhibitionAdditionalPositions(int $exhibitionId): void
+    private function normalizeLegacyExhibitionPositions(int $exhibitionId): void
     {
-        /** @var EloquentCollection<int, ExhibitionMedia> $additional */
-        $additional = ExhibitionMedia::query()
+        /** @var EloquentCollection<int, ExhibitionMedia> $rows */
+        $rows = ExhibitionMedia::query()
             ->where('exhibition_id', $exhibitionId)
             ->where('role', 'additional')
             ->orderBy('position')
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
-
-        foreach ($additional as $index => $usage) {
+        foreach ($rows as $index => $usage) {
             $position = $index + 1;
             if ((int) $usage->getAttribute('position') !== $position) {
                 $usage->setAttribute('position', $position);
@@ -323,7 +377,6 @@ class MediaAssetEditorialService
             try {
                 if ($disk->exists($key) && ! $disk->delete($key)) {
                     $failed[] = $key;
-
                     continue;
                 }
                 if ($disk->exists($key)) {

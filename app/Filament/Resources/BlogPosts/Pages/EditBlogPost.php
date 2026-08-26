@@ -6,6 +6,7 @@ use App\Domain\Blog\BlogEditorialService;
 use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Pages\JournalWorkspace;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
+use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -16,14 +17,19 @@ final class EditBlogPost extends EditRecord
 
     protected static string $resource = BlogPostResource::class;
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        return [...$data, ...app(JournalEntryEditorState::class)->for($this->post())];
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $post = $this->post();
+        $data['site_section_id'] = (int) $post->getAttribute('site_section_id');
         $data['state'] = (string) $post->getAttribute('state');
         $data['position'] = (int) $post->getAttribute('position');
         $data['published_at'] = $post->getAttribute('published_at');
         $data['scheduled_at'] = $post->getAttribute('scheduled_at');
-
         return $data;
     }
 
@@ -35,16 +41,15 @@ final class EditBlogPost extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        $sectionId = (int) $this->post()->getAttribute('site_section_id');
-
-        return $this->editorReturnUrl(JournalWorkspace::getUrl(['section' => $sectionId]));
+        return $this->editorReturnUrl(JournalWorkspace::getUrl([
+            'section' => (int) $this->post()->getAttribute('site_section_id'),
+        ]));
     }
 
     private function post(): BlogPost
     {
         /** @var BlogPost $record */
         $record = $this->getRecord();
-
         return $record;
     }
 }

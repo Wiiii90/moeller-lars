@@ -22,6 +22,10 @@ class AdminAuditService
         'public_content_setting',
     ];
 
+    private const REASONS = [
+        'referenced_inline_media_deleted',
+    ];
+
     public function __construct(
         private readonly AdminActionReceiptService $receipts,
     ) {}
@@ -70,8 +74,11 @@ class AdminAuditService
                 && $value >= 0;
             $validDirection = $key === 'direction'
                 && in_array($value, ['up', 'down'], true);
+            $validReason = $key === 'reason'
+                && is_string($value)
+                && in_array($value, self::REASONS, true);
 
-            if (! $validReference && ! $validPosition && ! $validDirection) {
+            if (! $validReference && ! $validPosition && ! $validDirection && ! $validReason) {
                 throw new InvalidArgumentException('Invalid audit metadata.');
             }
         }

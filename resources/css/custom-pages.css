@@ -48,7 +48,23 @@
 
 .custom-page__divider {
     margin: .15rem 0;
-    border-top: var(--public-divider-width) solid var(--public-divider);
+    border: 0;
+}
+
+.custom-page__divider--thin {
+    border-top: 1px solid var(--public-divider);
+}
+
+.custom-page__divider--subtle {
+    border-top: 1px solid color-mix(in srgb, var(--public-divider) 50%, transparent);
+}
+
+.custom-page__divider--strong {
+    border-top: 2px solid var(--public-divider);
+}
+
+.custom-page__divider--dotted {
+    border-top: 1px dotted var(--public-divider);
 }
 
 .custom-page__list {
@@ -74,6 +90,91 @@
 
 .custom-page__contact .contact-section {
     margin: 0;
+}
+
+.custom-page__contact .category-heading {
+    width: auto;
+    margin: 0 0 .95rem;
+    color: #504b47;
+}
+
+.custom-page__contact .contact-status {
+    margin-bottom: 1rem;
+}
+
+.custom-page__contact .contact-form {
+    display: grid;
+    width: min(100%, 31rem);
+    margin: 0;
+    gap: .9rem;
+}
+
+.custom-page__contact .contact-form__field {
+    margin: 0;
+}
+
+.custom-page__contact .contact-form label {
+    display: block;
+    margin: 0 0 .27rem;
+    color: #706a65;
+    font-size: .66rem;
+    font-weight: 500;
+    letter-spacing: .065em;
+    text-transform: uppercase;
+}
+
+.custom-page__contact .contact-form input,
+.custom-page__contact .contact-form textarea {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: .58rem .64rem;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid #d0ccc8;
+    border-radius: 0;
+    background: #fff;
+    color: #444;
+    font: inherit;
+    line-height: 1.4;
+    box-shadow: none;
+    transition: border-color .14s ease;
+}
+
+.custom-page__contact .contact-form textarea {
+    min-height: 126px;
+    resize: vertical;
+}
+
+.custom-page__contact .contact-form input:focus-visible,
+.custom-page__contact .contact-form textarea:focus-visible {
+    border-color: #8d857e;
+    outline: 1px solid #8d857e;
+    outline-offset: 1px;
+}
+
+.custom-page__contact .contact-form button {
+    width: fit-content;
+    min-width: 0;
+    min-height: 0;
+    margin: .1rem 0 0;
+    padding: .54rem .88rem;
+    border: 1px solid #9a938d;
+    border-radius: 0;
+    background: #fff;
+    color: #555;
+    font: inherit;
+    font-size: .7rem;
+    font-weight: 500;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.custom-page__contact .contact-form button:hover:not(:disabled),
+.custom-page__contact .contact-form button:focus-visible:not(:disabled) {
+    border-color: #625d58;
+    color: #222;
 }
 
 .public-preview-state {

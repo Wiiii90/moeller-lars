@@ -117,7 +117,13 @@
                 @endif
 
                 @if ($type === 'divider')
-                    <div class="custom-page__divider" aria-hidden="true"></div>
+                    @php
+                        $dividerVariant = is_string($block['variant'] ?? null)
+                            && in_array($block['variant'], \App\Models\CustomPageSetting::DIVIDER_VARIANTS, true)
+                                ? $block['variant']
+                                : 'thin';
+                    @endphp
+                    <div class="custom-page__divider custom-page__divider--{{ $dividerVariant }}" aria-hidden="true"></div>
                 @endif
 
                 @if ($type === 'contact')
