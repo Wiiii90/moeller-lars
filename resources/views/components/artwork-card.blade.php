@@ -7,7 +7,7 @@
     $mime = $media->mimeType($artwork);
     $isVideo = $kind === 'video';
     $thumbnail = $isVideo ? null : $media->thumbnailVariant($artwork);
-    $imageUrl = $thumbnail ? route('media.variant', $thumbnail) : null;
+    $imageUrl = $thumbnail ? $media->variantUrl($thumbnail) : null;
     $category = $artwork->getRelationValue('category');
     $thumbnailWidth = (int) ($thumbnail?->getAttribute('width') ?? 0);
     $thumbnailHeight = (int) ($thumbnail?->getAttribute('height') ?? 0);

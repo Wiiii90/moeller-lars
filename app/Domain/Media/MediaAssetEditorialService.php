@@ -9,7 +9,6 @@ use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\ExhibitionMedia;
-use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\User;
@@ -204,18 +203,7 @@ class MediaAssetEditorialService
             }
         }
 
-        $affectedInlineBlogIds = JournalEntryMedia::query()
-            ->where('media_asset_id', $assetId)
-            ->where('role', JournalEntryMedia::ROLE_INLINE)
-            ->whereNotNull('blog_post_id')
-            ->pluck('blog_post_id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
-
         $this->journalMedia->detachAsset($asset);
-        $this->repairBlogLifecycleAfterInlineDetach($affectedInlineBlogIds, $actor);
 
         /** @var EloquentCollection<int, PublicContentSetting> $settings */
         $settings = PublicContentSetting::query()
@@ -245,41 +233,6 @@ class MediaAssetEditorialService
 
             $customPage->setAttribute('blocks', $filtered);
             $customPage->save();
-        }
-    }
-
-    /** @param list<int> $blogPostIds */
-    private function repairBlogLifecycleAfterInlineDetach(array $blogPostIds, User $actor): void
-    {
-        if ($blogPostIds === []) {
-            return;
-        }
-
-        /** @var EloquentCollection<int, BlogPost> $posts */
-        $posts = BlogPost::query()
-            ->whereIn('id', $blogPostIds)
-            ->lockForUpdate()
-            ->get();
-
-        foreach ($posts as $post) {
-            $state = (string) $post->getAttribute('state');
-            if (! in_array($state, ['published', 'scheduled'], true)) {
-                continue;
-            }
-            if (trim((string) ($post->getAttribute('body') ?? '')) !== '') {
-                continue;
-            }
-
-            $post->setAttribute('state', $state === 'published' ? 'unpublished' : 'draft');
-            $post->setAttribute('scheduled_at', null);
-            $post->save();
-            $this->adminAuditService->record(
-                $actor,
-                $state === 'published' ? 'blog_post.unpublished' : 'blog_post.restored_to_draft',
-                'blog_post',
-                $post->getKey(),
-                ['reason' => 'referenced_inline_media_deleted'],
-            );
         }
     }
 

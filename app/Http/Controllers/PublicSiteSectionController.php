@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Blog\BlogEditorialService;
-use App\Domain\Content\JournalEntryContentRenderer;
+use App\Domain\Content\JournalMediaRenderer;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SiteNodeType;
@@ -29,7 +29,7 @@ final class PublicSiteSectionController extends Controller
         private readonly PublicArtworkController $artworks,
         private readonly SafeRichTextRenderer $richText,
         private readonly PublicMedia $media,
-        private readonly JournalEntryContentRenderer $journalContent,
+        private readonly JournalMediaRenderer $journalMedia,
         private readonly SitePreviewContext $preview,
         private readonly SiteNodeRoute $siteNodeRoute,
     ) {}
@@ -57,7 +57,7 @@ final class PublicSiteSectionController extends Controller
         abort_unless($post instanceof BlogPost, 404);
         return view('pages.blog.show', [
             'section' => $journal, 'post' => $post, 'richText' => $this->richText, 'media' => $this->media,
-            'journalContent' => $this->journalContent, 'siteNodeRoute' => $this->siteNodeRoute,
+            'journalMedia' => $this->journalMedia, 'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 
@@ -97,7 +97,7 @@ final class PublicSiteSectionController extends Controller
         $posts = $this->blogPostsQuery($section)->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get();
         return view('pages.blog.index', [
             'section' => $section, 'settings' => JournalSetting::forSection($section), 'posts' => $posts,
-            'richText' => $this->richText, 'media' => $this->media, 'journalContent' => $this->journalContent, 'siteNodeRoute' => $this->siteNodeRoute,
+            'richText' => $this->richText, 'media' => $this->media, 'journalMedia' => $this->journalMedia, 'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 
@@ -108,7 +108,7 @@ final class PublicSiteSectionController extends Controller
             ->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get();
         return view('pages.exhibitions', [
             'section' => $section, 'settings' => JournalSetting::forSection($section), 'exhibitions' => $exhibitions,
-            'richText' => $this->richText, 'media' => $this->media, 'journalContent' => $this->journalContent, 'siteNodeRoute' => $this->siteNodeRoute,
+            'richText' => $this->richText, 'media' => $this->media, 'journalMedia' => $this->journalMedia, 'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
 

@@ -4,7 +4,7 @@ namespace App\Domain\Content;
 
 final class RichTextMediaReference
 {
-    private const MARKDOWN_PATTERN = '/!\[\]\(media:(\d+)\)/';
+    private const MARKDOWN_PATTERN = '/!\[([^\r\n]*?)\]\(media:(\d+)\)/';
 
     private const URL_PATTERN = '/\Amedia:(\d+)\z/';
 
@@ -13,9 +13,11 @@ final class RichTextMediaReference
         return 'media:'.$mediaAssetId;
     }
 
-    public static function markdown(int $mediaAssetId): string
+    public static function markdown(int $mediaAssetId, ?string $altTextOverride = null): string
     {
-        return '![]('.self::url($mediaAssetId).')';
+        $alt = $altTextOverride === null ? '' : self::escapeAlt($altTextOverride);
+
+        return '!['.$alt.']('.self::url($mediaAssetId).')';
     }
 
     public static function token(int $mediaAssetId): string
@@ -34,21 +36,56 @@ final class RichTextMediaReference
         return $id > 0 ? $id : null;
     }
 
-    /** @return list<int> */
-    public static function ids(string $source): array
+    /** @return list<array{media_asset_id:int,alt_text_override:?string}> */
+    public static function references(string $source): array
     {
         if ($source === '') {
             return [];
         }
 
-        preg_match_all(self::MARKDOWN_PATTERN, $source, $matches);
+        preg_match_all(self::MARKDOWN_PATTERN, $source, $matches, PREG_SET_ORDER);
+        $references = [];
 
-        return collect($matches[1] ?? [])
-            ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
-            ->map(static fn (mixed $id): int => (int) $id)
+        foreach ($matches as $match) {
+            $id = (int) ($match[2] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+
+            $alt = self::unescapeAlt((string) ($match[1] ?? ''));
+            $references[] = [
+                'media_asset_id' => $id,
+                'alt_text_override' => $alt === '' ? null : $alt,
+            ];
+        }
+
+        return $references;
+    }
+
+    /** @return list<int> */
+    public static function ids(string $source): array
+    {
+        return collect(self::references($source))
+            ->pluck('media_asset_id')
             ->unique()
             ->values()
             ->all();
+    }
+
+    public static function remove(string $source, int $mediaAssetId): string
+    {
+        $clean = preg_replace_callback(
+            self::MARKDOWN_PATTERN,
+            static fn (array $matches): string => (int) ($matches[2] ?? 0) === $mediaAssetId ? '' : (string) $matches[0],
+            $source,
+        );
+        if (! is_string($clean)) {
+            return $source;
+        }
+
+        $clean = preg_replace('/(?:\R[ \t]*){3,}/', "\n\n", $clean);
+
+        return trim(is_string($clean) ? $clean : '');
     }
 
     /**
@@ -83,5 +120,17 @@ final class RichTextMediaReference
         }
 
         return array_values(array_unique($ids));
+    }
+
+    private static function escapeAlt(string $alt): string
+    {
+        $alt = preg_replace('/\s+/u', ' ', trim($alt)) ?? trim($alt);
+
+        return str_replace(['\\', ']'], ['\\\\', '\\]'], $alt);
+    }
+
+    private static function unescapeAlt(string $alt): string
+    {
+        return preg_replace('/\\\\(.)/u', '$1', $alt) ?? $alt;
     }
 }

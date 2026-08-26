@@ -17,6 +17,7 @@ final class ExhibitionEditorialService
         private readonly AdminAuditService $audit,
         private readonly JournalEntryOrderService $order,
         private readonly SafeLinkPolicy $links,
+        private readonly SafeRichTextRenderer $richText,
         private readonly JournalEntryMediaService $media,
     ) {}
 
@@ -35,7 +36,6 @@ final class ExhibitionEditorialService
                 'archived_from_state' => null,
                 'position' => $this->order->nextPosition(new Exhibition, $sectionId),
                 'published_at' => null,
-                'description' => null,
                 'legacy_id' => null,
                 'legacy_source' => null,
                 'migration_batch_id' => null,
@@ -43,9 +43,9 @@ final class ExhibitionEditorialService
             ]);
             $entry->save();
 
-            $source = $this->media->syncEditor($entry, $data);
-            $entry->setAttribute('description', $source === '' ? null : $source);
-            $entry->save();
+            if ($this->hasStructuredMediaInput($data)) {
+                $this->media->syncStructuredMedia($entry, $data);
+            }
 
             $this->audit->record($actor, 'exhibition.created', 'exhibition', $entry->getKey(), [
                 'site_section_id' => $sectionId,
@@ -87,8 +87,9 @@ final class ExhibitionEditorialService
             }
 
             $fresh->fill([...$payload, 'site_section_id' => $sectionId]);
-            $source = $this->media->syncEditor($fresh, $data);
-            $fresh->setAttribute('description', $source === '' ? null : $source);
+            if ($this->hasStructuredMediaInput($data)) {
+                $this->media->syncStructuredMedia($fresh, $data);
+            }
 
             if ($fresh->getAttribute('state') === 'published') {
                 $this->assertPublicReady($fresh);
@@ -271,7 +272,7 @@ final class ExhibitionEditorialService
     private function validatedEditorialData(array $data, ?Exhibition $entry): array
     {
         $allowed = [
-            'site_section_id', 'slug', 'title', 'starts_on', 'ends_on', 'date_text', 'vernissage_at',
+            'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'date_text', 'vernissage_at',
             'venue', 'location_text', 'city', 'country', 'latitude', 'longitude', 'geocoded_at', 'external_url',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
@@ -284,6 +285,7 @@ final class ExhibitionEditorialService
             'site_section_id' => ['required', 'integer', 'min:1'],
             'slug' => ['required', 'string', 'max:180', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slugRule],
             'title' => ['required', 'string', 'max:240'],
+            'description' => ['nullable', 'string'],
             'starts_on' => ['nullable', 'date'],
             'ends_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
             'date_text' => ['nullable', 'string', 'max:160'],
@@ -302,6 +304,13 @@ final class ExhibitionEditorialService
             if (array_key_exists($field, $payload) && is_string($payload[$field])) {
                 $payload[$field] = trim($payload[$field]) === '' ? null : trim($payload[$field]);
             }
+        }
+
+        if (array_key_exists('description', $payload) && is_string($payload['description'])) {
+            $payload['description'] = trim($payload['description']) === '' ? null : trim($payload['description']);
+        }
+        if (is_string($payload['description'] ?? null)) {
+            $this->richText->assertValid($payload['description'], allowEmbeddedMedia: true);
         }
 
         $url = $payload['external_url'] ?? null;
@@ -346,5 +355,12 @@ final class ExhibitionEditorialService
         }
 
         return (int) $id;
+    }
+
+    private function hasStructuredMediaInput(array $data): bool
+    {
+        return array_key_exists('cover_media_asset_id', $data)
+            || array_key_exists('cover_alt_text_override', $data)
+            || array_key_exists('gallery_images', $data);
     }
 }

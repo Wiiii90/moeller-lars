@@ -33,7 +33,7 @@
                     @if ($asset !== null && $variant !== null)
                         <figure class="custom-page__component custom-page__media custom-page__image">
                             <img
-                                src="{{ route('media.variant', $variant) }}"
+                                src="{{ $media->variantUrl($variant) }}"
                                 alt="{{ $imageAlt }}"
                                 loading="{{ $loading }}"
                                 decoding="async"
@@ -75,7 +75,7 @@
                                     @if ($entryAsset instanceof \App\Models\MediaAsset && $entryVariant !== null)
                                         <figure class="cv-entry__media">
                                             <img
-                                                src="{{ route('media.variant', $entryVariant) }}"
+                                                src="{{ $media->variantUrl($entryVariant) }}"
                                                 alt="{{ $media->altTextForAsset($entryAsset) }}"
                                                 loading="lazy"
                                                 decoding="async"

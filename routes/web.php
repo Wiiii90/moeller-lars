@@ -25,6 +25,8 @@ Route::middleware(ProtectArtistPreview::class)
     ->name('preview.')
     ->group(function (): void {
         Route::get('/', [PublicHomeController::class, 'show'])->name('home');
+        Route::get('/media/original/{mediaAsset}', [AdminMediaController::class, 'original'])->name('media.original');
+        Route::get('/media/variant/{mediaVariant}', [AdminMediaController::class, 'variant'])->name('media.variant');
         Route::get('/artworks/{slug}', [PublicArtworkController::class, 'show'])->name('artworks.show');
         Route::get('/{section}/{slug}', [PublicSiteSectionController::class, 'journalEntry'])
             ->where(['section' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'slug' => '[a-z0-9]+(?:-[a-z0-9]+)*'])

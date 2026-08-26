@@ -2,6 +2,7 @@
 
 namespace App\Domain\Content;
 
+use App\Domain\Admin\AdminAuditService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
@@ -9,47 +10,23 @@ use App\Models\Exhibition;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 
 final class JournalEntryMediaService
 {
     public function __construct(
-        private readonly JournalEntryContent $content,
+        private readonly SafeRichTextRenderer $richText,
         private readonly PublicMedia $publicMedia,
+        private readonly AdminAuditService $audit,
     ) {}
 
     /** @return array<string,mixed> */
-    public function editorState(BlogPost|Exhibition $entry): array
+    public function structuredEditorState(BlogPost|Exhibition $entry): array
     {
         $entry->loadMissing('mediaUsages.mediaAsset.variants');
         /** @var EloquentCollection<int, JournalEntryMedia> $usages */
         $usages = $entry->mediaUsages;
-        $inline = $usages->where('role', JournalEntryMedia::ROLE_INLINE)
-            ->keyBy(fn (JournalEntryMedia $usage): string => strtolower((string) $usage->getAttribute('embed_key')));
-        $blocks = [];
-        foreach ($this->content->blocks($this->source($entry)) as $block) {
-            if (($block['type'] ?? null) === 'text') {
-                $blocks[] = $block;
-                continue;
-            }
-
-            $key = strtolower((string) ($block['data']['embed_key'] ?? ''));
-            $usage = $inline->get($key);
-            if (! $usage instanceof JournalEntryMedia) {
-                continue;
-            }
-
-            $blocks[] = ['type' => 'image', 'data' => [
-                'embed_key' => $key,
-                'media_asset_id' => (int) $usage->getAttribute('media_asset_id'),
-                'alt_text_override' => $usage->getAttribute('alt_text_override'),
-            ]];
-        }
-        if ($blocks === []) {
-            $blocks[] = ['type' => 'text', 'data' => ['markdown' => '']];
-        }
 
         $cover = $usages->firstWhere('role', JournalEntryMedia::ROLE_COVER);
         $gallery = $usages->where('role', JournalEntryMedia::ROLE_GALLERY)
@@ -62,7 +39,6 @@ final class JournalEntryMediaService
             ->all();
 
         return [
-            'content_blocks' => $blocks,
             'cover_media_asset_id' => $cover instanceof JournalEntryMedia ? (int) $cover->getAttribute('media_asset_id') : null,
             'cover_alt_text_override' => $cover instanceof JournalEntryMedia ? $cover->getAttribute('alt_text_override') : null,
             'gallery_images' => $gallery,
@@ -70,74 +46,18 @@ final class JournalEntryMediaService
     }
 
     /** @param array<string,mixed> $data */
-    public function syncEditor(BlogPost|Exhibition $entry, array $data): string
+    public function syncStructuredMedia(BlogPost|Exhibition $entry, array $data): void
     {
-        $rawContent = $data['content_blocks'] ?? [];
-        if (! is_array($rawContent)) {
-            throw ValidationException::withMessages(['content_blocks' => 'Journal content is invalid.']);
-        }
-
-        $blocks = ($rawContent['type'] ?? null) === 'doc'
-            ? $this->content->editorBlocks($rawContent)
-            : array_values($rawContent);
-
-        $preparedBlocks = [];
-        $inline = [];
-        $seenEmbedKeys = [];
-
-        foreach ($blocks as $block) {
-            if (! is_array($block)) {
-                throw ValidationException::withMessages(['content_blocks' => 'Journal content is invalid.']);
-            }
-
-            $type = $block['type'] ?? null;
-            $blockData = is_array($block['data'] ?? null) ? $block['data'] : [];
-            if ($type === 'text') {
-                $preparedBlocks[] = ['type' => 'text', 'data' => [
-                    'markdown' => (string) ($blockData['markdown'] ?? ''),
-                ]];
-                continue;
-            }
-            if ($type !== 'image') {
-                throw ValidationException::withMessages(['content_blocks' => 'Journal content contains an unsupported block.']);
-            }
-
-            $mediaAssetId = $this->mediaId($blockData['media_asset_id'] ?? null, 'content_blocks');
-            $embedKey = strtolower(trim((string) ($blockData['embed_key'] ?? '')));
-            if ($embedKey === '') {
-                $embedKey = (string) Str::uuid();
-            }
-            if (isset($seenEmbedKeys[$embedKey])) {
-                throw ValidationException::withMessages(['content_blocks' => 'Each inline image needs its own internal reference.']);
-            }
-            $seenEmbedKeys[$embedKey] = true;
-
-            $override = $this->altOverride($blockData['alt_text_override'] ?? null);
-            $this->assertMediaReady($mediaAssetId, $override, 'content_blocks');
-            $preparedBlocks[] = ['type' => 'image', 'data' => ['embed_key' => $embedKey]];
-            $inline[] = compact('mediaAssetId', 'embedKey', 'override');
-        }
-
-        $source = $this->content->serialize($preparedBlocks);
-        $entry->mediaUsages()->delete();
+        $entry->mediaUsages()
+            ->whereIn('role', [JournalEntryMedia::ROLE_COVER, JournalEntryMedia::ROLE_GALLERY])
+            ->delete();
 
         $coverId = $data['cover_media_asset_id'] ?? null;
         if ($coverId !== null && $coverId !== '') {
             $coverId = $this->mediaId($coverId, 'cover_media_asset_id');
             $override = $this->altOverride($data['cover_alt_text_override'] ?? null);
             $this->assertMediaReady($coverId, $override, 'cover_media_asset_id');
-            $this->createUsage($entry, $coverId, JournalEntryMedia::ROLE_COVER, 0, $override, null);
-        }
-
-        foreach ($inline as $index => $row) {
-            $this->createUsage(
-                $entry,
-                $row['mediaAssetId'],
-                JournalEntryMedia::ROLE_INLINE,
-                $index + 1,
-                $row['override'],
-                $row['embedKey'],
-            );
+            $this->createUsage($entry, $coverId, JournalEntryMedia::ROLE_COVER, 0, $override);
         }
 
         $gallery = is_array($data['gallery_images'] ?? null) ? array_values($data['gallery_images']) : [];
@@ -148,10 +68,8 @@ final class JournalEntryMediaService
             $mediaAssetId = $this->mediaId($row['media_asset_id'] ?? null, 'gallery_images');
             $override = $this->altOverride($row['alt_text_override'] ?? null);
             $this->assertMediaReady($mediaAssetId, $override, 'gallery_images');
-            $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_GALLERY, $index + 1, $override, null);
+            $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_GALLERY, $index + 1, $override);
         }
-
-        return $source;
     }
 
     public function assertPublicReady(BlogPost|Exhibition $entry): void
@@ -167,26 +85,23 @@ final class JournalEntryMediaService
             );
         }
 
-        $inlineKeys = $usages->where('role', JournalEntryMedia::ROLE_INLINE)
-            ->pluck('embed_key')
-            ->filter(fn (mixed $key): bool => is_string($key) && $key !== '')
-            ->map(fn (string $key): string => strtolower($key))
-            ->values()
-            ->all();
-        $this->content->assertValid($this->source($entry), $inlineKeys);
-        $markerCount = collect($this->content->blocks($this->source($entry)))
-            ->where('type', 'image')
-            ->count();
-        if ($markerCount !== count($inlineKeys)) {
-            throw ValidationException::withMessages(['media' => 'Journal content contains stale inline image references.']);
+        $source = $this->source($entry);
+        if ($source !== '') {
+            $this->richText->assertValid(
+                $source,
+                allowEmbeddedMedia: true,
+                requirePublicMedia: true,
+            );
         }
     }
 
     public function detachAsset(MediaAsset $asset): void
     {
+        $assetId = (int) $asset->getKey();
+
         /** @var EloquentCollection<int, JournalEntryMedia> $usages */
         $usages = JournalEntryMedia::query()
-            ->where('media_asset_id', $asset->getKey())
+            ->where('media_asset_id', $assetId)
             ->with(['blogPost', 'exhibition'])
             ->orderBy('id')
             ->lockForUpdate()
@@ -195,20 +110,51 @@ final class JournalEntryMediaService
 
         foreach ($usages as $usage) {
             $entry = $usage->entry();
-            if ($usage->getAttribute('role') === JournalEntryMedia::ROLE_INLINE
-                && ($entry instanceof BlogPost || $entry instanceof Exhibition)) {
-                $key = (string) $usage->getAttribute('embed_key');
-                $source = $this->content->removeEmbed($this->source($entry), $key);
-                $entry->setAttribute($entry instanceof BlogPost ? 'body' : 'description', $source === '' ? null : $source);
-                $entry->save();
-            }
-
             if ($entry instanceof BlogPost) {
                 $owners['blog:'.$entry->getKey()] = $entry;
             } elseif ($entry instanceof Exhibition) {
                 $owners['exhibition:'.$entry->getKey()] = $entry;
             }
             $usage->delete();
+        }
+
+        $actor = $this->audit->requireActor();
+
+        /** @var EloquentCollection<int, BlogPost> $posts */
+        $posts = BlogPost::query()->whereNotNull('body')->lockForUpdate()->get();
+        foreach ($posts as $post) {
+            $source = (string) $post->getAttribute('body');
+            if (! in_array($assetId, RichTextMediaReference::ids($source), true)) {
+                continue;
+            }
+
+            $clean = RichTextMediaReference::remove($source, $assetId);
+            $post->setAttribute('body', $clean === '' ? null : $clean);
+            $state = (string) $post->getAttribute('state');
+            if ($clean === '' && in_array($state, ['published', 'scheduled'], true)) {
+                $post->setAttribute('state', $state === 'published' ? 'unpublished' : 'draft');
+                $post->setAttribute('scheduled_at', null);
+                $this->audit->record(
+                    $actor,
+                    $state === 'published' ? 'blog_post.unpublished' : 'blog_post.restored_to_draft',
+                    'blog_post',
+                    $post->getKey(),
+                    ['reason' => 'referenced_rich_text_media_deleted'],
+                );
+            }
+            $post->save();
+        }
+
+        /** @var EloquentCollection<int, Exhibition> $exhibitions */
+        $exhibitions = Exhibition::query()->whereNotNull('description')->lockForUpdate()->get();
+        foreach ($exhibitions as $exhibition) {
+            $source = (string) $exhibition->getAttribute('description');
+            if (! in_array($assetId, RichTextMediaReference::ids($source), true)) {
+                continue;
+            }
+            $clean = RichTextMediaReference::remove($source, $assetId);
+            $exhibition->setAttribute('description', $clean === '' ? null : $clean);
+            $exhibition->save();
         }
 
         foreach ($owners as $entry) {
@@ -222,7 +168,6 @@ final class JournalEntryMediaService
         string $role,
         int $position,
         ?string $override,
-        ?string $embedKey,
     ): void {
         $usage = new JournalEntryMedia;
         $usage->fill([
@@ -231,7 +176,6 @@ final class JournalEntryMediaService
             'role' => $role,
             'position' => $position,
             'alt_text_override' => $override,
-            'embed_key' => $embedKey,
         ]);
         $usage->save();
     }
@@ -309,8 +253,8 @@ final class JournalEntryMediaService
 
     private function source(BlogPost|Exhibition $entry): string
     {
-        return (string) ($entry instanceof BlogPost
+        return trim((string) ($entry instanceof BlogPost
             ? ($entry->getAttribute('body') ?? '')
-            : ($entry->getAttribute('description') ?? ''));
+            : ($entry->getAttribute('description') ?? '')));
     }
 }

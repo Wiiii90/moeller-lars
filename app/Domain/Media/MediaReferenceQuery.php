@@ -4,8 +4,10 @@ namespace App\Domain\Media;
 
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\RichTextMediaReference;
+use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
+use App\Models\Exhibition;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use Illuminate\Database\Eloquent\Builder;
@@ -119,6 +121,18 @@ final class MediaReferenceQuery
         foreach (CvEntry::query()->whereNotNull('body')->pluck('body') as $body) {
             if (is_string($body)) {
                 $ids = array_merge($ids, RichTextMediaReference::ids($body));
+            }
+        }
+
+        foreach (BlogPost::query()->whereNotNull('body')->pluck('body') as $body) {
+            if (is_string($body)) {
+                $ids = array_merge($ids, RichTextMediaReference::ids($body));
+            }
+        }
+
+        foreach (Exhibition::query()->whereNotNull('description')->pluck('description') as $description) {
+            if (is_string($description)) {
+                $ids = array_merge($ids, RichTextMediaReference::ids($description));
             }
         }
 

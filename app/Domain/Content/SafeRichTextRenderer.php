@@ -89,7 +89,7 @@ final class SafeRichTextRenderer
         bool $allowEmbeddedMedia,
         bool $requirePublicMedia,
     ): void {
-        $imageIds = [];
+        $parsedImageIds = [];
         $walker = $document->walker();
 
         while ($event = $walker->next()) {
@@ -126,32 +126,40 @@ final class SafeRichTextRenderer
                 if ($mediaAssetId === null) {
                     throw UnsafeRichTextException::unsupportedSyntax();
                 }
-                $imageIds[] = $mediaAssetId;
+                $parsedImageIds[] = $mediaAssetId;
             }
         }
 
-        $parsedIds = array_values(array_unique($imageIds));
-        sort($parsedIds);
-        $sourceIds = RichTextMediaReference::ids($source);
-        sort($sourceIds);
-
-        if ($parsedIds !== $sourceIds) {
+        $references = RichTextMediaReference::references($source);
+        $sourceImageIds = array_map(
+            static fn (array $reference): int => $reference['media_asset_id'],
+            $references,
+        );
+        if ($parsedImageIds !== $sourceImageIds) {
             throw UnsafeRichTextException::unsupportedSyntax();
         }
 
-        if ($parsedIds === []) {
+        foreach ($references as $reference) {
+            $override = $reference['alt_text_override'];
+            if ($override !== null && (trim($override) === '' || mb_strlen($override) > 500)) {
+                throw UnsafeRichTextException::unsupportedSyntax();
+            }
+        }
+
+        $uniqueIds = array_values(array_unique($sourceImageIds));
+        if ($uniqueIds === []) {
             return;
         }
 
         $assets = MediaAsset::query()
-            ->whereIn('id', $parsedIds)
+            ->whereIn('id', $uniqueIds)
             ->where('state', 'available')
             ->where('mime_type', 'like', 'image/%')
             ->with('variants')
             ->get()
             ->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
 
-        if ($assets->count() !== count($parsedIds)) {
+        if ($assets->count() !== count($uniqueIds)) {
             throw UnsafeRichTextException::unsupportedSyntax();
         }
 
@@ -159,15 +167,15 @@ final class SafeRichTextRenderer
             return;
         }
 
-        foreach ($parsedIds as $mediaAssetId) {
+        foreach ($references as $reference) {
             /** @var MediaAsset|null $asset */
-            $asset = $assets->get($mediaAssetId);
+            $asset = $assets->get($reference['media_asset_id']);
             if (! $asset instanceof MediaAsset) {
                 throw UnsafeRichTextException::unsupportedSyntax();
             }
 
             try {
-                $this->publicMedia->altTextForAsset($asset);
+                $this->publicMedia->altTextForAsset($asset, $reference['alt_text_override']);
                 $this->publicMedia->thumbnailVariantForAsset($asset);
             } catch (LogicException) {
                 throw UnsafeRichTextException::unsupportedSyntax();

@@ -18,7 +18,7 @@
             <article class="blog-entry">
                 <h3><a href="{{ $postUrl }}">{{ $post->title }}</a></h3>
                 @if ($cover instanceof \App\Models\JournalEntryMedia)
-                    <a href="{{ $postUrl }}" class="blog-entry__cover">{!! $journalContent->renderMedia($cover, 'journal-entry-media journal-entry-media--listing-cover', $loop->first) !!}</a>
+                    <a href="{{ $postUrl }}" class="blog-entry__cover">{!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--listing-cover', $loop->first) !!}</a>
                 @endif
                 @if ($post->excerpt !== null)<p>{{ $post->excerpt }}</p>@endif
             </article>

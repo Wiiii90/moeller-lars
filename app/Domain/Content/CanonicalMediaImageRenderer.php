@@ -35,10 +35,13 @@ final class CanonicalMediaImageRenderer implements NodeRendererInterface
             throw UnsafeRichTextException::unsupportedSyntax();
         }
 
+        $renderedAlt = $childRenderer->renderNodes($node->children());
+        $override = trim(html_entity_decode(strip_tags($renderedAlt), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
         return new HtmlElement('img', [
             'class' => 'rich-text__media',
             'src' => $this->publicMedia->thumbnailUrlForAsset($asset),
-            'alt' => $this->publicMedia->altTextForAsset($asset),
+            'alt' => $this->publicMedia->altTextForAsset($asset, $override === '' ? null : $override),
             'loading' => 'lazy',
             'decoding' => 'async',
         ], '', true);

@@ -68,9 +68,8 @@ final class BlogEditorialService
             }
 
             $fresh->fill($validated);
-            if (array_key_exists('content_blocks', $data)) {
-                $source = $this->media->syncEditor($fresh, $data);
-                $fresh->setAttribute('body', $source === '' ? null : $source);
+            if ($this->hasStructuredMediaInput($data)) {
+                $this->media->syncStructuredMedia($fresh, $data);
             }
             $this->prepareLifecycle($fresh);
             if ($fresh->isDirty()) {
@@ -157,10 +156,11 @@ final class BlogEditorialService
         $post->fill([...$validated, 'legacy_id' => null, 'legacy_source' => null, 'migration_batch_id' => null, 'migrated_at' => null]);
         $this->prepareLifecycle($post, validateMedia: false);
         $post->save();
-        if (array_key_exists('content_blocks', $editorData)) {
-            $source = $this->media->syncEditor($post, $editorData);
-            $post->setAttribute('body', $source === '' ? null : $source);
-            $post->save();
+        if ($this->hasStructuredMediaInput($editorData)) {
+            $this->media->syncStructuredMedia($post, $editorData);
+        }
+        if (in_array((string) $post->getAttribute('state'), ['published', 'scheduled'], true)) {
+            $this->media->assertPublicReady($post);
         }
         $this->audit->record($actor, 'blog_post.created', 'blog_post', $post->getKey(), ['site_section_id' => (int) $post->getAttribute('site_section_id')]);
         return $post->fresh(['mediaUsages.mediaAsset']);
@@ -198,9 +198,13 @@ final class BlogEditorialService
             if (! is_string($body) || trim($body) === '') {
                 throw ValidationException::withMessages(['body' => 'Published or scheduled posts require content.']);
             }
-            if ($validateMedia) { $this->media->assertPublicReady($post); }
-        } elseif (is_string($body) && trim($body) !== '' && ! str_contains($body, '[[journal-image:')) {
-            $this->richText->assertValid($body);
+            if ($validateMedia) {
+                $this->media->assertPublicReady($post);
+            } else {
+                $this->richText->assertValid($body, allowEmbeddedMedia: true, requirePublicMedia: true);
+            }
+        } elseif (is_string($body) && trim($body) !== '') {
+            $this->richText->assertValid($body, allowEmbeddedMedia: true);
         }
         if ($state === 'published' && $post->getAttribute('published_at') === null) { $post->setAttribute('published_at', now()); }
         if ($state === 'scheduled' && ! $post->getAttribute('scheduled_at') instanceof CarbonInterface) {
@@ -234,7 +238,7 @@ final class BlogEditorialService
             'site_section_id' => $sectionId,
             'title' => $title,
             'slug' => $slug,
-            'body' => $body,
+            'body' => is_string($body) && trim($body) !== '' ? trim($body) : null,
             'state' => $state,
             'position' => (int) $position,
             'excerpt' => is_string($excerpt) && trim($excerpt) !== '' ? trim($excerpt) : null,
@@ -258,5 +262,12 @@ final class BlogEditorialService
         if ($value instanceof DateTimeInterface) { return CarbonImmutable::instance($value); }
         if (! is_string($value)) { throw ValidationException::withMessages([$field => 'The publication time is invalid.']); }
         try { return CarbonImmutable::parse($value); } catch (Throwable) { throw ValidationException::withMessages([$field => 'The publication time is invalid.']); }
+    }
+
+    private function hasStructuredMediaInput(array $data): bool
+    {
+        return array_key_exists('cover_media_asset_id', $data)
+            || array_key_exists('cover_alt_text_override', $data)
+            || array_key_exists('gallery_images', $data);
     }
 }

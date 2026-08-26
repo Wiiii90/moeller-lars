@@ -32,13 +32,13 @@
                         </div>
                     @endif
                     @if ($cover instanceof \App\Models\JournalEntryMedia)
-                        {!! $journalContent->renderMedia($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', $loop->first) !!}
+                        {!! $journalMedia->render($cover, 'journal-entry-media journal-entry-media--cover exhibition-entry__cover', $loop->first) !!}
                     @endif
                     @if (trim((string) ($exhibition->description ?? '')) !== '')
-                        <div class="rich-text journal-entry-content exhibition-entry__description">{!! $journalContent->render($exhibition) !!}</div>
+                        <div class="rich-text journal-entry-content exhibition-entry__description">{!! $richText->render((string) $exhibition->description) !!}</div>
                     @endif
                     @if ($gallery->isNotEmpty())
-                        <div class="journal-entry-gallery" aria-label="Exhibition images">@foreach ($gallery as $usage){!! $journalContent->renderMedia($usage, 'journal-entry-media journal-entry-media--gallery') !!}@endforeach</div>
+                        <div class="journal-entry-gallery" aria-label="Exhibition images">@foreach ($gallery as $usage){!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery') !!}@endforeach</div>
                     @endif
                     @if ($showMap)
                         <div class="exhibition-entry__map">

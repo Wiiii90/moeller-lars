@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Domain\Content\RichTextMediaReference;
 use App\Models\MediaAsset;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\TextInput;
 use Illuminate\Validation\ValidationException;
 
 final class AdminRichText
@@ -13,10 +14,12 @@ final class AdminRichText
     public static function schema(
         string $name,
         string $label,
-        int $maxLength,
+        ?int $maxLength,
         bool $nullable = true,
+        bool $allowEmbeddedMedia = true,
     ): array {
         $mediaField = '__'.$name.'_media_asset_id';
+        $mediaAltField = '__'.$name.'_media_alt_text';
 
         $editor = MarkdownEditor::make($name)
             ->label($label)
@@ -26,19 +29,32 @@ final class AdminRichText
                 ['blockquote', 'bulletList', 'orderedList'],
                 ['undo', 'redo'],
             ])
-            ->maxLength($maxLength)
             ->columnSpanFull();
 
+        if ($maxLength !== null) {
+            $editor->maxLength($maxLength);
+        }
         if ($nullable) {
             $editor->nullable();
         }
+        if (! $allowEmbeddedMedia) {
+            return [$editor];
+        }
+
+        $mediaAlt = TextInput::make($mediaAltField)
+            ->label('ALT override for next embedded image')
+            ->maxLength(500)
+            ->nullable()
+            ->dehydrated(false)
+            ->columnSpanFull()
+            ->helperText('Optional. Leave empty to use the canonical ALT text from Media Files.');
 
         $media = MediaAssetSelect::makeId($mediaField, 'Embed image from Media Files', imagesOnly: true)
             ->dehydrated(false)
             ->live()
             ->columnSpanFull()
-            ->helperText('Choose an image from Media Files. It is inserted into this text using its canonical Media reference.')
-            ->afterStateUpdated(function (mixed $state, callable $get, callable $set) use ($mediaField, $name): void {
+            ->helperText('Choose an image from Media Files. It is inserted using the canonical media:<id> Rich Text reference.')
+            ->afterStateUpdated(function (mixed $state, callable $get, callable $set) use ($mediaAltField, $mediaField, $name): void {
                 if (! is_numeric($state)) {
                     return;
                 }
@@ -56,17 +72,17 @@ final class AdminRichText
                     ]);
                 }
 
+                $alt = $get($mediaAltField);
+                $alt = is_string($alt) && trim($alt) !== '' ? trim($alt) : null;
                 $current = $get($name);
                 $current = is_string($current) ? rtrim($current) : '';
-                $reference = RichTextMediaReference::markdown((int) $asset->getKey());
+                $reference = RichTextMediaReference::markdown((int) $asset->getKey(), $alt);
 
-                if (! str_contains($current, $reference)) {
-                    $set($name, $current.($current === '' ? '' : "\n\n").$reference);
-                }
-
+                $set($name, $current.($current === '' ? '' : "\n\n").$reference);
+                $set($mediaAltField, null);
                 $set($mediaField, null);
             });
 
-        return [$editor, $media];
+        return [$editor, $mediaAlt, $media];
     }
 }

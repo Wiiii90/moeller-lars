@@ -9,6 +9,7 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\AdminRichText;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
@@ -23,7 +24,6 @@ use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -300,9 +300,7 @@ final class JournalWorkspace extends Page
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                         ->helperText('Changing this changes the public Journal URL.'),
                     TextInput::make('listing_title')->label('Listing title')->maxLength(240)->nullable(),
-                    MarkdownEditor::make('listing_intro')->label('Listing introduction')
-                        ->toolbarButtons([['bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']])
-                        ->maxLength(10000)->nullable()->columnSpanFull(),
+                    ...AdminRichText::schema('listing_intro', 'Listing introduction', 10000, allowEmbeddedMedia: false),
                 ])->columns(2),
             ])
             ->modalHeading('Journal settings')

@@ -6,10 +6,13 @@ use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SitePreviewContext;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
+use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
+use App\Models\Exhibition;
 use App\Models\HomePresentationSetting;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
@@ -22,6 +25,8 @@ class PublicMedia
 {
     public const THUMBNAIL_KIND = 'thumbnail';
     public const PUBLIC_TRANSFORM_PROFILE = 'public-v1';
+
+    public function __construct(private readonly SitePreviewContext $preview) {}
 
     public function isPublicAsset(MediaAsset $asset): bool
     {
@@ -48,6 +53,10 @@ class PublicMedia
         }
 
         if ($this->activeHomeReferencesAsset((int) $asset->getKey())) {
+            return true;
+        }
+
+        if ($this->publishedJournalRichTextReferencesAsset((int) $asset->getKey())) {
             return true;
         }
 
@@ -144,7 +153,7 @@ class PublicMedia
 
     public function thumbnailUrl(Artwork $artwork): string
     {
-        return route('media.variant', $this->thumbnailVariant($artwork));
+        return $this->variantUrl($this->thumbnailVariant($artwork));
     }
 
     public function originalUrl(Artwork $artwork): string
@@ -155,11 +164,11 @@ class PublicMedia
     public function altTextForAsset(MediaAsset $asset, mixed $override = null): string
     {
         if ($override !== null) {
-            if (! is_string($override) || trim($override) === '') {
-                throw new LogicException('Media ALT override must be non-empty text when provided.');
+            if (! is_string($override) || trim($override) === '' || mb_strlen($override) > 500) {
+                throw new LogicException('Media ALT override must be non-empty text of at most 500 characters when provided.');
             }
 
-            return $override;
+            return trim($override);
         }
 
         $alt = $asset->getAttribute('alt_text');
@@ -167,7 +176,7 @@ class PublicMedia
             throw new LogicException('Public media requires explicit ALT text.');
         }
 
-        return $alt;
+        return trim($alt);
     }
 
     public function thumbnailVariantForAsset(MediaAsset $asset): MediaVariant
@@ -189,14 +198,23 @@ class PublicMedia
 
     public function thumbnailUrlForAsset(MediaAsset $asset): string
     {
-        return route('media.variant', $this->thumbnailVariantForAsset($asset));
+        return $this->variantUrl($this->thumbnailVariantForAsset($asset));
+    }
+
+    public function variantUrl(MediaVariant $variant): string
+    {
+        return $this->preview->active()
+            ? route('preview.media.variant', ['mediaVariant' => $variant])
+            : route('media.variant', $variant);
     }
 
     public function originalUrlForAsset(MediaAsset $asset): string
     {
         $this->assertAvailable($asset);
 
-        return route('media.original', $asset);
+        return $this->preview->active()
+            ? route('preview.media.original', ['mediaAsset' => $asset])
+            : route('media.original', $asset);
     }
 
     private function publishedCustomPageReferencesAsset(int $mediaAssetId): bool
@@ -249,15 +267,20 @@ class PublicMedia
             return false;
         }
 
-        $richTextReference = RichTextMediaReference::markdown($mediaAssetId);
-
-        return CvEntry::query()
+        if (CvEntry::query()
             ->where('state', 'published')
-            ->where(function ($query) use ($mediaAssetId, $richTextReference): void {
-                $query->where('image_media_asset_id', $mediaAssetId)
-                    ->orWhere('body', 'like', '%'.$richTextReference.'%');
-            })
-            ->exists();
+            ->where('image_media_asset_id', $mediaAssetId)
+            ->exists()) {
+            return true;
+        }
+
+        foreach (CvEntry::query()->where('state', 'published')->whereNotNull('body')->pluck('body') as $body) {
+            if (is_string($body) && in_array($mediaAssetId, RichTextMediaReference::ids($body), true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function activeHomeReferencesAsset(int $mediaAssetId): bool
@@ -285,6 +308,41 @@ class PublicMedia
             if (($component['type'] ?? null) === 'text'
                 && is_string($component['body'] ?? null)
                 && in_array($mediaAssetId, RichTextMediaReference::ids($component['body']), true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function publishedJournalRichTextReferencesAsset(int $mediaAssetId): bool
+    {
+        $blogBodies = BlogPost::query()
+            ->publiclyVisible()
+            ->whereNotNull('body')
+            ->whereHas('siteSection', fn ($section) => $section
+                ->where('type', SiteNodeType::Journal->value)
+                ->where('template', JournalTemplate::Blog->value)
+                ->where('state', 'published'))
+            ->pluck('body');
+
+        foreach ($blogBodies as $body) {
+            if (is_string($body) && in_array($mediaAssetId, RichTextMediaReference::ids($body), true)) {
+                return true;
+            }
+        }
+
+        $descriptions = Exhibition::query()
+            ->where('state', 'published')
+            ->whereNotNull('description')
+            ->whereHas('siteSection', fn ($section) => $section
+                ->where('type', SiteNodeType::Journal->value)
+                ->where('template', JournalTemplate::Exhibitions->value)
+                ->where('state', 'published'))
+            ->pluck('description');
+
+        foreach ($descriptions as $description) {
+            if (is_string($description) && in_array($mediaAssetId, RichTextMediaReference::ids($description), true)) {
                 return true;
             }
         }

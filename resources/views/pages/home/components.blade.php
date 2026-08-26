@@ -17,7 +17,7 @@
                 @if ($asset !== null && $variant !== null)
                     <figure class="custom-page__component custom-page__media custom-page__image">
                         <img
-                            src="{{ route('media.variant', $variant) }}"
+                            src="{{ $media->variantUrl($variant) }}"
                             alt="{{ $imageAlt }}"
                             loading="{{ $componentIndex === 0 ? 'eager' : 'lazy' }}"
                             decoding="async"

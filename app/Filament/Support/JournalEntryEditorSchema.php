@@ -3,7 +3,6 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\ExhibitionGeocodingService;
-use App\Domain\Content\JournalEntryContent;
 use App\Models\Exhibition;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -11,8 +10,6 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\RichEditor\RichEditorTool;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -32,7 +29,7 @@ final class JournalEntryEditorSchema
                 self::slug(220),
                 Textarea::make('excerpt')->label('Excerpt')->maxLength(1000)->nullable()->columnSpanFull(),
             ])->columns(2),
-            self::textSection(),
+            self::textSection('body'),
             self::imagesSection(),
         ]);
     }
@@ -44,7 +41,7 @@ final class JournalEntryEditorSchema
                 self::title(),
                 self::slug(180),
             ])->columns(2),
-            self::textSection(),
+            self::textSection('description'),
             self::imagesSection(),
             AdminForm::section('Dates and venue')->schema([
                 DatePicker::make('starts_on')->label('Starts')->nullable(),
@@ -89,27 +86,10 @@ final class JournalEntryEditorSchema
             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
     }
 
-    private static function textSection(): mixed
+    private static function textSection(string $field): mixed
     {
-        $insertImage = RichEditorTool::make('insertJournalImage')
-            ->label('Insert image')
-            ->icon('heroicon-o-photo')
-            ->action('customBlock', "{ id: '".JournalEntryContent::INLINE_IMAGE_BLOCK_ID."', mode: 'insert' }");
-
         return AdminForm::section('Text')->schema([
-            RichEditor::make('content_blocks')
-                ->label('Text')
-                ->json()
-                ->customBlocks([JournalInlineImageBlock::class])
-                ->tools([$insertImage])
-                ->toolbarButtons([
-                    ['bold', 'italic', 'link'],
-                    ['bulletList', 'orderedList'],
-                    ['insertJournalImage'],
-                    ['undo', 'redo'],
-                ])
-                ->extraAttributes(['class' => 'journal-entry-editor__content'])
-                ->columnSpanFull(),
+            ...AdminRichText::schema($field, 'Text', null),
         ]);
     }
 
