@@ -67,18 +67,6 @@ class CvEntry extends Model
                 }
             }
 
-            $imageId = $entry->getAttribute('image_media_asset_id');
-            if ($imageId !== null) {
-                $asset = MediaAsset::query()->find($imageId);
-                $alt = $asset?->getAttribute('alt_text');
-                if (! $asset instanceof MediaAsset
-                    || $asset->getAttribute('state') !== 'available'
-                    || ! is_string($alt)
-                    || trim($alt) === '') {
-                    throw ValidationException::withMessages(['image_media_asset_id' => 'Published CV images require an available asset with canonical ALT text.']);
-                }
-            }
-
             if ($entry->getAttribute('published_at') === null) {
                 $entry->setAttribute('published_at', now());
             }

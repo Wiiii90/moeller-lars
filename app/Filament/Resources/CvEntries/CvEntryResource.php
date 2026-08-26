@@ -8,7 +8,6 @@ use App\Filament\Resources\CvEntries\Pages\EditCvEntry;
 use App\Filament\Resources\CvEntries\Pages\ListCvEntries;
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\AdminRichText;
-use App\Filament\Support\MediaAssetSelect;
 use App\Models\CvEntry;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -62,12 +61,6 @@ class CvEntryResource extends Resource
                     TextInput::make('external_url')->url()->maxLength(2048)->nullable()->columnSpanFull(),
                 ])
                 ->columns(2),
-            AdminForm::section('Presentation')
-                ->schema([
-                    MediaAssetSelect::make('image_media_asset_id', 'imageMediaAsset', 'Image')
-                        ->nullable()
-                        ->columnSpanFull(),
-                ]),
         ]);
     }
 

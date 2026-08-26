@@ -62,8 +62,8 @@ final class CvEntryEditorialService
     }
 
     /**
-     * Preserve compatibility-only editable fields supplied by the legacy resource,
-     * while preventing lifecycle, ordering, migration and publication metadata writes.
+     * Accept only fields from the current CV editorial contract while preserving
+     * compatibility-only persistence such as legacy direct image pointers.
      *
      * @param array<string, mixed> $data
      * @return array<string, mixed>
@@ -74,6 +74,7 @@ final class CvEntryEditorialService
             'state',
             'position',
             'published_at',
+            'image_media_asset_id',
             'legacy_id',
             'legacy_source',
             'migration_batch_id',
