@@ -1020,7 +1020,7 @@ final class CustomPageWorkspace extends Page
             ['label' => 'Images', 'value' => number_format($counts['image']), 'description' => 'Image components'],
             ['label' => 'Visits', 'value' => $this->metricValue($this->analytics['page']['visits'] ?? null), 'description' => 'This page · 30d'],
             ['label' => 'Views', 'value' => $this->metricValue($this->analytics['page']['views'] ?? null), 'description' => 'This page · 30d'],
-            ['label' => 'Contact messages', 'value' => $this->metricValue($this->analytics['contact_messages'] ?? null), 'description' => 'Site-wide successful submissions · 30d'],
+            ['label' => 'Contact messages', 'value' => $this->metricValue($this->analytics['contact_messages'] ?? null), 'description' => 'Site-wide · 30d'],
         ];
     }
 
@@ -1129,7 +1129,7 @@ final class CustomPageWorkspace extends Page
                     'social_links' => $this->socialChildDetail($child),
                     'contact_form' => ($child['form_state'] ?? 'enabled') === 'under_construction'
                         ? 'Under construction'
-                        : 'Contact form',
+                        : 'Enabled',
                     default => '',
                 };
                 $children[] = [
@@ -1669,7 +1669,10 @@ final class CustomPageWorkspace extends Page
         if (($block['type'] ?? null) !== 'contact') {
             return [];
         }
-        $existing = collect($this->settings()->contactChildren($block))->pluck('type')->filter('is_string')->all();
+        $existing = collect($this->settings()->contactChildren($block))
+            ->pluck('type')
+            ->filter(static fn (mixed $value): bool => is_string($value))
+            ->all();
 
         return array_filter(
             self::CONTACT_CHILD_LABELS,

@@ -8,22 +8,50 @@
 
         <div class="custom-page-workspace__page-controls" aria-label="Page actions">
             <span class="custom-page-workspace__control-label">Page</span>
-            <div class="admin-toolbar">
+            <div class="admin-toolbar custom-page-workspace__page-actions">
                 <button class="admin-action" type="button" wire:click="mountAction('pageSettings')">Settings</button>
                 <button class="admin-action is-primary" type="button" wire:click="mountAction('addComponent')">Add component</button>
                 @if ($previewUrl)
                     <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
+                @else
+                    <button class="admin-action" type="button" disabled>Preview</button>
                 @endif
             </div>
         </div>
 
+        @php
+            $reorderEnabled = trim($componentSearch) === '' && $componentType === 'any';
+            $selectedParentCount = count($selectedComponentTargets);
+            $selectedChildCount = count($selectedChildTargets);
+            $selectedItemCount = $selectedParentCount + $selectedChildCount;
+            $parentOnlySelection = $selectedParentCount > 0 && $selectedChildCount === 0;
+            $childOnlySelection = $selectedChildCount > 0 && $selectedParentCount === 0;
+            $selectedChildren = collect($components)
+                ->flatMap(static fn (array $component): array => is_array($component['children'] ?? null) ? $component['children'] : [])
+                ->filter(static fn (array $child): bool => in_array($child['target'] ?? null, $selectedChildTargets, true))
+                ->values();
+            $selectedCvChildren = $selectedChildren
+                ->filter(static fn (array $child): bool => ($child['kind'] ?? null) === 'cv')
+                ->values();
+            $canMoveSelected = $parentOnlySelection && $reorderEnabled;
+            $canPublishSelected = $childOnlySelection
+                && $selectedChildren->isNotEmpty()
+                && $selectedCvChildren->every(static fn (array $child): bool => in_array($child['state'] ?? null, ['draft', 'published'], true))
+                && $selectedChildren->contains(static fn (array $child): bool => ($child['published'] ?? false) === false);
+            $canUnpublishSelected = $childOnlySelection
+                && $selectedChildren->isNotEmpty()
+                && $selectedCvChildren->every(static fn (array $child): bool => ($child['state'] ?? null) === 'published')
+                && $selectedChildren->contains(static fn (array $child): bool => ($child['published'] ?? false) === true);
+            $canDeleteSelected = $parentOnlySelection || $childOnlySelection;
+        @endphp
+
         <div class="custom-page-workspace__controls" aria-label="Component table tools">
-            <label class="custom-page-workspace__search">
+            <label class="custom-page-workspace__field custom-page-workspace__search">
                 <span>Search</span>
                 <input type="search" wire:model.blur="componentSearch" placeholder="Search components and entries">
             </label>
 
-            <label class="custom-page-workspace__type-filter">
+            <label class="custom-page-workspace__field">
                 <span>Type</span>
                 <select wire:model.live="componentType">
                     <option value="any">All components</option>
@@ -33,32 +61,88 @@
                 </select>
             </label>
 
-            <div class="custom-page-workspace__tool-actions">
-                @if ($componentSearch !== '' || $componentType !== 'any')
-                    <button class="admin-action" type="button" wire:click="resetComponentFilters">Clear filters</button>
-                @endif
+            <div class="custom-page-workspace__control-group">
+                <span class="custom-page-workspace__control-label">Filter</span>
+                <button class="admin-action" type="button" wire:click="resetComponentFilters">Reset</button>
             </div>
 
-            <div class="custom-page-workspace__selection">
-                <span class="custom-page-workspace__selection-count">{{ count($selectedComponentTargets) }} components</span>
-                @if ($selectedComponentTargets !== [])
-                    <button class="admin-action" type="button" wire:click="moveSelectedComponents('up')">↑</button>
-                    <button class="admin-action" type="button" wire:click="moveSelectedComponents('down')">↓</button>
-                    <button class="admin-action is-danger" type="button" wire:click="mountAction('deleteSelectedComponents')">Delete</button>
-                @endif
-            </div>
-
-            <div class="custom-page-workspace__selection custom-page-workspace__selection--children">
-                <span class="custom-page-workspace__selection-count">{{ count($selectedChildTargets) }} entries</span>
-                @if ($selectedChildTargets !== [])
-                    <button class="admin-action" type="button" wire:click="publishSelectedChildren">Publish</button>
-                    <button class="admin-action" type="button" wire:click="unpublishSelectedChildren">Unpublish</button>
-                    <button class="admin-action is-danger" type="button" wire:click="mountAction('deleteSelectedChildren')">Delete</button>
-                @endif
+            <div
+                class="custom-page-workspace__control-group custom-page-workspace__selection"
+                x-data="{ open: false }"
+                x-on:click.outside="open = false"
+                x-on:keydown.escape.window="open = false"
+            >
+                <span class="custom-page-workspace__control-label">Selection</span>
+                <div class="custom-page-workspace__selection-anchor">
+                    <button
+                        class="admin-action custom-page-workspace__selection-trigger"
+                        type="button"
+                        x-on:click="open = ! open"
+                        x-bind:aria-expanded="open.toString()"
+                        aria-haspopup="menu"
+                        @disabled($selectedItemCount === 0)
+                    >
+                        Selected items
+                        <span class="custom-page-workspace__selection-count">{{ $selectedItemCount }}</span>
+                    </button>
+                    <div class="custom-page-workspace__selection-menu" role="menu" x-show="open" x-cloak>
+                        <button
+                            class="admin-action"
+                            type="button"
+                            role="menuitem"
+                            wire:click="moveSelectedComponents('up')"
+                            x-on:click="open = false"
+                            @disabled(! $canMoveSelected)
+                        >Move selected up</button>
+                        <button
+                            class="admin-action"
+                            type="button"
+                            role="menuitem"
+                            wire:click="moveSelectedComponents('down')"
+                            x-on:click="open = false"
+                            @disabled(! $canMoveSelected)
+                        >Move selected down</button>
+                        <button
+                            class="admin-action"
+                            type="button"
+                            role="menuitem"
+                            wire:click="publishSelectedChildren"
+                            x-on:click="open = false"
+                            @disabled(! $canPublishSelected)
+                        >Publish selected</button>
+                        <button
+                            class="admin-action"
+                            type="button"
+                            role="menuitem"
+                            wire:click="unpublishSelectedChildren"
+                            x-on:click="open = false"
+                            @disabled(! $canUnpublishSelected)
+                        >Unpublish selected</button>
+                        @if ($parentOnlySelection)
+                            <button
+                                class="admin-action is-danger"
+                                type="button"
+                                role="menuitem"
+                                wire:click="mountAction('deleteSelectedComponents')"
+                                x-on:click="open = false"
+                                @disabled(! $canDeleteSelected)
+                            >Delete selected</button>
+                        @elseif ($childOnlySelection)
+                            <button
+                                class="admin-action is-danger"
+                                type="button"
+                                role="menuitem"
+                                wire:click="mountAction('deleteSelectedChildren')"
+                                x-on:click="open = false"
+                                @disabled(! $canDeleteSelected)
+                            >Delete selected</button>
+                        @else
+                            <button class="admin-action is-danger" type="button" role="menuitem" disabled>Delete selected</button>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
-
-        @php($reorderEnabled = trim($componentSearch) === '' && $componentType === 'any')
 
         <section class="custom-page-component-sequence" aria-label="Page component sequence">
             <div class="custom-page-component-sequence__header" aria-hidden="true">
@@ -88,7 +172,7 @@
                                 </label>
 
                                 <button
-                                    class="custom-page-component__drag"
+                                    class="custom-page-row__drag custom-page-component__drag"
                                     type="button"
                                     @if ($reorderEnabled) wire:sort:handle @else disabled @endif
                                     aria-label="Drag {{ $component['type_label'] }}"
@@ -143,13 +227,6 @@
 
                             @if ($component['children'] !== [])
                                 <div class="custom-page-component__children">
-                                    <div class="custom-page-child-row custom-page-child-row--head" aria-hidden="true">
-                                        <span></span>
-                                        <span></span>
-                                        <span>Content</span>
-                                        <span>Status</span>
-                                        <span>Actions</span>
-                                    </div>
                                     <div class="custom-page-component__children-rows" @if ($reorderEnabled) wire:sort="sortChild" @endif>
                                         @foreach ($component['children'] as $child)
                                             <div
@@ -162,21 +239,41 @@
                                                 </label>
 
                                                 <button
-                                                    class="custom-page-child-row__drag"
+                                                    class="custom-page-row__drag custom-page-child-row__drag"
                                                     type="button"
                                                     @if ($reorderEnabled) wire:sort:handle @else disabled @endif
                                                     aria-label="Drag {{ $child['entry'] }}"
                                                 >⋮⋮</button>
 
-                                                <div class="custom-page-child-row__entry">
-                                                    <strong>
-                                                        @if ($child['date'] !== '')<span class="custom-page-child-row__date">{{ $child['date'] }}</span> · @endif
+                                                <div class="custom-page-child-row__type">
+                                                    @if ($child['kind'] === 'cv')
+                                                        CV Entry
+                                                    @elseif ($child['kind'] === 'list')
+                                                        List Entry
+                                                    @else
                                                         {{ $child['entry'] }}
-                                                    </strong>
-                                                    @if ($child['detail'] !== '')<small>{{ $child['detail'] }}</small>@endif
+                                                    @endif
                                                 </div>
 
-                                                <span class="custom-page-child-row__status {{ $child['published'] ? 'is-published' : 'is-unpublished' }}">{{ $child['status'] }}</span>
+                                                <div class="custom-page-child-row__content">
+                                                    @if ($child['kind'] === 'contact')
+                                                        <strong>{{ $child['detail'] }}</strong>
+                                                    @else
+                                                        <strong>
+                                                            @if ($child['date'] !== '')
+                                                                <span class="custom-page-child-row__date">{{ $child['date'] }}</span> ·
+                                                            @endif
+                                                            {{ $child['entry'] }}
+                                                        </strong>
+                                                        @if ($child['detail'] !== '')
+                                                            <small>{{ $child['detail'] }}</small>
+                                                        @endif
+                                                    @endif
+                                                </div>
+
+                                                <div class="custom-page-child-row__status-cell">
+                                                    <span class="custom-page-child-row__status {{ $child['published'] ? 'is-published' : 'is-unpublished' }}">{{ $child['status'] }}</span>
+                                                </div>
 
                                                 <div class="custom-page-child-row__actions admin-toolbar">
                                                     @if ($child['kind'] === 'cv')
