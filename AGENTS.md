@@ -1,21 +1,27 @@
 # Agent workflow contract
 
-This file is the default working contract for coding agents and parallel workers in `Wiiii90/moeller-lars`.
+This file is the default working contract for coding agents, review/orchestration chats and parallel workers in `Wiiii90/moeller-lars`.
+
+Two companion files are part of this contract:
+
+- [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
+- [`followup-skill.md`](followup-skill.md) — how to create a lossless continuation prompt when a long orchestration chat is handed to a fresh chat.
 
 ## Source of truth
 
 Use, in this order:
 
-1. the current branch and current code;
-2. open GitHub Issues for unfinished product scope, browser acceptance and blockers;
-3. durable contracts under `docs/`;
-4. PR discussion only for implementation-specific context.
+1. the exact current branch/SHA and its code;
+2. current browser feedback from the user for the candidate being reviewed;
+3. open GitHub Issues for unfinished product scope, acceptance and blockers;
+4. durable contracts in this repository;
+5. PR discussion only for implementation-specific context.
 
-Do not reconstruct current requirements from stale issue history, old branches, previous release-candidate SHAs or closed coordination threads.
+Browser feedback against the current candidate overrides stale acceptance wording. Do not reconstruct requirements from old issue history, old worker branches or earlier release-candidate SHAs when current code/user review supersedes them.
 
 ## Product language
 
-Use the current artist-facing/runtime concepts when describing or changing the product:
+Use the current artist-facing concepts:
 
 - Home;
 - Gallery;
@@ -25,193 +31,216 @@ Use the current artist-facing/runtime concepts when describing or changing the p
 - Files;
 - reusable Contact component inside Custom Page content.
 
-Legacy names such as `CV`, `Vita`, fixed `SiteSection` types or old persistence/resource names may appear in migration evidence, compatibility code or database/model names. They are not a license to reintroduce those concepts as current admin information architecture or new worker scopes. Biography/career content is composed through the current Custom Page/content model. Preserve migration provenance until its dedicated cleanup is proven safe.
+Legacy names such as `CV`, `Vita`, persistence model/table names or old migration terms may remain as migration/data-model evidence. They are not permission to recreate obsolete admin IA or parallel runtime concepts.
 
-## Branch and integration workflow
+## Current orchestration model
 
-- `main` is protected. Never commit or force-push directly to `main`.
-- The current admin-completion tranche integrates on `integration/admin-v0.3-final`.
-- Page/slice workers branch from the current integration head and open PRs back to that integration branch.
-- Do not retarget a worker PR to `main` unless explicitly instructed by the orchestrator.
-- Worker PRs into the integration branch use risk-appropriate targeted checks; they do not need to trigger the canonical full release workflow merely for iteration.
-- The combined integration candidate is browser-reviewed on protected Validation.
-- One final integration PR to `main` receives the complete canonical verification gate.
-- Do not create extra integration branches for unrelated one-off work.
+`main` is protected. The admin-completion integration line remains `integration/admin-v0.3-final` until the tranche is explicitly accepted and promoted.
 
-See `docs/RELEASE.md` for the exact release/preview contract.
+Browser-heavy reconciliation may use one temporary combined branch such as `reconcile/admin-v0.3-browser`. That branch is a review candidate, not a release branch and not proof of product acceptance.
 
-## Fast Validation preview
+When several browser-fix workers run in parallel:
 
-For a branch or combined integration candidate:
+1. freeze one exact shared base SHA;
+2. create one side branch per worker directly from that SHA;
+3. workers do **not** all push directly to the combined reconciliation branch;
+4. each worker returns branch + exact head + changed files + actual checks;
+5. the orchestrator verifies the remote ref and reviews the real base→head diff independently;
+6. accepted side diffs are reconciled/cherry-picked onto the latest combined branch;
+7. shared files are resolved deliberately as a union, never by blindly preferring one worker's version;
+8. cross-branch consequences are fixed explicitly in a small reconciliation commit;
+9. only after the combined source state is coherent is one browser build/migration/review cycle performed.
 
-1. run only targeted checks appropriate to the behavior actually changed;
-2. push the exact branch/SHA;
-3. use `scripts/validation-preview.ps1 <branch-or-sha>` when browser review is needed;
-4. Validation deployment is performed with the existing platform helper printed by that script;
-5. browser acceptance is evidence separate from CI.
+Do not mutate the original feature branches merely to create a browser candidate. Do not rebase, merge to `main`, deploy Production or retarget PRs unless the orchestrator explicitly asks.
 
-Do not rerun broad suites merely because they exist. Full verification belongs to the final PR to `main` unless a concrete risk justifies broader checks earlier.
+## Browser-review loop
 
-Agents must not invent server commands, hostnames or platform topology.
+Visual/admin work follows this order:
 
-## Environment safety
+1. get a technically running combined candidate;
+2. review it in the browser;
+3. collect the user's complete findings for the current review slice before launching a repair worker;
+4. classify findings into functional bugs, interaction defects, layout/style inconsistencies, performance, missing behavior and architecture/centralization mistakes;
+5. create a fresh narrowly scoped worker from an exact base;
+6. statically review the returned diff;
+7. reconcile accepted work;
+8. perform one new local/Validation browser cycle.
 
-- No Production deployment, cutover, DNS, mail, database or other Production mutation unless the user explicitly authorizes it.
-- Do not mutate protected Validation merely because code is ready; the orchestrator/user decides when the combined candidate should be deployed for browser review.
-- Never commit secrets, credentials, private Production data or private media.
-- `server-platform` owns runtime topology, host paths, operator quota injection, ingress, backups and operational mail infrastructure.
+Do **not** call a candidate final merely because it boots, migrations succeed or a 500 disappears. Browser/editorial acceptance is separate evidence.
+
+Do not rebuild after every comment or every worker. Prefer one combined build after all intended side diffs for that cycle are reconciled.
+
+## Verification discipline
+
+Run the narrowest checks that prove the changed behavior while iterating.
+
+Unless a concrete risk requires more, browser-polish workers should not automatically run:
+
+- full Pest;
+- full PHPStan;
+- npm tests/build;
+- Docker rebuilds;
+- CI waits;
+- Validation deployments.
+
+Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. Full canonical verification belongs to the final PR to `main` as defined in `docs/RELEASE.md`.
+
+The user's repeated request to inspect a change quickly is not an invitation to reinstall dependencies or recreate infrastructure.
+
+## Git and remote verification
+
+Never trust a worker handoff text by itself. For every returned worker candidate:
+
+- verify the remote branch head;
+- verify the expected parent/base;
+- compare exact base→head;
+- inspect the actual changed files and critical implementation;
+- distinguish reported checks from checks actually evidenced;
+- reject unexpected scope before reconciliation.
+
+When a side branch was intentionally created from an older shared base, review it against that base, then reconcile onto the newest combined head deliberately.
+
+Avoid force pushes during browser reconciliation. If an accidental bad commit is already public but a normal forward repair can restore the correct tree, prefer a repair commit and verify the **net tree diff** afterward.
+
+## PowerShell safety
+
+The canonical local repository path is `P:\moeller-lars`.
+
+PowerShell variables are case-insensitive. Do not use automatic/read-only variable names for script state. In particular:
+
+- never use `$Home`/`$HOME` for file content;
+- never use `$Args` for Docker argument splatting;
+- use names such as `$HomeText`, `$RunArgs`, `$DockerArgs`, `$EnvVars`.
+
+For scripted file replacement:
+
+- verify the expected source pattern count before writing;
+- stop immediately on a failed read/assignment;
+- inspect `git diff --stat` and `git diff` before committing;
+- treat unexpectedly large deletion counts as a blocker;
+- run `git diff --check` before commit.
 
 ## Local project-disk hygiene
 
-The Windows project drive uses one clean project directory per project. For this repository the canonical local path is `P:\moeller-lars`.
+Use only `P:\moeller-lars` for this repository.
 
-- never create sibling scratch/copy directories beside the project such as `P:\moeller-lars-*`, `P:\moeller-lars-copy`, temporary clones or generated worker directories;
-- do not create Git worktrees for this repository;
-- project-specific temporary data, snapshots and local-only tooling state must remain inside `P:\moeller-lars` and must stay outside Git;
-- use the existing Laravel `storage/` tree rather than inventing a parallel `.storage/` root;
-- local Validation DB/media snapshots, when intentionally retained, belong under `storage/local-validation-snapshot/`;
-- do not clutter the root of `P:\` with project-derived helper directories.
+- no sibling scratch clones/copies;
+- no Git worktrees;
+- no root-drive helper clutter;
+- local snapshots/tooling state stays inside the repository and outside Git;
+- retained local Validation data belongs under `storage/local-validation-snapshot/`.
+
+## Local browser preview
+
+The local browser preview is an iteration aid, not the canonical release topology. Reuse the existing preview stack instead of recreating it from scratch.
+
+Current durable local interface assumptions:
+
+- application URL: `http://127.0.0.1:8001`;
+- application container: `moeller-lars-local-web`;
+- preview image: `moeller-lars-local-preview`;
+- PostgreSQL container commonly used by the preview: `moeller-lars-postgres-1`;
+- image runtime listens internally on port `8080`;
+- preview Dockerfile: `storage/local-validation-snapshot/Dockerfile.local-preview`;
+- canonical private media mount destination: `/var/www/html/storage/app/private`.
+
+Exact transient branch SHAs, mount source paths and commands belong in the current follow-up prompt, not as timeless architecture facts in this file.
+
+## Fast Validation preview
+
+When protected Validation is actually needed, use the established preview/release workflow in `docs/RELEASE.md`. Do not invent server commands, hostnames or topology.
+
+Local browser acceptance and protected Validation are different environments. Do not deploy Validation merely because local source review is ready.
+
+## Environment safety
+
+- no Production deployment/cutover/DNS/mail/database mutation without explicit authorization;
+- no protected Validation mutation merely because code is ready;
+- no secrets, credentials, private Production data or authoritative private media in Git;
+- `server-platform` owns runtime topology, ingress, backups, operational mail, resource limits and deployment/rollback.
 
 ## Issue / PR discipline
 
-Issues contain durable current product scope, acceptance criteria, dependencies and blockers.
+Issues contain durable current product scope, acceptance criteria, dependencies and blockers. PRs contain implementation detail, changed files, technical decisions and verification evidence.
 
-PRs contain implementation details, changed files, technical decisions, targeted verification and transient branch/CI information.
-
-Do not use issues as worker diaries. Do not routinely post commit SHAs, CI run IDs or branch chatter into issues.
+Do not use issues as worker diaries. Temporary branch SHAs and browser-candidate choreography belong in handoffs/orchestration, not durable product issues unless they establish a blocker that needs tracking.
 
 ## Iterative redesign discipline
 
-The admin is still being redesigned. Existing good work is the starting point, not a frozen artifact and not an invitation to rebuild a page from scratch.
+The admin is still under browser acceptance. Existing work is a starting point, not automatically accepted UI.
 
-Workers should improve the assigned page against the current browser findings while moving reusable improvements into coherent shared systems where that genuinely benefits later pages.
+- preserve working domain behavior while correcting presentation;
+- do not reimplement stale issue descriptions already solved by current code;
+- do not turn concrete browser feedback into a speculative full-page rewrite;
+- prefer an existing shared primitive over page-local CSS/interaction forks;
+- when a genuinely shared defect is discovered, fix the shared authority intentionally;
+- do not introduce a second Rich Text, media-selection, table, modal or drag/drop technology to unblock one page;
+- consult `ui-skills.md` before changing admin workspace geometry.
 
-- keep structures and interactions that are already working well unless the current redesign explicitly improves them;
-- do not reimplement old issue descriptions that current code has already solved;
-- do not turn a few concrete defects into a speculative page rewrite;
-- when a better generic primitive can solve the current problem and improve later pages, prefer that over a page-local hack;
-- consistency means shared geometry, typography, controls, labels, spacing, dialogs and interaction behavior where appropriate, while each workspace keeps its task-specific content model;
-- browser feedback in the current issue/user review overrides stale acceptance language.
+## Central technology rules
 
-## Admin product contract
+### Rich Text
 
-The artist admin is an editorial tool, not a generic SaaS dashboard.
+The canonical stack is:
 
-Current shared composition for normal primary workspaces, where the page actually has comparable operational metrics:
+```text
+AdminRichText / Filament MarkdownEditor
+  -> Markdown
+  -> RichTextMediaReference
+  -> SafeRichTextRenderer
+  -> public HTML
+```
 
-1. one visible heading whose wording matches the navigation destination;
-2. no decorative kicker/eyebrow above that heading;
-3. one restrained six-metric strip;
-4. the page-specific action/filter/control row;
-5. the actual task surface: table, grid, contact sheet, editor, tree, analytics composition, graph, etc.
+Canonical embedded Media Files images use `media:<id>`. Do not resurrect TipTap/RichEditor, legacy `[[journal-image:...]]` runtime syntax, arbitrary external-image embeds or a second parser/editor.
 
-### No heading quick actions before cutover
+### Media
 
-Heading-row quick actions are deliberately out of scope until after the initial cutover/release.
+`MediaAsset` is the canonical reusable original. `MediaReferenceQuery` answers whether an asset is referenced; `PublicMedia` answers whether it is actually public. Protected preview does not create another asset type.
 
-- do not add yellow quick-action buttons during the current tranche;
-- do not create activity-driven recommendations or recommendation logic for them;
-- do not invent new product actions merely to populate a heading row;
-- if old quick-action UI remains on a page, remove it when that page is being finalized unless it is a normal page-specific action that belongs elsewhere in the existing workflow;
-- future quick-action exploration, if resumed after cutover, must only surface already-existing valid actions and must not create new functionality by implication.
+### Ordering
 
-### Metric strip
-
-- use exactly six restrained metric fields on primary workspaces when six meaningful contextual metrics exist;
-- follow the same visual system as Files: one coherent strip, consistent typography, spacing and geometry;
-- metric meanings are page-specific; do not reuse Files metrics mechanically;
-- do not fabricate weak metrics just to fill six slots on pages where the pattern is not semantically appropriate.
-
-### Task area
-
-After the metric strip, the page becomes task-specific. Most workspaces will begin with one compact action/filter/navigation row, often containing filters, tabs, segmented toggles or view controls, followed by the actual content such as a list, table, grid, graph, contact sheet, tree or editor.
-
-View switches must not make the task surface visibly jump vertically. When two modes have different internal chrome, compensate with shared spacing/geometry so their content starts on the same visual baseline.
-
-Other system-level rules:
-
-- generous useful desktop width and one shared workspace axis/gutter strategy;
-- task-specific layouts instead of one universal card template;
-- no repeated generic SaaS/LLM card walls;
-- dense/list-oriented Files workspace;
-- visual contact-sheet Gallery workspace;
-- analytical Analytics composition;
-- capacity-specific Storage visualization;
-- coherent timeline/history Activity presentation;
-- restrained neutral palette and shared control geometry;
-- use shared tokens/primitives before page-local pixel patches;
-- do not reintroduce obsolete `Website`/`Library` wrapper IA or expose persistence model names as artist-facing concepts.
-
-## Dialog and overlay contract
-
-Shared/native dialog behavior is owned by #61 and is a cross-page primitive.
-
-Dialogs must behave as browser-window overlays, not as panels constrained to the admin content column.
-
-Required behavior:
-
-- backdrop/overlay covers the relevant viewport;
-- dialog is centered in the browser viewport, not merely inside the content workspace;
-- width is responsive and bounded by the viewport;
-- height is bounded by the viewport;
-- oversized dialog content gets an internal vertical scroll region so controls remain reachable with wheel/touch/keyboard;
-- header/footer/actions remain usable rather than being pushed outside the clickable viewport;
-- stable z-index/backdrop behavior;
-- Escape/close behavior;
-- focus trap and focus restoration;
-- keyboard accessibility;
-- nested selectors/popovers remain above the dialog and usable;
-- originating workspace state remains intact after close/save.
-
-Fix shared dialog defects generically when encountered by the first page that needs them. Do not create a page-local fake modal merely to unblock one worker.
-
-## Parallel page ownership
-
-Workers should keep their diff inside their assigned page/domain plus directly necessary tests/services, except for deliberately generic shared primitives required by the current redesign.
-
-Do not casually edit global shell/theme files from multiple branches for unrelated reasons. If the assigned defect belongs to a shared primitive, make the shared change intentionally and keep it compatible with the other admin pages.
+Use native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) and canonical domain ordering services. Do not build parallel HTML5 drag state machines.
 
 ## Persistence and audit
 
-- Normal edits persist independently of the future `Commit` utility.
-- Text fields must not persist per keystroke and must not use timer/debounce autosave under the current General/admin contract.
-- Persist changed text on the normal change/blur path only when the normalized value actually changed.
-- Toggles/selects/media choices may persist on their discrete change event.
-- Activity/Audit records successful writes; it is not the persistence trigger.
-- Destructive/publication/media-reference operations must continue through canonical domain services and audit paths.
-
-## Verification
-
-Run the narrowest checks that prove the changed behavior while iterating. Reuse existing evidence for behavior that was not changed. Add focused regression coverage only for new or modified invariants/interactions that need it.
-
-The final PR to `main` must pass the canonical full gate in `.github/workflows/release.yml`:
-
-- Composer dependency/security verification;
-- frontend build;
-- Pest;
-- PHPStan;
-- Pint;
-- JavaScript tests.
-
-CI success alone is not browser/product acceptance for visual or interaction work.
+- normal edits persist independently of any future logical Commit utility;
+- text fields do not write per keystroke under the current admin contract;
+- persist changed text on the normal change/blur path only when normalized content changed;
+- toggles/selects/media choices may persist on discrete changes;
+- Activity/Audit records successful writes but is not the persistence trigger;
+- publication, destructive operations and media references continue through canonical domain services.
 
 ## Worker prompt delivery
 
-When the orchestrator drafts a prompt for the user to hand to a parallel worker, the complete worker prompt must be delivered as one contiguous fenced code block so the ChatGPT UI provides a single Copy button for the whole prompt.
+A prompt intended for a parallel worker must be one complete contiguous fenced code block so it has one Copy button.
 
-- do not split one worker prompt across prose, blockquotes, multiple code blocks or surrounding fragments that must be assembled manually;
-- keep explanation outside the fenced block only when it is genuinely needed;
-- the text inside the fenced block must be directly copy-pasteable as the complete worker instruction.
+A worker prompt should state:
 
-## Handoff
+- repository;
+- exact base SHA and branch strategy;
+- allowed scope;
+- explicit non-goals;
+- browser findings/root causes already known;
+- central technologies that must be reused;
+- checks that are and are not required;
+- commit/push rules;
+- exact handoff fields expected.
 
-A worker handoff should normally contain only:
+## Worker handoff
+
+A normal handoff contains:
 
 - branch;
-- head SHA;
-- PR number/link if opened;
-- actual changes;
-- relevant targeted checks run;
-- real blockers or browser-acceptance points.
+- base SHA;
+- new head SHA;
+- changed files;
+- actual behavior/root-cause changes;
+- checks actually run;
+- remote head verification;
+- unresolved blocker if one remains.
 
-Do not produce long implementation diaries unless specifically requested.
+The orchestrator then reviews the code independently. Long implementation diaries are not acceptance evidence.
+
+## Continuation handoffs
+
+When the orchestration chat itself is becoming too large, follow [`followup-skill.md`](followup-skill.md). The new chat should be able to continue from exact Git/browser/runtime state without asking the user to reconstruct it manually.
