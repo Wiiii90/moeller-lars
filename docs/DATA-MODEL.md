@@ -7,11 +7,12 @@ PostgreSQL is authoritative for editorial state. Canonical uploaded originals ar
 ## Conventions
 
 - ordered editorial records persist explicit non-negative `position`; insertion order is never a presentation fallback;
-- published content must satisfy its domain publication prerequisites;
+- admin may display a 1-based Position while persistence remains zero/sparse/internal;
+- published content must satisfy domain publication prerequisites;
 - foreign keys are restrictive where deletion could lose editorial meaning or reusable media relationships;
 - migration provenance (`legacy_*`, migration batch/timestamp fields) is evidence only and not a runtime fallback;
 - slugs are normalized public identities;
-- domain/application naming may differ from intentionally retained persistence names. `ArtworkCategory` is the persistence model behind the product concept **Gallery**.
+- application/product naming may differ from intentionally retained persistence names.
 
 ## Site structure
 
@@ -19,136 +20,127 @@ PostgreSQL is authoritative for editorial state. Canonical uploaded originals ar
 
 `SiteSection` is the persisted public-site/navigation tree projection.
 
-Persisted concepts include:
-- typed node kind;
-- optional Journal template;
-- title/navigation label;
-- optional public slug;
-- publication/navigation visibility;
-- explicit position;
-- optional parent;
-- optional Gallery persistence reference.
-
-Runtime behavior is defined by `SiteNodeType` / `JournalTemplate`, not raw persistence strings.
+Persisted concepts include typed node kind, optional Journal template, title/navigation label, optional public slug, publication/navigation visibility, explicit position, optional parent and optional Gallery persistence reference.
 
 Supported runtime node types:
-- **Home** — singleton root, no slug, always published/navigation-visible;
+
+- **Home** — singleton root;
 - **Gallery** — public Artwork collection backed by `ArtworkCategory`;
-- **Journal** — Blog or Exhibitions collection;
+- **Journal** — Blog or Exhibitions presentation;
 - **Custom Page** — structured component page;
-- **Navigation Node** — navigation-only grouping with no public content URL.
+- **Navigation Node** — navigation-only grouping.
 
-Contact is not a Site Node type. It is a reusable structured component. CV/Vita is composed through Custom Page content rather than represented by a dedicated runtime node type.
+Contact is not a Site Node type. CV/Vita is composed through Custom Page content.
 
-Parent nodes are not destructively removed while descendants remain. Journals are not removed while owned entries remain.
+### `home_presentation_settings`
+
+One canonical Home presentation record owns the active Home template and its configuration.
+
+Supported templates:
+
+- Artwork;
+- Under Construction;
+- Skip Home;
+- Custom.
+
+Under Construction/Custom configuration stores ordered components. Direct image components reference `MediaAsset` IDs; text components may contain canonical Rich Text `media:<id>` references.
+
+Heading and Rich Text intentionally share persisted component type `text`; editor-only subtype state must not become another storage format.
 
 ### `custom_page_settings`
 
 One-to-one with a Custom Page Site Node.
 
-`blocks` is an ordered JSON list of supported structured components. Publication validation applies safe content/link/media rules.
+`blocks` is an ordered JSON list of supported structured components. Component and child ordering is explicit. Direct Image components reference `MediaAsset`; Text/List rich text uses canonical `media:<id>` references.
 
 ### `journal_settings`
 
 One-to-one with a Journal Site Node. Stores collection-level title/introduction independently from entries.
 
+The SiteSection's Journal template determines the active Blog/Exhibitions workspace/public projection. Switching the template is **non-destructive**: BlogPost and Exhibition rows belonging to that Journal may coexist as retained inactive content. They are not converted/deleted merely because the active template changes.
+
 ## Gallery and Artwork
 
 ### `artwork_categories`
 
-Persistence model: `ArtworkCategory`.
+Persistence model: `ArtworkCategory`; application concept: **Gallery**.
 
-Application concept: **Gallery**.
-
-A Gallery stores persistent identity/content data and has one matching Gallery `SiteSection`, which owns placement, hierarchy, publication/navigation state and site order.
+A Gallery has one matching Gallery SiteSection, which owns placement, hierarchy, publication/navigation state and site order.
 
 ### `artworks`
 
-An Artwork may belong to a Gallery through nullable `artwork_category_id`.
+An Artwork may belong to a Gallery through nullable `artwork_category_id`; `null` is the real unassigned state.
 
-`null` is a real **unassigned** state used by the Gallery detach/remove workflow. It is not a hidden fake Gallery and is distinct from deleting the Artwork.
+Core concepts include slug/title, material/dimensions/description, normalized year/date metadata, lifecycle state/timestamps, Gallery-relative position, optional Home feature/tie-break state and migration provenance.
 
-Core editorial concepts include:
-- stable slug/title;
-- Material text (`medium` remains a compatibility persistence field);
-- dimensions/description;
-- normalized year/date metadata;
-- draft/publication state and timestamps;
-- Gallery-relative position while assigned;
-- optional homepage feature/tie-break state;
-- migration provenance.
-
-When assigned, Artwork ordering is explicit within its Gallery. Moving to another Gallery appends/reorders under the domain service and preserves media usages.
-
-Detaching from a Gallery:
-- requires lifecycle invariants to remain valid; currently a published Artwork must be unpublished first;
-- sets `artwork_category_id` to `null`;
-- removes it from Gallery ordering;
-- preserves the Artwork itself;
-- preserves `ArtworkMedia` and reusable `MediaAsset` records.
-
-Publication requires a publishable Gallery and valid public metadata/media.
+Detaching from a Gallery preserves the Artwork and its reusable media relations. Publication requires a publishable Gallery and valid public metadata/media.
 
 ### `artwork_media`
 
 Explicit usage relation between Artwork and canonical `MediaAsset` originals.
 
-It stores role, position and optional usage-specific ALT override. Removing a usage does not implicitly delete the asset. Primary-media replacement changes the relation while retaining reusable MediaAssets.
+It stores role, position and where supported an Artwork usage-specific ALT override. Removing/replacing a usage does not implicitly delete the MediaAsset.
 
-Gallery primary visual media is image/video-aware. Audio support in the Files library does not by itself make audio a primary Gallery visual role.
-
-### `artwork_material_presets`
-
-Reusable artist convenience list for Material suggestions.
-
-- names are unique;
-- presets are suggestions, not canonical normalization of historical Artwork material text;
-- removing a preset never rewrites existing Artworks.
-
-Structured dimensions remain stored in the existing Artwork dimensions text field for compatibility. The editor may parse/compose Height × Width × optional Depth with unit while preserving an unparseable/custom freeform value unchanged.
+Gallery primary visual media is image/video-aware. Files audio support does not automatically create an Artwork primary-audio contract.
 
 ## Journals
 
-### Blog / `blog_posts`
+### `blog_posts`
 
-Every Blog Post belongs to a Blog Journal Site Node.
+Every Blog Post belongs to a Journal SiteSection. Important concepts include slug/title/body/excerpt, lifecycle, explicit position, publication/schedule timestamps and provenance.
 
-Important concepts include slug/title/body/excerpt, lifecycle state, explicit Journal-relative position, optional cover media, timestamps and migration provenance.
+Body is canonical Markdown and may reference Media Files through `media:<id>`.
 
-Scheduled visibility is evaluated from persisted schedule timestamps. Published/scheduled posts must leave that lifecycle before normal deletion. Reusable MediaAssets remain.
+Structured Cover/Gallery usage lives in `journal_entry_media`.
 
-### Exhibitions / `exhibitions`
+### `exhibitions`
 
-Every Exhibition belongs to an Exhibitions Journal Site Node.
+Every Exhibition belongs to a Journal SiteSection. Important concepts include:
 
-Important concepts include slug/title, publication state, Journal-relative position, date text + normalized dates, venue/location fields, opening information, constrained rich text, external/directions links and provenance.
+- slug/title/lifecycle;
+- explicit Journal-relative position;
+- display/normalized dates and vernissage/opening information;
+- venue + venue website;
+- `location_text` as street address only;
+- separate city/country;
+- latitude/longitude/geocoding evidence;
+- canonical Markdown description;
+- external link;
+- `gallery_enabled`;
+- `map_enabled`;
+- `map_shape` (`wide`/`square`);
+- `archived_from_state` for safe restore;
+- migration provenance.
 
-Ordering is Journal-scoped. Published Exhibitions must be unpublished before normal deletion. Media usages are removed without deleting reusable MediaAssets.
+Map visibility is explicit presentation state, not inferred merely from coordinates/timing. Gallery visibility is explicit and does not delete stored gallery usages when turned off.
 
-### `exhibition_media`
+Historical archived rows that predate `archived_from_state` are forward-reconciled from publication evidence; restore still respects current readiness.
 
-Ordered usage relation between Exhibitions and `MediaAsset`, including role and optional ALT override.
+### `journal_entry_media`
+
+Canonical structured usage relation for Blog/Exhibition Cover/Gallery media.
+
+Each row belongs to exactly one supported Journal entry, references one `MediaAsset`, stores role/position and may retain historical compatibility columns.
+
+Runtime Journal ALT semantics are canonical `MediaAsset.alt_text`. Legacy `alt_text_override` values are not runtime authority; newly synchronized rows store the override as null.
+
+Disabling an Exhibition Gallery does not delete its Gallery rows. They remain canonical references even though public media policy excludes them until `gallery_enabled=true`.
+
+Legacy inline Journal Rich Text media rows/token identifiers are not a runtime content system. Forward canonicalization converted legacy embedded occurrences to central Markdown `media:<id>` references.
 
 ## Custom Page / CV / Contact
 
-The old fixed `vita` and `contact` runtime SiteSection types no longer exist.
+CV/Vita and Contact are not fixed runtime SiteSection types.
 
-- CV/Vita is structured Custom Page content;
-- Contact is a reusable component that can be included in a Custom Page composition;
-- legacy CV/Contact persistence/provenance may remain where required for migration compatibility, but it does not recreate those old runtime page types.
+`CvEntry` remains first-class editorial/migration data used by CV List composition. It may reference a direct image MediaAsset and canonical Rich Text body media.
 
-Historical `CvEntry` data remains available where required for migration reconciliation and transformed editorial content.
+Contact is a reusable structured component with bounded child kinds such as public email, social links and Contact form. Global identity/recipient values remain owned by General/runtime contracts rather than duplicated per child row.
 
 ## General settings
 
-`PublicContentSetting::general()` is the canonical fixed site-wide settings record for:
-- favicon/site identity media reference;
-- public email + visibility;
-- private Contact-form recipient;
-- social links;
-- default media copyright/global legal text.
+`PublicContentSetting::general()` is the canonical fixed site-wide settings record for favicon/site identity media reference, public email/visibility, private Contact recipient, social links, default copyright/global legal text.
 
-This record is not an editable page and is not deletable. SMTP/DKIM/TLS/runtime secrets are not stored here.
+SMTP/DKIM/TLS/runtime secrets are not stored here.
 
 ## Media
 
@@ -156,33 +148,33 @@ This record is not an editable page and is not deletable. SMTP/DKIM/TLS/runtime 
 
 Canonical original uploaded or migrated asset.
 
-Durable technical identity includes generated storage key, content-derived MIME type, bytes, SHA-256, lifecycle state and relevant media metadata.
+Durable technical identity includes generated storage key, content-derived MIME type, bytes, SHA-256, lifecycle state and media metadata including canonical asset-level ALT.
 
-Current canonical media kinds include image, video and audio under `MediaTypePolicy`. Consumers may impose stricter type rules.
-
-Available originals are reusable across content. Quarantined/deleted state is explicit. A referenced asset cannot be destructively deleted.
+Available originals are reusable across consumers. A referenced asset cannot be destructively deleted.
 
 ### `media_variants`
 
 Generated derivative of one canonical original. Variants are rebuildable and never authoritative.
 
-Images currently use generated derivatives where required. Video/audio do not imply a transcoding/poster/waveform derivative contract unless explicitly added later.
+### Canonical reference model
+
+Structured references include Artwork, Journal Cover/Gallery, CV direct image, Custom/Home direct Image and site identity.
+
+Rich Text references use Markdown `media:<id>` and are discovered by `RichTextMediaReference`/`MediaReferenceQuery`.
+
+`MediaReferenceQuery` answers whether an asset is referenced anywhere. It intentionally includes retained inactive Blog/Exhibition rows for a Journal after a template switch.
+
+`PublicMedia` is a separate policy layer deciding whether a reference is currently public.
 
 See [MEDIA.md](MEDIA.md).
 
 ## Audit and editorial checkpoints
 
-### `audit_events`
-
-Durable append-only administrative history.
-
-Domain writes are persisted and audited independently of any future logical Commit/checkpoint feature. Activity reflects successful writes; it is not the persistence trigger.
-
-A future editorial checkpoint may group already-persisted audit events without turning `Commit` into a Save operation or Git integration.
+`audit_events` is durable append-only admin history. Domain writes are persisted/audited independently of any future logical Commit/checkpoint feature.
 
 ## Operational metrics
 
-Application-local operational metrics store bounded aggregate error/request/performance/admin health data. Human visitor analytics remain canonical in Matomo and are not duplicated as raw visitor history in PostgreSQL.
+Application-local operational metrics store bounded aggregate request/error/performance/admin-health data. Human visitor analytics remain canonical in Matomo.
 
 ## Framework/runtime tables
 
@@ -191,16 +183,15 @@ Laravel user/session/cache/job tables support authenticated administration/runti
 ## Deletion rules
 
 - Home cannot be deleted.
-- A parent Site Node cannot be deleted while descendants remain.
-- A Journal cannot be deleted while owned entries remain.
+- Parent Site Nodes cannot be deleted while descendants remain.
+- Journals cannot be deleted while owned entries remain.
 - Referenced MediaAssets cannot be destructively deleted.
-- Removing Artwork from a Gallery is detach/unassignment, not Artwork or MediaAsset deletion.
-- normal direct Artwork deletion is restricted by Artwork lifecycle and preserves reusable MediaAssets;
-- published/scheduled Blog and published Exhibition records must leave the public lifecycle before normal deletion;
-- destructive actions are authorized/audited and never silently cascade through reusable content.
+- disabling a presentation feature does not silently detach/delete its retained data.
+- Gallery detach is Artwork unassignment, not Artwork/Media deletion.
+- destructive/publication operations are authorized/audited and go through canonical domain services.
 
 ## Migration boundary
 
-Legacy artwork tables, Vita content/media and historical SiteSection shapes are migration inputs only.
+Legacy artwork/Vita/Journal/media structures are migration inputs only.
 
-Current normalization maps historical placement/content into Home, Gallery, Journal, Custom Page and reusable Contact components. Protected Validation/Production state evolves through forward Laravel migrations; source import is not rerun destructively against canonical non-empty data.
+Existing protected canonical state evolves through forward Laravel migrations. Source import is not rerun destructively against non-empty canonical data. Current forward canonicalization includes Journal Rich Text media normalization and Exhibition presentation/restore normalization; see [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
