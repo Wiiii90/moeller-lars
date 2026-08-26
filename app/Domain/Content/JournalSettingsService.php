@@ -3,8 +3,6 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Admin\AdminSettingsService;
-use App\Models\JournalSetting;
 use App\Models\SiteSection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -13,8 +11,6 @@ final class JournalSettingsService
 {
     public function __construct(
         private readonly AdminAuditService $audit,
-        private readonly AdminSettingsService $settings,
-        private readonly SafeRichTextRenderer $richText,
         private readonly SiteSectionPathPolicy $pathPolicy,
     ) {}
 
@@ -32,15 +28,9 @@ final class JournalSettingsService
         $title = $this->requiredText($data['title'] ?? null, 'title', 160, 'A Journal title is required.');
         $navigationLabel = $this->requiredText($data['navigation_label'] ?? null, 'navigation_label', 120, 'A navigation label is required.');
         $slug = $this->slug($data['slug'] ?? null);
-        $listingTitle = $this->nullableText($data['listing_title'] ?? null, 'listing_title', 240);
-        $listingIntro = $this->nullableText($data['listing_intro'] ?? null, 'listing_intro', 10000);
-        if ($listingIntro !== null) {
-            $this->richText->assertValid($listingIntro);
-        }
-
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use ($section, $templateValue, $title, $navigationLabel, $slug, $listingTitle, $listingIntro, $actor): SiteSection {
+        return DB::transaction(function () use ($section, $templateValue, $title, $navigationLabel, $slug, $actor): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             if ($fresh->nodeType() !== SiteNodeType::Journal) {
@@ -63,12 +53,6 @@ final class JournalSettingsService
                 $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
             }
 
-            $journalSettings = JournalSetting::forSection($fresh);
-            $this->settings->updateJournal($journalSettings, [
-                'listing_title' => $listingTitle,
-                'listing_intro' => $listingIntro,
-            ]);
-
             return $fresh->fresh();
         });
     }
@@ -83,18 +67,6 @@ final class JournalSettingsService
             throw ValidationException::withMessages([$field => $message]);
         }
         return $value;
-    }
-
-    private function nullableText(mixed $value, string $field, int $maxLength): ?string
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-        if (! is_string($value) || mb_strlen($value) > $maxLength) {
-            throw ValidationException::withMessages([$field => 'This Journal setting is invalid.']);
-        }
-        $value = trim($value);
-        return $value === '' ? null : $value;
     }
 
     private function slug(mixed $value): string

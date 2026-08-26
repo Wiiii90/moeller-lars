@@ -72,6 +72,17 @@ final class JournalEntryEditorSchema
                     ->label('Gallery enabled')
                     ->live()
                     ->columnSpanFull(),
+                Select::make('gallery_presentation')
+                    ->label('Gallery presentation')
+                    ->options([
+                        'grid' => 'Grid',
+                        'mosaic' => 'Mosaic',
+                        'slideshow' => 'Slideshow',
+                    ])
+                    ->default('grid')
+                    ->required()
+                    ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
+                    ->helperText('Uses the same Gallery images and order.'),
                 self::galleryImages()
                     ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
                     ->dehydrated(fn (Get $get): bool => (bool) $get('gallery_enabled')),

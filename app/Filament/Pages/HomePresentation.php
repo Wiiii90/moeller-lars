@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\HomePresentationEditorialService;
@@ -9,6 +10,7 @@ use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
+use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\MediaAssetSelect;
@@ -27,7 +29,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use LogicException;
@@ -47,11 +51,15 @@ final class HomePresentation extends Page
 
     public string $template = 'artwork';
 
-    public string $templateLabel = 'Artwork';
+    public string $templateLabel = 'Hero Artwork';
 
     public string $previewUrl = '';
 
     public int $settingsId = 0;
+
+    public int $homeSectionId = 0;
+
+    public bool $showHomeInNavigation = true;
 
     public bool $artworkShowDetails = true;
 
@@ -59,14 +67,45 @@ final class HomePresentation extends Page
 
     public bool $publicSiteGate = false;
 
+    public string $heroMode = 'automatic';
+
+    public ?int $fixedArtworkId = null;
+
+    public string $heroPoolRule = 'newest';
+
+    public ?int $heroPoolYear = null;
+
+    /** @var list<int> */
+    public array $manualHeroCandidateIds = [];
+
     /** @var array<string, mixed>|null */
     public ?array $currentArtwork = null;
 
     /** @var list<array<string, mixed>> */
-    public array $galleries = [];
+    public array $heroCandidates = [];
 
-    /** @var list<array<string, mixed>> */
-    public array $newestEligibleArtworks = [];
+    public int $candidatePoolCount = 0;
+
+    public ?string $selectionIssue = null;
+
+    public int $eligibleArtworkCount = 0;
+
+    public int $sourceGalleryCount = 0;
+
+    public ?int $newestEligibleYear = null;
+
+    public string $sourceSearch = '';
+
+    public string $sourceStatusFilter = 'any';
+
+    public string $sourceHomeFilter = 'any';
+
+    public int $sourcePage = 1;
+
+    public int $sourcePerPage = 10;
+
+    /** @var list<int|string> */
+    public array $selectedSourceIds = [];
 
     /** @var list<array<string, mixed>> */
     public array $componentDataset = [];
@@ -78,6 +117,13 @@ final class HomePresentation extends Page
     public array $componentTypeOptions = [
         'image' => 'Image',
         'heading' => 'Heading',
+        'rich_text' => 'Rich Text',
+        'divider' => 'Divider',
+    ];
+
+    /** @var array<string, string> */
+    public array $newComponentOptions = [
+        'image' => 'Image',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
     ];
@@ -102,26 +148,84 @@ final class HomePresentation extends Page
     /** @var array<string, mixed>|null */
     public ?array $skipTarget = null;
 
-    public ?string $selectionIssue = null;
+    public bool $homeAnalyticsLoaded = false;
 
-    public ?string $readinessWarning = null;
+    public string $homeAnalyticsStatus = 'loading';
 
-    public int $eligibleArtworkCount = 0;
+    public ?float $homeVisits = null;
 
-    public int $sourceGalleryCount = 0;
-
-    public int $publicSourceGalleryCount = 0;
-
-    public ?int $newestEligibleYear = null;
-
-    public int $newestYearCandidateCount = 0;
-
-    public int $explicitTieBreakerCount = 0;
+    public ?float $homeViews = null;
 
     public function mount(): void
     {
         $this->previewUrl = app(SitePreviewContext::class)->previewSiteUrl();
         $this->reloadWorkspace();
+    }
+
+    public function loadHomeAnalytics(): void
+    {
+        if ($this->homeAnalyticsLoaded || $this->template !== HomeTemplate::Artwork->value) {
+            return;
+        }
+
+        $this->homeAnalyticsLoaded = true;
+        $report = app(ArtistReportingService::class)->customPage('/', '30d');
+
+        $this->homeAnalyticsStatus = (string) ($report['status'] ?? 'unavailable');
+        $this->homeVisits = $this->analyticsMetricValue($report['page']['visits'] ?? null);
+        $this->homeViews = $this->analyticsMetricValue($report['page']['views'] ?? null);
+        $this->refreshMetrics();
+    }
+
+    public function updatedSourceSearch(): void
+    {
+        $this->sourcePage = 1;
+        $this->clearSourceSelection();
+    }
+
+    public function updatedSourceStatusFilter(): void
+    {
+        if (! in_array($this->sourceStatusFilter, ['any', 'published', 'unpublished'], true)) {
+            $this->sourceStatusFilter = 'any';
+        }
+
+        $this->sourcePage = 1;
+        $this->clearSourceSelection();
+    }
+
+    public function updatedSourceHomeFilter(): void
+    {
+        if (! in_array($this->sourceHomeFilter, ['any', 'enabled', 'disabled'], true)) {
+            $this->sourceHomeFilter = 'any';
+        }
+
+        $this->sourcePage = 1;
+        $this->clearSourceSelection();
+    }
+
+    public function updatedSourcePerPage(): void
+    {
+        if (! in_array($this->sourcePerPage, [10, 25], true)) {
+            $this->sourcePerPage = 10;
+        }
+
+        $this->sourcePage = 1;
+        $this->clearSourceSelection();
+    }
+
+    public function resetSourceFilters(): void
+    {
+        $this->sourceSearch = '';
+        $this->sourceStatusFilter = 'any';
+        $this->sourceHomeFilter = 'any';
+        $this->sourcePage = 1;
+        $this->clearSourceSelection();
+    }
+
+    public function goToSourcePage(int $page): void
+    {
+        $this->sourcePage = max(1, $page);
+        $this->clearSourceSelection();
     }
 
     public function updatedComponentSearch(): void
@@ -154,8 +258,14 @@ final class HomePresentation extends Page
             ->label('Settings')
             ->fillForm(fn (): array => [
                 'template' => $this->template,
+                'show_in_navigation' => $this->showHomeInNavigation,
                 'show_details' => $this->artworkShowDetails,
                 'show_gallery_link' => $this->artworkShowGalleryLink,
+                'hero_mode' => $this->heroMode,
+                'fixed_artwork_id' => $this->fixedArtworkId,
+                'pool_rule' => $this->heroPoolRule,
+                'pool_year' => $this->heroPoolYear,
+                'manual_include_ids' => $this->manualHeroCandidateIds,
                 'public_site_gate' => $this->publicSiteGate,
             ])
             ->schema([
@@ -164,6 +274,50 @@ final class HomePresentation extends Page
                     ->options(HomeTemplate::options())
                     ->required()
                     ->live(),
+                Toggle::make('show_in_navigation')
+                    ->label('Show Home in navigation')
+                    ->helperText('Only the public Home link changes. The Home page remains available at /.'),
+                Select::make('hero_mode')
+                    ->label('Hero mode')
+                    ->options([
+                        'automatic' => 'Automatic / Newest',
+                        'fixed' => 'Fixed',
+                        'random' => 'Random Pool',
+                    ])
+                    ->required()
+                    ->live()
+                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                $this->heroArtworkSelect('fixed_artwork_id', 'Fixed artwork')
+                    ->required(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'fixed')
+                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'fixed'),
+                Select::make('pool_rule')
+                    ->label('Automatic pool')
+                    ->options([
+                        'newest' => 'Newest eligible year',
+                        'year' => 'Specific year',
+                    ])
+                    ->required(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'random')
+                    ->live()
+                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'random'),
+                TextInput::make('pool_year')
+                    ->label('Year')
+                    ->numeric()
+                    ->minValue(1000)
+                    ->maxValue(3000)
+                    ->required(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'random'
+                        && $get('pool_rule') === 'year')
+                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'random'
+                        && $get('pool_rule') === 'year'),
+                $this->heroArtworkSelect('manual_include_ids', 'Additional candidates', multiple: true)
+                    ->helperText('Adds Home-eligible artworks to the automatic pool.')
+                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'random'),
                 Toggle::make('show_details')
                     ->label('Show artwork information')
                     ->helperText('Shows the title, material, dimensions and other artwork label information.')
@@ -191,15 +345,35 @@ final class HomePresentation extends Page
             ->modalSubmitActionLabel('Save changes')
             ->action(function (array $data): void {
                 $template = HomeTemplate::from((string) $data['template']);
+                $input = [];
+                if ($template === HomeTemplate::Artwork) {
+                    $input = [
+                        'show_details' => $data['show_details'] ?? $this->artworkShowDetails,
+                        'show_gallery_link' => $data['show_gallery_link'] ?? $this->artworkShowGalleryLink,
+                        'hero_mode' => $data['hero_mode'] ?? $this->heroMode,
+                        'fixed_artwork_id' => $data['fixed_artwork_id'] ?? $this->fixedArtworkId,
+                        'pool_rule' => $data['pool_rule'] ?? $this->heroPoolRule,
+                        'pool_year' => $data['pool_year'] ?? $this->heroPoolYear,
+                        'manual_include_ids' => $data['manual_include_ids'] ?? $this->manualHeroCandidateIds,
+                    ];
+                }
+                if ($template === HomeTemplate::UnderConstruction) {
+                    $input['public_site_gate'] = $data['public_site_gate'] ?? $this->publicSiteGate;
+                }
+
                 app(HomePresentationEditorialService::class)->updateSettings(
                     $this->settings(),
                     $template,
-                    [
-                        'show_details' => $data['show_details'] ?? null,
-                        'show_gallery_link' => $data['show_gallery_link'] ?? null,
-                        'public_site_gate' => $data['public_site_gate'] ?? null,
-                    ],
+                    $input,
                 );
+
+                app(SiteSectionEditorialService::class)->updatePlacement(
+                    $this->homeSection(),
+                    'published',
+                    (bool) ($data['show_in_navigation'] ?? false),
+                    null,
+                );
+                $this->showHomeInNavigation = (bool) ($data['show_in_navigation'] ?? false);
 
                 $this->reloadWorkspace();
                 Notification::make()->title('Home settings saved')->success()->send();
@@ -213,14 +387,9 @@ final class HomePresentation extends Page
             ->schema([
                 Select::make('kind')
                     ->label('Component')
-                    ->options($this->componentTypeOptions)
+                    ->options($this->newComponentOptions)
                     ->required()
                     ->live(),
-                TextInput::make('title')
-                    ->label('Heading')
-                    ->maxLength(160)
-                    ->required(fn (callable $get): bool => $get('kind') === 'heading')
-                    ->visible(fn (callable $get): bool => $get('kind') === 'heading'),
                 ...$this->homeRichTextFields('kind', 'rich_text', required: true),
                 MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', true)
                     ->required(fn (callable $get): bool => $get('kind') === 'image')
@@ -236,15 +405,10 @@ final class HomePresentation extends Page
             ->action(function (array $data): void {
                 $kind = (string) ($data['kind'] ?? '');
                 $component = match ($kind) {
-                    'heading' => [
-                        'type' => 'text',
-                        'title' => trim((string) ($data['title'] ?? '')),
-                        'body' => null,
-                    ],
                     'rich_text' => [
                         'type' => 'text',
                         'title' => null,
-                        'body' => $data['body'] ?? null,
+                        'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null,
                     ],
                     'image' => [
                         'type' => 'image',
@@ -491,8 +655,138 @@ final class HomePresentation extends Page
             'show_on_home' => ! (bool) $gallery->getAttribute('show_on_home'),
         ]);
 
+        $this->clearSourceSelection();
         $this->reloadWorkspace();
-        Notification::make()->title('Homepage source updated')->success()->send();
+        Notification::make()->title('Home source updated')->success()->send();
+    }
+
+    public function setSelectedGalleryEligibility(bool $enabled): void
+    {
+        $ids = collect($this->selectedSourceIds)
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->filter(static fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return;
+        }
+
+        /** @var EloquentCollection<int, ArtworkCategory> $galleries */
+        $galleries = ArtworkCategory::query()->whereIn('id', $ids)->get();
+        foreach ($galleries as $gallery) {
+            if ((bool) $gallery->getAttribute('show_on_home') === $enabled) {
+                continue;
+            }
+
+            app(GalleryEditorialService::class)->update($gallery, [
+                'name' => (string) $gallery->getAttribute('name'),
+                'description' => $gallery->getAttribute('description'),
+                'show_on_home' => $enabled,
+            ]);
+        }
+
+        $count = $galleries->count();
+        $this->clearSourceSelection();
+        $this->reloadWorkspace();
+        Notification::make()
+            ->title($enabled ? 'Home sources enabled' : 'Home sources disabled')
+            ->body($count.' '.($count === 1 ? 'Gallery' : 'Galleries').' updated.')
+            ->success()
+            ->send();
+    }
+
+    public function sourceRows(): LengthAwarePaginator
+    {
+        /** @var Builder<ArtworkCategory> $query */
+        $query = ArtworkCategory::query()
+            ->whereHas('siteSection')
+            ->with('siteSection')
+            ->withCount([
+                'artworks as published_artworks_count' => static fn ($query) => $query->where('state', 'published'),
+            ])
+            ->withMax([
+                'artworks as newest_published_year' => static fn ($query) => $query
+                    ->where('state', 'published')
+                    ->whereNotNull('work_year'),
+            ], 'work_year');
+
+        $search = trim($this->sourceSearch);
+        if ($search !== '') {
+            $needle = '%'.mb_strtolower($search).'%';
+            $query->whereRaw('LOWER(name) LIKE ?', [$needle]);
+        }
+
+        if ($this->sourceStatusFilter === 'published') {
+            $query->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'));
+        } elseif ($this->sourceStatusFilter === 'unpublished') {
+            $query->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', '<>', 'published'));
+        }
+
+        if ($this->sourceHomeFilter === 'enabled') {
+            $query->where('show_on_home', true);
+        } elseif ($this->sourceHomeFilter === 'disabled') {
+            $query->where('show_on_home', false);
+        }
+
+        $total = (clone $query)->count();
+        $perPage = in_array($this->sourcePerPage, [10, 25], true) ? $this->sourcePerPage : 10;
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($this->sourcePage, $lastPage));
+
+        /** @var EloquentCollection<int, ArtworkCategory> $galleries */
+        $galleries = $query
+            ->orderBy('name')
+            ->offset(($page - 1) * $perPage)
+            ->limit($perPage)
+            ->get();
+
+        $galleryIds = $galleries
+            ->map(static fn (ArtworkCategory $gallery): int => (int) $gallery->getKey())
+            ->all();
+
+        $candidates = app(PublicArtworkQuery::class)->homePoolCandidatesForGalleries(
+            $galleryIds,
+            $this->effectivePoolRule(),
+            $this->effectivePoolYear(),
+            $this->effectiveManualCandidateIds(),
+            5,
+        )->groupBy(fn (Artwork $artwork): int => (int) $artwork->getAttribute('artwork_category_id'));
+
+        $rows = $galleries->map(function (ArtworkCategory $gallery) use ($candidates): array {
+            /** @var SiteSection|null $section */
+            $section = $gallery->getRelationValue('siteSection');
+            $galleryCandidates = $candidates->get((int) $gallery->getKey(), collect());
+
+            return [
+                'id' => (int) $gallery->getKey(),
+                'name' => (string) $gallery->getAttribute('name'),
+                'eligible' => (bool) $gallery->getAttribute('show_on_home'),
+                'state' => (string) ($section?->getAttribute('state') ?? 'hidden'),
+                'status_label' => (string) ($section?->getAttribute('state') ?? 'hidden') === 'published'
+                    ? 'Published'
+                    : 'Unpublished',
+                'published_artworks' => (int) $gallery->getAttribute('published_artworks_count'),
+                'newest_year' => $gallery->getAttribute('newest_published_year'),
+                'workspace_url' => ArtworkResource::getUrl('gallery', ['gallery' => $gallery->getKey()]),
+                'candidates' => $galleryCandidates
+                    ->map(fn (Artwork $artwork): array => $this->candidateRow($artwork))
+                    ->values()
+                    ->all(),
+            ];
+        })->all();
+
+        return new LengthAwarePaginator(
+            $rows,
+            $total,
+            $perPage,
+            $page,
+            [
+                'path' => request()->url(),
+                'pageName' => 'sourcePage',
+            ],
+        );
     }
 
     private function reloadWorkspace(): void
@@ -500,27 +794,42 @@ final class HomePresentation extends Page
         $settings = $this->settings();
         $configuration = app(HomePresentationEditorialService::class)->configuration($settings);
         $this->settingsId = (int) $settings->getKey();
+        $this->homeSectionId = (int) $settings->getAttribute('site_section_id');
+
+        if ($settings->relationLoaded('siteSection')) {
+            /** @var SiteSection|null $homeSection */
+            $homeSection = $settings->getRelationValue('siteSection');
+            if ($homeSection instanceof SiteSection) {
+                $this->showHomeInNavigation = (bool) $homeSection->getAttribute('show_in_navigation');
+            }
+        }
+
         $template = $settings->template();
         $this->template = $template->value;
         $this->templateLabel = $template->label();
-        $this->artworkShowDetails = (bool) $configuration[HomeTemplate::Artwork->value]['show_details'];
-        $this->artworkShowGalleryLink = (bool) $configuration[HomeTemplate::Artwork->value]['show_gallery_link'];
+
+        $artworkConfiguration = $configuration[HomeTemplate::Artwork->value];
+        $this->artworkShowDetails = (bool) $artworkConfiguration['show_details'];
+        $this->artworkShowGalleryLink = (bool) $artworkConfiguration['show_gallery_link'];
+        $this->heroMode = (string) $artworkConfiguration['hero_mode'];
+        $this->fixedArtworkId = is_int($artworkConfiguration['fixed_artwork_id']) ? $artworkConfiguration['fixed_artwork_id'] : null;
+        $this->heroPoolRule = (string) $artworkConfiguration['pool_rule'];
+        $this->heroPoolYear = is_int($artworkConfiguration['pool_year']) ? $artworkConfiguration['pool_year'] : null;
+        $this->manualHeroCandidateIds = is_array($artworkConfiguration['manual_include_ids'])
+            ? array_values($artworkConfiguration['manual_include_ids'])
+            : [];
         $this->publicSiteGate = (bool) $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'];
 
         $this->selectionIssue = null;
-        $this->readinessWarning = null;
         $this->currentArtwork = null;
-        $this->galleries = [];
-        $this->newestEligibleArtworks = [];
+        $this->heroCandidates = [];
         $this->componentDataset = [];
         $this->components = [];
         $this->skipTarget = null;
         $this->eligibleArtworkCount = 0;
         $this->sourceGalleryCount = 0;
-        $this->publicSourceGalleryCount = 0;
         $this->newestEligibleYear = null;
-        $this->newestYearCandidateCount = 0;
-        $this->explicitTieBreakerCount = 0;
+        $this->candidatePoolCount = 0;
         $this->componentStats = [
             'components' => 0,
             'images' => 0,
@@ -539,7 +848,7 @@ final class HomePresentation extends Page
         match ($template) {
             HomeTemplate::Artwork => $this->loadArtworkWorkspace(),
             HomeTemplate::UnderConstruction,
-            HomeTemplate::Custom => $this->loadComponentWorkspace($template, $settings, $configuration),
+            HomeTemplate::Custom => $this->loadComponentWorkspace($template, $configuration),
             HomeTemplate::SkipHome => $this->loadSkipWorkspace(),
         };
 
@@ -549,79 +858,53 @@ final class HomePresentation extends Page
     private function loadArtworkWorkspace(): void
     {
         $publicArtworks = app(PublicArtworkQuery::class);
+        $statistics = $publicArtworks->homeCandidateStatistics();
+
+        $this->eligibleArtworkCount = $statistics['eligible'];
+        $this->newestEligibleYear = $statistics['newest_year'];
+        $this->sourceGalleryCount = ArtworkCategory::query()
+            ->where('show_on_home', true)
+            ->whereHas('siteSection')
+            ->count();
+
+        $pool = $publicArtworks->homePoolCandidates(
+            $this->effectivePoolRule(),
+            $this->effectivePoolYear(),
+            $this->effectiveManualCandidateIds(),
+            12,
+        );
+        $this->candidatePoolCount = $publicArtworks->homePoolCandidateCount(
+            $this->effectivePoolRule(),
+            $this->effectivePoolYear(),
+            $this->effectiveManualCandidateIds(),
+        );
+        $this->heroCandidates = $pool
+            ->map(fn (Artwork $artwork): array => $this->candidateRow($artwork))
+            ->values()
+            ->all();
 
         try {
-            $current = $publicArtworks->latestForHome();
+            $current = match ($this->heroMode) {
+                'fixed' => $this->fixedArtworkId === null
+                    ? null
+                    : $publicArtworks->homeCandidateById($this->fixedArtworkId),
+                'random' => $pool->first(),
+                default => $publicArtworks->latestForHome(),
+            };
+
             if ($current instanceof Artwork) {
                 $this->currentArtwork = $this->artworkRow($current);
+            } elseif ($this->heroMode === 'fixed') {
+                $this->selectionIssue = 'The fixed Hero Artwork is no longer eligible.';
             }
         } catch (LogicException $exception) {
             $this->selectionIssue = $exception->getMessage();
         }
-
-        /** @var EloquentCollection<int, ArtworkCategory> $galleries */
-        $galleries = ArtworkCategory::query()
-            ->whereHas('siteSection')
-            ->with('siteSection')
-            ->withCount([
-                'artworks as published_artworks_count' => static fn ($query) => $query->where('state', 'published'),
-            ])
-            ->withMax([
-                'artworks as newest_published_year' => static fn ($query) => $query
-                    ->where('state', 'published')
-                    ->whereNotNull('work_year'),
-            ], 'work_year')
-            ->orderBy('name')
-            ->get();
-
-        $this->galleries = $galleries
-            ->map(function (ArtworkCategory $gallery): array {
-                /** @var SiteSection|null $section */
-                $section = $gallery->getRelationValue('siteSection');
-
-                return [
-                    'id' => (int) $gallery->getKey(),
-                    'name' => (string) $gallery->getAttribute('name'),
-                    'eligible' => (bool) $gallery->getAttribute('show_on_home'),
-                    'state' => (string) ($section?->getAttribute('state') ?? 'hidden'),
-                    'published_artworks' => (int) $gallery->getAttribute('published_artworks_count'),
-                    'newest_year' => $gallery->getAttribute('newest_published_year'),
-                    'workspace_url' => ArtworkResource::getUrl('gallery', ['gallery' => $gallery->getKey()]),
-                ];
-            })
-            ->values()
-            ->all();
-
-        $this->sourceGalleryCount = collect($this->galleries)->where('eligible', true)->count();
-        $this->publicSourceGalleryCount = collect($this->galleries)
-            ->where('eligible', true)
-            ->where('state', 'published')
-            ->count();
-
-        $statistics = $publicArtworks->homeCandidateStatistics();
-        $this->eligibleArtworkCount = $statistics['eligible'];
-        $this->newestEligibleYear = $statistics['newest_year'];
-        $this->newestYearCandidateCount = $statistics['newest_year_candidates'];
-        $this->explicitTieBreakerCount = $statistics['explicit_tie_breakers'];
-
-        $this->newestEligibleArtworks = $publicArtworks->newestHomeCandidates()
-            ->map(fn (Artwork $artwork): array => $this->artworkRow($artwork))
-            ->values()
-            ->all();
-
-        if ($this->selectionIssue !== null) {
-            $this->readinessWarning = 'The current hero needs an explicit tie-breaker.';
-        } elseif ($this->currentArtwork === null) {
-            $this->readinessWarning = 'No public Home artwork is currently eligible.';
-        }
     }
 
     /** @param array<string, mixed> $configuration */
-    private function loadComponentWorkspace(
-        HomeTemplate $template,
-        HomePresentationSetting $settings,
-        array $configuration,
-    ): void {
+    private function loadComponentWorkspace(HomeTemplate $template, array $configuration): void
+    {
         $raw = $configuration[$template->value]['components'] ?? [];
         $raw = is_array($raw) && array_is_list($raw) ? $raw : [];
 
@@ -711,21 +994,6 @@ final class HomePresentation extends Page
             'media_references' => count(array_unique($referenceIds)),
         ];
         $this->projectComponents();
-
-        if ($template === HomeTemplate::UnderConstruction) {
-            $hasImage = collect($raw)->contains(fn (mixed $component): bool => is_array($component)
-                && ($component['type'] ?? null) === 'image'
-                && is_numeric($component['media_asset_id'] ?? null));
-            $hasText = collect($raw)->contains(fn (mixed $component): bool => is_array($component)
-                && ($component['type'] ?? null) === 'text'
-                && (filled($component['title'] ?? null) || filled($component['body'] ?? null)));
-
-            if (! $hasImage || ! $hasText) {
-                $this->readinessWarning = 'Under Construction should contain both an image and text before public use.';
-            }
-        } elseif ($raw === []) {
-            $this->readinessWarning = 'Custom Home has no components yet.';
-        }
     }
 
     private function projectComponents(): void
@@ -749,8 +1017,6 @@ final class HomePresentation extends Page
     {
         $target = app(HomePresentationResolver::class)->skipTarget();
         if (! $target instanceof SiteSection) {
-            $this->readinessWarning = 'No published top-level page exists after Home. The public root will stay on Home instead of redirecting.';
-
             return;
         }
 
@@ -769,13 +1035,15 @@ final class HomePresentation extends Page
         $template = HomeTemplate::from($this->template);
 
         if ($template === HomeTemplate::Artwork) {
+            $analyticsDescription = $this->analyticsDescription();
+
             $this->metrics = [
-                ['label' => 'Source Galleries', 'value' => number_format($this->sourceGalleryCount), 'description' => 'Galleries enabled as Home sources'],
-                ['label' => 'Public Sources', 'value' => number_format($this->publicSourceGalleryCount), 'description' => 'Enabled source Galleries currently public'],
-                ['label' => 'Eligible Artworks', 'value' => number_format($this->eligibleArtworkCount), 'description' => 'Published Home candidates'],
-                ['label' => 'Newest Year', 'value' => $this->newestEligibleYear === null ? '—' : (string) $this->newestEligibleYear, 'description' => 'Newest eligible artwork year'],
-                ['label' => 'Newest-year Candidates', 'value' => number_format($this->newestYearCandidateCount), 'description' => 'Candidates in the newest eligible year'],
-                ['label' => 'Explicit Tie-breakers', 'value' => number_format($this->explicitTieBreakerCount), 'description' => 'Eligible artworks marked for Home tie-breaking'],
+                ['label' => 'Visits · 30d', 'value' => $this->formatMetric($this->homeVisits), 'description' => $analyticsDescription],
+                ['label' => 'Views · 30d', 'value' => $this->formatMetric($this->homeViews), 'description' => $analyticsDescription],
+                ['label' => 'Source Galleries', 'value' => number_format($this->sourceGalleryCount), 'description' => 'Enabled sources'],
+                ['label' => 'Eligible Artworks', 'value' => number_format($this->eligibleArtworkCount), 'description' => 'Home eligible'],
+                ['label' => 'Candidate Pool', 'value' => number_format($this->candidatePoolCount), 'description' => 'Configured pool'],
+                ['label' => 'Newest Year', 'value' => $this->newestEligibleYear === null ? '—' : (string) $this->newestEligibleYear, 'description' => 'Eligible newest'],
             ];
 
             return;
@@ -783,12 +1051,12 @@ final class HomePresentation extends Page
 
         if (in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
             $this->metrics = [
-                ['label' => 'Components', 'value' => number_format($this->componentStats['components']), 'description' => 'Components in this Home template'],
-                ['label' => 'Images', 'value' => number_format($this->componentStats['images']), 'description' => 'Image components'],
-                ['label' => 'Headings', 'value' => number_format($this->componentStats['headings']), 'description' => 'Heading components'],
-                ['label' => 'Rich Text', 'value' => number_format($this->componentStats['rich_text']), 'description' => 'Rich Text components'],
-                ['label' => 'Dividers', 'value' => number_format($this->componentStats['dividers']), 'description' => 'Divider components'],
-                ['label' => 'Media References', 'value' => number_format($this->componentStats['media_references']), 'description' => 'Distinct Media Files referenced by this template'],
+                ['label' => 'Components', 'value' => number_format($this->componentStats['components']), 'description' => 'This template'],
+                ['label' => 'Images', 'value' => number_format($this->componentStats['images']), 'description' => 'Image blocks'],
+                ['label' => 'Headings', 'value' => number_format($this->componentStats['headings']), 'description' => 'Legacy headings'],
+                ['label' => 'Rich Text', 'value' => number_format($this->componentStats['rich_text']), 'description' => 'Text blocks'],
+                ['label' => 'Dividers', 'value' => number_format($this->componentStats['dividers']), 'description' => 'Divider blocks'],
+                ['label' => 'Media References', 'value' => number_format($this->componentStats['media_references']), 'description' => 'Referenced files'],
             ];
 
             return;
@@ -799,6 +1067,16 @@ final class HomePresentation extends Page
 
     /** @return array<string, mixed> */
     private function artworkRow(Artwork $artwork): array
+    {
+        return [
+            ...$this->candidateRow($artwork),
+            'featured' => (bool) $artwork->getAttribute('featured_on_home'),
+            'preview_url' => route('preview.artworks.show', ['slug' => $artwork->getAttribute('slug')]),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function candidateRow(Artwork $artwork): array
     {
         $gallery = $artwork->getRelationValue('category');
         if (! $gallery instanceof ArtworkCategory) {
@@ -813,15 +1091,88 @@ final class HomePresentation extends Page
             'title' => (string) $artwork->getAttribute('title'),
             'year' => $artwork->getAttribute('work_year'),
             'date' => $workDate instanceof DateTimeInterface ? $workDate->format('Y-m-d') : null,
-            'featured' => (bool) $artwork->getAttribute('featured_on_home'),
             'gallery' => $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : null,
             'thumbnail_url' => ArtworkResource::thumbnailUrl($artwork),
             'edit_url' => ArtworkResource::getUrl('edit', ['record' => $artwork]),
-            'preview_url' => route('preview.artworks.show', ['slug' => $artwork->getAttribute('slug')]),
             'gallery_url' => $gallery instanceof ArtworkCategory
                 ? ArtworkResource::getUrl('gallery', ['gallery' => $gallery->getKey()])
                 : null,
         ];
+    }
+
+    private function heroArtworkSelect(string $name, string $label, bool $multiple = false): Select
+    {
+        $select = Select::make($name)
+            ->label($label)
+            ->searchable()
+            ->getSearchResultsUsing(fn (string $search): array => $this->heroArtworkOptions($search))
+            ->searchDebounce(300)
+            ->searchPrompt('Search eligible Hero Artworks')
+            ->noSearchResultsMessage('No matching eligible artworks');
+
+        if ($multiple) {
+            $select
+                ->multiple()
+                ->getOptionLabelsUsing(fn (array $values): array => $this->heroArtworkOptionLabels($values));
+        } else {
+            $select->getOptionLabelUsing(fn (mixed $value): ?string => $this->heroArtworkOptionLabel($value));
+        }
+
+        return $select;
+    }
+
+    /** @return array<int, string> */
+    private function heroArtworkOptions(string $search): array
+    {
+        return app(PublicArtworkQuery::class)
+            ->searchHomeCandidates($search, 30)
+            ->mapWithKeys(fn (Artwork $artwork): array => [
+                (int) $artwork->getKey() => $this->heroArtworkLabel($artwork),
+            ])
+            ->all();
+    }
+
+    /** @param list<mixed> $values
+     *  @return array<int, string>
+     */
+    private function heroArtworkOptionLabels(array $values): array
+    {
+        $ids = collect($values)
+            ->map(static fn (mixed $value): int => (int) $value)
+            ->filter(static fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        return app(PublicArtworkQuery::class)
+            ->homeCandidatesByIds($ids)
+            ->mapWithKeys(fn (Artwork $artwork): array => [
+                (int) $artwork->getKey() => $this->heroArtworkLabel($artwork),
+            ])
+            ->all();
+    }
+
+    private function heroArtworkOptionLabel(mixed $value): ?string
+    {
+        $id = filter_var($value, FILTER_VALIDATE_INT);
+        if ($id === false || $id <= 0) {
+            return null;
+        }
+
+        $artwork = app(PublicArtworkQuery::class)->homeCandidateById((int) $id);
+
+        return $artwork instanceof Artwork ? $this->heroArtworkLabel($artwork) : null;
+    }
+
+    private function heroArtworkLabel(Artwork $artwork): string
+    {
+        $gallery = $artwork->getRelationValue('category');
+        $galleryName = $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : 'Gallery';
+        $year = $artwork->getAttribute('work_year');
+
+        return (string) $artwork->getAttribute('title')
+            .' · '.$galleryName
+            .($year === null ? '' : ' · '.$year);
     }
 
     /** @return list<mixed> */
@@ -864,6 +1215,18 @@ final class HomePresentation extends Page
         }
 
         return app(HomePresentationResolver::class)->settings();
+    }
+
+    private function homeSection(): SiteSection
+    {
+        if ($this->homeSectionId <= 0) {
+            throw ValidationException::withMessages(['section' => 'Home site node is missing.']);
+        }
+
+        /** @var SiteSection $section */
+        $section = SiteSection::query()->whereKey($this->homeSectionId)->firstOrFail();
+
+        return $section;
     }
 
     private function componentTemplate(): HomeTemplate
@@ -946,5 +1309,69 @@ final class HomePresentation extends Page
     private function clearComponentSelection(): void
     {
         $this->selectedComponentTargets = [];
+    }
+
+    private function clearSourceSelection(): void
+    {
+        $this->selectedSourceIds = [];
+    }
+
+    private function effectivePoolRule(): string
+    {
+        return $this->heroMode === 'random' ? $this->heroPoolRule : 'newest';
+    }
+
+    private function effectivePoolYear(): ?int
+    {
+        return $this->heroMode === 'random' && $this->heroPoolRule === 'year'
+            ? $this->heroPoolYear
+            : null;
+    }
+
+    /** @return list<int> */
+    private function effectiveManualCandidateIds(): array
+    {
+        if ($this->heroMode === 'random') {
+            return $this->manualHeroCandidateIds;
+        }
+
+        if ($this->heroMode === 'fixed' && $this->fixedArtworkId !== null) {
+            return [$this->fixedArtworkId];
+        }
+
+        return [];
+    }
+
+    private function analyticsMetricValue(mixed $metric): ?float
+    {
+        if (! is_array($metric)
+            || ($metric['state'] ?? null) !== 'available'
+            || ! is_numeric($metric['value'] ?? null)) {
+            return null;
+        }
+
+        return (float) $metric['value'];
+    }
+
+    private function formatMetric(?float $value): string
+    {
+        if ($value === null) {
+            return '—';
+        }
+
+        return number_format($value, $value === floor($value) ? 0 : 1);
+    }
+
+    private function analyticsDescription(): string
+    {
+        if (! $this->homeAnalyticsLoaded) {
+            return 'Loading · 30d';
+        }
+
+        return match ($this->homeAnalyticsStatus) {
+            'stale' => 'Cached · 30d',
+            'available' => 'Home · 30d',
+            default => 'Unavailable · 30d',
+        };
     }
 }

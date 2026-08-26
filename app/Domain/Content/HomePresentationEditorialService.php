@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Artwork\PublicArtworkQuery;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ final class HomePresentationEditorialService
     public function __construct(
         private readonly AdminAuditService $audit,
         private readonly SafeRichTextRenderer $richText,
+        private readonly PublicArtworkQuery $artworks,
     ) {}
 
     /** @return array<string, mixed> */
@@ -22,6 +24,11 @@ final class HomePresentationEditorialService
             HomeTemplate::Artwork->value => [
                 'show_details' => true,
                 'show_gallery_link' => true,
+                'hero_mode' => 'automatic',
+                'fixed_artwork_id' => null,
+                'pool_rule' => 'newest',
+                'pool_year' => null,
+                'manual_include_ids' => [],
             ],
             HomeTemplate::UnderConstruction->value => [
                 'public_site_gate' => false,
@@ -73,6 +80,7 @@ final class HomePresentationEditorialService
         return DB::transaction(function () use ($settings, $template, $input): bool {
             $fresh = $this->locked($settings);
             $configuration = $this->configuration($fresh);
+            $artworkSettingsChanged = false;
 
             if (array_key_exists('show_details', $input) && $input['show_details'] !== null) {
                 $configuration[HomeTemplate::Artwork->value]['show_details'] = (bool) $input['show_details'];
@@ -80,11 +88,35 @@ final class HomePresentationEditorialService
             if (array_key_exists('show_gallery_link', $input) && $input['show_gallery_link'] !== null) {
                 $configuration[HomeTemplate::Artwork->value]['show_gallery_link'] = (bool) $input['show_gallery_link'];
             }
+            if (array_key_exists('hero_mode', $input) && $input['hero_mode'] !== null) {
+                $configuration[HomeTemplate::Artwork->value]['hero_mode'] = (string) $input['hero_mode'];
+                $artworkSettingsChanged = true;
+            }
+            if (array_key_exists('fixed_artwork_id', $input)) {
+                $configuration[HomeTemplate::Artwork->value]['fixed_artwork_id'] = $this->nullablePositiveInt($input['fixed_artwork_id']);
+                $artworkSettingsChanged = true;
+            }
+            if (array_key_exists('pool_rule', $input) && $input['pool_rule'] !== null) {
+                $configuration[HomeTemplate::Artwork->value]['pool_rule'] = (string) $input['pool_rule'];
+                $artworkSettingsChanged = true;
+            }
+            if (array_key_exists('pool_year', $input)) {
+                $configuration[HomeTemplate::Artwork->value]['pool_year'] = $this->nullablePositiveInt($input['pool_year']);
+                $artworkSettingsChanged = true;
+            }
+            if (array_key_exists('manual_include_ids', $input)) {
+                $configuration[HomeTemplate::Artwork->value]['manual_include_ids'] = $this->positiveIntList($input['manual_include_ids']);
+                $artworkSettingsChanged = true;
+            }
             if (array_key_exists('public_site_gate', $input) && $input['public_site_gate'] !== null) {
                 $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] = (bool) $input['public_site_gate'];
             }
 
             $this->validateConfiguration($configuration);
+            if ($artworkSettingsChanged) {
+                $this->validateArtworkReferences($configuration[HomeTemplate::Artwork->value]);
+            }
+
             $fresh->setAttribute('template', $template->value);
             $fresh->setAttribute('configuration', $configuration);
 
@@ -278,16 +310,85 @@ final class HomePresentationEditorialService
     /** @param array<string, mixed> $configuration */
     private function validateConfiguration(array $configuration): void
     {
-        if (! is_bool($configuration[HomeTemplate::Artwork->value]['show_details'] ?? null)
-            || ! is_bool($configuration[HomeTemplate::Artwork->value]['show_gallery_link'] ?? null)
+        $artwork = $configuration[HomeTemplate::Artwork->value] ?? [];
+        $mode = $artwork['hero_mode'] ?? null;
+        $fixedId = $artwork['fixed_artwork_id'] ?? null;
+        $poolRule = $artwork['pool_rule'] ?? null;
+        $poolYear = $artwork['pool_year'] ?? null;
+        $manualIds = $artwork['manual_include_ids'] ?? null;
+
+        if (! is_bool($artwork['show_details'] ?? null)
+            || ! is_bool($artwork['show_gallery_link'] ?? null)
+            || ! is_string($mode)
+            || ! in_array($mode, ['automatic', 'fixed', 'random'], true)
+            || ($fixedId !== null && (! is_int($fixedId) || $fixedId <= 0))
+            || ! is_string($poolRule)
+            || ! in_array($poolRule, ['newest', 'year'], true)
+            || ($poolYear !== null && (! is_int($poolYear) || $poolYear < 1000 || $poolYear > 3000))
+            || ! is_array($manualIds)
+            || ! array_is_list($manualIds)
+            || ! $this->isPositiveIntList($manualIds)
             || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? null)) {
             throw ValidationException::withMessages([
                 'configuration' => 'Home presentation settings are invalid.',
             ]);
         }
 
+        if ($mode === 'fixed' && $fixedId === null) {
+            throw ValidationException::withMessages([
+                'fixed_artwork_id' => 'Choose an eligible artwork for Fixed mode.',
+            ]);
+        }
+
+        if ($poolRule === 'year' && $poolYear === null) {
+            throw ValidationException::withMessages([
+                'pool_year' => 'Choose a year for the specific-year candidate pool.',
+            ]);
+        }
+
         $this->validateComponents($configuration[HomeTemplate::UnderConstruction->value]['components'] ?? null);
         $this->validateComponents($configuration[HomeTemplate::Custom->value]['components'] ?? null);
+    }
+
+    /** @param array<string, mixed> $artwork */
+    private function validateArtworkReferences(array $artwork): void
+    {
+        $manualIds = $this->positiveIntList($artwork['manual_include_ids'] ?? []);
+        $ids = $manualIds;
+        $fixedId = $artwork['fixed_artwork_id'] ?? null;
+        if (is_int($fixedId) && $fixedId > 0) {
+            $ids[] = $fixedId;
+        }
+        $ids = array_values(array_unique($ids));
+
+        if ($ids !== []) {
+            $validIds = $this->artworks->homeCandidatesByIds($ids)
+                ->pluck('id')
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->all();
+            sort($ids);
+            sort($validIds);
+
+            if ($ids !== $validIds) {
+                throw ValidationException::withMessages([
+                    'hero_artwork' => 'Hero artwork choices must be eligible published artworks from enabled Home source Galleries.',
+                ]);
+            }
+        }
+
+        if (($artwork['hero_mode'] ?? null) === 'random') {
+            $poolCount = $this->artworks->homePoolCandidateCount(
+                (string) ($artwork['pool_rule'] ?? 'newest'),
+                is_int($artwork['pool_year'] ?? null) ? $artwork['pool_year'] : null,
+                $manualIds,
+            );
+
+            if ($poolCount < 1) {
+                throw ValidationException::withMessages([
+                    'hero_mode' => 'Random Pool needs at least one eligible Hero candidate.',
+                ]);
+            }
+        }
     }
 
     private function validateComponents(mixed $components): void
@@ -303,7 +404,7 @@ final class HomePresentationEditorialService
                 || ! is_string($component['type'] ?? null)
                 || ! in_array($component['type'], ['image', 'text', 'divider'], true)) {
                 throw ValidationException::withMessages([
-                    'components' => 'Home supports Image, Heading / Rich Text and Divider components.',
+                    'components' => 'Home supports Image, Text and Divider components.',
                 ]);
             }
 
@@ -425,6 +526,47 @@ final class HomePresentationEditorialService
                 'component' => 'The requested component move is invalid.',
             ]);
         }
+    }
+
+    private function nullablePositiveInt(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $id = filter_var($value, FILTER_VALIDATE_INT);
+
+        return $id === false || $id <= 0 ? null : (int) $id;
+    }
+
+    /** @return list<int> */
+    private function positiveIntList(mixed $values): array
+    {
+        if (! is_array($values)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($values as $value) {
+            $id = $this->nullablePositiveInt($value);
+            if ($id !== null) {
+                $ids[] = $id;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /** @param list<mixed> $values */
+    private function isPositiveIntList(array $values): bool
+    {
+        foreach ($values as $value) {
+            if (! is_int($value) || $value <= 0) {
+                return false;
+            }
+        }
+
+        return count($values) === count(array_unique($values));
     }
 
     private function locked(HomePresentationSetting $settings): HomePresentationSetting

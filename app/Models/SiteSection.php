@@ -91,13 +91,8 @@ final class SiteSection extends Model
                 throw ValidationException::withMessages(['slug' => $nodeType->label().' does not own a public URL slug.']);
             }
 
-            if ($nodeType === SiteNodeType::Home) {
-                if ((string) $section->getAttribute('state') !== 'published') {
-                    throw ValidationException::withMessages(['state' => 'Home is always published.']);
-                }
-                if (! (bool) $section->getAttribute('show_in_navigation')) {
-                    throw ValidationException::withMessages(['show_in_navigation' => 'Home is always present in navigation.']);
-                }
+            if ($nodeType === SiteNodeType::Home && (string) $section->getAttribute('state') !== 'published') {
+                throw ValidationException::withMessages(['state' => 'Home is always published.']);
             }
 
             $parentId = $section->getAttribute('parent_id');

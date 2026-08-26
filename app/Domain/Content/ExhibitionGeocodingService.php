@@ -15,26 +15,41 @@ final class ExhibitionGeocodingService
             return null;
         }
 
+        $endpoint = trim((string) config('services.nominatim.endpoint'));
+        $userAgent = trim((string) config('services.nominatim.user_agent'));
+        if ($endpoint === '' || $userAgent === '') {
+            throw new ExhibitionGeocodingUnavailable('Nominatim endpoint or User-Agent is not configured.');
+        }
+
         try {
             $request = Http::acceptJson()
-                ->withHeaders(['User-Agent' => (string) config('services.nominatim.user_agent')])
+                ->withHeaders(['User-Agent' => $userAgent])
+                ->connectTimeout(2)
                 ->timeout(5);
             $email = trim((string) config('services.nominatim.email'));
-            $response = $request->get((string) config('services.nominatim.endpoint'), array_filter([
+            $response = $request->get($endpoint, array_filter([
                 'q' => $address,
                 'format' => 'jsonv2',
                 'limit' => 1,
                 'addressdetails' => 0,
                 'email' => $email !== '' ? $email : null,
-            ]));
+            ], static fn (mixed $value): bool => $value !== null));
 
             if (! $response->successful()) {
+                throw new ExhibitionGeocodingUnavailable('Nominatim returned HTTP '.$response->status().'.');
+            }
+
+            $payload = $response->json();
+            if (! is_array($payload)) {
+                throw new ExhibitionGeocodingUnavailable('Nominatim returned an invalid JSON payload.');
+            }
+            if ($payload === []) {
                 return null;
             }
 
-            $candidate = ((array) $response->json())[0] ?? null;
+            $candidate = $payload[0] ?? null;
             if (! is_array($candidate)) {
-                return null;
+                throw new ExhibitionGeocodingUnavailable('Nominatim returned an invalid result row.');
             }
 
             $latitude = filter_var($candidate['lat'] ?? null, FILTER_VALIDATE_FLOAT);
@@ -49,7 +64,7 @@ final class ExhibitionGeocodingService
                 || $longitude < -180
                 || $longitude > 180
             ) {
-                return null;
+                throw new ExhibitionGeocodingUnavailable('Nominatim returned invalid coordinates.');
             }
 
             return [
@@ -57,8 +72,10 @@ final class ExhibitionGeocodingService
                 'latitude' => (float) $latitude,
                 'longitude' => (float) $longitude,
             ];
-        } catch (Throwable) {
-            return null;
+        } catch (ExhibitionGeocodingUnavailable $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new ExhibitionGeocodingUnavailable('Nominatim request failed.', previous: $exception);
         }
     }
 }

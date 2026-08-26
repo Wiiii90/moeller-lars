@@ -32,6 +32,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class CustomPageWorkspace extends Page
@@ -40,7 +41,7 @@ final class CustomPageWorkspace extends Page
     private const COMPONENT_LABELS = [
         'image' => 'Image',
         'cv_list' => 'CV List',
-        'text' => 'Text',
+        'text' => 'Rich Text',
         'list' => 'List',
         'divider' => 'Divider',
         'contact' => 'Contact',
@@ -309,6 +310,10 @@ final class CustomPageWorkspace extends Page
                 'publication_state' => 'published',
                 'image_decorative' => false,
                 'variant' => 'thin',
+                'initial_list_publication_state' => 'published',
+                'initial_cv_publication_state' => 'unpublished',
+                'initial_cv_date_precision' => 'unknown',
+                'initial_cv_image_media_asset_id' => null,
                 'legal_disclaimer' => PublicContentSetting::general()->getAttribute('legal_disclaimer'),
             ])
             ->schema($this->componentEditorSchema(includeTypeSelect: true))
@@ -318,8 +323,30 @@ final class CustomPageWorkspace extends Page
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $data): void {
-                app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
-                $this->syncLegalDisclaimerIfNeeded($data);
+                DB::transaction(function () use ($data): void {
+                    $settings = $this->settings();
+                    $editorial = app(CustomPageEditorialService::class);
+                    $editorial->addBlock($settings, $this->componentPayload($data));
+
+                    $type = $data['type'] ?? null;
+                    if ($type === 'list') {
+                        $componentIndex = count($this->settings()->components()) - 1;
+                        $editorial->addListItem(
+                            $this->settings(),
+                            $componentIndex,
+                            'list',
+                            $this->initialListItemPayload($data),
+                        );
+                    } elseif ($type === 'cv_list') {
+                        $entry = app(CvEntryEditorialService::class)->createDraft($this->initialCvEntryPayload($data));
+                        if (($data['initial_cv_publication_state'] ?? 'unpublished') === 'published') {
+                            app(EditorialRecordService::class)->publish($entry);
+                        }
+                    }
+
+                    $this->syncLegalDisclaimerIfNeeded($data);
+                });
+
                 $this->clearSelections();
                 $this->reloadWorkspace();
                 Notification::make()->title('Component added')->success()->send();
@@ -539,7 +566,7 @@ final class CustomPageWorkspace extends Page
     public function addContactChildAction(): Action
     {
         return Action::make('addContactChild')
-            ->label('Add child')
+            ->label('Add contact item')
             ->fillForm(fn (): array => [
                 'child_type' => 'public_email',
                 'publication_state' => 'published',
@@ -548,8 +575,8 @@ final class CustomPageWorkspace extends Page
                 'status_text' => null,
             ])
             ->schema(fn (array $arguments): array => $this->contactChildEditorSchema(null, includeTypeSelect: true, arguments: $arguments))
-            ->modalHeading('Add Contact child')
-            ->modalSubmitActionLabel('Add child')
+            ->modalHeading('Add contact item')
+            ->modalSubmitActionLabel('Add item')
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 app(CustomPageEditorialService::class)->addContactChild(
@@ -560,7 +587,7 @@ final class CustomPageWorkspace extends Page
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('Contact child added')->success()->send();
+                Notification::make()->title('Contact item added')->success()->send();
             });
     }
 
@@ -577,7 +604,7 @@ final class CustomPageWorkspace extends Page
                 ];
             })
             ->schema(fn (array $arguments): array => $this->contactChildEditorSchema($this->actionContactChildType($arguments), false, $arguments))
-            ->modalHeading(fn (array $arguments): string => 'Edit '.(self::CONTACT_CHILD_LABELS[$this->actionContactChildType($arguments)] ?? 'Contact child'))
+            ->modalHeading(fn (array $arguments): string => 'Edit '.(self::CONTACT_CHILD_LABELS[$this->actionContactChildType($arguments)] ?? 'Contact item'))
             ->modalSubmitActionLabel('Save')
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
@@ -591,7 +618,7 @@ final class CustomPageWorkspace extends Page
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('Contact child saved')->success()->send();
+                Notification::make()->title('Contact item saved')->success()->send();
             });
     }
 
@@ -629,7 +656,7 @@ final class CustomPageWorkspace extends Page
             ->label('Delete')
             ->color('danger')
             ->requiresConfirmation()
-            ->modalHeading('Delete Contact child?')
+            ->modalHeading('Delete contact item?')
             ->action(function (array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 app(CustomPageEditorialService::class)->deleteContactChild(
@@ -640,7 +667,7 @@ final class CustomPageWorkspace extends Page
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('Contact child deleted')->success()->send();
+                Notification::make()->title('Contact item deleted')->success()->send();
             });
     }
 
@@ -648,18 +675,26 @@ final class CustomPageWorkspace extends Page
     {
         return Action::make('addCvEntry')
             ->label('Add CV entry')
-            ->fillForm(fn (): array => ['section' => 'CV', 'date_precision' => 'unknown', 'image_media_asset_id' => null])
-            ->schema($this->cvEntrySchema())
+            ->fillForm(fn (): array => [
+                'section' => 'CV',
+                'publication_state' => 'unpublished',
+                'date_precision' => 'unknown',
+                'image_media_asset_id' => null,
+            ])
+            ->schema($this->cvEntryCreateSchema())
             ->modalHeading('Add CV entry')
-            ->modalSubmitAction(fn (Action $action): Action => $action->label('Create draft')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Add entry')->extraAttributes(['class' => 'custom-page-dialog__primary']))
             ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $data): void {
-                app(CvEntryEditorialService::class)->createDraft($data);
+                $entry = app(CvEntryEditorialService::class)->createDraft($this->cvEntryPayload($data));
+                if (($data['publication_state'] ?? 'unpublished') === 'published') {
+                    app(EditorialRecordService::class)->publish($entry);
+                }
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: true);
-                Notification::make()->title('CV draft created')->success()->send();
+                Notification::make()->title('CV entry added')->success()->send();
             });
     }
 
@@ -739,13 +774,18 @@ final class CustomPageWorkspace extends Page
         $entry = CvEntry::query()->findOrFail($entryId);
         $service = app(EditorialRecordService::class);
 
-        match ($action) {
-            'publish' => $service->publish($entry),
-            'unpublish' => $service->unpublish($entry),
-            'archive' => $service->archive($entry),
-            'restore' => $service->restoreDraft($entry),
-            default => throw ValidationException::withMessages(['state' => 'Unsupported CV state action.']),
-        };
+        if ($action === 'publish') {
+            $state = (string) $entry->getAttribute('state');
+            if (in_array($state, ['archived', 'hidden'], true)) {
+                /** @var CvEntry $entry */
+                $entry = $service->restoreDraft($entry);
+            }
+            $service->publish($entry);
+        } elseif ($action === 'unpublish') {
+            $service->unpublish($entry);
+        } else {
+            throw ValidationException::withMessages(['state' => 'Unsupported CV publication action.']);
+        }
 
         $this->clearSelections();
         $this->loadComponentProjection(refreshCvCount: true);
@@ -883,6 +923,11 @@ final class CustomPageWorkspace extends Page
                 continue;
             }
             $state = (string) $entry->getAttribute('state');
+            if ($published && in_array($state, ['archived', 'hidden'], true)) {
+                /** @var CvEntry $entry */
+                $entry = app($records)->restoreDraft($entry);
+                $state = 'draft';
+            }
             if ($published && $state === 'draft') {
                 app($records)->publish($entry);
             } elseif (! $published && $state === 'published') {
@@ -1039,16 +1084,13 @@ final class CustomPageWorkspace extends Page
                     $entry->getAttribute('location'),
                 ], static fn (mixed $value): bool => is_string($value) && trim($value) !== ''));
                 $state = (string) $entry->getAttribute('state');
-                $status = match ($state) {
-                    'published' => 'Published',
-                    'archived', 'hidden' => 'Archived',
-                    default => 'Draft',
-                };
+                $status = $state === 'published' ? 'Published' : 'Unpublished';
 
                 return [
                     'kind' => 'cv',
                     'key' => 'cv-'.(int) $entry->getKey(),
                     'target' => 'cv:'.(int) $entry->getKey(),
+                    'position' => $index + 1,
                     'date' => (string) ($entry->getAttribute('year_text') ?? ''),
                     'entry' => (string) $entry->getAttribute('title'),
                     'detail' => implode(' · ', $meta),
@@ -1329,38 +1371,45 @@ final class CustomPageWorkspace extends Page
                 ->default('published')
                 ->required(),
             Grid::make(1)
-                ->schema(fn (Get $get): array => $this->componentTypeFields((string) $get('type')))
+                ->schema(fn (Get $get): array => $this->componentTypeFields((string) $get('type'), $includeTypeSelect))
                 ->key('dynamicComponentFields'),
         ];
     }
 
     /** @return list<mixed> */
-    private function componentTypeFields(string $type): array
+    private function componentTypeFields(string $type, bool $isNew): array
     {
         return match ($type) {
             'image' => [
                 MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', imagesOnly: true)->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false),
             ],
-            'text' => [
-                TextInput::make('title')->label('Heading')->maxLength(160),
-                ...AdminRichText::schema('body', 'Text', 20000),
-            ],
+            'text' => $isNew
+                ? AdminRichText::schema('body', 'Rich Text', 20000)
+                : [
+                    TextInput::make('title')->label('Heading')->maxLength(160),
+                    ...AdminRichText::schema('body', 'Rich Text', 20000),
+                ],
             'list' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),
+                ...($isNew ? $this->initialListEntrySchema() : []),
             ],
-            'cv_list' => [
-                Placeholder::make('cv_list_note')
-                    ->label('CV entries')
-                    ->content('This component renders the canonical CV entry sequence. Entry content and lifecycle are managed in the child rows below.'),
-            ],
+            'cv_list' => $isNew
+                ? $this->initialCvEntrySchema()
+                : [
+                    Placeholder::make('cv_list_note')
+                        ->label('CV entries')
+                        ->content('This component renders the canonical CV entry sequence. Entry content is managed in the child rows below.'),
+                ],
             'divider' => [
                 Select::make('variant')->label('Divider')->options(self::DIVIDER_LABELS)->default('thin')->required(),
             ],
             'contact' => [
                 Placeholder::make('contact_note')
-                    ->label('Contact children')
-                    ->content('Public Email, Social Media Links and Contact Form are managed as ordered child components below this row.'),
+                    ->label('Contact items')
+                    ->content($isNew
+                        ? 'Public Email, Social Media Links and Contact Form are created with this component.'
+                        : 'Contact items are managed in the child rows below.'),
             ],
             'legal_disclaimer' => [
                 Textarea::make('legal_disclaimer')
@@ -1371,6 +1420,51 @@ final class CustomPageWorkspace extends Page
             ],
             default => [],
         };
+    }
+
+    /** @return list<mixed> */
+    private function initialListEntrySchema(): array
+    {
+        return [
+            Select::make('initial_list_publication_state')
+                ->label('Initial entry status')
+                ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+                ->default('published')
+                ->required(),
+            TextInput::make('initial_list_date')->label('Initial entry date / year')->maxLength(120),
+            TextInput::make('initial_list_title')->label('Initial entry')->required()->maxLength(240),
+            TextInput::make('initial_list_meta')->label('Initial entry organisation / context')->maxLength(240),
+            TextInput::make('initial_list_location')->label('Initial entry location')->maxLength(240),
+            TextInput::make('initial_list_url')->label('Initial entry optional link')->url()->maxLength(2048),
+            ...AdminRichText::schema('initial_list_body', 'Initial entry details', 10000),
+        ];
+    }
+
+    /** @return list<mixed> */
+    private function initialCvEntrySchema(): array
+    {
+        return [
+            Select::make('initial_cv_publication_state')
+                ->label('Initial entry status')
+                ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+                ->default('unpublished')
+                ->required(),
+            TextInput::make('initial_cv_title')->label('Initial CV entry')->required()->maxLength(240),
+            TextInput::make('initial_cv_year_text')->label('Displayed date / year')->required()->maxLength(80),
+            Select::make('initial_cv_date_precision')->label('Date precision')->options([
+                'unknown' => 'Unknown',
+                'year' => 'Year',
+                'month' => 'Month',
+                'day' => 'Day',
+            ])->required()->default('unknown'),
+            DatePicker::make('initial_cv_starts_on')->label('Starts on')->nullable(),
+            DatePicker::make('initial_cv_ends_on')->label('Ends on')->nullable(),
+            TextInput::make('initial_cv_organisation')->label('Organisation')->maxLength(240)->nullable(),
+            TextInput::make('initial_cv_location')->label('Location')->maxLength(240)->nullable(),
+            ...AdminRichText::schema('initial_cv_body', 'Details', 10000),
+            MediaAssetSelect::makeId('initial_cv_image_media_asset_id', 'Image from Media Files', imagesOnly: true)->nullable(),
+            TextInput::make('initial_cv_external_url')->label('External URL')->url()->maxLength(2048)->nullable(),
+        ];
     }
 
     /** @return list<mixed> */
@@ -1388,6 +1482,19 @@ final class CustomPageWorkspace extends Page
             TextInput::make('location')->maxLength(240),
             TextInput::make('url')->label('Optional link')->url()->maxLength(2048),
             ...AdminRichText::schema('body', 'Details', 10000),
+        ];
+    }
+
+    /** @return list<mixed> */
+    private function cvEntryCreateSchema(): array
+    {
+        return [
+            Select::make('publication_state')
+                ->label('Status')
+                ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+                ->default('unpublished')
+                ->required(),
+            ...$this->cvEntrySchema(),
         ];
     }
 
@@ -1420,7 +1527,7 @@ final class CustomPageWorkspace extends Page
         $fields = [];
         if ($includeTypeSelect) {
             $fields[] = Select::make('child_type')
-                ->label('Contact child')
+                ->label('Contact item')
                 ->options($this->availableContactChildOptions($arguments))
                 ->required()
                 ->live();
@@ -1533,6 +1640,56 @@ final class CustomPageWorkspace extends Page
     }
 
     /** @return array<string,mixed> */
+    private function initialListItemPayload(array $data): array
+    {
+        return [
+            'published' => ($data['initial_list_publication_state'] ?? 'published') === 'published',
+            'date' => $data['initial_list_date'] ?? null,
+            'title' => $data['initial_list_title'] ?? null,
+            'meta' => $data['initial_list_meta'] ?? null,
+            'location' => $data['initial_list_location'] ?? null,
+            'url' => $data['initial_list_url'] ?? null,
+            'body' => $data['initial_list_body'] ?? null,
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function initialCvEntryPayload(array $data): array
+    {
+        return [
+            'section' => 'CV',
+            'title' => $data['initial_cv_title'] ?? null,
+            'year_text' => $data['initial_cv_year_text'] ?? null,
+            'date_precision' => $data['initial_cv_date_precision'] ?? 'unknown',
+            'starts_on' => $data['initial_cv_starts_on'] ?? null,
+            'ends_on' => $data['initial_cv_ends_on'] ?? null,
+            'organisation' => $data['initial_cv_organisation'] ?? null,
+            'location' => $data['initial_cv_location'] ?? null,
+            'body' => $data['initial_cv_body'] ?? null,
+            'image_media_asset_id' => $data['initial_cv_image_media_asset_id'] ?? null,
+            'external_url' => $data['initial_cv_external_url'] ?? null,
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function cvEntryPayload(array $data): array
+    {
+        return [
+            'section' => $data['section'] ?? 'CV',
+            'title' => $data['title'] ?? null,
+            'year_text' => $data['year_text'] ?? null,
+            'date_precision' => $data['date_precision'] ?? 'unknown',
+            'starts_on' => $data['starts_on'] ?? null,
+            'ends_on' => $data['ends_on'] ?? null,
+            'organisation' => $data['organisation'] ?? null,
+            'location' => $data['location'] ?? null,
+            'body' => $data['body'] ?? null,
+            'image_media_asset_id' => $data['image_media_asset_id'] ?? null,
+            'external_url' => $data['external_url'] ?? null,
+        ];
+    }
+
+    /** @return array<string,mixed> */
     private function listItemPayload(array $data): array
     {
         return [
@@ -1551,7 +1708,7 @@ final class CustomPageWorkspace extends Page
     {
         $type = $data['child_type'] ?? null;
         if (! is_string($type) || ! array_key_exists($type, self::CONTACT_CHILD_LABELS)) {
-            throw ValidationException::withMessages(['component' => 'Choose a supported Contact child component.']);
+            throw ValidationException::withMessages(['component' => 'Choose a supported Contact item.']);
         }
         $published = ($data['publication_state'] ?? 'published') === 'published';
 
@@ -1599,7 +1756,7 @@ final class CustomPageWorkspace extends Page
         }
         if ($type === 'contact') {
             $count = count($settings->contactChildren($block));
-            return ['primary' => 'Contact', 'secondary' => '', 'meta' => $count.' '.($count === 1 ? 'child' : 'children')];
+            return ['primary' => 'Contact', 'secondary' => '', 'meta' => $count.' '.($count === 1 ? 'item' : 'items')];
         }
         if ($type === 'legal_disclaimer') {
             $text = PublicContentSetting::general()->getAttribute('legal_disclaimer');

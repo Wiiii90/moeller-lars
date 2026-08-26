@@ -23,7 +23,7 @@ enum HomeTemplate: string
     public function label(): string
     {
         return match ($this) {
-            self::Artwork => 'Artwork',
+            self::Artwork => 'Hero Artwork',
             self::UnderConstruction => 'Under Construction',
             self::SkipHome => 'Skip Home',
             self::Custom => 'Custom',

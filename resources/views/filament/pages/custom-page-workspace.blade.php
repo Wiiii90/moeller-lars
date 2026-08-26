@@ -6,19 +6,6 @@
             @endforeach
         </x-admin.metrics>
 
-        <div class="custom-page-workspace__page-controls" aria-label="Page actions">
-            <span class="custom-page-workspace__control-label">Page</span>
-            <div class="admin-toolbar custom-page-workspace__page-actions">
-                <button class="admin-action" type="button" wire:click="mountAction('pageSettings')">Settings</button>
-                <button class="admin-action is-primary" type="button" wire:click="mountAction('addComponent')">Add component</button>
-                @if ($previewUrl)
-                    <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
-                @else
-                    <button class="admin-action" type="button" disabled>Preview</button>
-                @endif
-            </div>
-        </div>
-
         @php
             $reorderEnabled = trim($componentSearch) === '' && $componentType === 'any';
             $selectedParentCount = count($selectedComponentTargets);
@@ -30,17 +17,12 @@
                 ->flatMap(static fn (array $component): array => is_array($component['children'] ?? null) ? $component['children'] : [])
                 ->filter(static fn (array $child): bool => in_array($child['target'] ?? null, $selectedChildTargets, true))
                 ->values();
-            $selectedCvChildren = $selectedChildren
-                ->filter(static fn (array $child): bool => ($child['kind'] ?? null) === 'cv')
-                ->values();
             $canMoveSelected = $parentOnlySelection && $reorderEnabled;
             $canPublishSelected = $childOnlySelection
                 && $selectedChildren->isNotEmpty()
-                && $selectedCvChildren->every(static fn (array $child): bool => in_array($child['state'] ?? null, ['draft', 'published'], true))
                 && $selectedChildren->contains(static fn (array $child): bool => ($child['published'] ?? false) === false);
             $canUnpublishSelected = $childOnlySelection
                 && $selectedChildren->isNotEmpty()
-                && $selectedCvChildren->every(static fn (array $child): bool => ($child['state'] ?? null) === 'published')
                 && $selectedChildren->contains(static fn (array $child): bool => ($child['published'] ?? false) === true);
             $canDeleteSelected = $parentOnlySelection || $childOnlySelection;
         @endphp
@@ -64,6 +46,19 @@
             <div class="custom-page-workspace__control-group">
                 <span class="custom-page-workspace__control-label">Filter</span>
                 <button class="admin-action" type="button" wire:click="resetComponentFilters">Reset</button>
+            </div>
+
+            <div class="custom-page-workspace__control-group custom-page-workspace__page">
+                <span class="custom-page-workspace__control-label">CUSTOM PAGE</span>
+                <div class="admin-toolbar custom-page-workspace__page-actions">
+                    <button class="admin-action" type="button" wire:click="mountAction('pageSettings')">Settings</button>
+                    <button class="admin-action" type="button" wire:click="mountAction('addComponent')">Add component</button>
+                    @if ($previewUrl)
+                        <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
+                    @else
+                        <button class="admin-action" type="button" disabled>Preview</button>
+                    @endif
+                </div>
             </div>
 
             <div
@@ -154,9 +149,17 @@
                 <span>Actions</span>
             </div>
 
-            @if ($components === [])
-                <x-admin.empty-state kicker="No components" title="No matching components">
-                    <p>Add a component or clear the current filters.</p>
+            @if ($components === [] && $unfilteredComponentCount === 0)
+                <x-admin.empty-state kicker="" title="No components" :minimal="true">
+                    <x-slot:actions>
+                        <button class="admin-action" type="button" wire:click="mountAction('addComponent')">Add component</button>
+                    </x-slot:actions>
+                </x-admin.empty-state>
+            @elseif ($components === [])
+                <x-admin.empty-state kicker="" title="No matching components" :minimal="true">
+                    <x-slot:actions>
+                        <button class="admin-action" type="button" wire:click="resetComponentFilters">Clear filters</button>
+                    </x-slot:actions>
                 </x-admin.empty-state>
             @else
                 <div class="custom-page-component-sequence__rows" @if ($reorderEnabled) wire:sort="sortComponent" @endif>
@@ -212,13 +215,6 @@
                                         type="button"
                                         wire:click="setComponentPublished({{ $component['index'] }}, '{{ $component['type'] }}', {{ $component['published'] ? 'false' : 'true' }})"
                                     >{{ $component['published'] ? 'Unpublish' : 'Publish' }}</button>
-                                    @if ($component['is_list'])
-                                        <button class="admin-action" type="button" wire:click="mountAction('addListEntry', { componentIndex: {{ $component['index'] }}, componentType: 'list' })">Add entry</button>
-                                    @elseif ($component['is_cv_list'])
-                                        <button class="admin-action" type="button" wire:click="mountAction('addCvEntry')">Add CV entry</button>
-                                    @elseif ($component['is_contact'] && $component['contact_child_count'] < 3)
-                                        <button class="admin-action" type="button" wire:click="mountAction('addContactChild', { componentIndex: {{ $component['index'] }}, componentType: 'contact' })">Add child</button>
-                                    @endif
                                     <button class="admin-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')" @disabled(! $reorderEnabled || ! $component['can_move_up']) aria-label="Move component up">↑</button>
                                     <button class="admin-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')" @disabled(! $reorderEnabled || ! $component['can_move_down']) aria-label="Move component down">↓</button>
                                     <button class="admin-action is-danger" type="button" wire:click="mountAction('deleteComponent', { componentIndex: {{ $component['index'] }}, componentType: '{{ $component['type'] }}' })">Delete</button>
@@ -256,7 +252,20 @@
                                                 </div>
 
                                                 <div class="custom-page-child-row__content">
-                                                    @if ($child['kind'] === 'contact')
+                                                    @if ($child['kind'] === 'cv')
+                                                        <div class="custom-page-child-row__cv-line">
+                                                            <span class="custom-page-child-row__position" aria-label="Position {{ $child['position'] }}">{{ str_pad((string) $child['position'], 2, '0', STR_PAD_LEFT) }}</span>
+                                                            <strong>
+                                                                @if ($child['date'] !== '')
+                                                                    <span class="custom-page-child-row__date">{{ $child['date'] }}</span> ·
+                                                                @endif
+                                                                {{ $child['entry'] }}
+                                                            </strong>
+                                                        </div>
+                                                        @if ($child['detail'] !== '')
+                                                            <small>{{ $child['detail'] }}</small>
+                                                        @endif
+                                                    @elseif ($child['kind'] === 'contact')
                                                         <strong>{{ $child['detail'] }}</strong>
                                                     @else
                                                         <strong>
@@ -278,15 +287,7 @@
                                                 <div class="custom-page-child-row__actions admin-toolbar">
                                                     @if ($child['kind'] === 'cv')
                                                         <button class="admin-action" type="button" wire:click="mountAction('editCvEntry', { entry: {{ $child['entry_id'] }} })">Edit</button>
-                                                        @if ($child['state'] === 'draft')
-                                                            <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, 'publish')">Publish</button>
-                                                            <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, 'archive')">Archive</button>
-                                                        @elseif ($child['state'] === 'published')
-                                                            <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, 'unpublish')">Unpublish</button>
-                                                            <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, 'archive')">Archive</button>
-                                                        @else
-                                                            <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, 'restore')">Restore</button>
-                                                        @endif
+                                                        <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, '{{ $child['published'] ? 'unpublish' : 'publish' }}')">{{ $child['published'] ? 'Unpublish' : 'Publish' }}</button>
                                                         <button class="admin-action" type="button" wire:click="moveCvEntry({{ $child['entry_id'] }}, 'up')" @disabled(! $child['can_move_up']) aria-label="Move CV entry up">↑</button>
                                                         <button class="admin-action" type="button" wire:click="moveCvEntry({{ $child['entry_id'] }}, 'down')" @disabled(! $child['can_move_down']) aria-label="Move CV entry down">↓</button>
                                                         <button class="admin-action is-danger" type="button" wire:click="mountAction('deleteCvEntry', { entry: {{ $child['entry_id'] }} })">Delete</button>
@@ -309,11 +310,28 @@
                                     </div>
                                 </div>
                             @elseif ($component['is_list'])
-                                <div class="custom-page-component__children-empty">No list entries yet.</div>
+                                <div class="custom-page-component__children-empty">No list entries</div>
                             @elseif ($component['is_cv_list'])
-                                <div class="custom-page-component__children-empty">No CV entries yet.</div>
+                                <div class="custom-page-component__children-empty">No CV entries</div>
                             @elseif ($component['is_contact'])
-                                <div class="custom-page-component__children-empty">No Contact children. Add Public Email, Social Media Links or Contact Form.</div>
+                                <div class="custom-page-component__children-empty">No contact items</div>
+                            @endif
+
+                            @if ($component['is_list'])
+                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addListEntry', { componentIndex: {{ $component['index'] }}, componentType: 'list' })">
+                                    <span aria-hidden="true">+</span>
+                                    <strong>Add list item</strong>
+                                </button>
+                            @elseif ($component['is_cv_list'])
+                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addCvEntry')">
+                                    <span aria-hidden="true">+</span>
+                                    <strong>Add CV entry</strong>
+                                </button>
+                            @elseif ($component['is_contact'] && $component['contact_child_count'] < 3)
+                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addContactChild', { componentIndex: {{ $component['index'] }}, componentType: 'contact' })">
+                                    <span aria-hidden="true">+</span>
+                                    <strong>Add contact item</strong>
+                                </button>
                             @endif
                         </article>
                     @endforeach

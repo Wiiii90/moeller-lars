@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalEntryOrderService;
@@ -10,13 +11,11 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\AdminForm;
-use App\Filament\Support\AdminRichText;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
 use App\Models\JournalEntryMedia;
-use App\Models\JournalSetting;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
@@ -97,7 +96,7 @@ final class JournalWorkspace extends Page
     {
         $allowed = $this->journalTemplate() === JournalTemplate::Blog
             ? ['any', 'draft', 'scheduled', 'published', 'unpublished', 'archived']
-            : ['any', 'draft', 'published', 'archived'];
+            : ['any', 'published', 'unpublished'];
         if (! in_array($this->statusFilter, $allowed, true)) { $this->statusFilter = 'any'; }
         $this->refreshFromFirstPage();
     }
@@ -192,8 +191,7 @@ final class JournalWorkspace extends Page
     public function archivePost(int $id): void { $this->runEntryAction('Post archived', fn () => app(BlogEditorialService::class)->archive($this->post($id))); }
     public function restorePostDraft(int $id): void { $this->runEntryAction('Post restored to draft', fn () => app(BlogEditorialService::class)->restoreDraft($this->post($id))); }
     public function publishExhibition(int $id): void { $this->runEntryAction('Exhibition published', fn () => app(ExhibitionEditorialService::class)->publish($this->exhibition($id))); }
-    public function archiveExhibition(int $id): void { $this->runEntryAction('Exhibition archived', fn () => app(ExhibitionEditorialService::class)->archive($this->exhibition($id))); }
-    public function restoreExhibition(int $id): void { $this->runEntryAction('Exhibition restored', fn () => app(ExhibitionEditorialService::class)->restore($this->exhibition($id))); }
+    public function unpublishExhibition(int $id): void { $this->runEntryAction('Exhibition unpublished', fn () => app(ExhibitionEditorialService::class)->unpublish($this->exhibition($id))); }
 
     public function moveSelectedEntries(string $direction): void
     {
@@ -240,15 +238,12 @@ final class JournalWorkspace extends Page
             ->label('Settings')
             ->fillForm(function (): array {
                 $section = $this->section();
-                $settings = JournalSetting::forSection($section);
                 return [
                     'template' => (string) $section->getAttribute('template'),
                     'confirm_template_change' => false,
                     'title' => $section->getAttribute('title'),
                     'navigation_label' => $section->getAttribute('navigation_label'),
                     'slug' => $section->getAttribute('slug'),
-                    'listing_title' => $settings->getAttribute('listing_title'),
-                    'listing_intro' => $settings->getAttribute('listing_intro'),
                 ];
             })
             ->schema([
@@ -262,8 +257,6 @@ final class JournalWorkspace extends Page
                     TextInput::make('navigation_label')->label('Navigation label')->required()->maxLength(120),
                     TextInput::make('slug')->label('Public URL slug')->required()->maxLength(80)
                         ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')->helperText('Changing this changes the public Journal URL.'),
-                    TextInput::make('listing_title')->label('Listing title')->maxLength(240)->nullable(),
-                    ...AdminRichText::schema('listing_intro', 'Listing introduction', 10000, allowEmbeddedMedia: false),
                 ])->columns(2),
             ])
             ->modalHeading('Journal settings')
@@ -347,13 +340,13 @@ final class JournalWorkspace extends Page
     {
         return Action::make('addExhibition')->label('Add exhibition')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
-            ->modalHeading('Add exhibition')->modalSubmitActionLabel('Create draft')->modalCancelActionLabel('Cancel')
+            ->modalHeading('Add exhibition')->modalSubmitActionLabel('Create exhibition')->modalCancelActionLabel('Cancel')
             ->modalWidth(Width::SevenExtraLarge)->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try { app(ExhibitionEditorialService::class)->createDraft($data); }
                 catch (ValidationException $exception) { $this->notifyValidationFailure('Exhibition was not created', $exception); $action->halt(); return; }
-                $this->loadExhibitions(); Notification::make()->title('Exhibition draft created')->success()->send();
+                $this->loadExhibitions(); Notification::make()->title('Exhibition created')->success()->send();
             });
     }
 
@@ -468,7 +461,8 @@ final class JournalWorkspace extends Page
     {
         if ($refreshMetrics) { $this->loadExhibitionMetrics(); }
         $query = Exhibition::query()->where('site_section_id', $this->sectionId);
-        if ($this->statusFilter !== 'any') { $query->where('state', $this->statusFilter); }
+        if ($this->statusFilter === 'published') { $query->where('state', 'published'); }
+        elseif ($this->statusFilter === 'unpublished') { $query->where('state', '!=', 'published'); }
         $this->applyTimingFilter($query);
         $term = trim($this->search);
         if ($term !== '') {
@@ -484,14 +478,16 @@ final class JournalWorkspace extends Page
         /** @var EloquentCollection<int, Exhibition> $records */
         $records = $query->orderBy('position')->orderBy('id')->forPage($this->page, $this->pageSize)->get(); $now = now();
         $this->exhibitions = $records->map(function (Exhibition $entry) use ($ranks, $count, $now): array {
-            $state = (string) $entry->getAttribute('state'); $rank = ((int) ($ranks[(int) $entry->getKey()] ?? 0)) + 1;
+            $internalState = (string) $entry->getAttribute('state');
+            $state = $internalState === 'published' ? 'published' : 'unpublished';
+            $rank = ((int) ($ranks[(int) $entry->getKey()] ?? 0)) + 1;
             $location = collect([$entry->getAttribute('venue'), $entry->getAttribute('city')])->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')->map(fn (string $value): string => trim($value))->unique()->implode(' · ');
             return [
                 'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location !== '' ? $location : null,
                 'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $entry->vernissageDisplay(), 'date_text' => $entry->displayDate() ?? '',
-                'public_url' => $this->journalPublicUrl !== null && $state === 'published' ? $this->journalPublicUrl : null,
-                'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count, 'can_delete' => $state !== 'published',
-                'delete_help' => $state === 'published' ? 'Archive this exhibition before deleting' : null,
+                'public_url' => $this->journalPublicUrl !== null && $internalState === 'published' ? $this->journalPublicUrl : null,
+                'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count, 'can_delete' => $internalState !== 'published',
+                'delete_help' => $internalState === 'published' ? 'Unpublish this exhibition before deleting' : null,
             ];
         })->all();
     }
@@ -499,11 +495,15 @@ final class JournalWorkspace extends Page
     private function loadPostMetrics(): void
     {
         $records = BlogPost::query()->where('site_section_id', $this->sectionId)->get(['id', 'state', 'published_at', 'scheduled_at']);
-        $this->unfilteredEntryCount = $records->count(); $now = now();
+        $this->unfilteredEntryCount = $records->count();
+        $analytics = app(ArtistReportingService::class)->blog(null, '30d');
         $this->metrics = [
-            ['label' => 'Posts', 'value' => $records->count()], ['label' => 'Public', 'value' => $records->filter(fn (BlogPost $post): bool => $this->postIsPublic($post, $now))->count()],
-            ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count()], ['label' => 'Scheduled', 'value' => $records->where('state', 'scheduled')->count()],
-            ['label' => 'Unpublished', 'value' => $records->where('state', 'unpublished')->count()], ['label' => 'Archived', 'value' => $records->where('state', 'archived')->count()],
+            ['label' => 'Reads · 30d', 'value' => $this->analyticsValue($analytics['reads'] ?? null), 'description' => $this->analyticsDescription($analytics, 'Posts opened')],
+            ['label' => 'Published', 'value' => $records->where('state', 'published')->count(), 'description' => 'Live posts'],
+            ['label' => 'Scheduled', 'value' => $records->where('state', 'scheduled')->count(), 'description' => 'Queued posts'],
+            ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count(), 'description' => 'Work in progress'],
+            ['label' => 'Unpublished', 'value' => $records->where('state', 'unpublished')->count(), 'description' => 'Offline posts'],
+            ['label' => 'Archived', 'value' => $records->where('state', 'archived')->count(), 'description' => 'Retained posts'],
         ];
     }
 
@@ -511,10 +511,47 @@ final class JournalWorkspace extends Page
     {
         $records = Exhibition::query()->where('site_section_id', $this->sectionId)->get(['id', 'state', 'starts_on', 'ends_on']);
         $this->unfilteredEntryCount = $records->count(); $now = now(); $timing = $records->map(fn (Exhibition $entry): string => $entry->temporalState($now));
+        $analytics = app(ArtistReportingService::class)->exhibitions('30d');
         $this->metrics = [
-            ['label' => 'Exhibitions', 'value' => $records->count()], ['label' => 'Published', 'value' => $records->where('state', 'published')->count()], ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count()],
-            ['label' => 'Upcoming', 'value' => $timing->filter(fn (string $value): bool => $value === 'upcoming')->count()], ['label' => 'Current', 'value' => $timing->filter(fn (string $value): bool => $value === 'current')->count()], ['label' => 'Past', 'value' => $timing->filter(fn (string $value): bool => $value === 'past')->count()],
+            ['label' => 'Visits · 30d', 'value' => $this->analyticsValue($analytics['page']['visits'] ?? null), 'description' => $this->analyticsDescription($analytics, 'Journal page')],
+            ['label' => 'Views · 30d', 'value' => $this->analyticsValue($analytics['page']['views'] ?? null), 'description' => $this->analyticsDescription($analytics, 'Journal page')],
+            ['label' => 'Published', 'value' => $records->where('state', 'published')->count(), 'description' => 'Public exhibitions'],
+            ['label' => 'Current', 'value' => $timing->filter(fn (string $value): bool => $value === 'current')->count(), 'description' => 'Happening now'],
+            ['label' => 'Upcoming', 'value' => $timing->filter(fn (string $value): bool => $value === 'upcoming')->count(), 'description' => 'Coming next'],
+            ['label' => 'Interactions · 30d', 'value' => $this->analyticsSum($analytics['external_clicks'] ?? null, $analytics['directions_clicks'] ?? null), 'description' => $this->analyticsDescription($analytics, 'External + map')],
         ];
+    }
+
+    private function analyticsValue(mixed $metric): int|string
+    {
+        if (! is_array($metric) || ($metric['state'] ?? null) !== 'available' || ! is_numeric($metric['value'] ?? null)) {
+            return '—';
+        }
+
+        return (int) round((float) $metric['value']);
+    }
+
+    private function analyticsSum(mixed ...$metrics): int|string
+    {
+        $sum = 0.0;
+        foreach ($metrics as $metric) {
+            if (! is_array($metric) || ($metric['state'] ?? null) !== 'available' || ! is_numeric($metric['value'] ?? null)) {
+                return '—';
+            }
+            $sum += (float) $metric['value'];
+        }
+
+        return (int) round($sum);
+    }
+
+    private function analyticsDescription(array $report, string $base): string
+    {
+        return match ((string) ($report['status'] ?? 'unavailable')) {
+            'stale' => $base.' · stale',
+            'loading' => $base.' · loading',
+            'unavailable' => $base.' · unavailable',
+            default => $base,
+        };
     }
 
     private function applyTimingFilter(Builder $query): void

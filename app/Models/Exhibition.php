@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'map_enabled', 'map_shape', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'gallery_presentation', 'map_enabled', 'map_shape', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {
@@ -183,6 +183,13 @@ class Exhibition extends Model
     public function shouldShowPublicGallery(): bool
     {
         return (bool) $this->getAttribute('gallery_enabled');
+    }
+
+    public function galleryPresentation(): string
+    {
+        $presentation = (string) ($this->getAttribute('gallery_presentation') ?? 'grid');
+
+        return in_array($presentation, ['grid', 'mosaic', 'slideshow'], true) ? $presentation : 'grid';
     }
 
     public function shouldShowPublicMap(?CarbonInterface $date = null): bool

@@ -18,18 +18,25 @@ final class AdminRichText
         ?int $maxLength = null,
         bool $allowEmbeddedMedia = true,
     ): array {
+        $toolbar = [
+            ['bold', 'italic', 'link'],
+            ['heading'],
+            ['bulletList', 'orderedList'],
+            ['undo', 'redo'],
+        ];
+
+        if ($allowEmbeddedMedia) {
+            $toolbar[2][] = 'attachFiles';
+        }
+
         $editor = MarkdownEditor::make($name)
             ->label($label)
-            ->toolbarButtons([
-                ['bold', 'italic', 'link'],
-                ['bulletList', 'orderedList'],
-                ['undo', 'redo'],
-            ])
+            ->toolbarButtons($toolbar)
+            ->fileAttachments(false)
             ->nullable()
             ->columnSpanFull()
             ->extraFieldWrapperAttributes([
                 'class' => 'admin-rich-text',
-                'style' => 'position:relative',
             ]);
 
         if ($maxLength !== null) {
@@ -37,15 +44,41 @@ final class AdminRichText
         }
 
         if ($allowEmbeddedMedia) {
+            $editor->extraAlpineAttributes([
+                'x-init' => <<<'JS'
+                    const bindMediaToolbarAction = () => {
+                        const toolbarButton = $el.querySelector('.editor-toolbar .upload-image')
+                        const actionButton = $el.closest('.admin-rich-text')?.querySelector('[data-admin-rich-text-media-action]')
+                        if (! toolbarButton || ! actionButton || toolbarButton.dataset.adminMediaBound === 'true') return false
+
+                        toolbarButton.dataset.adminMediaBound = 'true'
+                        toolbarButton.setAttribute('title', 'Insert image from Media Files')
+                        toolbarButton.setAttribute('aria-label', 'Insert image from Media Files')
+                        toolbarButton.addEventListener('click', (event) => {
+                            event.preventDefault()
+                            event.stopImmediatePropagation()
+                            actionButton.click()
+                        }, true)
+
+                        return true
+                    }
+
+                    if (! bindMediaToolbarAction()) {
+                        const observer = new MutationObserver(() => {
+                            if (bindMediaToolbarAction()) observer.disconnect()
+                        })
+                        observer.observe($el, { childList: true, subtree: true })
+                        setTimeout(() => observer.disconnect(), 3000)
+                    }
+                JS,
+            ]);
+
             $editor->aboveContent(
                 Action::make('insertRichTextMedia_'.substr(sha1($name), 0, 12))
                     ->label('Insert image from Media Files')
-                    ->icon('heroicon-o-photo')
-                    ->iconButton()
-                    ->tooltip('Insert image from Media Files')
                     ->extraAttributes([
-                        'class' => 'admin-rich-text__media-action',
-                        'style' => 'position:absolute;right:.55rem;top:2.55rem;z-index:3',
+                        'data-admin-rich-text-media-action' => 'true',
+                        'style' => 'display:none',
                     ])
                     ->modalHeading('Insert image from Media Files')
                     ->modalSubmitActionLabel('Insert image')

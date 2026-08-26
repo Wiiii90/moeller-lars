@@ -153,6 +153,12 @@
     color: var(--admin-danger);
 }
 
+.journal-workspace .admin-metric__detail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .journal-workspace__table-wrap {
     overflow: auto;
     border-top: 0 !important;
@@ -368,6 +374,24 @@
     font-weight: 600;
 }
 
+.journal-workspace__position-badge {
+    display: inline-flex;
+    min-width: 1.9rem;
+    min-height: 1.9rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--admin-line-strong);
+    background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
+    color: var(--admin-muted);
+    font-size: .68rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .08em;
+}
+
+.dark .journal-workspace__position-badge {
+    background: color-mix(in srgb, var(--admin-subtle) 82%, transparent);
+}
+
 .journal-workspace__actions {
     white-space: nowrap;
 }
@@ -388,6 +412,21 @@
     min-height: 5.2rem;
     padding: 1.35rem .6rem;
     border: 0;
+}
+
+.journal-workspace__bottom-add {
+    padding: .35rem 0 .2rem;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.journal-workspace__bottom-add .admin-action {
+    padding-left: 0;
+    color: var(--admin-muted);
+}
+
+.journal-workspace__bottom-add .admin-action:hover,
+.journal-workspace__bottom-add .admin-action:focus-visible {
+    padding-left: .58rem;
 }
 
 /* Exact Media Files pagination geometry. */

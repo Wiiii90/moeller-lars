@@ -4,6 +4,7 @@ namespace App\Domain\Content;
 
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Media\PublicMedia;
+use App\Models\Artwork;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
@@ -117,7 +118,7 @@ final class HomePresentationResolver
         return match ($template) {
             HomeTemplate::Artwork => [
                 'template' => $template,
-                'artwork' => $this->artworks->latestForHome(),
+                'artwork' => $this->resolveHeroArtwork($configuration[HomeTemplate::Artwork->value]),
                 'media' => $this->media,
                 'showDetails' => (bool) $configuration['artwork']['show_details'],
                 'showGalleryLink' => (bool) $configuration['artwork']['show_gallery_link'],
@@ -166,6 +167,26 @@ final class HomePresentationResolver
     public function referencesMedia(HomePresentationSetting $settings, int $mediaAssetId): bool
     {
         return in_array($mediaAssetId, $this->mediaIds($settings), true);
+    }
+
+    /** @param array<string, mixed> $configuration */
+    private function resolveHeroArtwork(array $configuration): ?Artwork
+    {
+        return match ((string) ($configuration['hero_mode'] ?? 'automatic')) {
+            'fixed' => $this->artworks->homeCandidateById(
+                is_int($configuration['fixed_artwork_id'] ?? null)
+                    ? $configuration['fixed_artwork_id']
+                    : 0,
+            ),
+            'random' => $this->artworks->randomForHomePool(
+                (string) ($configuration['pool_rule'] ?? 'newest'),
+                is_int($configuration['pool_year'] ?? null) ? $configuration['pool_year'] : null,
+                is_array($configuration['manual_include_ids'] ?? null)
+                    ? $configuration['manual_include_ids']
+                    : [],
+            ),
+            default => $this->artworks->latestForHome(),
+        };
     }
 
     /** @param list<array<string, mixed>> $components

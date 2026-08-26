@@ -120,10 +120,10 @@ final class ExhibitionEditorialService
 
     public function publish(Exhibition $entry): Exhibition
     {
-        return $this->transition($entry, 'published', ['draft'], 'published', true);
+        return $this->transition($entry, 'published', ['draft', 'archived'], 'published', true);
     }
 
-    /** Compatibility path for older admin callers. Canonical Journal UI archives published exhibitions. */
+    /** Canonical non-destructive path from Published to the Unpublished admin presentation. */
     public function unpublish(Exhibition $entry): Exhibition
     {
         return $this->transition($entry, 'draft', ['published'], 'unpublished');
@@ -211,7 +211,7 @@ final class ExhibitionEditorialService
         DB::transaction(function () use ($entry, $actor): void {
             $fresh = Exhibition::query()->whereKey($entry->getKey())->lockForUpdate()->firstOrFail();
             if ((string) $fresh->getAttribute('state') === 'published') {
-                throw ValidationException::withMessages(['exhibition' => 'Archive this exhibition before deleting it.']);
+                throw ValidationException::withMessages(['exhibition' => 'Unpublish this exhibition before deleting it.']);
             }
 
             $id = (int) $fresh->getKey();
@@ -266,7 +266,7 @@ final class ExhibitionEditorialService
             throw ValidationException::withMessages(['starts_on' => 'Set exhibition dates before publishing.']);
         }
         if ((bool) $entry->getAttribute('map_enabled') && ! $entry->hasCoordinates()) {
-            throw ValidationException::withMessages(['map_enabled' => 'The entered address cannot currently provide a map location.']);
+            throw ValidationException::withMessages(['map_enabled' => 'Resolve the map location before publishing this exhibition.']);
         }
 
         $this->media->assertPublicReady($entry);
@@ -276,7 +276,7 @@ final class ExhibitionEditorialService
     {
         $allowed = [
             'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'date_text', 'vernissage_at',
-            'venue', 'location_text', 'city', 'country', 'external_url', 'gallery_enabled', 'map_enabled', 'map_shape',
+            'venue', 'location_text', 'city', 'country', 'external_url', 'gallery_enabled', 'gallery_presentation', 'map_enabled', 'map_shape',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
         $slugRule = Rule::unique('exhibitions', 'slug');
@@ -299,6 +299,7 @@ final class ExhibitionEditorialService
             'country' => ['nullable', 'string', 'max:160'],
             'external_url' => ['nullable', 'string', 'max:2048'],
             'gallery_enabled' => ['nullable', 'boolean'],
+            'gallery_presentation' => ['nullable', Rule::in(['grid', 'mosaic', 'slideshow'])],
             'map_enabled' => ['nullable', 'boolean'],
             'map_shape' => ['nullable', Rule::in(['wide', 'square'])],
         ])->validate();
@@ -326,6 +327,7 @@ final class ExhibitionEditorialService
         if (array_key_exists('map_enabled', $payload)) {
             $payload['map_enabled'] = (bool) $payload['map_enabled'];
         }
+        $payload['gallery_presentation'] = (string) ($payload['gallery_presentation'] ?? ($entry?->getAttribute('gallery_presentation') ?? 'grid'));
         $payload['map_shape'] = (string) ($payload['map_shape'] ?? ($entry?->getAttribute('map_shape') ?? 'wide'));
 
         return $payload;
@@ -342,9 +344,18 @@ final class ExhibitionEditorialService
             throw ValidationException::withMessages(['location_text' => 'Enter a street address, city or country to enable the map.']);
         }
 
-        $match = $this->geocoding->locate($parts->implode(', '));
+        try {
+            $match = $this->geocoding->locate($parts->implode(', '));
+        } catch (ExhibitionGeocodingUnavailable $exception) {
+            report($exception);
+            throw ValidationException::withMessages([
+                'map_enabled' => 'The map service is temporarily unavailable. Your address was not rejected; try saving again later.',
+            ]);
+        }
         if ($match === null) {
-            throw ValidationException::withMessages(['location_text' => 'The entered address cannot currently provide a map location.']);
+            throw ValidationException::withMessages([
+                'location_text' => 'No map location was found for this address. Check Street address, City and Country.',
+            ]);
         }
 
         return [

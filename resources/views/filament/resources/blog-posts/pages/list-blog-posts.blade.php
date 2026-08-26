@@ -9,7 +9,7 @@
 
     <x-admin.workspace :title="$journalTitle" class="journal-workspace journal-workspace--blog">
         <x-admin.metrics :columns="6" aria-label="Blog overview">
-            @foreach ($metrics as $metric)<x-admin.metric :label="$metric['label']" :value="$metric['value']" />@endforeach
+            @foreach ($metrics as $metric)<x-admin.metric :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>@endforeach
         </x-admin.metrics>
 
         <x-admin.section class="journal-workspace__entries" aria-label="Blog entries">
