@@ -88,6 +88,40 @@
     white-space: nowrap;
 }
 
+.cv-biography {
+    display: grid;
+    gap: 1.35rem;
+}
+
+.cv-entry {
+    display: grid;
+    min-width: 0;
+    gap: 1.4rem;
+}
+
+.cv-entry.has-image {
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 14rem);
+    align-items: start;
+}
+
+.cv-entry__content {
+    min-width: 0;
+}
+
+.cv-entry__media {
+    width: min(100%, 14rem);
+    margin: 0;
+    justify-self: end;
+}
+
+.cv-entry__media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    outline: 1px solid rgba(50, 47, 44, .14);
+    outline-offset: -1px;
+}
+
 .custom-page__contact .contact-section {
     margin: 0;
 }
@@ -96,6 +130,10 @@
     width: auto;
     margin: 0 0 .95rem;
     color: #504b47;
+}
+
+.custom-page__contact-child + .custom-page__contact-child {
+    margin-top: 1rem;
 }
 
 .custom-page__contact .contact-status {
@@ -191,5 +229,14 @@
     .custom-page__list-line {
         grid-template-columns: 1fr;
         gap: .1rem;
+    }
+
+    .cv-entry.has-image {
+        grid-template-columns: 1fr;
+    }
+
+    .cv-entry__media {
+        width: min(100%, 12rem);
+        justify-self: start;
     }
 }

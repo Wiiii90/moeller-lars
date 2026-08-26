@@ -58,6 +58,22 @@ class CvEntry extends Model
                 );
             }
 
+            $imageId = $entry->getAttribute('image_media_asset_id');
+            if ($imageId !== null) {
+                /** @var MediaAsset|null $asset */
+                $asset = is_numeric($imageId) ? MediaAsset::query()->find((int) $imageId) : null;
+                $alt = $asset?->getAttribute('alt_text');
+                if (! $asset instanceof MediaAsset
+                    || $asset->getAttribute('state') !== 'available'
+                    || ! str_starts_with((string) $asset->getAttribute('mime_type'), 'image/')
+                    || ! is_string($alt)
+                    || trim($alt) === '') {
+                    throw ValidationException::withMessages([
+                        'image_media_asset_id' => 'Published CV images require an available image with canonical ALT text.',
+                    ]);
+                }
+            }
+
             $externalUrl = $entry->getAttribute('external_url');
             if ($externalUrl !== null) {
                 if (! is_string($externalUrl)

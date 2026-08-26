@@ -10,21 +10,21 @@
     @endphp
 
     <div class="custom-page" aria-label="{{ $section->title }}">
-        <h2 class="category-heading">{{ $section->title }}</h2>
-
         @if ($blocks === [])
             <p class="public-empty-state">This page does not have published content yet.</p>
         @else
             @foreach ($blocks as $blockIndex => $block)
                 @php
                     $type = is_array($block) ? ($block['type'] ?? null) : null;
+                    $componentPublished = is_array($block) ? \App\Models\CustomPageSetting::componentPublished($block) : false;
                 @endphp
+                @continue(! $isPreview && ! $componentPublished)
 
                 @if ($type === 'image')
                     @php
                         $assetId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
                         $asset = $assetId !== null ? $assets->get($assetId) : null;
-                        $variant = $asset !== null ? $media->thumbnailVariantForAsset($asset) : null;
+                        $variant = $asset !== null && $asset->getAttribute('state') === 'available' ? $media->thumbnailVariantForAsset($asset) : null;
                         $decorative = (bool) ($block['image_decorative'] ?? false);
                         $imageAlt = $asset !== null && ! $decorative ? $media->altTextForAsset($asset) : '';
                         $loading = $blockIndex === 0 ? 'eager' : 'lazy';
@@ -46,7 +46,13 @@
                     <section class="custom-page__component" aria-label="CV entries">
                         <div class="cv-biography">
                             @foreach ($cvEntries as $entry)
-                                <article class="cv-entry">
+                                @php
+                                    $entryAsset = $entry->getRelationValue('imageMediaAsset');
+                                    $entryVariant = $entryAsset instanceof \App\Models\MediaAsset && $entryAsset->getAttribute('state') === 'available'
+                                        ? $media->thumbnailVariantForAsset($entryAsset)
+                                        : null;
+                                @endphp
+                                <article class="cv-entry @if ($entryVariant !== null) has-image @endif">
                                     <div class="cv-entry__content">
                                         <div class="cv-entry__line">
                                             @if (filled($entry->year_text))
@@ -66,6 +72,16 @@
                                             <small class="public-preview-state">{{ ucfirst((string) $entry->state) }}</small>
                                         @endif
                                     </div>
+                                    @if ($entryAsset instanceof \App\Models\MediaAsset && $entryVariant !== null)
+                                        <figure class="cv-entry__media">
+                                            <img
+                                                src="{{ route('media.variant', $entryVariant) }}"
+                                                alt="{{ $media->altTextForAsset($entryAsset) }}"
+                                                loading="lazy"
+                                                decoding="async"
+                                            >
+                                        </figure>
+                                    @endif
                                 </article>
                             @endforeach
                         </div>
@@ -93,7 +109,7 @@
                             @endif
                             <div class="custom-page__list">
                                 @foreach (($block['items'] ?? []) as $item)
-                                    @continue(! is_array($item) || (! $isPreview && (($item['visible'] ?? true) !== true)))
+                                    @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
                                     <article class="custom-page__list-item">
                                         <div class="custom-page__list-line">
                                             @if (filled($item['date'] ?? null))
@@ -108,6 +124,9 @@
                                         @endif
                                         @if (filled($item['url'] ?? null))
                                             <p><a href="{{ $item['url'] }}" rel="noopener noreferrer">More information</a></p>
+                                        @endif
+                                        @if ($isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item))
+                                            <small class="public-preview-state">Unpublished</small>
                                         @endif
                                     </article>
                                 @endforeach
@@ -127,33 +146,25 @@
                 @endif
 
                 @if ($type === 'contact')
-                    @php
-                        $formState = is_string($block['form_state'] ?? null) ? $block['form_state'] : 'enabled';
-                        $statusText = is_string($block['status_text'] ?? null) ? $block['status_text'] : null;
-                        $showEmail = (bool) ($block['show_email'] ?? true);
-                        $showForm = (bool) ($block['show_form'] ?? true);
-                        $socialPlatforms = is_array($block['social_platforms'] ?? null) ? $block['social_platforms'] : [];
-                    @endphp
                     <div class="custom-page__component custom-page__contact">
                         <x-contact
                             :general-settings="$generalSettings"
-                            :form-state="$formState"
-                            :status-text="$statusText"
-                            :show-status="true"
-                            :show-email="$showEmail"
-                            :show-form="$showForm"
-                            :social-platforms="$socialPlatforms"
+                            :children="$settings->contactChildren($block)"
                         />
                     </div>
                 @endif
-            @endforeach
-        @endif
 
-        @if ($generalSettings->legal_disclaimer !== null)
-            <section class="legal-disclaimer" aria-labelledby="legal-disclaimer-heading">
-                <h2 id="legal-disclaimer-heading">Haftungsablehnung</h2>
-                <p>{{ $generalSettings->legal_disclaimer }}</p>
-            </section>
+                @if ($type === 'legal_disclaimer' && $generalSettings->legal_disclaimer !== null)
+                    <section class="legal-disclaimer" aria-labelledby="legal-disclaimer-heading-{{ $blockIndex }}">
+                        <h2 id="legal-disclaimer-heading-{{ $blockIndex }}">Haftungsablehnung</h2>
+                        <p>{{ $generalSettings->legal_disclaimer }}</p>
+                    </section>
+                @endif
+
+                @if ($isPreview && ! $componentPublished)
+                    <small class="public-preview-state">Unpublished component</small>
+                @endif
+            @endforeach
         @endif
     </div>
 @endsection

@@ -43,42 +43,7 @@ class PublicMedia
             return true;
         }
 
-        if (CustomPageSetting::query()
-            ->whereHas('siteSection', fn ($query) => $query
-                ->where('type', SiteNodeType::CustomPage->value)
-                ->where('state', 'published'))
-            ->whereRaw('blocks @> ?::jsonb', [json_encode([['media_asset_id' => (int) $asset->getKey()]], JSON_THROW_ON_ERROR)])
-            ->exists()) {
-            return true;
-        }
-
-        $publishedCustomPages = CustomPageSetting::query()
-            ->whereHas('siteSection', fn ($query) => $query
-                ->where('type', SiteNodeType::CustomPage->value)
-                ->where('state', 'published'))
-            ->get(['id', 'blocks']);
-
-        foreach ($publishedCustomPages as $settings) {
-            if (in_array(
-                (int) $asset->getKey(),
-                RichTextMediaReference::idsFromCustomPageBlocks($settings->components()),
-                true,
-            )) {
-                return true;
-            }
-        }
-
-        $richTextReference = RichTextMediaReference::markdown((int) $asset->getKey());
-        if (CvEntry::query()
-            ->where('state', 'published')
-            ->where('body', 'like', '%'.$richTextReference.'%')
-            ->exists()
-            && CustomPageSetting::query()
-                ->whereHas('siteSection', fn ($query) => $query
-                    ->where('type', SiteNodeType::CustomPage->value)
-                    ->where('state', 'published'))
-                ->whereRaw('blocks @> ?::jsonb', [json_encode([['type' => 'cv_list']], JSON_THROW_ON_ERROR)])
-                ->exists()) {
+        if ($this->publishedCustomPageReferencesAsset((int) $asset->getKey())) {
             return true;
         }
 
@@ -232,6 +197,67 @@ class PublicMedia
         $this->assertAvailable($asset);
 
         return route('media.original', $asset);
+    }
+
+    private function publishedCustomPageReferencesAsset(int $mediaAssetId): bool
+    {
+        $publishedCustomPages = CustomPageSetting::query()
+            ->whereHas('siteSection', fn ($query) => $query
+                ->where('type', SiteNodeType::CustomPage->value)
+                ->where('state', 'published'))
+            ->get(['id', 'blocks']);
+
+        $publishedCvListExists = false;
+        foreach ($publishedCustomPages as $settings) {
+            foreach ($settings->components() as $block) {
+                if (! is_array($block) || ! CustomPageSetting::componentPublished($block)) {
+                    continue;
+                }
+
+                $type = $block['type'] ?? null;
+                if ($type === 'image'
+                    && is_numeric($block['media_asset_id'] ?? null)
+                    && (int) $block['media_asset_id'] === $mediaAssetId) {
+                    return true;
+                }
+
+                if ($type === 'text'
+                    && is_string($block['body'] ?? null)
+                    && in_array($mediaAssetId, RichTextMediaReference::ids($block['body']), true)) {
+                    return true;
+                }
+
+                if ($type === 'list' && is_array($block['items'] ?? null)) {
+                    foreach ($block['items'] as $item) {
+                        if (! is_array($item) || ! CustomPageSetting::listItemPublished($item)) {
+                            continue;
+                        }
+                        if (is_string($item['body'] ?? null)
+                            && in_array($mediaAssetId, RichTextMediaReference::ids($item['body']), true)) {
+                            return true;
+                        }
+                    }
+                }
+
+                if ($type === 'cv_list') {
+                    $publishedCvListExists = true;
+                }
+            }
+        }
+
+        if (! $publishedCvListExists) {
+            return false;
+        }
+
+        $richTextReference = RichTextMediaReference::markdown($mediaAssetId);
+
+        return CvEntry::query()
+            ->where('state', 'published')
+            ->where(function ($query) use ($mediaAssetId, $richTextReference): void {
+                $query->where('image_media_asset_id', $mediaAssetId)
+                    ->orWhere('body', 'like', '%'.$richTextReference.'%');
+            })
+            ->exists();
     }
 
     private function activeHomeReferencesAsset(int $mediaAssetId): bool

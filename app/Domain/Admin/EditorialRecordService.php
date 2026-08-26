@@ -134,15 +134,7 @@ final class EditorialRecordService
                 ->lockForUpdate()
                 ->get();
             $ordered = $records->values()->all();
-            $index = null;
-
-            foreach ($ordered as $candidateIndex => $candidate) {
-                if ((int) $candidate->getKey() === (int) $record->getKey()) {
-                    $index = $candidateIndex;
-                    break;
-                }
-            }
-
+            $index = $this->cvIndex($ordered, (int) $record->getKey());
             if ($index === null) {
                 return false;
             }
@@ -154,41 +146,33 @@ final class EditorialRecordService
 
             [$ordered[$index], $ordered[$targetIndex]] = [$ordered[$targetIndex], $ordered[$index]];
 
-            $changes = [];
-            foreach ($ordered as $position => $candidate) {
-                if ((int) $candidate->getAttribute('position') !== $position) {
-                    $changes[] = [$candidate, $position];
-                }
-            }
-            if ($changes === []) {
+            return $this->persistCvOrder($records, $ordered, $actor);
+        });
+    }
+
+    public function sortCv(CvEntry $record, int $position): bool
+    {
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($record, $position, $actor): bool {
+            /** @var Collection<int, CvEntry> $records */
+            $records = CvEntry::query()
+                ->orderBy('position')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+            $ordered = $records->values()->all();
+            $index = $this->cvIndex($ordered, (int) $record->getKey());
+            if ($index === null) {
                 return false;
             }
 
-            $maxPosition = (int) ($records->max('position') ?? 0);
-            $temporaryBase = $maxPosition + count($records) + 1;
-            foreach ($changes as $temporaryOffset => [$candidate]) {
-                DB::table($record->getTable())
-                    ->where('id', $candidate->getKey())
-                    ->update(['position' => $temporaryBase + $temporaryOffset]);
-            }
+            $moved = $ordered[$index];
+            array_splice($ordered, $index, 1);
+            $position = max(0, min($position, count($ordered)));
+            array_splice($ordered, $position, 0, [$moved]);
 
-            foreach ($changes as [$candidate, $position]) {
-                DB::table($record->getTable())
-                    ->where('id', $candidate->getKey())
-                    ->update([
-                        'position' => $position,
-                        'updated_at' => now(),
-                    ]);
-                $this->audit->record(
-                    $actor,
-                    'cv_entry.reordered',
-                    'cv_entry',
-                    $candidate->getKey(),
-                    ['position' => $position],
-                );
-            }
-
-            return true;
+            return $this->persistCvOrder($records, $ordered, $actor);
         });
     }
 
@@ -226,6 +210,58 @@ final class EditorialRecordService
             ->firstOrFail();
 
         return $fresh;
+    }
+
+    /** @param list<CvEntry> $ordered */
+    private function cvIndex(array $ordered, int $recordId): ?int
+    {
+        foreach ($ordered as $index => $candidate) {
+            if ((int) $candidate->getKey() === $recordId) {
+                return $index;
+            }
+        }
+
+        return null;
+    }
+
+    /** @param list<CvEntry> $ordered */
+    private function persistCvOrder(Collection $records, array $ordered, mixed $actor): bool
+    {
+        $changes = [];
+        foreach ($ordered as $position => $candidate) {
+            if ((int) $candidate->getAttribute('position') !== $position) {
+                $changes[] = [$candidate, $position];
+            }
+        }
+        if ($changes === []) {
+            return false;
+        }
+
+        $maxPosition = (int) ($records->max('position') ?? 0);
+        $temporaryBase = $maxPosition + count($records) + 1;
+        foreach ($changes as $temporaryOffset => [$candidate]) {
+            DB::table($candidate->getTable())
+                ->where('id', $candidate->getKey())
+                ->update(['position' => $temporaryBase + $temporaryOffset]);
+        }
+
+        foreach ($changes as [$candidate, $position]) {
+            DB::table($candidate->getTable())
+                ->where('id', $candidate->getKey())
+                ->update([
+                    'position' => $position,
+                    'updated_at' => now(),
+                ]);
+            $this->audit->record(
+                $actor,
+                'cv_entry.reordered',
+                'cv_entry',
+                $candidate->getKey(),
+                ['position' => $position],
+            );
+        }
+
+        return true;
     }
 
     private function validateDirection(string $direction): void

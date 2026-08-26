@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 final class MediaReferenceQuery
 {
     /** @var list<string> */
-    private const CANONICAL_RELATIONS = ['artworks', 'journalEntryMedia', 'siteIdentitySettings'];
+    private const CANONICAL_RELATIONS = ['artworks', 'journalEntryMedia', 'siteIdentitySettings', 'cvEntries'];
 
     /** @var list<int>|null */
     private ?array $directContentMediaIds = null;

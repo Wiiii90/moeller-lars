@@ -19,6 +19,7 @@ final class CustomPageEditorialService
         'list',
         'divider',
         'contact',
+        'legal_disclaimer',
     ];
 
     public function __construct(private readonly AdminAuditService $audit) {}
@@ -29,6 +30,10 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $block): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
+            $type = $block['type'] ?? null;
+            if ($type === 'legal_disclaimer' && $this->containsType($blocks, 'legal_disclaimer')) {
+                throw ValidationException::withMessages(['component' => 'This page already contains a Legal Disclaimer component.']);
+            }
             $blocks[] = $block;
 
             return $this->persist($fresh, $blocks);
@@ -63,9 +68,9 @@ final class CustomPageEditorialService
             $blocks = $fresh->components();
             $this->assertListTarget($blocks, $index, $expectedType);
 
-            $items = is_array($blocks[$index]['items'] ?? null) ? array_values($blocks[$index]['items']) : [];
+            $items = $this->listItems($blocks[$index]);
             $items[] = $item;
-            $blocks[$index]['items'] = $items;
+            $blocks[$index]['items'] = array_values($items);
 
             return $this->persist($fresh, $blocks);
         });
@@ -79,13 +84,8 @@ final class CustomPageEditorialService
             $blocks = $fresh->components();
             $this->assertListTarget($blocks, $index, $expectedType);
 
-            $items = is_array($blocks[$index]['items'] ?? null) ? array_values($blocks[$index]['items']) : [];
-            if (! array_key_exists($itemIndex, $items) || ! is_array($items[$itemIndex])) {
-                throw ValidationException::withMessages([
-                    'component' => 'This list entry changed. Reload the workspace and try again.',
-                ]);
-            }
-
+            $items = $this->listItems($blocks[$index]);
+            $this->assertListItem($items, $itemIndex);
             $items[$itemIndex] = $item;
             $blocks[$index]['items'] = array_values($items);
 
@@ -93,24 +93,264 @@ final class CustomPageEditorialService
         });
     }
 
-    public function deleteListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex): bool
-    {
-        return DB::transaction(function () use ($settings, $index, $expectedType, $itemIndex): bool {
-            $fresh = $this->locked($settings);
-            $blocks = $fresh->components();
-            $this->assertListTarget($blocks, $index, $expectedType);
+    public function setListItemPublished(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        int $itemIndex,
+        bool $published,
+    ): bool {
+        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $published): array {
+            $this->assertListItem($items, $itemIndex);
+            $items[$itemIndex]['published'] = $published;
+            unset($items[$itemIndex]['visible']);
 
-            $items = is_array($blocks[$index]['items'] ?? null) ? array_values($blocks[$index]['items']) : [];
-            if (! array_key_exists($itemIndex, $items) || ! is_array($items[$itemIndex])) {
-                throw ValidationException::withMessages([
-                    'component' => 'This list entry changed. Reload the workspace and try again.',
-                ]);
+            return $items;
+        });
+    }
+
+    /** @param list<int> $itemIndices */
+    public function setListItemsPublished(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        array $itemIndices,
+        bool $published,
+    ): bool {
+        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndices, $published): array {
+            foreach (array_values(array_unique($itemIndices)) as $itemIndex) {
+                $this->assertListItem($items, $itemIndex);
+                $items[$itemIndex]['published'] = $published;
+                unset($items[$itemIndex]['visible']);
             }
 
-            unset($items[$itemIndex]);
-            $blocks[$index]['items'] = array_values($items);
+            return $items;
+        });
+    }
 
-            return $this->persist($fresh, $blocks);
+    public function moveListItem(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        int $itemIndex,
+        string $direction,
+    ): bool {
+        $this->assertDirection($direction);
+
+        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $direction): array {
+            $this->assertListItem($items, $itemIndex);
+            $target = $direction === 'up' ? $itemIndex - 1 : $itemIndex + 1;
+            if (! array_key_exists($target, $items)) {
+                return $items;
+            }
+            [$items[$itemIndex], $items[$target]] = [$items[$target], $items[$itemIndex]];
+
+            return array_values($items);
+        });
+    }
+
+    public function sortListItem(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        int $itemIndex,
+        int $position,
+    ): bool {
+        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $position): array {
+            $this->assertListItem($items, $itemIndex);
+            $moved = $items[$itemIndex];
+            array_splice($items, $itemIndex, 1);
+            $position = max(0, min($position, count($items)));
+            array_splice($items, $position, 0, [$moved]);
+
+            return array_values($items);
+        });
+    }
+
+    public function deleteListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex): bool
+    {
+        return $this->deleteListItems($settings, $index, $expectedType, [$itemIndex]);
+    }
+
+    /** @param list<int> $itemIndices */
+    public function deleteListItems(CustomPageSetting $settings, int $index, string $expectedType, array $itemIndices): bool
+    {
+        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndices): array {
+            $indices = array_values(array_unique($itemIndices));
+            rsort($indices);
+            foreach ($indices as $itemIndex) {
+                $this->assertListItem($items, $itemIndex);
+                unset($items[$itemIndex]);
+            }
+
+            return array_values($items);
+        });
+    }
+
+    /** @param array<string, mixed> $child */
+    public function addContactChild(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        array $child,
+    ): bool {
+        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($child): array {
+            $type = $this->contactChildType($child);
+            if ($this->contactChildIndex($children, $type) !== null) {
+                throw ValidationException::withMessages(['component' => 'This Contact child already exists.']);
+            }
+            $children[] = $child;
+
+            return array_values($children);
+        });
+    }
+
+    /** @param array<string, mixed> $child */
+    public function updateContactChild(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        string $childType,
+        array $child,
+    ): bool {
+        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childType, $child): array {
+            if ($this->contactChildType($child) !== $childType) {
+                throw ValidationException::withMessages(['component' => 'The Contact child type changed while it was being edited.']);
+            }
+            $childIndex = $this->requiredContactChildIndex($children, $childType);
+            $children[$childIndex] = $child;
+
+            return array_values($children);
+        });
+    }
+
+    public function setContactChildPublished(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        string $childType,
+        bool $published,
+    ): bool {
+        return $this->setContactChildrenPublished($settings, $index, $expectedType, [$childType], $published);
+    }
+
+    /** @param list<string> $childTypes */
+    public function setContactChildrenPublished(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        array $childTypes,
+        bool $published,
+    ): bool {
+        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childTypes, $published): array {
+            foreach (array_values(array_unique($childTypes)) as $childType) {
+                $childIndex = $this->requiredContactChildIndex($children, $childType);
+                $children[$childIndex]['published'] = $published;
+            }
+
+            return array_values($children);
+        });
+    }
+
+    public function moveContactChild(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        string $childType,
+        string $direction,
+    ): bool {
+        $this->assertDirection($direction);
+
+        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childType, $direction): array {
+            $childIndex = $this->requiredContactChildIndex($children, $childType);
+            $target = $direction === 'up' ? $childIndex - 1 : $childIndex + 1;
+            if (! array_key_exists($target, $children)) {
+                return $children;
+            }
+            [$children[$childIndex], $children[$target]] = [$children[$target], $children[$childIndex]];
+
+            return array_values($children);
+        });
+    }
+
+    public function sortContactChild(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        string $childType,
+        int $position,
+    ): bool {
+        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childType, $position): array {
+            $childIndex = $this->requiredContactChildIndex($children, $childType);
+            $moved = $children[$childIndex];
+            array_splice($children, $childIndex, 1);
+            $position = max(0, min($position, count($children)));
+            array_splice($children, $position, 0, [$moved]);
+
+            return array_values($children);
+        });
+    }
+
+    public function deleteContactChild(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        string $childType,
+    ): bool {
+        return $this->deleteContactChildren($settings, $index, $expectedType, [$childType]);
+    }
+
+    /** @param list<string> $childTypes */
+    public function deleteContactChildren(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        array $childTypes,
+    ): bool {
+        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childTypes): array {
+            foreach (array_values(array_unique($childTypes)) as $childType) {
+                $childIndex = $this->requiredContactChildIndex($children, $childType);
+                unset($children[$childIndex]);
+                $children = array_values($children);
+            }
+
+            return $children;
+        });
+    }
+
+    /** Legacy-compatible adapter for callers outside the workspace. */
+    public function setContactToggle(CustomPageSetting $settings, int $index, string $expectedType, string $field, bool $enabled): bool
+    {
+        $childType = match ($field) {
+            'show_email' => 'public_email',
+            'show_form' => 'contact_form',
+            default => throw new InvalidArgumentException('Unsupported Contact toggle.'),
+        };
+
+        return $this->setContactChildPublished($settings, $index, $expectedType, $childType, $enabled);
+    }
+
+    /** Legacy-compatible adapter for callers outside the workspace. */
+    public function setContactSocialPlatform(CustomPageSetting $settings, int $index, string $expectedType, string $platform, bool $enabled): bool
+    {
+        $this->assertAvailableSocialPlatform($platform);
+
+        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($platform, $enabled): array {
+            $childIndex = $this->requiredContactChildIndex($children, 'social_links');
+            $selected = array_values(array_filter(
+                is_array($children[$childIndex]['social_platforms'] ?? null) ? $children[$childIndex]['social_platforms'] : [],
+                static fn (mixed $value): bool => is_string($value),
+            ));
+
+            if ($enabled && ! in_array($platform, $selected, true)) {
+                $selected[] = $platform;
+            }
+            if (! $enabled) {
+                $selected = array_values(array_filter($selected, static fn (string $value): bool => $value !== $platform));
+            }
+            $children[$childIndex]['social_platforms'] = $selected;
+
+            return $children;
         });
     }
 
@@ -125,6 +365,9 @@ final class CustomPageEditorialService
 
             if ($expectedType === $targetType) {
                 return false;
+            }
+            if ($targetType === 'legal_disclaimer' && $this->containsType($blocks, 'legal_disclaimer', exceptIndex: $index)) {
+                throw ValidationException::withMessages(['component' => 'This page already contains a Legal Disclaimer component.']);
             }
 
             $blocks[$index] = $this->convertedBlock($blocks[$index], $targetType);
@@ -144,7 +387,7 @@ final class CustomPageEditorialService
 
         $next = $this->convertedBlock($block, $targetType);
         foreach ($block as $key => $value) {
-            if ($key === 'type') {
+            if ($key === 'type' || $key === 'published') {
                 continue;
             }
             if (array_key_exists($key, $next) && $next[$key] === $value) {
@@ -156,55 +399,6 @@ final class CustomPageEditorialService
         }
 
         return false;
-    }
-
-    public function setContactToggle(CustomPageSetting $settings, int $index, string $expectedType, string $field, bool $enabled): bool
-    {
-        if (! in_array($field, ['show_email', 'show_form'], true)) {
-            throw new InvalidArgumentException('Unsupported Contact toggle.');
-        }
-
-        return DB::transaction(function () use ($settings, $index, $expectedType, $field, $enabled): bool {
-            $fresh = $this->locked($settings);
-            $blocks = $fresh->components();
-            $this->assertTarget($blocks, $index, $expectedType);
-            if ($expectedType !== 'contact') {
-                throw ValidationException::withMessages(['component' => 'Only Contact components support this setting.']);
-            }
-
-            $blocks[$index][$field] = $enabled;
-
-            return $this->persist($fresh, $blocks);
-        });
-    }
-
-    public function setContactSocialPlatform(CustomPageSetting $settings, int $index, string $expectedType, string $platform, bool $enabled): bool
-    {
-        return DB::transaction(function () use ($settings, $index, $expectedType, $platform, $enabled): bool {
-            $this->assertAvailableSocialPlatform($platform);
-            $fresh = $this->locked($settings);
-            $blocks = $fresh->components();
-            $this->assertTarget($blocks, $index, $expectedType);
-            if ($expectedType !== 'contact') {
-                throw ValidationException::withMessages(['component' => 'Only Contact components support social links.']);
-            }
-
-            $selected = array_values(array_filter(
-                is_array($blocks[$index]['social_platforms'] ?? null) ? $blocks[$index]['social_platforms'] : [],
-                static fn (mixed $value): bool => is_string($value),
-            ));
-
-            if ($enabled && ! in_array($platform, $selected, true)) {
-                $selected[] = $platform;
-            }
-            if (! $enabled) {
-                $selected = array_values(array_filter($selected, static fn (string $value): bool => $value !== $platform));
-            }
-
-            $blocks[$index]['social_platforms'] = $selected;
-
-            return $this->persist($fresh, $blocks);
-        });
     }
 
     public function moveBlock(CustomPageSetting $settings, int $index, string $expectedType, string $direction): bool
@@ -322,6 +516,49 @@ final class CustomPageEditorialService
         });
     }
 
+    /**
+     * @param callable(list<array<string,mixed>>): list<array<string,mixed>> $mutator
+     */
+    private function mutateListItems(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        callable $mutator,
+    ): bool {
+        return DB::transaction(function () use ($settings, $index, $expectedType, $mutator): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertListTarget($blocks, $index, $expectedType);
+            $blocks[$index]['items'] = array_values($mutator($this->listItems($blocks[$index])));
+
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
+    /**
+     * @param callable(list<array<string,mixed>>): list<array<string,mixed>> $mutator
+     */
+    private function mutateContactChildren(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        callable $mutator,
+    ): bool {
+        return DB::transaction(function () use ($settings, $index, $expectedType, $mutator): bool {
+            $fresh = $this->locked($settings);
+            $blocks = $fresh->components();
+            $this->assertContactTarget($blocks, $index, $expectedType);
+            $children = $fresh->contactChildren($blocks[$index]);
+            $blocks[$index] = [
+                'type' => 'contact',
+                'published' => CustomPageSetting::componentPublished($blocks[$index]),
+                'children' => array_values($mutator($children)),
+            ];
+
+            return $this->persist($fresh, $blocks);
+        });
+    }
+
     private function locked(CustomPageSetting $settings): CustomPageSetting
     {
         /** @var CustomPageSetting $fresh */
@@ -330,10 +567,9 @@ final class CustomPageEditorialService
         return $fresh;
     }
 
-    /**
-     * @param list<array<string, mixed>> $blocks
-     * @param list<array{index:int,type:string}> $targets
-     * @return list<int>
+    /** @param list<array<string, mixed>> $blocks
+     *  @param list<array{index:int,type:string}> $targets
+     *  @return list<int>
      */
     private function validatedIndices(array $blocks, array $targets): array
     {
@@ -377,28 +613,108 @@ final class CustomPageEditorialService
         }
     }
 
+    /** @param list<array<string, mixed>> $blocks */
+    private function assertContactTarget(array $blocks, int $index, string $expectedType): void
+    {
+        $this->assertTarget($blocks, $index, $expectedType);
+        if ($expectedType !== 'contact') {
+            throw ValidationException::withMessages(['component' => 'Only Contact components contain Contact children.']);
+        }
+    }
+
+    /** @param array<string, mixed> $block
+     *  @return list<array<string,mixed>>
+     */
+    private function listItems(array $block): array
+    {
+        return is_array($block['items'] ?? null) ? array_values($block['items']) : [];
+    }
+
+    /** @param list<array<string,mixed>> $items */
+    private function assertListItem(array $items, int $itemIndex): void
+    {
+        if ($itemIndex < 0 || ! array_key_exists($itemIndex, $items) || ! is_array($items[$itemIndex])) {
+            throw ValidationException::withMessages(['component' => 'This list entry changed. Reload the workspace and try again.']);
+        }
+    }
+
+    /** @param array<string,mixed> $child */
+    private function contactChildType(array $child): string
+    {
+        $type = $child['type'] ?? null;
+        if (! is_string($type) || ! in_array($type, CustomPageSetting::CONTACT_CHILD_TYPES, true)) {
+            throw ValidationException::withMessages(['component' => 'Choose a supported Contact child component.']);
+        }
+
+        return $type;
+    }
+
+    /** @param list<array<string,mixed>> $children */
+    private function contactChildIndex(array $children, string $childType): ?int
+    {
+        foreach ($children as $index => $child) {
+            if (is_array($child) && ($child['type'] ?? null) === $childType) {
+                return $index;
+            }
+        }
+
+        return null;
+    }
+
+    /** @param list<array<string,mixed>> $children */
+    private function requiredContactChildIndex(array $children, string $childType): int
+    {
+        if (! in_array($childType, CustomPageSetting::CONTACT_CHILD_TYPES, true)) {
+            throw ValidationException::withMessages(['component' => 'Choose a supported Contact child component.']);
+        }
+        $index = $this->contactChildIndex($children, $childType);
+        if ($index === null) {
+            throw ValidationException::withMessages(['component' => 'This Contact child changed. Reload the workspace and try again.']);
+        }
+
+        return $index;
+    }
+
     /** @param array<string, mixed> $block */
     private function convertedBlock(array $block, string $targetType): array
     {
         $title = in_array($block['type'] ?? null, ['text', 'list'], true) && is_string($block['title'] ?? null)
             ? $block['title']
             : null;
+        $published = CustomPageSetting::componentPublished($block);
 
         return match ($targetType) {
-            'image' => ['type' => 'image', 'media_asset_id' => null, 'image_decorative' => false],
-            'cv_list' => ['type' => 'cv_list'],
-            'text' => ['type' => 'text', 'title' => $title, 'body' => null],
-            'list' => ['type' => 'list', 'title' => $title, 'items' => []],
-            'divider' => ['type' => 'divider', 'variant' => 'thin'],
+            'image' => ['type' => 'image', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
+            'cv_list' => ['type' => 'cv_list', 'published' => $published],
+            'text' => ['type' => 'text', 'published' => $published, 'title' => $title, 'body' => null],
+            'list' => ['type' => 'list', 'published' => $published, 'title' => $title, 'items' => []],
+            'divider' => ['type' => 'divider', 'published' => $published, 'variant' => 'thin'],
             'contact' => [
                 'type' => 'contact',
-                'form_state' => 'enabled',
-                'status_text' => null,
-                'show_email' => true,
-                'show_form' => true,
-                'social_platforms' => array_keys(SocialLinks::options()),
+                'published' => $published,
+                'children' => [
+                    ['type' => 'public_email', 'published' => true],
+                    ['type' => 'social_links', 'published' => true, 'social_platforms' => array_keys(SocialLinks::options())],
+                    ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled', 'status_text' => null],
+                ],
             ],
+            'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
         };
+    }
+
+    /** @param list<array<string,mixed>> $blocks */
+    private function containsType(array $blocks, string $type, ?int $exceptIndex = null): bool
+    {
+        foreach ($blocks as $index => $block) {
+            if ($exceptIndex !== null && $index === $exceptIndex) {
+                continue;
+            }
+            if (is_array($block) && ($block['type'] ?? null) === $type) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function meaningfulValue(mixed $value): bool
@@ -464,7 +780,7 @@ final class CustomPageEditorialService
     private function assertDirection(string $direction): void
     {
         if (! in_array($direction, ['up', 'down'], true)) {
-            throw ValidationException::withMessages(['component' => 'Choose a supported move direction.']);
+            throw new InvalidArgumentException('Editorial order direction must be up or down.');
         }
     }
 }

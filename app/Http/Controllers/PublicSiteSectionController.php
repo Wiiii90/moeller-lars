@@ -72,11 +72,13 @@ final class PublicSiteSectionController extends Controller
         $assets = MediaAsset::query()->whereKey($mediaIds)->with('variants')->get()->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
         $cvEntries = collect();
         if (collect($blocks)->contains(fn (array $block): bool => ($block['type'] ?? null) === 'cv_list')) {
-            $cvEntries = CvEntry::query()->when($this->preview->active(), fn (Builder $query) => $query->where('state', '<>', 'archived'), fn (Builder $query) => $query->where('state', 'published'))
+            $cvEntries = CvEntry::query()
+                ->when($this->preview->active(), fn (Builder $query) => $query->where('state', '<>', 'archived'), fn (Builder $query) => $query->where('state', 'published'))
+                ->with('imageMediaAsset.variants')
                 ->orderBy('position')->orderBy('id')->get();
         }
         return view('pages.custom', [
-            'section' => $section, 'blocks' => $blocks, 'assets' => $assets, 'cvEntries' => $cvEntries,
+            'section' => $section, 'settings' => $settings, 'blocks' => $blocks, 'assets' => $assets, 'cvEntries' => $cvEntries,
             'generalSettings' => PublicContentSetting::general(), 'richText' => $this->richText, 'media' => $this->media, 'siteNodeRoute' => $this->siteNodeRoute,
         ]);
     }
