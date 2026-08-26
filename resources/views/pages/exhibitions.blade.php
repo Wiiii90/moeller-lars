@@ -10,12 +10,14 @@
             @php
                 $timing = $exhibition->temporalState(now());
                 $cover = $exhibition->mediaUsages->firstWhere('role', \App\Models\JournalEntryMedia::ROLE_COVER);
-                $gallery = $exhibition->mediaUsages->where('role', \App\Models\JournalEntryMedia::ROLE_GALLERY)->sortBy('position');
+                $gallery = $exhibition->shouldShowPublicGallery()
+                    ? $exhibition->mediaUsages->where('role', \App\Models\JournalEntryMedia::ROLE_GALLERY)->sortBy('position')
+                    : collect();
                 $displayDate = $exhibition->displayDate();
                 $vernissage = $exhibition->vernissageDisplay();
                 $address = $exhibition->address();
-                $showMap = $exhibition->shouldShowPublicMap(now());
-                $mapUrl = $showMap ? $exhibition->publicMapUrl() : null;
+                $map = $exhibition->shouldShowPublicMap() ? $exhibition->mapPresentation() : null;
+                $mapAspect = $map !== null ? app(\App\Domain\Content\ExhibitionMapPresentation::class)->aspectRatio($map['shape']) : null;
             @endphp
             <article class="exhibition-entry" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
                 <div class="exhibition-entry__schedule" aria-label="Exhibition dates">
@@ -40,15 +42,15 @@
                     @if ($gallery->isNotEmpty())
                         <div class="journal-entry-gallery" aria-label="Exhibition images">@foreach ($gallery as $usage){!! $journalMedia->render($usage, 'journal-entry-media journal-entry-media--gallery') !!}@endforeach</div>
                     @endif
-                    @if ($showMap)
-                        <div class="exhibition-entry__map">
-                            <iframe src="{{ $exhibition->mapEmbedUrl() }}" title="Map for {{ $exhibition->title }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    @if ($map !== null)
+                        <div class="exhibition-entry__map exhibition-entry__map--{{ $map['shape'] }}" style="aspect-ratio: {{ $mapAspect }}; max-width: {{ $map['shape'] === 'square' ? '42rem' : 'none' }};">
+                            <iframe src="{{ $map['embed_url'] }}" title="Map for {{ $exhibition->title }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="width:100%;height:100%;border:0"></iframe>
                         </div>
                     @endif
-                    @if ($exhibition->external_url !== null || $mapUrl !== null)
+                    @if ($exhibition->external_url !== null || $map !== null)
                         <div class="exhibition-entry__links">
                             @if ($exhibition->external_url !== null)<a href="{{ $exhibition->external_url }}" rel="noopener noreferrer" data-matomo-event-category="Journal" data-matomo-event-action="exhibition_external_click" data-matomo-event-name="{{ $exhibition->title }}">More information</a>@endif
-                            @if ($mapUrl !== null)<a href="{{ $mapUrl }}" target="_blank" rel="noopener noreferrer" data-matomo-event-category="Journal" data-matomo-event-action="exhibition_map_click" data-matomo-event-name="{{ $exhibition->title }}">Open map</a>@endif
+                            @if ($map !== null)<a href="{{ $map['public_url'] }}" target="_blank" rel="noopener noreferrer" data-matomo-event-category="Journal" data-matomo-event-action="exhibition_map_click" data-matomo-event-name="{{ $exhibition->title }}">Open map</a>@endif
                         </div>
                     @endif
                 </div>

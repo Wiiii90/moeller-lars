@@ -19,6 +19,7 @@ final class ExhibitionEditorialService
         private readonly SafeLinkPolicy $links,
         private readonly SafeRichTextRenderer $richText,
         private readonly JournalEntryMediaService $media,
+        private readonly ExhibitionGeocodingService $geocoding,
     ) {}
 
     public function createDraft(array $data): Exhibition
@@ -26,6 +27,14 @@ final class ExhibitionEditorialService
         $actor = $this->audit->requireActor();
         $sectionId = $this->journalSectionId($data['site_section_id'] ?? null);
         $payload = $this->validatedEditorialData($data, null);
+        $payload['location_text'] = $this->streetOnly(
+            $payload['location_text'] ?? null,
+            $payload['city'] ?? null,
+            $payload['country'] ?? null,
+        );
+        if ((bool) ($payload['map_enabled'] ?? false)) {
+            $payload = [...$payload, ...$this->geocodePayload($payload)];
+        }
 
         return DB::transaction(function () use ($data, $payload, $sectionId, $actor): Exhibition {
             $entry = new Exhibition;
@@ -69,21 +78,26 @@ final class ExhibitionEditorialService
             }
 
             $payload = $this->validatedEditorialData($data, $fresh);
-            $oldLocation = $this->locationSignature($fresh->getAttributes());
-            $newLocation = $this->locationSignature([
+            $location = [
                 'location_text' => array_key_exists('location_text', $payload) ? $payload['location_text'] : $fresh->getAttribute('location_text'),
                 'city' => array_key_exists('city', $payload) ? $payload['city'] : $fresh->getAttribute('city'),
                 'country' => array_key_exists('country', $payload) ? $payload['country'] : $fresh->getAttribute('country'),
-            ]);
-            $coordinatesProvided = isset($payload['latitude'], $payload['longitude']);
-            $newGeocodedAt = $payload['geocoded_at'] ?? null;
-            $freshGeocode = $newGeocodedAt !== null
-                && (string) $newGeocodedAt !== (string) $fresh->getAttribute('geocoded_at');
+            ];
+            $location['location_text'] = $this->streetOnly($location['location_text'], $location['city'], $location['country']);
+            $payload['location_text'] = $location['location_text'];
+            $locationChanged = $this->locationSignature($location) !== $this->locationSignature($fresh->getAttributes());
+            $mapEnabled = array_key_exists('map_enabled', $payload)
+                ? (bool) $payload['map_enabled']
+                : (bool) $fresh->getAttribute('map_enabled');
 
-            if ($newLocation !== $oldLocation && (! $coordinatesProvided || ! $freshGeocode)) {
+            if ($locationChanged) {
                 $payload['latitude'] = null;
                 $payload['longitude'] = null;
                 $payload['geocoded_at'] = null;
+            }
+
+            if ($mapEnabled && ($locationChanged || ! $fresh->hasCoordinates())) {
+                $payload = [...$payload, ...$this->geocodePayload($location)];
             }
 
             $fresh->fill([...$payload, 'site_section_id' => $sectionId]);
@@ -126,9 +140,7 @@ final class ExhibitionEditorialService
                 return $fresh;
             }
             if (! in_array($current, ['draft', 'published'], true)) {
-                throw ValidationException::withMessages([
-                    'state' => 'This exhibition cannot be archived from '.$current.'.',
-                ]);
+                throw ValidationException::withMessages(['state' => 'This exhibition cannot be archived from '.$current.'.']);
             }
 
             $fresh->setAttribute('archived_from_state', $current);
@@ -152,13 +164,15 @@ final class ExhibitionEditorialService
 
             $target = $fresh->getAttribute('archived_from_state');
             if (! is_string($target) || ! in_array($target, ['draft', 'published'], true)) {
-                throw ValidationException::withMessages([
-                    'state' => 'This archived exhibition has no recorded previous state and cannot be restored safely.',
-                ]);
+                $target = $fresh->getAttribute('published_at') !== null ? 'published' : 'draft';
             }
 
             if ($target === 'published') {
-                $this->assertPublicReady($fresh);
+                try {
+                    $this->assertPublicReady($fresh);
+                } catch (ValidationException) {
+                    $target = 'draft';
+                }
             }
 
             $fresh->setAttribute('state', $target);
@@ -197,28 +211,19 @@ final class ExhibitionEditorialService
         DB::transaction(function () use ($entry, $actor): void {
             $fresh = Exhibition::query()->whereKey($entry->getKey())->lockForUpdate()->firstOrFail();
             if ((string) $fresh->getAttribute('state') === 'published') {
-                throw ValidationException::withMessages([
-                    'exhibition' => 'Archive this exhibition before deleting it.',
-                ]);
+                throw ValidationException::withMessages(['exhibition' => 'Archive this exhibition before deleting it.']);
             }
 
             $id = (int) $fresh->getKey();
             $sectionId = (int) $fresh->getAttribute('site_section_id');
             $fresh->delete();
-            $this->audit->record($actor, 'exhibition.deleted', 'exhibition', $id, [
-                'site_section_id' => $sectionId,
-            ]);
+            $this->audit->record($actor, 'exhibition.deleted', 'exhibition', $id, ['site_section_id' => $sectionId]);
         });
     }
 
     /** @param list<string> $allowedFrom */
-    private function transition(
-        Exhibition $entry,
-        string $state,
-        array $allowedFrom,
-        string $action,
-        bool $validatePublic = false,
-    ): Exhibition {
+    private function transition(Exhibition $entry, string $state, array $allowedFrom, string $action, bool $validatePublic = false): Exhibition
+    {
         $actor = $this->audit->requireActor();
 
         return DB::transaction(function () use ($entry, $state, $allowedFrom, $action, $validatePublic, $actor): Exhibition {
@@ -228,11 +233,8 @@ final class ExhibitionEditorialService
                 return $fresh;
             }
             if (! in_array($current, $allowedFrom, true)) {
-                throw ValidationException::withMessages([
-                    'state' => 'This exhibition cannot move from '.$current.' to '.$state.'.',
-                ]);
+                throw ValidationException::withMessages(['state' => 'This exhibition cannot move from '.$current.' to '.$state.'.']);
             }
-
             if ($validatePublic) {
                 $this->assertPublicReady($fresh);
             }
@@ -258,12 +260,13 @@ final class ExhibitionEditorialService
             || (is_string($legacySource) && trim($legacySource) !== '');
 
         if (! $isLegacy && ! $startsOn instanceof CarbonInterface) {
-            throw ValidationException::withMessages([
-                'starts_on' => 'Set the structured exhibition start date before publishing.',
-            ]);
+            throw ValidationException::withMessages(['starts_on' => 'Set the structured exhibition start date before publishing.']);
         }
         if ($entry->displayDate() === null) {
             throw ValidationException::withMessages(['starts_on' => 'Set exhibition dates before publishing.']);
+        }
+        if ((bool) $entry->getAttribute('map_enabled') && ! $entry->hasCoordinates()) {
+            throw ValidationException::withMessages(['map_enabled' => 'The entered address cannot currently provide a map location.']);
         }
 
         $this->media->assertPublicReady($entry);
@@ -273,7 +276,7 @@ final class ExhibitionEditorialService
     {
         $allowed = [
             'site_section_id', 'slug', 'title', 'description', 'starts_on', 'ends_on', 'date_text', 'vernissage_at',
-            'venue', 'location_text', 'city', 'country', 'latitude', 'longitude', 'geocoded_at', 'external_url',
+            'venue', 'location_text', 'city', 'country', 'external_url', 'gallery_enabled', 'map_enabled', 'map_shape',
         ];
         $payload = array_intersect_key($data, array_flip($allowed));
         $slugRule = Rule::unique('exhibitions', 'slug');
@@ -294,10 +297,10 @@ final class ExhibitionEditorialService
             'location_text' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:160'],
             'country' => ['nullable', 'string', 'max:160'],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-            'geocoded_at' => ['nullable', 'date'],
             'external_url' => ['nullable', 'string', 'max:2048'],
+            'gallery_enabled' => ['nullable', 'boolean'],
+            'map_enabled' => ['nullable', 'boolean'],
+            'map_shape' => ['nullable', Rule::in(['wide', 'square'])],
         ])->validate();
 
         foreach (['date_text', 'venue', 'location_text', 'city', 'country', 'external_url'] as $field) {
@@ -305,7 +308,6 @@ final class ExhibitionEditorialService
                 $payload[$field] = trim($payload[$field]) === '' ? null : trim($payload[$field]);
             }
         }
-
         if (array_key_exists('description', $payload) && is_string($payload['description'])) {
             $payload['description'] = trim($payload['description']) === '' ? null : trim($payload['description']);
         }
@@ -318,22 +320,63 @@ final class ExhibitionEditorialService
             throw ValidationException::withMessages(['external_url' => 'Use a safe absolute HTTP or HTTPS URL.']);
         }
 
-        if (array_key_exists('latitude', $payload) || array_key_exists('longitude', $payload)) {
-            if (($payload['latitude'] ?? null) === null || ($payload['longitude'] ?? null) === null) {
-                $payload['latitude'] = null;
-                $payload['longitude'] = null;
-                $payload['geocoded_at'] = null;
-            }
+        if (array_key_exists('gallery_enabled', $payload)) {
+            $payload['gallery_enabled'] = (bool) $payload['gallery_enabled'];
         }
+        if (array_key_exists('map_enabled', $payload)) {
+            $payload['map_enabled'] = (bool) $payload['map_enabled'];
+        }
+        $payload['map_shape'] = (string) ($payload['map_shape'] ?? ($entry?->getAttribute('map_shape') ?? 'wide'));
 
         return $payload;
+    }
+
+    /** @param array<string,mixed> $values */
+    private function geocodePayload(array $values): array
+    {
+        $parts = collect([$values['location_text'] ?? null, $values['city'] ?? null, $values['country'] ?? null])
+            ->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+            ->map(static fn (string $value): string => trim($value))
+            ->values();
+        if ($parts->isEmpty()) {
+            throw ValidationException::withMessages(['location_text' => 'Enter a street address, city or country to enable the map.']);
+        }
+
+        $match = $this->geocoding->locate($parts->implode(', '));
+        if ($match === null) {
+            throw ValidationException::withMessages(['location_text' => 'The entered address cannot currently provide a map location.']);
+        }
+
+        return [
+            'latitude' => $match['latitude'],
+            'longitude' => $match['longitude'],
+            'geocoded_at' => now(),
+        ];
+    }
+
+    private function streetOnly(mixed $street, mixed $city, mixed $country): ?string
+    {
+        $street = is_string($street) ? trim($street) : '';
+        if ($street === '') {
+            return null;
+        }
+        $city = is_string($city) ? trim($city) : '';
+        $country = is_string($country) ? trim($country) : '';
+        $normalize = static fn (string $value): string => mb_strtolower(preg_replace('/\s+/u', ' ', trim($value)) ?? trim($value));
+        $streetKey = $normalize($street);
+        foreach (array_filter([$city, $country, collect([$city, $country])->filter()->implode(', '), collect([$city, $country])->filter()->implode(',')]) as $duplicate) {
+            if ($streetKey === $normalize((string) $duplicate)) {
+                return null;
+            }
+        }
+        return $street;
     }
 
     /** @param array<string, mixed> $values */
     private function locationSignature(array $values): string
     {
         return collect([$values['location_text'] ?? null, $values['city'] ?? null, $values['country'] ?? null])
-            ->map(static fn (mixed $value): string => is_string($value) ? trim($value) : '')
+            ->map(static fn (mixed $value): string => is_string($value) ? mb_strtolower(trim($value)) : '')
             ->implode('|');
     }
 
@@ -349,9 +392,7 @@ final class ExhibitionEditorialService
             ->where('template', JournalTemplate::Exhibitions->value)
             ->exists();
         if (! $exists) {
-            throw ValidationException::withMessages([
-                'site_section_id' => 'The selected page is not an Exhibitions Journal.',
-            ]);
+            throw ValidationException::withMessages(['site_section_id' => 'The selected page is not an Exhibitions Journal.']);
         }
 
         return (int) $id;
@@ -359,8 +400,6 @@ final class ExhibitionEditorialService
 
     private function hasStructuredMediaInput(array $data): bool
     {
-        return array_key_exists('cover_media_asset_id', $data)
-            || array_key_exists('cover_alt_text_override', $data)
-            || array_key_exists('gallery_images', $data);
+        return array_key_exists('cover_media_asset_id', $data) || array_key_exists('gallery_images', $data);
     }
 }

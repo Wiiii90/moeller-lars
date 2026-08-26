@@ -25,13 +25,12 @@ final class JournalSettingsService
             throw ValidationException::withMessages(['section' => 'Only Journal pages have Journal settings.']);
         }
 
+        $templateValue = $data['template'] ?? $section->getAttribute('template');
+        if (! is_string($templateValue) || JournalTemplate::tryFrom($templateValue) === null) {
+            throw ValidationException::withMessages(['template' => 'Choose Blog or Exhibitions.']);
+        }
         $title = $this->requiredText($data['title'] ?? null, 'title', 160, 'A Journal title is required.');
-        $navigationLabel = $this->requiredText(
-            $data['navigation_label'] ?? null,
-            'navigation_label',
-            120,
-            'A navigation label is required.',
-        );
+        $navigationLabel = $this->requiredText($data['navigation_label'] ?? null, 'navigation_label', 120, 'A navigation label is required.');
         $slug = $this->slug($data['slug'] ?? null);
         $listingTitle = $this->nullableText($data['listing_title'] ?? null, 'listing_title', 240);
         $listingIntro = $this->nullableText($data['listing_intro'] ?? null, 'listing_intro', 10000);
@@ -41,15 +40,7 @@ final class JournalSettingsService
 
         $actor = $this->audit->requireActor();
 
-        return DB::transaction(function () use (
-            $section,
-            $title,
-            $navigationLabel,
-            $slug,
-            $listingTitle,
-            $listingIntro,
-            $actor,
-        ): SiteSection {
+        return DB::transaction(function () use ($section, $templateValue, $title, $navigationLabel, $slug, $listingTitle, $listingIntro, $actor): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             if ($fresh->nodeType() !== SiteNodeType::Journal) {
@@ -62,6 +53,7 @@ final class JournalSettingsService
             }
 
             $fresh->fill([
+                'template' => $templateValue,
                 'title' => $title,
                 'navigation_label' => $navigationLabel,
                 'slug' => $slug,
@@ -86,12 +78,10 @@ final class JournalSettingsService
         if (! is_string($value)) {
             throw ValidationException::withMessages([$field => $message]);
         }
-
         $value = trim($value);
         if ($value === '' || mb_strlen($value) > $maxLength) {
             throw ValidationException::withMessages([$field => $message]);
         }
-
         return $value;
     }
 
@@ -103,9 +93,7 @@ final class JournalSettingsService
         if (! is_string($value) || mb_strlen($value) > $maxLength) {
             throw ValidationException::withMessages([$field => 'This Journal setting is invalid.']);
         }
-
         $value = trim($value);
-
         return $value === '' ? null : $value;
     }
 
@@ -114,14 +102,10 @@ final class JournalSettingsService
         if (! is_string($value)) {
             throw ValidationException::withMessages(['slug' => 'A public URL slug is required.']);
         }
-
         $slug = trim($value);
         if ($slug === '' || mb_strlen($slug) > 80 || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) !== 1) {
-            throw ValidationException::withMessages([
-                'slug' => 'Use lowercase letters, numbers and hyphens for the public URL slug.',
-            ]);
+            throw ValidationException::withMessages(['slug' => 'Use lowercase letters, numbers and hyphens for the public URL slug.']);
         }
-
         return $slug;
     }
 }

@@ -2,17 +2,17 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Content\ExhibitionGeocodingService;
+use App\Domain\Content\ExhibitionMapPresentation;
 use App\Models\Exhibition;
-use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
@@ -28,9 +28,14 @@ final class JournalEntryEditorSchema
                 self::title(),
                 self::slug(220),
                 Textarea::make('excerpt')->label('Excerpt')->maxLength(1000)->nullable()->columnSpanFull(),
+                MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
+                    ->nullable()
+                    ->columnSpanFull(),
             ])->columns(2),
             self::textSection('body'),
-            self::imagesSection(),
+            AdminForm::section('Gallery')->schema([
+                self::galleryImages(),
+            ]),
         ]);
     }
 
@@ -40,25 +45,57 @@ final class JournalEntryEditorSchema
             AdminForm::section('Basics')->schema([
                 self::title(),
                 self::slug(180),
+                MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
+                    ->nullable()
+                    ->columnSpanFull(),
             ])->columns(2),
+
+            AdminForm::section('Venue')->schema([
+                TextInput::make('venue')->label('Venue')->maxLength(240)->nullable()->columnSpan(3),
+                TextInput::make('external_url')->label('Venue website')->url()->maxLength(2048)->nullable()->columnSpan(3),
+                self::locationField('location_text', 'Street address', 500)->columnSpan(2),
+                self::locationField('city', 'City', 160)->columnSpan(2),
+                self::locationField('country', 'Country', 160)->columnSpan(2),
+            ])->columns(6),
+
             self::textSection('description'),
-            self::imagesSection(),
-            AdminForm::section('Dates and venue')->schema([
+
+            AdminForm::section('Dates')->schema([
                 DatePicker::make('starts_on')->label('Starts')->nullable(),
                 DatePicker::make('ends_on')->label('Ends')->afterOrEqual('starts_on')->nullable(),
                 TextInput::make('date_text')->label('Display date override')->maxLength(160)->nullable()->columnSpanFull(),
                 DateTimePicker::make('vernissage_at')->label('Vernissage')->seconds(false)->nullable()->columnSpanFull(),
-                TextInput::make('venue')->label('Venue')->maxLength(240)->nullable(),
-                TextInput::make('external_url')->label('Venue website')->url()->maxLength(2048)->nullable(),
-                self::locationField('location_text', 'Street address', 500)->columnSpanFull()->belowContent(self::findLocationAction()),
-                self::locationField('city', 'City', 160),
-                self::locationField('country', 'Country', 160),
-                Hidden::make('latitude'),
-                Hidden::make('longitude'),
-                Hidden::make('geocoded_at'),
+            ])->columns(2),
+
+            AdminForm::section('Gallery')->schema([
+                Toggle::make('gallery_enabled')
+                    ->label('Gallery enabled')
+                    ->live()
+                    ->columnSpanFull(),
+                self::galleryImages()
+                    ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
+                    ->dehydrated(fn (Get $get): bool => (bool) $get('gallery_enabled')),
+            ]),
+
+            AdminForm::section('Map')->schema([
+                Toggle::make('map_enabled')
+                    ->label('Map enabled')
+                    ->live()
+                    ->columnSpanFull(),
+                Select::make('map_shape')
+                    ->label('Map shape')
+                    ->options(['wide' => 'Wide', 'square' => 'Square'])
+                    ->default('wide')
+                    ->required()
+                    ->live()
+                    ->visible(fn (Get $get): bool => (bool) $get('map_enabled')),
+                Hidden::make('latitude')->dehydrated(false),
+                Hidden::make('longitude')->dehydrated(false),
+                Hidden::make('geocoded_at')->dehydrated(false),
                 Placeholder::make('map_preview')
-                    ->label('Map')
+                    ->label('Preview')
                     ->content(fn (Get $get): HtmlString => self::mapPreview($get))
+                    ->visible(fn (Get $get): bool => (bool) $get('map_enabled'))
                     ->columnSpanFull(),
             ])->columns(2),
         ]);
@@ -86,35 +123,24 @@ final class JournalEntryEditorSchema
             ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/');
     }
 
-    private static function textSection(string $field): mixed
+    private static function textSection(string $name): mixed
     {
         return AdminForm::section('Text')->schema([
-            ...AdminRichText::schema($field, 'Text', null),
+            ...AdminRichText::schema($name, 'Text', 50000, allowEmbeddedMedia: true),
         ]);
     }
 
-    private static function imagesSection(): mixed
+    private static function galleryImages(): Repeater
     {
-        return AdminForm::section('Images')->schema([
-            MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
-                ->nullable()
-                ->columnSpanFull(),
-            TextInput::make('cover_alt_text_override')
-                ->label('Cover ALT override')
-                ->maxLength(500)
-                ->nullable()
-                ->columnSpanFull(),
-            Repeater::make('gallery_images')
-                ->label('Gallery images')
-                ->schema([
-                    MediaAssetSelect::makeId('media_asset_id', 'Image', imagesOnly: true)->required(),
-                    TextInput::make('alt_text_override')->label('ALT override')->maxLength(500)->nullable(),
-                ])
-                ->addActionLabel('Add image')
-                ->reorderableWithButtons()
-                ->reorderableWithDragAndDrop(false)
-                ->columnSpanFull(),
-        ]);
+        return Repeater::make('gallery_images')
+            ->label('Gallery images')
+            ->schema([
+                MediaAssetSelect::makeId('media_asset_id', 'Image', imagesOnly: true)->required(),
+            ])
+            ->addActionLabel('Add image')
+            ->reorderableWithButtons()
+            ->reorderableWithDragAndDrop(false)
+            ->columnSpanFull();
     }
 
     private static function locationField(string $name, string $label, int $max): TextInput
@@ -131,63 +157,14 @@ final class JournalEntryEditorSchema
             JS);
     }
 
-    private static function findLocationAction(): Action
-    {
-        return Action::make('findExhibitionLocation')
-            ->label('Find location')
-            ->icon('heroicon-o-map-pin')
-            ->modalHidden()
-            ->action(function (Get $schemaGet, Set $schemaSet): void {
-                $parts = collect([
-                    $schemaGet('location_text'),
-                    $schemaGet('city'),
-                    $schemaGet('country'),
-                ])->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
-                    ->map(static fn (string $value): string => trim($value))
-                    ->values()
-                    ->all();
-
-                if ($parts === []) {
-                    Notification::make()
-                        ->title('Enter a street address, city or country first')
-                        ->warning()
-                        ->send();
-                    return;
-                }
-
-                $match = app(ExhibitionGeocodingService::class)->locate(implode(', ', $parts));
-                if ($match === null) {
-                    Notification::make()
-                        ->title('Location not found')
-                        ->body('The address was not changed. Adjust it and try again.')
-                        ->warning()
-                        ->send();
-                    return;
-                }
-
-                $schemaSet('latitude', $match['latitude']);
-                $schemaSet('longitude', $match['longitude']);
-                $schemaSet('geocoded_at', now()->toIso8601String());
-                Notification::make()->title('Map location set')->success()->send();
-            });
-    }
-
     private static function mapPreview(Get $get): HtmlString
     {
         $latitude = filter_var($get('latitude'), FILTER_VALIDATE_FLOAT);
         $longitude = filter_var($get('longitude'), FILTER_VALIDATE_FLOAT);
-        $mapKey = 'journal-map-'.hash('sha256', implode('|', [
-            $latitude === false ? '' : (string) $latitude,
-            $longitude === false ? '' : (string) $longitude,
-            (string) ($get('geocoded_at') ?? ''),
-        ]));
-
         if ($latitude === false || $longitude === false || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
             return new HtmlString(
-                '<div wire:key="'.e($mapKey).'" x-data="{ stale: false }" x-on:journal-location-stale.window="stale = true">'
-                .'<div class="journal-entry-editor__map is-empty">'
-                .'<p>No map location set. Enter the venue address and use <strong>Find location</strong>.</p>'
-                .'</div>'
+                '<div class="journal-entry-editor__map is-empty">'
+                .'<p>The map location will be resolved from Street address, City and Country when you save.</p>'
                 .'</div>',
             );
         }
@@ -195,18 +172,23 @@ final class JournalEntryEditorSchema
         $preview = new Exhibition;
         $preview->setAttribute('latitude', (float) $latitude);
         $preview->setAttribute('longitude', (float) $longitude);
-        $embedUrl = $preview->mapEmbedUrl();
-        $mapUrl = $preview->publicMapUrl();
+        $preview->setAttribute('map_shape', (string) ($get('map_shape') ?? 'wide'));
+        $presentation = app(ExhibitionMapPresentation::class)->for($preview);
+        if ($presentation === null) {
+            return new HtmlString('<div class="journal-entry-editor__map is-empty"><p>Map preview unavailable.</p></div>');
+        }
+        $aspect = app(ExhibitionMapPresentation::class)->aspectRatio($presentation['shape']);
+        $key = sha1($latitude.'|'.$longitude.'|'.(string) ($get('geocoded_at') ?? '').'|'.$presentation['shape']);
 
         return new HtmlString(
-            '<div wire:key="'.e($mapKey).'" x-data="{ stale: false }" x-on:journal-location-stale.window="stale = true">'
+            '<div wire:key="journal-map-'.$key.'" x-data="{ stale: false }" x-on:journal-location-stale.window="stale = true">'
             .'<div class="journal-entry-editor__map" x-show="! stale">'
-            .'<iframe src="'.e((string) $embedUrl).'" title="Venue map preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
-            .'<div class="journal-entry-editor__map-meta"><span>Map location set</span>'
-            .'<a href="'.e((string) $mapUrl).'" target="_blank" rel="noopener noreferrer">Open map</a></div>'
+            .'<iframe src="'.e($presentation['embed_url']).'" title="Venue map preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="aspect-ratio:'.e($aspect).';height:auto;min-height:16rem"></iframe>'
+            .'<div class="journal-entry-editor__map-meta"><span>'.e(ucfirst($presentation['shape'])).' map</span>'
+            .'<a href="'.e($presentation['public_url']).'" target="_blank" rel="noopener noreferrer">Open map</a></div>'
             .'</div>'
             .'<div class="journal-entry-editor__map is-empty" x-show="stale" x-cloak>'
-            .'<p>Address changed. Use <strong>Find location</strong> to update the map.</p>'
+            .'<p>Address changed. The map location will be refreshed when you save.</p>'
             .'</div>'
             .'</div>',
         );

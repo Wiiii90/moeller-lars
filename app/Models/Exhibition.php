@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Content\ExhibitionMapPresentation;
 use App\Domain\Content\SafeLinkPolicy;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'state', 'archived_from_state', 'position', 'kind', 'venue', 'city', 'country', 'location_text', 'description', 'external_url', 'directions_url', 'starts_on', 'ends_on', 'date_text', 'opening_text', 'vernissage_at', 'latitude', 'longitude', 'geocoded_at', 'gallery_enabled', 'map_enabled', 'map_shape', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at', 'published_at'])]
 #[Guarded(['id'])]
 class Exhibition extends Model
 {
@@ -29,6 +30,8 @@ class Exhibition extends Model
             'geocoded_at' => 'datetime',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+            'gallery_enabled' => 'boolean',
+            'map_enabled' => 'boolean',
             'migrated_at' => 'datetime',
             'published_at' => 'datetime',
         ];
@@ -121,16 +124,53 @@ class Exhibition extends Model
         return $legacy !== '' ? $legacy : null;
     }
 
+    public function streetAddress(): ?string
+    {
+        $street = trim((string) ($this->getAttribute('location_text') ?? ''));
+        if ($street === '') {
+            return null;
+        }
+
+        $city = trim((string) ($this->getAttribute('city') ?? ''));
+        $country = trim((string) ($this->getAttribute('country') ?? ''));
+        $normalized = static fn (string $value): string => mb_strtolower(preg_replace('/\s+/u', ' ', trim($value)) ?? trim($value));
+        $streetKey = $normalized($street);
+        $duplicates = array_filter([
+            $city,
+            $country,
+            collect([$city, $country])->filter()->implode(', '),
+            collect([$city, $country])->filter()->implode(','),
+        ]);
+
+        foreach ($duplicates as $duplicate) {
+            if ($streetKey === $normalized((string) $duplicate)) {
+                return null;
+            }
+        }
+
+        return $street;
+    }
+
     public function address(): ?string
     {
-        $address = collect([
-            $this->getAttribute('location_text'),
+        $parts = collect([
+            $this->streetAddress(),
             $this->getAttribute('city'),
             $this->getAttribute('country'),
         ])->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
-            ->map(static fn (string $value): string => trim($value))
-            ->unique()
-            ->implode(', ');
+            ->map(static fn (string $value): string => trim($value));
+
+        $seen = [];
+        $parts = $parts->filter(static function (string $value) use (&$seen): bool {
+            $key = mb_strtolower(preg_replace('/\s+/u', ' ', $value) ?? $value);
+            if (isset($seen[$key])) {
+                return false;
+            }
+            $seen[$key] = true;
+            return true;
+        });
+
+        $address = $parts->implode(', ');
 
         return $address !== '' ? $address : null;
     }
@@ -140,47 +180,35 @@ class Exhibition extends Model
         return is_numeric($this->getAttribute('latitude')) && is_numeric($this->getAttribute('longitude'));
     }
 
-    public function shouldShowPublicMap(CarbonInterface $date): bool
+    public function shouldShowPublicGallery(): bool
     {
-        return $this->hasCoordinates() && in_array($this->temporalState($date), ['current', 'upcoming'], true);
+        return (bool) $this->getAttribute('gallery_enabled');
+    }
+
+    public function shouldShowPublicMap(?CarbonInterface $date = null): bool
+    {
+        return (bool) $this->getAttribute('map_enabled') && $this->hasCoordinates();
+    }
+
+    /** @return array{embed_url:string, public_url:string, shape:string}|null */
+    public function mapPresentation(): ?array
+    {
+        return app(ExhibitionMapPresentation::class)->for($this);
     }
 
     public function mapEmbedUrl(): ?string
     {
-        if (! $this->hasCoordinates()) {
-            return null;
-        }
-
-        $latitude = (float) $this->getAttribute('latitude');
-        $longitude = (float) $this->getAttribute('longitude');
-        $delta = 0.008;
-        $bbox = implode(',', [
-            $longitude - $delta,
-            $latitude - $delta,
-            $longitude + $delta,
-            $latitude + $delta,
-        ]);
-
-        return 'https://www.openstreetmap.org/export/embed.html?'.http_build_query([
-            'bbox' => $bbox,
-            'layer' => 'mapnik',
-            'marker' => $latitude.','.$longitude,
-        ]);
+        return $this->mapPresentation()['embed_url'] ?? null;
     }
 
     public function publicMapUrl(): ?string
     {
-        if (! $this->hasCoordinates()) {
-            return null;
-        }
+        return $this->mapPresentation()['public_url'] ?? null;
+    }
 
-        $latitude = (float) $this->getAttribute('latitude');
-        $longitude = (float) $this->getAttribute('longitude');
-
-        return 'https://www.openstreetmap.org/?'.http_build_query([
-            'mlat' => $latitude,
-            'mlon' => $longitude,
-        ]).'#map=16/'.$latitude.'/'.$longitude;
+    public function mapShape(): string
+    {
+        return app(ExhibitionMapPresentation::class)->shape((string) ($this->getAttribute('map_shape') ?? 'wide'));
     }
 
     /** Legacy compatibility for older callers; canonical public UI uses publicMapUrl(). */
@@ -201,6 +229,9 @@ class Exhibition extends Model
             }
             if ($exhibition->displayDate() === null) {
                 throw ValidationException::withMessages(['starts_on' => 'Published exhibitions require exhibition dates.']);
+            }
+            if ((bool) $exhibition->getAttribute('map_enabled') && ! $exhibition->hasCoordinates()) {
+                throw ValidationException::withMessages(['map_enabled' => 'Enabled exhibition maps require a resolved map location.']);
             }
 
             foreach (['external_url', 'directions_url'] as $field) {
