@@ -51,7 +51,11 @@ class CvEntry extends Model
                 if (! is_string($body)) {
                     throw ValidationException::withMessages(['body' => 'CV body content must be text.']);
                 }
-                app(SafeRichTextRenderer::class)->assertValid($body);
+                app(SafeRichTextRenderer::class)->assertValid(
+                    $body,
+                    allowEmbeddedMedia: true,
+                    requirePublicMedia: true,
+                );
             }
 
             $externalUrl = $entry->getAttribute('external_url');

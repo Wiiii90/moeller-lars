@@ -4,10 +4,12 @@ namespace App\Domain\Media;
 
 use App\Domain\Blog\BlogEditorialService;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SiteNodeType;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\CustomPageSetting;
+use App\Models\CvEntry;
 use App\Models\ExhibitionMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -47,6 +49,36 @@ class PublicMedia
                 ->where('state', 'published'))
             ->whereRaw('blocks @> ?::jsonb', [json_encode([['media_asset_id' => (int) $asset->getKey()]], JSON_THROW_ON_ERROR)])
             ->exists()) {
+            return true;
+        }
+
+        $publishedCustomPages = CustomPageSetting::query()
+            ->whereHas('siteSection', fn ($query) => $query
+                ->where('type', SiteNodeType::CustomPage->value)
+                ->where('state', 'published'))
+            ->get(['id', 'blocks']);
+
+        foreach ($publishedCustomPages as $settings) {
+            if (in_array(
+                (int) $asset->getKey(),
+                RichTextMediaReference::idsFromCustomPageBlocks($settings->components()),
+                true,
+            )) {
+                return true;
+            }
+        }
+
+        $richTextReference = RichTextMediaReference::markdown((int) $asset->getKey());
+        if (CvEntry::query()
+            ->where('state', 'published')
+            ->where('body', 'like', '%'.$richTextReference.'%')
+            ->exists()
+            && CustomPageSetting::query()
+                ->whereHas('siteSection', fn ($query) => $query
+                    ->where('type', SiteNodeType::CustomPage->value)
+                    ->where('state', 'published'))
+                ->whereRaw('blocks @> ?::jsonb', [json_encode([['type' => 'cv_list']], JSON_THROW_ON_ERROR)])
+                ->exists()) {
             return true;
         }
 

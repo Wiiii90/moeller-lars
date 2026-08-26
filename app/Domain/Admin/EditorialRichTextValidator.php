@@ -10,7 +10,7 @@ final class EditorialRichTextValidator
 {
     public function __construct(private readonly SafeRichTextRenderer $renderer) {}
 
-    public function validate(mixed $source, string $field): void
+    public function validate(mixed $source, string $field, bool $allowEmbeddedMedia = false): void
     {
         if ($source === null || $source === '') {
             return;
@@ -23,10 +23,10 @@ final class EditorialRichTextValidator
         }
 
         try {
-            $this->renderer->assertValid($source);
+            $this->renderer->assertValid($source, allowEmbeddedMedia: $allowEmbeddedMedia);
         } catch (UnsafeRichTextException) {
             throw ValidationException::withMessages([
-                $field => 'This text contains unsupported formatting or an unsafe link.',
+                $field => 'This text contains unsupported formatting, media or an unsafe link.',
             ]);
         }
     }

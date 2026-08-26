@@ -48,7 +48,23 @@
 
 .custom-page__divider {
     margin: .15rem 0;
-    border-top: var(--public-divider-width) solid var(--public-divider);
+    border: 0;
+}
+
+.custom-page__divider--thin {
+    border-top: 1px solid var(--public-divider);
+}
+
+.custom-page__divider--subtle {
+    border-top: 1px solid color-mix(in srgb, var(--public-divider) 50%, transparent);
+}
+
+.custom-page__divider--strong {
+    border-top: 2px solid var(--public-divider);
+}
+
+.custom-page__divider--dotted {
+    border-top: 1px dotted var(--public-divider);
 }
 
 .custom-page__list {
@@ -76,12 +92,6 @@
     margin: 0;
 }
 
-/*
- * The ordered Custom Page renderer replaced the legacy `.cv-contact-area`
- * wrapper. Reuse that last-known-good contact presentation here so Contact
- * keeps the canonical public form styling without coupling admin CSS to public
- * pages or changing the reusable Contact component markup.
- */
 .custom-page__contact .category-heading {
     width: auto;
     margin: 0 0 .95rem;

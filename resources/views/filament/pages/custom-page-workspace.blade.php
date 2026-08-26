@@ -2,26 +2,6 @@
     @php
         $componentReorderEnabled = trim($componentSearch) === '' && $componentType === 'any';
         $componentTargets = collect($components)->pluck('target')->values()->all();
-        $cvReorderEnabled = trim($cvSearch) === '' && $cvSection === 'any' && $cvStatus === 'any';
-        $selectedCvIds = collect($selectedCvEntryIds)
-            ->filter(static fn (mixed $id): bool => is_numeric($id))
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
-        $visibleCvIds = collect($cvEntries)->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
-        $visibleSelectedCvCount = count(array_intersect($visibleCvIds, $selectedCvIds));
-        $allVisibleCvSelected = $visibleCvIds !== [] && $visibleSelectedCvCount === count($visibleCvIds);
-        $selectedCvStates = collect($cvEntries)
-            ->whereIn('id', $selectedCvIds)
-            ->pluck('state')
-            ->values();
-        $canPublishSelectedCv = $selectedCvStates->contains('draft');
-        $canUnpublishSelectedCv = $selectedCvStates->contains('published');
-        $canArchiveSelectedCv = $selectedCvStates->contains(static fn (string $state): bool => $state !== 'archived');
-        $canRestoreSelectedCv = $selectedCvStates->contains(static fn (string $state): bool => in_array($state, ['archived', 'hidden'], true));
-        $cvResultStart = $cvTotal === 0 ? 0 : (($cvPage - 1) * $cvPageSize) + 1;
-        $cvResultEnd = $cvTotal === 0 ? 0 : min($cvTotal, $cvPage * $cvPageSize);
     @endphp
 
     <x-admin.workspace :title="$pageTitle" class="custom-page-workspace">
@@ -39,7 +19,7 @@
                         type="search"
                         wire:model.blur="componentSearch"
                         x-on:keydown.enter.prevent="$el.blur()"
-                        placeholder="Heading, list entry, text"
+                        placeholder="Heading, entry, contact, text"
                         autocomplete="off"
                     >
                 </label>
@@ -59,22 +39,18 @@
                     <button class="admin-action" type="button" wire:click="resetComponentFilters">Reset</button>
                 </div>
 
-                <div class="custom-page-workspace__control-group custom-page-workspace__page-actions">
+                <div class="custom-page-workspace__control-group custom-page-workspace__preview">
                     <span class="custom-page-workspace__control-label">Page</span>
-                    <div class="admin-toolbar">
-                        <button class="admin-action" type="button" wire:click="mountAction('addComponent')">Add component</button>
-                        @if ($publicUrl)
-                            <a class="admin-action" href="{{ $publicUrl }}" target="_blank" rel="noopener">Preview</a>
-                        @else
-                            <button
-                                class="admin-action"
-                                type="button"
-                                disabled
-                                title="Publish this page to preview the public Custom Page"
-                                aria-label="Preview unavailable until this page is published"
-                            >Preview</button>
-                        @endif
-                    </div>
+                    @if ($publicUrl)
+                        <a class="admin-action" href="{{ $publicUrl }}" target="_blank" rel="noopener">Preview</a>
+                    @else
+                        <button
+                            class="admin-action"
+                            type="button"
+                            disabled
+                            title="Publish this page to preview the public Custom Page"
+                        >Preview</button>
+                    @endif
                 </div>
 
                 <div
@@ -196,13 +172,17 @@
                         <span></span>
                         <span></span>
                         <span>Component</span>
-                        <span></span>
+                        <span>Content</span>
                         <span>Actions</span>
                     </header>
 
                     @foreach ($components as $component)
                         <article
-                            @class(['custom-page-component', 'is-selected' => in_array($component['target'], $selectedComponentTargets, true)])
+                            @class([
+                                'custom-page-component',
+                                'has-children' => $component['children'] !== [],
+                                'is-selected' => in_array($component['target'], $selectedComponentTargets, true),
+                            ])
                             wire:key="custom-page-component-{{ $component['index'] }}-{{ $component['type'] }}"
                             data-component-target="{{ $component['target'] }}"
                             x-bind:class="{
@@ -258,32 +238,7 @@
                                 </select>
 
                                 <div class="custom-page-component__content">
-                                    @if ($component['is_contact'])
-                                        <div class="custom-page-component__contact-controls" aria-label="Contact component visibility controls">
-                                            <button
-                                                @class(['custom-page-component__quick-toggle', 'is-on' => $component['show_email']])
-                                                type="button"
-                                                aria-pressed="{{ $component['show_email'] ? 'true' : 'false' }}"
-                                                wire:click="setContactToggle({{ $component['index'] }}, '{{ $component['type'] }}', 'show_email', {{ $component['show_email'] ? 'false' : 'true' }})"
-                                            >Public email <span>{{ $component['show_email'] ? 'On' : 'Off' }}</span></button>
-                                            <button
-                                                @class(['custom-page-component__quick-toggle', 'is-on' => $component['show_form']])
-                                                type="button"
-                                                aria-pressed="{{ $component['show_form'] ? 'true' : 'false' }}"
-                                                wire:click="setContactToggle({{ $component['index'] }}, '{{ $component['type'] }}', 'show_form', {{ $component['show_form'] ? 'false' : 'true' }})"
-                                            >Contact form <span>{{ $component['show_form'] ? 'On' : 'Off' }}</span></button>
-
-                                            @foreach ($availableSocialPlatforms as $platform => $label)
-                                                @php($platformEnabled = in_array($platform, $component['social_platforms'], true))
-                                                <button
-                                                    @class(['custom-page-component__quick-toggle', 'is-on' => $platformEnabled])
-                                                    type="button"
-                                                    aria-pressed="{{ $platformEnabled ? 'true' : 'false' }}"
-                                                    wire:click="setContactSocialPlatform({{ $component['index'] }}, '{{ $component['type'] }}', '{{ $platform }}', {{ $platformEnabled ? 'false' : 'true' }})"
-                                                >{{ $label }} <span>{{ $platformEnabled ? 'On' : 'Off' }}</span></button>
-                                            @endforeach
-                                        </div>
-                                    @elseif ($component['content']['primary'] !== '' || $component['content']['secondary'] !== '' || $component['content']['meta'] !== '')
+                                    @if ($component['content']['primary'] !== '' || $component['content']['secondary'] !== '' || $component['content']['meta'] !== '')
                                         <div class="custom-page-component__content-copy">
                                             @if ($component['content']['primary'] !== '')
                                                 <strong>{{ $component['content']['primary'] }}</strong>
@@ -300,8 +255,15 @@
 
                                 <div class="custom-page-component__actions admin-toolbar">
                                     @if ($component['is_cv_list'])
-                                        <button class="admin-action" type="button" wire:click="mountAction('addCvEntry')">Add CV entry</button>
+                                        <button class="admin-action" type="button" wire:click="mountAction('addCvEntry')">Add entry</button>
+                                    @elseif ($component['is_list'])
+                                        <button
+                                            class="admin-action"
+                                            type="button"
+                                            wire:click="mountAction('addListEntry', { componentIndex: {{ $component['index'] }}, componentType: '{{ $component['type'] }}' })"
+                                        >Add entry</button>
                                     @endif
+
                                     @if ($component['editable'])
                                         <button
                                             class="admin-action"
@@ -309,13 +271,13 @@
                                             wire:click="mountAction('editComponent', { componentIndex: {{ $component['index'] }}, componentType: '{{ $component['type'] }}' })"
                                         >Edit</button>
                                     @endif
+
                                     <button
                                         class="admin-action custom-page-component__order-action"
                                         type="button"
                                         wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')"
                                         @disabled(! $componentReorderEnabled || ! $component['can_move_up'])
                                         title="{{ $componentReorderEnabled ? 'Move component up' : 'Clear filters to reorder' }}"
-                                        aria-label="{{ $componentReorderEnabled ? 'Move '.$component['type_label'].' component up' : 'Clear filters to reorder '.$component['type_label'].' component' }}"
                                     >↑</button>
                                     <button
                                         class="admin-action custom-page-component__order-action"
@@ -323,7 +285,6 @@
                                         wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')"
                                         @disabled(! $componentReorderEnabled || ! $component['can_move_down'])
                                         title="{{ $componentReorderEnabled ? 'Move component down' : 'Clear filters to reorder' }}"
-                                        aria-label="{{ $componentReorderEnabled ? 'Move '.$component['type_label'].' component down' : 'Clear filters to reorder '.$component['type_label'].' component' }}"
                                     >↓</button>
                                     <button
                                         class="admin-action"
@@ -333,201 +294,99 @@
                                 </div>
                             </header>
 
-                            @if ($component['is_cv_list'])
-                                <div class="custom-page-cv" aria-label="CV entries">
-                                    <div class="custom-page-cv__controls" aria-label="CV controls">
-                                        <label class="custom-page-workspace__field custom-page-cv__search">
-                                            <span>Search CV</span>
-                                            <input
-                                                type="search"
-                                                wire:model.blur="cvSearch"
-                                                x-on:keydown.enter.prevent="$el.blur()"
-                                                placeholder="Search CV"
-                                                autocomplete="off"
-                                            >
-                                        </label>
-
-                                        <label class="custom-page-workspace__field">
-                                            <span>Section</span>
-                                            <select wire:model.change="cvSection">
-                                                <option value="any">Any section</option>
-                                                @foreach ($cvSections as $section)
-                                                    <option value="{{ $section }}">{{ $section }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-
-                                        <label class="custom-page-workspace__field">
+                            @if ($component['is_cv_list'] || $component['is_list'] || $component['is_contact'])
+                                <div class="custom-page-component__children" aria-label="{{ $component['type_label'] }} details">
+                                    @if ($component['children'] !== [])
+                                        <div class="custom-page-child-row custom-page-child-row--head" aria-hidden="true">
+                                            <span>{{ $component['is_contact'] ? '' : 'Date' }}</span>
+                                            <span>{{ $component['is_contact'] ? 'Setting' : 'Entry' }}</span>
                                             <span>Status</span>
-                                            <select wire:model.change="cvStatus">
-                                                <option value="any">Any</option>
-                                                <option value="draft">Draft</option>
-                                                <option value="published">Published</option>
-                                                <option value="archived">Archived</option>
-                                                @if ($hasLegacyHiddenCvEntries)
-                                                    <option value="hidden">Hidden</option>
-                                                @endif
-                                            </select>
-                                        </label>
-
-                                        <div class="custom-page-workspace__control-group">
-                                            <span class="custom-page-workspace__control-label">Filter</span>
-                                            <button class="admin-action" type="button" wire:click="resetCvFilters">Reset</button>
+                                            <span>Actions</span>
                                         </div>
 
-                                        <div
-                                            class="custom-page-workspace__control-group custom-page-cv__selection"
-                                            x-data="{ open: false }"
-                                            x-on:keydown.escape.window="open = false"
-                                        >
-                                            <span class="custom-page-workspace__control-label">Selection</span>
-                                            <div class="custom-page-workspace__selection-anchor">
-                                                <button
-                                                    class="admin-action custom-page-workspace__selection-trigger"
-                                                    type="button"
-                                                    x-on:click="open = !open"
-                                                    x-bind:aria-expanded="open"
-                                                    aria-haspopup="menu"
-                                                    @disabled($selectedCvIds === [])
-                                                >
-                                                    Selected CV entries
-                                                    <span class="custom-page-workspace__selection-count">{{ count($selectedCvIds) }}</span>
-                                                </button>
-                                                <div
-                                                    class="custom-page-workspace__selection-menu custom-page-cv__selection-menu"
-                                                    x-show="open"
-                                                    x-cloak
-                                                    x-on:click.outside="open = false"
-                                                    role="menu"
-                                                >
-                                                    <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedCvEntries('up')" x-on:click="open = false" @disabled(! $cvReorderEnabled) title="{{ $cvReorderEnabled ? 'Move selected CV entries up' : 'Clear filters to reorder' }}">Move selected up</button>
-                                                    <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedCvEntries('down')" x-on:click="open = false" @disabled(! $cvReorderEnabled) title="{{ $cvReorderEnabled ? 'Move selected CV entries down' : 'Clear filters to reorder' }}">Move selected down</button>
-                                                    @if ($canPublishSelectedCv)
-                                                        <button class="admin-action" type="button" role="menuitem" wire:click="transitionSelectedCvEntries('publish')" x-on:click="open = false">Publish selected</button>
+                                        @foreach ($component['children'] as $child)
+                                            <div
+                                                class="custom-page-child-row"
+                                                wire:key="custom-page-child-{{ $component['index'] }}-{{ $child['key'] }}"
+                                            >
+                                                <span class="custom-page-child-row__date">{{ $child['date'] ?? '' }}</span>
+
+                                                <span class="custom-page-child-row__entry">
+                                                    <strong>{{ $child['entry'] }}</strong>
+                                                    @if (($child['detail'] ?? '') !== '')
+                                                        <small>{{ $child['detail'] }}</small>
                                                     @endif
-                                                    @if ($canUnpublishSelectedCv)
-                                                        <button class="admin-action" type="button" role="menuitem" wire:click="transitionSelectedCvEntries('unpublish')" x-on:click="open = false">Unpublish selected</button>
+                                                </span>
+
+                                                <span @class([
+                                                    'custom-page-child-row__status',
+                                                    'is-published' => ($child['status'] ?? '') === 'Published',
+                                                    'is-on' => ($child['status'] ?? '') === 'On',
+                                                    'is-visible' => ($child['status'] ?? '') === 'Visible',
+                                                ])>{{ $child['status'] }}</span>
+
+                                                <span class="custom-page-child-row__actions admin-toolbar">
+                                                    @if ($child['kind'] === 'cv')
+                                                        <button class="admin-action" type="button" wire:click="mountAction('editCvEntry', { entry: {{ $child['entry_id'] }} })">Edit</button>
+                                                        @if ($child['state'] === 'draft')
+                                                            <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, 'publish')">Publish</button>
+                                                            <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, 'archive')">Archive</button>
+                                                        @elseif ($child['state'] === 'published')
+                                                            <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, 'unpublish')">Unpublish</button>
+                                                            <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, 'archive')">Archive</button>
+                                                        @elseif (in_array($child['state'], ['archived', 'hidden'], true))
+                                                            <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, 'restore')">Restore</button>
+                                                        @endif
+                                                        <button
+                                                            class="admin-action custom-page-component__order-action"
+                                                            type="button"
+                                                            wire:click="moveCvEntry({{ $child['entry_id'] }}, 'up')"
+                                                            @disabled(! $child['can_move_up'])
+                                                            title="{{ $componentReorderEnabled ? 'Move CV entry up' : 'Clear filters to reorder' }}"
+                                                        >↑</button>
+                                                        <button
+                                                            class="admin-action custom-page-component__order-action"
+                                                            type="button"
+                                                            wire:click="moveCvEntry({{ $child['entry_id'] }}, 'down')"
+                                                            @disabled(! $child['can_move_down'])
+                                                            title="{{ $componentReorderEnabled ? 'Move CV entry down' : 'Clear filters to reorder' }}"
+                                                        >↓</button>
+                                                        <button class="admin-action" type="button" wire:click="mountAction('deleteCvEntry', { entry: {{ $child['entry_id'] }} })">Delete</button>
+                                                    @elseif ($child['kind'] === 'list')
+                                                        <button
+                                                            class="admin-action"
+                                                            type="button"
+                                                            wire:click="mountAction('editListEntry', { componentIndex: {{ $component['index'] }}, componentType: '{{ $component['type'] }}', itemIndex: {{ $child['item_index'] }} })"
+                                                        >Edit</button>
+                                                        <button
+                                                            class="admin-action"
+                                                            type="button"
+                                                            wire:click="mountAction('deleteListEntry', { componentIndex: {{ $component['index'] }}, componentType: '{{ $component['type'] }}', itemIndex: {{ $child['item_index'] }} })"
+                                                        >Delete</button>
+                                                    @elseif (($child['action'] ?? null) === 'edit')
+                                                        <button
+                                                            class="admin-action"
+                                                            type="button"
+                                                            wire:click="mountAction('editComponent', { componentIndex: {{ $component['index'] }}, componentType: '{{ $component['type'] }}' })"
+                                                        >Edit</button>
+                                                    @elseif (($child['action'] ?? null) === 'toggle')
+                                                        <button
+                                                            class="admin-action"
+                                                            type="button"
+                                                            wire:click="setContactToggle({{ $component['index'] }}, '{{ $component['type'] }}', '{{ $child['field'] }}', {{ $child['enabled'] ? 'false' : 'true' }})"
+                                                        >{{ $child['enabled'] ? 'Turn off' : 'Turn on' }}</button>
+                                                    @elseif (($child['action'] ?? null) === 'social')
+                                                        <button
+                                                            class="admin-action"
+                                                            type="button"
+                                                            wire:click="setContactSocialPlatform({{ $component['index'] }}, '{{ $component['type'] }}', '{{ $child['platform'] }}', {{ $child['enabled'] ? 'false' : 'true' }})"
+                                                        >{{ $child['enabled'] ? 'Turn off' : 'Turn on' }}</button>
                                                     @endif
-                                                    @if ($canArchiveSelectedCv)
-                                                        <button class="admin-action" type="button" role="menuitem" wire:click="transitionSelectedCvEntries('archive')" x-on:click="open = false">Archive selected</button>
-                                                    @endif
-                                                    @if ($canRestoreSelectedCv)
-                                                        <button class="admin-action" type="button" role="menuitem" wire:click="transitionSelectedCvEntries('restore')" x-on:click="open = false">Restore selected to draft</button>
-                                                    @endif
-                                                    <button class="admin-action" type="button" role="menuitem" wire:click="mountAction('deleteSelectedCvEntries')" x-on:click="open = false">Delete selected</button>
-                                                </div>
+                                                </span>
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    @if ($cvEntries !== [])
-                                        <div class="custom-page-cv__table-wrap">
-                                            <table class="custom-page-cv__table">
-                                                <thead>
-                                                    <tr>
-                                                        <th scope="col" class="custom-page-cv__selection-head">
-                                                            <input
-                                                                type="checkbox"
-                                                                x-data="{}"
-                                                                wire:click.prevent="toggleVisibleCvSelection"
-                                                                x-effect="
-                                                                    $el.checked = @js($allVisibleCvSelected);
-                                                                    $el.indeterminate = @js($visibleSelectedCvCount > 0 && ! $allVisibleCvSelected);
-                                                                    $el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));
-                                                                "
-                                                                aria-label="Toggle selection for visible CV entries"
-                                                            >
-                                                        </th>
-                                                        <th scope="col">Date</th>
-                                                        <th scope="col">Entry</th>
-                                                        <th scope="col">Section</th>
-                                                        <th scope="col">Status</th>
-                                                        <th scope="col">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach ($cvEntries as $entry)
-                                                        <tr @class(['is-selected' => in_array((int) $entry['id'], $selectedCvIds, true)]) wire:key="custom-page-cv-entry-{{ $entry['id'] }}">
-                                                            <td class="custom-page-cv__selection-cell">
-                                                                <input type="checkbox" wire:model.live="selectedCvEntryIds" value="{{ $entry['id'] }}" aria-label="Select {{ $entry['title'] }}">
-                                                            </td>
-                                                            <td class="custom-page-cv__date">{{ $entry['date'] }}</td>
-                                                            <td class="custom-page-cv__entry">
-                                                                <strong>{{ $entry['title'] }}</strong>
-                                                                @if ($entry['meta'] !== '')<small>{{ $entry['meta'] }}</small>@endif
-                                                            </td>
-                                                            <td>{{ $entry['section'] }}</td>
-                                                            <td><span class="custom-page-cv__state {{ $entry['state'] === 'published' ? 'is-published' : '' }}">{{ $entry['state_label'] }}</span></td>
-                                                            <td class="custom-page-cv__actions">
-                                                                <div class="admin-toolbar">
-                                                                    <button class="admin-action" type="button" wire:click="mountAction('editCvEntry', { entry: {{ $entry['id'] }} })">Edit</button>
-                                                                    @if ($entry['state'] === 'draft')
-                                                                        <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $entry['id'] }}, 'publish')">Publish</button>
-                                                                        <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $entry['id'] }}, 'archive')">Archive</button>
-                                                                    @elseif ($entry['state'] === 'published')
-                                                                        <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $entry['id'] }}, 'unpublish')">Unpublish</button>
-                                                                        <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $entry['id'] }}, 'archive')">Archive</button>
-                                                                    @elseif (in_array($entry['state'], ['archived', 'hidden'], true))
-                                                                        <button class="admin-action" type="button" wire:click="transitionCvEntry({{ $entry['id'] }}, 'restore')">Restore</button>
-                                                                    @endif
-                                                                    <button
-                                                                        class="admin-action custom-page-component__order-action"
-                                                                        type="button"
-                                                                        wire:click="moveCvEntry({{ $entry['id'] }}, 'up')"
-                                                                        @disabled(! $entry['can_move_up'])
-                                                                        title="{{ $cvReorderEnabled ? 'Move CV entry up' : 'Clear filters to reorder' }}"
-                                                                    >↑</button>
-                                                                    <button
-                                                                        class="admin-action custom-page-component__order-action"
-                                                                        type="button"
-                                                                        wire:click="moveCvEntry({{ $entry['id'] }}, 'down')"
-                                                                        @disabled(! $entry['can_move_down'])
-                                                                        title="{{ $cvReorderEnabled ? 'Move CV entry down' : 'Clear filters to reorder' }}"
-                                                                    >↓</button>
-                                                                    <button class="admin-action" type="button" wire:click="mountAction('deleteCvEntry', { entry: {{ $entry['id'] }} })">Delete</button>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    @elseif ($cvEntryCount > 0)
-                                        <x-admin.empty-state title="No matching CV entries" minimal>
-                                            <x-slot:actions>
-                                                <button class="admin-action" type="button" wire:click="resetCvFilters">Clear filters</button>
-                                            </x-slot:actions>
-                                        </x-admin.empty-state>
+                                        @endforeach
                                     @else
-                                        <x-admin.empty-state title="No CV entries added" minimal>
-                                            <x-slot:actions>
-                                                <button class="admin-action" type="button" wire:click="mountAction('addCvEntry')">Add CV entry</button>
-                                            </x-slot:actions>
-                                        </x-admin.empty-state>
-                                    @endif
-
-                                    @if ($cvEntryCount > 0)
-                                        <footer class="custom-page-cv__pager">
-                                            <label class="custom-page-cv__pager-size">
-                                                <span>Per page</span>
-                                                <select wire:model.change="cvPageSize">
-                                                    <option value="25">25</option>
-                                                    <option value="50">50</option>
-                                                    <option value="100">100</option>
-                                                </select>
-                                            </label>
-                                            <span class="custom-page-cv__pager-range">
-                                                @if ($cvTotal === 0)
-                                                    0 of 0
-                                                @else
-                                                    {{ $cvResultStart }}–{{ $cvResultEnd }} of {{ $cvTotal }}
-                                                @endif
-                                            </span>
-                                            <div class="custom-page-cv__pager-actions admin-toolbar">
-                                                <button class="admin-action" type="button" wire:click="previousCvPage" @disabled($cvPage <= 1)>Previous</button>
-                                                <button class="admin-action" type="button" wire:click="nextCvPage" @disabled($cvPage >= $cvPages)>Next</button>
-                                            </div>
-                                        </footer>
+                                        <div class="custom-page-component__children-empty">No matching entries</div>
                                     @endif
                                 </div>
                             @endif
@@ -541,12 +400,13 @@
                     </x-slot:actions>
                 </x-admin.empty-state>
             @else
-                <x-admin.empty-state title="No components added to this page" minimal>
-                    <x-slot:actions>
-                        <button class="admin-action" type="button" wire:click="mountAction('addComponent')">Add component</button>
-                    </x-slot:actions>
-                </x-admin.empty-state>
+                <x-admin.empty-state title="No components added to this page" minimal />
             @endif
+
+            <button class="custom-page-component-add-row" type="button" wire:click="mountAction('addComponent')">
+                <span aria-hidden="true">+</span>
+                <strong>Add component</strong>
+            </button>
         </x-admin.section>
     </x-admin.workspace>
 

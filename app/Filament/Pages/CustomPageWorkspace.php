@@ -8,6 +8,8 @@ use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SocialLinks;
+use App\Filament\Support\AdminRichText;
+use App\Filament\Support\MediaAssetSelect;
 use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
 use App\Models\MediaAsset;
@@ -17,9 +19,6 @@ use App\Routing\SiteNodeRoute;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\MarkdownEditor;
-use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -28,10 +27,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
-use Throwable;
 
 final class CustomPageWorkspace extends Page
 {
@@ -45,23 +41,22 @@ final class CustomPageWorkspace extends Page
         'contact' => 'Contact',
     ];
 
-    /** @var list<int> */
-    private const CV_PAGE_SIZES = [25, 50, 100];
+    /** @var array<string, string> */
+    private const DIVIDER_LABELS = [
+        'thin' => 'Thin',
+        'subtle' => 'Subtle',
+        'strong' => 'Strong',
+        'dotted' => 'Dotted',
+    ];
 
     protected static bool $shouldRegisterNavigation = false;
-
     protected static ?string $slug = 'pages/custom/{section}';
-
     protected static ?string $title = 'Custom Page';
-
     protected string $view = 'filament.pages.custom-page-workspace';
 
     public int $sectionId;
-
     public int $settingsId;
-
     public string $pageTitle = '';
-
     public ?string $publicUrl = null;
 
     /** @var array<string, mixed> */
@@ -69,6 +64,9 @@ final class CustomPageWorkspace extends Page
 
     /** @var array<string, string> */
     public array $componentTypeOptions = self::COMPONENT_LABELS;
+
+    /** @var array<string, string> */
+    public array $dividerVariantOptions = self::DIVIDER_LABELS;
 
     /** @var array<string, string> */
     public array $availableSocialPlatforms = [];
@@ -80,42 +78,14 @@ final class CustomPageWorkspace extends Page
     public array $components = [];
 
     public int $unfilteredComponentCount = 0;
-
     public string $componentSearch = '';
-
     public string $componentType = 'any';
 
     /** @var list<string> */
     public array $selectedComponentTargets = [];
 
     public bool $hasCvList = false;
-
     public int $cvEntryCount = 0;
-
-    /** @var list<array<string, mixed>> */
-    public array $cvEntries = [];
-
-    /** @var list<string> */
-    public array $cvSections = [];
-
-    public bool $hasLegacyHiddenCvEntries = false;
-
-    public string $cvSearch = '';
-
-    public string $cvSection = 'any';
-
-    public string $cvStatus = 'any';
-
-    /** @var list<int|string> */
-    public array $selectedCvEntryIds = [];
-
-    public int $cvPage = 1;
-
-    public int $cvPageSize = 25;
-
-    public int $cvTotal = 0;
-
-    public int $cvPages = 1;
 
     public function mount(int|string $section): void
     {
@@ -124,6 +94,7 @@ final class CustomPageWorkspace extends Page
             ->whereKey((int) $section)
             ->where('type', SiteNodeType::CustomPage->value)
             ->firstOrFail();
+
         /** @var CustomPageSetting $settings */
         $settings = CustomPageSetting::query()
             ->where('site_section_id', $siteSection->getKey())
@@ -176,12 +147,7 @@ final class CustomPageWorkspace extends Page
             return;
         }
 
-        $changed = app(CustomPageEditorialService::class)->moveBlock(
-            $this->settings(),
-            $index,
-            $type,
-            $direction,
-        );
+        $changed = app(CustomPageEditorialService::class)->moveBlock($this->settings(), $index, $type, $direction);
         $this->selectedComponentTargets = [];
         $this->reloadWorkspace();
 
@@ -231,11 +197,7 @@ final class CustomPageWorkspace extends Page
             return;
         }
 
-        $changed = app(CustomPageEditorialService::class)->moveSelectedBlocks(
-            $this->settings(),
-            $targets,
-            $direction,
-        );
+        $changed = app(CustomPageEditorialService::class)->moveSelectedBlocks($this->settings(), $targets, $direction);
         $count = count($targets);
         $this->selectedComponentTargets = [];
         $this->reloadWorkspace();
@@ -249,43 +211,19 @@ final class CustomPageWorkspace extends Page
         }
     }
 
-    public function setContactToggle(
-        int $index,
-        string $type,
-        string $field,
-        bool $enabled,
-    ): void {
-        app(CustomPageEditorialService::class)->setContactToggle(
-            $this->settings(),
-            $index,
-            $type,
-            $field,
-            $enabled,
-        );
-
+    public function setContactToggle(int $index, string $type, string $field, bool $enabled): void
+    {
+        app(CustomPageEditorialService::class)->setContactToggle($this->settings(), $index, $type, $field, $enabled);
         $this->loadComponentProjection(refreshCvCount: false);
     }
 
-    public function setContactSocialPlatform(
-        int $index,
-        string $type,
-        string $platform,
-        bool $enabled,
-    ): void {
+    public function setContactSocialPlatform(int $index, string $type, string $platform, bool $enabled): void
+    {
         if (! array_key_exists($platform, $this->availableSocialPlatforms)) {
-            throw ValidationException::withMessages([
-                'component' => 'This social platform is not available from General.',
-            ]);
+            throw ValidationException::withMessages(['component' => 'This social platform is not available from General.']);
         }
 
-        app(CustomPageEditorialService::class)->setContactSocialPlatform(
-            $this->settings(),
-            $index,
-            $type,
-            $platform,
-            $enabled,
-        );
-
+        app(CustomPageEditorialService::class)->setContactSocialPlatform($this->settings(), $index, $type, $platform, $enabled);
         $this->loadComponentProjection(refreshCvCount: false);
     }
 
@@ -296,28 +234,21 @@ final class CustomPageWorkspace extends Page
             ->fillForm(fn (): array => [
                 'type' => 'text',
                 'image_decorative' => false,
+                'variant' => 'thin',
                 'form_visibility' => 'visible',
                 'status_text' => null,
                 'show_email' => true,
                 'show_form' => true,
-                'social_platforms' => array_keys(SocialLinks::options()),
-                'items' => [],
+                'social_platforms' => array_keys($this->availableSocialPlatforms),
             ])
             ->schema($this->componentEditorSchema(includeTypeSelect: true))
             ->modalHeading('Add component')
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Add component')
-                ->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Add component')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $data): void {
-                app(CustomPageEditorialService::class)->addBlock(
-                    $this->settings(),
-                    $this->componentPayload($data),
-                );
+                app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
                 $this->selectedComponentTargets = [];
                 $this->reloadWorkspace();
                 Notification::make()->title('Component added')->success()->send();
@@ -332,32 +263,25 @@ final class CustomPageWorkspace extends Page
             ->schema($this->componentEditorSchema(includeTypeSelect: false))
             ->modalHeading(function (array $arguments): string {
                 $block = $this->actionComponent($arguments);
-
                 return 'Edit '.(self::COMPONENT_LABELS[(string) $block['type']] ?? 'component');
             })
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Save')
-                ->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Save')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
+                $existing = $this->actionComponent($arguments);
                 $changed = app(CustomPageEditorialService::class)->updateBlock(
                     $this->settings(),
                     $index,
                     $type,
-                    $this->componentPayload($data),
+                    $this->componentPayload($data, $existing),
                 );
                 $this->selectedComponentTargets = [];
                 $this->reloadWorkspace();
 
-                Notification::make()
-                    ->title($changed ? 'Component saved' : 'No component changes')
-                    ->success()
-                    ->send();
+                Notification::make()->title($changed ? 'Component saved' : 'No component changes')->success()->send();
             });
     }
 
@@ -368,32 +292,21 @@ final class CustomPageWorkspace extends Page
             ->requiresConfirmation(fn (array $arguments): bool => $this->componentTypeChangeLosesContent($arguments))
             ->modalHeading('Change component type?')
             ->modalDescription(function (array $arguments): string {
-                [$index, $oldType] = $this->actionComponentTarget($arguments);
+                [, $oldType] = $this->actionComponentTarget($arguments);
                 $targetType = $this->actionTargetComponentType($arguments);
 
                 return 'Changing '.(self::COMPONENT_LABELS[$oldType] ?? $oldType)
                     .' to '.(self::COMPONENT_LABELS[$targetType] ?? $targetType)
                     .' can remove component-specific content that cannot be carried over.';
             })
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Change type')
-                ->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Change type')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
             ->modalWidth(Width::Large)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $arguments): void {
                 [$index, $oldType] = $this->actionComponentTarget($arguments);
                 $targetType = $this->actionTargetComponentType($arguments);
-
-                $changed = app(CustomPageEditorialService::class)->convertBlock(
-                    $this->settings(),
-                    $index,
-                    $oldType,
-                    $targetType,
-                );
-
+                $changed = app(CustomPageEditorialService::class)->convertBlock($this->settings(), $index, $oldType, $targetType);
                 $this->selectedComponentTargets = [];
                 $this->reloadWorkspace();
 
@@ -410,21 +323,13 @@ final class CustomPageWorkspace extends Page
             ->color('danger')
             ->requiresConfirmation()
             ->modalHeading('Delete component?')
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Delete')
-                ->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Delete')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
             ->modalWidth(Width::Large)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
-                app(CustomPageEditorialService::class)->deleteBlock(
-                    $this->settings(),
-                    $index,
-                    $type,
-                );
+                app(CustomPageEditorialService::class)->deleteBlock($this->settings(), $index, $type);
                 $this->selectedComponentTargets = [];
                 $this->reloadWorkspace();
                 Notification::make()->title('Component deleted')->success()->send();
@@ -438,12 +343,8 @@ final class CustomPageWorkspace extends Page
             ->color('danger')
             ->requiresConfirmation()
             ->modalHeading('Delete selected components?')
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Delete')
-                ->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Delete')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
             ->modalWidth(Width::Large)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (): void {
@@ -464,107 +365,85 @@ final class CustomPageWorkspace extends Page
             });
     }
 
-    public function updatedCvSearch(): void
+    public function addListEntryAction(): Action
     {
-        $this->refreshCvFromFirstPage();
+        return Action::make('addListEntry')
+            ->label('Add list entry')
+            ->fillForm(fn (): array => ['visible' => true])
+            ->schema($this->listEntrySchema())
+            ->modalHeading('Add list entry')
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Add entry')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
+            ->action(function (array $data, array $arguments): void {
+                [$index, $type] = $this->actionComponentTarget($arguments);
+                app(CustomPageEditorialService::class)->addListItem($this->settings(), $index, $type, $this->listItemPayload($data));
+                $this->loadComponentProjection(refreshCvCount: false);
+                Notification::make()->title('List entry added')->success()->send();
+            });
     }
 
-    public function updatedCvSection(): void
+    public function editListEntryAction(): Action
     {
-        if ($this->cvSection !== 'any' && ! in_array($this->cvSection, $this->cvSections, true)) {
-            $this->cvSection = 'any';
-        }
-
-        $this->refreshCvFromFirstPage();
+        return Action::make('editListEntry')
+            ->label('Edit')
+            ->fillForm(fn (array $arguments): array => $this->actionListItem($arguments))
+            ->schema($this->listEntrySchema())
+            ->modalHeading(fn (array $arguments): string => 'Edit '.(string) ($this->actionListItem($arguments)['title'] ?? 'list entry'))
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Save')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalWidth(Width::SevenExtraLarge)
+            ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
+            ->action(function (array $data, array $arguments): void {
+                [$index, $type] = $this->actionComponentTarget($arguments);
+                $itemIndex = $this->actionListItemIndex($arguments);
+                app(CustomPageEditorialService::class)->updateListItem(
+                    $this->settings(),
+                    $index,
+                    $type,
+                    $itemIndex,
+                    $this->listItemPayload($data),
+                );
+                $this->loadComponentProjection(refreshCvCount: false);
+                Notification::make()->title('List entry saved')->success()->send();
+            });
     }
 
-    public function updatedCvStatus(): void
+    public function deleteListEntryAction(): Action
     {
-        $allowed = ['any', 'draft', 'published', 'archived'];
-        if ($this->hasLegacyHiddenCvEntries) {
-            $allowed[] = 'hidden';
-        }
-        if (! in_array($this->cvStatus, $allowed, true)) {
-            $this->cvStatus = 'any';
-        }
-
-        $this->refreshCvFromFirstPage();
-    }
-
-    public function updatedCvPageSize(mixed $value): void
-    {
-        $size = (int) $value;
-        $this->cvPageSize = in_array($size, self::CV_PAGE_SIZES, true) ? $size : 25;
-        $this->refreshCvFromFirstPage();
-    }
-
-    public function resetCvFilters(): void
-    {
-        $this->cvSearch = '';
-        $this->cvSection = 'any';
-        $this->cvStatus = 'any';
-        $this->refreshCvFromFirstPage();
-    }
-
-    public function previousCvPage(): void
-    {
-        if ($this->cvPage <= 1) {
-            return;
-        }
-
-        $this->cvPage--;
-        $this->selectedCvEntryIds = [];
-        $this->loadCvProjection();
-    }
-
-    public function nextCvPage(): void
-    {
-        if ($this->cvPage >= $this->cvPages) {
-            return;
-        }
-
-        $this->cvPage++;
-        $this->selectedCvEntryIds = [];
-        $this->loadCvProjection();
-    }
-
-    public function toggleVisibleCvSelection(): void
-    {
-        $visibleIds = collect($this->cvEntries)
-            ->pluck('id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->values()
-            ->all();
-        if ($visibleIds === []) {
-            return;
-        }
-
-        $selected = $this->normalizedCvSelection();
-        $allVisibleSelected = count(array_intersect($visibleIds, $selected)) === count($visibleIds);
-        $this->selectedCvEntryIds = $allVisibleSelected
-            ? array_values(array_diff($selected, $visibleIds))
-            : array_values(array_unique(array_merge($selected, $visibleIds)));
+        return Action::make('deleteListEntry')
+            ->label('Delete')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete list entry?')
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Delete')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
+            ->action(function (array $arguments): void {
+                [$index, $type] = $this->actionComponentTarget($arguments);
+                $itemIndex = $this->actionListItemIndex($arguments);
+                app(CustomPageEditorialService::class)->deleteListItem($this->settings(), $index, $type, $itemIndex);
+                $this->loadComponentProjection(refreshCvCount: false);
+                Notification::make()->title('List entry deleted')->success()->send();
+            });
     }
 
     public function addCvEntryAction(): Action
     {
         return Action::make('addCvEntry')
             ->label('Add CV entry')
-            ->fillForm(fn (): array => ['date_precision' => 'unknown'])
+            ->fillForm(fn (): array => ['section' => 'CV', 'date_precision' => 'unknown'])
             ->schema($this->cvEntrySchema())
             ->modalHeading('Add CV entry')
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Create draft')
-                ->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Create draft')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $data): void {
                 app(CvEntryEditorialService::class)->createDraft($data);
-                $this->selectedCvEntryIds = [];
-                $this->reloadWorkspace();
+                $this->loadComponentProjection(refreshCvCount: true);
                 Notification::make()->title('CV draft created')->success()->send();
             });
     }
@@ -575,7 +454,6 @@ final class CustomPageWorkspace extends Page
             ->label('Edit')
             ->fillForm(function (array $arguments): array {
                 $entry = $this->actionCvEntry($arguments);
-
                 return [
                     'section' => $entry->getAttribute('section'),
                     'title' => $entry->getAttribute('title'),
@@ -591,19 +469,13 @@ final class CustomPageWorkspace extends Page
             })
             ->schema($this->cvEntrySchema())
             ->modalHeading(fn (array $arguments): string => 'Edit '.(string) $this->actionCvEntry($arguments)->getAttribute('title'))
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Save')
-                ->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Save')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $data, array $arguments): void {
                 app(CvEntryEditorialService::class)->update($this->actionCvEntry($arguments), $data);
-                $this->selectedCvEntryIds = [];
-                $this->reloadCvMetadata();
-                $this->loadCvProjection();
+                $this->loadComponentProjection(refreshCvCount: true);
                 Notification::make()->title('CV entry saved')->success()->send();
             });
     }
@@ -615,84 +487,27 @@ final class CustomPageWorkspace extends Page
             ->color('danger')
             ->requiresConfirmation()
             ->modalHeading('Delete CV entry?')
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Delete')
-                ->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'custom-page-dialog__cancel']))
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Delete')->extraAttributes(['class' => 'custom-page-dialog__primary']))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
             ->modalWidth(Width::Large)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $arguments): void {
                 app(EditorialRecordService::class)->deleteCv($this->actionCvEntry($arguments));
-                $this->selectedCvEntryIds = [];
-                $this->reloadWorkspace();
+                $this->loadComponentProjection(refreshCvCount: true);
                 Notification::make()->title('CV entry deleted')->success()->send();
-            });
-    }
-
-    public function deleteSelectedCvEntriesAction(): Action
-    {
-        return Action::make('deleteSelectedCvEntries')
-            ->label('Delete selected')
-            ->color('danger')
-            ->requiresConfirmation()
-            ->modalHeading('Delete selected CV entries?')
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Delete')
-                ->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'custom-page-dialog__cancel']))
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
-            ->action(function (): void {
-                $ids = $this->normalizedCvSelection();
-                if ($ids === []) {
-                    return;
-                }
-
-                /** @var list<CvEntry> $entries */
-                $entries = CvEntry::query()
-                    ->whereIn('id', $ids)
-                    ->orderBy('position')
-                    ->orderBy('id')
-                    ->get()
-                    ->values()
-                    ->all();
-                $service = app(EditorialRecordService::class);
-                $success = 0;
-                $failed = 0;
-
-                foreach ($entries as $entry) {
-                    try {
-                        $service->deleteCv($entry);
-                        $success++;
-                    } catch (Throwable $exception) {
-                        if (! $exception instanceof ValidationException) {
-                            report($exception);
-                        }
-                        $failed++;
-                    }
-                }
-
-                $this->selectedCvEntryIds = [];
-                $this->reloadWorkspace();
-                $this->sendBatchNotification('Delete selected CV entries', $success, 0, $failed);
             });
     }
 
     public function moveCvEntry(int $entryId, string $direction): void
     {
-        if (! $this->cvReorderEnabled()) {
+        if (! $this->componentReorderEnabled()) {
             return;
         }
 
         /** @var CvEntry $entry */
         $entry = CvEntry::query()->findOrFail($entryId);
         $changed = app(EditorialRecordService::class)->move($entry, $direction);
-        $this->selectedCvEntryIds = [];
-        $this->loadCvProjection();
+        $this->loadComponentProjection(refreshCvCount: true);
 
         if ($changed) {
             Notification::make()->title('CV order updated')->success()->send();
@@ -713,111 +528,15 @@ final class CustomPageWorkspace extends Page
             default => throw ValidationException::withMessages(['state' => 'Unsupported CV state action.']),
         };
 
-        $this->selectedCvEntryIds = [];
-        $this->loadCvProjection();
+        $this->loadComponentProjection(refreshCvCount: true);
         Notification::make()->title('CV entry updated')->success()->send();
-    }
-
-    public function moveSelectedCvEntries(string $direction): void
-    {
-        if (! $this->cvReorderEnabled()) {
-            return;
-        }
-
-        $ids = $this->normalizedCvSelection();
-        if ($ids === []) {
-            return;
-        }
-
-        $entries = CvEntry::query()
-            ->whereIn('id', $ids)
-            ->orderBy('position')
-            ->orderBy('id')
-            ->get()
-            ->values()
-            ->all();
-        if ($direction === 'down') {
-            $entries = array_reverse($entries);
-        }
-
-        $success = 0;
-        $failed = 0;
-        $service = app(EditorialRecordService::class);
-        foreach ($entries as $entry) {
-            try {
-                if ($entry instanceof CvEntry && $service->move($entry, $direction)) {
-                    $success++;
-                }
-            } catch (Throwable $exception) {
-                if (! $exception instanceof ValidationException) {
-                    report($exception);
-                }
-                $failed++;
-            }
-        }
-
-        $this->selectedCvEntryIds = [];
-        $this->loadCvProjection();
-        $this->sendBatchNotification('Move selected CV entries', $success, 0, $failed);
-    }
-
-    public function transitionSelectedCvEntries(string $action): void
-    {
-        $ids = $this->normalizedCvSelection();
-        if ($ids === []) {
-            return;
-        }
-
-        /** @var list<CvEntry> $entries */
-        $entries = CvEntry::query()
-            ->whereIn('id', $ids)
-            ->orderBy('position')
-            ->orderBy('id')
-            ->get()
-            ->values()
-            ->all();
-        $service = app(EditorialRecordService::class);
-        $success = 0;
-        $skipped = 0;
-        $failed = 0;
-
-        foreach ($entries as $entry) {
-            $state = (string) $entry->getAttribute('state');
-            if (! $this->cvTransitionApplies($state, $action)) {
-                $skipped++;
-                continue;
-            }
-
-            try {
-                match ($action) {
-                    'publish' => $service->publish($entry),
-                    'unpublish' => $service->unpublish($entry),
-                    'archive' => $service->archive($entry),
-                    'restore' => $service->restoreDraft($entry),
-                    default => throw ValidationException::withMessages(['state' => 'Unsupported CV state action.']),
-                };
-                $success++;
-            } catch (Throwable $exception) {
-                if (! $exception instanceof ValidationException) {
-                    report($exception);
-                }
-                $failed++;
-            }
-        }
-
-        $this->selectedCvEntryIds = [];
-        $this->loadCvProjection();
-        $this->sendBatchNotification('Update selected CV entries', $success, $skipped, $failed);
     }
 
     private function loadAvailableSocialPlatforms(): void
     {
         $general = PublicContentSetting::general();
-
         $this->availableSocialPlatforms = collect(SocialLinks::visible($general->getAttribute('social_links')))
-            ->mapWithKeys(static fn (array $link): array => [
-                $link['platform'] => SocialLinks::label($link['platform']),
-            ])
+            ->mapWithKeys(static fn (array $link): array => [$link['platform'] => SocialLinks::label($link['platform'])])
             ->all();
     }
 
@@ -842,25 +561,21 @@ final class CustomPageWorkspace extends Page
             : null;
 
         $this->loadComponentProjection(refreshCvCount: true);
-        if ($this->hasCvList) {
-            $this->reloadCvMetadata();
-            $this->loadCvProjection();
-        } else {
-            $this->resetCvState();
-        }
     }
 
     private function loadComponentProjection(bool $refreshCvCount): void
     {
         $blocks = $this->settings()->components();
         $this->unfilteredComponentCount = count($blocks);
-        $this->hasCvList = collect($blocks)->contains(
-            static fn (array $block): bool => ($block['type'] ?? null) === 'cv_list',
-        );
+        $this->hasCvList = collect($blocks)->contains(static fn (array $block): bool => ($block['type'] ?? null) === 'cv_list');
 
-        if ($refreshCvCount) {
-            $this->cvEntryCount = $this->hasCvList ? CvEntry::query()->count() : 0;
-        } elseif (! $this->hasCvList) {
+        $cvRecords = collect();
+        if ($this->hasCvList) {
+            $cvRecords = CvEntry::query()->orderBy('position')->orderBy('id')->get();
+            if ($refreshCvCount || $this->cvEntryCount === 0) {
+                $this->cvEntryCount = $cvRecords->count();
+            }
+        } else {
             $this->cvEntryCount = 0;
         }
 
@@ -869,20 +584,19 @@ final class CustomPageWorkspace extends Page
             ->pluck('media_asset_id')
             ->filter(static fn (mixed $id): bool => is_numeric($id))
             ->map(static fn (mixed $id): int => (int) $id)
-            ->unique()
-            ->values()
+            ->unique()->values()->all();
+
+        $imageNames = $imageIds === [] ? [] : MediaAsset::query()
+            ->whereIn('id', $imageIds)
+            ->pluck('original_filename', 'id')
+            ->mapWithKeys(static fn (mixed $name, mixed $id): array => [(int) $id => (string) $name])
             ->all();
-        $imageNames = $imageIds === []
-            ? []
-            : MediaAsset::query()
-                ->whereIn('id', $imageIds)
-                ->pluck('original_filename', 'id')
-                ->mapWithKeys(static fn (mixed $name, mixed $id): array => [(int) $id => (string) $name])
-                ->all();
 
         $counts = array_fill_keys(array_keys(self::COMPONENT_LABELS), 0);
         $listEntryCount = 0;
         $projected = [];
+        $needle = mb_strtolower(trim($this->componentSearch));
+
         foreach ($blocks as $index => $block) {
             $type = is_string($block['type'] ?? null) ? $block['type'] : '';
             if (isset($counts[$type])) {
@@ -891,36 +605,43 @@ final class CustomPageWorkspace extends Page
             if ($type === 'list' && is_array($block['items'] ?? null)) {
                 $listEntryCount += count($block['items']);
             }
-
-            $mediaId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
-            $imageName = $mediaId !== null ? ($imageNames[$mediaId] ?? null) : null;
-            $content = $this->componentContent($block, $imageName);
-            $searchText = $this->componentSearchText($block, $imageName);
-
             if ($this->componentType !== 'any' && $type !== $this->componentType) {
                 continue;
             }
-            $needle = mb_strtolower(trim($this->componentSearch));
-            if ($needle !== '' && ! str_contains(mb_strtolower($searchText), $needle)) {
-                continue;
+
+            $mediaId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
+            $imageName = $mediaId !== null ? ($imageNames[$mediaId] ?? null) : null;
+            $children = $this->componentChildren($block, $cvRecords->all());
+            $parentSearch = mb_strtolower($this->componentParentSearchText($block, $imageName));
+
+            if ($needle !== '') {
+                $parentMatches = str_contains($parentSearch, $needle);
+                $matchingChildren = array_values(array_filter(
+                    $children,
+                    static fn (array $child): bool => str_contains(mb_strtolower((string) ($child['search_text'] ?? '')), $needle),
+                ));
+
+                if (! $parentMatches && $matchingChildren === []) {
+                    continue;
+                }
+                if (! $parentMatches) {
+                    $children = $matchingChildren;
+                }
             }
 
             $projected[] = [
                 'index' => $index,
                 'type' => $type,
                 'type_label' => self::COMPONENT_LABELS[$type] ?? 'Component',
-                'content' => $content,
+                'content' => $this->componentContent($block, $imageName),
                 'target' => $index.':'.$type,
-                'editable' => ! in_array($type, ['cv_list', 'divider'], true),
+                'editable' => $type !== 'cv_list',
                 'can_move_up' => $index > 0,
                 'can_move_down' => $index < count($blocks) - 1,
                 'is_cv_list' => $type === 'cv_list',
+                'is_list' => $type === 'list',
                 'is_contact' => $type === 'contact',
-                'show_email' => $type === 'contact' ? (bool) ($block['show_email'] ?? true) : false,
-                'show_form' => $type === 'contact' ? (bool) ($block['show_form'] ?? true) : false,
-                'social_platforms' => $type === 'contact' && is_array($block['social_platforms'] ?? null)
-                    ? array_values(array_filter($block['social_platforms'], 'is_string'))
-                    : [],
+                'children' => $children,
             ];
         }
 
@@ -936,114 +657,139 @@ final class CustomPageWorkspace extends Page
         ];
     }
 
-    private function reloadCvMetadata(): void
+    /**
+     * @param array<string, mixed> $block
+     * @param list<CvEntry> $cvRecords
+     * @return list<array<string, mixed>>
+     */
+    private function componentChildren(array $block, array $cvRecords): array
     {
-        $this->cvSections = CvEntry::query()
-            ->whereNotNull('section')
-            ->where('section', '<>', '')
-            ->distinct()
-            ->orderBy('section')
-            ->pluck('section')
-            ->map(static fn (mixed $section): string => (string) $section)
-            ->values()
-            ->all();
-        $this->hasLegacyHiddenCvEntries = CvEntry::query()->where('state', 'hidden')->exists();
+        $type = $block['type'] ?? null;
 
-        if ($this->cvSection !== 'any' && ! in_array($this->cvSection, $this->cvSections, true)) {
-            $this->cvSection = 'any';
-        }
-        if ($this->cvStatus === 'hidden' && ! $this->hasLegacyHiddenCvEntries) {
-            $this->cvStatus = 'any';
-        }
-    }
+        if ($type === 'cv_list') {
+            $count = count($cvRecords);
+            return array_values(array_map(function (CvEntry $entry, int $index) use ($count): array {
+                $meta = array_values(array_filter([
+                    $entry->getAttribute('organisation'),
+                    $entry->getAttribute('location'),
+                ], static fn (mixed $value): bool => is_string($value) && trim($value) !== ''));
 
-    private function loadCvProjection(): void
-    {
-        if (! $this->hasCvList) {
-            $this->resetCvState();
-            return;
-        }
+                $search = implode(' ', array_filter([
+                    $entry->getAttribute('year_text'),
+                    $entry->getAttribute('title'),
+                    $entry->getAttribute('organisation'),
+                    $entry->getAttribute('location'),
+                    $entry->getAttribute('body'),
+                    $entry->getAttribute('state'),
+                ], static fn (mixed $value): bool => is_string($value) && trim($value) !== ''));
 
-        $query = CvEntry::query();
-        $needle = mb_strtolower(trim($this->cvSearch));
-        if ($needle !== '') {
-            $pattern = '%'.$needle.'%';
-            $query->where(function (Builder $query) use ($pattern): void {
-                $query
-                    ->whereRaw('LOWER(year_text) LIKE ?', [$pattern])
-                    ->orWhereRaw('LOWER(title) LIKE ?', [$pattern])
-                    ->orWhereRaw('LOWER(organisation) LIKE ?', [$pattern])
-                    ->orWhereRaw('LOWER(location) LIKE ?', [$pattern])
-                    ->orWhereRaw('LOWER(section) LIKE ?', [$pattern]);
-            });
-        }
-        if ($this->cvSection !== 'any') {
-            $query->where('section', $this->cvSection);
-        }
-        if ($this->cvStatus !== 'any') {
-            $query->where('state', $this->cvStatus);
+                return [
+                    'kind' => 'cv',
+                    'key' => 'cv-'.(int) $entry->getKey(),
+                    'date' => (string) ($entry->getAttribute('year_text') ?? ''),
+                    'entry' => (string) $entry->getAttribute('title'),
+                    'detail' => implode(' · ', $meta),
+                    'status' => ucfirst((string) $entry->getAttribute('state')),
+                    'state' => (string) $entry->getAttribute('state'),
+                    'entry_id' => (int) $entry->getKey(),
+                    'can_move_up' => $this->componentReorderEnabled() && $index > 0,
+                    'can_move_down' => $this->componentReorderEnabled() && $index < $count - 1,
+                    'search_text' => $search,
+                ];
+            }, $cvRecords, array_keys($cvRecords)));
         }
 
-        $this->cvTotal = (clone $query)->count();
-        $this->cvPages = max(1, (int) ceil($this->cvTotal / $this->cvPageSize));
-        $this->cvPage = min(max(1, $this->cvPage), $this->cvPages);
+        if ($type === 'list') {
+            $items = is_array($block['items'] ?? null) ? array_values($block['items']) : [];
+            $children = [];
+            foreach ($items as $itemIndex => $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
 
-        $records = $query
-            ->orderBy('position')
-            ->orderBy('id')
-            ->forPage($this->cvPage, $this->cvPageSize)
-            ->get();
-        $globalOffset = ($this->cvPage - 1) * $this->cvPageSize;
-        $reorderEnabled = $this->cvReorderEnabled();
-        $canonicalTotal = $this->cvEntryCount;
+                $detail = implode(' · ', array_values(array_filter([
+                    is_string($item['meta'] ?? null) ? trim($item['meta']) : '',
+                    is_string($item['location'] ?? null) ? trim($item['location']) : '',
+                    $this->contentExcerpt($item['body'] ?? null, 110),
+                ], static fn (string $value): bool => $value !== '')));
 
-        $this->cvEntries = $records->values()->map(static function (CvEntry $entry, int $index) use ($globalOffset, $reorderEnabled, $canonicalTotal): array {
-            $meta = array_values(array_filter([
-                $entry->getAttribute('organisation'),
-                $entry->getAttribute('location'),
-            ], static fn (mixed $value): bool => is_string($value) && trim($value) !== ''));
-            $globalIndex = $globalOffset + $index;
+                $children[] = [
+                    'kind' => 'list',
+                    'key' => 'list-'.$itemIndex,
+                    'date' => is_string($item['date'] ?? null) ? $item['date'] : '',
+                    'entry' => is_string($item['title'] ?? null) ? $item['title'] : '',
+                    'detail' => $detail,
+                    'status' => (bool) ($item['visible'] ?? true) ? 'Visible' : 'Hidden',
+                    'item_index' => $itemIndex,
+                    'search_text' => implode(' ', array_filter([
+                        $item['date'] ?? null,
+                        $item['title'] ?? null,
+                        $item['meta'] ?? null,
+                        $item['location'] ?? null,
+                        $item['body'] ?? null,
+                        $item['url'] ?? null,
+                        (bool) ($item['visible'] ?? true) ? 'Visible' : 'Hidden',
+                    ], static fn (mixed $value): bool => is_string($value) && trim($value) !== '')),
+                ];
+            }
+            return $children;
+        }
 
-            return [
-                'id' => (int) $entry->getKey(),
-                'date' => (string) ($entry->getAttribute('year_text') ?? ''),
-                'title' => (string) $entry->getAttribute('title'),
-                'meta' => implode(' · ', $meta),
-                'section' => (string) $entry->getAttribute('section'),
-                'state' => (string) $entry->getAttribute('state'),
-                'state_label' => ucfirst((string) $entry->getAttribute('state')),
-                'can_move_up' => $reorderEnabled && $globalIndex > 0,
-                'can_move_down' => $reorderEnabled && $globalIndex < $canonicalTotal - 1,
-            ];
-        })->all();
-    }
+        if ($type === 'contact') {
+            $visible = ($block['form_state'] ?? 'enabled') !== 'hidden';
+            $children = [[
+                'kind' => 'contact',
+                'key' => 'contact-visibility',
+                'entry' => 'Form visibility',
+                'detail' => '',
+                'status' => $visible ? 'Visible' : 'Hidden',
+                'action' => 'edit',
+                'search_text' => 'Form visibility '.($visible ? 'Visible' : 'Hidden'),
+            ]];
 
-    private function refreshCvFromFirstPage(): void
-    {
-        $this->cvPage = 1;
-        $this->selectedCvEntryIds = [];
-        $this->loadCvProjection();
-    }
+            foreach (['show_email' => 'Public email', 'show_form' => 'Contact form'] as $field => $label) {
+                $enabled = (bool) ($block[$field] ?? true);
+                $children[] = [
+                    'kind' => 'contact',
+                    'key' => 'contact-'.$field,
+                    'entry' => $label,
+                    'detail' => 'General',
+                    'status' => $enabled ? 'On' : 'Off',
+                    'action' => 'toggle',
+                    'field' => $field,
+                    'enabled' => $enabled,
+                    'search_text' => $label.' '.($enabled ? 'On Visible' : 'Off Hidden').' General',
+                ];
+            }
 
-    private function resetCvState(): void
-    {
-        $this->cvEntries = [];
-        $this->cvSections = [];
-        $this->hasLegacyHiddenCvEntries = false;
-        $this->selectedCvEntryIds = [];
-        $this->cvTotal = 0;
-        $this->cvPages = 1;
-        $this->cvPage = 1;
+            $selected = is_array($block['social_platforms'] ?? null)
+                ? array_values(array_filter($block['social_platforms'], 'is_string'))
+                : [];
+
+            foreach ($this->availableSocialPlatforms as $platform => $label) {
+                $enabled = in_array($platform, $selected, true);
+                $children[] = [
+                    'kind' => 'contact',
+                    'key' => 'contact-social-'.$platform,
+                    'entry' => $label,
+                    'detail' => 'Social link from General',
+                    'status' => $enabled ? 'On' : 'Off',
+                    'action' => 'social',
+                    'platform' => $platform,
+                    'enabled' => $enabled,
+                    'search_text' => $label.' Social link General '.($enabled ? 'On Visible' : 'Off Hidden'),
+                ];
+            }
+
+            return $children;
+        }
+
+        return [];
     }
 
     private function componentReorderEnabled(): bool
     {
         return trim($this->componentSearch) === '' && $this->componentType === 'any';
-    }
-
-    private function cvReorderEnabled(): bool
-    {
-        return trim($this->cvSearch) === '' && $this->cvSection === 'any' && $this->cvStatus === 'any';
     }
 
     /** @return list<array{index:int,type:string}> */
@@ -1060,19 +806,7 @@ final class CustomPageWorkspace extends Page
             }
             $targets[] = ['index' => (int) $index, 'type' => $type];
         }
-
         return $targets;
-    }
-
-    /** @return list<int> */
-    private function normalizedCvSelection(): array
-    {
-        return collect($this->selectedCvEntryIds)
-            ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
     }
 
     /** @return array{0:int,1:string} */
@@ -1083,7 +817,6 @@ final class CustomPageWorkspace extends Page
         if (! is_numeric($index) || ! is_string($type) || ! array_key_exists($type, self::COMPONENT_LABELS)) {
             throw ValidationException::withMessages(['component' => 'The selected component is invalid.']);
         }
-
         return [(int) $index, $type];
     }
 
@@ -1093,16 +826,15 @@ final class CustomPageWorkspace extends Page
         if (! is_string($type) || ! array_key_exists($type, self::COMPONENT_LABELS)) {
             throw ValidationException::withMessages(['component' => 'Choose a supported component type.']);
         }
-
         return $type;
     }
 
     private function componentTypeChangeLosesContent(array $arguments): bool
     {
-        $block = $this->actionComponent($arguments);
-        $targetType = $this->actionTargetComponentType($arguments);
-
-        return app(CustomPageEditorialService::class)->conversionLosesContent($block, $targetType);
+        return app(CustomPageEditorialService::class)->conversionLosesContent(
+            $this->actionComponent($arguments),
+            $this->actionTargetComponentType($arguments),
+        );
     }
 
     /** @return array<string, mixed> */
@@ -1113,8 +845,32 @@ final class CustomPageWorkspace extends Page
         if (! is_array($block) || ($block['type'] ?? null) !== $type) {
             throw ValidationException::withMessages(['component' => 'This component changed. Reload and try again.']);
         }
-
         return $block;
+    }
+
+    private function actionListItemIndex(array $arguments): int
+    {
+        $itemIndex = $arguments['itemIndex'] ?? null;
+        if (! is_numeric($itemIndex) || (int) $itemIndex < 0) {
+            throw ValidationException::withMessages(['component' => 'The selected list entry is invalid.']);
+        }
+        return (int) $itemIndex;
+    }
+
+    /** @return array<string, mixed> */
+    private function actionListItem(array $arguments): array
+    {
+        $block = $this->actionComponent($arguments);
+        if (($block['type'] ?? null) !== 'list') {
+            throw ValidationException::withMessages(['component' => 'The selected component is not a List.']);
+        }
+        $itemIndex = $this->actionListItemIndex($arguments);
+        $items = is_array($block['items'] ?? null) ? array_values($block['items']) : [];
+        $item = $items[$itemIndex] ?? null;
+        if (! is_array($item)) {
+            throw ValidationException::withMessages(['component' => 'This list entry changed. Reload and try again.']);
+        }
+        return $item;
     }
 
     private function actionCvEntry(array $arguments): CvEntry
@@ -1123,10 +879,8 @@ final class CustomPageWorkspace extends Page
         if (! is_numeric($id)) {
             throw ValidationException::withMessages(['entry' => 'The selected CV entry is invalid.']);
         }
-
         /** @var CvEntry $entry */
         $entry = CvEntry::query()->findOrFail((int) $id);
-
         return $entry;
     }
 
@@ -1159,142 +913,69 @@ final class CustomPageWorkspace extends Page
     {
         return match ($type) {
             'image' => [
-                Select::make('media_asset_id')
-                    ->label('Image from Media Files')
-                    ->options(fn (): array => MediaAsset::query()
-                        ->where('state', 'available')
-                        ->where('mime_type', 'like', 'image/%')
-                        ->orderBy('original_filename')
-                        ->pluck('original_filename', 'id')
-                        ->all())
-                    ->searchable()
-                    ->required()
-                    ->live(),
-                Placeholder::make('image_preview')
-                    ->label('Preview')
-                    ->content(function (Get $get): HtmlString|string {
-                        $mediaId = $get('media_asset_id');
-                        if (! is_numeric($mediaId)) {
-                            return 'Choose an image from Media Files.';
-                        }
-
-                        /** @var MediaAsset|null $asset */
-                        $asset = MediaAsset::query()->find((int) $mediaId);
-                        if (! $asset instanceof MediaAsset) {
-                            return 'The selected image is unavailable.';
-                        }
-
-                        $url = e(route('admin.media.original', ['mediaAsset' => $asset]));
-                        $filename = e((string) $asset->getAttribute('original_filename'));
-
-                        return new HtmlString(
-                            '<div class="custom-page-dialog__image-preview">'
-                            .'<img src="'.$url.'" alt="" loading="lazy">'
-                            .'<span>'.$filename.'</span>'
-                            .'</div>',
-                        );
-                    }),
-                Toggle::make('image_decorative')
-                    ->label('Decorative image')
-                    ->default(false),
+                MediaAssetSelect::forId('media_asset_id', 'Image from Media Files', imagesOnly: true)->required(),
+                Toggle::make('image_decorative')->label('Decorative image')->default(false),
             ],
             'text' => [
-                TextInput::make('title')
-                    ->label('Heading')
-                    ->maxLength(160),
-                MarkdownEditor::make('body')
-                    ->label('Text')
-                    ->toolbarButtons([
-                        ['bold', 'italic', 'link'],
-                        ['bulletList', 'orderedList'],
-                        ['undo', 'redo'],
-                    ])
-                    ->maxLength(20000),
+                TextInput::make('title')->label('Heading')->maxLength(160),
+                ...AdminRichText::schema('body', 'Text', 20000),
             ],
             'list' => [
-                TextInput::make('title')
-                    ->label('Heading')
-                    ->maxLength(160),
-                Repeater::make('items')
-                    ->label('List entries')
-                    ->extraAttributes(['class' => 'custom-page-dialog__list-entries'])
-                    ->schema([
-                        Toggle::make('visible')->label('Visible on public page')->default(true),
-                        TextInput::make('date')->label('Date / year')->maxLength(120),
-                        TextInput::make('title')->required()->maxLength(240),
-                        TextInput::make('meta')->label('Organisation / context')->maxLength(240),
-                        TextInput::make('location')->maxLength(240),
-                        TextInput::make('url')->label('Optional link')->url()->maxLength(2048),
-                        MarkdownEditor::make('body')
-                            ->label('Details')
-                            ->toolbarButtons([
-                                ['bold', 'italic', 'link'],
-                                ['bulletList', 'orderedList'],
-                                ['undo', 'redo'],
-                            ])
-                            ->maxLength(10000),
-                    ])
-                    ->defaultItems(0)
-                    ->addActionLabel('Add list entry')
-                    ->reorderableWithButtons()
-                    ->reorderableWithDragAndDrop(false)
-                    ->itemLabel(fn (array $state): ?string => isset($state['title']) && is_string($state['title']) ? $state['title'] : null),
+                TextInput::make('title')->label('Heading')->maxLength(160),
+            ],
+            'divider' => [
+                Select::make('variant')->label('Divider')->options(self::DIVIDER_LABELS)->default('thin')->required(),
             ],
             'contact' => [
-                Select::make('form_visibility')
-                    ->label('Form visibility')
-                    ->options([
-                        'visible' => 'Visible',
-                        'hidden' => 'Hidden',
-                    ])
-                    ->default('visible')
-                    ->required(),
+                Select::make('form_visibility')->label('Form visibility')->options([
+                    'visible' => 'Visible',
+                    'hidden' => 'Hidden',
+                ])->default('visible')->required(),
                 Hidden::make('status_text'),
-                Toggle::make('show_email')
-                    ->label('Show public email from General')
-                    ->default(true),
-                Toggle::make('show_form')
-                    ->label('Show contact form')
-                    ->default(true),
+                Toggle::make('show_email')->label('Show public email from General')->default(true),
+                Toggle::make('show_form')->label('Show contact form')->default(true),
                 Select::make('social_platforms')
                     ->label('Social links from General')
-                    ->options(SocialLinks::options())
+                    ->options($this->availableSocialPlatforms)
                     ->multiple()
-                    ->default(array_keys(SocialLinks::options())),
+                    ->default(array_keys($this->availableSocialPlatforms)),
             ],
             default => [],
         };
     }
 
     /** @return list<mixed> */
+    private function listEntrySchema(): array
+    {
+        return [
+            Toggle::make('visible')->label('Visible on public page')->default(true),
+            TextInput::make('date')->label('Date / year')->maxLength(120),
+            TextInput::make('title')->label('Entry')->required()->maxLength(240),
+            TextInput::make('meta')->label('Organisation / context')->maxLength(240),
+            TextInput::make('location')->maxLength(240),
+            TextInput::make('url')->label('Optional link')->url()->maxLength(2048),
+            ...AdminRichText::schema('body', 'Details', 10000),
+        ];
+    }
+
+    /** @return list<mixed> */
     private function cvEntrySchema(): array
     {
         return [
-            TextInput::make('section')->required()->maxLength(120),
-            TextInput::make('title')->required()->maxLength(240),
-            TextInput::make('year_text')->label('Displayed date/year')->required()->maxLength(80),
-            Select::make('date_precision')
-                ->options([
-                    'unknown' => 'Unknown',
-                    'year' => 'Year',
-                    'month' => 'Month',
-                    'day' => 'Day',
-                ])
-                ->required()
-                ->default('unknown'),
+            Hidden::make('section')->default('CV')->required(),
+            TextInput::make('title')->label('Entry')->required()->maxLength(240),
+            TextInput::make('year_text')->label('Displayed date / year')->required()->maxLength(80),
+            Select::make('date_precision')->options([
+                'unknown' => 'Unknown',
+                'year' => 'Year',
+                'month' => 'Month',
+                'day' => 'Day',
+            ])->required()->default('unknown'),
             DatePicker::make('starts_on')->nullable(),
             DatePicker::make('ends_on')->nullable(),
             TextInput::make('organisation')->maxLength(240)->nullable(),
             TextInput::make('location')->maxLength(240)->nullable(),
-            MarkdownEditor::make('body')
-                ->label('Details')
-                ->toolbarButtons([
-                    ['bold', 'italic', 'link'],
-                    ['bulletList', 'orderedList'],
-                    ['undo', 'redo'],
-                ])
-                ->maxLength(10000)
-                ->nullable(),
+            ...AdminRichText::schema('body', 'Details', 10000),
             TextInput::make('external_url')->url()->maxLength(2048)->nullable(),
         ];
     }
@@ -1302,10 +983,17 @@ final class CustomPageWorkspace extends Page
     /** @param array<string, mixed> $block */
     private function componentEditorData(array $block): array
     {
+        if (($block['type'] ?? null) === 'divider') {
+            return [
+                ...$block,
+                'variant' => in_array($block['variant'] ?? null, array_keys(self::DIVIDER_LABELS), true)
+                    ? $block['variant']
+                    : 'thin',
+            ];
+        }
         if (($block['type'] ?? null) !== 'contact') {
             return $block;
         }
-
         return [
             ...$block,
             'form_visibility' => ($block['form_state'] ?? 'enabled') === 'hidden' ? 'hidden' : 'visible',
@@ -1313,8 +1001,12 @@ final class CustomPageWorkspace extends Page
         ];
     }
 
-    /** @param array<string, mixed> $data */
-    private function componentPayload(array $data): array
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed>|null $existing
+     * @return array<string, mixed>
+     */
+    private function componentPayload(array $data, ?array $existing = null): array
     {
         $type = $data['type'] ?? null;
         if (! is_string($type) || ! array_key_exists($type, self::COMPONENT_LABELS)) {
@@ -1328,21 +1020,20 @@ final class CustomPageWorkspace extends Page
                 'image_decorative' => (bool) ($data['image_decorative'] ?? false),
             ],
             'cv_list' => ['type' => 'cv_list'],
-            'text' => [
-                'type' => 'text',
-                'title' => $data['title'] ?? null,
-                'body' => $data['body'] ?? null,
-            ],
+            'text' => ['type' => 'text', 'title' => $data['title'] ?? null, 'body' => $data['body'] ?? null],
             'list' => [
                 'type' => 'list',
                 'title' => $data['title'] ?? null,
-                'items' => is_array($data['items'] ?? null) ? array_values($data['items']) : [],
+                'items' => is_array($existing['items'] ?? null) ? array_values($existing['items']) : [],
             ],
-            'divider' => ['type' => 'divider'],
+            'divider' => [
+                'type' => 'divider',
+                'variant' => in_array($data['variant'] ?? null, array_keys(self::DIVIDER_LABELS), true) ? $data['variant'] : 'thin',
+            ],
             'contact' => [
                 'type' => 'contact',
                 'form_state' => ($data['form_visibility'] ?? 'visible') === 'hidden' ? 'hidden' : 'enabled',
-                'status_text' => $data['status_text'] ?? null,
+                'status_text' => $data['status_text'] ?? ($existing['status_text'] ?? null),
                 'show_email' => (bool) ($data['show_email'] ?? true),
                 'show_form' => (bool) ($data['show_form'] ?? true),
                 'social_platforms' => is_array($data['social_platforms'] ?? null) ? array_values($data['social_platforms']) : [],
@@ -1350,57 +1041,49 @@ final class CustomPageWorkspace extends Page
         };
     }
 
-    /**
-     * @param array<string, mixed> $block
-     * @return array{primary:string,secondary:string,meta:string}
-     */
+    /** @param array<string, mixed> $data */
+    private function listItemPayload(array $data): array
+    {
+        return [
+            'visible' => (bool) ($data['visible'] ?? true),
+            'date' => $data['date'] ?? null,
+            'title' => $data['title'] ?? null,
+            'meta' => $data['meta'] ?? null,
+            'location' => $data['location'] ?? null,
+            'url' => $data['url'] ?? null,
+            'body' => $data['body'] ?? null,
+        ];
+    }
+
+    /** @param array<string, mixed> $block @return array{primary:string,secondary:string,meta:string} */
     private function componentContent(array $block, ?string $imageName): array
     {
         $type = $block['type'] ?? null;
-
         if ($type === 'image') {
-            return [
-                'primary' => $imageName ?: 'Image unavailable',
-                'secondary' => '',
-                'meta' => '',
-            ];
+            return ['primary' => $imageName ?: 'Image unavailable', 'secondary' => '', 'meta' => ''];
         }
-
         if ($type === 'text') {
             $title = is_string($block['title'] ?? null) ? trim($block['title']) : '';
             $body = $this->contentExcerpt($block['body'] ?? null);
-
-            return [
-                'primary' => $title !== '' ? $title : $body,
-                'secondary' => $title !== '' ? $body : '',
-                'meta' => '',
-            ];
+            return ['primary' => $title !== '' ? $title : $body, 'secondary' => $title !== '' ? $body : '', 'meta' => ''];
         }
-
         if ($type === 'list') {
             $title = is_string($block['title'] ?? null) ? trim($block['title']) : '';
             $items = is_array($block['items'] ?? null) ? array_values(array_filter($block['items'], 'is_array')) : [];
-            $first = $items[0] ?? null;
-            $firstLine = '';
-            if (is_array($first)) {
-                $firstLine = implode(' · ', array_values(array_filter([
-                    is_string($first['date'] ?? null) ? trim($first['date']) : '',
-                    is_string($first['title'] ?? null) ? trim($first['title']) : '',
-                ], static fn (string $value): bool => $value !== '')));
-            }
-
-            return [
-                'primary' => $title,
-                'secondary' => $this->contentExcerpt($firstLine, 120),
-                'meta' => count($items).' '.(count($items) === 1 ? 'entry' : 'entries'),
-            ];
+            return ['primary' => $title, 'secondary' => '', 'meta' => count($items).' '.(count($items) === 1 ? 'entry' : 'entries')];
         }
-
-        return [
-            'primary' => '',
-            'secondary' => '',
-            'meta' => '',
-        ];
+        if ($type === 'cv_list') {
+            return ['primary' => '', 'secondary' => '', 'meta' => $this->cvEntryCount.' '.($this->cvEntryCount === 1 ? 'entry' : 'entries')];
+        }
+        if ($type === 'divider') {
+            $variant = is_string($block['variant'] ?? null) ? $block['variant'] : 'thin';
+            return ['primary' => self::DIVIDER_LABELS[$variant] ?? self::DIVIDER_LABELS['thin'], 'secondary' => '', 'meta' => ''];
+        }
+        if ($type === 'contact') {
+            $selected = is_array($block['social_platforms'] ?? null) ? count($block['social_platforms']) : 0;
+            return ['primary' => 'Contact settings', 'secondary' => '', 'meta' => $selected.' social '.($selected === 1 ? 'link' : 'links')];
+        }
+        return ['primary' => '', 'secondary' => '', 'meta' => ''];
     }
 
     private function contentExcerpt(mixed $value, int $limit = 170): string
@@ -1408,21 +1091,19 @@ final class CustomPageWorkspace extends Page
         if (! is_string($value)) {
             return '';
         }
-
+        $value = preg_replace('/!\[\]\(media:\d+\)/', '[Image]', $value) ?? $value;
         $text = preg_replace('/\s+/u', ' ', trim(strip_tags($value))) ?? '';
         if (mb_strlen($text) <= $limit) {
             return $text;
         }
-
         return rtrim(mb_substr($text, 0, max(1, $limit - 1))).'…';
     }
 
     /** @param array<string, mixed> $block */
-    private function componentSearchText(array $block, ?string $imageName): string
+    private function componentParentSearchText(array $block, ?string $imageName): string
     {
         $type = is_string($block['type'] ?? null) ? $block['type'] : '';
         $parts = [self::COMPONENT_LABELS[$type] ?? $type];
-
         if ($type === 'image') {
             $parts[] = $imageName;
         } elseif ($type === 'text') {
@@ -1430,26 +1111,9 @@ final class CustomPageWorkspace extends Page
             $parts[] = $block['body'] ?? null;
         } elseif ($type === 'list') {
             $parts[] = $block['title'] ?? null;
-            foreach (is_array($block['items'] ?? null) ? $block['items'] : [] as $item) {
-                if (! is_array($item)) {
-                    continue;
-                }
-                foreach (['date', 'title', 'meta', 'location', 'body'] as $field) {
-                    $parts[] = $item[$field] ?? null;
-                }
-            }
-        } elseif ($type === 'contact') {
-            $visible = ($block['form_state'] ?? 'enabled') !== 'hidden';
-            $parts[] = 'Form visibility';
-            $parts[] = $visible ? 'Visible' : 'Hidden';
-            $parts[] = (bool) ($block['show_email'] ?? true) ? 'Public email visible' : 'Public email hidden';
-            $parts[] = (bool) ($block['show_form'] ?? true) ? 'Contact form visible' : 'Contact form hidden';
-            $parts[] = 'Social links from General';
-            foreach (is_array($block['social_platforms'] ?? null) ? $block['social_platforms'] : [] as $platform) {
-                if (is_string($platform) && SocialLinks::supports($platform)) {
-                    $parts[] = SocialLinks::label($platform);
-                }
-            }
+        } elseif ($type === 'divider') {
+            $variant = is_string($block['variant'] ?? null) ? $block['variant'] : 'thin';
+            $parts[] = self::DIVIDER_LABELS[$variant] ?? $variant;
         }
 
         return implode(' ', array_filter($parts, static fn (mixed $part): bool => is_string($part) && trim($part) !== ''));
@@ -1460,43 +1124,14 @@ final class CustomPageWorkspace extends Page
         if (! is_array($metric) || ($metric['state'] ?? null) !== 'available' || ! is_numeric($metric['value'] ?? null)) {
             return '—';
         }
-
         $value = (float) $metric['value'];
-
         return number_format($value, $value === floor($value) ? 0 : 1);
-    }
-
-    private function cvTransitionApplies(string $state, string $action): bool
-    {
-        return match ($action) {
-            'publish' => $state === 'draft',
-            'unpublish' => $state === 'published',
-            'archive' => $state !== 'archived',
-            'restore' => in_array($state, ['archived', 'hidden'], true),
-            default => false,
-        };
-    }
-
-    private function sendBatchNotification(string $title, int $success, int $skipped, int $failed): void
-    {
-        $notification = Notification::make()
-            ->title($title)
-            ->body($success.' updated · '.$skipped.' skipped · '.$failed.' failed');
-
-        if ($failed > 0) {
-            $notification->warning();
-        } else {
-            $notification->success();
-        }
-
-        $notification->send();
     }
 
     private function settings(): CustomPageSetting
     {
         /** @var CustomPageSetting $settings */
         $settings = CustomPageSetting::query()->findOrFail($this->settingsId);
-
         return $settings;
     }
 }

@@ -16,7 +16,7 @@ final class CvEntryEditorialService
     public function createDraft(array $data): CvEntry
     {
         $data = $this->editableData($data);
-        $this->richText->validate($data['body'] ?? null, 'body');
+        $this->richText->validate($data['body'] ?? null, 'body', allowEmbeddedMedia: true);
         $data['state'] = 'draft';
         $data['published_at'] = null;
         $actor = $this->audit->requireActor();
@@ -41,7 +41,7 @@ final class CvEntryEditorialService
     public function update(CvEntry $entry, array $data): CvEntry
     {
         $data = $this->editableData($data);
-        $this->richText->validate($data['body'] ?? null, 'body');
+        $this->richText->validate($data['body'] ?? null, 'body', allowEmbeddedMedia: true);
         $actor = $this->audit->requireActor();
 
         return DB::transaction(function () use ($entry, $data, $actor): CvEntry {
