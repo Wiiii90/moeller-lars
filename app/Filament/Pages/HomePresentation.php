@@ -279,6 +279,7 @@ final class HomePresentation extends Page
 
                 return [
                     'type' => $component['type'],
+                    'editor_kind' => $this->editorKind($component),
                     'title' => $component['title'] ?? null,
                     'body' => $component['body'] ?? null,
                     'media_asset_id' => $component['media_asset_id'] ?? null,
@@ -287,11 +288,13 @@ final class HomePresentation extends Page
             })
             ->schema([
                 Hidden::make('type'),
+                Hidden::make('editor_kind'),
                 TextInput::make('title')
                     ->label('Heading')
                     ->maxLength(160)
-                    ->visible(fn (callable $get): bool => $get('type') === 'text'),
-                ...$this->homeRichTextFields('type', 'text'),
+                    ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
+                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
+                ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
                 MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', true)
                     ->required(fn (callable $get): bool => $get('type') === 'image')
                     ->visible(fn (callable $get): bool => $get('type') === 'image'),
@@ -305,12 +308,23 @@ final class HomePresentation extends Page
             ->action(function (array $data, array $arguments): void {
                 $current = $this->componentFromArguments($arguments);
                 $type = (string) $current['type'];
+                $editorKind = $this->editorKind($current);
                 $component = match ($type) {
-                    'text' => [
-                        'type' => 'text',
-                        'title' => filled($data['title'] ?? null) ? trim((string) $data['title']) : null,
-                        'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null,
-                    ],
+                    'text' => match ($editorKind) {
+                        'heading' => [
+                            'type' => 'text',
+                            'title' => trim((string) ($data['title'] ?? '')),
+                            'body' => null,
+                        ],
+                        'rich_text' => [
+                            'type' => 'text',
+                            'title' => null,
+                            'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null,
+                        ],
+                        default => throw ValidationException::withMessages([
+                            'component' => 'This text component has no supported editor mode.',
+                        ]),
+                    },
                     'image' => [
                         'type' => 'image',
                         'media_asset_id' => is_numeric($data['media_asset_id'] ?? null)
@@ -823,6 +837,21 @@ final class HomePresentation extends Page
         }
 
         return $fields;
+    }
+
+    /** @param array<string, mixed> $component */
+    private function editorKind(array $component): ?string
+    {
+        if (($component['type'] ?? null) !== 'text') {
+            return null;
+        }
+
+        $title = $component['title'] ?? null;
+        $body = $component['body'] ?? null;
+        $hasTitle = is_string($title) && trim($title) !== '';
+        $hasBody = is_string($body) && trim($body) !== '';
+
+        return $hasTitle && ! $hasBody ? 'heading' : 'rich_text';
     }
 
     private function settings(): HomePresentationSetting
