@@ -11,7 +11,7 @@ use App\Models\Exhibition;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
-use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 
 final class JournalEntryEditorState
 {
@@ -38,7 +38,6 @@ final class JournalEntryEditorState
             ->keyBy(fn (JournalEntryMedia $usage): string => strtolower((string) $usage->getAttribute('embed_key')));
         $blocks = is_array($state['content_blocks'] ?? null) ? $state['content_blocks'] : [];
         $nodes = [];
-        $editor = RichEditor::make('content_blocks')->json()->customBlocks([JournalInlineImageBlock::class]);
 
         foreach ($blocks as $block) {
             if (! is_array($block)) {
@@ -53,8 +52,8 @@ final class JournalEntryEditorState
                     continue;
                 }
 
-                $document = $editor->getTipTapEditor()
-                    ->setContent($this->richText->render($markdown)->toHtml())
+                $document = RichContentRenderer::make($this->richText->render($markdown)->toHtml())
+                    ->getEditor()
                     ->getDocument();
                 foreach ((array) ($document['content'] ?? []) as $node) {
                     if (is_array($node)) {
