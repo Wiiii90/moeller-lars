@@ -89,11 +89,34 @@ final class GalleryWorkspace extends Page
         $this->refreshGalleryMetrics();
     }
 
-    public function applyFilters(string $search, string $status, string $readiness): void
+    public function updatedSearch(): void
     {
-        $this->search = $search;
-        $this->statusFilter = in_array($status, ['any', 'published', 'draft'], true) ? $status : 'any';
-        $this->readinessFilter = in_array($readiness, ['any', 'ready', 'needs-attention'], true) ? $readiness : 'any';
+        $this->projectArtworks();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        if (! in_array($this->statusFilter, ['any', 'published', 'draft'], true)) {
+            $this->statusFilter = 'any';
+        }
+
+        $this->projectArtworks();
+    }
+
+    public function updatedReadinessFilter(): void
+    {
+        if (! in_array($this->readinessFilter, ['any', 'ready', 'needs-attention'], true)) {
+            $this->readinessFilter = 'any';
+        }
+
+        $this->projectArtworks();
+    }
+
+    public function resetFilters(): void
+    {
+        $this->search = '';
+        $this->statusFilter = 'any';
+        $this->readinessFilter = 'any';
         $this->projectArtworks();
     }
 

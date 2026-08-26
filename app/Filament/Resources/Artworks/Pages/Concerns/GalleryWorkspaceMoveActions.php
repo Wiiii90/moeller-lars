@@ -44,53 +44,34 @@ trait GalleryWorkspaceMoveActions
         Notification::make()->title('Gallery order updated')->success()->send();
     }
 
-    public function reorderArtworks(array $orderedIds): void
+    public function sortArtwork(int|string $artworkId, int|string $position): void
     {
         if (! $this->artworkReorderingAvailable()) {
-            Notification::make()->title('Clear filters to reorder')->warning()->send();
-
             return;
         }
-
-        $normalized = [];
-        foreach ($orderedIds as $id) {
-            if (! is_int($id) && (! is_string($id) || ! ctype_digit($id))) {
-                $this->notifyValidationFailure(
-                    'Gallery order was not updated',
-                    ValidationException::withMessages(['artworks' => 'The artwork order is invalid.']),
-                );
-
-                return;
-            }
-
-            $normalized[] = (int) $id;
-        }
-
-        $current = $this->orderedArtworkIds();
-        $expected = $current;
-        $actual = $normalized;
-        sort($expected);
-        sort($actual);
 
         if (
-            count($normalized) !== count($current)
-            || count(array_unique($normalized)) !== count($normalized)
-            || $actual !== $expected
+            (! is_int($artworkId) && (! is_string($artworkId) || ! ctype_digit($artworkId)))
+            || (! is_int($position) && (! is_string($position) || ! ctype_digit($position)))
         ) {
-            $this->notifyValidationFailure(
-                'Gallery order was not updated',
-                ValidationException::withMessages(['artworks' => 'The artwork order is invalid.']),
-            );
-
             return;
         }
 
-        if ($normalized === $current) {
+        $artworkId = (int) $artworkId;
+        $position = (int) $position;
+        $orderedIds = $this->orderedArtworkIds();
+        $from = array_search($artworkId, $orderedIds, true);
+
+        if ($from === false || $position < 0 || $position >= count($orderedIds) || $from === $position) {
             return;
         }
+
+        $next = $orderedIds;
+        array_splice($next, $from, 1);
+        array_splice($next, $position, 0, [$artworkId]);
 
         try {
-            $this->saveArtworkOrder($normalized);
+            $this->saveArtworkOrder($next);
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Gallery order was not updated', $exception);
 

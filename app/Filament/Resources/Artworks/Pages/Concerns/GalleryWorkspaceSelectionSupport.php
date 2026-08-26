@@ -11,26 +11,6 @@ use Illuminate\Validation\ValidationException;
 
 trait GalleryWorkspaceSelectionSupport
 {
-    public function setArtworkSelected(int $artworkId, bool $selected): void
-    {
-        $validIds = collect($this->artworkDataset)
-            ->pluck('id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->all();
-        if (! in_array($artworkId, $validIds, true)) {
-            return;
-        }
-
-        $selection = $this->selectedArtworkIdSet();
-        if ($selected) {
-            $selection[$artworkId] = true;
-        } else {
-            unset($selection[$artworkId]);
-        }
-
-        $this->selectedArtworkIds = array_keys($selection);
-    }
-
     private function actionArtwork(array $arguments): Artwork
     {
         $id = $arguments['artwork'] ?? null;
