@@ -69,12 +69,22 @@ class PublicMedia
                         ->where('type', SiteNodeType::Journal->value)
                         ->where('template', JournalTemplate::Blog->value)
                         ->where('state', 'published')))
-                    ->orWhereHas('exhibition', fn ($entries) => $entries
-                        ->where('state', 'published')
-                        ->whereHas('siteSection', fn ($section) => $section
-                            ->where('type', SiteNodeType::Journal->value)
-                            ->where('template', JournalTemplate::Exhibitions->value)
-                            ->where('state', 'published')));
+                    ->orWhere(function ($exhibitionUsage): void {
+                        $exhibitionUsage
+                            ->whereHas('exhibition', fn ($entries) => $entries
+                                ->where('state', 'published')
+                                ->whereHas('siteSection', fn ($section) => $section
+                                    ->where('type', SiteNodeType::Journal->value)
+                                    ->where('template', JournalTemplate::Exhibitions->value)
+                                    ->where('state', 'published')))
+                            ->where(function ($role): void {
+                                $role->where('role', JournalEntryMedia::ROLE_COVER)
+                                    ->orWhere(function ($gallery): void {
+                                        $gallery->where('role', JournalEntryMedia::ROLE_GALLERY)
+                                            ->whereHas('exhibition', fn ($entries) => $entries->where('gallery_enabled', true));
+                                    });
+                            });
+                    });
             })
             ->exists();
     }

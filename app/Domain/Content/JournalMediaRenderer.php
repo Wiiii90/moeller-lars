@@ -15,7 +15,7 @@ final class JournalMediaRenderer
         $usage->loadMissing('mediaAsset.variants');
         $asset = $usage->mediaAsset;
         $variant = $this->media->thumbnailVariantForAsset($asset);
-        $alt = $this->media->altTextForAsset($asset, $usage->getAttribute('alt_text_override'));
+        $alt = $this->media->altTextForAsset($asset);
         $width = (int) ($variant->getAttribute('width') ?? 0);
         $height = (int) ($variant->getAttribute('height') ?? 0);
         $credit = trim((string) ($asset->getAttribute('credit') ?? ''));

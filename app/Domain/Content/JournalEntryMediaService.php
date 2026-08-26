@@ -66,7 +66,6 @@ final class JournalEntryMediaService
             }
             $this->assertMediaReady(
                 (int) $usage->getAttribute('media_asset_id'),
-                $usage->getAttribute('alt_text_override'),
                 'media',
             );
         }
@@ -142,20 +141,14 @@ final class JournalEntryMediaService
 
     private function syncCover(BlogPost|Exhibition $entry, mixed $value): void
     {
-        /** @var JournalEntryMedia|null $existing */
-        $existing = $entry->mediaUsages()->where('role', JournalEntryMedia::ROLE_COVER)->lockForUpdate()->first();
         $entry->mediaUsages()->where('role', JournalEntryMedia::ROLE_COVER)->delete();
         if ($value === null || $value === '') {
             return;
         }
 
         $mediaAssetId = $this->mediaId($value, 'cover_media_asset_id');
-        $legacyOverride = $existing instanceof JournalEntryMedia
-            && (int) $existing->getAttribute('media_asset_id') === $mediaAssetId
-            ? $existing->getAttribute('alt_text_override')
-            : null;
-        $this->assertMediaReady($mediaAssetId, $legacyOverride, 'cover_media_asset_id');
-        $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_COVER, 0, $legacyOverride);
+        $this->assertMediaReady($mediaAssetId, 'cover_media_asset_id');
+        $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_COVER, 0);
     }
 
     private function syncGallery(BlogPost|Exhibition $entry, mixed $value): void
@@ -164,17 +157,6 @@ final class JournalEntryMediaService
             throw ValidationException::withMessages(['gallery_images' => 'Gallery images are invalid.']);
         }
 
-        /** @var EloquentCollection<int, JournalEntryMedia> $existing */
-        $existing = $entry->mediaUsages()
-            ->where('role', JournalEntryMedia::ROLE_GALLERY)
-            ->orderBy('position')
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get();
-        $legacyOverrides = [];
-        foreach ($existing as $usage) {
-            $legacyOverrides[(int) $usage->getAttribute('media_asset_id')][] = $usage->getAttribute('alt_text_override');
-        }
         $entry->mediaUsages()->where('role', JournalEntryMedia::ROLE_GALLERY)->delete();
 
         foreach (array_values($value) as $index => $row) {
@@ -182,16 +164,12 @@ final class JournalEntryMediaService
                 throw ValidationException::withMessages(['gallery_images' => 'Gallery images are invalid.']);
             }
             $mediaAssetId = $this->mediaId($row['media_asset_id'] ?? null, 'gallery_images');
-            $override = null;
-            if (isset($legacyOverrides[$mediaAssetId]) && $legacyOverrides[$mediaAssetId] !== []) {
-                $override = array_shift($legacyOverrides[$mediaAssetId]);
-            }
-            $this->assertMediaReady($mediaAssetId, $override, 'gallery_images');
-            $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_GALLERY, $index + 1, $override);
+            $this->assertMediaReady($mediaAssetId, 'gallery_images');
+            $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_GALLERY, $index + 1);
         }
     }
 
-    private function createUsage(BlogPost|Exhibition $entry, int $mediaAssetId, string $role, int $position, mixed $override): void
+    private function createUsage(BlogPost|Exhibition $entry, int $mediaAssetId, string $role, int $position): void
     {
         $usage = new JournalEntryMedia;
         $usage->fill([
@@ -199,7 +177,7 @@ final class JournalEntryMediaService
             'media_asset_id' => $mediaAssetId,
             'role' => $role,
             'position' => $position,
-            'alt_text_override' => is_string($override) && trim($override) !== '' ? trim($override) : null,
+            'alt_text_override' => null,
         ]);
         $usage->save();
     }
@@ -226,7 +204,7 @@ final class JournalEntryMediaService
         }
     }
 
-    private function assertMediaReady(int $mediaAssetId, mixed $override, string $field): void
+    private function assertMediaReady(int $mediaAssetId, string $field): void
     {
         $asset = MediaAsset::query()->with('variants')->find($mediaAssetId);
         if (! $asset instanceof MediaAsset
@@ -235,7 +213,7 @@ final class JournalEntryMediaService
             throw ValidationException::withMessages([$field => 'Journal images must reference an available image in Media Files.']);
         }
         try {
-            $this->publicMedia->altTextForAsset($asset, is_string($override) ? $override : null);
+            $this->publicMedia->altTextForAsset($asset);
             $this->publicMedia->thumbnailVariantForAsset($asset);
         } catch (LogicException) {
             throw ValidationException::withMessages([$field => 'Journal images require ALT text and an available public image variant.']);
