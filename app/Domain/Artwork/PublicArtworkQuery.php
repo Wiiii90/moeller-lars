@@ -106,6 +106,47 @@ class PublicArtworkQuery
         return $artworks;
     }
 
+    /** @return Collection<int, Artwork> */
+    public function newestHomeCandidates(?int $latestYear = null): Collection
+    {
+        $latestYear ??= $this->homeQuery()->max('work_year');
+        if ($latestYear === null) {
+            return new Collection;
+        }
+
+        /** @var Collection<int, Artwork> $artworks */
+        $artworks = $this->homeQuery()
+            ->where('work_year', $latestYear)
+            ->orderByDesc('work_date')
+            ->orderByDesc('id')
+            ->get();
+
+        return $artworks;
+    }
+
+    /** @return array{eligible:int,newest_year:?int,newest_year_candidates:int,explicit_tie_breakers:int} */
+    public function homeCandidateStatistics(): array
+    {
+        $query = $this->homeQuery()->withoutEagerLoads();
+        /** @var Artwork|null $summary */
+        $summary = (clone $query)
+            ->selectRaw('COUNT(*) AS eligible_count')
+            ->selectRaw('MAX(work_year) AS newest_year')
+            ->selectRaw('SUM(CASE WHEN featured_on_home THEN 1 ELSE 0 END) AS explicit_tie_breakers')
+            ->first();
+        $newestYear = $summary?->getAttribute('newest_year');
+        $newestYear = is_numeric($newestYear) ? (int) $newestYear : null;
+
+        return [
+            'eligible' => (int) ($summary?->getAttribute('eligible_count') ?? 0),
+            'newest_year' => $newestYear,
+            'newest_year_candidates' => $newestYear === null
+                ? 0
+                : (clone $query)->where('work_year', $newestYear)->count(),
+            'explicit_tie_breakers' => (int) ($summary?->getAttribute('explicit_tie_breakers') ?? 0),
+        ];
+    }
+
     public function homeCandidateCount(): int
     {
         return $this->homeQuery()->count();

@@ -131,11 +131,7 @@ final class HomePresentationEditorialService
         string $expectedType,
         string $direction,
     ): bool {
-        if (! in_array($direction, ['up', 'down'], true)) {
-            throw ValidationException::withMessages([
-                'component' => 'The requested component move is invalid.',
-            ]);
-        }
+        $this->assertDirection($direction);
 
         return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType, $direction): array {
             $this->assertTarget($components, $index, $expectedType);
@@ -150,6 +146,75 @@ final class HomePresentationEditorialService
         });
     }
 
+    /** @param list<array{index:int,type:string}> $targets */
+    public function reorderComponents(HomePresentationSetting $settings, HomeTemplate $mode, array $targets): bool
+    {
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($targets): array {
+            if (count($targets) !== count($components)) {
+                throw ValidationException::withMessages([
+                    'component' => 'The component sequence changed. Reload the workspace and try again.',
+                ]);
+            }
+
+            $indices = $this->validatedIndices($components, $targets);
+            if (count($indices) !== count($components)) {
+                throw ValidationException::withMessages([
+                    'component' => 'The component sequence is incomplete.',
+                ]);
+            }
+
+            return array_values(array_map(
+                static fn (array $target): array => $components[$target['index']],
+                $targets,
+            ));
+        });
+    }
+
+    /** @param list<array{index:int,type:string}> $targets */
+    public function moveSelectedComponents(
+        HomePresentationSetting $settings,
+        HomeTemplate $mode,
+        array $targets,
+        string $direction,
+    ): bool {
+        $this->assertDirection($direction);
+
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($targets, $direction): array {
+            $indices = $this->validatedIndices($components, $targets);
+            if ($indices === []) {
+                return $components;
+            }
+
+            $selected = array_fill_keys($indices, true);
+            $sequence = [];
+            foreach ($components as $index => $component) {
+                $sequence[] = [
+                    'component' => $component,
+                    'selected' => isset($selected[$index]),
+                ];
+            }
+
+            if ($direction === 'up') {
+                for ($index = 1, $count = count($sequence); $index < $count; $index++) {
+                    if ($sequence[$index]['selected'] && ! $sequence[$index - 1]['selected']) {
+                        [$sequence[$index - 1], $sequence[$index]] = [$sequence[$index], $sequence[$index - 1]];
+                    }
+                }
+            } else {
+                for ($index = count($sequence) - 2; $index >= 0; $index--) {
+                    if ($sequence[$index]['selected'] && ! $sequence[$index + 1]['selected']) {
+                        [$sequence[$index], $sequence[$index + 1]] = [$sequence[$index + 1], $sequence[$index]];
+                    }
+                }
+            }
+
+            return array_values(array_map(
+                static fn (array $item): array => $item['component'],
+                $sequence,
+            ));
+        });
+    }
+
     public function deleteComponent(
         HomePresentationSetting $settings,
         HomeTemplate $mode,
@@ -159,6 +224,24 @@ final class HomePresentationEditorialService
         return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType): array {
             $this->assertTarget($components, $index, $expectedType);
             unset($components[$index]);
+
+            return array_values($components);
+        });
+    }
+
+    /** @param list<array{index:int,type:string}> $targets */
+    public function deleteComponents(HomePresentationSetting $settings, HomeTemplate $mode, array $targets): bool
+    {
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($targets): array {
+            $indices = $this->validatedIndices($components, $targets);
+            if ($indices === []) {
+                return $components;
+            }
+
+            rsort($indices);
+            foreach ($indices as $index) {
+                unset($components[$index]);
+            }
 
             return array_values($components);
         });
@@ -291,6 +374,39 @@ final class HomePresentationEditorialService
         $this->richText->assertValid($body, allowEmbeddedMedia: true);
     }
 
+    /**
+     * @param list<array<string, mixed>> $components
+     * @param list<array{index:int,type:string}> $targets
+     * @return list<int>
+     */
+    private function validatedIndices(array $components, array $targets): array
+    {
+        $indices = [];
+        foreach ($targets as $target) {
+            if (! is_array($target)
+                || ! is_int($target['index'] ?? null)
+                || ! is_string($target['type'] ?? null)) {
+                throw ValidationException::withMessages([
+                    'component' => 'The selected Home component target is invalid.',
+                ]);
+            }
+
+            $index = $target['index'];
+            $this->assertTarget($components, $index, $target['type']);
+            $indices[] = $index;
+        }
+
+        if (count(array_unique($indices)) !== count($indices)) {
+            throw ValidationException::withMessages([
+                'component' => 'The selected Home component targets contain duplicates.',
+            ]);
+        }
+
+        sort($indices);
+
+        return $indices;
+    }
+
     /** @param list<array<string, mixed>> $components */
     private function assertTarget(array $components, int $index, string $expectedType): void
     {
@@ -298,6 +414,15 @@ final class HomePresentationEditorialService
         if (! is_array($component) || ($component['type'] ?? null) !== $expectedType) {
             throw ValidationException::withMessages([
                 'component' => 'This Home component changed. Reload the workspace and try again.',
+            ]);
+        }
+    }
+
+    private function assertDirection(string $direction): void
+    {
+        if (! in_array($direction, ['up', 'down'], true)) {
+            throw ValidationException::withMessages([
+                'component' => 'The requested component move is invalid.',
             ]);
         }
     }

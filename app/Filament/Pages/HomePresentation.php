@@ -7,6 +7,7 @@ use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeTemplate;
+use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SitePreviewContext;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
@@ -50,6 +51,14 @@ final class HomePresentation extends Page
 
     public string $previewUrl = '';
 
+    public int $settingsId = 0;
+
+    public bool $artworkShowDetails = true;
+
+    public bool $artworkShowGalleryLink = true;
+
+    public bool $publicSiteGate = false;
+
     /** @var array<string, mixed>|null */
     public ?array $currentArtwork = null;
 
@@ -60,7 +69,35 @@ final class HomePresentation extends Page
     public array $newestEligibleArtworks = [];
 
     /** @var list<array<string, mixed>> */
+    public array $componentDataset = [];
+
+    /** @var list<array<string, mixed>> */
     public array $components = [];
+
+    /** @var array<string, string> */
+    public array $componentTypeOptions = [
+        'image' => 'Image',
+        'heading' => 'Heading',
+        'rich_text' => 'Rich Text',
+        'divider' => 'Divider',
+    ];
+
+    public string $componentSearch = '';
+
+    public string $componentType = 'any';
+
+    /** @var list<string> */
+    public array $selectedComponentTargets = [];
+
+    /** @var array{components:int,images:int,headings:int,rich_text:int,dividers:int,media_references:int} */
+    public array $componentStats = [
+        'components' => 0,
+        'images' => 0,
+        'headings' => 0,
+        'rich_text' => 0,
+        'dividers' => 0,
+        'media_references' => 0,
+    ];
 
     /** @var array<string, mixed>|null */
     public ?array $skipTarget = null;
@@ -75,27 +112,52 @@ final class HomePresentation extends Page
 
     public int $publicSourceGalleryCount = 0;
 
+    public ?int $newestEligibleYear = null;
+
+    public int $newestYearCandidateCount = 0;
+
+    public int $explicitTieBreakerCount = 0;
+
     public function mount(): void
     {
         $this->previewUrl = app(SitePreviewContext::class)->previewSiteUrl();
-        $this->loadWorkspace();
+        $this->reloadWorkspace();
+    }
+
+    public function updatedComponentSearch(): void
+    {
+        $this->clearComponentSelection();
+        $this->projectComponents();
+    }
+
+    public function updatedComponentType(): void
+    {
+        if ($this->componentType !== 'any' && ! array_key_exists($this->componentType, $this->componentTypeOptions)) {
+            $this->componentType = 'any';
+        }
+
+        $this->clearComponentSelection();
+        $this->projectComponents();
+    }
+
+    public function resetComponentFilters(): void
+    {
+        $this->componentSearch = '';
+        $this->componentType = 'any';
+        $this->clearComponentSelection();
+        $this->projectComponents();
     }
 
     public function settingsAction(): Action
     {
         return Action::make('settings')
             ->label('Settings')
-            ->fillForm(function (): array {
-                $settings = $this->settings();
-                $configuration = app(HomePresentationEditorialService::class)->configuration($settings);
-
-                return [
-                    'template' => $settings->template()->value,
-                    'show_details' => (bool) $configuration[HomeTemplate::Artwork->value]['show_details'],
-                    'show_gallery_link' => (bool) $configuration[HomeTemplate::Artwork->value]['show_gallery_link'],
-                    'public_site_gate' => (bool) $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'],
-                ];
-            })
+            ->fillForm(fn (): array => [
+                'template' => $this->template,
+                'show_details' => $this->artworkShowDetails,
+                'show_gallery_link' => $this->artworkShowGalleryLink,
+                'public_site_gate' => $this->publicSiteGate,
+            ])
             ->schema([
                 Select::make('template')
                     ->label('Template')
@@ -117,12 +179,12 @@ final class HomePresentation extends Page
                 Placeholder::make('skip_target')
                     ->label('Current redirect target')
                     ->content(fn (): string => $this->skipTarget === null
-                        ? 'No published top-level page exists after Home. The public root will safely remain on Home.'
+                        ? 'No published top-level page exists after Home. The public root safely remains on Home.'
                         : $this->skipTarget['label'].' · '.$this->skipTarget['path'])
                     ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::SkipHome->value),
                 Placeholder::make('custom_components')
                     ->label('Custom composition')
-                    ->content('Components are edited in the Home workspace below the settings row.')
+                    ->content('Components are edited in the Home workspace.')
                     ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value),
             ])
             ->modalHeading('Home settings')
@@ -139,7 +201,7 @@ final class HomePresentation extends Page
                     ],
                 );
 
-                $this->loadWorkspace();
+                $this->reloadWorkspace();
                 Notification::make()->title('Home settings saved')->success()->send();
             });
     }
@@ -151,12 +213,7 @@ final class HomePresentation extends Page
             ->schema([
                 Select::make('kind')
                     ->label('Component')
-                    ->options([
-                        'heading' => 'Heading',
-                        'rich_text' => 'Rich Text',
-                        'image' => 'Image',
-                        'divider' => 'Divider',
-                    ])
+                    ->options($this->componentTypeOptions)
                     ->required()
                     ->live(),
                 TextInput::make('title')
@@ -208,7 +265,7 @@ final class HomePresentation extends Page
                     $component,
                 );
 
-                $this->loadWorkspace();
+                $this->reloadWorkspace();
                 Notification::make()->title('Home component added')->success()->send();
             });
     }
@@ -274,7 +331,7 @@ final class HomePresentation extends Page
                     $component,
                 );
 
-                $this->loadWorkspace();
+                $this->reloadWorkspace();
                 Notification::make()->title('Home component saved')->success()->send();
             });
     }
@@ -282,9 +339,10 @@ final class HomePresentation extends Page
     public function removeComponentAction(): Action
     {
         return Action::make('removeComponent')
-            ->label('Remove')
+            ->label('Delete')
+            ->color('danger')
             ->requiresConfirmation()
-            ->modalHeading('Remove Home component?')
+            ->modalHeading('Delete Home component?')
             ->modalDescription('The component is removed from this Home template. Other template configurations are unchanged.')
             ->action(function (array $arguments): void {
                 $component = $this->componentFromArguments($arguments);
@@ -295,13 +353,45 @@ final class HomePresentation extends Page
                     (string) $component['type'],
                 );
 
-                $this->loadWorkspace();
-                Notification::make()->title('Home component removed')->success()->send();
+                $this->reloadWorkspace();
+                Notification::make()->title('Home component deleted')->success()->send();
+            });
+    }
+
+    public function deleteSelectedComponentsAction(): Action
+    {
+        return Action::make('deleteSelectedComponents')
+            ->label('Delete selected')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Delete selected Home components?')
+            ->action(function (): void {
+                $targets = $this->selectedComponentTargetData();
+                if ($targets === []) {
+                    return;
+                }
+
+                app(HomePresentationEditorialService::class)->deleteComponents(
+                    $this->settings(),
+                    $this->componentTemplate(),
+                    $targets,
+                );
+                $count = count($targets);
+                $this->reloadWorkspace();
+                Notification::make()
+                    ->title('Selected Home components deleted')
+                    ->body($count.' component'.($count === 1 ? '' : 's').' deleted.')
+                    ->success()
+                    ->send();
             });
     }
 
     public function moveComponent(int $index, string $expectedType, string $direction): void
     {
+        if (! $this->componentReorderEnabled()) {
+            return;
+        }
+
         app(HomePresentationEditorialService::class)->moveComponent(
             $this->settings(),
             $this->componentTemplate(),
@@ -310,8 +400,70 @@ final class HomePresentation extends Page
             $direction,
         );
 
-        $this->loadWorkspace();
+        $this->reloadWorkspace();
         Notification::make()->title('Home component order updated')->success()->send();
+    }
+
+    public function sortComponent(string $target, int $position): void
+    {
+        if (! $this->componentReorderEnabled()) {
+            return;
+        }
+
+        $targets = collect($this->componentDataset)
+            ->pluck('target')
+            ->filter(static fn (mixed $value): bool => is_string($value))
+            ->values()
+            ->all();
+        $from = array_search($target, $targets, true);
+        if ($from === false) {
+            throw ValidationException::withMessages([
+                'component' => 'The component sequence changed. Reload the workspace and try again.',
+            ]);
+        }
+
+        $moved = $targets[$from];
+        array_splice($targets, $from, 1);
+        $position = max(0, min($position, count($targets)));
+        array_splice($targets, $position, 0, [$moved]);
+
+        app(HomePresentationEditorialService::class)->reorderComponents(
+            $this->settings(),
+            $this->componentTemplate(),
+            array_map(fn (string $value): array => $this->parseComponentTarget($value), $targets),
+        );
+
+        $this->reloadWorkspace();
+        Notification::make()->title('Home component order updated')->success()->send();
+    }
+
+    public function moveSelectedComponents(string $direction): void
+    {
+        if (! $this->componentReorderEnabled()) {
+            return;
+        }
+
+        $targets = $this->selectedComponentTargetData();
+        if ($targets === []) {
+            return;
+        }
+
+        $changed = app(HomePresentationEditorialService::class)->moveSelectedComponents(
+            $this->settings(),
+            $this->componentTemplate(),
+            $targets,
+            $direction,
+        );
+        $count = count($targets);
+        $this->reloadWorkspace();
+
+        if ($changed) {
+            Notification::make()
+                ->title('Selected Home components moved')
+                ->body($count.' component'.($count === 1 ? '' : 's').' updated.')
+                ->success()
+                ->send();
+        }
     }
 
     public function toggleGalleryEligibility(int $galleryId): void
@@ -325,32 +477,55 @@ final class HomePresentation extends Page
             'show_on_home' => ! (bool) $gallery->getAttribute('show_on_home'),
         ]);
 
-        $this->loadWorkspace();
+        $this->reloadWorkspace();
         Notification::make()->title('Homepage source updated')->success()->send();
     }
 
-    private function loadWorkspace(): void
+    private function reloadWorkspace(): void
     {
+        $settings = $this->settings();
+        $configuration = app(HomePresentationEditorialService::class)->configuration($settings);
+        $this->settingsId = (int) $settings->getKey();
+        $template = $settings->template();
+        $this->template = $template->value;
+        $this->templateLabel = $template->label();
+        $this->artworkShowDetails = (bool) $configuration[HomeTemplate::Artwork->value]['show_details'];
+        $this->artworkShowGalleryLink = (bool) $configuration[HomeTemplate::Artwork->value]['show_gallery_link'];
+        $this->publicSiteGate = (bool) $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'];
+
         $this->selectionIssue = null;
         $this->readinessWarning = null;
         $this->currentArtwork = null;
         $this->galleries = [];
         $this->newestEligibleArtworks = [];
+        $this->componentDataset = [];
         $this->components = [];
         $this->skipTarget = null;
         $this->eligibleArtworkCount = 0;
         $this->sourceGalleryCount = 0;
         $this->publicSourceGalleryCount = 0;
+        $this->newestEligibleYear = null;
+        $this->newestYearCandidateCount = 0;
+        $this->explicitTieBreakerCount = 0;
+        $this->componentStats = [
+            'components' => 0,
+            'images' => 0,
+            'headings' => 0,
+            'rich_text' => 0,
+            'dividers' => 0,
+            'media_references' => 0,
+        ];
+        $this->clearComponentSelection();
 
-        $settings = $this->settings();
-        $template = $settings->template();
-        $this->template = $template->value;
-        $this->templateLabel = $template->label();
+        if (! in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
+            $this->componentSearch = '';
+            $this->componentType = 'any';
+        }
 
         match ($template) {
             HomeTemplate::Artwork => $this->loadArtworkWorkspace(),
             HomeTemplate::UnderConstruction,
-            HomeTemplate::Custom => $this->loadComponentWorkspace($template),
+            HomeTemplate::Custom => $this->loadComponentWorkspace($template, $settings, $configuration),
             HomeTemplate::SkipHome => $this->loadSkipWorkspace(),
         };
 
@@ -408,12 +583,14 @@ final class HomePresentation extends Page
             ->where('eligible', true)
             ->where('state', 'published')
             ->count();
-        $this->eligibleArtworkCount = $publicArtworks->homeCandidateCount();
 
-        $eligible = $publicArtworks->homeCandidates();
-        $newestYear = $eligible->max('work_year');
-        $this->newestEligibleArtworks = $eligible
-            ->filter(static fn (Artwork $artwork): bool => (int) $artwork->getAttribute('work_year') === (int) $newestYear)
+        $statistics = $publicArtworks->homeCandidateStatistics();
+        $this->eligibleArtworkCount = $statistics['eligible'];
+        $this->newestEligibleYear = $statistics['newest_year'];
+        $this->newestYearCandidateCount = $statistics['newest_year_candidates'];
+        $this->explicitTieBreakerCount = $statistics['explicit_tie_breakers'];
+
+        $this->newestEligibleArtworks = $publicArtworks->newestHomeCandidates()
             ->map(fn (Artwork $artwork): array => $this->artworkRow($artwork))
             ->values()
             ->all();
@@ -425,10 +602,12 @@ final class HomePresentation extends Page
         }
     }
 
-    private function loadComponentWorkspace(HomeTemplate $template): void
-    {
-        $settings = $this->settings();
-        $configuration = app(HomePresentationEditorialService::class)->configuration($settings);
+    /** @param array<string, mixed> $configuration */
+    private function loadComponentWorkspace(
+        HomeTemplate $template,
+        HomePresentationSetting $settings,
+        array $configuration,
+    ): void {
         $raw = $configuration[$template->value]['components'] ?? [];
         $raw = is_array($raw) && array_is_list($raw) ? $raw : [];
 
@@ -437,6 +616,7 @@ final class HomePresentation extends Page
                 && ($component['type'] ?? null) === 'image'
                 && is_numeric($component['media_asset_id'] ?? null))
             ->map(fn (array $component): int => (int) $component['media_asset_id'])
+            ->filter(static fn (int $id): bool => $id > 0)
             ->unique()
             ->values()
             ->all();
@@ -446,45 +626,77 @@ final class HomePresentation extends Page
             ->get(['id', 'original_filename', 'alt_text'])
             ->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
 
+        $referenceIds = [];
         $count = count($raw);
-        $this->components = collect($raw)
-            ->map(function (array $component, int $index) use ($assets, $count): array {
-                $type = is_string($component['type'] ?? null) ? $component['type'] : 'unknown';
-                $assetId = is_numeric($component['media_asset_id'] ?? null) ? (int) $component['media_asset_id'] : null;
-                $asset = $assetId === null ? null : $assets->get($assetId);
-                $summary = match ($type) {
-                    'image' => $asset instanceof MediaAsset
-                        ? (string) $asset->getAttribute('original_filename')
-                        : 'Choose an image from Media Files',
-                    'text' => filled($component['title'] ?? null)
-                        ? (string) $component['title']
-                        : (Str::limit(trim((string) ($component['body'] ?? '')), 110) ?: 'Empty Rich Text'),
-                    'divider' => 'Editorial divider',
-                    default => 'Unsupported component',
-                };
+        $dataset = [];
+        foreach ($raw as $index => $component) {
+            if (! is_array($component)) {
+                continue;
+            }
 
-                return [
-                    'index' => $index,
-                    'type' => $type,
-                    'type_label' => match ($type) {
-                        'image' => 'Image',
-                        'text' => filled($component['title'] ?? null) && blank($component['body'] ?? null)
-                            ? 'Heading'
-                            : 'Rich Text',
-                        'divider' => 'Divider',
-                        default => 'Component',
-                    },
-                    'summary' => $summary,
-                    'preview_url' => $asset instanceof MediaAsset
-                        ? route('admin.media.original', ['mediaAsset' => $asset])
-                        : null,
-                    'can_move_up' => $index > 0,
-                    'can_move_down' => $index < $count - 1,
-                    'editable' => in_array($type, ['image', 'text'], true),
-                ];
-            })
-            ->values()
-            ->all();
+            $type = is_string($component['type'] ?? null) ? $component['type'] : 'unknown';
+            $assetId = is_numeric($component['media_asset_id'] ?? null) ? (int) $component['media_asset_id'] : null;
+            $asset = $assetId === null ? null : $assets->get($assetId);
+            $title = trim((string) ($component['title'] ?? ''));
+            $body = is_string($component['body'] ?? null) ? trim((string) $component['body']) : '';
+            $filterType = match ($type) {
+                'image' => 'image',
+                'text' => $title !== '' && $body === '' ? 'heading' : 'rich_text',
+                'divider' => 'divider',
+                default => 'unknown',
+            };
+            $typeLabel = $this->componentTypeOptions[$filterType] ?? 'Component';
+
+            if ($type === 'image' && $assetId !== null && $assetId > 0) {
+                $referenceIds[] = $assetId;
+            }
+            if ($type === 'text' && $body !== '') {
+                $referenceIds = array_merge($referenceIds, RichTextMediaReference::ids($body));
+            }
+
+            [$primary, $secondary] = match ($filterType) {
+                'image' => [
+                    $asset instanceof MediaAsset ? (string) $asset->getAttribute('original_filename') : 'Choose an image from Media Files',
+                    $asset instanceof MediaAsset && filled($asset->getAttribute('alt_text'))
+                        ? 'ALT · '.Str::limit((string) $asset->getAttribute('alt_text'), 90)
+                        : 'Media Files image',
+                ],
+                'heading' => [$title !== '' ? $title : 'Untitled heading', ''],
+                'rich_text' => [
+                    $title !== '' ? $title : (Str::limit($body, 110) ?: 'Empty Rich Text'),
+                    $title !== '' ? (Str::limit($body, 110) ?: 'No body text') : '',
+                ],
+                'divider' => ['Divider', 'Editorial divider'],
+                default => ['Unsupported component', ''],
+            };
+
+            $dataset[] = [
+                'index' => $index,
+                'target' => $index.':'.$type,
+                'type' => $type,
+                'filter_type' => $filterType,
+                'type_label' => $typeLabel,
+                'content' => [
+                    'primary' => $primary,
+                    'secondary' => $secondary,
+                ],
+                'search_text' => Str::lower(implode(' ', [$typeLabel, $primary, $secondary, $title, $body])),
+                'can_move_up' => $index > 0,
+                'can_move_down' => $index < $count - 1,
+                'editable' => in_array($type, ['image', 'text'], true),
+            ];
+        }
+
+        $this->componentDataset = $dataset;
+        $this->componentStats = [
+            'components' => count($raw),
+            'images' => collect($dataset)->where('filter_type', 'image')->count(),
+            'headings' => collect($dataset)->where('filter_type', 'heading')->count(),
+            'rich_text' => collect($dataset)->where('filter_type', 'rich_text')->count(),
+            'dividers' => collect($dataset)->where('filter_type', 'divider')->count(),
+            'media_references' => count(array_unique($referenceIds)),
+        ];
+        $this->projectComponents();
 
         if ($template === HomeTemplate::UnderConstruction) {
             $hasImage = collect($raw)->contains(fn (mixed $component): bool => is_array($component)
@@ -500,6 +712,23 @@ final class HomePresentation extends Page
         } elseif ($raw === []) {
             $this->readinessWarning = 'Custom Home has no components yet.';
         }
+    }
+
+    private function projectComponents(): void
+    {
+        $term = Str::lower(trim($this->componentSearch));
+        $type = $this->componentType;
+
+        $this->components = collect($this->componentDataset)
+            ->filter(function (array $component) use ($term, $type): bool {
+                if ($type !== 'any' && ($component['filter_type'] ?? null) !== $type) {
+                    return false;
+                }
+
+                return $term === '' || str_contains((string) ($component['search_text'] ?? ''), $term);
+            })
+            ->values()
+            ->all();
     }
 
     private function loadSkipWorkspace(): void
@@ -523,51 +752,35 @@ final class HomePresentation extends Page
 
     private function refreshMetrics(): void
     {
-        $settings = $this->settings();
-        $template = $settings->template();
-        $configuration = app(HomePresentationEditorialService::class)->configuration($settings);
+        $template = HomeTemplate::from($this->template);
 
-        $publicBehavior = match ($template) {
-            HomeTemplate::Artwork => ['Artwork home', 'Shows the selected newest eligible artwork.'],
-            HomeTemplate::UnderConstruction => (bool) $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate']
-                ? ['Site gated', 'Public content URLs return to the construction Home.']
-                : ['Landing only', 'Home shows construction content; other public pages remain reachable.'],
-            HomeTemplate::SkipHome => $this->skipTarget === null
-                ? ['Safe fallback', 'No redirect occurs until a valid next public page exists.']
-                : ['Redirect', '/ → '.$this->skipTarget['path']],
-            HomeTemplate::Custom => ['Custom home', 'Home renders its ordered component composition.'],
-        };
+        if ($template === HomeTemplate::Artwork) {
+            $this->metrics = [
+                ['label' => 'Source Galleries', 'value' => number_format($this->sourceGalleryCount), 'description' => 'Galleries enabled as Home sources'],
+                ['label' => 'Public Sources', 'value' => number_format($this->publicSourceGalleryCount), 'description' => 'Enabled source Galleries currently public'],
+                ['label' => 'Eligible Artworks', 'value' => number_format($this->eligibleArtworkCount), 'description' => 'Published Home candidates'],
+                ['label' => 'Newest Year', 'value' => $this->newestEligibleYear === null ? '—' : (string) $this->newestEligibleYear, 'description' => 'Newest eligible artwork year'],
+                ['label' => 'Newest-year Candidates', 'value' => number_format($this->newestYearCandidateCount), 'description' => 'Candidates in the newest eligible year'],
+                ['label' => 'Explicit Tie-breakers', 'value' => number_format($this->explicitTieBreakerCount), 'description' => 'Eligible artworks marked for Home tie-breaking'],
+            ];
 
-        $sourceMetric = $template === HomeTemplate::Artwork
-            ? [$this->sourceGalleryCount.' enabled', $this->publicSourceGalleryCount.' enabled Galleries are currently public.']
-            : ['Not used', 'Gallery source eligibility is retained for Artwork mode.'];
-        $eligibleMetric = $template === HomeTemplate::Artwork
-            ? [(string) $this->eligibleArtworkCount, 'Published artworks currently eligible for Home selection.']
-            : ['Not used', 'Artwork candidates are retained for Artwork mode.'];
+            return;
+        }
 
-        $primaryMetric = match ($template) {
-            HomeTemplate::Artwork => $this->currentArtwork === null
-                ? ['None', 'No unambiguous public hero is selected.']
-                : ['Selected', (string) $this->currentArtwork['title']],
-            HomeTemplate::UnderConstruction => [count($this->components).' components', 'Ordered construction presentation.'],
-            HomeTemplate::SkipHome => $this->skipTarget === null
-                ? ['No target', 'Waiting for a later published top-level page.']
-                : [$this->skipTarget['label'], 'Current canonical redirect target.'],
-            HomeTemplate::Custom => [count($this->components).' components', 'Ordered custom Home composition.'],
-        };
+        if (in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
+            $this->metrics = [
+                ['label' => 'Components', 'value' => number_format($this->componentStats['components']), 'description' => 'Components in this Home template'],
+                ['label' => 'Images', 'value' => number_format($this->componentStats['images']), 'description' => 'Image components'],
+                ['label' => 'Headings', 'value' => number_format($this->componentStats['headings']), 'description' => 'Heading components'],
+                ['label' => 'Rich Text', 'value' => number_format($this->componentStats['rich_text']), 'description' => 'Rich Text components'],
+                ['label' => 'Dividers', 'value' => number_format($this->componentStats['dividers']), 'description' => 'Divider components'],
+                ['label' => 'Media References', 'value' => number_format($this->componentStats['media_references']), 'description' => 'Distinct Media Files referenced by this template'],
+            ];
 
-        $statusMetric = $this->readinessWarning === null
-            ? ['Ready', 'No Home presentation issue is currently detected.']
-            : ['Needs attention', $this->readinessWarning];
+            return;
+        }
 
-        $this->metrics = [
-            ['label' => 'Template', 'value' => $this->templateLabel, 'description' => 'Active public Home presentation.'],
-            ['label' => 'Public behavior', 'value' => $publicBehavior[0], 'description' => $publicBehavior[1]],
-            ['label' => 'Source Galleries', 'value' => $sourceMetric[0], 'description' => $sourceMetric[1]],
-            ['label' => 'Eligible Artworks', 'value' => $eligibleMetric[0], 'description' => $eligibleMetric[1]],
-            ['label' => 'Primary content', 'value' => $primaryMetric[0], 'description' => $primaryMetric[1]],
-            ['label' => 'Template status', 'value' => $statusMetric[0], 'description' => $statusMetric[1]],
-        ];
+        $this->metrics = [];
     }
 
     /** @return array<string, mixed> */
@@ -614,6 +827,13 @@ final class HomePresentation extends Page
 
     private function settings(): HomePresentationSetting
     {
+        if ($this->settingsId > 0) {
+            /** @var HomePresentationSetting $settings */
+            $settings = HomePresentationSetting::query()->findOrFail($this->settingsId);
+
+            return $settings;
+        }
+
         return app(HomePresentationResolver::class)->settings();
     }
 
@@ -627,6 +847,11 @@ final class HomePresentation extends Page
         }
 
         return $template;
+    }
+
+    private function componentReorderEnabled(): bool
+    {
+        return trim($this->componentSearch) === '' && $this->componentType === 'any';
     }
 
     /** @param array<string, mixed> $arguments
@@ -651,5 +876,46 @@ final class HomePresentation extends Page
         }
 
         return $component;
+    }
+
+    /** @return list<array{index:int,type:string}> */
+    private function selectedComponentTargetData(): array
+    {
+        $available = collect($this->componentDataset)
+            ->pluck('target')
+            ->filter(static fn (mixed $target): bool => is_string($target))
+            ->flip();
+        $targets = [];
+
+        foreach (array_values(array_unique($this->selectedComponentTargets)) as $target) {
+            if (! is_string($target) || ! $available->has($target)) {
+                throw ValidationException::withMessages([
+                    'component' => 'The selected Home components changed. Reload the workspace and try again.',
+                ]);
+            }
+            $targets[] = $this->parseComponentTarget($target);
+        }
+
+        return $targets;
+    }
+
+    /** @return array{index:int,type:string} */
+    private function parseComponentTarget(string $target): array
+    {
+        if (! str_contains($target, ':')) {
+            throw ValidationException::withMessages(['component' => 'The Home component target is invalid.']);
+        }
+
+        [$index, $type] = explode(':', $target, 2);
+        if (! ctype_digit($index) || ! in_array($type, ['image', 'text', 'divider'], true)) {
+            throw ValidationException::withMessages(['component' => 'The Home component target is invalid.']);
+        }
+
+        return ['index' => (int) $index, 'type' => $type];
+    }
+
+    private function clearComponentSelection(): void
+    {
+        $this->selectedComponentTargets = [];
     }
 }

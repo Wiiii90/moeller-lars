@@ -3,13 +3,17 @@
 namespace App\Domain\Media;
 
 use App\Domain\Content\HomeTemplate;
+use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RichTextMediaReference;
+use App\Domain\Content\SiteNodeType;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\HomePresentationSetting;
+use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
+use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 
 final class MediaReferenceQuery
@@ -80,6 +84,76 @@ final class MediaReferenceQuery
     }
 
     /** @return list<int> */
+    public function mediaIdsForJournalSection(SiteSection $section): array
+    {
+        if ($section->nodeType() !== SiteNodeType::Journal) {
+            return [];
+        }
+
+        $template = $section->journalTemplate();
+        if ($template === JournalTemplate::Blog) {
+            $entries = BlogPost::query()
+                ->where('site_section_id', $section->getKey());
+            $entryIds = (clone $entries)->pluck('id')->all();
+            $structured = JournalEntryMedia::query()
+                ->whereIn('blog_post_id', $entryIds)
+                ->pluck('media_asset_id')
+                ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->all();
+            $richText = $this->richTextIds((clone $entries)->whereNotNull('body')->pluck('body'));
+
+            return array_values(array_unique(array_merge($structured, $richText)));
+        }
+
+        if ($template === JournalTemplate::Exhibitions) {
+            $entries = Exhibition::query()
+                ->where('site_section_id', $section->getKey());
+            $entryIds = (clone $entries)->pluck('id')->all();
+            $structured = JournalEntryMedia::query()
+                ->whereIn('exhibition_id', $entryIds)
+                ->pluck('media_asset_id')
+                ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->all();
+            $richText = $this->richTextIds((clone $entries)->whereNotNull('description')->pluck('description'));
+
+            return array_values(array_unique(array_merge($structured, $richText)));
+        }
+
+        return [];
+    }
+
+    /** @param iterable<SiteSection> $sections
+     *  @return list<int>
+     */
+    public function mediaIdsForJournalSections(iterable $sections): array
+    {
+        $ids = [];
+        foreach ($sections as $section) {
+            if ($section instanceof SiteSection) {
+                $ids = array_merge($ids, $this->mediaIdsForJournalSection($section));
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /** @return list<int> */
+    public function mediaIdsForCv(): array
+    {
+        $direct = CvEntry::query()
+            ->whereNotNull('image_media_asset_id')
+            ->pluck('image_media_asset_id')
+            ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+        $richText = $this->richTextIds(CvEntry::query()->whereNotNull('body')->pluck('body'));
+
+        return array_values(array_unique(array_merge($direct, $richText)));
+    }
+
+    /** @return list<int> */
     public function mediaIdsForHome(HomePresentationSetting $settings): array
     {
         $ids = [];
@@ -118,28 +192,29 @@ final class MediaReferenceQuery
             $ids = array_merge($ids, $this->mediaIdsForCustomPage($settings));
         }
 
-        foreach (CvEntry::query()->whereNotNull('body')->pluck('body') as $body) {
-            if (is_string($body)) {
-                $ids = array_merge($ids, RichTextMediaReference::ids($body));
-            }
-        }
-
-        foreach (BlogPost::query()->whereNotNull('body')->pluck('body') as $body) {
-            if (is_string($body)) {
-                $ids = array_merge($ids, RichTextMediaReference::ids($body));
-            }
-        }
-
-        foreach (Exhibition::query()->whereNotNull('description')->pluck('description') as $description) {
-            if (is_string($description)) {
-                $ids = array_merge($ids, RichTextMediaReference::ids($description));
-            }
-        }
+        $ids = array_merge($ids, $this->richTextIds(CvEntry::query()->whereNotNull('body')->pluck('body')));
+        $ids = array_merge($ids, $this->richTextIds(BlogPost::query()->whereNotNull('body')->pluck('body')));
+        $ids = array_merge($ids, $this->richTextIds(Exhibition::query()->whereNotNull('description')->pluck('description')));
 
         foreach (HomePresentationSetting::query()->get(['id', 'configuration']) as $settings) {
             $ids = array_merge($ids, $this->mediaIdsForHome($settings));
         }
 
         return $this->directContentMediaIds = array_values(array_unique($ids));
+    }
+
+    /** @param iterable<mixed> $values
+     *  @return list<int>
+     */
+    private function richTextIds(iterable $values): array
+    {
+        $ids = [];
+        foreach ($values as $value) {
+            if (is_string($value)) {
+                $ids = array_merge($ids, RichTextMediaReference::ids($value));
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 }
