@@ -26,7 +26,7 @@ No production credentials, database dumps or authoritative production media belo
 
 ## Local development
 
-The development Compose stack provides the application container and PostgreSQL 17.
+The normal development Compose stack provides the application container and PostgreSQL 17.
 
 ```sh
 docker compose up -d --build
@@ -34,7 +34,7 @@ docker compose exec app composer install --no-interaction
 docker compose exec app npm ci --ignore-scripts
 ```
 
-Run the same core verification used by CI:
+Run the core verification used by CI when that level of verification is actually required:
 
 ```sh
 docker compose exec app composer test
@@ -50,27 +50,39 @@ Stop the stack with:
 docker compose down
 ```
 
+Browser-polish/reconciliation work may deliberately use the existing lightweight local preview loop instead of recreating the development stack. That workflow is governed by [AGENTS.md](AGENTS.md) and the current continuation/orchestration prompt; it is not the canonical Production release path.
+
 ## Site structure
 
 The editable public site is modeled as typed site nodes:
 
-- **Home** — singleton root presentation
+- **Home** — singleton root presentation with Artwork, Under Construction, Skip Home or Custom presentation modes
 - **Gallery** — artwork collection, optionally nested
-- **Journal** — Blog or Exhibitions
-- **Custom Page** — structured content/components
+- **Journal** — Blog or Exhibitions; switching the active Journal template does not destructively convert/delete the inactive template's entries
+- **Custom Page** — structured content/components, including CV and reusable Contact composition
 - **Navigation Node** — navigation-only grouping
 
 The domain types, public routing, admin destinations and navigation projection have separate owners; persistence details do not define application behavior.
 
+## Admin development and review
+
+The artist admin is browser-reviewed as an editorial product, not accepted merely because a page boots or CI is green.
+
+Start with:
+
+- [AGENTS.md](AGENTS.md) — branch/reconciliation/worker workflow and central technology rules
+- [ui-skills.md](ui-skills.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
+- [followup-skill.md](followup-skill.md) — how to hand a long orchestration session to a new chat without losing exact Git/runtime/review state
+
 ## Releases
 
-`.github/workflows/release.yml` is the canonical GitHub Actions workflow. It verifies pull requests and, for non-PR runs such as `main`, publishes an immutable image tagged with the exact Git SHA:
+`.github/workflows/release.yml` is the canonical GitHub Actions workflow. It verifies pull requests targeting `main` and, for eligible non-PR runs, publishes an immutable image tagged with the exact Git SHA:
 
 ```text
 ghcr.io/wiiii90/moeller-lars:<git-sha>
 ```
 
-A green CI run or published image does not itself authorize a Production deployment.
+A green CI run, a local browser candidate or a published preview image does not itself authorize a Production deployment.
 
 ## Documentation
 
