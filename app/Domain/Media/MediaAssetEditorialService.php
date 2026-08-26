@@ -3,12 +3,19 @@
 namespace App\Domain\Media;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\CvEntryEditorialService;
+use App\Domain\Content\CustomPageEditorialService;
+use App\Domain\Content\HomePresentationEditorialService;
+use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\JournalEntryMediaService;
+use App\Domain\Content\RichTextMediaReference;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
+use App\Models\CvEntry;
 use App\Models\ExhibitionMedia;
+use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\User;
@@ -25,6 +32,9 @@ class MediaAssetEditorialService
         private readonly AdminAuditService $adminAuditService,
         private readonly MediaReferenceQuery $referenceQuery,
         private readonly JournalEntryMediaService $journalMedia,
+        private readonly CustomPageEditorialService $customPages,
+        private readonly CvEntryEditorialService $cvEntries,
+        private readonly HomePresentationEditorialService $homePresentation,
     ) {}
 
     public function updateMetadata(MediaAsset $asset, array $data): MediaAsset
@@ -215,25 +225,158 @@ class MediaAssetEditorialService
             $setting->save();
         }
 
+        $this->removeCustomPageReferences($assetId);
+        $this->removeCvReferences($assetId);
+        $this->removeHomeReferences($assetId);
+    }
+
+    private function removeCustomPageReferences(int $assetId): void
+    {
         /** @var EloquentCollection<int, CustomPageSetting> $customPages */
-        $customPages = CustomPageSetting::query()->lockForUpdate()->get();
+        $customPages = CustomPageSetting::query()
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
         foreach ($customPages as $customPage) {
-            $components = $customPage->components();
-            $filtered = array_values(array_filter(
-                $components,
-                static fn (array $component): bool => ! (
-                    ($component['type'] ?? null) === 'image'
-                    && is_numeric($component['media_asset_id'] ?? null)
-                    && (int) $component['media_asset_id'] === $assetId
-                ),
-            ));
-            if (count($filtered) === count($components)) {
+            if (! $this->referenceQuery->customPageReferencesAsset($customPage, $assetId)) {
                 continue;
             }
 
-            $customPage->setAttribute('blocks', $filtered);
-            $customPage->save();
+            $blocks = $customPage->components();
+            for ($index = count($blocks) - 1; $index >= 0; $index--) {
+                $block = $blocks[$index] ?? null;
+                if (! is_array($block)) {
+                    continue;
+                }
+
+                $type = $block['type'] ?? null;
+                if ($type === 'image'
+                    && is_numeric($block['media_asset_id'] ?? null)
+                    && (int) $block['media_asset_id'] === $assetId) {
+                    $this->customPages->deleteBlock($customPage, $index, 'image');
+                    continue;
+                }
+
+                if ($type === 'text') {
+                    $body = $block['body'] ?? null;
+                    $clean = $this->removeRichTextReference($body, $assetId);
+                    if ($clean !== $body) {
+                        $block['body'] = $clean;
+                        $this->customPages->updateBlock($customPage, $index, 'text', $block);
+                    }
+                    continue;
+                }
+
+                if ($type !== 'list' || ! is_array($block['items'] ?? null)) {
+                    continue;
+                }
+
+                $items = array_values($block['items']);
+                $changed = false;
+                foreach ($items as $itemIndex => $item) {
+                    if (! is_array($item)) {
+                        continue;
+                    }
+                    $body = $item['body'] ?? null;
+                    $clean = $this->removeRichTextReference($body, $assetId);
+                    if ($clean === $body) {
+                        continue;
+                    }
+                    $items[$itemIndex]['body'] = $clean;
+                    $changed = true;
+                }
+
+                if ($changed) {
+                    $block['items'] = $items;
+                    $this->customPages->updateBlock($customPage, $index, 'list', $block);
+                }
+            }
         }
+    }
+
+    private function removeCvReferences(int $assetId): void
+    {
+        /** @var EloquentCollection<int, CvEntry> $entries */
+        $entries = CvEntry::query()
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($entries as $entry) {
+            $data = [];
+            $imageId = $entry->getAttribute('image_media_asset_id');
+            if (is_numeric($imageId) && (int) $imageId === $assetId) {
+                $data['image_media_asset_id'] = null;
+            }
+
+            $body = $entry->getAttribute('body');
+            $clean = $this->removeRichTextReference($body, $assetId);
+            if ($clean !== $body) {
+                $data['body'] = $clean;
+            }
+
+            if ($data !== []) {
+                $this->cvEntries->update($entry, $data);
+            }
+        }
+    }
+
+    private function removeHomeReferences(int $assetId): void
+    {
+        /** @var EloquentCollection<int, HomePresentationSetting> $settingsRows */
+        $settingsRows = HomePresentationSetting::query()
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($settingsRows as $settings) {
+            if (! $this->referenceQuery->homeReferencesAsset($settings, $assetId)) {
+                continue;
+            }
+
+            foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $mode) {
+                $components = $settings->components($mode);
+                foreach ($components as $index => $component) {
+                    if (! is_array($component)) {
+                        continue;
+                    }
+
+                    $type = $component['type'] ?? null;
+                    if ($type === 'image'
+                        && is_numeric($component['media_asset_id'] ?? null)
+                        && (int) $component['media_asset_id'] === $assetId) {
+                        $component['media_asset_id'] = null;
+                        $this->homePresentation->updateComponent($settings, $mode, $index, 'image', $component);
+                        continue;
+                    }
+
+                    if ($type !== 'text') {
+                        continue;
+                    }
+
+                    $body = $component['body'] ?? null;
+                    $clean = $this->removeRichTextReference($body, $assetId);
+                    if ($clean === $body) {
+                        continue;
+                    }
+
+                    $component['body'] = $clean;
+                    $this->homePresentation->updateComponent($settings, $mode, $index, 'text', $component);
+                }
+            }
+        }
+    }
+
+    private function removeRichTextReference(mixed $source, int $assetId): mixed
+    {
+        if (! is_string($source) || ! in_array($assetId, RichTextMediaReference::ids($source), true)) {
+            return $source;
+        }
+
+        $clean = RichTextMediaReference::remove($source, $assetId);
+
+        return $clean === '' ? null : $clean;
     }
 
     private function removeLegacyJournalReferences(MediaAsset $asset): void
