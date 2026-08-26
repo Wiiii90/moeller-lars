@@ -1,0 +1,333 @@
+<?php
+
+namespace App\Domain\Content;
+
+use App\Domain\Admin\AdminAuditService;
+use App\Models\HomePresentationSetting;
+use App\Models\MediaAsset;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+final class HomePresentationEditorialService
+{
+    public function __construct(
+        private readonly AdminAuditService $audit,
+        private readonly SafeRichTextRenderer $richText,
+    ) {}
+
+    /** @return array<string, mixed> */
+    public static function defaults(): array
+    {
+        return [
+            HomeTemplate::Artwork->value => [
+                'show_details' => true,
+                'show_gallery_link' => true,
+            ],
+            HomeTemplate::UnderConstruction->value => [
+                'public_site_gate' => false,
+                'components' => [
+                    [
+                        'type' => 'image',
+                        'media_asset_id' => null,
+                        'image_decorative' => true,
+                    ],
+                    [
+                        'type' => 'text',
+                        'title' => 'Under construction',
+                        'body' => 'The website is currently being updated.',
+                    ],
+                ],
+            ],
+            HomeTemplate::Custom->value => [
+                'components' => [],
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function configuration(HomePresentationSetting $settings): array
+    {
+        $defaults = self::defaults();
+        $stored = $settings->configuration();
+
+        $artwork = is_array($stored[HomeTemplate::Artwork->value] ?? null)
+            ? $stored[HomeTemplate::Artwork->value]
+            : [];
+        $construction = is_array($stored[HomeTemplate::UnderConstruction->value] ?? null)
+            ? $stored[HomeTemplate::UnderConstruction->value]
+            : [];
+        $custom = is_array($stored[HomeTemplate::Custom->value] ?? null)
+            ? $stored[HomeTemplate::Custom->value]
+            : [];
+
+        return [
+            HomeTemplate::Artwork->value => array_replace($defaults[HomeTemplate::Artwork->value], $artwork),
+            HomeTemplate::UnderConstruction->value => array_replace($defaults[HomeTemplate::UnderConstruction->value], $construction),
+            HomeTemplate::Custom->value => array_replace($defaults[HomeTemplate::Custom->value], $custom),
+        ];
+    }
+
+    /** @param array<string, mixed> $input */
+    public function updateSettings(HomePresentationSetting $settings, HomeTemplate $template, array $input): bool
+    {
+        return DB::transaction(function () use ($settings, $template, $input): bool {
+            $fresh = $this->locked($settings);
+            $configuration = $this->configuration($fresh);
+
+            if (array_key_exists('show_details', $input) && $input['show_details'] !== null) {
+                $configuration[HomeTemplate::Artwork->value]['show_details'] = (bool) $input['show_details'];
+            }
+            if (array_key_exists('show_gallery_link', $input) && $input['show_gallery_link'] !== null) {
+                $configuration[HomeTemplate::Artwork->value]['show_gallery_link'] = (bool) $input['show_gallery_link'];
+            }
+            if (array_key_exists('public_site_gate', $input) && $input['public_site_gate'] !== null) {
+                $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] = (bool) $input['public_site_gate'];
+            }
+
+            $this->validateConfiguration($configuration);
+            $fresh->setAttribute('template', $template->value);
+            $fresh->setAttribute('configuration', $configuration);
+
+            return $this->save($fresh);
+        });
+    }
+
+    /** @param array<string, mixed> $component */
+    public function addComponent(HomePresentationSetting $settings, HomeTemplate $mode, array $component): bool
+    {
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($component): array {
+            $components[] = $component;
+
+            return array_values($components);
+        });
+    }
+
+    /** @param array<string, mixed> $component */
+    public function updateComponent(
+        HomePresentationSetting $settings,
+        HomeTemplate $mode,
+        int $index,
+        string $expectedType,
+        array $component,
+    ): bool {
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType, $component): array {
+            $this->assertTarget($components, $index, $expectedType);
+            if (($component['type'] ?? null) !== $expectedType) {
+                throw ValidationException::withMessages([
+                    'component' => 'The component type changed while it was being edited.',
+                ]);
+            }
+
+            $components[$index] = $component;
+
+            return array_values($components);
+        });
+    }
+
+    public function moveComponent(
+        HomePresentationSetting $settings,
+        HomeTemplate $mode,
+        int $index,
+        string $expectedType,
+        string $direction,
+    ): bool {
+        if (! in_array($direction, ['up', 'down'], true)) {
+            throw ValidationException::withMessages([
+                'component' => 'The requested component move is invalid.',
+            ]);
+        }
+
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType, $direction): array {
+            $this->assertTarget($components, $index, $expectedType);
+            $target = $direction === 'up' ? $index - 1 : $index + 1;
+            if (! array_key_exists($target, $components)) {
+                return $components;
+            }
+
+            [$components[$index], $components[$target]] = [$components[$target], $components[$index]];
+
+            return array_values($components);
+        });
+    }
+
+    public function deleteComponent(
+        HomePresentationSetting $settings,
+        HomeTemplate $mode,
+        int $index,
+        string $expectedType,
+    ): bool {
+        return $this->mutateComponents($settings, $mode, function (array $components) use ($index, $expectedType): array {
+            $this->assertTarget($components, $index, $expectedType);
+            unset($components[$index]);
+
+            return array_values($components);
+        });
+    }
+
+    /**
+     * @param callable(list<array<string, mixed>>): list<array<string, mixed>> $mutator
+     */
+    private function mutateComponents(
+        HomePresentationSetting $settings,
+        HomeTemplate $mode,
+        callable $mutator,
+    ): bool {
+        if (! in_array($mode, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
+            throw ValidationException::withMessages([
+                'component' => 'This Home template does not use editable components.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($settings, $mode, $mutator): bool {
+            $fresh = $this->locked($settings);
+            $configuration = $this->configuration($fresh);
+            $components = $configuration[$mode->value]['components'] ?? [];
+            $components = is_array($components) && array_is_list($components) ? $components : [];
+            $configuration[$mode->value]['components'] = $mutator($components);
+
+            $this->validateConfiguration($configuration);
+            $fresh->setAttribute('configuration', $configuration);
+
+            return $this->save($fresh);
+        });
+    }
+
+    /** @param array<string, mixed> $configuration */
+    private function validateConfiguration(array $configuration): void
+    {
+        if (! is_bool($configuration[HomeTemplate::Artwork->value]['show_details'] ?? null)
+            || ! is_bool($configuration[HomeTemplate::Artwork->value]['show_gallery_link'] ?? null)
+            || ! is_bool($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? null)) {
+            throw ValidationException::withMessages([
+                'configuration' => 'Home presentation settings are invalid.',
+            ]);
+        }
+
+        $this->validateComponents($configuration[HomeTemplate::UnderConstruction->value]['components'] ?? null);
+        $this->validateComponents($configuration[HomeTemplate::Custom->value]['components'] ?? null);
+    }
+
+    private function validateComponents(mixed $components): void
+    {
+        if (! is_array($components) || ! array_is_list($components)) {
+            throw ValidationException::withMessages([
+                'components' => 'Home components must be an ordered list.',
+            ]);
+        }
+
+        foreach ($components as $index => $component) {
+            if (! is_array($component)
+                || ! is_string($component['type'] ?? null)
+                || ! in_array($component['type'], ['image', 'text', 'divider'], true)) {
+                throw ValidationException::withMessages([
+                    'components' => 'Home supports Image, Heading / Rich Text and Divider components.',
+                ]);
+            }
+
+            if ($component['type'] === 'image') {
+                $this->validateImage($component);
+            }
+            if ($component['type'] === 'text') {
+                $this->validateText($component, $index);
+            }
+        }
+    }
+
+    /** @param array<string, mixed> $component */
+    private function validateImage(array $component): void
+    {
+        if (! is_bool($component['image_decorative'] ?? false)) {
+            throw ValidationException::withMessages([
+                'components' => 'Home image presentation settings are invalid.',
+            ]);
+        }
+
+        $mediaId = $component['media_asset_id'] ?? null;
+        if ($mediaId === null) {
+            return;
+        }
+
+        $id = filter_var($mediaId, FILTER_VALIDATE_INT);
+        /** @var MediaAsset|null $asset */
+        $asset = $id === false ? null : MediaAsset::query()->find((int) $id);
+        if (! $asset instanceof MediaAsset
+            || (string) $asset->getAttribute('state') !== 'available'
+            || ! str_starts_with((string) $asset->getAttribute('mime_type'), 'image/')) {
+            throw ValidationException::withMessages([
+                'components' => 'Home images must reference an available image from Media Files.',
+            ]);
+        }
+
+        if (! (bool) ($component['image_decorative'] ?? false)) {
+            $alt = $asset->getAttribute('alt_text');
+            if (! is_string($alt) || trim($alt) === '') {
+                throw ValidationException::withMessages([
+                    'components' => 'Non-decorative Home images need canonical ALT text in Media Files.',
+                ]);
+            }
+        }
+    }
+
+    /** @param array<string, mixed> $component */
+    private function validateText(array $component, int $index): void
+    {
+        $title = $component['title'] ?? null;
+        if ($title !== null && (! is_string($title) || mb_strlen($title) > 160)) {
+            throw ValidationException::withMessages([
+                'components' => 'Home component headings must be short text.',
+            ]);
+        }
+
+        $body = $component['body'] ?? null;
+        if ($body === null || $body === '') {
+            return;
+        }
+        if (! is_string($body) || mb_strlen($body) > 20000) {
+            throw ValidationException::withMessages([
+                'components.'.$index.'.body' => 'Home rich text is too long.',
+            ]);
+        }
+
+        $this->richText->assertValid($body, allowEmbeddedMedia: true);
+    }
+
+    /** @param list<array<string, mixed>> $components */
+    private function assertTarget(array $components, int $index, string $expectedType): void
+    {
+        $component = $components[$index] ?? null;
+        if (! is_array($component) || ($component['type'] ?? null) !== $expectedType) {
+            throw ValidationException::withMessages([
+                'component' => 'This Home component changed. Reload the workspace and try again.',
+            ]);
+        }
+    }
+
+    private function locked(HomePresentationSetting $settings): HomePresentationSetting
+    {
+        /** @var HomePresentationSetting $fresh */
+        $fresh = HomePresentationSetting::query()
+            ->whereKey($settings->getKey())
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        return $fresh;
+    }
+
+    private function save(HomePresentationSetting $settings): bool
+    {
+        if (! $settings->isDirty(['template', 'configuration'])) {
+            return false;
+        }
+
+        $settings->save();
+        $actor = $this->audit->requireActor();
+        $this->audit->record(
+            $actor,
+            'site_section.updated',
+            'site_section',
+            (int) $settings->getAttribute('site_section_id'),
+        );
+
+        return true;
+    }
+}

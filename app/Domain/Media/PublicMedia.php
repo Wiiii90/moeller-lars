@@ -2,6 +2,7 @@
 
 namespace App\Domain\Media;
 
+use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SiteNodeType;
@@ -9,6 +10,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
+use App\Models\HomePresentationSetting;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -77,6 +79,10 @@ class PublicMedia
                     ->where('state', 'published'))
                 ->whereRaw('blocks @> ?::jsonb', [json_encode([['type' => 'cv_list']], JSON_THROW_ON_ERROR)])
                 ->exists()) {
+            return true;
+        }
+
+        if ($this->activeHomeReferencesAsset((int) $asset->getKey())) {
             return true;
         }
 
@@ -226,6 +232,38 @@ class PublicMedia
         $this->assertAvailable($asset);
 
         return route('media.original', $asset);
+    }
+
+    private function activeHomeReferencesAsset(int $mediaAssetId): bool
+    {
+        /** @var HomePresentationSetting|null $settings */
+        $settings = HomePresentationSetting::query()
+            ->whereHas('siteSection', fn ($query) => $query->where('type', SiteNodeType::Home->value))
+            ->first(['id', 'template', 'configuration']);
+        if (! $settings instanceof HomePresentationSetting) {
+            return false;
+        }
+
+        $template = $settings->template();
+        if (! in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
+            return false;
+        }
+
+        foreach ($settings->components($template) as $component) {
+            if (($component['type'] ?? null) === 'image'
+                && is_numeric($component['media_asset_id'] ?? null)
+                && (int) $component['media_asset_id'] === $mediaAssetId) {
+                return true;
+            }
+
+            if (($component['type'] ?? null) === 'text'
+                && is_string($component['body'] ?? null)
+                && in_array($mediaAssetId, RichTextMediaReference::ids($component['body']), true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function assertAvailable(MediaAsset $asset): void

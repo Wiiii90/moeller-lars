@@ -106,6 +106,11 @@ class PublicArtworkQuery
         return $artworks;
     }
 
+    public function homeCandidateCount(): int
+    {
+        return $this->homeQuery()->count();
+    }
+
     public function publishedBySlug(string $slug): ?Artwork
     {
         return $this->publicQuery()

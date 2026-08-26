@@ -2,9 +2,11 @@
 
 namespace App\Domain\Media;
 
+use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\RichTextMediaReference;
 use App\Models\CustomPageSetting;
 use App\Models\CvEntry;
+use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -76,6 +78,33 @@ final class MediaReferenceQuery
     }
 
     /** @return list<int> */
+    public function mediaIdsForHome(HomePresentationSetting $settings): array
+    {
+        $ids = [];
+
+        foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $template) {
+            foreach ($settings->components($template) as $component) {
+                if (($component['type'] ?? null) === 'image'
+                    && is_numeric($component['media_asset_id'] ?? null)
+                    && (int) $component['media_asset_id'] > 0) {
+                    $ids[] = (int) $component['media_asset_id'];
+                }
+
+                if (($component['type'] ?? null) === 'text' && is_string($component['body'] ?? null)) {
+                    $ids = array_merge($ids, RichTextMediaReference::ids($component['body']));
+                }
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    public function homeReferencesAsset(HomePresentationSetting $settings, int $mediaAssetId): bool
+    {
+        return in_array($mediaAssetId, $this->mediaIdsForHome($settings), true);
+    }
+
+    /** @return list<int> */
     private function directContentMediaIds(): array
     {
         if ($this->directContentMediaIds !== null) {
@@ -91,6 +120,10 @@ final class MediaReferenceQuery
             if (is_string($body)) {
                 $ids = array_merge($ids, RichTextMediaReference::ids($body));
             }
+        }
+
+        foreach (HomePresentationSetting::query()->get(['id', 'configuration']) as $settings) {
+            $ids = array_merge($ids, $this->mediaIdsForHome($settings));
         }
 
         return $this->directContentMediaIds = array_values(array_unique($ids));
