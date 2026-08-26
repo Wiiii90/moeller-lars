@@ -458,7 +458,7 @@ final class HomePresentation extends Page
                         : 'Choose an image from Media Files',
                     'text' => filled($component['title'] ?? null)
                         ? (string) $component['title']
-                        : Str::limit(trim((string) ($component['body'] ?? '')), 110) ?: 'Empty Rich Text',
+                        : (Str::limit(trim((string) ($component['body'] ?? '')), 110) ?: 'Empty Rich Text'),
                     'divider' => 'Editorial divider',
                     default => 'Unsupported component',
                 };
