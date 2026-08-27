@@ -5,6 +5,12 @@
     padding: .85rem 0;
 }
 
+.admin-home-workspace .admin-data-controls {
+    grid-template-columns: minmax(14rem, 2fr) minmax(8rem, .75fr) minmax(8rem, .75fr) auto auto;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
 .home-hero-surface {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
@@ -194,10 +200,20 @@
     line-height: 1.4;
 }
 
-.home-hero-rail > .custom-page-component-add-row {
+.home-hero-rail__add {
     flex: 0 0 auto;
     margin: 0;
+    padding: 0;
     border-top: 1px solid var(--admin-line);
+    border-bottom: 0;
+}
+
+.home-hero-rail__add .admin-action {
+    width: 100%;
+}
+
+.home-components__add {
+    margin-top: 0;
 }
 
 .home-source-candidates {
@@ -276,6 +292,10 @@
 }
 
 @media (max-width: 760px) {
+    .admin-home-workspace .admin-data-controls {
+        grid-template-columns: 1fr;
+    }
+
     .home-hero-surface {
         grid-template-columns: 1fr;
         height: auto;

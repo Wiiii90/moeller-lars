@@ -11,9 +11,9 @@
         @endif
 
         @if ($template === 'artwork')
-            <div class="home-hero-actions journal-workspace__control-group">
-                <span class="journal-workspace__control-label">Hero Artwork</span>
-                <div class="journal-workspace__journal-actions">
+            <div class="home-hero-actions admin-data-control-group">
+                <span class="admin-data-control-label">Hero Artwork</span>
+                <div class="admin-toolbar">
                     <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
                     @if ($heroGroupSource === 'manual')
                         <button class="admin-action" type="button" wire:click="mountAction('addHeroArtwork')">Add artwork</button>
@@ -52,7 +52,7 @@
                                     @if ($heroGroupSource === 'manual') wire:sort:item="{{ $row['id'] }}" @endif
                                 >
                                     @if ($heroGroupSource === 'manual')
-                                        <button class="custom-page-row__drag" type="button" wire:sort:handle aria-label="Drag {{ $row['title'] }}">⋮⋮</button>
+                                        <button class="admin-drag-handle" type="button" wire:sort:handle aria-label="Drag {{ $row['title'] }}">⋮⋮</button>
                                     @endif
 
                                     <div class="home-hero-candidate__visual">
@@ -104,10 +104,12 @@
                     @endif
 
                     @if ($heroGroupSource === 'manual')
-                        <button class="custom-page-component-add-row" type="button" wire:click="mountAction('addHeroArtwork')">
-                            <span aria-hidden="true">+</span>
-                            <strong>Add artwork</strong>
-                        </button>
+                        <div class="admin-bottom-add home-hero-rail__add">
+                            <button class="admin-action" type="button" wire:click="mountAction('addHeroArtwork')">
+                                <span class="admin-bottom-add__plus" aria-hidden="true">+</span>
+                                <span class="admin-bottom-add__label">Add artwork</span>
+                            </button>
+                        </div>
                     @endif
 
                     @if ($selectionIssue)
@@ -121,12 +123,12 @@
                 $visibleSourceIds = collect($sourceRows->items())->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
             @endphp
 
-            <div class="journal-workspace__controls is-blog" aria-label="Gallery source controls">
-                <label class="journal-workspace__field journal-workspace__search">
+            <div class="admin-data-controls" aria-label="Gallery source controls">
+                <label class="admin-data-field">
                     <span>Search</span>
                     <input type="search" wire:model.live.debounce.300ms="sourceSearch" placeholder="Gallery" autocomplete="off">
                 </label>
-                <label class="journal-workspace__field">
+                <label class="admin-data-field">
                     <span>Status</span>
                     <select wire:model.live="sourceStatusFilter">
                         <option value="any">Any</option>
@@ -134,7 +136,7 @@
                         <option value="unpublished">Unpublished</option>
                     </select>
                 </label>
-                <label class="journal-workspace__field">
+                <label class="admin-data-field">
                     <span>Source</span>
                     <select wire:model.live="sourceHomeFilter">
                         <option value="any">Any</option>
@@ -142,17 +144,17 @@
                         <option value="disabled">Unavailable / Disabled</option>
                     </select>
                 </label>
-                <div class="journal-workspace__control-group">
-                    <span class="journal-workspace__control-label">Filter</span>
+                <div class="admin-data-control-group">
+                    <span class="admin-data-control-label">Filter</span>
                     <button class="admin-action" type="button" wire:click="resetSourceFilters">Reset</button>
                 </div>
-                <div class="journal-workspace__control-group journal-workspace__selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
-                    <span class="journal-workspace__control-label">Selection</span>
-                    <div class="journal-workspace__selection-anchor">
-                        <button class="admin-action journal-workspace__selection-trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedSourceIds === [])>
-                            Selected Galleries <span class="journal-workspace__selection-count">{{ count($selectedSourceIds) }}</span>
+                <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
+                    <span class="admin-data-control-label">Selection</span>
+                    <div class="admin-selection__anchor">
+                        <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedSourceIds === [])>
+                            Selected Galleries <span class="admin-selection__count">{{ count($selectedSourceIds) }}</span>
                         </button>
-                        <div class="journal-workspace__selection-menu" role="menu" x-show="open" x-cloak>
+                        <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
                             <button class="admin-action" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(true)" x-on:click="open = false">Enable preference</button>
                             <button class="admin-action" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(false)" x-on:click="open = false">Disable preference</button>
                         </div>
@@ -161,11 +163,11 @@
             </div>
 
             @if ($sourceRows->count() > 0)
-                <x-admin.table class="journal-workspace__table-wrap">
-                    <table class="journal-workspace__table">
+                <x-admin.table class="admin-data-table">
+                    <table>
                         <thead>
                             <tr>
-                                <th scope="col" class="journal-workspace__selection-head">
+                                <th scope="col" class="admin-table__selection">
                                     <input
                                         type="checkbox"
                                         x-data="{}"
@@ -196,10 +198,10 @@
                                     $selected = in_array($gallery['id'], array_map('intval', $selectedSourceIds), true);
                                 @endphp
                                 <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="home-source-gallery-{{ $gallery['id'] }}">
-                                    <td class="journal-workspace__selection-cell">
+                                    <td class="admin-table__selection">
                                         <input type="checkbox" value="{{ $gallery['id'] }}" wire:model.live="selectedSourceIds" aria-label="Select {{ $gallery['name'] }}">
                                     </td>
-                                    <td class="journal-workspace__identity"><strong>{{ $gallery['name'] }}</strong></td>
+                                    <td class="admin-table__identity"><strong>{{ $gallery['name'] }}</strong></td>
                                     <td>
                                         <div class="home-source-candidates" aria-label="Candidates from {{ $gallery['name'] }}">
                                             @forelse ($gallery['candidates'] as $candidate)
@@ -215,8 +217,8 @@
                                             @endforelse
                                         </div>
                                     </td>
-                                    <td><span class="journal-workspace__state {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
-                                    <td><span class="journal-workspace__state {{ $gallery['effective_enabled'] ? 'is-published' : '' }}">{{ $gallery['source_label'] }}</span></td>
+                                    <td><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
+                                    <td><span class="admin-status {{ $gallery['effective_enabled'] ? 'is-published' : '' }}">{{ $gallery['source_label'] }}</span></td>
                                     <td>{{ number_format($gallery['published_artworks']) }}</td>
                                     <td>{{ $gallery['newest_year'] ?: '—' }}</td>
                                     <td>
@@ -239,13 +241,13 @@
             @endif
 
             @if ($sourceRows->total() > $sourceRows->perPage() || $sourceRows->currentPage() > 1)
-                <footer class="journal-workspace__pager">
-                    <label class="journal-workspace__pager-size">
+                <footer class="admin-pager">
+                    <label class="admin-pager__size">
                         <span>Per page</span>
                         <select wire:model.live.number="sourcePerPage"><option value="10">10</option><option value="25">25</option></select>
                     </label>
-                    <span class="journal-workspace__pager-range">{{ $sourceRows->firstItem() ?? 0 }}–{{ $sourceRows->lastItem() ?? 0 }} of {{ $sourceRows->total() }}</span>
-                    <div class="journal-workspace__pager-actions admin-toolbar">
+                    <span class="admin-pager__range">{{ $sourceRows->firstItem() ?? 0 }}–{{ $sourceRows->lastItem() ?? 0 }} of {{ $sourceRows->total() }}</span>
+                    <div class="admin-pager__actions admin-toolbar">
                         <button class="admin-action" type="button" wire:click="goToSourcePage({{ $sourceRows->currentPage() - 1 }})" @disabled($sourceRows->onFirstPage())>Previous</button>
                         <button class="admin-action" type="button" wire:click="goToSourcePage({{ $sourceRows->currentPage() + 1 }})" @disabled(! $sourceRows->hasMorePages())>Next</button>
                     </div>
@@ -258,37 +260,37 @@
                 $visibleComponentTargets = collect($components)->pluck('target')->values()->all();
             @endphp
 
-            <div class="journal-workspace__controls is-blog" aria-label="Home component controls">
-                <label class="journal-workspace__field journal-workspace__search">
+            <div class="admin-data-controls" aria-label="Home component controls">
+                <label class="admin-data-field">
                     <span>Search</span>
                     <input type="search" wire:model.live.debounce.300ms="componentSearch" placeholder="Components" autocomplete="off">
                 </label>
-                <label class="journal-workspace__field">
+                <label class="admin-data-field">
                     <span>Type</span>
                     <select wire:model.live="componentType">
                         <option value="any">Any</option>
                         @foreach ($componentTypeOptions as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
                     </select>
                 </label>
-                <div class="journal-workspace__control-group">
-                    <span class="journal-workspace__control-label">Filter</span>
+                <div class="admin-data-control-group">
+                    <span class="admin-data-control-label">Filter</span>
                     <button class="admin-action" type="button" wire:click="resetComponentFilters">Reset</button>
                 </div>
-                <div class="journal-workspace__control-group">
-                    <span class="journal-workspace__control-label">{{ strtoupper($templateLabel) }}</span>
-                    <div class="journal-workspace__journal-actions">
+                <div class="admin-data-control-group">
+                    <span class="admin-data-control-label">{{ strtoupper($templateLabel) }}</span>
+                    <div class="admin-toolbar">
                         <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
                         <button class="admin-action" type="button" wire:click="mountAction('addComponent')">Add component</button>
                         <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
                     </div>
                 </div>
-                <div class="journal-workspace__control-group journal-workspace__selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
-                    <span class="journal-workspace__control-label">Selection</span>
-                    <div class="journal-workspace__selection-anchor">
-                        <button class="admin-action journal-workspace__selection-trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedComponentTargets === [])>
-                            Selected components <span class="journal-workspace__selection-count">{{ count($selectedComponentTargets) }}</span>
+                <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
+                    <span class="admin-data-control-label">Selection</span>
+                    <div class="admin-selection__anchor">
+                        <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedComponentTargets === [])>
+                            Selected components <span class="admin-selection__count">{{ count($selectedComponentTargets) }}</span>
                         </button>
-                        <div class="journal-workspace__selection-menu" role="menu" x-show="open" x-cloak>
+                        <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
                             <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('up')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected up</button>
                             <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('down')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected down</button>
                             <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false">Delete selected</button>
@@ -298,11 +300,11 @@
             </div>
 
             @if ($components !== [])
-                <x-admin.table class="journal-workspace__table-wrap">
-                    <table class="journal-workspace__table">
+                <x-admin.table class="admin-data-table">
+                    <table>
                         <thead>
                             <tr>
-                                <th scope="col" class="journal-workspace__selection-head">
+                                <th scope="col" class="admin-table__selection">
                                     <input
                                         type="checkbox"
                                         x-data="{}"
@@ -327,23 +329,23 @@
                         <tbody @if ($reorderEnabled) wire:sort="sortComponent" @endif>
                             @foreach ($components as $component)
                                 <tr wire:key="home-component-{{ $template }}-{{ $component['target'] }}" @if ($reorderEnabled) wire:sort:item="{{ $component['target'] }}" @endif>
-                                    <td class="journal-workspace__selection-cell">
+                                    <td class="admin-table__selection">
                                         <input type="checkbox" value="{{ $component['target'] }}" wire:model.live="selectedComponentTargets" aria-label="Select {{ $component['type_label'] }}">
                                     </td>
                                     <td>
-                                        <button class="custom-page-row__drag" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $component['type_label'] }}">⋮⋮</button>
+                                        <button class="admin-drag-handle" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $component['type_label'] }}">⋮⋮</button>
                                     </td>
-                                    <td><span class="journal-workspace__position-badge">{{ str_pad((string) $component['position'], 2, '0', STR_PAD_LEFT) }}</span></td>
+                                    <td><span class="admin-position">{{ str_pad((string) $component['position'], 2, '0', STR_PAD_LEFT) }}</span></td>
                                     <td>{{ $component['type_label'] }}</td>
-                                    <td class="journal-workspace__identity">
+                                    <td class="admin-table__identity">
                                         <strong>{{ $component['content']['primary'] }}</strong>
                                         @if ($component['content']['secondary'] !== '')<small>{{ $component['content']['secondary'] }}</small>@endif
                                     </td>
                                     <td>
                                         <div class="admin-toolbar">
                                             @if ($component['editable'])<button class="admin-action" type="button" wire:click="mountAction('editComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })">Edit</button>@endif
-                                            <button class="admin-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')" @disabled(! $reorderEnabled || ! $component['can_move_up']) aria-label="Move {{ $component['type_label'] }} up">↑</button>
-                                            <button class="admin-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')" @disabled(! $reorderEnabled || ! $component['can_move_down']) aria-label="Move {{ $component['type_label'] }} down">↓</button>
+                                            <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')" @disabled(! $reorderEnabled || ! $component['can_move_up']) aria-label="Move {{ $component['type_label'] }} up">↑</button>
+                                            <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')" @disabled(! $reorderEnabled || ! $component['can_move_down']) aria-label="Move {{ $component['type_label'] }} down">↓</button>
                                             <button class="admin-action is-danger" type="button" wire:click="mountAction('removeComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })">Delete</button>
                                         </div>
                                     </td>
@@ -360,14 +362,17 @@
                 </x-admin.empty-state>
             @endif
 
-            <button class="custom-page-component-add-row" type="button" wire:click="mountAction('addComponent')">
-                <span aria-hidden="true">+</span><strong>Add component</strong>
-            </button>
+            <div class="admin-bottom-add home-components__add">
+                <button class="admin-action" type="button" wire:click="mountAction('addComponent')">
+                    <span class="admin-bottom-add__plus" aria-hidden="true">+</span>
+                    <span class="admin-bottom-add__label">Add component</span>
+                </button>
+            </div>
 
         @elseif ($template === 'skip_home')
-            <div class="home-skip-tools journal-workspace__control-group" aria-label="Skip Home actions">
-                <span class="journal-workspace__control-label">Skip Home</span>
-                <div class="journal-workspace__journal-actions">
+            <div class="home-skip-tools admin-data-control-group" aria-label="Skip Home actions">
+                <span class="admin-data-control-label">Skip Home</span>
+                <div class="admin-toolbar">
                     <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
                     <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
                 </div>
