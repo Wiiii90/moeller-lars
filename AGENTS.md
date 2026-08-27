@@ -264,7 +264,7 @@ Use native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) 
 
 ## Worker prompt delivery
 
-A prompt intended for a parallel worker must be one complete contiguous fenced code block so it has one Copy button.
+Whenever a worker, repair, or handoff prompt is emitted for copy/paste, the entire prompt must be inside exactly one contiguous fenced Markdown code block. Do not split it across multiple fenced blocks, use quote/indent formatting for the prompt, or place any part of the prompt outside that code block.
 
 A worker prompt should state:
 
