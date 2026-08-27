@@ -7,8 +7,6 @@ Two companion files are part of this contract:
 - [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
 - [`followup-skill.md`](followup-skill.md) — how to create a lossless continuation prompt when a long orchestration chat is handed to a fresh chat.
 
-Additional browser-acceptance discipline is documented in [`docs/ADMIN_BROWSER_ACCEPTANCE.md`](docs/ADMIN_BROWSER_ACCEPTANCE.md).
-
 ## Source of truth
 
 Use, in this order:
@@ -92,8 +90,6 @@ Do not create a new page-local design language to satisfy one slice. In particul
 If repeated visual repair passes preserve the same rejected structure, stop patching around it. Re-audit from the accepted reference and rebuild the presentation layer while keeping the domain/runtime behavior intact.
 
 Do not encode rejected or unreviewed presentation details into durable tests or docs merely because a worker implemented them. Current browser acceptance is the authority for presentation.
-
-See `docs/ADMIN_BROWSER_ACCEPTANCE.md` for the durable review and prompting rules that follow from this distinction.
 
 ## Verification discipline
 
