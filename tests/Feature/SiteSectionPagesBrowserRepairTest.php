@@ -7,6 +7,7 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Pages\SitePages;
 use App\Models\ArtworkCategory;
+use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -53,13 +54,19 @@ it('keeps the Pages browser on one flat editorial table contract', function (): 
 
     $controlsMatch = preg_match('/\.pages-controls\s*\{([^}]*)\}/s', $view, $controlsRules);
     $headerMatch = preg_match('/\.pages-table__header\s*\{([^}]*)\}/s', $view, $headerRules);
+    $headerMarkupMatch = preg_match(
+        '/<div class="pages-table__header" role="row">(.*?)@if \(! \$filtersActive\)/s',
+        $view,
+        $headerMarkup,
+    );
 
     expect($controlsMatch)->toBe(1)
         ->and($headerMatch)->toBe(1)
+        ->and($headerMarkupMatch)->toBe(1)
         ->and($controlsRules[1])->not->toContain('border-bottom')
         ->and($headerRules[1])->toContain('border-bottom: 1px solid var(--pages-border);')
         ->and(substr_count($view, 'role="table"'))->toBe(1)
-        ->and(substr_count($view, 'role="columnheader"'))->toBe(9)
+        ->and(substr_count($headerMarkup[1], 'role="columnheader"'))->toBe(9)
         ->and($source)->toContain('wire:model.live.debounce.300ms="search"')
         ->and($source)->toContain('wire:model.live="typeFilter"')
         ->and($source)->toContain('wire:model.live="statusFilter"')
@@ -157,6 +164,12 @@ it('allows normal cross-parent moves child to top and top to child with normaliz
     expect($order->moveTo($page, (int) $parentA->getKey(), 0))->toBeTrue();
     expect($page->refresh()->parent_id)->toBe((int) $parentA->getKey())
         ->and($page->position)->toBe(10);
+
+    expect(AuditEvent::query()
+        ->where('action', 'site_section.reordered')
+        ->where('entity_type', 'site_section')
+        ->where('entity_id', $page->getKey())
+        ->count())->toBe(4);
 });
 
 it('moves a published in-menu page under a hidden off-menu parent without changing page visibility state', function (): void {
@@ -316,6 +329,12 @@ it('initializes target configuration for safe type conversions transactionally',
     expect($custom->type)->toBe(SiteNodeType::CustomPage->value)
         ->and($custom->slug)->not->toBeNull()
         ->and($custom->customPageSetting()->exists())->toBeTrue();
+
+    expect(AuditEvent::query()
+        ->where('action', 'site_section.type_converted')
+        ->where('entity_type', 'site_section')
+        ->where('entity_id', $page->getKey())
+        ->count())->toBe(4);
 });
 
 it('blocks destructive type conversion when custom page content exists', function (): void {
@@ -342,7 +361,12 @@ it('allows safe Journal template changes and blocks changes or conversion when e
 
     $safe = $service->createJournal('Safe Journal', 'safe-journal-repair', JournalTemplate::Blog->value);
     $service->updateJournalTemplate($safe, JournalTemplate::Exhibitions->value);
-    expect($safe->refresh()->template)->toBe(JournalTemplate::Exhibitions->value);
+    expect($safe->refresh()->template)->toBe(JournalTemplate::Exhibitions->value)
+        ->and(AuditEvent::query()
+            ->where('action', 'site_section.journal_template_updated')
+            ->where('entity_type', 'site_section')
+            ->where('entity_id', $safe->getKey())
+            ->exists())->toBeTrue();
 
     $journal = $service->createJournal('Journal With Entry', 'journal-with-entry-repair', JournalTemplate::Blog->value);
     BlogPost::query()->create([
