@@ -269,14 +269,30 @@ Current Exhibitions table:
 
 For Exhibition identity, keep the secondary line concise, e.g. `Venue · City`; do not dump full street/country metadata into the collection row.
 
-## 13. Gallery and Files are references, not universal templates
+## 13. Gallery and Media Files are accepted style references
 
-Gallery and Files currently establish useful shared control geometry, but their task surfaces remain distinct:
+Gallery and Media Files / Files are currently browser/product accepted and are the primary style references for the admin where their geometry applies.
+
+A worker changing another admin page must inspect their actual current Blade/CSS/shared-primitives at the exact working base instead of approximating them from prose.
+
+Use them as authorities for applicable shared presentation dimensions such as:
+
+- overall workspace/content width;
+- page heading placement and typography;
+- metric-strip placement and geometry;
+- control labels, heights and spacing;
+- table/grid header and row treatment;
+- action alignment;
+- general density, borders and typography.
+
+Their task surfaces remain distinct:
 
 - Gallery is a visual Artwork/contact-sheet workflow;
-- Files is a dense reusable media-library workflow.
+- Media Files is a dense reusable media-library workflow.
 
-Do not turn Custom, Journal or Home into a Gallery contact sheet or Files list merely for consistency. Reuse the **shared controls and geometry**, not the wrong task model.
+Do not turn Custom, Journal, Home, Pages or General into the wrong task model merely for consistency. Reuse the **accepted shell, controls and geometry**, then keep the task-specific surface appropriate to the page.
+
+Do not introduce a competing page-local width, card family, toolbar grammar, table grammar, metric implementation or typography system when the accepted references/shared primitives already solve that dimension.
 
 ## 14. Sections, kickers and information hierarchy
 
@@ -407,7 +423,19 @@ Important shared Blade primitives include:
 - `toolbar.blade.php`;
 - `empty-state.blade.php`.
 
-## 22. Browser-review checklist
+## 22. Browser acceptance and presentation reset
+
+Static source review, passing focused tests and a running container do not establish visual/product acceptance.
+
+The user's review of the current built candidate is authoritative for presentation. If the user rejects a layout, width, cards/panels, metrics treatment, toolbar, table geometry, typography or wording, that rejected presentation is not a preservation requirement merely because it already exists, passed a source review or is asserted by a temporary test.
+
+When the user names Gallery, Media Files or another accepted current page as a visual reference, inspect the exact reference implementation and reuse its primitives/tokens for the dimensions named. “Keep it consistent” without reading the reference code is not sufficient.
+
+If a page has survived repeated visual repair passes while retaining the same rejected structure, stop layering patches onto it. Preserve valid domain behavior, persistence, safety guards and central technologies, but rebuild the presentation layer from the accepted reference/shared grammar when necessary.
+
+Do not create durable UI tests whose purpose is to memorialize a repair round, branch name, candidate chronology or unaccepted markup. Tests should protect stable functional/domain behavior; browser presentation becomes a durable reference after browser/product acceptance.
+
+## 23. Browser-review checklist
 
 For every admin slice, inspect at least:
 
@@ -423,6 +451,7 @@ For every admin slice, inspect at least:
 - dialog size/scroll/focus/popovers;
 - filtered reorder behavior;
 - obvious first-click/navigation latency;
-- whether an existing shared component was bypassed by a new local structure.
+- whether an existing shared component was bypassed by a new local structure;
+- whether the page matches the accepted Gallery/Media Files reference geometry where applicable.
 
 Browser acceptance is allowed to reject a technically correct implementation for poor/inconsistent UI. That feedback becomes the next source requirement.
