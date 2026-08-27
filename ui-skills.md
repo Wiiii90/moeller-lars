@@ -294,7 +294,65 @@ Do not turn Custom, Journal, Home, Pages or General into the wrong task model me
 
 Do not introduce a competing page-local width, card family, toolbar grammar, table grammar, metric implementation or typography system when the accepted references/shared primitives already solve that dimension.
 
-## 14. Sections, kickers and information hierarchy
+## 14. Theme and shared-primitive enforcement
+
+The admin theme is an implementation authority, not optional inspiration.
+
+Using `x-admin.workspace` around a page does **not** count as theme compliance if the page then recreates controls, metrics, table geometry, actions, spacing, typography or width with page-local classes.
+
+For shared presentation concerns, reuse the existing theme tokens and Blade primitives first. The default authorities include:
+
+- `resources/css/admin.css` and shared `resources/css/admin/*` modules;
+- `--admin-*` tokens;
+- `x-admin.workspace`;
+- `x-admin.metrics` / `x-admin.metric`;
+- `x-admin.section`;
+- `x-admin.table`;
+- `x-admin.toolbar`;
+- `x-admin.empty-state`;
+- `admin-action` and other existing shared control classes;
+- accepted Gallery and Media Files implementations for concrete composition examples.
+
+Without an explicit, task-specific reason, the following are source-review failures:
+
+- inline `<style>` blocks inside admin Blade views;
+- new page-local CSS variables that duplicate existing `--admin-*` tokens for color, border, spacing, width, control height or typography;
+- new page-local control/button/action families that duplicate shared controls;
+- new page-local metric card systems;
+- new page-local table/header/row systems for ordinary editorial tables when `x-admin.table` and accepted table geometry can be reused;
+- page-specific workspace/content widths that diverge from the accepted shell;
+- copying shared geometry into `.pages-*`, `.general-*`, `.home-*`, `.journal-*` or similar selectors merely to make one page self-contained;
+- large pixel-tuning patches whose only purpose is to imitate geometry that already exists in the theme/reference pages.
+
+Feature-local CSS is allowed for genuinely feature-specific surfaces, for example an artwork contact sheet, media preview, drag affordance unique to a domain surface, or a task-specific visualization. It must not redefine the shared shell around that surface.
+
+If the theme or shared primitive cannot express a needed shared pattern, fix or extend the shared authority deliberately. Do not fork it locally first and promise to centralize later.
+
+### Required implementation order
+
+For visual/admin work:
+
+1. read `ui-skills.md`;
+2. inspect the exact accepted Gallery/Media Files reference code relevant to the requested geometry;
+3. inspect existing shared Blade primitives and theme tokens;
+4. compose the target page from those authorities;
+5. add feature-local CSS only for task-specific behavior that remains;
+6. explain every new shared-looking selector or token in the worker handoff.
+
+### Source-review gate
+
+A visual worker result is not source-coherent until the reviewer checks the changed Blade/CSS for theme bypasses.
+
+The reviewer should reject the change before reconciliation when a page recreates an existing shared primitive locally, even if the markup is functional and the worker claims visual consistency.
+
+The handoff for visual work must state:
+
+- which accepted reference files were inspected;
+- which shared primitives/tokens were reused;
+- which new CSS/classes were added;
+- why each new class is genuinely task-specific rather than a duplicate of the theme.
+
+## 15. Sections, kickers and information hierarchy
 
 Use explicit section titles where a workspace has multiple real task surfaces.
 
@@ -309,7 +367,7 @@ when `Current Home artwork` already communicates the section.
 
 Likewise avoid eyebrow/kicker labels on every row/card. Information hierarchy should come from page heading, metric strip, control labels, table headers and section titles.
 
-## 15. Dialogs and overlays
+## 16. Dialogs and overlays
 
 Dialogs are a shared primitive.
 
@@ -329,7 +387,7 @@ Do not fix one broken dialog by creating a page-local fake modal.
 
 Large editorial dialogs should order content according to the actual editorial task, not persistence schema order.
 
-## 16. Rich Text editor UI
+## 17. Rich Text editor UI
 
 There is one central Rich Text technology: `AdminRichText` backed by Filament `MarkdownEditor`.
 
@@ -343,7 +401,7 @@ Media insertion belongs with the editor controls/action area and uses the lazy M
 
 Canonical asset ALT should be reused unless a product surface explicitly supports a true occurrence-level override. Journal structured Cover/Gallery currently use Media Files ALT exclusively at runtime.
 
-## 17. Media picker behavior
+## 18. Media picker behavior
 
 Use the central lazy `MediaAssetSelect` pattern.
 
@@ -351,7 +409,7 @@ Do not eagerly `pluck()` hundreds of MediaAsset options merely because a normal 
 
 The picker should narrow by allowed media kind and query lazily. This is both a UI consistency and performance rule.
 
-## 18. Performance as UI quality
+## 19. Performance as UI quality
 
 A slow first click is a product bug even when local Docker amplifies it.
 
@@ -365,7 +423,7 @@ When browser review reports latency:
 
 Avoid adding caches blindly before identifying what is repeated or unnecessarily eager.
 
-## 19. Empty states
+## 20. Empty states
 
 Empty states should be concise and task-oriented.
 
@@ -380,7 +438,7 @@ Avoid paragraphs explaining obvious states.
 
 If the empty state is caused by active filters, distinguish it from a genuinely empty dataset.
 
-## 20. Responsive behavior
+## 21. Responsive behavior
 
 Desktop alignment is primary for these editorial tables, but responsive behavior must be intentional.
 
@@ -389,7 +447,7 @@ Desktop alignment is primary for these editorial tables, but responsive behavior
 - do not let one child/action toolbar wrap independently and create a pseudo-card inside a table;
 - maintain control labels/action grouping when tool rows wrap.
 
-## 21. CSS ownership
+## 22. CSS ownership
 
 The canonical theme entrypoint is `resources/css/admin.css`; feature modules live under `resources/css/admin/`.
 
@@ -423,7 +481,7 @@ Important shared Blade primitives include:
 - `toolbar.blade.php`;
 - `empty-state.blade.php`.
 
-## 22. Browser acceptance and presentation reset
+## 23. Browser acceptance and presentation reset
 
 Static source review, passing focused tests and a running container do not establish visual/product acceptance.
 
@@ -435,7 +493,7 @@ If a page has survived repeated visual repair passes while retaining the same re
 
 Do not create durable UI tests whose purpose is to memorialize a repair round, branch name, candidate chronology or unaccepted markup. Tests should protect stable functional/domain behavior; browser presentation becomes a durable reference after browser/product acceptance.
 
-## 23. Browser-review checklist
+## 24. Browser-review checklist
 
 For every admin slice, inspect at least:
 
@@ -452,6 +510,7 @@ For every admin slice, inspect at least:
 - filtered reorder behavior;
 - obvious first-click/navigation latency;
 - whether an existing shared component was bypassed by a new local structure;
-- whether the page matches the accepted Gallery/Media Files reference geometry where applicable.
+- whether the page matches the accepted Gallery/Media Files reference geometry where applicable;
+- whether page-local CSS duplicates an existing theme token or primitive.
 
 Browser acceptance is allowed to reject a technically correct implementation for poor/inconsistent UI. That feedback becomes the next source requirement.
