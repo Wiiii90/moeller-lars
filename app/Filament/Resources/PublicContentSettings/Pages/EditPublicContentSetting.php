@@ -12,6 +12,8 @@ final class EditPublicContentSetting extends EditRecord
 
     public function mount(int|string $record): void
     {
+        parent::mount($record);
+
         $this->redirect(General::getUrl(), navigate: true);
     }
 }
