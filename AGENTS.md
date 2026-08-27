@@ -7,6 +7,8 @@ Two companion files are part of this contract:
 - [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
 - [`followup-skill.md`](followup-skill.md) — how to create a lossless continuation prompt when a long orchestration chat is handed to a fresh chat.
 
+Additional browser-acceptance discipline is documented in [`docs/ADMIN_BROWSER_ACCEPTANCE.md`](docs/ADMIN_BROWSER_ACCEPTANCE.md).
+
 ## Source of truth
 
 Use, in this order:
@@ -70,6 +72,29 @@ Do **not** call a candidate final merely because it boots, migrations succeed or
 
 Do not rebuild after every comment or every worker. Prefer one combined build after all intended side diffs for that cycle are reconciled.
 
+## Browser acceptance authority
+
+Static source review cannot approve presentation. Use precise acceptance language:
+
+- **source reviewed / source coherent** means the code and contracts were inspected;
+- **runtime verified** means a concrete runtime behavior was actually exercised;
+- **browser reviewed** means the current built candidate was inspected in the browser;
+- **browser/product accepted** means the user accepted that current presentation and behavior.
+
+Never collapse these states into a generic `accepted` label for UI work.
+
+If the user rejects a page's presentation, that rejected markup/CSS/layout is **not** a contract merely because it already exists or passed static checks. Preserve working domain behavior, persistence, services and safety guards, but the presentation layer may be replaced wholesale when that is the clearest route to the accepted UI.
+
+When the user identifies another current page as the visual reference for a dimension such as width, heading geometry, metrics, controls, table rows, typography or actions, workers must read the exact reference implementation at the shared base and reuse its shared primitives/tokens before inventing anything new. A prose prompt that merely says “keep things consistent” is insufficient evidence of visual consistency.
+
+Do not create a new page-local design language to satisfy one slice. In particular, do not introduce a parallel shell, card system, content width, toolbar grammar, table grammar or typography system when an accepted/current reference already exists.
+
+If repeated visual repair passes preserve the same rejected structure, stop patching around it. Re-audit from the accepted reference and rebuild the presentation layer while keeping the domain/runtime behavior intact.
+
+Do not encode rejected or unreviewed presentation details into durable tests or docs merely because a worker implemented them. Current browser acceptance is the authority for presentation.
+
+See `docs/ADMIN_BROWSER_ACCEPTANCE.md` for the durable review and prompting rules that follow from this distinction.
+
 ## Verification discipline
 
 Run the narrowest checks that prove the changed behavior while iterating.
@@ -84,6 +109,8 @@ Unless a concrete risk requires more, browser-polish workers should not automati
 - Validation deployments.
 
 Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. Full canonical verification belongs to the final PR to `main` as defined in `docs/RELEASE.md`.
+
+Tests added during browser work should encode durable product/domain behavior, not temporary orchestration states. Avoid durable test names tied to repair rounds, browser passes, branch choreography or candidate labels when a stable behavior-based name is available. Do not add a broad “acceptance” test merely to memorialize an intermediate browser candidate.
 
 The user's repeated request to inspect a change quickly is not an invitation to reinstall dependencies or recreate infrastructure.
 
@@ -175,7 +202,8 @@ The admin is still under browser acceptance. Existing work is a starting point, 
 - prefer an existing shared primitive over page-local CSS/interaction forks;
 - when a genuinely shared defect is discovered, fix the shared authority intentionally;
 - do not introduce a second Rich Text, media-selection, table, modal or drag/drop technology to unblock one page;
-- consult `ui-skills.md` before changing admin workspace geometry.
+- consult `ui-skills.md` before changing admin workspace geometry;
+- when the user explicitly rejects the current presentation or asks for a reset, do not preserve that rejected structure merely to minimize the diff.
 
 ## Central technology rules
 
@@ -226,6 +254,8 @@ A worker prompt should state:
 - commit/push rules;
 - exact handoff fields expected.
 
+For visual work, the prompt must additionally identify the current browser acceptance state and any user-designated reference surface. Do not describe rejected current markup as a preservation requirement unless the user explicitly accepted it.
+
 ## Worker handoff
 
 A normal handoff contains:
@@ -239,7 +269,7 @@ A normal handoff contains:
 - remote head verification;
 - unresolved blocker if one remains.
 
-The orchestrator then reviews the code independently. Long implementation diaries are not acceptance evidence.
+The orchestrator then reviews the code independently. Long implementation diaries are not acceptance evidence. A worker must not self-declare browser/product acceptance for a presentation it cannot see in the user's running candidate.
 
 ## Continuation handoffs
 
