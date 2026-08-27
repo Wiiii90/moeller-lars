@@ -91,6 +91,34 @@ If repeated visual repair passes preserve the same rejected structure, stop patc
 
 Do not encode rejected or unreviewed presentation details into durable tests or docs merely because a worker implemented them. Current browser acceptance is the authority for presentation.
 
+## Admin theme enforcement
+
+For authenticated admin UI, `ui-skills.md`, the shared `x-admin.*` Blade primitives, `resources/css/admin.css`, shared `resources/css/admin/*` modules, and accepted Gallery/Media Files implementations are mandatory implementation authorities.
+
+Wrapping a page in `x-admin.workspace` is not sufficient if the page then recreates the rest of the visual system locally.
+
+Without an explicit task-specific justification, treat these patterns as source-review failures:
+
+- inline `<style>` blocks in admin Blade views;
+- page-local CSS variables duplicating shared `--admin-*` tokens;
+- page-local control, button, action, metric, table, row, toolbar or workspace systems that duplicate existing shared primitives;
+- page-specific content widths or control heights that diverge from the accepted shell;
+- feature CSS used to reproduce generic theme geometry under selectors such as `.pages-*`, `.general-*`, `.home-*` or `.journal-*`;
+- large pixel-tuning patches that imitate Gallery/Media Files instead of reusing the same primitives/tokens.
+
+Feature-local CSS is valid only for genuinely feature-specific task surfaces. If a shared primitive is insufficient, extend the shared authority deliberately instead of forking it locally.
+
+For every visual worker, the prompt must require the worker to:
+
+1. read `ui-skills.md`;
+2. inspect the exact accepted Gallery/Media Files reference code relevant to the requested geometry;
+3. inspect the shared Blade/CSS primitives before adding local structure;
+4. reuse those authorities first;
+5. list in the handoff which reference files and shared primitives were actually used;
+6. justify every new shared-looking CSS class or token as genuinely task-specific.
+
+For every visual worker handoff, source review must inspect the actual Blade/CSS diff for theme bypasses before calling the result source coherent. Functional correctness alone is insufficient for reconciliation of visual work.
+
 ## Verification discipline
 
 Run the narrowest checks that prove the changed behavior while iterating.
@@ -252,6 +280,8 @@ A worker prompt should state:
 
 For visual work, the prompt must additionally identify the current browser acceptance state and any user-designated reference surface. Do not describe rejected current markup as a preservation requirement unless the user explicitly accepted it.
 
+For visual work, prompts must make theme/reference reuse operational rather than aspirational: name the accepted references, require inspection of their actual source at the base, prohibit duplicate local presentation systems, and require the handoff to enumerate reused primitives and any justified feature-local CSS.
+
 ## Worker handoff
 
 A normal handoff contains:
@@ -264,6 +294,12 @@ A normal handoff contains:
 - checks actually run;
 - remote head verification;
 - unresolved blocker if one remains.
+
+For visual work, also include:
+
+- accepted reference files inspected;
+- shared Blade/CSS primitives reused;
+- new CSS/classes/tokens added and why each is task-specific.
 
 The orchestrator then reviews the code independently. Long implementation diaries are not acceptance evidence. A worker must not self-declare browser/product acceptance for a presentation it cannot see in the user's running candidate.
 
