@@ -30,15 +30,18 @@ it('projects Blog and Exhibition cover thumbnails before the shared Blade render
 it('keeps Journal visual and action geometry stable without rebuilding the shared data workspace', function (): void {
     $journalCss = (string) file_get_contents(resource_path('css/admin/journal.css'));
     $dataCss = (string) file_get_contents(resource_path('css/admin/data-workspace.css'));
+    $taskCss = (string) file_get_contents(resource_path('css/admin/task-surfaces.css'));
 
     expect($journalCss)->toContain('.journal-visual {')
         ->and($journalCss)->toContain('width: 5rem;')
         ->and($journalCss)->toContain('.journal-visual__thumbnail {')
         ->and($journalCss)->toContain('width: 3.6rem;', 'height: 3rem;', 'object-fit: cover;')
-        ->and($dataCss)->toContain('.admin-table__actions {')
-        ->and($dataCss)->toContain('text-align: right !important;')
-        ->and($dataCss)->toContain('justify-content: flex-end;')
-        ->and($dataCss)->toContain('.admin-action--state {', 'min-width: 7.75rem;');
+        ->and($taskCss)->toContain('.admin-table__actions {')
+        ->and($taskCss)->toContain('text-align: right !important;')
+        ->and($taskCss)->toContain('justify-content: flex-end;')
+        ->and($taskCss)->toContain('.admin-action--state {', 'min-width: 7.75rem;')
+        ->and($dataCss)->toContain('.admin-pager,')
+        ->and($dataCss)->not->toContain('.admin-action--state');
 });
 
 it('keeps the shared Journal editor Gallery source and the central rich text fix intact', function (): void {

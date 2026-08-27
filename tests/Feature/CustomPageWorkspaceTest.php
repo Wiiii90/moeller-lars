@@ -392,27 +392,31 @@ it('keeps the Custom Page presentation on shared editorial primitives and centra
     $sequence = file_get_contents(resource_path('views/filament/pages/partials/custom-page-workspace-sequence.blade.php'));
     $footer = file_get_contents(resource_path('views/filament/pages/partials/custom-page-workspace-footer.blade.php'));
     $customCss = file_get_contents(resource_path('css/admin/custom-page.css'));
-    $sharedCss = file_get_contents(resource_path('css/admin/editorial-primitives.css'));
+    $taskCss = file_get_contents(resource_path('css/admin/task-surfaces.css'));
+    $dataCss = file_get_contents(resource_path('css/admin/data-workspace.css'));
     $blade = implode("\n", [$wrapper, $controls, $sequence, $footer]);
 
     expect($wrapper)->toContain('class="custom-page-workspace"')
-        ->and($sequence)->toContain('admin-position-badge')
-        ->and($sequence)->toContain('admin-action-slot')
+        ->and($sequence)->toContain('admin-position')
+        ->and($sequence)->toContain('admin-action--state')
         ->and($sequence)->toContain('admin-action is-danger')
+        ->and($sequence)->not->toContain('admin-position-badge')
+        ->and($sequence)->not->toContain('admin-action-slot')
         ->and($footer)->toContain('admin-bottom-add')
         ->and($footer)->toContain('admin-pager')
         ->and($footer)->toContain('wire:model.live.number="pageSize"')
-        ->and($sharedCss)->toContain('--admin-control-text-inset:')
-        ->and($sharedCss)->toContain('.admin-action.is-danger')
-        ->and($sharedCss)->toContain('.admin-action-slot')
-        ->and($sharedCss)->toContain('.admin-position-badge')
-        ->and($sharedCss)->toContain('.admin-bottom-add')
-        ->and($sharedCss)->toContain('.admin-pager')
-        ->and($customCss)->toContain('padding: .3rem 1.7rem .3rem var(--admin-control-text-inset);')
+        ->and($taskCss)->toContain('--admin-control-text-inset:')
+        ->and($taskCss)->toContain('.admin-action.is-danger')
+        ->and($taskCss)->toContain('.admin-action--state')
+        ->and($taskCss)->toContain('.admin-position')
+        ->and($taskCss)->toContain('.admin-bottom-add')
+        ->and($taskCss)->not->toContain('.admin-pager {')
+        ->and($dataCss)->toContain('.admin-pager,')
+        ->and(file_exists(resource_path('css/admin/editorial-primitives.css')))->toBeFalse()
         ->and($customCss)->toContain('padding-inline-start: var(--admin-control-text-inset);')
-        ->and($customCss)->not->toContain('.admin-action-slot')
+        ->and($customCss)->not->toContain('.admin-action--state')
         ->and($customCss)->not->toContain('.admin-action.is-danger')
-        ->and($customCss)->not->toContain('pager')
+        ->and($customCss)->not->toContain('.admin-pager')
         ->and($blade)->not->toContain('position-digits')
         ->and($blade)->not->toContain('style="')
         ->and($blade)->not->toContain('Create the CV List first')

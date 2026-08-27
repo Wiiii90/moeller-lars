@@ -24,10 +24,10 @@ function pagesRepairAdmin(): User
 it('uses the shared admin presentation contract instead of a Pages-local theme', function (): void {
     $view = file_get_contents(resource_path('views/filament/pages/site-pages.blade.php'));
     $row = file_get_contents(resource_path('views/filament/pages/partials/site-section-row.blade.php'));
-    $shared = file_get_contents(resource_path('css/admin/task-surfaces.css'));
+    $taskCss = file_get_contents(resource_path('css/admin/task-surfaces.css'));
+    $dataCss = file_get_contents(resource_path('css/admin/data-workspace.css'));
     $customPageCss = file_get_contents(resource_path('css/admin/custom-page.css'));
-    $journalBlog = file_get_contents(resource_path('views/filament/resources/blog-posts/pages/list-blog-posts.blade.php'));
-    $journalExhibitions = file_get_contents(resource_path('views/filament/resources/exhibitions/pages/list-exhibitions.blade.php'));
+    $journalWorkspace = file_get_contents(resource_path('views/filament/pages/journal-workspace.blade.php'));
 
     expect($view)
         ->toContain('<x-admin.workspace title="Pages">')
@@ -54,7 +54,7 @@ it('uses the shared admin presentation contract instead of a Pages-local theme',
         ->and($row)->toContain('admin-position')
         ->and($row)->toContain('admin-inline-select')
         ->and($row)->toContain('admin-row-actions admin-toolbar')
-        ->and($row)->toContain('admin-action is-state-toggle')
+        ->and($row)->toContain('admin-action admin-action--state')
         ->and($row)->toContain('admin-action is-danger')
         ->and($row)->not->toContain('data-cell="navigation"')
         ->and($row)->not->toContain('toggleSectionNavigation')
@@ -74,20 +74,22 @@ it('uses the shared admin presentation contract instead of a Pages-local theme',
         expect($controlOrder[$index])->toBeLessThan($controlOrder[$index + 1]);
     }
 
-    expect($shared)
-        ->toContain('.admin-hierarchy,')
-        ->toContain('.custom-page-component-sequence')
+    expect($taskCss)
+        ->toContain('.admin-hierarchy {')
         ->toContain('.admin-hierarchy__row.is-child .admin-hierarchy__content::before')
-        ->toContain('.custom-page-child-row .custom-page-child-row__content::before')
-        ->toContain('.admin-position,')
+        ->toContain('.admin-position {')
+        ->toContain('.admin-action--state {')
         ->toContain('.admin-bottom-add')
-        ->toContain('.admin-pager')
-        ->and($customPageCss)->not->toContain('.custom-page-component-sequence {')
-        ->and($customPageCss)->not->toContain('.custom-page-row__position {')
-        ->and($journalBlog)->toContain('class="admin-pager"')
-        ->and($journalExhibitions)->toContain('class="admin-position"')
-        ->and($journalExhibitions)->toContain('class="admin-bottom-add"')
-        ->and($journalExhibitions)->toContain('class="admin-pager"');
+        ->not->toContain('.admin-pager {')
+        ->and($dataCss)->toContain('.admin-pager,')
+        ->and($customPageCss)->toContain('.custom-page-component-sequence {')
+        ->and($customPageCss)->not->toContain('.admin-position {')
+        ->and($customPageCss)->not->toContain('.admin-action--state')
+        ->and($customPageCss)->not->toContain('.admin-action.is-danger')
+        ->and($customPageCss)->not->toContain('.admin-pager')
+        ->and($journalWorkspace)->toContain('class="admin-position"')
+        ->and($journalWorkspace)->toContain('class="admin-bottom-add"')
+        ->and($journalWorkspace)->toContain('class="admin-pager"');
 });
 
 it('derives all six metrics from real SiteSections', function (): void {
