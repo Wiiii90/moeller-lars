@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Admin\CvEntryEditorialService;
 use App\Domain\Admin\EditorialRecordService;
 use App\Domain\Analytics\ArtistReportingService;
@@ -25,7 +24,6 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -159,6 +157,26 @@ final class CustomPageWorkspace extends Page
         $this->loadComponentProjection(refreshCvCount: false);
     }
 
+    public function selectAllVisible(bool $selected): void
+    {
+        if (! $selected) {
+            $this->clearSelections();
+            return;
+        }
+
+        $this->selectedComponentTargets = collect($this->components)
+            ->pluck('target')
+            ->filter(static fn (mixed $target): bool => is_string($target))
+            ->values()
+            ->all();
+        $this->selectedChildTargets = collect($this->components)
+            ->flatMap(static fn (array $component): array => is_array($component['children'] ?? null) ? $component['children'] : [])
+            ->pluck('target')
+            ->filter(static fn (mixed $target): bool => is_string($target))
+            ->values()
+            ->all();
+    }
+
     public function pageSettingsAction(): Action
     {
         return Action::make('pageSettings')
@@ -268,29 +286,45 @@ final class CustomPageWorkspace extends Page
         $this->reorderComponents($targets);
     }
 
-    public function moveSelectedComponents(string $direction): void
+    public function moveSelected(string $direction): void
     {
         if (! $this->componentReorderEnabled()) {
             return;
         }
+        if (! in_array($direction, ['up', 'down'], true)) {
+            throw ValidationException::withMessages(['component' => 'The move direction is invalid.']);
+        }
 
-        $targets = $this->selectedComponentTargetData();
-        if ($targets === []) {
+        $parents = $this->selectedComponentTargetData();
+        $children = $this->selectedChildTargetData();
+        if ($parents === [] && $children === []) {
             return;
         }
 
-        $changed = app(CustomPageEditorialService::class)->moveSelectedBlocks($this->settings(), $targets, $direction);
-        $count = count($targets);
+        $changed = DB::transaction(function () use ($parents, $children, $direction): bool {
+            $childrenChanged = $this->moveSelectedChildTargets($children, $direction);
+            $parentsChanged = $parents !== []
+                && app(CustomPageEditorialService::class)->moveSelectedBlocks($this->settings(), $parents, $direction);
+
+            return $childrenChanged || $parentsChanged;
+        });
+
+        $count = count($parents) + count($children);
         $this->clearSelections();
         $this->reloadWorkspace();
 
         if ($changed) {
             Notification::make()
-                ->title('Selected components moved')
-                ->body($count.' component'.($count === 1 ? '' : 's').' updated.')
+                ->title('Selection moved')
+                ->body($count.' selected '.($count === 1 ? 'item' : 'items').' updated in '.($parents !== [] && $children !== [] ? 'their own scopes.' : 'order.'))
                 ->success()
                 ->send();
         }
+    }
+
+    public function moveSelectedComponents(string $direction): void
+    {
+        $this->moveSelected($direction);
     }
 
     public function setComponentPublished(int $index, string $type, bool $published): void
@@ -299,6 +333,16 @@ final class CustomPageWorkspace extends Page
         $block['published'] = $published;
         app(CustomPageEditorialService::class)->updateBlock($this->settings(), $index, $type, $block);
         $this->loadComponentProjection(refreshCvCount: false);
+    }
+
+    public function publishSelected(): void
+    {
+        $this->setSelectedPublished(true);
+    }
+
+    public function unpublishSelected(): void
+    {
+        $this->setSelectedPublished(false);
     }
 
     public function addComponentAction(): Action
@@ -310,11 +354,7 @@ final class CustomPageWorkspace extends Page
                 'publication_state' => 'published',
                 'image_decorative' => false,
                 'variant' => 'thin',
-                'initial_list_publication_state' => 'published',
-                'initial_cv_publication_state' => 'unpublished',
-                'initial_cv_date_precision' => 'unknown',
-                'initial_cv_image_media_asset_id' => null,
-                'legal_disclaimer' => PublicContentSetting::general()->getAttribute('legal_disclaimer'),
+                'media_asset_id' => null,
             ])
             ->schema($this->componentEditorSchema(includeTypeSelect: true))
             ->modalHeading('Add component')
@@ -323,30 +363,7 @@ final class CustomPageWorkspace extends Page
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $data): void {
-                DB::transaction(function () use ($data): void {
-                    $settings = $this->settings();
-                    $editorial = app(CustomPageEditorialService::class);
-                    $editorial->addBlock($settings, $this->componentPayload($data));
-
-                    $type = $data['type'] ?? null;
-                    if ($type === 'list') {
-                        $componentIndex = count($this->settings()->components()) - 1;
-                        $editorial->addListItem(
-                            $this->settings(),
-                            $componentIndex,
-                            'list',
-                            $this->initialListItemPayload($data),
-                        );
-                    } elseif ($type === 'cv_list') {
-                        $entry = app(CvEntryEditorialService::class)->createDraft($this->initialCvEntryPayload($data));
-                        if (($data['initial_cv_publication_state'] ?? 'unpublished') === 'published') {
-                            app(EditorialRecordService::class)->publish($entry);
-                        }
-                    }
-
-                    $this->syncLegalDisclaimerIfNeeded($data);
-                });
-
+                app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
                 $this->clearSelections();
                 $this->reloadWorkspace();
                 Notification::make()->title('Component added')->success()->send();
@@ -376,7 +393,6 @@ final class CustomPageWorkspace extends Page
                     $type,
                     $this->componentPayload($data, $existing),
                 );
-                $this->syncLegalDisclaimerIfNeeded($data);
                 $this->clearSelections();
                 $this->reloadWorkspace();
 
@@ -435,33 +451,45 @@ final class CustomPageWorkspace extends Page
             });
     }
 
-    public function deleteSelectedComponentsAction(): Action
+    public function deleteSelectedAction(): Action
     {
-        return Action::make('deleteSelectedComponents')
+        return Action::make('deleteSelected')
             ->label('Delete selected')
             ->color('danger')
             ->requiresConfirmation()
-            ->modalHeading('Delete selected components?')
+            ->modalHeading('Delete selected items?')
             ->modalSubmitAction(fn (Action $action): Action => $action->label('Delete')->extraAttributes(['class' => 'custom-page-dialog__primary']))
             ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
             ->modalWidth(Width::Large)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (): void {
-                $targets = $this->selectedComponentTargetData();
-                if ($targets === []) {
+                $parents = $this->selectedComponentTargetData();
+                $children = $this->selectedChildTargetData();
+                if ($parents === [] && $children === []) {
                     return;
                 }
 
-                app(CustomPageEditorialService::class)->deleteBlocks($this->settings(), $targets);
-                $count = count($targets);
+                DB::transaction(function () use ($parents, $children): void {
+                    $this->deleteSelectedChildTargets($children, $parents);
+                    if ($parents !== []) {
+                        app(CustomPageEditorialService::class)->deleteBlocks($this->settings(), $parents);
+                    }
+                });
+
+                $count = count($parents) + count($children);
                 $this->clearSelections();
                 $this->reloadWorkspace();
                 Notification::make()
-                    ->title('Selected components deleted')
-                    ->body($count.' component'.($count === 1 ? '' : 's').' deleted.')
+                    ->title('Selection deleted')
+                    ->body($count.' selected '.($count === 1 ? 'item' : 'items').' processed.')
                     ->success()
                     ->send();
             });
+    }
+
+    public function deleteSelectedComponentsAction(): Action
+    {
+        return $this->deleteSelectedAction();
     }
 
     public function addListEntryAction(): Action
@@ -679,7 +707,6 @@ final class CustomPageWorkspace extends Page
                 'section' => 'CV',
                 'publication_state' => 'unpublished',
                 'date_precision' => 'unknown',
-                'image_media_asset_id' => null,
             ])
             ->schema($this->cvEntryCreateSchema())
             ->modalHeading('Add CV entry')
@@ -713,8 +740,6 @@ final class CustomPageWorkspace extends Page
                     'ends_on' => $entry->getAttribute('ends_on'),
                     'organisation' => $entry->getAttribute('organisation'),
                     'location' => $entry->getAttribute('location'),
-                    'body' => $entry->getAttribute('body'),
-                    'image_media_asset_id' => $entry->getAttribute('image_media_asset_id'),
                     'external_url' => $entry->getAttribute('external_url'),
                 ];
             })
@@ -725,7 +750,7 @@ final class CustomPageWorkspace extends Page
             ->modalWidth(Width::SevenExtraLarge)
             ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $data, array $arguments): void {
-                app(CvEntryEditorialService::class)->update($this->actionCvEntry($arguments), $data);
+                app(CvEntryEditorialService::class)->update($this->actionCvEntry($arguments), $this->cvEntryPayload($data));
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: true);
                 Notification::make()->title('CV entry saved')->success()->send();
@@ -840,60 +865,58 @@ final class CustomPageWorkspace extends Page
 
     public function publishSelectedChildren(): void
     {
-        $this->setSelectedChildrenPublished(true);
+        $this->publishSelected();
     }
 
     public function unpublishSelectedChildren(): void
     {
-        $this->setSelectedChildrenPublished(false);
+        $this->unpublishSelected();
     }
 
     public function deleteSelectedChildrenAction(): Action
     {
-        return Action::make('deleteSelectedChildren')
-            ->label('Delete selected')
-            ->color('danger')
-            ->requiresConfirmation()
-            ->modalHeading('Delete selected entries?')
-            ->action(function (): void {
-                $targets = $this->selectedChildTargetData();
-                $listGroups = [];
-                $contactGroups = [];
-                $cvIds = [];
-
-                foreach ($targets as $target) {
-                    if ($target['kind'] === 'list') {
-                        $listGroups[$target['component_index']][] = $target['item_index'];
-                    } elseif ($target['kind'] === 'contact') {
-                        $contactGroups[$target['component_index']][] = $target['child_type'];
-                    } elseif ($target['kind'] === 'cv') {
-                        $cvIds[] = $target['entry_id'];
-                    }
-                }
-
-                foreach ($listGroups as $componentIndex => $indices) {
-                    app(CustomPageEditorialService::class)->deleteListItems($this->settings(), (int) $componentIndex, 'list', $indices);
-                }
-                foreach ($contactGroups as $componentIndex => $types) {
-                    app(CustomPageEditorialService::class)->deleteContactChildren($this->settings(), (int) $componentIndex, 'contact', $types);
-                }
-                foreach (array_values(array_unique($cvIds)) as $entryId) {
-                    /** @var CvEntry|null $entry */
-                    $entry = CvEntry::query()->find($entryId);
-                    if ($entry instanceof CvEntry) {
-                        app(EditorialRecordService::class)->deleteCv($entry);
-                    }
-                }
-
-                $this->clearSelections();
-                $this->loadComponentProjection(refreshCvCount: true);
-                Notification::make()->title('Selected entries deleted')->success()->send();
-            });
+        return $this->deleteSelectedAction();
     }
 
-    private function setSelectedChildrenPublished(bool $published): void
+    private function setSelectedPublished(bool $published): void
     {
-        $targets = $this->selectedChildTargetData();
+        $parents = $this->selectedComponentTargetData();
+        $children = $this->selectedChildTargetData();
+        if ($parents === [] && $children === []) {
+            return;
+        }
+
+        DB::transaction(function () use ($parents, $children, $published): void {
+            $this->applySelectedChildPublication($children, $published);
+
+            foreach ($parents as $target) {
+                $block = $this->componentAt($target['index'], $target['type']);
+                if (CustomPageSetting::componentPublished($block) === $published) {
+                    continue;
+                }
+                $block['published'] = $published;
+                app(CustomPageEditorialService::class)->updateBlock(
+                    $this->settings(),
+                    $target['index'],
+                    $target['type'],
+                    $block,
+                );
+            }
+        });
+
+        $count = count($parents) + count($children);
+        $this->clearSelections();
+        $this->reloadWorkspace();
+        Notification::make()
+            ->title($published ? 'Selection published' : 'Selection unpublished')
+            ->body($count.' selected '.($count === 1 ? 'item' : 'items').' updated on their own hierarchy levels.')
+            ->success()
+            ->send();
+    }
+
+    /** @param list<array<string,mixed>> $targets */
+    private function applySelectedChildPublication(array $targets, bool $published): void
+    {
         $listGroups = [];
         $contactGroups = [];
         $cvIds = [];
@@ -915,7 +938,7 @@ final class CustomPageWorkspace extends Page
             app(CustomPageEditorialService::class)->setContactChildrenPublished($this->settings(), (int) $componentIndex, 'contact', $types, $published);
         }
 
-        $records = EditorialRecordService::class;
+        $records = app(EditorialRecordService::class);
         foreach (array_values(array_unique($cvIds)) as $entryId) {
             /** @var CvEntry|null $entry */
             $entry = CvEntry::query()->find($entryId);
@@ -925,19 +948,135 @@ final class CustomPageWorkspace extends Page
             $state = (string) $entry->getAttribute('state');
             if ($published && in_array($state, ['archived', 'hidden'], true)) {
                 /** @var CvEntry $entry */
-                $entry = app($records)->restoreDraft($entry);
+                $entry = $records->restoreDraft($entry);
                 $state = 'draft';
             }
             if ($published && $state === 'draft') {
-                app($records)->publish($entry);
+                $records->publish($entry);
             } elseif (! $published && $state === 'published') {
-                app($records)->unpublish($entry);
+                $records->unpublish($entry);
+            }
+        }
+    }
+
+    /** @param list<array<string,mixed>> $targets */
+    private function moveSelectedChildTargets(array $targets, string $direction): bool
+    {
+        $changed = false;
+        $listGroups = [];
+        $contactGroups = [];
+        $cvIds = [];
+
+        foreach ($targets as $target) {
+            if ($target['kind'] === 'list') {
+                $listGroups[$target['component_index']][] = $target['item_index'];
+            } elseif ($target['kind'] === 'contact') {
+                $contactGroups[$target['component_index']][] = $target['child_type'];
+            } elseif ($target['kind'] === 'cv') {
+                $cvIds[] = $target['entry_id'];
             }
         }
 
-        $this->clearSelections();
-        $this->loadComponentProjection(refreshCvCount: true);
-        Notification::make()->title($published ? 'Selected entries published' : 'Selected entries unpublished')->success()->send();
+        foreach ($listGroups as $componentIndex => $indices) {
+            $indices = array_values(array_unique(array_map('intval', $indices)));
+            $direction === 'up' ? sort($indices) : rsort($indices);
+            foreach ($indices as $itemIndex) {
+                $changed = app(CustomPageEditorialService::class)->moveListItem(
+                    $this->settings(),
+                    (int) $componentIndex,
+                    'list',
+                    $itemIndex,
+                    $direction,
+                ) || $changed;
+            }
+        }
+
+        foreach ($contactGroups as $componentIndex => $types) {
+            $block = $this->componentAt((int) $componentIndex, 'contact');
+            $order = collect($this->settings()->contactChildren($block))
+                ->pluck('type')
+                ->filter(static fn (mixed $type): bool => is_string($type))
+                ->values()
+                ->all();
+            $types = array_values(array_unique(array_filter($types, static fn (mixed $type): bool => is_string($type))));
+            usort($types, static function (string $left, string $right) use ($order, $direction): int {
+                $leftIndex = array_search($left, $order, true);
+                $rightIndex = array_search($right, $order, true);
+                $comparison = (int) $leftIndex <=> (int) $rightIndex;
+                return $direction === 'up' ? $comparison : -$comparison;
+            });
+            foreach ($types as $childType) {
+                $changed = app(CustomPageEditorialService::class)->moveContactChild(
+                    $this->settings(),
+                    (int) $componentIndex,
+                    'contact',
+                    $childType,
+                    $direction,
+                ) || $changed;
+            }
+        }
+
+        if ($cvIds !== []) {
+            $entries = CvEntry::query()
+                ->whereIn('id', array_values(array_unique($cvIds)))
+                ->orderBy('position')
+                ->orderBy('id')
+                ->get()
+                ->all();
+            if ($direction === 'down') {
+                $entries = array_reverse($entries);
+            }
+            foreach ($entries as $entry) {
+                if ($entry instanceof CvEntry) {
+                    $changed = app(EditorialRecordService::class)->move($entry, $direction) || $changed;
+                }
+            }
+        }
+
+        return $changed;
+    }
+
+    /**
+     * @param list<array<string,mixed>> $children
+     * @param list<array{index:int,type:string}> $parents
+     */
+    private function deleteSelectedChildTargets(array $children, array $parents): void
+    {
+        $parentKeys = [];
+        foreach ($parents as $parent) {
+            $parentKeys[$parent['index'].':'.$parent['type']] = true;
+        }
+
+        $listGroups = [];
+        $contactGroups = [];
+        $cvIds = [];
+        foreach ($children as $target) {
+            if ($target['kind'] === 'list') {
+                if (! isset($parentKeys[$target['component_index'].':list'])) {
+                    $listGroups[$target['component_index']][] = $target['item_index'];
+                }
+            } elseif ($target['kind'] === 'contact') {
+                if (! isset($parentKeys[$target['component_index'].':contact'])) {
+                    $contactGroups[$target['component_index']][] = $target['child_type'];
+                }
+            } elseif ($target['kind'] === 'cv') {
+                $cvIds[] = $target['entry_id'];
+            }
+        }
+
+        foreach ($listGroups as $componentIndex => $indices) {
+            app(CustomPageEditorialService::class)->deleteListItems($this->settings(), (int) $componentIndex, 'list', $indices);
+        }
+        foreach ($contactGroups as $componentIndex => $types) {
+            app(CustomPageEditorialService::class)->deleteContactChildren($this->settings(), (int) $componentIndex, 'contact', $types);
+        }
+        foreach (array_values(array_unique($cvIds)) as $entryId) {
+            /** @var CvEntry|null $entry */
+            $entry = CvEntry::query()->find($entryId);
+            if ($entry instanceof CvEntry) {
+                app(EditorialRecordService::class)->deleteCv($entry);
+            }
+        }
     }
 
     private function loadAvailableSocialPlatforms(): void
@@ -989,7 +1128,7 @@ final class CustomPageWorkspace extends Page
         }
 
         $imageIds = collect($blocks)
-            ->filter(static fn (array $block): bool => ($block['type'] ?? null) === 'image')
+            ->filter(static fn (array $block): bool => in_array($block['type'] ?? null, ['image', 'cv_list'], true))
             ->pluck('media_asset_id')
             ->filter(static fn (mixed $id): bool => is_numeric($id))
             ->map(static fn (mixed $id): int => (int) $id)
@@ -1018,9 +1157,10 @@ final class CustomPageWorkspace extends Page
                 continue;
             }
 
+            $published = CustomPageSetting::componentPublished($block);
             $mediaId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
             $imageName = $mediaId !== null ? ($imageNames[$mediaId] ?? null) : null;
-            $children = $this->componentChildren($settings, $block, $cvRecords->all(), $index);
+            $children = $this->componentChildren($settings, $block, $cvRecords->all(), $index, $published);
             $parentSearch = mb_strtolower($this->componentParentSearchText($settings, $block, $imageName));
 
             if ($needle !== '') {
@@ -1040,11 +1180,12 @@ final class CustomPageWorkspace extends Page
 
             $projected[] = [
                 'index' => $index,
+                'position' => $index + 1,
                 'type' => $type,
                 'type_label' => self::COMPONENT_LABELS[$type] ?? 'Component',
                 'content' => $this->componentContent($settings, $block, $imageName),
-                'status' => CustomPageSetting::componentPublished($block) ? 'Published' : 'Unpublished',
-                'published' => CustomPageSetting::componentPublished($block),
+                'status' => $published ? 'Published' : 'Unpublished',
+                'published' => $published,
                 'target' => $index.':'.$type,
                 'editable' => true,
                 'can_move_up' => $index > 0,
@@ -1072,13 +1213,18 @@ final class CustomPageWorkspace extends Page
     /** @param list<CvEntry> $cvRecords
      *  @return list<array<string, mixed>>
      */
-    private function componentChildren(CustomPageSetting $settings, array $block, array $cvRecords, int $componentIndex): array
-    {
+    private function componentChildren(
+        CustomPageSetting $settings,
+        array $block,
+        array $cvRecords,
+        int $componentIndex,
+        bool $parentPublished,
+    ): array {
         $type = $block['type'] ?? null;
 
         if ($type === 'cv_list') {
             $count = count($cvRecords);
-            return array_values(array_map(function (CvEntry $entry, int $index) use ($count): array {
+            return array_values(array_map(function (CvEntry $entry, int $index) use ($count, $parentPublished): array {
                 $meta = array_values(array_filter([
                     $entry->getAttribute('organisation'),
                     $entry->getAttribute('location'),
@@ -1097,6 +1243,7 @@ final class CustomPageWorkspace extends Page
                     'status' => $status,
                     'state' => $state,
                     'published' => $state === 'published',
+                    'parent_published' => $parentPublished,
                     'entry_id' => (int) $entry->getKey(),
                     'can_move_up' => $this->componentReorderEnabled() && $index > 0,
                     'can_move_down' => $this->componentReorderEnabled() && $index < $count - 1,
@@ -1105,7 +1252,7 @@ final class CustomPageWorkspace extends Page
                         $entry->getAttribute('title'),
                         $entry->getAttribute('organisation'),
                         $entry->getAttribute('location'),
-                        $entry->getAttribute('body'),
+                        $entry->getAttribute('external_url'),
                         $status,
                     ], static fn (mixed $value): bool => is_string($value) && trim($value) !== '')),
                 ];
@@ -1131,11 +1278,13 @@ final class CustomPageWorkspace extends Page
                     'kind' => 'list',
                     'key' => 'list-'.$itemIndex,
                     'target' => 'list:'.$componentIndex.':'.$itemIndex,
+                    'position' => $itemIndex + 1,
                     'date' => is_string($item['date'] ?? null) ? $item['date'] : '',
                     'entry' => is_string($item['title'] ?? null) ? $item['title'] : '',
                     'detail' => $detail,
                     'status' => $published ? 'Published' : 'Unpublished',
                     'published' => $published,
+                    'parent_published' => $parentPublished,
                     'item_index' => $itemIndex,
                     'can_move_up' => $this->componentReorderEnabled() && $itemIndex > 0,
                     'can_move_down' => $this->componentReorderEnabled() && $itemIndex < $count - 1,
@@ -1178,12 +1327,14 @@ final class CustomPageWorkspace extends Page
                     'kind' => 'contact',
                     'key' => 'contact-'.$childType,
                     'target' => 'contact:'.$componentIndex.':'.$childType,
+                    'position' => $childIndex + 1,
                     'child_type' => $childType,
                     'date' => '',
                     'entry' => self::CONTACT_CHILD_LABELS[$childType],
                     'detail' => $detail,
                     'status' => $published ? 'Published' : 'Unpublished',
                     'published' => $published,
+                    'parent_published' => $parentPublished,
                     'can_move_up' => $this->componentReorderEnabled() && $childIndex > 0,
                     'can_move_down' => $this->componentReorderEnabled() && $childIndex < $count - 1,
                     'search_text' => self::CONTACT_CHILD_LABELS[$childType].' '.$detail.' '.($published ? 'Published' : 'Unpublished'),
@@ -1205,7 +1356,7 @@ final class CustomPageWorkspace extends Page
     private function selectedComponentTargetData(): array
     {
         $targets = [];
-        foreach ($this->selectedComponentTargets as $target) {
+        foreach (array_values(array_unique($this->selectedComponentTargets)) as $target) {
             if (! is_string($target) || ! str_contains($target, ':')) {
                 continue;
             }
@@ -1392,15 +1543,15 @@ final class CustomPageWorkspace extends Page
                 ],
             'list' => [
                 TextInput::make('title')->label('Heading')->maxLength(160),
-                ...($isNew ? $this->initialListEntrySchema() : []),
             ],
-            'cv_list' => $isNew
-                ? $this->initialCvEntrySchema()
-                : [
-                    Placeholder::make('cv_list_note')
-                        ->label('CV entries')
-                        ->content('This component renders the canonical CV entry sequence. Entry content is managed in the child rows below.'),
-                ],
+            'cv_list' => [
+                MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', imagesOnly: true)->nullable(),
+                Placeholder::make('cv_list_note')
+                    ->label('CV entries')
+                    ->content($isNew
+                        ? 'Create the CV List first. Entries are added and managed as equal child rows afterwards.'
+                        : 'This component renders the canonical CV entry sequence. Entry content is managed in the child rows below.'),
+            ],
             'divider' => [
                 Select::make('variant')->label('Divider')->options(self::DIVIDER_LABELS)->default('thin')->required(),
             ],
@@ -1412,59 +1563,17 @@ final class CustomPageWorkspace extends Page
                         : 'Contact items are managed in the child rows below.'),
             ],
             'legal_disclaimer' => [
-                Textarea::make('legal_disclaimer')
+                Placeholder::make('legal_disclaimer_note')
                     ->label('Legal disclaimer from General')
-                    ->rows(6)
-                    ->maxLength(5000)
-                    ->helperText('This edits the same canonical General setting. The page component stores no copied disclaimer text.'),
+                    ->content(function (): string {
+                        $value = PublicContentSetting::general()->getAttribute('legal_disclaimer');
+                        return is_string($value) && trim($value) !== ''
+                            ? $value
+                            : 'No legal disclaimer is configured in General.';
+                    }),
             ],
             default => [],
         };
-    }
-
-    /** @return list<mixed> */
-    private function initialListEntrySchema(): array
-    {
-        return [
-            Select::make('initial_list_publication_state')
-                ->label('Initial entry status')
-                ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-                ->default('published')
-                ->required(),
-            TextInput::make('initial_list_date')->label('Initial entry date / year')->maxLength(120),
-            TextInput::make('initial_list_title')->label('Initial entry')->required()->maxLength(240),
-            TextInput::make('initial_list_meta')->label('Initial entry organisation / context')->maxLength(240),
-            TextInput::make('initial_list_location')->label('Initial entry location')->maxLength(240),
-            TextInput::make('initial_list_url')->label('Initial entry optional link')->url()->maxLength(2048),
-            ...AdminRichText::schema('initial_list_body', 'Initial entry details', 10000),
-        ];
-    }
-
-    /** @return list<mixed> */
-    private function initialCvEntrySchema(): array
-    {
-        return [
-            Select::make('initial_cv_publication_state')
-                ->label('Initial entry status')
-                ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-                ->default('unpublished')
-                ->required(),
-            TextInput::make('initial_cv_title')->label('Initial CV entry')->required()->maxLength(240),
-            TextInput::make('initial_cv_year_text')->label('Displayed date / year')->required()->maxLength(80),
-            Select::make('initial_cv_date_precision')->label('Date precision')->options([
-                'unknown' => 'Unknown',
-                'year' => 'Year',
-                'month' => 'Month',
-                'day' => 'Day',
-            ])->required()->default('unknown'),
-            DatePicker::make('initial_cv_starts_on')->label('Starts on')->nullable(),
-            DatePicker::make('initial_cv_ends_on')->label('Ends on')->nullable(),
-            TextInput::make('initial_cv_organisation')->label('Organisation')->maxLength(240)->nullable(),
-            TextInput::make('initial_cv_location')->label('Location')->maxLength(240)->nullable(),
-            ...AdminRichText::schema('initial_cv_body', 'Details', 10000),
-            MediaAssetSelect::makeId('initial_cv_image_media_asset_id', 'Image from Media Files', imagesOnly: true)->nullable(),
-            TextInput::make('initial_cv_external_url')->label('External URL')->url()->maxLength(2048)->nullable(),
-        ];
     }
 
     /** @return list<mixed> */
@@ -1511,13 +1620,15 @@ final class CustomPageWorkspace extends Page
                 'month' => 'Month',
                 'day' => 'Day',
             ])->required()->default('unknown'),
-            DatePicker::make('starts_on')->nullable(),
-            DatePicker::make('ends_on')->nullable(),
+            Grid::make()
+                ->columns(['md' => 2])
+                ->schema([
+                    DatePicker::make('starts_on')->label('Starts on')->nullable(),
+                    DatePicker::make('ends_on')->label('Ends on')->nullable(),
+                ]),
             TextInput::make('organisation')->maxLength(240)->nullable(),
             TextInput::make('location')->maxLength(240)->nullable(),
-            ...AdminRichText::schema('body', 'Details', 10000),
-            MediaAssetSelect::makeId('image_media_asset_id', 'Image from Media Files', imagesOnly: true)->nullable(),
-            TextInput::make('external_url')->url()->maxLength(2048)->nullable(),
+            TextInput::make('external_url')->label('External URL')->url()->maxLength(2048)->nullable(),
         ];
     }
 
@@ -1588,9 +1699,6 @@ final class CustomPageWorkspace extends Page
                 ? $block['variant']
                 : 'thin';
         }
-        if (($block['type'] ?? null) === 'legal_disclaimer') {
-            $data['legal_disclaimer'] = PublicContentSetting::general()->getAttribute('legal_disclaimer');
-        }
 
         return $data;
     }
@@ -1611,7 +1719,11 @@ final class CustomPageWorkspace extends Page
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                 'image_decorative' => (bool) ($data['image_decorative'] ?? false),
             ],
-            'cv_list' => ['type' => 'cv_list', 'published' => $published],
+            'cv_list' => [
+                'type' => 'cv_list',
+                'published' => $published,
+                'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
+            ],
             'text' => ['type' => 'text', 'published' => $published, 'title' => $data['title'] ?? null, 'body' => $data['body'] ?? null],
             'list' => [
                 'type' => 'list',
@@ -1640,38 +1752,6 @@ final class CustomPageWorkspace extends Page
     }
 
     /** @return array<string,mixed> */
-    private function initialListItemPayload(array $data): array
-    {
-        return [
-            'published' => ($data['initial_list_publication_state'] ?? 'published') === 'published',
-            'date' => $data['initial_list_date'] ?? null,
-            'title' => $data['initial_list_title'] ?? null,
-            'meta' => $data['initial_list_meta'] ?? null,
-            'location' => $data['initial_list_location'] ?? null,
-            'url' => $data['initial_list_url'] ?? null,
-            'body' => $data['initial_list_body'] ?? null,
-        ];
-    }
-
-    /** @return array<string,mixed> */
-    private function initialCvEntryPayload(array $data): array
-    {
-        return [
-            'section' => 'CV',
-            'title' => $data['initial_cv_title'] ?? null,
-            'year_text' => $data['initial_cv_year_text'] ?? null,
-            'date_precision' => $data['initial_cv_date_precision'] ?? 'unknown',
-            'starts_on' => $data['initial_cv_starts_on'] ?? null,
-            'ends_on' => $data['initial_cv_ends_on'] ?? null,
-            'organisation' => $data['initial_cv_organisation'] ?? null,
-            'location' => $data['initial_cv_location'] ?? null,
-            'body' => $data['initial_cv_body'] ?? null,
-            'image_media_asset_id' => $data['initial_cv_image_media_asset_id'] ?? null,
-            'external_url' => $data['initial_cv_external_url'] ?? null,
-        ];
-    }
-
-    /** @return array<string,mixed> */
     private function cvEntryPayload(array $data): array
     {
         return [
@@ -1683,8 +1763,6 @@ final class CustomPageWorkspace extends Page
             'ends_on' => $data['ends_on'] ?? null,
             'organisation' => $data['organisation'] ?? null,
             'location' => $data['location'] ?? null,
-            'body' => $data['body'] ?? null,
-            'image_media_asset_id' => $data['image_media_asset_id'] ?? null,
             'external_url' => $data['external_url'] ?? null,
         ];
     }
@@ -1748,7 +1826,11 @@ final class CustomPageWorkspace extends Page
             return ['primary' => $title, 'secondary' => '', 'meta' => count($items).' '.(count($items) === 1 ? 'entry' : 'entries')];
         }
         if ($type === 'cv_list') {
-            return ['primary' => 'Canonical CV entries', 'secondary' => '', 'meta' => $this->cvEntryCount.' '.($this->cvEntryCount === 1 ? 'entry' : 'entries')];
+            return [
+                'primary' => 'Canonical CV entries',
+                'secondary' => $imageName !== null ? 'Image: '.$imageName : '',
+                'meta' => $this->cvEntryCount.' '.($this->cvEntryCount === 1 ? 'entry' : 'entries'),
+            ];
         }
         if ($type === 'divider') {
             $variant = is_string($block['variant'] ?? null) ? $block['variant'] : 'thin';
@@ -1782,9 +1864,10 @@ final class CustomPageWorkspace extends Page
     {
         $type = is_string($block['type'] ?? null) ? $block['type'] : '';
         $parts = [self::COMPONENT_LABELS[$type] ?? $type, CustomPageSetting::componentPublished($block) ? 'Published' : 'Unpublished'];
-        if ($type === 'image') {
+        if (in_array($type, ['image', 'cv_list'], true)) {
             $parts[] = $imageName;
-        } elseif ($type === 'text') {
+        }
+        if ($type === 'text') {
             $parts[] = $block['title'] ?? null;
             $parts[] = $block['body'] ?? null;
         } elseif ($type === 'list') {
@@ -1853,18 +1936,6 @@ final class CustomPageWorkspace extends Page
         }
 
         return array_values(array_unique($selected));
-    }
-
-    private function syncLegalDisclaimerIfNeeded(array $data): void
-    {
-        if (($data['type'] ?? null) !== 'legal_disclaimer') {
-            return;
-        }
-        $value = is_string($data['legal_disclaimer'] ?? null) ? trim($data['legal_disclaimer']) : '';
-        app(AdminSettingsService::class)->updatePublicContent(
-            PublicContentSetting::general(),
-            ['legal_disclaimer' => $value === '' ? null : $value],
-        );
     }
 
     /** @return array<int,string> */

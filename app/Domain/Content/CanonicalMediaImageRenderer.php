@@ -12,7 +12,10 @@ use League\CommonMark\Util\HtmlElement;
 
 final class CanonicalMediaImageRenderer implements NodeRendererInterface
 {
-    public function __construct(private readonly PublicMedia $publicMedia) {}
+    public function __construct(
+        private readonly PublicMedia $publicMedia,
+        private readonly SafeLinkPolicy $safeLinkPolicy,
+    ) {}
 
     public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable|string|null
     {
@@ -20,9 +23,23 @@ final class CanonicalMediaImageRenderer implements NodeRendererInterface
             throw UnsafeRichTextException::unsupportedSyntax();
         }
 
-        $mediaAssetId = RichTextMediaReference::idFromUrl($node->getUrl());
+        $url = $node->getUrl();
+        $renderedAlt = $childRenderer->renderNodes($node->children());
+        $override = trim(html_entity_decode(strip_tags($renderedAlt), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $mediaAssetId = RichTextMediaReference::idFromUrl($url);
+
         if ($mediaAssetId === null) {
-            throw UnsafeRichTextException::unsupportedSyntax();
+            if (! $this->isAllowedExternalImageUrl($url)) {
+                throw UnsafeRichTextException::unsupportedSyntax();
+            }
+
+            return new HtmlElement('img', [
+                'class' => 'rich-text__media',
+                'src' => $url,
+                'alt' => $override,
+                'loading' => 'lazy',
+                'decoding' => 'async',
+            ], '', true);
         }
 
         /** @var MediaAsset|null $asset */
@@ -35,9 +52,6 @@ final class CanonicalMediaImageRenderer implements NodeRendererInterface
             throw UnsafeRichTextException::unsupportedSyntax();
         }
 
-        $renderedAlt = $childRenderer->renderNodes($node->children());
-        $override = trim(html_entity_decode(strip_tags($renderedAlt), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-
         return new HtmlElement('img', [
             'class' => 'rich-text__media',
             'src' => $this->publicMedia->thumbnailUrlForAsset($asset),
@@ -45,5 +59,13 @@ final class CanonicalMediaImageRenderer implements NodeRendererInterface
             'loading' => 'lazy',
             'decoding' => 'async',
         ], '', true);
+    }
+
+    private function isAllowedExternalImageUrl(string $url): bool
+    {
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true)
+            && $this->safeLinkPolicy->isAllowed($url);
     }
 }

@@ -66,15 +66,22 @@ final class PublicSiteSectionController extends Controller
         $section->load('customPageSetting');
         $settings = $section->getRelation('customPageSetting'); abort_unless($settings instanceof CustomPageSetting, 404);
         $blocks = $settings->components();
-        $mediaIds = collect($blocks)->filter(fn (array $block): bool => ($block['type'] ?? null) === 'image')->pluck('media_asset_id')
+        $mediaIds = collect($blocks)
+            ->filter(fn (array $block): bool => in_array($block['type'] ?? null, ['image', 'cv_list'], true))
+            ->pluck('media_asset_id')
             ->filter(fn ($id): bool => is_numeric($id))->map(fn ($id): int => (int) $id)->unique()->values();
         /** @var Collection<int, MediaAsset> $assets */
         $assets = MediaAsset::query()->whereKey($mediaIds)->with('variants')->get()->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
+
+        $cvListBlocks = collect($blocks)->filter(fn (array $block): bool => ($block['type'] ?? null) === 'cv_list');
+        $hasRenderableCvList = $this->preview->active()
+            ? $cvListBlocks->isNotEmpty()
+            : $cvListBlocks->contains(fn (array $block): bool => CustomPageSetting::componentPublished($block));
+
         $cvEntries = collect();
-        if (collect($blocks)->contains(fn (array $block): bool => ($block['type'] ?? null) === 'cv_list')) {
+        if ($hasRenderableCvList) {
             $cvEntries = CvEntry::query()
                 ->when($this->preview->active(), fn (Builder $query) => $query->where('state', '<>', 'archived'), fn (Builder $query) => $query->where('state', 'published'))
-                ->with('imageMediaAsset.variants')
                 ->orderBy('position')->orderBy('id')->get();
         }
         return view('pages.custom', [

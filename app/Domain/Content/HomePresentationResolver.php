@@ -21,6 +21,7 @@ final class HomePresentationResolver
         private readonly SitePreviewContext $preview,
         private readonly SafeRichTextRenderer $richText,
         private readonly HomePresentationEditorialService $editorial,
+        private readonly HomeHeroConfigurationService $heroConfiguration,
     ) {}
 
     public function settings(): HomePresentationSetting
@@ -114,14 +115,15 @@ final class HomePresentationResolver
         $settings = $this->settings();
         $template = $settings->template();
         $configuration = $this->editorial->configuration($settings);
+        $heroConfiguration = $this->heroConfiguration->configuration($settings);
 
         return match ($template) {
             HomeTemplate::Artwork => [
                 'template' => $template,
-                'artwork' => $this->resolveHeroArtwork($configuration[HomeTemplate::Artwork->value]),
+                'artwork' => $this->resolveHeroArtwork($settings),
                 'media' => $this->media,
-                'showDetails' => (bool) $configuration['artwork']['show_details'],
-                'showGalleryLink' => (bool) $configuration['artwork']['show_gallery_link'],
+                'showDetails' => $heroConfiguration['show_details'],
+                'showGalleryLink' => $heroConfiguration['show_gallery_link'],
                 'gateActive' => false,
             ],
             HomeTemplate::UnderConstruction => $this->componentPresentation(
@@ -169,24 +171,30 @@ final class HomePresentationResolver
         return in_array($mediaAssetId, $this->mediaIds($settings), true);
     }
 
-    /** @param array<string, mixed> $configuration */
-    private function resolveHeroArtwork(array $configuration): ?Artwork
+    private function resolveHeroArtwork(HomePresentationSetting $settings): ?Artwork
     {
-        return match ((string) ($configuration['hero_mode'] ?? 'automatic')) {
-            'fixed' => $this->artworks->homeCandidateById(
-                is_int($configuration['fixed_artwork_id'] ?? null)
-                    ? $configuration['fixed_artwork_id']
-                    : 0,
-            ),
-            'random' => $this->artworks->randomForHomePool(
-                (string) ($configuration['pool_rule'] ?? 'newest'),
-                is_int($configuration['pool_year'] ?? null) ? $configuration['pool_year'] : null,
-                is_array($configuration['manual_include_ids'] ?? null)
-                    ? $configuration['manual_include_ids']
-                    : [],
-            ),
-            default => $this->artworks->latestForHome(),
-        };
+        $configuration = $this->heroConfiguration->configuration($settings);
+
+        if ($configuration['mode'] === 'manual') {
+            return $this->artworks->homeCandidateById($configuration['hero_artwork_id'] ?? 0);
+        }
+
+        $candidates = $this->artworks->configuredHomeCandidates(
+            $configuration['group_size'],
+            $configuration['newest_by'],
+            $configuration['candidate_filter'],
+            $configuration['candidate_filter'] === 'year' ? $configuration['specific_year'] : null,
+            $configuration['manual_include_ids'],
+        );
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        if ($configuration['selection'] === 'random') {
+            return $candidates->get(random_int(0, $candidates->count() - 1));
+        }
+
+        return $candidates->first();
     }
 
     /** @param list<array<string, mixed>> $components

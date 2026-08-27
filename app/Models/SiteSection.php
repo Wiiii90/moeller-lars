@@ -65,6 +65,13 @@ final class SiteSection extends Model
                 throw ValidationException::withMessages(['type' => 'The site node type is invalid.']);
             }
 
+            if ($section->exists && $section->isDirty('type')) {
+                $originalType = SiteNodeType::tryFrom((string) $section->getRawOriginal('type'));
+                if ($originalType === SiteNodeType::Home || $nodeType === SiteNodeType::Home) {
+                    throw ValidationException::withMessages(['type' => 'Home cannot be converted to or from another page type.']);
+                }
+            }
+
             $template = $section->getAttribute('template');
             if ($nodeType === SiteNodeType::Journal) {
                 if (! is_string($template) || JournalTemplate::tryFrom($template) === null) {
@@ -97,9 +104,6 @@ final class SiteSection extends Model
 
             $parentId = $section->getAttribute('parent_id');
             if ($parentId !== null) {
-                if (! $nodeType->canHaveParent()) {
-                    throw ValidationException::withMessages(['parent_id' => $nodeType->label().' cannot be nested below another site node.']);
-                }
                 if ($section->exists && (int) $parentId === (int) $section->getKey()) {
                     throw ValidationException::withMessages(['parent_id' => 'A site node cannot be its own parent.']);
                 }
@@ -109,10 +113,13 @@ final class SiteSection extends Model
                 if (! $parent instanceof self) {
                     throw ValidationException::withMessages(['parent_id' => 'The selected parent site node does not exist.']);
                 }
-
-                $parentType = $parent->nodeType();
-                if ($parent->getAttribute('parent_id') !== null || ! $nodeType->canBeChildOf($parentType)) {
-                    throw ValidationException::withMessages(['parent_id' => 'The selected parent cannot contain this site node type.']);
+                if ($parent->getAttribute('parent_id') !== null) {
+                    throw ValidationException::withMessages(['parent_id' => 'The parent must be a top-level page.']);
+                }
+                if ($section->exists && self::query()->where('parent_id', $section->getKey())->exists()) {
+                    throw ValidationException::withMessages([
+                        'parent_id' => 'A page that already has child pages cannot itself become a child page.',
+                    ]);
                 }
             }
 
@@ -191,6 +198,6 @@ final class SiteSection extends Model
 
     public function canContainChildren(): bool
     {
-        return $this->nodeType()->canContainChildren();
+        return true;
     }
 }

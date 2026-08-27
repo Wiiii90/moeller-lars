@@ -107,6 +107,32 @@ class PublicArtworkQuery
         return $artworks;
     }
 
+    /**
+     * Return the bounded automatic Home candidate group from the canonical Home eligibility query.
+     * Artwork date ordering uses the Artwork's work year/date; Added ordering uses Artwork created_at.
+     * MediaAsset timestamps never participate in either ordering.
+     *
+     * @param list<int> $manualIncludeIds
+     * @return Collection<int, Artwork>
+     */
+    public function configuredHomeCandidates(
+        int $groupSize = 12,
+        string $newestBy = 'artwork_date',
+        string $filter = 'all',
+        ?int $year = null,
+        array $manualIncludeIds = [],
+    ): Collection {
+        $query = $this->configuredHomeCandidateQuery($filter, $year, $manualIncludeIds);
+        $this->applyConfiguredHomeOrdering($query, $newestBy);
+
+        /** @var Collection<int, Artwork> $artworks */
+        $artworks = $query
+            ->limit(max(1, min($groupSize, 50)))
+            ->get();
+
+        return $artworks;
+    }
+
     /** @return Collection<int, Artwork> */
     public function newestHomeCandidates(?int $latestYear = null): Collection
     {
@@ -338,6 +364,51 @@ class PublicArtworkQuery
         $artwork = $featured->first();
 
         return $artwork;
+    }
+
+    /**
+     * @param list<int> $manualIncludeIds
+     * @return Builder<Artwork>
+     */
+    private function configuredHomeCandidateQuery(string $filter, ?int $year, array $manualIncludeIds): Builder
+    {
+        $query = $this->homeQuery();
+        if ($filter !== 'year') {
+            return $query;
+        }
+
+        $manualIncludeIds = $this->normalizedIds($manualIncludeIds);
+
+        return $query->where(function (Builder $candidates) use ($year, $manualIncludeIds): void {
+            if ($year !== null) {
+                $candidates->where('work_year', $year);
+            } else {
+                $candidates->whereRaw('1 = 0');
+            }
+
+            if ($manualIncludeIds !== []) {
+                $candidates->orWhereIn('id', $manualIncludeIds);
+            }
+        });
+    }
+
+    /** @param Builder<Artwork> $query */
+    private function applyConfiguredHomeOrdering(Builder $query, string $newestBy): void
+    {
+        if ($newestBy === 'added') {
+            $query
+                ->orderByDesc('created_at')
+                ->orderByDesc('id');
+
+            return;
+        }
+
+        $query
+            ->orderByDesc('work_year')
+            ->orderByRaw('CASE WHEN work_date IS NULL THEN 1 ELSE 0 END')
+            ->orderByDesc('work_date')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 
     /**

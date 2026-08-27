@@ -44,7 +44,7 @@ final class SafeRichTextRenderer
         $this->environment->addExtension(new CommonMarkCoreExtension);
         $this->environment->addRenderer(
             Image::class,
-            new CanonicalMediaImageRenderer($this->publicMedia),
+            new CanonicalMediaImageRenderer($this->publicMedia, $this->safeLinkPolicy),
             100,
         );
     }
@@ -122,11 +122,16 @@ final class SafeRichTextRenderer
                     throw UnsafeRichTextException::unsupportedSyntax();
                 }
 
-                $mediaAssetId = RichTextMediaReference::idFromUrl($node->getUrl());
-                if ($mediaAssetId === null) {
+                $url = $node->getUrl();
+                $mediaAssetId = RichTextMediaReference::idFromUrl($url);
+                if ($mediaAssetId !== null) {
+                    $parsedImageIds[] = $mediaAssetId;
+                    continue;
+                }
+
+                if (! $this->isAllowedExternalImageUrl($url)) {
                     throw UnsafeRichTextException::unsupportedSyntax();
                 }
-                $parsedImageIds[] = $mediaAssetId;
             }
         }
 
@@ -181,5 +186,13 @@ final class SafeRichTextRenderer
                 throw UnsafeRichTextException::unsupportedSyntax();
             }
         }
+    }
+
+    private function isAllowedExternalImageUrl(string $url): bool
+    {
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true)
+            && $this->safeLinkPolicy->isAllowed($url);
     }
 }

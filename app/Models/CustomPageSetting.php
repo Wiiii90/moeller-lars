@@ -132,6 +132,9 @@ final class CustomPageSetting extends Model
                 'cv_list' => [
                     'type' => 'cv_list',
                     'published' => $published,
+                    'media_asset_id' => is_numeric($block['media_asset_id'] ?? null)
+                        ? (int) $block['media_asset_id']
+                        : null,
                 ],
                 'text' => [
                     'type' => 'text',
@@ -194,8 +197,11 @@ final class CustomPageSetting extends Model
                 $this->validateImageComponent($block, $public);
             }
 
-            if ($type === 'cv_list' && array_key_exists('items', $block)) {
-                throw ValidationException::withMessages(['blocks' => 'CV List components reference canonical CV records and cannot store copied entries.']);
+            if ($type === 'cv_list') {
+                if (array_key_exists('items', $block)) {
+                    throw ValidationException::withMessages(['blocks' => 'CV List components reference canonical CV records and cannot store copied entries.']);
+                }
+                $this->validateCvListImage($block, $public);
             }
 
             if ($type === 'text') {
@@ -266,6 +272,37 @@ final class CustomPageSetting extends Model
         }
         if (! $decorative && (! is_string($alt) || trim($alt) === '')) {
             throw ValidationException::withMessages(['blocks' => 'Published non-decorative images must have canonical ALT text in Media.']);
+        }
+    }
+
+    /** @param array<string, mixed> $block */
+    private function validateCvListImage(array $block, bool $requirePublicMedia): void
+    {
+        $mediaId = $block['media_asset_id'] ?? null;
+        if ($mediaId === null) {
+            return;
+        }
+
+        if (filter_var($mediaId, FILTER_VALIDATE_INT) === false) {
+            throw ValidationException::withMessages(['blocks' => 'CV List images must reference an image from Media.']);
+        }
+
+        /** @var MediaAsset|null $asset */
+        $asset = MediaAsset::query()->find((int) $mediaId);
+        if (! $asset instanceof MediaAsset || ! str_starts_with((string) $asset->getAttribute('mime_type'), 'image/')) {
+            throw ValidationException::withMessages(['blocks' => 'CV List images must reference an image from Media.']);
+        }
+
+        if (! $requirePublicMedia) {
+            return;
+        }
+
+        $alt = $asset->getAttribute('alt_text');
+        if ((string) $asset->getAttribute('state') !== 'available') {
+            throw ValidationException::withMessages(['blocks' => 'Published CV List images must be available.']);
+        }
+        if (! is_string($alt) || trim($alt) === '') {
+            throw ValidationException::withMessages(['blocks' => 'Published CV List images must have canonical ALT text in Media.']);
         }
     }
 

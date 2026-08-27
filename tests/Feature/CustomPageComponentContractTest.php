@@ -1,7 +1,9 @@
 <?php
 
+use App\Domain\Admin\CvEntryEditorialService;
 use App\Domain\Admin\EditorialRecordService;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
@@ -70,10 +72,11 @@ it('persists ordered Custom Page components across add remove and reorder change
     ]);
 });
 
-it('keeps CV List components as references to canonical CV records instead of copied entries', function (): void {
+it('keeps CV List components as references to canonical CV records with an optional canonical image', function (): void {
     $section = app(SiteSectionEditorialService::class)->createCustomPage('CV contract', 'cv-contract-page');
     /** @var CustomPageSetting $settings */
     $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $asset = componentContractAsset('cv-list');
     $entry = CvEntry::query()->create([
         'section' => 'Exhibitions',
         'title' => 'Original CV title',
@@ -82,16 +85,111 @@ it('keeps CV List components as references to canonical CV records instead of co
         'year_text' => '2026',
     ]);
 
-    $settings->update(['blocks' => [['type' => 'cv_list']]]);
+    $settings->update(['blocks' => [[
+        'type' => 'cv_list',
+        'media_asset_id' => $asset->getKey(),
+    ]]]);
     $stored = $settings->fresh()->components()[0];
 
-    expect($stored)->toBe(['type' => 'cv_list'])
-        ->and($stored)->not->toHaveKey('items');
+    expect($stored)->toBe([
+        'type' => 'cv_list',
+        'published' => true,
+        'media_asset_id' => (int) $asset->getKey(),
+    ])->and($stored)->not->toHaveKey('items');
 
     $entry->update(['title' => 'Updated canonical CV title']);
 
-    expect($settings->fresh()->components()[0])->toBe(['type' => 'cv_list'])
-        ->and(CvEntry::query()->findOrFail($entry->getKey())->title)->toBe('Updated canonical CV title');
+    expect($settings->fresh()->components()[0])->toBe([
+        'type' => 'cv_list',
+        'published' => true,
+        'media_asset_id' => (int) $asset->getKey(),
+    ])->and(CvEntry::query()->findOrFail($entry->getKey())->title)->toBe('Updated canonical CV title');
+});
+
+it('preserves historical CV body and entry image when structured fields are edited', function (): void {
+    $asset = componentContractAsset('cv-history');
+    $entry = CvEntry::query()->create([
+        'section' => 'CV',
+        'title' => 'Historical CV entry',
+        'state' => 'draft',
+        'position' => 0,
+        'year_text' => '2025',
+        'body' => 'Historical details',
+        'image_media_asset_id' => $asset->getKey(),
+    ]);
+
+    app(CvEntryEditorialService::class)->update($entry, [
+        'section' => 'CV',
+        'title' => 'Structured CV entry',
+        'year_text' => '2026',
+        'date_precision' => 'year',
+        'starts_on' => null,
+        'ends_on' => null,
+        'organisation' => null,
+        'location' => null,
+        'external_url' => null,
+    ]);
+
+    $fresh = $entry->fresh();
+    expect($fresh->getAttribute('title'))->toBe('Structured CV entry')
+        ->and($fresh->getAttribute('body'))->toBe('Historical details')
+        ->and((int) $fresh->getAttribute('image_media_asset_id'))->toBe((int) $asset->getKey());
+});
+
+it('defaults Contact Form presentation to enabled when child state is absent', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('Contact contract', 'contact-contract-page');
+    /** @var CustomPageSetting $settings */
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+
+    $settings->update(['blocks' => [[
+        'type' => 'contact',
+        'children' => [[
+            'type' => 'contact_form',
+            'published' => true,
+        ]],
+    ]]]);
+
+    $block = $settings->fresh()->components()[0];
+    expect($settings->fresh()->contactChildren($block)[0]['form_state'])->toBe('enabled');
+});
+
+it('accepts external HTTP image sources in Custom Page rich text without fetching them', function (): void {
+    $section = app(SiteSectionEditorialService::class)->createCustomPage('External image contract', 'external-image-contract-page');
+    /** @var CustomPageSetting $settings */
+    $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->firstOrFail();
+    $body = "![](https://images.example.com/work.jpg)\n\n![](http://images.example.com/archive.jpg)";
+
+    $settings->update(['blocks' => [[
+        'type' => 'text',
+        'body' => $body,
+    ]]]);
+    $settings->fresh()->assertReadyForPublic();
+
+    $rendered = (string) app(SafeRichTextRenderer::class)->render($body);
+    expect($rendered)->toContain('src="https://images.example.com/work.jpg"')
+        ->and($rendered)->toContain('src="http://images.example.com/archive.jpg"');
+});
+
+it('keeps rich text images in one compact MarkdownEditor insertion flow', function (): void {
+    $support = file_get_contents(app_path('Filament/Support/AdminRichText.php'));
+    $insertView = file_get_contents(resource_path('views/filament/support/rich-text-image-insert.blade.php'));
+
+    expect($support)->toContain('MarkdownEditor::make($name)')
+        ->and($support)->toContain("['bold', 'italic', 'link']")
+        ->and($support)->toContain("['heading']")
+        ->and($support)->toContain("['bulletList', 'orderedList']")
+        ->and($support)->toContain("\$toolbar[2][] = 'attachFiles'")
+        ->and($support)->toContain("['undo', 'redo']")
+        ->and($support)->toContain('->fileAttachments(false)')
+        ->and($support)->toContain('RichTextMediaReference::markdown((int) $id)')
+        ->and($support)->toContain("View::make('filament.support.rich-text-image-insert')")
+        ->and($support)->toContain("'x-show' => 'open'")
+        ->and($support)->not->toContain('Filament\\Actions\\Action');
+
+    expect($insertView)->toContain('Media Files')
+        ->and($insertView)->toContain('External URL')
+        ->and($insertView)->toContain('data-admin-rich-text-external-url')
+        ->and($insertView)->toContain('submitExternal($el)');
 });
 
 it('removes CV records without deleting their canonical Media assets', function (): void {

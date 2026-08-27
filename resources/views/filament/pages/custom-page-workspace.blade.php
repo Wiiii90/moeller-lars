@@ -11,26 +11,38 @@
             $selectedParentCount = count($selectedComponentTargets);
             $selectedChildCount = count($selectedChildTargets);
             $selectedItemCount = $selectedParentCount + $selectedChildCount;
-            $parentOnlySelection = $selectedParentCount > 0 && $selectedChildCount === 0;
-            $childOnlySelection = $selectedChildCount > 0 && $selectedParentCount === 0;
+            $selectedParents = collect($components)
+                ->filter(static fn (array $component): bool => in_array($component['target'] ?? null, $selectedComponentTargets, true))
+                ->values();
             $selectedChildren = collect($components)
                 ->flatMap(static fn (array $component): array => is_array($component['children'] ?? null) ? $component['children'] : [])
                 ->filter(static fn (array $child): bool => in_array($child['target'] ?? null, $selectedChildTargets, true))
                 ->values();
-            $canMoveSelected = $parentOnlySelection && $reorderEnabled;
-            $canPublishSelected = $childOnlySelection
-                && $selectedChildren->isNotEmpty()
-                && $selectedChildren->contains(static fn (array $child): bool => ($child['published'] ?? false) === false);
-            $canUnpublishSelected = $childOnlySelection
-                && $selectedChildren->isNotEmpty()
-                && $selectedChildren->contains(static fn (array $child): bool => ($child['published'] ?? false) === true);
-            $canDeleteSelected = $parentOnlySelection || $childOnlySelection;
+            $canMoveSelected = $selectedItemCount > 0 && $reorderEnabled;
+            $canPublishSelected = $selectedItemCount > 0
+                && ($selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === false)
+                    || $selectedChildren->contains(static fn (array $child): bool => ($child['published'] ?? false) === false));
+            $canUnpublishSelected = $selectedItemCount > 0
+                && ($selectedParents->contains(static fn (array $component): bool => ($component['published'] ?? false) === true)
+                    || $selectedChildren->contains(static fn (array $child): bool => ($child['published'] ?? false) === true));
+            $canDeleteSelected = $selectedItemCount > 0;
+            $visibleSelectableCount = collect($components)->sum(
+                static fn (array $component): int => 1 + count(is_array($component['children'] ?? null) ? $component['children'] : []),
+            );
+            $maxVisiblePosition = collect($components)->reduce(function (int $max, array $component): int {
+                $max = max($max, (int) ($component['position'] ?? 1));
+                foreach (is_array($component['children'] ?? null) ? $component['children'] : [] as $child) {
+                    $max = max($max, (int) ($child['position'] ?? 1));
+                }
+                return $max;
+            }, 1);
+            $positionDigits = max(2, strlen((string) $maxVisiblePosition));
         @endphp
 
         <div class="custom-page-workspace__controls" aria-label="Component table tools">
             <label class="custom-page-workspace__field custom-page-workspace__search">
                 <span>Search</span>
-                <input type="search" wire:model.blur="componentSearch" placeholder="Search components and entries">
+                <input type="search" wire:model.live.debounce.300ms="componentSearch" placeholder="Search components and entries">
             </label>
 
             <label class="custom-page-workspace__field">
@@ -85,7 +97,7 @@
                             class="admin-action"
                             type="button"
                             role="menuitem"
-                            wire:click="moveSelectedComponents('up')"
+                            wire:click="moveSelected('up')"
                             x-on:click="open = false"
                             @disabled(! $canMoveSelected)
                         >Move selected up</button>
@@ -93,7 +105,7 @@
                             class="admin-action"
                             type="button"
                             role="menuitem"
-                            wire:click="moveSelectedComponents('down')"
+                            wire:click="moveSelected('down')"
                             x-on:click="open = false"
                             @disabled(! $canMoveSelected)
                         >Move selected down</button>
@@ -101,7 +113,7 @@
                             class="admin-action"
                             type="button"
                             role="menuitem"
-                            wire:click="publishSelectedChildren"
+                            wire:click="publishSelected"
                             x-on:click="open = false"
                             @disabled(! $canPublishSelected)
                         >Publish selected</button>
@@ -109,40 +121,40 @@
                             class="admin-action"
                             type="button"
                             role="menuitem"
-                            wire:click="unpublishSelectedChildren"
+                            wire:click="unpublishSelected"
                             x-on:click="open = false"
                             @disabled(! $canUnpublishSelected)
                         >Unpublish selected</button>
-                        @if ($parentOnlySelection)
-                            <button
-                                class="admin-action is-danger"
-                                type="button"
-                                role="menuitem"
-                                wire:click="mountAction('deleteSelectedComponents')"
-                                x-on:click="open = false"
-                                @disabled(! $canDeleteSelected)
-                            >Delete selected</button>
-                        @elseif ($childOnlySelection)
-                            <button
-                                class="admin-action is-danger"
-                                type="button"
-                                role="menuitem"
-                                wire:click="mountAction('deleteSelectedChildren')"
-                                x-on:click="open = false"
-                                @disabled(! $canDeleteSelected)
-                            >Delete selected</button>
-                        @else
-                            <button class="admin-action is-danger" type="button" role="menuitem" disabled>Delete selected</button>
-                        @endif
+                        <button
+                            class="admin-action is-danger"
+                            type="button"
+                            role="menuitem"
+                            wire:click="mountAction('deleteSelected')"
+                            x-on:click="open = false"
+                            @disabled(! $canDeleteSelected)
+                        >Delete selected</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <section class="custom-page-component-sequence" aria-label="Page component sequence">
-            <div class="custom-page-component-sequence__header" aria-hidden="true">
-                <span></span>
-                <span></span>
+        <section
+            class="custom-page-component-sequence"
+            aria-label="Page component sequence"
+            style="--custom-page-position-digits: {{ $positionDigits }}"
+        >
+            <div class="custom-page-component-sequence__header">
+                <label class="custom-page-component-sequence__select-all" aria-label="Select all visible components and entries">
+                    <input
+                        type="checkbox"
+                        wire:change="selectAllVisible($event.target.checked)"
+                        x-data
+                        x-bind:checked="$wire.selectedComponentTargets.length + $wire.selectedChildTargets.length === {{ $visibleSelectableCount }} && {{ $visibleSelectableCount }} > 0"
+                        x-effect="$el.indeterminate = ($wire.selectedComponentTargets.length + $wire.selectedChildTargets.length > 0) && ($wire.selectedComponentTargets.length + $wire.selectedChildTargets.length < {{ $visibleSelectableCount }})"
+                    >
+                </label>
+                <span class="custom-page-component-sequence__drag-heading" aria-label="Drag"></span>
+                <span>Position</span>
                 <span>Component</span>
                 <span>Content</span>
                 <span>Status</span>
@@ -180,6 +192,10 @@
                                     @if ($reorderEnabled) wire:sort:handle @else disabled @endif
                                     aria-label="Drag {{ $component['type_label'] }}"
                                 >⋮⋮</button>
+
+                                <span class="custom-page-row__position" aria-label="Position {{ $component['position'] }}">
+                                    {{ str_pad((string) $component['position'], $positionDigits, '0', STR_PAD_LEFT) }}
+                                </span>
 
                                 <div class="custom-page-component__type">
                                     <select
@@ -226,7 +242,7 @@
                                     <div class="custom-page-component__children-rows" @if ($reorderEnabled) wire:sort="sortChild" @endif>
                                         @foreach ($component['children'] as $child)
                                             <div
-                                                class="custom-page-child-row"
+                                                class="custom-page-child-row {{ ($child['parent_published'] ?? true) ? '' : 'is-parent-unpublished' }}"
                                                 wire:key="child-{{ $component['target'] }}-{{ $child['key'] }}"
                                                 @if ($reorderEnabled) wire:sort:item="{{ $child['target'] }}" @endif
                                             >
@@ -241,6 +257,10 @@
                                                     aria-label="Drag {{ $child['entry'] }}"
                                                 >⋮⋮</button>
 
+                                                <span class="custom-page-row__position" aria-label="Position {{ $child['position'] }}">
+                                                    {{ str_pad((string) $child['position'], $positionDigits, '0', STR_PAD_LEFT) }}
+                                                </span>
+
                                                 <div class="custom-page-child-row__type">
                                                     @if ($child['kind'] === 'cv')
                                                         CV Entry
@@ -253,15 +273,12 @@
 
                                                 <div class="custom-page-child-row__content">
                                                     @if ($child['kind'] === 'cv')
-                                                        <div class="custom-page-child-row__cv-line">
-                                                            <span class="custom-page-child-row__position" aria-label="Position {{ $child['position'] }}">{{ str_pad((string) $child['position'], 2, '0', STR_PAD_LEFT) }}</span>
-                                                            <strong>
-                                                                @if ($child['date'] !== '')
-                                                                    <span class="custom-page-child-row__date">{{ $child['date'] }}</span> ·
-                                                                @endif
-                                                                {{ $child['entry'] }}
-                                                            </strong>
-                                                        </div>
+                                                        <strong>
+                                                            @if ($child['date'] !== '')
+                                                                <span class="custom-page-child-row__date">{{ $child['date'] }}</span> ·
+                                                            @endif
+                                                            {{ $child['entry'] }}
+                                                        </strong>
                                                         @if ($child['detail'] !== '')
                                                             <small>{{ $child['detail'] }}</small>
                                                         @endif

@@ -7,23 +7,19 @@ use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
-use LogicException;
 
 final class SiteSectionOrderService
 {
-    /** @var array<string, list<int>> */
-    private array $siblingIds = [];
-
     public function __construct(private readonly AdminAuditService $audit) {}
 
     public function canMove(SiteSection $section, string $direction): bool
     {
         $this->validateDirection($direction);
 
-        $ids = $this->orderedSiblingIds($section);
+        $ids = $this->orderedSiblingIds($section->getAttribute('parent_id'));
         $index = array_search((int) $section->getKey(), $ids, true);
-
         if ($index === false) {
             return false;
         }
@@ -34,66 +30,105 @@ final class SiteSectionOrderService
     public function move(SiteSection $section, string $direction): bool
     {
         $this->validateDirection($direction);
+
+        $ids = $this->orderedSiblingIds($section->getAttribute('parent_id'));
+        $index = array_search((int) $section->getKey(), $ids, true);
+        if ($index === false) {
+            return false;
+        }
+
+        $targetIndex = $direction === 'up' ? $index - 1 : $index + 1;
+        if (! array_key_exists($targetIndex, $ids)) {
+            return false;
+        }
+
+        return $this->moveTo(
+            $section,
+            $section->getAttribute('parent_id') === null ? null : (int) $section->getAttribute('parent_id'),
+            $targetIndex,
+        );
+    }
+
+    /**
+     * Move a page to a zero-based position in a sibling group. The target parent is
+     * deliberately type-agnostic: only the two-level hierarchy contract matters.
+     */
+    public function moveTo(SiteSection $section, ?int $parentSectionId, int $position): bool
+    {
+        if ($position < 0) {
+            throw new InvalidArgumentException('Site-section position must be zero or greater.');
+        }
+
         $actor = $this->audit->requireActor();
 
-        $moved = DB::transaction(function () use ($section, $direction, $actor): bool {
+        return DB::transaction(function () use ($section, $parentSectionId, $position, $actor): bool {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
-            /** @var Collection<int, SiteSection> $siblings */
-            $siblings = $this->siblings($fresh)
+            $targetParent = $this->targetParent($fresh, $parentSectionId);
+            $targetParentId = $targetParent?->getKey();
+            $targetParentId = $targetParentId === null ? null : (int) $targetParentId;
+            $sourceParentId = $fresh->getAttribute('parent_id');
+            $sourceParentId = $sourceParentId === null ? null : (int) $sourceParentId;
+
+            if ($targetParentId !== null && SiteSection::query()->where('parent_id', $fresh->getKey())->exists()) {
+                throw ValidationException::withMessages([
+                    'parent_id' => 'A page that already has child pages cannot itself become a child page.',
+                ]);
+            }
+
+            /** @var Collection<int, SiteSection> $sourceSiblings */
+            $sourceSiblings = $this->siblings($sourceParentId)
                 ->orderBy('position')
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get();
 
-            $ordered = $siblings->values()->all();
-            $slots = $siblings
-                ->map(static fn (SiteSection $candidate): int => (int) $candidate->getAttribute('position'))
+            if ($sourceParentId === $targetParentId) {
+                $targetSiblings = $sourceSiblings;
+            } else {
+                /** @var Collection<int, SiteSection> $targetSiblings */
+                $targetSiblings = $this->siblings($targetParentId)
+                    ->orderBy('position')
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+            }
+
+            $sourceIds = $sourceSiblings
+                ->pluck('id')
+                ->map(static fn ($id): int => (int) $id)
+                ->reject(static fn (int $id): bool => $id === (int) $fresh->getKey())
                 ->values()
                 ->all();
 
-            if (count($slots) !== count(array_unique($slots))) {
-                throw new LogicException('Sibling site-section positions must be unique before reordering.');
+            if ($sourceParentId === $targetParentId) {
+                $targetIds = $sourceIds;
+            } else {
+                $targetIds = $targetSiblings
+                    ->pluck('id')
+                    ->map(static fn ($id): int => (int) $id)
+                    ->values()
+                    ->all();
             }
 
-            $index = null;
-            foreach ($ordered as $candidateIndex => $candidate) {
-                if ((int) $candidate->getKey() === (int) $fresh->getKey()) {
-                    $index = $candidateIndex;
-                    break;
+            $targetIndex = min($position, count($targetIds));
+            array_splice($targetIds, $targetIndex, 0, [(int) $fresh->getKey()]);
+
+            if ($sourceParentId === $targetParentId) {
+                $currentIds = $sourceSiblings
+                    ->pluck('id')
+                    ->map(static fn ($id): int => (int) $id)
+                    ->values()
+                    ->all();
+                if ($currentIds === $targetIds) {
+                    return false;
                 }
-            }
 
-            if ($index === null) {
-                return false;
-            }
-
-            $targetIndex = $direction === 'up' ? $index - 1 : $index + 1;
-            if (! array_key_exists($targetIndex, $ordered)) {
-                return false;
-            }
-
-            [$ordered[$index], $ordered[$targetIndex]] = [$ordered[$targetIndex], $ordered[$index]];
-
-            $changes = [];
-            foreach ($ordered as $slotIndex => $candidate) {
-                $position = $slots[$slotIndex];
-                if ((int) $candidate->getAttribute('position') !== $position) {
-                    $changes[] = [$candidate, $position];
-                }
-            }
-
-            $temporaryBase = max($slots) + count($siblings) + 100;
-            foreach ($changes as $offset => [$candidate]) {
-                DB::table('site_sections')->where('id', $candidate->getKey())->update([
-                    'position' => $temporaryBase + $offset,
-                ]);
-            }
-
-            foreach ($changes as [$candidate, $position]) {
-                DB::table('site_sections')->where('id', $candidate->getKey())->update([
-                    'position' => $position,
-                    'updated_at' => now(),
+                $this->rewriteGroups([[$targetParentId, $targetIds]]);
+            } else {
+                $this->rewriteGroups([
+                    [$sourceParentId, $sourceIds],
+                    [$targetParentId, $targetIds],
                 ]);
             }
 
@@ -102,28 +137,22 @@ final class SiteSectionOrderService
                 'site_section.reordered',
                 'site_section',
                 (int) $fresh->getKey(),
-                ['direction' => $direction],
+                [
+                    'parent_id' => $targetParentId,
+                    'sibling_position' => $targetIndex + 1,
+                ],
             );
 
             return true;
         });
-
-        if ($moved) {
-            unset($this->siblingIds[$this->siblingCacheKey($section)]);
-        }
-
-        return $moved;
     }
 
     /** @return list<int> */
-    private function orderedSiblingIds(SiteSection $section): array
+    private function orderedSiblingIds(mixed $parentId): array
     {
-        $key = $this->siblingCacheKey($section);
-        if (array_key_exists($key, $this->siblingIds)) {
-            return $this->siblingIds[$key];
-        }
+        $normalizedParentId = $parentId === null ? null : (int) $parentId;
 
-        return $this->siblingIds[$key] = $this->siblings($section)
+        return $this->siblings($normalizedParentId)
             ->orderBy('position')
             ->orderBy('id')
             ->pluck('id')
@@ -131,42 +160,67 @@ final class SiteSectionOrderService
             ->all();
     }
 
-    private function siblingCacheKey(SiteSection $section): string
-    {
-        $parentId = $section->getAttribute('parent_id');
-        if ($parentId !== null) {
-            return 'parent:'.(int) $parentId;
-        }
-
-        return $section->nodeType() === SiteNodeType::Home
-            ? 'root:home'
-            : 'root:navigation';
-    }
-
     /** @return Builder<SiteSection> */
-    private function siblings(SiteSection $section): Builder
+    private function siblings(?int $parentId): Builder
     {
         /** @var Builder<SiteSection> $query */
         $query = SiteSection::query();
-        $parentId = $section->getAttribute('parent_id');
 
-        if ($parentId !== null) {
-            return $query->where('parent_id', $parentId);
+        return $parentId === null
+            ? $query->whereNull('parent_id')
+            : $query->where('parent_id', $parentId);
+    }
+
+    private function targetParent(SiteSection $section, ?int $parentSectionId): ?SiteSection
+    {
+        if ($parentSectionId === null) {
+            return null;
+        }
+        if ($parentSectionId === (int) $section->getKey()) {
+            throw ValidationException::withMessages(['parent_id' => 'A page cannot be its own parent.']);
         }
 
-        $query->whereNull('parent_id');
-        if ($section->nodeType() === SiteNodeType::Home) {
-            $query->where('type', SiteNodeType::Home->value);
-        } else {
-            $query->where('type', '<>', SiteNodeType::Home->value);
+        /** @var SiteSection|null $parent */
+        $parent = SiteSection::query()->whereKey($parentSectionId)->lockForUpdate()->first();
+        if (! $parent instanceof SiteSection || $parent->getAttribute('parent_id') !== null) {
+            throw ValidationException::withMessages(['parent_id' => 'The parent must be a top-level page.']);
         }
 
-        return $query;
+        return $parent;
+    }
+
+    /**
+     * @param list<array{0:?int,1:list<int>}> $groups
+     */
+    private function rewriteGroups(array $groups): void
+    {
+        $temporaryBase = ((int) (SiteSection::query()->max('position') ?? 0)) + 1000;
+        $temporaryOffset = 0;
+
+        foreach ($groups as [$parentId, $ids]) {
+            foreach ($ids as $index => $id) {
+                DB::table('site_sections')->where('id', $id)->update([
+                    'parent_id' => $parentId,
+                    'position' => $temporaryBase + $temporaryOffset + $index + 1,
+                ]);
+            }
+            $temporaryOffset += count($ids) + 10;
+        }
+
+        foreach ($groups as [$parentId, $ids]) {
+            foreach ($ids as $index => $id) {
+                DB::table('site_sections')->where('id', $id)->update([
+                    'parent_id' => $parentId,
+                    'position' => ($index + 1) * 10,
+                    'updated_at' => now(),
+                ]);
+            }
+        }
     }
 
     private function validateDirection(string $direction): void
     {
-        if (in_array($direction, ['up', 'down'], true) === false) {
+        if (! in_array($direction, ['up', 'down'], true)) {
             throw new InvalidArgumentException('Site-section order direction must be up or down.');
         }
     }

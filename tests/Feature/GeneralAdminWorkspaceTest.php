@@ -1,7 +1,7 @@
 <?php
 
 use App\Domain\Admin\AdminSettingsService;
-use App\Filament\Resources\PublicContentSettings\Pages\EditPublicContentSetting;
+use App\Filament\Pages\General;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\AuditEvent;
@@ -38,6 +38,24 @@ function generalSettingsAuditCount(): int
         ->count();
 }
 
+it('uses General as the canonical singleton route and redirects the legacy record edit route', function (): void {
+    $settings = PublicContentSetting::general();
+
+    expect(parse_url(General::getUrl(), PHP_URL_PATH))->toBe('/admin/general')
+        ->and(PublicContentSettingResource::getNavigationUrl())->toBe(General::getUrl());
+
+    $this->get(General::getUrl())
+        ->assertOk()
+        ->assertSee('General')
+        ->assertDontSee('Public Content Settings')
+        ->assertDontSee('Edit Public Content Setting')
+        ->assertDontSee('Save changes');
+
+    $legacyUrl = PublicContentSettingResource::getUrl('edit', ['record' => $settings]);
+
+    $this->get($legacyUrl)->assertRedirect(General::getUrl());
+});
+
 it('renders the six General status cells from the canonical settings record', function (): void {
     $settings = PublicContentSetting::general();
     $favicon = generalStatusFavicon();
@@ -55,7 +73,7 @@ it('renders the six General status cells from the canonical settings record', fu
         'legal_disclaimer' => 'Global legal text.',
     ]);
 
-    $this->get(PublicContentSettingResource::getNavigationUrl())
+    $this->get(General::getUrl())
         ->assertOk()
         ->assertSee('General')
         ->assertSee('Site identity')
@@ -85,7 +103,7 @@ it('renders explicit fallback states instead of fake General statistics', functi
         'legal_disclaimer' => null,
     ]);
 
-    $this->get(PublicContentSettingResource::getNavigationUrl())
+    $this->get(General::getUrl())
         ->assertOk()
         ->assertSee('Missing')
         ->assertSee('Not set')
@@ -98,11 +116,10 @@ it('renders explicit fallback states instead of fake General statistics', functi
 
 it('persists one changed text value once and skips unchanged commits and duplicate blur paths', function (): void {
     $settings = PublicContentSetting::general();
-    $id = $settings->getKey();
     app(AdminSettingsService::class)->updatePublicContent($settings, ['public_email' => 'before@example.invalid']);
     $auditBefore = generalSettingsAuditCount();
 
-    $component = Livewire::test(EditPublicContentSetting::class, ['record' => $id])
+    $component = Livewire::test(General::class)
         ->assertOk()
         ->assertDontSee('Save changes')
         ->set('data.public_email', 'after@example.invalid');
@@ -119,21 +136,18 @@ it('persists one changed text value once and skips unchanged commits and duplica
 });
 
 it('uses only event-driven lazy text persistence with no debounce or timer autosave', function (): void {
-    $resourceSource = file_get_contents(app_path('Filament/Resources/PublicContentSettings/PublicContentSettingResource.php'));
-    $pageSource = file_get_contents(app_path('Filament/Resources/PublicContentSettings/Pages/EditPublicContentSetting.php'));
-    $viewSource = file_get_contents(resource_path('views/filament/resources/public-content-settings/pages/edit-public-content-setting.blade.php'));
+    $pageSource = file_get_contents(app_path('Filament/Pages/General.php'));
+    $viewSource = file_get_contents(resource_path('views/filament/pages/general.blade.php'));
 
-    expect($resourceSource)->toBeString()
-        ->and(substr_count($resourceSource, '->lazy()'))->toBe(5)
-        ->and($resourceSource)->not->toContain('live(debounce:')
-        ->and($resourceSource)->not->toContain('debounce(')
-        ->and($resourceSource)->not->toContain('setTimeout')
-        ->and($resourceSource)->not->toContain('wire:model.debounce')
-        ->and($pageSource)->toBeString()
+    expect($pageSource)->toBeString()
+        ->and(substr_count($pageSource, '->lazy()'))->toBe(5)
+        ->and($pageSource)->not->toContain('live(debounce:')
+        ->and($pageSource)->not->toContain('debounce(')
         ->and($pageSource)->not->toContain('setTimeout')
+        ->and($pageSource)->not->toContain('wire:model.debounce')
         ->and($viewSource)->toBeString()
         ->and($viewSource)->not->toContain('wire:model.debounce')
-        ->and($resourceSource)->toContain("'x-on:keydown.enter.prevent' => '\$event.target.blur()'");
+        ->and($pageSource)->toContain("'x-on:keydown.enter.prevent' => '\$event.target.blur()'");
 });
 
 it('keeps invalid event persistence visible as a field error without replacing persisted data', function (): void {
@@ -141,7 +155,7 @@ it('keeps invalid event persistence visible as a field error without replacing p
     app(AdminSettingsService::class)->updatePublicContent($settings, ['public_email' => 'valid@example.invalid']);
     $auditBefore = generalSettingsAuditCount();
 
-    Livewire::test(EditPublicContentSetting::class, ['record' => $settings->getKey()])
+    Livewire::test(General::class)
         ->set('data.public_email', 'not-an-email')
         ->assertHasErrors(['data.public_email']);
 
@@ -160,7 +174,7 @@ it('persists toggle select and media changes on their real state-change lifecycl
     $favicon = generalStatusFavicon();
     $auditBefore = generalSettingsAuditCount();
 
-    $component = Livewire::test(EditPublicContentSetting::class, ['record' => $settings->getKey()]);
+    $component = Livewire::test(General::class);
 
     $component->set('data.show_public_email', false);
     expect(PublicContentSetting::general()->getAttribute('show_public_email'))->toBeFalse()
@@ -179,10 +193,35 @@ it('persists toggle select and media changes on their real state-change lifecycl
         ->and(generalSettingsAuditCount())->toBe($auditBefore + 3);
 });
 
-it('keeps a changed text value persisted before the next internal admin navigation', function (): void {
+it('persists social order visibility and legal text through the singleton page', function (): void {
     $settings = PublicContentSetting::general();
+    app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'social_links' => [
+            ['platform' => 'instagram', 'url' => 'https://example.invalid/instagram', 'visible' => true],
+            ['platform' => 'facebook', 'url' => 'https://example.invalid/facebook', 'visible' => true],
+        ],
+        'legal_disclaimer' => 'Original legal text.',
+    ]);
+    $auditBefore = generalSettingsAuditCount();
 
-    Livewire::test(EditPublicContentSetting::class, ['record' => $settings->getKey()])
+    Livewire::test(General::class)
+        ->set('data.social_links', [
+            ['platform' => 'facebook', 'url' => 'https://example.invalid/facebook', 'visible' => false],
+            ['platform' => 'instagram', 'url' => 'https://example.invalid/instagram', 'visible' => true],
+        ])
+        ->set('data.legal_disclaimer', 'Updated legal text.');
+
+    $fresh = PublicContentSetting::general();
+
+    expect($fresh->getAttribute('social_links')[0]['platform'])->toBe('facebook')
+        ->and($fresh->getAttribute('social_links')[0]['visible'])->toBeFalse()
+        ->and($fresh->getAttribute('social_links')[1]['platform'])->toBe('instagram')
+        ->and($fresh->getAttribute('legal_disclaimer'))->toBe('Updated legal text.')
+        ->and(generalSettingsAuditCount())->toBe($auditBefore + 2);
+});
+
+it('keeps a changed text value persisted before the next internal admin navigation', function (): void {
+    Livewire::test(General::class)
         ->set('data.default_media_copyright_notice', 'Navigation-safe notice');
 
     $this->get('/admin/media-files')->assertOk();
@@ -221,4 +260,23 @@ it('searches favicon choices by filename and keeps the picker image-only and ava
 
     expect(array_keys($results))->toBe([(int) $image->id])
         ->and($results[(int) $image->id])->toContain('picker-match.png');
+});
+
+it('keeps General presentation flat and leaves the compatibility resource out of navigation', function (): void {
+    $pageSource = file_get_contents(app_path('Filament/Pages/General.php'));
+    $viewSource = file_get_contents(resource_path('views/filament/pages/general.blade.php'));
+    $resourceSource = file_get_contents(app_path('Filament/Resources/PublicContentSettings/PublicContentSettingResource.php'));
+
+    expect($viewSource)->toBeString()
+        ->and($viewSource)->toContain('general-workspace__sheet')
+        ->and($viewSource)->not->toContain('general-workspace__form')
+        ->and($pageSource)->toBeString()
+        ->and($pageSource)->toContain("'Site identity'")
+        ->and($pageSource)->toContain("'Public contact'")
+        ->and($pageSource)->toContain("'Contact delivery'")
+        ->and($pageSource)->toContain("'Social links'")
+        ->and($pageSource)->toContain("'Legal & media'")
+        ->and($pageSource)->not->toContain('AdminForm::section')
+        ->and($resourceSource)->toBeString()
+        ->and($resourceSource)->toContain('protected static bool $shouldRegisterNavigation = false;');
 });

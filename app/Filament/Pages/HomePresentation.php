@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\PublicArtworkQuery;
+use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeTemplate;
@@ -34,7 +35,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use LogicException;
 
 final class HomePresentation extends Page
 {
@@ -71,7 +71,13 @@ final class HomePresentation extends Page
 
     public ?int $fixedArtworkId = null;
 
-    public string $heroPoolRule = 'newest';
+    public string $heroSelection = 'newest';
+
+    public string $heroNewestBy = 'artwork_date';
+
+    public int $heroGroupSize = HomeHeroConfigurationService::DEFAULT_GROUP_SIZE;
+
+    public string $heroPoolRule = 'all';
 
     public ?int $heroPoolYear = null;
 
@@ -263,6 +269,9 @@ final class HomePresentation extends Page
                 'show_gallery_link' => $this->artworkShowGalleryLink,
                 'hero_mode' => $this->heroMode,
                 'fixed_artwork_id' => $this->fixedArtworkId,
+                'automatic_selection' => $this->heroSelection,
+                'newest_by' => $this->heroNewestBy,
+                'group_size' => $this->heroGroupSize,
                 'pool_rule' => $this->heroPoolRule,
                 'pool_year' => $this->heroPoolYear,
                 'manual_include_ids' => $this->manualHeroCandidateIds,
@@ -278,46 +287,74 @@ final class HomePresentation extends Page
                     ->label('Show Home in navigation')
                     ->helperText('Only the public Home link changes. The Home page remains available at /.'),
                 Select::make('hero_mode')
-                    ->label('Hero mode')
+                    ->label('Mode')
                     ->options([
-                        'automatic' => 'Automatic / Newest',
-                        'fixed' => 'Fixed',
-                        'random' => 'Random Pool',
+                        'manual' => 'Manual',
+                        'automatic' => 'Automatic',
                     ])
                     ->required()
                     ->live()
                     ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                $this->heroArtworkSelect('fixed_artwork_id', 'Fixed artwork')
+                $this->heroArtworkSelect('fixed_artwork_id', 'Hero artwork')
                     ->required(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
-                        && $get('hero_mode') === 'fixed')
+                        && $get('hero_mode') === 'manual')
                     ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
-                        && $get('hero_mode') === 'fixed'),
-                Select::make('pool_rule')
-                    ->label('Automatic pool')
+                        && $get('hero_mode') === 'manual'),
+                TextInput::make('group_size')
+                    ->label('Group size')
+                    ->numeric()
+                    ->minValue(1)
+                    ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)
+                    ->required(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'automatic')
+                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'automatic'),
+                Select::make('newest_by')
+                    ->label('Newest by')
                     ->options([
-                        'newest' => 'Newest eligible year',
-                        'year' => 'Specific year',
+                        'artwork_date' => 'Artwork date',
+                        'added' => 'Added',
                     ])
                     ->required(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
-                        && $get('hero_mode') === 'random')
+                        && $get('hero_mode') === 'automatic')
+                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'automatic'),
+                Select::make('automatic_selection')
+                    ->label('Selection')
+                    ->options([
+                        'newest' => 'Newest',
+                        'random' => 'Random',
+                    ])
+                    ->required(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'automatic')
+                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'automatic'),
+                Select::make('pool_rule')
+                    ->label('Candidate filter')
+                    ->options([
+                        'all' => 'All eligible',
+                        'year' => 'Specific Year',
+                    ])
+                    ->required(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
+                        && $get('hero_mode') === 'automatic')
                     ->live()
                     ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
-                        && $get('hero_mode') === 'random'),
+                        && $get('hero_mode') === 'automatic'),
                 TextInput::make('pool_year')
                     ->label('Year')
                     ->numeric()
                     ->minValue(1000)
                     ->maxValue(3000)
                     ->required(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
-                        && $get('hero_mode') === 'random'
+                        && $get('hero_mode') === 'automatic'
                         && $get('pool_rule') === 'year')
                     ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
-                        && $get('hero_mode') === 'random'
+                        && $get('hero_mode') === 'automatic'
                         && $get('pool_rule') === 'year'),
-                $this->heroArtworkSelect('manual_include_ids', 'Additional candidates', multiple: true)
-                    ->helperText('Adds Home-eligible artworks to the automatic pool.')
+                $this->heroArtworkSelect('manual_include_ids', 'Additional includes', multiple: true)
+                    ->helperText('Adds eligible artworks outside a Specific Year filter before the configured group size is applied.')
                     ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value
-                        && $get('hero_mode') === 'random'),
+                        && $get('hero_mode') === 'automatic'),
                 Toggle::make('show_details')
                     ->label('Show artwork information')
                     ->helperText('Shows the title, material, dimensions and other artwork label information.')
@@ -345,27 +382,35 @@ final class HomePresentation extends Page
             ->modalSubmitActionLabel('Save changes')
             ->action(function (array $data): void {
                 $template = HomeTemplate::from((string) $data['template']);
-                $input = [];
-                if ($template === HomeTemplate::Artwork) {
-                    $input = [
-                        'show_details' => $data['show_details'] ?? $this->artworkShowDetails,
-                        'show_gallery_link' => $data['show_gallery_link'] ?? $this->artworkShowGalleryLink,
-                        'hero_mode' => $data['hero_mode'] ?? $this->heroMode,
-                        'fixed_artwork_id' => $data['fixed_artwork_id'] ?? $this->fixedArtworkId,
-                        'pool_rule' => $data['pool_rule'] ?? $this->heroPoolRule,
-                        'pool_year' => $data['pool_year'] ?? $this->heroPoolYear,
-                        'manual_include_ids' => $data['manual_include_ids'] ?? $this->manualHeroCandidateIds,
-                    ];
-                }
-                if ($template === HomeTemplate::UnderConstruction) {
-                    $input['public_site_gate'] = $data['public_site_gate'] ?? $this->publicSiteGate;
-                }
 
-                app(HomePresentationEditorialService::class)->updateSettings(
-                    $this->settings(),
-                    $template,
-                    $input,
-                );
+                if ($template === HomeTemplate::Artwork) {
+                    app(HomeHeroConfigurationService::class)->updateArtworkSettings(
+                        $this->settings(),
+                        [
+                            'show_details' => $data['show_details'] ?? $this->artworkShowDetails,
+                            'show_gallery_link' => $data['show_gallery_link'] ?? $this->artworkShowGalleryLink,
+                            'mode' => $data['hero_mode'] ?? $this->heroMode,
+                            'hero_artwork_id' => $data['fixed_artwork_id'] ?? $this->fixedArtworkId,
+                            'selection' => $data['automatic_selection'] ?? $this->heroSelection,
+                            'newest_by' => $data['newest_by'] ?? $this->heroNewestBy,
+                            'group_size' => $data['group_size'] ?? $this->heroGroupSize,
+                            'candidate_filter' => $data['pool_rule'] ?? $this->heroPoolRule,
+                            'specific_year' => $data['pool_year'] ?? $this->heroPoolYear,
+                            'manual_include_ids' => $data['manual_include_ids'] ?? $this->manualHeroCandidateIds,
+                        ],
+                    );
+                } else {
+                    $input = [];
+                    if ($template === HomeTemplate::UnderConstruction) {
+                        $input['public_site_gate'] = $data['public_site_gate'] ?? $this->publicSiteGate;
+                    }
+
+                    app(HomePresentationEditorialService::class)->updateSettings(
+                        $this->settings(),
+                        $template,
+                        $input,
+                    );
+                }
 
                 app(SiteSectionEditorialService::class)->updatePlacement(
                     $this->homeSection(),
@@ -660,6 +705,41 @@ final class HomePresentation extends Page
         Notification::make()->title('Home source updated')->success()->send();
     }
 
+    public function toggleVisibleSourceSelection(): void
+    {
+        $visibleIds = $this->sourceRows()->getCollection()
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->filter(static fn (int $id): bool => $id > 0)
+            ->values()
+            ->all();
+        if ($visibleIds === []) {
+            return;
+        }
+
+        $selected = collect($this->selectedSourceIds)
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->filter(static fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+        $selectedVisibleCount = $selected->intersect($visibleIds)->count();
+
+        if ($selectedVisibleCount === count($visibleIds)) {
+            $this->selectedSourceIds = $selected
+                ->reject(static fn (int $id): bool => in_array($id, $visibleIds, true))
+                ->values()
+                ->all();
+
+            return;
+        }
+
+        $this->selectedSourceIds = $selected
+            ->merge($visibleIds)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function setSelectedGalleryEligibility(bool $enabled): void
     {
         $ids = collect($this->selectedSourceIds)
@@ -746,13 +826,18 @@ final class HomePresentation extends Page
             ->map(static fn (ArtworkCategory $gallery): int => (int) $gallery->getKey())
             ->all();
 
-        $candidates = app(PublicArtworkQuery::class)->homePoolCandidatesForGalleries(
-            $galleryIds,
-            $this->effectivePoolRule(),
-            $this->effectivePoolYear(),
-            $this->effectiveManualCandidateIds(),
-            5,
-        )->groupBy(fn (Artwork $artwork): int => (int) $artwork->getAttribute('artwork_category_id'));
+        $candidateGroup = $this->heroMode === 'automatic'
+            ? app(PublicArtworkQuery::class)->configuredHomeCandidates(
+                $this->heroGroupSize,
+                $this->heroNewestBy,
+                $this->effectivePoolRule(),
+                $this->effectivePoolYear(),
+                $this->effectiveManualCandidateIds(),
+            )
+            : new EloquentCollection;
+        $candidates = $candidateGroup
+            ->filter(static fn (Artwork $artwork): bool => in_array((int) $artwork->getAttribute('artwork_category_id'), $galleryIds, true))
+            ->groupBy(fn (Artwork $artwork): int => (int) $artwork->getAttribute('artwork_category_id'));
 
         $rows = $galleries->map(function (ArtworkCategory $gallery) use ($candidates): array {
             /** @var SiteSection|null $section */
@@ -771,6 +856,7 @@ final class HomePresentation extends Page
                 'newest_year' => $gallery->getAttribute('newest_published_year'),
                 'workspace_url' => ArtworkResource::getUrl('gallery', ['gallery' => $gallery->getKey()]),
                 'candidates' => $galleryCandidates
+                    ->take(5)
                     ->map(fn (Artwork $artwork): array => $this->candidateRow($artwork))
                     ->values()
                     ->all(),
@@ -793,6 +879,7 @@ final class HomePresentation extends Page
     {
         $settings = $this->settings();
         $configuration = app(HomePresentationEditorialService::class)->configuration($settings);
+        $heroConfiguration = app(HomeHeroConfigurationService::class)->configuration($settings);
         $this->settingsId = (int) $settings->getKey();
         $this->homeSectionId = (int) $settings->getAttribute('site_section_id');
 
@@ -808,16 +895,16 @@ final class HomePresentation extends Page
         $this->template = $template->value;
         $this->templateLabel = $template->label();
 
-        $artworkConfiguration = $configuration[HomeTemplate::Artwork->value];
-        $this->artworkShowDetails = (bool) $artworkConfiguration['show_details'];
-        $this->artworkShowGalleryLink = (bool) $artworkConfiguration['show_gallery_link'];
-        $this->heroMode = (string) $artworkConfiguration['hero_mode'];
-        $this->fixedArtworkId = is_int($artworkConfiguration['fixed_artwork_id']) ? $artworkConfiguration['fixed_artwork_id'] : null;
-        $this->heroPoolRule = (string) $artworkConfiguration['pool_rule'];
-        $this->heroPoolYear = is_int($artworkConfiguration['pool_year']) ? $artworkConfiguration['pool_year'] : null;
-        $this->manualHeroCandidateIds = is_array($artworkConfiguration['manual_include_ids'])
-            ? array_values($artworkConfiguration['manual_include_ids'])
-            : [];
+        $this->artworkShowDetails = $heroConfiguration['show_details'];
+        $this->artworkShowGalleryLink = $heroConfiguration['show_gallery_link'];
+        $this->heroMode = $heroConfiguration['mode'];
+        $this->fixedArtworkId = $heroConfiguration['hero_artwork_id'];
+        $this->heroSelection = $heroConfiguration['selection'];
+        $this->heroNewestBy = $heroConfiguration['newest_by'];
+        $this->heroGroupSize = $heroConfiguration['group_size'];
+        $this->heroPoolRule = $heroConfiguration['candidate_filter'];
+        $this->heroPoolYear = $heroConfiguration['specific_year'];
+        $this->manualHeroCandidateIds = $heroConfiguration['manual_include_ids'];
         $this->publicSiteGate = (bool) $configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'];
 
         $this->selectionIssue = null;
@@ -867,38 +954,31 @@ final class HomePresentation extends Page
             ->whereHas('siteSection')
             ->count();
 
-        $pool = $publicArtworks->homePoolCandidates(
-            $this->effectivePoolRule(),
-            $this->effectivePoolYear(),
-            $this->effectiveManualCandidateIds(),
-            12,
-        );
-        $this->candidatePoolCount = $publicArtworks->homePoolCandidateCount(
-            $this->effectivePoolRule(),
-            $this->effectivePoolYear(),
-            $this->effectiveManualCandidateIds(),
-        );
+        $pool = $this->heroMode === 'automatic'
+            ? $publicArtworks->configuredHomeCandidates(
+                $this->heroGroupSize,
+                $this->heroNewestBy,
+                $this->effectivePoolRule(),
+                $this->effectivePoolYear(),
+                $this->effectiveManualCandidateIds(),
+            )
+            : new EloquentCollection;
+        $this->candidatePoolCount = $pool->count();
         $this->heroCandidates = $pool
             ->map(fn (Artwork $artwork): array => $this->candidateRow($artwork))
             ->values()
             ->all();
 
-        try {
-            $current = match ($this->heroMode) {
-                'fixed' => $this->fixedArtworkId === null
-                    ? null
-                    : $publicArtworks->homeCandidateById($this->fixedArtworkId),
-                'random' => $pool->first(),
-                default => $publicArtworks->latestForHome(),
-            };
+        $current = $this->heroMode === 'manual'
+            ? ($this->fixedArtworkId === null ? null : $publicArtworks->homeCandidateById($this->fixedArtworkId))
+            : $pool->first();
 
-            if ($current instanceof Artwork) {
-                $this->currentArtwork = $this->artworkRow($current);
-            } elseif ($this->heroMode === 'fixed') {
-                $this->selectionIssue = 'The fixed Hero Artwork is no longer eligible.';
-            }
-        } catch (LogicException $exception) {
-            $this->selectionIssue = $exception->getMessage();
+        if ($current instanceof Artwork) {
+            $this->currentArtwork = $this->artworkRow($current);
+        } elseif ($this->heroMode === 'manual') {
+            $this->selectionIssue = 'The Manual Hero Artwork is no longer eligible.';
+        } else {
+            $this->selectionIssue = 'No eligible artwork matches the Automatic candidate settings.';
         }
     }
 
@@ -1042,7 +1122,7 @@ final class HomePresentation extends Page
                 ['label' => 'Views · 30d', 'value' => $this->formatMetric($this->homeViews), 'description' => $analyticsDescription],
                 ['label' => 'Source Galleries', 'value' => number_format($this->sourceGalleryCount), 'description' => 'Enabled sources'],
                 ['label' => 'Eligible Artworks', 'value' => number_format($this->eligibleArtworkCount), 'description' => 'Home eligible'],
-                ['label' => 'Candidate Pool', 'value' => number_format($this->candidatePoolCount), 'description' => 'Configured pool'],
+                ['label' => 'Candidate Pool', 'value' => number_format($this->candidatePoolCount), 'description' => 'Configured group'],
                 ['label' => 'Newest Year', 'value' => $this->newestEligibleYear === null ? '—' : (string) $this->newestEligibleYear, 'description' => 'Eligible newest'],
             ];
 
@@ -1318,12 +1398,12 @@ final class HomePresentation extends Page
 
     private function effectivePoolRule(): string
     {
-        return $this->heroMode === 'random' ? $this->heroPoolRule : 'newest';
+        return $this->heroMode === 'automatic' ? $this->heroPoolRule : 'all';
     }
 
     private function effectivePoolYear(): ?int
     {
-        return $this->heroMode === 'random' && $this->heroPoolRule === 'year'
+        return $this->heroMode === 'automatic' && $this->heroPoolRule === 'year'
             ? $this->heroPoolYear
             : null;
     }
@@ -1331,15 +1411,7 @@ final class HomePresentation extends Page
     /** @return list<int> */
     private function effectiveManualCandidateIds(): array
     {
-        if ($this->heroMode === 'random') {
-            return $this->manualHeroCandidateIds;
-        }
-
-        if ($this->heroMode === 'fixed' && $this->fixedArtworkId !== null) {
-            return [$this->fixedArtworkId];
-        }
-
-        return [];
+        return $this->heroMode === 'automatic' ? $this->manualHeroCandidateIds : [];
     }
 
     private function analyticsMetricValue(mixed $metric): ?float

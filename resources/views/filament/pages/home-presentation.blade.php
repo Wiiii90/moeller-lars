@@ -11,7 +11,8 @@
         @endif
 
         @if ($template === 'artwork')
-            <div class="home-hero-surface" aria-label="Hero Artwork">
+            @php($additionalHeroCandidates = collect($heroCandidates)->reject(fn (array $candidate): bool => $currentArtwork !== null && $candidate['id'] === $currentArtwork['id'])->values())
+            <div class="home-hero-surface {{ $additionalHeroCandidates->isEmpty() ? 'is-compact' : 'has-candidates' }}" aria-label="Hero Artwork">
                 <div class="home-hero-surface__current">
                     <div class="home-hero-surface__visual">
                         @if ($currentArtwork && $currentArtwork['thumbnail_url'])
@@ -25,61 +26,57 @@
                             <span>No Hero Artwork</span>
                         @endif
                     </div>
+                </div>
 
-                    <div class="home-hero-surface__meta">
-                        <div>
-                            @if ($currentArtwork)
-                                <strong>{{ $currentArtwork['title'] }}</strong>
-                                <span>
-                                    {{ $currentArtwork['gallery'] ?: '—' }}
-                                    · {{ $currentArtwork['date'] ?: ($currentArtwork['year'] ?: '—') }}
-                                    @if ($heroMode === 'random') · Random Pool preview @endif
-                                </span>
-                            @else
-                                <strong>No Hero Artwork</strong>
-                                <span>{{ $heroMode === 'fixed' ? 'Fixed selection unavailable' : 'No eligible artwork' }}</span>
-                            @endif
-                        </div>
-
+                @if ($currentArtwork || $additionalHeroCandidates->isNotEmpty() || $selectionIssue)
+                    <div class="home-hero-candidate-rail" aria-label="Hero artwork context">
                         @if ($currentArtwork)
-                            <div class="admin-toolbar home-hero-surface__actions">
-                                <a class="admin-action" href="{{ $currentArtwork['edit_url'] }}">Edit</a>
-                                @if ($currentArtwork['gallery_url'])
-                                    <a class="admin-action" href="{{ $currentArtwork['gallery_url'] }}">Open Gallery</a>
-                                @endif
-                                <a class="admin-action" href="{{ $currentArtwork['preview_url'] }}" target="_blank" rel="noopener">Preview</a>
-                            </div>
+                            <article class="home-hero-candidate is-current" wire:key="home-current-hero-{{ $currentArtwork['id'] }}">
+                                <div class="home-hero-candidate__visual">
+                                    @if ($currentArtwork['thumbnail_url'])
+                                        <img src="{{ $currentArtwork['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                    @else
+                                        <span>—</span>
+                                    @endif
+                                </div>
+                                <div class="home-hero-candidate__meta">
+                                    <strong title="{{ $currentArtwork['title'] }}">{{ $currentArtwork['title'] }}</strong>
+                                    <span title="{{ $currentArtwork['gallery'] ?: '—' }}">{{ $currentArtwork['gallery'] ?: '—' }}</span>
+                                    <small>
+                                        {{ $currentArtwork['year'] ?: '—' }}
+                                        · {{ $heroMode === 'manual' ? 'Manual' : ($heroSelection === 'random' ? 'Random preview' : 'Current') }}
+                                    </small>
+                                </div>
+                            </article>
+                        @endif
+
+                        @foreach ($additionalHeroCandidates as $candidate)
+                            <article class="home-hero-candidate" wire:key="home-hero-candidate-{{ $candidate['id'] }}">
+                                <div class="home-hero-candidate__visual">
+                                    @if ($candidate['thumbnail_url'])
+                                        <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                    @else
+                                        <span>—</span>
+                                    @endif
+                                </div>
+                                <div class="home-hero-candidate__meta">
+                                    <strong title="{{ $candidate['title'] }}">{{ $candidate['title'] }}</strong>
+                                    <span title="{{ $candidate['gallery'] ?: '—' }}">{{ $candidate['gallery'] ?: '—' }}</span>
+                                    <small>{{ $candidate['year'] ?: '—' }}</small>
+                                </div>
+                            </article>
+                        @endforeach
+
+                        @if ($selectionIssue)
+                            <p class="home-hero-surface__issue">{{ $selectionIssue }}</p>
                         @endif
                     </div>
-
-                    @if ($selectionIssue)
-                        <p class="home-hero-surface__issue">{{ $selectionIssue }}</p>
-                    @endif
-                </div>
-
-                <div class="home-hero-candidate-rail" aria-label="Hero candidate rail">
-                    @forelse ($heroCandidates as $candidate)
-                        <article class="home-hero-candidate" wire:key="home-hero-candidate-{{ $candidate['id'] }}">
-                            <a class="home-hero-candidate__visual" href="{{ $candidate['edit_url'] }}" aria-label="Edit {{ $candidate['title'] }}">
-                                @if ($candidate['thumbnail_url'])
-                                    <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
-                                @else
-                                    <span>—</span>
-                                @endif
-                            </a>
-                            <div class="home-hero-candidate__meta">
-                                <strong title="{{ $candidate['title'] }}">{{ $candidate['title'] }}</strong>
-                                <span title="{{ $candidate['gallery'] ?: '—' }}">{{ $candidate['gallery'] ?: '—' }}</span>
-                                <small>{{ $candidate['year'] ?: '—' }}</small>
-                            </div>
-                        </article>
-                    @empty
-                        <x-admin.empty-state title="No candidates" minimal />
-                    @endforelse
-                </div>
+                @endif
             </div>
 
             @php($sourceRows = $this->sourceRows())
+            @php($visibleSourceIds = collect($sourceRows->items())->pluck('id')->map(fn ($id) => (int) $id)->values()->all())
+            <div class="home-source-controls-divider" aria-hidden="true"></div>
             <div class="home-source-controls" aria-label="Gallery source controls">
                 <label class="home-source-controls__field home-source-controls__search">
                     <span>Search</span>
@@ -166,11 +163,28 @@
                     <table class="home-source-list__table">
                         <thead>
                             <tr>
+                                <th scope="col" class="home-source-list__selection-head">
+                                    <input
+                                        type="checkbox"
+                                        x-data="{}"
+                                        wire:click.prevent="toggleVisibleSourceSelection"
+                                        x-effect="
+                                            const visibleIds = @js($visibleSourceIds);
+                                            const selectedIds = $wire.selectedSourceIds.map(Number);
+                                            const selectedCount = visibleIds.filter((id) => selectedIds.includes(id)).length;
+                                            $el.checked = visibleIds.length > 0 && selectedCount === visibleIds.length;
+                                            $el.indeterminate = selectedCount > 0 && selectedCount < visibleIds.length;
+                                            $el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));
+                                        "
+                                        @disabled($visibleSourceIds === [])
+                                        aria-label="Toggle selection for visible Galleries"
+                                    >
+                                </th>
                                 <th scope="col">Gallery</th>
                                 <th scope="col">Candidates</th>
                                 <th scope="col">Status</th>
                                 <th scope="col">Artworks</th>
-                                <th scope="col">Newest year</th>
+                                <th scope="col">Newest Year</th>
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
@@ -178,16 +192,16 @@
                             @foreach ($sourceRows as $gallery)
                                 @php($selected = in_array($gallery['id'], array_map('intval', $selectedSourceIds), true))
                                 <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="home-source-gallery-{{ $gallery['id'] }}">
+                                    <td class="home-source-list__selection-cell">
+                                        <input
+                                            type="checkbox"
+                                            value="{{ $gallery['id'] }}"
+                                            wire:model.live="selectedSourceIds"
+                                            aria-label="Select {{ $gallery['name'] }}"
+                                        >
+                                    </td>
                                     <td class="home-source-list__gallery">
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                value="{{ $gallery['id'] }}"
-                                                wire:model.live="selectedSourceIds"
-                                                aria-label="Select {{ $gallery['name'] }}"
-                                            >
-                                            <strong>{{ $gallery['name'] }}</strong>
-                                        </label>
+                                        <strong>{{ $gallery['name'] }}</strong>
                                     </td>
                                     <td>
                                         <div class="home-source-candidates" aria-label="Candidates from {{ $gallery['name'] }}">
@@ -218,12 +232,14 @@
                                     <td>{{ $gallery['newest_year'] ?: '—' }}</td>
                                     <td class="home-source-list__actions">
                                         <div class="admin-toolbar">
+                                            <span class="home-source-list__source-action">
+                                                <button
+                                                    class="admin-action"
+                                                    type="button"
+                                                    wire:click="toggleGalleryEligibility({{ $gallery['id'] }})"
+                                                >{{ $gallery['eligible'] ? 'Disable Source' : 'Enable Source' }}</button>
+                                            </span>
                                             <a class="admin-action" href="{{ $gallery['workspace_url'] }}">Open Gallery</a>
-                                            <button
-                                                class="admin-action"
-                                                type="button"
-                                                wire:click="toggleGalleryEligibility({{ $gallery['id'] }})"
-                                            >{{ $gallery['eligible'] ? 'Disable Source' : 'Enable Source' }}</button>
                                         </div>
                                     </td>
                                 </tr>
