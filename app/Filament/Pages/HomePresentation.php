@@ -412,11 +412,13 @@ final class HomePresentation extends Page
                     );
                 }
 
+                $homeSection = $this->homeSection();
+                $parentId = $homeSection->getAttribute('parent_id');
                 app(SiteSectionEditorialService::class)->updatePlacement(
-                    $this->homeSection(),
+                    $homeSection,
                     'published',
                     (bool) ($data['show_in_navigation'] ?? false),
-                    null,
+                    is_numeric($parentId) ? (int) $parentId : null,
                 );
                 $this->showHomeInNavigation = (bool) ($data['show_in_navigation'] ?? false);
 
