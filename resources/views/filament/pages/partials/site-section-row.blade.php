@@ -84,7 +84,7 @@
         @endif
 
         @if ($section['can_change_publication'])
-            <button class="admin-action is-state-toggle" type="button" wire:click="toggleSectionState({{ $section['id'] }})">
+            <button class="admin-action admin-action--state" type="button" wire:click="toggleSectionState({{ $section['id'] }})">
                 {{ $section['state'] === 'published' ? 'Unpublish' : 'Publish' }}
             </button>
         @endif

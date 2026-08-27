@@ -1,6 +1,6 @@
         <div class="admin-bottom-add">
-            <button class="admin-bottom-add__button" type="button" wire:click="mountAction('addComponent')">
-                <span class="admin-bottom-add__icon" aria-hidden="true">+</span>
+            <button class="admin-action" type="button" wire:click="mountAction('addComponent')">
+                <span class="admin-bottom-add__plus" aria-hidden="true">+</span>
                 <span class="admin-bottom-add__label">Add component</span>
             </button>
         </div>
