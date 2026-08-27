@@ -27,6 +27,8 @@ final class AdminActionCatalog
         'site_section.created' => ['label' => 'Created website page', 'area' => 'Website', 'family' => 'create'],
         'site_section.updated' => ['label' => 'Edited public page placement', 'area' => 'Website', 'family' => 'settings'],
         'site_section.reordered' => ['label' => 'Reordered public navigation', 'area' => 'Website', 'family' => 'ordering'],
+        'site_section.type_converted' => ['label' => 'Changed website page type', 'area' => 'Website', 'family' => 'settings'],
+        'site_section.journal_template_updated' => ['label' => 'Changed Journal template', 'area' => 'Website', 'family' => 'settings'],
         'site_section.deleted' => ['label' => 'Deleted website page', 'area' => 'Website', 'family' => 'lifecycle'],
         'media.ingested' => ['label' => 'Uploaded media', 'area' => 'Media', 'family' => 'media'],
         'media.metadata_updated' => ['label' => 'Edited media details', 'area' => 'Media', 'family' => 'edit'],
