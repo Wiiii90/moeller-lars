@@ -105,7 +105,7 @@ it('restricts destructive SiteSection deletion while descendants or Journal entr
     $sections->updatePlacement($child, 'hidden', false, (int) $parent->getKey());
 
     expect(fn () => $sections->deleteConfigurableSection($parent))
-        ->toThrow(ValidationException::class, 'Move or delete submenu entries before deleting their parent.');
+        ->toThrow(ValidationException::class, 'Move or delete child pages before deleting their parent.');
 
     $journal = $sections->createJournal('Acceptance Blog', 'acceptance-blog', JournalTemplate::Blog->value);
     app(BlogEditorialService::class)->createDraft([
@@ -244,12 +244,14 @@ it('keeps Exhibition order scoped per Journal and allows equal published positio
         'slug' => 'acceptance-show-one-b',
         'title' => 'Show one B',
         'date_text' => '2027',
+        'starts_on' => '2027-01-01',
     ]);
     $second = $drafts->create([
         'site_section_id' => $secondJournal->getKey(),
         'slug' => 'acceptance-show-two',
         'title' => 'Show two',
         'date_text' => '2026',
+        'starts_on' => '2026-01-01',
     ]);
 
     expect($first->getAttribute('position'))->toBe(0)
