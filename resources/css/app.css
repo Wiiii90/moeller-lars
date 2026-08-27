@@ -49,6 +49,29 @@ body.public-site #content {
     min-height: 0;
 }
 
+.public-preview-badge {
+    position: fixed;
+    right: .75rem;
+    bottom: .75rem;
+    z-index: 9999;
+    padding: .45rem .65rem;
+    border: 1px solid currentColor;
+    background: #fff;
+    color: #3d3935;
+    font: 600 11px/1 Arial, sans-serif;
+    letter-spacing: .12em;
+}
+
+.exhibition-entry__map--wide .exhibition-entry__map-frame,
+.exhibition-entry__map--wide .exhibition-map-dialog__frame {
+    aspect-ratio: 16 / 9;
+}
+
+.exhibition-entry__map--square .exhibition-entry__map-frame,
+.exhibition-entry__map--square .exhibition-map-dialog__frame {
+    aspect-ratio: 1 / 1;
+}
+
 .artwork-card__video,
 .artwork-detail__video {
     display: block;

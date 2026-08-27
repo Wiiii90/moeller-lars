@@ -36,9 +36,9 @@
     <body class="public-site">
         @if ($isPreview)
             <div
+                class="public-preview-badge"
                 role="status"
                 aria-label="Artist preview mode"
-                style="position:fixed;right:.75rem;bottom:.75rem;z-index:9999;padding:.45rem .65rem;border:1px solid currentColor;background:#fff;color:#3d3935;font:600 11px/1 Arial,sans-serif;letter-spacing:.12em;"
             >PREVIEW</div>
         @endif
         <header class="site-header">

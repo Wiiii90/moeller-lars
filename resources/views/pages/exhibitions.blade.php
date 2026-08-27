@@ -19,7 +19,6 @@
                 $vernissage = $exhibition->vernissageDisplay();
                 $address = $exhibition->address();
                 $map = $exhibition->shouldShowPublicMap() ? $exhibition->mapPresentation() : null;
-                $mapAspect = $map !== null ? app(\App\Domain\Content\ExhibitionMapPresentation::class)->aspectRatio($map['shape']) : null;
                 $mapDialogId = 'exhibition-map-'.$exhibition->getKey();
             @endphp
             <article class="exhibition-entry" data-matomo-event-view="exhibition_view" data-matomo-event-category="Journal" data-matomo-event-name="{{ $exhibition->title }}">
@@ -58,14 +57,14 @@
                     @endif
                     @if ($map !== null)
                         <div class="exhibition-entry__map exhibition-entry__map--{{ $map['shape'] }}">
-                            <div class="exhibition-entry__map-frame" style="aspect-ratio: {{ $mapAspect }}">
+                            <div class="exhibition-entry__map-frame">
                                 <iframe src="{{ $map['embed_url'] }}" title="Map for {{ $exhibition->title }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                                 <button class="exhibition-entry__map-expand" type="button" data-exhibition-map-expand aria-controls="{{ $mapDialogId }}" aria-label="Enlarge map for {{ $exhibition->title }}">Enlarge</button>
                             </div>
                             <dialog id="{{ $mapDialogId }}" class="exhibition-map-dialog exhibition-map-dialog--{{ $map['shape'] }}">
                                 <div class="exhibition-map-dialog__content">
                                     <button class="exhibition-map-dialog__close" type="button" data-exhibition-map-close>Close</button>
-                                    <div class="exhibition-map-dialog__frame" style="aspect-ratio: {{ $mapAspect }}">
+                                    <div class="exhibition-map-dialog__frame">
                                         <iframe src="{{ $map['embed_url'] }}" title="Enlarged map for {{ $exhibition->title }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                                     </div>
                                 </div>
