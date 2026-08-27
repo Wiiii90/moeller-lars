@@ -106,25 +106,27 @@ final class SiteSectionEditorialService
 
     public function deleteConfigurableSection(SiteSection $section): void
     {
-        $type = $section->nodeType();
-        if (! in_array($type, [SiteNodeType::CustomPage, SiteNodeType::Journal, SiteNodeType::NavigationNode], true)) {
-            throw ValidationException::withMessages(['section' => 'This page cannot be deleted from the configurable page workflow.']);
-        }
-
         $actor = $this->audit->requireActor();
 
         DB::transaction(function () use ($section, $actor): void {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            $type = $fresh->nodeType();
 
-            if ((string) $fresh->getAttribute('state') !== 'hidden' || (bool) $fresh->getAttribute('show_in_navigation')) {
+            if (! in_array($type, [SiteNodeType::CustomPage, SiteNodeType::Journal, SiteNodeType::NavigationNode], true)) {
+                throw ValidationException::withMessages(['section' => 'This page cannot be deleted from the configurable page workflow.']);
+            }
+            if (
+                $type !== SiteNodeType::Journal
+                && ((string) $fresh->getAttribute('state') !== 'hidden' || (bool) $fresh->getAttribute('show_in_navigation'))
+            ) {
                 throw ValidationException::withMessages(['section' => 'Unpublish the page and remove it from navigation before deleting it.']);
             }
             if (SiteSection::query()->where('parent_id', $fresh->getKey())->exists()) {
                 throw ValidationException::withMessages(['section' => 'Move or delete child pages before deleting their parent.']);
             }
             if (
-                $fresh->nodeType() === SiteNodeType::Journal
+                $type === SiteNodeType::Journal
                 && (
                     BlogPost::query()->where('site_section_id', $fresh->getKey())->exists()
                     || Exhibition::query()->where('site_section_id', $fresh->getKey())->exists()
@@ -244,7 +246,6 @@ final class SiteSectionEditorialService
                 'site_section.type_converted',
                 'site_section',
                 (int) $fresh->getKey(),
-                ['from' => $source->value, 'to' => $target->value],
             );
 
             /** @var SiteSection $converted */
@@ -293,7 +294,6 @@ final class SiteSectionEditorialService
                 'site_section.journal_template_updated',
                 'site_section',
                 (int) $fresh->getKey(),
-                ['from' => $current?->value, 'to' => $target->value],
             );
 
             return $fresh;
