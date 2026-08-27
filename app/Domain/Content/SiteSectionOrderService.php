@@ -132,15 +132,17 @@ final class SiteSectionOrderService
                 ]);
             }
 
+            $metadata = ['position' => $targetIndex + 1];
+            if ($targetParentId !== null) {
+                $metadata['site_section_id'] = $targetParentId;
+            }
+
             $this->audit->record(
                 $actor,
                 'site_section.reordered',
                 'site_section',
                 (int) $fresh->getKey(),
-                [
-                    'parent_id' => $targetParentId,
-                    'sibling_position' => $targetIndex + 1,
-                ],
+                $metadata,
             );
 
             return true;
