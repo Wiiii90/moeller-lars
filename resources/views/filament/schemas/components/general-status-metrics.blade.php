@@ -5,7 +5,12 @@
             && filled($link['platform'] ?? null)
             && filled($link['url'] ?? null));
 
-    $siteIdentityStatus = filled($settings->getAttribute('favicon_media_asset_id')) ? 'Favicon set' : 'Missing';
+    $backgroundMode = match ($settings->getAttribute('background_mode')) {
+        \App\Domain\Content\PublicAppearance::MODE_SOLID => 'Solid',
+        \App\Domain\Content\PublicAppearance::MODE_GRADIENT => 'Gradient',
+        default => 'Default',
+    };
+    $faviconStatus = filled($settings->getAttribute('favicon_media_asset_id')) ? 'Favicon set' : 'No favicon';
     $publicEmailStatus = blank($settings->getAttribute('public_email'))
         ? 'Not set'
         : ((bool) $settings->getAttribute('show_public_email') ? 'Visible' : 'Hidden');
@@ -15,7 +20,7 @@
 @endphp
 
 <x-admin.metrics :columns="6" aria-label="General status">
-    <x-admin.metric label="Site identity" :value="$siteIdentityStatus">Favicon</x-admin.metric>
+    <x-admin.metric label="Appearance" :value="$backgroundMode">{{ $faviconStatus }}</x-admin.metric>
     <x-admin.metric label="Public email" :value="$publicEmailStatus">Public contact</x-admin.metric>
     <x-admin.metric label="Contact delivery" :value="$contactDeliveryStatus">Private recipient</x-admin.metric>
     <x-admin.metric label="Social profiles" :value="(string) $socialProfiles->count()">Configured profiles</x-admin.metric>

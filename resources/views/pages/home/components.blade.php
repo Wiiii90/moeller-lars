@@ -3,7 +3,9 @@
         <p class="public-empty-state">This Home presentation does not have content yet.</p>
     @else
         @foreach ($components as $componentIndex => $component)
-            @php($type = is_array($component) ? ($component['type'] ?? null) : null)
+            @php
+                $type = is_array($component) ? ($component['type'] ?? null) : null;
+            @endphp
 
             @if ($type === 'image')
                 @php

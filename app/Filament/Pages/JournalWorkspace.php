@@ -475,6 +475,7 @@ final class JournalWorkspace extends Page
         $this->total = (clone $query)->count(); $this->setPagination($this->total);
         $canonicalIds = Exhibition::query()->where('site_section_id', $this->sectionId)->orderBy('position')->orderBy('id')->pluck('id')->map(fn ($id): int => (int) $id)->values();
         $ranks = $canonicalIds->flip(); $count = $canonicalIds->count();
+        $query->with(['mediaUsages' => function ($usages): void { $usages->where('role', JournalEntryMedia::ROLE_COVER)->with('mediaAsset.variants'); }]);
         /** @var EloquentCollection<int, Exhibition> $records */
         $records = $query->orderBy('position')->orderBy('id')->forPage($this->page, $this->pageSize)->get(); $now = now();
         $this->exhibitions = $records->map(function (Exhibition $entry) use ($ranks, $count, $now): array {
@@ -485,6 +486,7 @@ final class JournalWorkspace extends Page
             return [
                 'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location !== '' ? $location : null,
                 'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $entry->vernissageDisplay(), 'date_text' => $entry->displayDate() ?? '',
+                'thumbnail_url' => $this->coverThumbnailUrl($entry),
                 'public_url' => $this->journalPublicUrl !== null && $internalState === 'published' ? $this->journalPublicUrl : null,
                 'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count, 'can_delete' => $internalState !== 'published',
                 'delete_help' => $internalState === 'published' ? 'Unpublish this exhibition before deleting' : null,
@@ -573,9 +575,9 @@ final class JournalWorkspace extends Page
         }
     }
 
-    private function coverThumbnailUrl(BlogPost $post): ?string
+    private function coverThumbnailUrl(BlogPost|Exhibition $entry): ?string
     {
-        $usage = $post->getRelationValue('mediaUsages')->first(); if (! $usage instanceof JournalEntryMedia) { return null; }
+        $usage = $entry->getRelationValue('mediaUsages')->first(); if (! $usage instanceof JournalEntryMedia) { return null; }
         $asset = $usage->getRelationValue('mediaAsset'); if (! $asset instanceof MediaAsset) { return null; }
         $variant = $asset->getRelationValue('variants')->first(fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === PublicMedia::THUMBNAIL_KIND && $candidate->getAttribute('transform_profile') === PublicMedia::PUBLIC_TRANSFORM_PROFILE && $candidate->getAttribute('state') === 'available');
         return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;

@@ -8,6 +8,7 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SafeRichTextRenderer;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SitePreviewContext;
+use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Media\PublicMedia;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
@@ -16,6 +17,7 @@ use App\Models\Exhibition;
 use App\Models\JournalSetting;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
+use App\Models\Redirect;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use Illuminate\Contracts\View\View;
@@ -39,7 +41,27 @@ final class PublicSiteSectionController extends Controller
         $query = SiteSection::query()->where('slug', $section);
         $this->preview->constrainSectionQuery($query);
         $siteSection = $query->first();
-        if ($siteSection === null || $siteSection->nodeType() === SiteNodeType::Gallery) { return $this->artworks->category($section); }
+
+        if ($siteSection === null) {
+            if (! $this->preview->active()) {
+                $redirect = Redirect::query()
+                    ->where('source_path', '/'.$section)
+                    ->where('enabled', true)
+                    ->where('reason', SiteSectionPathPolicy::CUSTOM_PAGE_SLUG_REDIRECT_REASON)
+                    ->first();
+
+                if ($redirect !== null) {
+                    return redirect($redirect->getAttribute('target_path'), (int) $redirect->getAttribute('status_code'));
+                }
+            }
+
+            return $this->artworks->category($section);
+        }
+
+        if ($siteSection->nodeType() === SiteNodeType::Gallery) {
+            return $this->artworks->category($section);
+        }
+
         return match ($siteSection->nodeType()) {
             SiteNodeType::CustomPage => $this->customPage($siteSection),
             SiteNodeType::Journal => $this->journal($siteSection),

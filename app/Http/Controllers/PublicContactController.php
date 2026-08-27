@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\Contact\ContactDeliveryReadiness;
 use App\Domain\Content\SiteNodeType;
 use App\Mail\WebsiteContactMessage;
+use App\Models\ContactMessage;
 use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +16,8 @@ use Throwable;
 
 class PublicContactController extends Controller
 {
+    private const RECEIVED_MESSAGE = 'Your message was received.';
+
     public function __construct(private readonly ContactDeliveryReadiness $deliveryReadiness) {}
 
     public function submit(Request $request): RedirectResponse
@@ -28,13 +31,22 @@ class PublicContactController extends Controller
             'company' => ['nullable', 'string', 'max:0'],
         ]);
 
+        $contactMessage = ContactMessage::query()->create([
+            'sender_name' => $data['name'],
+            'sender_email' => $data['email'],
+            'message' => $data['message'],
+            'mail_delivery_status' => ContactMessage::DELIVERY_PENDING,
+        ]);
+
         $generalSettings = PublicContentSetting::general();
         $recipient = $this->deliveryReadiness->resolveRecipient($generalSettings);
         $senderAddress = $this->deliveryReadiness->senderAddress();
         $delivery = $this->deliveryReadiness->snapshot($generalSettings);
 
         if ($recipient === null || $senderAddress === null || ! $delivery['mailer_ready']) {
-            return back()->withErrors(['contact' => 'Message delivery is currently unavailable.'])->withInput();
+            $contactMessage->markMailUnavailable();
+
+            return back()->with('contact_success', self::RECEIVED_MESSAGE);
         }
 
         try {
@@ -45,13 +57,16 @@ class PublicContactController extends Controller
                 senderAddress: $senderAddress,
                 senderName: $this->deliveryReadiness->senderName(),
             ));
+            $contactMessage->markMailDelivered();
         } catch (Throwable $exception) {
-            Log::warning('Contact delivery failed.', ['exception' => $exception::class]);
-
-            return back()->withErrors(['contact' => 'Message delivery failed. Please try again later.'])->withInput();
+            $contactMessage->markMailFailed();
+            Log::warning('Contact delivery failed.', [
+                'exception_type' => $exception::class,
+                'contact_message_id' => $contactMessage->getKey(),
+            ]);
         }
 
-        return back()->with('contact_success', 'Your message was sent.');
+        return back()->with('contact_success', self::RECEIVED_MESSAGE);
     }
 
     private function publishedContactFormExists(): bool

@@ -1,11 +1,13 @@
 <?php
 
 use App\Mail\WebsiteContactMessage;
+use App\Models\ContactMessage;
 use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
@@ -47,6 +49,39 @@ function contactPayload(array $overrides = []): array
     ], $overrides);
 }
 
+it('persists contact before the mail attempt', function (): void {
+    config([
+        'contact.recipient' => 'fallback@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+        'mail.from.name' => 'Lars Möller Website',
+    ]);
+    enablePublishedContactForm();
+
+    $pendingMail = Mockery::mock(PendingMail::class);
+    $pendingMail->shouldReceive('send')
+        ->once()
+        ->with(Mockery::type(WebsiteContactMessage::class))
+        ->andReturnUsing(function (): void {
+            $message = ContactMessage::query()->sole();
+
+            expect($message->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_PENDING)
+                ->and($message->getAttribute('read_at'))->toBeNull();
+        });
+
+    Mail::shouldReceive('to')
+        ->once()
+        ->with('fallback@example.test')
+        ->andReturn($pendingMail);
+
+    $this->post('/contact', contactPayload())
+        ->assertRedirect()
+        ->assertSessionHas('contact_success', 'Your message was received.');
+
+    expect(ContactMessage::query()->sole()->getAttribute('mail_delivery_status'))
+        ->toBe(ContactMessage::DELIVERY_DELIVERED);
+});
+
 it('delivers to the private General recipient with the configured sender and visitor Reply-To', function (): void {
     config([
         'contact.recipient' => 'fallback@example.test',
@@ -62,7 +97,7 @@ it('delivers to the private General recipient with the configured sender and vis
 
     $this->post('/contact', contactPayload())
         ->assertRedirect()
-        ->assertSessionHas('contact_success');
+        ->assertSessionHas('contact_success', 'Your message was received.');
 
     Mail::assertSent(WebsiteContactMessage::class, function (WebsiteContactMessage $mail): bool {
         $envelope = $mail->envelope();
@@ -75,6 +110,14 @@ it('delivers to the private General recipient with the configured sender and vis
             && $replyTo instanceof Address
             && $replyTo->address === 'visitor@example.test';
     });
+
+    $message = ContactMessage::query()->sole();
+    expect($message->getAttribute('sender_name'))->toBe('Visitor')
+        ->and($message->getAttribute('sender_email'))->toBe('visitor@example.test')
+        ->and($message->getAttribute('message'))->toBe('Hello Lars')
+        ->and($message->getAttribute('read_at'))->toBeNull()
+        ->and($message->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_DELIVERED)
+        ->and($message->getAttribute('mail_delivered_at'))->not->toBeNull();
 });
 
 it('falls back to the runtime recipient when General has no private recipient', function (): void {
@@ -91,9 +134,62 @@ it('falls back to the runtime recipient when General has no private recipient', 
     $this->post('/contact', contactPayload())->assertSessionHas('contact_success');
 
     Mail::assertSent(WebsiteContactMessage::class, fn (WebsiteContactMessage $mail): bool => $mail->hasTo('fallback@example.test'));
+    expect(ContactMessage::query()->sole()->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_DELIVERED);
 });
 
-it('validates required fields and rejects the honeypot', function (): void {
+it('keeps a locally received contact when mail delivery is unavailable', function (): void {
+    config([
+        'contact.recipient' => null,
+        'mail.from.address' => null,
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+    PublicContentSetting::general()->update(['contact_recipient_email' => null]);
+
+    $this->post('/contact', contactPayload())
+        ->assertRedirect()
+        ->assertSessionHas('contact_success', 'Your message was received.')
+        ->assertSessionDoesntHaveErrors('contact');
+
+    Mail::assertNothingSent();
+
+    $message = ContactMessage::query()->sole();
+    expect($message->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_UNAVAILABLE)
+        ->and($message->getAttribute('mail_delivered_at'))->toBeNull()
+        ->and($message->getAttribute('read_at'))->toBeNull();
+});
+
+it('keeps a locally received contact when mail delivery fails', function (): void {
+    config([
+        'contact.recipient' => 'fallback@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+        'mail.from.name' => 'Website',
+    ]);
+    enablePublishedContactForm();
+
+    $pendingMail = Mockery::mock(PendingMail::class);
+    $pendingMail->shouldReceive('send')
+        ->once()
+        ->andThrow(new RuntimeException('secret SMTP diagnostic'));
+
+    Mail::shouldReceive('to')
+        ->once()
+        ->with('fallback@example.test')
+        ->andReturn($pendingMail);
+
+    $this->post('/contact', contactPayload())
+        ->assertRedirect()
+        ->assertSessionHas('contact_success', 'Your message was received.')
+        ->assertSessionDoesntHaveErrors('contact');
+
+    $message = ContactMessage::query()->sole();
+    expect($message->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_FAILED)
+        ->and($message->getAttribute('mail_delivered_at'))->toBeNull()
+        ->and($message->getAttribute('message'))->toBe('Hello Lars');
+});
+
+it('validates required fields and rejects the honeypot without persisting', function (): void {
     config(['contact.recipient' => 'artist@example.test']);
     enablePublishedContactForm();
 
@@ -105,6 +201,8 @@ it('validates required fields and rejects the honeypot', function (): void {
 
     $this->post('/contact', contactPayload(['company' => 'spam']))
         ->assertSessionHasErrors('company');
+
+    expect(ContactMessage::query()->count())->toBe(0);
 });
 
 it('rate limits repeated contact submissions', function (): void {
@@ -123,19 +221,8 @@ it('rate limits repeated contact submissions', function (): void {
 
     $this->post('/contact', contactPayload(['message' => 'Attempt 6']))
         ->assertTooManyRequests();
-});
 
-it('fails closed when delivery configuration is incomplete', function (): void {
-    config([
-        'contact.recipient' => null,
-        'mail.from.address' => null,
-    ]);
-    enablePublishedContactForm();
-    PublicContentSetting::general()->update(['contact_recipient_email' => null]);
-
-    $this->post('/contact', contactPayload())
-        ->assertSessionHasErrors('contact')
-        ->assertSessionMissing('contact_success');
+    expect(ContactMessage::query()->count())->toBe(5);
 });
 
 it('requires an enabled Contact component on a published Custom Page', function (): void {
@@ -178,4 +265,6 @@ it('requires an enabled Contact component on a published Custom Page', function 
     ]]]);
 
     $this->post('/contact', contactPayload())->assertNotFound();
+
+    expect(ContactMessage::query()->count())->toBe(0);
 });

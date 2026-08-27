@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Content\PublicAppearance;
 use App\Domain\Content\SocialLinks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
@@ -21,16 +22,19 @@ use LogicException;
     'legal_disclaimer',
     'favicon_media_asset_id',
     'default_media_copyright_notice',
+    'background_mode',
+    'background_color',
+    'background_gradient_start',
+    'background_gradient_end',
+    'background_gradient_angle',
 ])]
 #[Guarded(['id', 'scope'])]
 class PublicContentSetting extends Model
 {
     public const SCOPE_GENERAL = 'general';
-
     public const SCOPES = [self::SCOPE_GENERAL];
 
     protected $table = 'public_content_settings';
-
     public $incrementing = false;
 
     protected function casts(): array
@@ -39,6 +43,7 @@ class PublicContentSetting extends Model
             'show_public_email' => 'boolean',
             'show_instagram' => 'boolean',
             'social_links' => 'array',
+            'background_gradient_angle' => 'integer',
         ];
     }
 
@@ -82,6 +87,12 @@ class PublicContentSetting extends Model
 
     private static function validateGeneral(self $setting): void
     {
+        $setting->setAttribute('background_mode', PublicAppearance::normalizeMode($setting->getAttribute('background_mode')));
+        $setting->setAttribute('background_color', PublicAppearance::normalizeColor($setting->getAttribute('background_color'), 'background_color'));
+        $setting->setAttribute('background_gradient_start', PublicAppearance::normalizeColor($setting->getAttribute('background_gradient_start'), 'background_gradient_start'));
+        $setting->setAttribute('background_gradient_end', PublicAppearance::normalizeColor($setting->getAttribute('background_gradient_end'), 'background_gradient_end'));
+        $setting->setAttribute('background_gradient_angle', PublicAppearance::normalizeAngle($setting->getAttribute('background_gradient_angle')));
+
         $publicEmail = $setting->getAttribute('public_email');
         if ($publicEmail !== null && (! is_string($publicEmail) || filter_var($publicEmail, FILTER_VALIDATE_EMAIL) === false)) {
             throw ValidationException::withMessages([

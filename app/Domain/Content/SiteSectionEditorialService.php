@@ -8,6 +8,7 @@ use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\Exhibition;
 use App\Models\JournalSetting;
+use App\Models\Redirect;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -152,6 +153,56 @@ final class SiteSectionEditorialService
         }
 
         return $this->updatePlacement($section, $state, $showInNavigation, $parentSectionId);
+    }
+
+    public function updateCustomPageIdentity(
+        SiteSection $section,
+        string $title,
+        ?string $navigationLabel,
+        string $slug,
+    ): SiteSection {
+        if ($section->nodeType() !== SiteNodeType::CustomPage) {
+            throw ValidationException::withMessages(['type' => 'Only Custom Pages support these page identity settings.']);
+        }
+
+        $title = $this->validatedTitle($title);
+        $navigationLabel = trim((string) $navigationLabel);
+        if ($navigationLabel === '') {
+            $navigationLabel = $title;
+        }
+        if (mb_strlen($navigationLabel) > 160) {
+            throw ValidationException::withMessages(['navigation_label' => 'The navigation label must be short text.']);
+        }
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($section, $title, $navigationLabel, $slug, $actor): SiteSection {
+            /** @var SiteSection $fresh */
+            $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+            if ($fresh->nodeType() !== SiteNodeType::CustomPage) {
+                throw ValidationException::withMessages(['type' => 'Only Custom Pages support these page identity settings.']);
+            }
+
+            $oldSlug = trim((string) $fresh->getAttribute('slug'));
+            $newSlug = $this->validatedSlug($slug, (int) $fresh->getKey());
+            if ($newSlug !== $oldSlug) {
+                $this->retainCustomPagePath($oldSlug, $newSlug);
+            }
+
+            $fresh->fill([
+                'title' => $title,
+                'navigation_label' => $navigationLabel,
+                'slug' => $newSlug,
+            ]);
+
+            if (! $fresh->isDirty()) {
+                return $fresh;
+            }
+
+            $fresh->save();
+            $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
+
+            return $fresh->fresh();
+        });
     }
 
     public function updatePlacement(
@@ -310,17 +361,57 @@ final class SiteSectionEditorialService
         return $title;
     }
 
-    private function validatedSlug(string $slug): string
+    private function validatedSlug(string $slug, ?int $ignoreSiteSectionId = null): string
     {
         $slug = trim($slug);
         if ($slug === '' || mb_strlen($slug) > 80 || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) !== 1) {
             throw ValidationException::withMessages(['slug' => 'Use lowercase letters, numbers and hyphens for the public URL slug.']);
         }
-        if (! $this->pathPolicy->available($slug)) {
+        if (! $this->pathPolicy->available($slug, $ignoreSiteSectionId)) {
             throw ValidationException::withMessages(['slug' => 'This public URL slug is reserved or already in use.']);
         }
 
         return $slug;
+    }
+
+    private function retainCustomPagePath(string $oldSlug, string $newSlug): void
+    {
+        if ($oldSlug === '' || $oldSlug === $newSlug) {
+            return;
+        }
+
+        $oldPath = '/'.$oldSlug;
+        $newPath = '/'.$newSlug;
+        $ownedReason = SiteSectionPathPolicy::CUSTOM_PAGE_SLUG_REDIRECT_REASON;
+
+        Redirect::query()
+            ->where('reason', $ownedReason)
+            ->where('target_path', $oldPath)
+            ->update(['target_path' => $newPath]);
+
+        /** @var Redirect|null $sourceRedirect */
+        $sourceRedirect = Redirect::query()->where('source_path', $oldPath)->lockForUpdate()->first();
+        if ($sourceRedirect !== null && $sourceRedirect->getAttribute('reason') !== $ownedReason) {
+            throw ValidationException::withMessages(['slug' => 'The previous public path is already reserved by another redirect.']);
+        }
+
+        if ($sourceRedirect === null) {
+            Redirect::query()->create([
+                'source_path' => $oldPath,
+                'target_path' => $newPath,
+                'status_code' => 301,
+                'enabled' => true,
+                'reason' => $ownedReason,
+            ]);
+
+            return;
+        }
+
+        $sourceRedirect->update([
+            'target_path' => $newPath,
+            'status_code' => 301,
+            'enabled' => true,
+        ]);
     }
 
     private function parentSection(SiteSection $section, ?int $parentSectionId): ?SiteSection

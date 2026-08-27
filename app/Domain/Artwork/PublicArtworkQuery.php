@@ -459,11 +459,7 @@ class PublicArtworkQuery
         $result = $query
             ->whereHas('category', function (Builder $query): void {
                 $query->where('show_on_home', true)
-                    ->whereHas('siteSection', function (Builder $section): void {
-                        if (! $this->preview->active()) {
-                            $section->where('state', 'published');
-                        }
-                    });
+                    ->whereHas('siteSection', fn (Builder $section): Builder => $section->where('state', 'published'));
             })
             ->whereNotNull('work_year');
 

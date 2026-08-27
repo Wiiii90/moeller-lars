@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="public-site-root">
+@php($publicStyleNonce = request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE))
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,6 +29,9 @@
             'resources/css/custom-pages.css',
             'resources/js/app.js',
         ])
+        @if ($publicBackgroundCss !== null && is_string($publicStyleNonce) && $publicStyleNonce !== '')
+            <style nonce="{{ $publicStyleNonce }}">:root { --public-page: {{ $publicBackgroundCss }}; }</style>
+        @endif
     </head>
     <body class="public-site">
         @if ($isPreview)

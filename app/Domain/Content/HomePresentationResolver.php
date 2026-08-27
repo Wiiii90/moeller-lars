@@ -2,9 +2,7 @@
 
 namespace App\Domain\Content;
 
-use App\Domain\Artwork\PublicArtworkQuery;
 use App\Domain\Media\PublicMedia;
-use App\Models\Artwork;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
@@ -15,13 +13,13 @@ use LogicException;
 final class HomePresentationResolver
 {
     public function __construct(
-        private readonly PublicArtworkQuery $artworks,
         private readonly PublicMedia $media,
         private readonly SiteNodeRoute $routes,
         private readonly SitePreviewContext $preview,
         private readonly SafeRichTextRenderer $richText,
         private readonly HomePresentationEditorialService $editorial,
         private readonly HomeHeroConfigurationService $heroConfiguration,
+        private readonly HomeHeroResolver $hero,
     ) {}
 
     public function settings(): HomePresentationSetting
@@ -116,11 +114,14 @@ final class HomePresentationResolver
         $template = $settings->template();
         $configuration = $this->editorial->configuration($settings);
         $heroConfiguration = $this->heroConfiguration->configuration($settings);
+        $heroResolution = $template === HomeTemplate::Artwork
+            ? $this->hero->resolve($settings)
+            : null;
 
         return match ($template) {
             HomeTemplate::Artwork => [
                 'template' => $template,
-                'artwork' => $this->resolveHeroArtwork($settings),
+                'artwork' => $heroResolution['current'],
                 'media' => $this->media,
                 'showDetails' => $heroConfiguration['show_details'],
                 'showGalleryLink' => $heroConfiguration['show_gallery_link'],
@@ -169,32 +170,6 @@ final class HomePresentationResolver
     public function referencesMedia(HomePresentationSetting $settings, int $mediaAssetId): bool
     {
         return in_array($mediaAssetId, $this->mediaIds($settings), true);
-    }
-
-    private function resolveHeroArtwork(HomePresentationSetting $settings): ?Artwork
-    {
-        $configuration = $this->heroConfiguration->configuration($settings);
-
-        if ($configuration['mode'] === 'manual') {
-            return $this->artworks->homeCandidateById($configuration['hero_artwork_id'] ?? 0);
-        }
-
-        $candidates = $this->artworks->configuredHomeCandidates(
-            $configuration['group_size'],
-            $configuration['newest_by'],
-            $configuration['candidate_filter'],
-            $configuration['candidate_filter'] === 'year' ? $configuration['specific_year'] : null,
-            $configuration['manual_include_ids'],
-        );
-        if ($candidates->isEmpty()) {
-            return null;
-        }
-
-        if ($configuration['selection'] === 'random') {
-            return $candidates->get(random_int(0, $candidates->count() - 1));
-        }
-
-        return $candidates->first();
     }
 
     /** @param list<array<string, mixed>> $components

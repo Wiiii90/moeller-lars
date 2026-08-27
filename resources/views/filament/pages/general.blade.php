@@ -1,9 +1,6 @@
 <x-filament-panels::page>
-    <x-admin.workspace title="General" class="general-workspace">
+    <x-admin.workspace title="General">
         @include('filament.schemas.components.general-status-metrics')
-
-        <div class="general-workspace__sheet" aria-label="General settings">
-            {{ $this->form }}
-        </div>
+        {{ $this->form }}
     </x-admin.workspace>
 </x-filament-panels::page>

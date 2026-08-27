@@ -38,8 +38,24 @@ final class SitePages extends Page
     /** @var list<array<string, mixed>> */
     public array $sections = [];
 
-    /** @var list<array<string, mixed>> */
+    /**
+     * Visible rows in their rendered hierarchy order. This is deliberately
+     * derived from the grouped projection instead of being a separate flat
+     * filter projection.
+     *
+     * @var list<array<string, mixed>>
+     */
     public array $filteredRows = [];
+
+    /** @var array{total:int,published:int,unpublished:int,top_level:int,children:int,navigation:int} */
+    public array $metrics = [
+        'total' => 0,
+        'published' => 0,
+        'unpublished' => 0,
+        'top_level' => 0,
+        'children' => 0,
+        'navigation' => 0,
+    ];
 
     /** @var list<int|string> */
     public array $selectedSectionIds = [];
@@ -51,6 +67,8 @@ final class SitePages extends Page
     public string $statusFilter = '';
 
     public bool $filtersActive = false;
+
+    public bool $reorderEnabled = true;
 
     public bool $allVisibleSelected = false;
 
@@ -66,6 +84,18 @@ final class SitePages extends Page
 
     public string $newJournalTemplate = 'blog';
 
+    public int $perPage = 25;
+
+    public int $pageNumber = 1;
+
+    public int $totalGroups = 0;
+
+    public int $lastPage = 1;
+
+    public int $rangeStart = 0;
+
+    public int $rangeEnd = 0;
+
     private ?SiteSectionOrderService $orderService = null;
 
     public function mount(): void
@@ -75,16 +105,29 @@ final class SitePages extends Page
 
     public function updatedSearch(): void
     {
+        $this->pageNumber = 1;
         $this->loadSections();
     }
 
     public function updatedTypeFilter(): void
     {
+        $this->pageNumber = 1;
         $this->loadSections();
     }
 
     public function updatedStatusFilter(): void
     {
+        $this->pageNumber = 1;
+        $this->loadSections();
+    }
+
+    public function updatedPerPage(): void
+    {
+        if (! in_array($this->perPage, [25, 50, 100], true)) {
+            $this->perPage = 25;
+        }
+
+        $this->pageNumber = 1;
         $this->loadSections();
     }
 
@@ -98,6 +141,27 @@ final class SitePages extends Page
         $this->search = '';
         $this->typeFilter = '';
         $this->statusFilter = '';
+        $this->pageNumber = 1;
+        $this->loadSections();
+    }
+
+    public function previousPage(): void
+    {
+        if ($this->pageNumber <= 1) {
+            return;
+        }
+
+        $this->pageNumber--;
+        $this->loadSections();
+    }
+
+    public function nextPage(): void
+    {
+        if ($this->pageNumber >= $this->lastPage) {
+            return;
+        }
+
+        $this->pageNumber++;
         $this->loadSections();
     }
 
@@ -119,10 +183,12 @@ final class SitePages extends Page
 
     public function sortSection(int $sectionId, int $position, int|string|null $groupId = null): void
     {
-        if ($this->filtersActive) {
+        if (! $this->reorderEnabled) {
             Notification::make()
-                ->title('Reordering is unavailable while filters are active')
-                ->body('Reset Search, Type and Status before changing page order.')
+                ->title('Reordering is unavailable for this view')
+                ->body($this->filtersActive
+                    ? 'Reset Search, Type and Status before changing page order.'
+                    : 'Show the complete canonical root-page set before changing page order.')
                 ->warning()
                 ->send();
             $this->loadSections();
@@ -156,8 +222,8 @@ final class SitePages extends Page
 
     public function moveSection(int $sectionId, string $direction): void
     {
-        if ($this->filtersActive) {
-            Notification::make()->title('Reset filters before reordering pages')->warning()->send();
+        if (! $this->reorderEnabled) {
+            Notification::make()->title('Show the complete unfiltered page order before reordering')->warning()->send();
 
             return;
         }
@@ -187,6 +253,10 @@ final class SitePages extends Page
         $this->updatePlacement($section, $state, (bool) $section->getAttribute('show_in_navigation'));
     }
 
+    /**
+     * Navigation visibility remains part of the domain contract and is used by
+     * page edit/settings flows. It is intentionally not exposed as a row action.
+     */
     public function toggleSectionNavigation(int $sectionId): void
     {
         /** @var SiteSection $section */
@@ -312,6 +382,7 @@ final class SitePages extends Page
             $this->newPageSlug = '';
             $this->newPageType = SiteNodeType::CustomPage->value;
             $this->newJournalTemplate = JournalTemplate::Blog->value;
+            $this->pageNumber = 1;
             $this->loadSections();
             Notification::make()->title($message)->success()->send();
         } catch (ValidationException $exception) {
@@ -373,8 +444,8 @@ final class SitePages extends Page
             ->orderBy('id')
             ->get();
 
-        $rows = [];
-        $flatRows = [];
+        $allGroups = [];
+        $allRows = [];
         $topCount = $topLevel->count();
         foreach ($topLevel->values() as $topIndex => $section) {
             /** @var EloquentCollection<int, SiteSection> $children */
@@ -393,7 +464,7 @@ final class SitePages extends Page
             $childRows = [];
             $childCount = $children->count();
             foreach ($children->values() as $childIndex => $child) {
-                $childRow = $this->row(
+                $childRows[] = $this->row(
                     $child,
                     1,
                     $childIndex + 1,
@@ -402,25 +473,91 @@ final class SitePages extends Page
                     $childIndex < $childCount - 1,
                     false,
                 );
-                $childRows[] = $childRow;
-                $flatRows[] = $childRow;
             }
 
             $row['children'] = $childRows;
-            $rows[] = $row;
-            array_splice($flatRows, count($flatRows) - count($childRows), 0, [$row]);
+            $allGroups[] = $row;
+            $allRows[] = $row;
+            foreach ($childRows as $childRow) {
+                $allRows[] = $childRow;
+            }
         }
 
-        $this->sections = $rows;
-        $this->filtersActive = trim($this->search) !== '' || $this->typeFilter !== '' || $this->statusFilter !== '';
-        $this->filteredRows = array_values(array_filter(
-            $flatRows,
-            fn (array $row): bool => $this->matchesFilters($row),
-        ));
+        $this->metrics = [
+            'total' => count($allRows),
+            'published' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] === 'published')),
+            'unpublished' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] !== 'published')),
+            'top_level' => count($allGroups),
+            'children' => count(array_filter($allRows, static fn (array $row): bool => $row['parent_id'] !== null)),
+            'navigation' => count(array_filter($allRows, static fn (array $row): bool => $row['visible'] === true)),
+        ];
 
-        $existingIds = array_map(static fn (array $row): int => (int) $row['id'], $flatRows);
-        $this->selectedSectionIds = array_values(array_intersect($this->selectedIds(), $existingIds));
+        $this->filtersActive = trim($this->search) !== '' || $this->typeFilter !== '' || $this->statusFilter !== '';
+        $groups = $this->filtersActive ? $this->filteredGroups($allGroups) : $allGroups;
+
+        $this->totalGroups = count($groups);
+        $this->lastPage = max(1, (int) ceil($this->totalGroups / $this->perPage));
+        $this->pageNumber = min(max(1, $this->pageNumber), $this->lastPage);
+
+        $offset = ($this->pageNumber - 1) * $this->perPage;
+        $this->sections = array_values(array_slice($groups, $offset, $this->perPage));
+        $this->rangeStart = $this->totalGroups === 0 ? 0 : $offset + 1;
+        $this->rangeEnd = $this->totalGroups === 0 ? 0 : min($offset + count($this->sections), $this->totalGroups);
+        $this->filteredRows = $this->flattenGroups($this->sections);
+
+        $visibleIds = array_map(static fn (array $row): int => (int) $row['id'], $this->filteredRows);
+        $this->selectedSectionIds = array_values(array_intersect($this->selectedIds(), $visibleIds));
+
+        // Native Livewire sorting operates only when the complete canonical root
+        // set is visible. A root group (root + direct children) is never split.
+        $this->reorderEnabled = ! $this->filtersActive && $this->totalGroups <= $this->perPage;
         $this->syncSelectionState();
+    }
+
+    /** @param list<array<string, mixed>> $groups
+     *  @return list<array<string, mixed>>
+     */
+    private function filteredGroups(array $groups): array
+    {
+        $filtered = [];
+
+        foreach ($groups as $group) {
+            $children = $group['children'];
+            $rootMatches = $this->matchesFilters($group);
+            $matchingChildren = array_values(array_filter(
+                $children,
+                fn (array $child): bool => $this->matchesFilters($child),
+            ));
+
+            if (! $rootMatches && $matchingChildren === []) {
+                continue;
+            }
+
+            $group['children'] = $matchingChildren;
+            $group['filter_context'] = ! $rootMatches;
+            $filtered[] = $group;
+        }
+
+        return $filtered;
+    }
+
+    /** @param list<array<string, mixed>> $groups
+     *  @return list<array<string, mixed>>
+     */
+    private function flattenGroups(array $groups): array
+    {
+        $rows = [];
+        foreach ($groups as $group) {
+            $children = $group['children'];
+            $root = $group;
+            unset($root['children']);
+            $rows[] = $root;
+            foreach ($children as $child) {
+                $rows[] = $child;
+            }
+        }
+
+        return $rows;
     }
 
     /** @return array<string, mixed> */
@@ -458,7 +595,7 @@ final class SitePages extends Page
             'can_delete' => $type->canDelete(),
             'can_change_publication' => $type->canChangePublication(),
             'can_convert' => $type->canConvert(),
-            'can_toggle_navigation' => is_string($navigationLabel) && trim($navigationLabel) !== '',
+            'filter_context' => false,
             'workspace_url' => app(SiteNodePresentation::class)->workspaceUrl($section),
         ];
     }

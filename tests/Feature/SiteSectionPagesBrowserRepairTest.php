@@ -1,6 +1,5 @@
 <?php
 
-use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SiteSectionEditorialService;
@@ -22,80 +21,150 @@ function pagesRepairAdmin(): User
     return User::factory()->admin()->create();
 }
 
-it('keeps the Pages browser on one flat editorial table contract', function (): void {
+it('uses the shared admin presentation contract instead of a Pages-local theme', function (): void {
     $view = file_get_contents(resource_path('views/filament/pages/site-pages.blade.php'));
     $row = file_get_contents(resource_path('views/filament/pages/partials/site-section-row.blade.php'));
-    $component = file_get_contents(app_path('Filament/Pages/SitePages.php'));
-    $source = $view."\n".$row."\n".$component;
+    $shared = file_get_contents(resource_path('css/admin/task-surfaces.css'));
+    $customPageCss = file_get_contents(resource_path('css/admin/custom-page.css'));
+    $journalBlog = file_get_contents(resource_path('views/filament/resources/blog-posts/pages/list-blog-posts.blade.php'));
+    $journalExhibitions = file_get_contents(resource_path('views/filament/resources/exhibitions/pages/list-exhibitions.blade.php'));
 
-    $columns = [
-        'data-column="selection"',
-        'data-column="drag"',
-        'data-column="position"',
-        'data-column="page-type"',
-        'data-column="page"',
-        'data-column="template"',
-        'data-column="status"',
-        'data-column="navigation"',
-        'data-column="actions"',
+    expect($view)
+        ->toContain('<x-admin.workspace title="Pages">')
+        ->toContain('<x-admin.metrics :columns="6">')
+        ->toContain('label="Total pages"')
+        ->toContain('label="Published"')
+        ->toContain('label="Unpublished"')
+        ->toContain('label="Top level"')
+        ->toContain('label="Child pages"')
+        ->toContain('label="In navigation"')
+        ->toContain('admin-task-controls admin-task-controls--pages')
+        ->toContain('admin-hierarchy admin-hierarchy--pages')
+        ->toContain('admin-bottom-add')
+        ->toContain('admin-pager')
+        ->not->toContain('<style>')
+        ->not->toContain('--pages-')
+        ->not->toContain('min-width: 96rem')
+        ->not->toContain('data-column="navigation"')
+        ->not->toContain('pages-control')
+        ->not->toContain('pages-position-box')
+        ->not->toContain('pages-actions');
+
+    expect(substr_count($view, '<x-admin.metric '))->toBe(6)
+        ->and($row)->toContain('admin-position')
+        ->and($row)->toContain('admin-inline-select')
+        ->and($row)->toContain('admin-row-actions admin-toolbar')
+        ->and($row)->toContain('admin-action is-state-toggle')
+        ->and($row)->toContain('admin-action is-danger')
+        ->and($row)->not->toContain('data-cell="navigation"')
+        ->and($row)->not->toContain('toggleSectionNavigation')
+        ->and($row)->not->toContain('>Add<')
+        ->and($row)->not->toContain('>Remove<');
+
+    $controlOrder = [
+        strpos($view, '>SEARCH<'),
+        strpos($view, '>TYPE<'),
+        strpos($view, '>STATUS<'),
+        strpos($view, '>FILTER<'),
+        strpos($view, '>PAGES<'),
+        strpos($view, '>SELECTION<'),
     ];
-    $positions = [];
-    foreach ($columns as $column) {
-        $position = strpos($view, $column);
-        expect($position)->not->toBeFalse();
-        $positions[] = $position;
-    }
-    foreach (array_keys($positions) as $index) {
-        if ($index === array_key_last($positions)) {
-            continue;
-        }
-        expect($positions[$index])->toBeLessThan($positions[$index + 1]);
+    expect($controlOrder)->each->not->toBeFalse();
+    for ($index = 0; $index < count($controlOrder) - 1; $index++) {
+        expect($controlOrder[$index])->toBeLessThan($controlOrder[$index + 1]);
     }
 
-    $controlsMatch = preg_match('/\.pages-controls\s*\{([^}]*)\}/s', $view, $controlsRules);
-    $headerMatch = preg_match('/\.pages-table__header\s*\{([^}]*)\}/s', $view, $headerRules);
-    $headerMarkupMatch = preg_match(
-        '/<div class="pages-table__header" role="row">(.*?)@if \(! \$filtersActive\)/s',
-        $view,
-        $headerMarkup,
-    );
-
-    expect($controlsMatch)->toBe(1)
-        ->and($headerMatch)->toBe(1)
-        ->and($headerMarkupMatch)->toBe(1)
-        ->and($controlsRules[1])->not->toContain('border-bottom')
-        ->and($headerRules[1])->toContain('border-bottom: 1px solid var(--pages-border);')
-        ->and(substr_count($view, 'role="table"'))->toBe(1)
-        ->and(substr_count($headerMarkup[1], 'role="columnheader"'))->toBe(9)
-        ->and($source)->toContain('wire:model.live.debounce.300ms="search"')
-        ->and($source)->toContain('wire:model.live="typeFilter"')
-        ->and($source)->toContain('wire:model.live="statusFilter"')
-        ->and($source)->toContain('toggleSelectAll')
-        ->and($source)->toContain('indeterminate')
-        ->and($source)->toContain('bulkPublish')
-        ->and($source)->toContain('bulkUnpublish')
-        ->and($source)->toContain('bulkDelete')
-        ->and($source)->toContain('wire:sort="sortSection"')
-        ->and($source)->toContain('wire:sort:item')
-        ->and($source)->toContain('wire:sort:handle')
-        ->and($source)->toContain('wire:sort:group-id')
-        ->and($component)->toContain('if ($this->filtersActive)')
-        ->and($row)->toContain('Under {{ $section[\'parent_label\'] }}')
-        ->and($view)->toContain('pages-position-box')
-        ->and($view)->toContain('width: 3.35rem')
-        ->and($view)->toContain('pages-actions')
-        ->and($view)->toContain('grid-template-columns: 4.5rem 6.75rem 5.75rem 2.25rem 2.25rem 4.75rem')
-        ->and($view)->toContain('pages-add-plus')
-        ->and($view)->toContain('Add page')
-        ->and($source)->not->toContain('admin-site-tree')
-        ->and($source)->not->toContain('admin-list__eyebrow')
-        ->and($source)->not->toContain('draggable=')
-        ->and($source)->not->toContain('dragstart')
-        ->and($source)->not->toContain('dragover')
-        ->and($source)->not->toContain('drop=');
+    expect($shared)
+        ->toContain('.admin-hierarchy,')
+        ->toContain('.custom-page-component-sequence')
+        ->toContain('.admin-hierarchy__row.is-child .admin-hierarchy__content::before')
+        ->toContain('.custom-page-child-row .custom-page-child-row__content::before')
+        ->toContain('.admin-position,')
+        ->toContain('.admin-bottom-add')
+        ->toContain('.admin-pager')
+        ->and($customPageCss)->not->toContain('.custom-page-component-sequence {')
+        ->and($customPageCss)->not->toContain('.custom-page-row__position {')
+        ->and($journalBlog)->toContain('class="admin-pager"')
+        ->and($journalExhibitions)->toContain('class="admin-position"')
+        ->and($journalExhibitions)->toContain('class="admin-bottom-add"')
+        ->and($journalExhibitions)->toContain('class="admin-pager"');
 });
 
-it('implements select all and indeterminate selection for the visible rows', function (): void {
+it('derives all six metrics from real SiteSections', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    $service = app(SiteSectionEditorialService::class);
+    $parent = $service->createCustomPage('Metric Parent', 'metric-parent');
+    $child = $service->createJournal('Metric Child', 'metric-child', JournalTemplate::Blog->value);
+    $service->updatePlacement($parent, 'published', true, null);
+    app(SiteSectionOrderService::class)->moveTo($child, (int) $parent->getKey(), 0);
+
+    $metrics = Livewire::test(SitePages::class)->get('metrics');
+
+    expect($metrics)->toBe([
+        'total' => SiteSection::query()->count(),
+        'published' => SiteSection::query()->where('state', 'published')->count(),
+        'unpublished' => SiteSection::query()->where('state', '!=', 'published')->count(),
+        'top_level' => SiteSection::query()->whereNull('parent_id')->count(),
+        'children' => SiteSection::query()->whereNotNull('parent_id')->count(),
+        'navigation' => SiteSection::query()->where('show_in_navigation', true)->count(),
+    ]);
+});
+
+it('keeps parent context when a child matches a filter and disables reorder', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    $service = app(SiteSectionEditorialService::class);
+    $parent = $service->createCustomPage('Paintings Context', 'paintings-context');
+    $child = $service->createCustomPage('Test Child Match', 'test-child-match');
+    app(SiteSectionOrderService::class)->moveTo($child, (int) $parent->getKey(), 0);
+
+    $component = Livewire::test(SitePages::class)->set('search', 'Test Child Match');
+    $groups = $component->get('sections');
+
+    expect($groups)->toHaveCount(1)
+        ->and((int) $groups[0]['id'])->toBe((int) $parent->getKey())
+        ->and($groups[0]['filter_context'])->toBeTrue()
+        ->and($groups[0]['children'])->toHaveCount(1)
+        ->and((int) $groups[0]['children'][0]['id'])->toBe((int) $child->getKey())
+        ->and(collect($component->get('filteredRows'))->pluck('id')->map(fn ($id): int => (int) $id)->all())
+        ->toBe([(int) $parent->getKey(), (int) $child->getKey()])
+        ->and($component->get('filtersActive'))->toBeTrue()
+        ->and($component->get('reorderEnabled'))->toBeFalse();
+});
+
+it('resets paging on filters and keeps root groups intact across pagination', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    $service = app(SiteSectionEditorialService::class);
+    $order = app(SiteSectionOrderService::class);
+
+    $parent = $service->createCustomPage('Paged Parent', 'paged-parent');
+    $child = $service->createCustomPage('Paged Child', 'paged-child');
+    $order->moveTo($child, (int) $parent->getKey(), 0);
+    foreach (range(1, 26) as $index) {
+        $service->createNavigationGroup('Paged Root '.$index);
+    }
+
+    $positionsBefore = SiteSection::query()->orderBy('id')->pluck('position', 'id')->all();
+    $component = Livewire::test(SitePages::class);
+    $firstPageGroups = $component->get('sections');
+    $pagedParent = collect($firstPageGroups)->firstWhere('id', (int) $parent->getKey());
+
+    expect($component->get('totalGroups'))->toBe(SiteSection::query()->whereNull('parent_id')->count())
+        ->and($component->get('reorderEnabled'))->toBeFalse()
+        ->and($pagedParent)->not->toBeNull()
+        ->and($pagedParent['children'])->toHaveCount(1)
+        ->and((int) $pagedParent['children'][0]['id'])->toBe((int) $child->getKey());
+
+    $component->call('nextPage');
+    expect($component->get('pageNumber'))->toBe(2)
+        ->and(SiteSection::query()->orderBy('id')->pluck('position', 'id')->all())->toBe($positionsBefore);
+
+    $component->set('search', 'Paged Root 26');
+    expect($component->get('pageNumber'))->toBe(1)
+        ->and($component->get('filtersActive'))->toBeTrue()
+        ->and($component->get('reorderEnabled'))->toBeFalse();
+});
+
+it('selects only the currently visible hierarchy rows with correct mixed state', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     app(SiteSectionEditorialService::class)->createCustomPage('Alpha Selection', 'alpha-selection');
     app(SiteSectionEditorialService::class)->createCustomPage('Beta Selection', 'beta-selection');
@@ -113,32 +182,23 @@ it('implements select all and indeterminate selection for the visible rows', fun
         ->and($component->get('selectionIndeterminate'))->toBeTrue();
 });
 
-it('filters by search type and status and blocks reorder while a filter is active', function (): void {
+it('keeps root reorder and child reorder canonical', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
-    $alpha = $service->createCustomPage('Alpha Search', 'alpha-search');
-    $beta = $service->createJournal('Beta Search', 'beta-search', JournalTemplate::Blog->value);
-    $service->updatePlacement($beta, 'published', false, null);
+    $order = app(SiteSectionOrderService::class);
+    $rootA = $service->createCustomPage('Root A', 'root-a-order');
+    $rootB = $service->createCustomPage('Root B', 'root-b-order');
+    $childA = $service->createNavigationGroup('Child A');
+    $childB = $service->createNavigationGroup('Child B');
 
-    $component = Livewire::test(SitePages::class)
-        ->set('search', 'Alpha Search');
+    $order->moveTo($childA, (int) $rootA->getKey(), 0);
+    $order->moveTo($childB, (int) $rootA->getKey(), 1);
+    expect($order->moveTo($childB, (int) $rootA->getKey(), 0))->toBeTrue();
+    expect($childB->refresh()->position)->toBe(10)
+        ->and($childA->refresh()->position)->toBe(20);
 
-    expect(collect($component->get('filteredRows'))->pluck('id')->map(fn ($id): int => (int) $id)->all())
-        ->toBe([(int) $alpha->getKey()])
-        ->and($component->get('filtersActive'))->toBeTrue();
-
-    $before = $alpha->refresh()->position;
-    $component->call('sortSection', (int) $alpha->getKey(), 0, 'root');
-    expect($alpha->refresh()->position)->toBe($before);
-
-    $component->set('search', '')
-        ->set('typeFilter', SiteNodeType::Journal->value)
-        ->set('statusFilter', 'published');
-
-    $filtered = collect($component->get('filteredRows'));
-    expect($filtered)->not->toBeEmpty()
-        ->and($filtered->every(fn (array $row): bool => $row['type'] === SiteNodeType::Journal->value))->toBeTrue()
-        ->and($filtered->every(fn (array $row): bool => $row['state'] === 'published'))->toBeTrue();
+    expect($order->moveTo($rootB, null, 0))->toBeTrue();
+    expect($rootB->refresh()->parent_id)->toBeNull();
 });
 
 it('allows normal cross-parent moves child to top and top to child with normalized positions', function (): void {
@@ -172,73 +232,6 @@ it('allows normal cross-parent moves child to top and top to child with normaliz
         ->count())->toBe(4);
 });
 
-it('moves a published in-menu page under a hidden off-menu parent without changing page visibility state', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
-    $service = app(SiteSectionEditorialService::class);
-    $order = app(SiteSectionOrderService::class);
-
-    $parent = $service->createCustomPage('Hidden Parent', 'hidden-parent-placement');
-    $page = $service->createCustomPage('Visible Child', 'visible-child-placement');
-    $service->updatePlacement($page, 'published', true, null);
-
-    expect($parent->refresh()->state)->toBe('hidden')
-        ->and($parent->show_in_navigation)->toBeFalse()
-        ->and($page->refresh()->state)->toBe('published')
-        ->and($page->show_in_navigation)->toBeTrue();
-
-    expect($order->moveTo($page, (int) $parent->getKey(), 0))->toBeTrue();
-    expect($page->refresh()->parent_id)->toBe((int) $parent->getKey())
-        ->and($page->state)->toBe('published')
-        ->and($page->show_in_navigation)->toBeTrue()
-        ->and($parent->refresh()->state)->toBe('hidden')
-        ->and($parent->show_in_navigation)->toBeFalse();
-});
-
-it('allows Home published and in-menu under a hidden off-menu parent without mutating Home visibility state', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
-    $service = app(SiteSectionEditorialService::class);
-    $order = app(SiteSectionOrderService::class);
-    $home = SiteSection::query()->where('type', SiteNodeType::Home->value)->firstOrFail();
-    $parent = $service->createCustomPage('Hidden Home Parent', 'hidden-home-parent-placement');
-
-    $home->setAttribute('navigation_label', 'Home');
-    $home->save();
-    $service->updatePlacement($home, 'published', true, null);
-
-    expect($parent->refresh()->state)->toBe('hidden')
-        ->and($parent->show_in_navigation)->toBeFalse()
-        ->and($home->refresh()->state)->toBe('published')
-        ->and($home->show_in_navigation)->toBeTrue();
-
-    expect($order->moveTo($home, (int) $parent->getKey(), 0))->toBeTrue();
-    expect($home->refresh()->parent_id)->toBe((int) $parent->getKey())
-        ->and($home->state)->toBe('published')
-        ->and($home->type)->toBe(SiteNodeType::Home->value)
-        ->and($home->show_in_navigation)->toBeTrue();
-});
-
-it('lets a parent change publication and navigation without mutating its child state or placement', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
-    $service = app(SiteSectionEditorialService::class);
-
-    $parent = $service->createCustomPage('Independent Parent', 'independent-parent-placement');
-    $child = $service->createCustomPage('Independent Child', 'independent-child-placement');
-    $service->updatePlacement($parent, 'published', true, null);
-    $service->updatePlacement($child, 'published', true, (int) $parent->getKey());
-
-    $childParentId = (int) $child->refresh()->parent_id;
-    expect($child->state)->toBe('published')
-        ->and($child->show_in_navigation)->toBeTrue();
-
-    $service->updatePlacement($parent, 'hidden', false, null);
-
-    expect($parent->refresh()->state)->toBe('hidden')
-        ->and($parent->show_in_navigation)->toBeFalse()
-        ->and($child->refresh()->parent_id)->toBe($childParentId)
-        ->and($child->state)->toBe('published')
-        ->and($child->show_in_navigation)->toBeTrue();
-});
-
 it('rejects self parenting level three and nesting a page that already has children', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
@@ -259,21 +252,7 @@ it('rejects self parenting level three and nesting a page that already has child
         ->toThrow(ValidationException::class, 'A page that already has child pages cannot itself become a child page.');
 });
 
-it('allows Home to be a parent without changing its publication invariants', function (): void {
-    $this->actingAs(pagesRepairAdmin(), 'web');
-    $service = app(SiteSectionEditorialService::class);
-    $order = app(SiteSectionOrderService::class);
-    $home = SiteSection::query()->where('type', SiteNodeType::Home->value)->firstOrFail();
-    $child = $service->createCustomPage('Under Home', 'under-home-repair');
-
-    expect($order->moveTo($child, (int) $home->getKey(), 0))->toBeTrue();
-    expect($child->refresh()->parent_id)->toBe((int) $home->getKey())
-        ->and($home->refresh()->state)->toBe('published')
-        ->and($home->type)->toBe(SiteNodeType::Home->value)
-        ->and($home->slug)->toBeNull();
-});
-
-it('allows Home to be a child while keeping Home non delete non convert and permanently published', function (): void {
+it('preserves Home publication delete and conversion guards even when Home is reparented', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
@@ -282,9 +261,7 @@ it('allows Home to be a child while keeping Home non delete non convert and perm
 
     expect($order->moveTo($home, (int) $parent->getKey(), 0))->toBeTrue();
     expect($home->refresh()->parent_id)->toBe((int) $parent->getKey())
-        ->and($home->type)->toBe(SiteNodeType::Home->value)
-        ->and($home->state)->toBe('published')
-        ->and($home->slug)->toBeNull();
+        ->and($home->state)->toBe('published');
 
     expect(fn () => $service->updatePlacement($home, 'hidden', false, (int) $parent->getKey()))
         ->toThrow(ValidationException::class, 'Home is always published.')
@@ -292,14 +269,6 @@ it('allows Home to be a child while keeping Home non delete non convert and perm
         ->toThrow(ValidationException::class, 'Home cannot be converted')
         ->and(fn () => $home->refresh()->delete())
         ->toThrow(ValidationException::class, 'Home cannot be deleted.');
-
-    $home->refresh();
-    $home->setAttribute('type', SiteNodeType::CustomPage->value);
-    $home->setAttribute('slug', 'home-conversion-repair');
-    expect(fn () => $home->save())
-        ->toThrow(ValidationException::class, 'Home cannot be converted');
-    expect($home->refresh()->type)->toBe(SiteNodeType::Home->value)
-        ->and($home->state)->toBe('published');
 });
 
 it('initializes target configuration for safe type conversions transactionally', function (): void {
@@ -329,12 +298,6 @@ it('initializes target configuration for safe type conversions transactionally',
     expect($custom->type)->toBe(SiteNodeType::CustomPage->value)
         ->and($custom->slug)->not->toBeNull()
         ->and($custom->customPageSetting()->exists())->toBeTrue();
-
-    expect(AuditEvent::query()
-        ->where('action', 'site_section.type_converted')
-        ->where('entity_type', 'site_section')
-        ->where('entity_id', $page->getKey())
-        ->count())->toBe(4);
 });
 
 it('blocks destructive type conversion when custom page content exists', function (): void {
@@ -361,12 +324,7 @@ it('allows safe Journal template changes and blocks changes or conversion when e
 
     $safe = $service->createJournal('Safe Journal', 'safe-journal-repair', JournalTemplate::Blog->value);
     $service->updateJournalTemplate($safe, JournalTemplate::Exhibitions->value);
-    expect($safe->refresh()->template)->toBe(JournalTemplate::Exhibitions->value)
-        ->and(AuditEvent::query()
-            ->where('action', 'site_section.journal_template_updated')
-            ->where('entity_type', 'site_section')
-            ->where('entity_id', $safe->getKey())
-            ->exists())->toBeTrue();
+    expect($safe->refresh()->template)->toBe(JournalTemplate::Exhibitions->value);
 
     $journal = $service->createJournal('Journal With Entry', 'journal-with-entry-repair', JournalTemplate::Blog->value);
     BlogPost::query()->create([

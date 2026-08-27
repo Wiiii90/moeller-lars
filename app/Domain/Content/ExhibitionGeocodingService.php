@@ -2,11 +2,19 @@
 
 namespace App\Domain\Content;
 
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
 final class ExhibitionGeocodingService
 {
+    private const CACHE_VERSION = 'v2';
+
+    public function __construct(
+        private readonly NominatimRequestThrottle $throttle,
+    ) {}
+
     /** @return array{label:string, latitude:float, longitude:float}|null */
     public function locate(string $address): ?array
     {
@@ -21,20 +29,98 @@ final class ExhibitionGeocodingService
             throw new ExhibitionGeocodingUnavailable('Nominatim endpoint or User-Agent is not configured.');
         }
 
-        try {
-            $request = Http::acceptJson()
-                ->withHeaders(['User-Agent' => $userAgent])
-                ->connectTimeout(2)
-                ->timeout(5);
-            $email = trim((string) config('services.nominatim.email'));
-            $response = $request->get($endpoint, array_filter([
-                'q' => $address,
-                'format' => 'jsonv2',
-                'limit' => 1,
-                'addressdetails' => 0,
-                'email' => $email !== '' ? $email : null,
-            ], static fn (mixed $value): bool => $value !== null));
+        $request = Http::acceptJson()
+            ->withHeaders(['User-Agent' => $userAgent])
+            ->connectTimeout(2)
+            ->timeout(5);
 
+        foreach ($this->queriesFor($address) as $query) {
+            $cacheKey = $this->cacheKey($endpoint, $query);
+            $cached = Cache::get($cacheKey);
+            if (is_array($cached) && array_key_exists('found', $cached)) {
+                if (($cached['found'] ?? false) === true && is_array($cached['result'] ?? null)) {
+                    /** @var array{label:string, latitude:float, longitude:float} $result */
+                    $result = $cached['result'];
+                    return $result;
+                }
+
+                continue;
+            }
+
+            $result = $this->throttle->run(
+                $endpoint,
+                fn (): ?array => $this->request($request, $endpoint, $query),
+            );
+            Cache::put(
+                $cacheKey,
+                ['found' => $result !== null, 'result' => $result],
+                now()->addSeconds($result === null ? $this->missCacheSeconds() : $this->hitCacheSeconds()),
+            );
+
+            if ($result !== null) {
+                return $result;
+            }
+        }
+
+        return null;
+    }
+
+    /** @return list<array<string, int|string>> */
+    private function queriesFor(string $address): array
+    {
+        $parts = collect(explode(',', $address))
+            ->map(static fn (string $part): string => trim($part))
+            ->filter()
+            ->values();
+        $queries = [];
+
+        // Editorial input is normalized as "Street address, City, Country".
+        // Prefer Nominatim's structured search when all three parts are available,
+        // then make one bounded free-text fallback for addresses with unusual OSM data.
+        if ($parts->count() >= 3) {
+            $country = (string) $parts->pop();
+            $city = (string) $parts->pop();
+            $street = $parts->implode(', ');
+            if ($street !== '' && $city !== '' && $country !== '') {
+                $queries[] = [
+                    'street' => $street,
+                    'city' => $city,
+                    'country' => $country,
+                    'format' => 'jsonv2',
+                    'limit' => 1,
+                    'addressdetails' => 0,
+                ];
+            }
+        }
+
+        $queries[] = [
+            'q' => $address,
+            'format' => 'jsonv2',
+            'limit' => 1,
+            'addressdetails' => 0,
+        ];
+
+        $email = trim((string) config('services.nominatim.email'));
+        if ($email !== '') {
+            foreach ($queries as &$query) {
+                $query['email'] = $email;
+            }
+            unset($query);
+        }
+
+        return collect($queries)
+            ->unique(static fn (array $query): string => http_build_query($query, '', '&', PHP_QUERY_RFC3986))
+            ->values()
+            ->all();
+    }
+
+    /** @param array<string, int|string> $query
+     *  @return array{label:string, latitude:float, longitude:float}|null
+     */
+    private function request(PendingRequest $request, string $endpoint, array $query): ?array
+    {
+        try {
+            $response = $request->get($endpoint, $query);
             if (! $response->successful()) {
                 throw new ExhibitionGeocodingUnavailable('Nominatim returned HTTP '.$response->status().'.');
             }
@@ -77,5 +163,23 @@ final class ExhibitionGeocodingService
         } catch (Throwable $exception) {
             throw new ExhibitionGeocodingUnavailable('Nominatim request failed.', previous: $exception);
         }
+    }
+
+    /** @param array<string, int|string> $query */
+    private function cacheKey(string $endpoint, array $query): string
+    {
+        ksort($query);
+
+        return 'journal:nominatim:'.self::CACHE_VERSION.':'.sha1($endpoint.'|'.http_build_query($query, '', '&', PHP_QUERY_RFC3986));
+    }
+
+    private function hitCacheSeconds(): int
+    {
+        return max(86400, (int) config('services.nominatim.hit_cache_seconds', 2592000));
+    }
+
+    private function missCacheSeconds(): int
+    {
+        return max(300, (int) config('services.nominatim.miss_cache_seconds', 86400));
     }
 }

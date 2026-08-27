@@ -10,7 +10,6 @@ use App\Filament\Pages\SitePages;
 use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\SiteNavigation;
-use App\Filament\Widgets\ArtistDashboard;
 use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
 use Filament\Http\Middleware\Authenticate;
@@ -55,7 +54,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([])
             ->widgets([
-                ArtistDashboard::class,
                 ContactHealth::class,
             ])
             ->navigation(fn (NavigationBuilder $builder): NavigationBuilder => $this->navigation($builder))

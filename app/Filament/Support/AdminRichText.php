@@ -54,43 +54,12 @@ final class AdminRichText
             return [$editor];
         }
 
+        // Keep the editor Alpine attribute limited to the state mutation it owns.
+        // The DOM/toolbar observer lives on the dedicated insert-flow Group below so
+        // Filament never has to serialize a multiline x-init block on MarkdownEditor.
         $editor->extraAlpineAttributes([
             'data-admin-rich-text-editor-input' => $pickerKey,
-            'x-init' => <<<JS
-                \$el.addEventListener('admin-rich-text-image-insert', (event) => {
-                    const markdown = event.detail?.markdown
-                    if (typeof markdown !== 'string' || markdown === '') return
-
-                    const current = String(state ?? '').trim()
-                    state = current === '' ? markdown : current + '\n\n' + markdown
-                })
-
-                const bindImageToolbarAction = () => {
-                    const toolbarButton = \$el.querySelector('.editor-toolbar .upload-image')
-                    const scope = \$el.closest('.fi-modal-window, form, .fi-page') ?? document
-                    const insertFlow = scope.querySelector('[data-admin-rich-text-image-insert="{$pickerKey}"]')
-                    if (! toolbarButton || ! insertFlow || toolbarButton.dataset.adminImageBound === 'true') return false
-
-                    toolbarButton.dataset.adminImageBound = 'true'
-                    toolbarButton.setAttribute('title', 'Insert image')
-                    toolbarButton.setAttribute('aria-label', 'Insert image')
-                    toolbarButton.addEventListener('click', (event) => {
-                        event.preventDefault()
-                        event.stopImmediatePropagation()
-                        insertFlow.dispatchEvent(new CustomEvent('admin-rich-text-image-open'))
-                    }, true)
-
-                    return true
-                }
-
-                if (! bindImageToolbarAction()) {
-                    const observer = new MutationObserver(() => {
-                        if (bindImageToolbarAction()) observer.disconnect()
-                    })
-                    observer.observe(\$el.closest('.fi-modal-window, form, .fi-page') ?? document.body, { childList: true, subtree: true })
-                    setTimeout(() => observer.disconnect(), 3000)
-                }
-            JS,
+            'x-on:admin-rich-text-image-insert' => "const markdown = \$event.detail?.markdown; if (typeof markdown === 'string' && markdown !== '') { const current = String(state ?? '').trim(); state = current === '' ? markdown : current + '\\n\\n' + markdown; }",
         ]);
 
         $picker = MediaAssetSelect::makeId($pickerName, 'Image from Media Files', imagesOnly: true)
@@ -178,6 +147,33 @@ final class AdminRichText
                             this.externalError = ''
                             this.open = false
                         },
+                    }
+                JS,
+                'x-init' => <<<JS
+                    const scope = \$el.closest('.fi-modal-window, form, .fi-page') ?? document
+                    const bindImageToolbarAction = () => {
+                        const editor = scope.querySelector('[data-admin-rich-text-editor-input="{$pickerKey}"]')
+                        const toolbarButton = editor?.querySelector('.editor-toolbar .upload-image')
+                        if (! toolbarButton || toolbarButton.dataset.adminImageBound === 'true') return false
+
+                        toolbarButton.dataset.adminImageBound = 'true'
+                        toolbarButton.setAttribute('title', 'Insert image')
+                        toolbarButton.setAttribute('aria-label', 'Insert image')
+                        toolbarButton.addEventListener('click', (event) => {
+                            event.preventDefault()
+                            event.stopImmediatePropagation()
+                            \$el.dispatchEvent(new CustomEvent('admin-rich-text-image-open'))
+                        }, true)
+
+                        return true
+                    }
+
+                    if (! bindImageToolbarAction()) {
+                        const observer = new MutationObserver(() => {
+                            if (bindImageToolbarAction()) observer.disconnect()
+                        })
+                        observer.observe(scope === document ? document.body : scope, { childList: true, subtree: true })
+                        setTimeout(() => observer.disconnect(), 3000)
                     }
                 JS,
                 'x-on:admin-rich-text-image-open' => "open = true; source = 'media'; externalError = ''; \$nextTick(() => \$el.querySelector('[role=\"combobox\"]')?.focus())",

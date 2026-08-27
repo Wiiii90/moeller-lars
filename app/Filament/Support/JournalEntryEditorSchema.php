@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Content\ExhibitionMapPresentation;
+use App\Domain\Content\JournalTemplate;
 use App\Models\Exhibition;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -23,93 +24,131 @@ final class JournalEntryEditorSchema
 {
     public static function blog(Schema $schema): Schema
     {
-        return $schema->components([
-            AdminForm::section('Basics')->schema([
-                self::title(),
-                self::slug(220),
-                Textarea::make('excerpt')->label('Excerpt')->maxLength(1000)->nullable()->columnSpanFull(),
-                MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
-                    ->nullable()
-                    ->columnSpanFull(),
-            ])->columns(2),
-            self::textSection('body'),
-            AdminForm::section('Gallery')->schema([
-                self::galleryImages(),
-            ]),
-        ]);
+        return self::entry($schema, JournalTemplate::Blog);
     }
 
     public static function exhibition(Schema $schema): Schema
     {
-        return $schema->components([
-            AdminForm::section('Basics')->schema([
-                self::title(),
-                self::slug(180),
-                MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
-                    ->nullable()
-                    ->columnSpanFull(),
-            ])->columns(2),
+        return self::entry($schema, JournalTemplate::Exhibitions);
+    }
 
-            AdminForm::section('Venue')->schema([
-                TextInput::make('venue')->label('Venue')->maxLength(240)->nullable()->columnSpan(3),
-                TextInput::make('external_url')->label('Venue website')->url()->maxLength(2048)->nullable()->columnSpan(3),
-                self::locationField('location_text', 'Street address', 500)->columnSpan(2),
-                self::locationField('city', 'City', 160)->columnSpan(2),
-                self::locationField('country', 'Country', 160)->columnSpan(2),
-            ])->columns(6),
+    private static function entry(Schema $schema, JournalTemplate $template): Schema
+    {
+        $components = [self::basicsSection($template)];
 
-            self::textSection('description'),
+        if ($template === JournalTemplate::Exhibitions) {
+            $components[] = self::venueSection();
+        }
 
-            AdminForm::section('Dates')->schema([
-                DatePicker::make('starts_on')->label('Starts')->nullable(),
-                DatePicker::make('ends_on')->label('Ends')->afterOrEqual('starts_on')->nullable(),
-                TextInput::make('date_text')->label('Display date override')->maxLength(160)->nullable()->columnSpanFull(),
-                DateTimePicker::make('vernissage_at')->label('Vernissage')->seconds(false)->nullable()->columnSpanFull(),
-            ])->columns(2),
+        $components[] = self::textSection($template === JournalTemplate::Blog ? 'body' : 'description');
 
-            AdminForm::section('Gallery')->schema([
-                Toggle::make('gallery_enabled')
-                    ->label('Gallery enabled')
-                    ->live()
-                    ->columnSpanFull(),
-                Select::make('gallery_presentation')
-                    ->label('Gallery presentation')
-                    ->options([
-                        'grid' => 'Grid',
-                        'mosaic' => 'Mosaic',
-                        'slideshow' => 'Slideshow',
-                    ])
-                    ->default('grid')
-                    ->required()
-                    ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
-                    ->helperText('Uses the same Gallery images and order.'),
-                self::galleryImages()
-                    ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
-                    ->dehydrated(fn (Get $get): bool => (bool) $get('gallery_enabled')),
-            ]),
+        if ($template === JournalTemplate::Exhibitions) {
+            $components[] = self::datesSection();
+        }
 
-            AdminForm::section('Map')->schema([
-                Toggle::make('map_enabled')
-                    ->label('Map enabled')
-                    ->live()
-                    ->columnSpanFull(),
-                Select::make('map_shape')
-                    ->label('Map shape')
-                    ->options(['wide' => 'Wide', 'square' => 'Square'])
-                    ->default('wide')
-                    ->required()
-                    ->live()
-                    ->visible(fn (Get $get): bool => (bool) $get('map_enabled')),
-                Hidden::make('latitude')->dehydrated(false),
-                Hidden::make('longitude')->dehydrated(false),
-                Hidden::make('geocoded_at')->dehydrated(false),
-                Placeholder::make('map_preview')
-                    ->label('Preview')
-                    ->content(fn (Get $get): HtmlString => self::mapPreview($get))
-                    ->visible(fn (Get $get): bool => (bool) $get('map_enabled'))
-                    ->columnSpanFull(),
-            ])->columns(2),
+        $components[] = self::gallerySection($template);
+
+        if ($template === JournalTemplate::Exhibitions) {
+            $components[] = self::mapSection();
+        }
+
+        return $schema->components($components);
+    }
+
+    private static function basicsSection(JournalTemplate $template): mixed
+    {
+        $schema = [
+            self::title(),
+            self::slug($template === JournalTemplate::Blog ? 220 : 180),
+        ];
+
+        if ($template === JournalTemplate::Blog) {
+            $schema[] = Textarea::make('excerpt')->label('Excerpt')->maxLength(1000)->nullable()->columnSpanFull();
+        }
+
+        $schema[] = MediaAssetSelect::makeId('cover_media_asset_id', 'Cover image', imagesOnly: true)
+            ->nullable()
+            ->columnSpanFull();
+
+        return AdminForm::section('Basics')->schema($schema)->columns(2);
+    }
+
+    private static function venueSection(): mixed
+    {
+        return AdminForm::section('Venue')->schema([
+            TextInput::make('venue')->label('Venue')->maxLength(240)->nullable()->columnSpan(3),
+            TextInput::make('external_url')->label('Venue website')->url()->maxLength(2048)->nullable()->columnSpan(3),
+            self::locationField('location_text', 'Street address', 500)->columnSpan(2),
+            self::locationField('city', 'City', 160)->columnSpan(2),
+            self::locationField('country', 'Country', 160)->columnSpan(2),
+        ])->columns(6);
+    }
+
+    private static function datesSection(): mixed
+    {
+        return AdminForm::section('Dates')->schema([
+            DatePicker::make('starts_on')->label('Starts')->nullable(),
+            DatePicker::make('ends_on')->label('Ends')->afterOrEqual('starts_on')->nullable(),
+            TextInput::make('date_text')->label('Display date override')->maxLength(160)->nullable()->columnSpanFull(),
+            DateTimePicker::make('vernissage_at')->label('Vernissage')->seconds(false)->nullable()->columnSpanFull(),
+        ])->columns(2);
+    }
+
+    private static function gallerySection(JournalTemplate $template): mixed
+    {
+        $images = self::galleryImages();
+
+        if ($template === JournalTemplate::Blog) {
+            return AdminForm::section('Gallery')->schema([$images]);
+        }
+
+        $images
+            ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
+            ->dehydrated(fn (Get $get): bool => (bool) $get('gallery_enabled'));
+
+        return AdminForm::section('Gallery')->schema([
+            Toggle::make('gallery_enabled')
+                ->label('Gallery enabled')
+                ->live()
+                ->columnSpanFull(),
+            Select::make('gallery_presentation')
+                ->label('Gallery presentation')
+                ->options([
+                    'grid' => 'Grid',
+                    'mosaic' => 'Mosaic',
+                    'slideshow' => 'Slideshow',
+                ])
+                ->default('grid')
+                ->required()
+                ->visible(fn (Get $get): bool => (bool) $get('gallery_enabled'))
+                ->helperText('Uses the same Gallery images and order.'),
+            $images,
         ]);
+    }
+
+    private static function mapSection(): mixed
+    {
+        return AdminForm::section('Map')->schema([
+            Toggle::make('map_enabled')
+                ->label('Map enabled')
+                ->live()
+                ->columnSpanFull(),
+            Select::make('map_shape')
+                ->label('Map shape')
+                ->options(['wide' => 'Wide', 'square' => 'Square'])
+                ->default('wide')
+                ->required()
+                ->live()
+                ->visible(fn (Get $get): bool => (bool) $get('map_enabled')),
+            Hidden::make('latitude')->dehydrated(false),
+            Hidden::make('longitude')->dehydrated(false),
+            Hidden::make('geocoded_at')->dehydrated(false),
+            Placeholder::make('map_preview')
+                ->label('Preview')
+                ->content(fn (Get $get): HtmlString => self::mapPreview($get))
+                ->visible(fn (Get $get): bool => (bool) $get('map_enabled'))
+                ->columnSpanFull(),
+        ])->columns(2);
     }
 
     private static function title(): TextInput
@@ -188,13 +227,12 @@ final class JournalEntryEditorSchema
         if ($presentation === null) {
             return new HtmlString('<div class="journal-entry-editor__map is-empty"><p>Map preview unavailable.</p></div>');
         }
-        $aspect = app(ExhibitionMapPresentation::class)->aspectRatio($presentation['shape']);
         $key = sha1($latitude.'|'.$longitude.'|'.(string) ($get('geocoded_at') ?? '').'|'.$presentation['shape']);
 
         return new HtmlString(
             '<div wire:key="journal-map-'.$key.'" x-data="{ stale: false }" x-on:journal-location-stale.window="stale = true">'
-            .'<div class="journal-entry-editor__map" x-show="! stale">'
-            .'<iframe src="'.e($presentation['embed_url']).'" title="Venue map preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="aspect-ratio:'.e($aspect).';height:auto;min-height:16rem"></iframe>'
+            .'<div class="journal-entry-editor__map is-'.e($presentation['shape']).'" x-show="! stale">'
+            .'<iframe src="'.e($presentation['embed_url']).'" title="Venue map preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
             .'<div class="journal-entry-editor__map-meta"><span>'.e(ucfirst($presentation['shape'])).' map</span>'
             .'<a href="'.e($presentation['public_url']).'" target="_blank" rel="noopener noreferrer">Open map</a></div>'
             .'</div>'

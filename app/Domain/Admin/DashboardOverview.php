@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Filament\Widgets;
+namespace App\Domain\Admin;
 
-use App\Domain\Admin\DashboardFeed;
 use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\MatomoReportingClient;
 use App\Domain\Content\SiteNodeType;
@@ -15,30 +14,19 @@ use App\Models\Artwork;
 use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use Carbon\CarbonInterface;
-use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
-final class ArtistDashboard extends Widget
+final class DashboardOverview
 {
-    protected string $view = 'filament.widgets.artist-dashboard';
-
-    protected static ?int $sort = 1;
-
-    protected static bool $isLazy = false;
-
-    protected int|string|array $columnSpan = 'full';
-
-    public string $feedSearch = '';
-
-    public string $feedView = 'all';
-
-    public function resetFeed(): void
-    {
-        $this->feedSearch = '';
-        $this->feedView = 'all';
-    }
-
-    protected function getViewData(): array
+    /**
+     * @return array{
+     *   analytics:array<string,mixed>,
+     *   storage:array<string,mixed>,
+     *   activity:array<string,mixed>,
+     *   metrics:list<array{label:string,value:string,detail:string}>
+     * }
+     */
+    public function snapshot(): array
     {
         $analytics = $this->analyticsOverview(app(MatomoReportingClient::class)->report('30d'));
         $storage = $this->storageOverview(app(MediaCapacityService::class)->cachedSnapshotIfAvailable());
@@ -58,10 +46,7 @@ final class ArtistDashboard extends Widget
             ['label' => 'Recent changes', 'value' => number_format($activity['recent_changes']), 'detail' => 'Last 30 days'],
         ];
 
-        $feed = app(DashboardFeed::class)->items($this->feedSearch, $this->feedView);
-        $feedViews = DashboardFeed::views();
-
-        return compact('analytics', 'storage', 'activity', 'metrics', 'feed', 'feedViews');
+        return compact('analytics', 'storage', 'activity', 'metrics');
     }
 
     /** @param array<string, mixed> $report
