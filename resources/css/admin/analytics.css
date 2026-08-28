@@ -29,6 +29,12 @@
 .analytics-status.is-stale::before { background: var(--admin-accent); }
 .analytics-status.is-unavailable::before { background: var(--admin-danger); }
 
+.analytics-controls {
+    display: flex;
+    padding: .85rem 0;
+    justify-content: flex-end;
+}
+
 .analytics-range {
     display: flex;
     overflow: hidden;
@@ -81,6 +87,10 @@
 }
 
 .analytics-context strong { color: var(--admin-text); font-weight: 650; }
+
+.analytics-context {
+    border-bottom: 0;
+}
 
 .analytics-kpi small {
     display: block;

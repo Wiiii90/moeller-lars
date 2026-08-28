@@ -1,5 +1,13 @@
 /* Journal-specific content presentation only. Generic workspace/table/action/control geometry lives in data-workspace.css. */
 
+.journal-workspace .admin-data-controls {
+    display: flex;
+    gap: .85rem;
+    padding: .85rem 0;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
 .journal-visual {
     width: 5rem;
 }

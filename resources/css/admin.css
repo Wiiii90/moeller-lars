@@ -259,24 +259,6 @@
     color: var(--admin-danger);
 }
 
-.journal-workspace .admin-data-controls {
-    display: flex;
-    gap: .85rem;
-    padding: .85rem 0;
-    align-items: flex-end;
-    flex-wrap: wrap;
-}
-
-.analytics-controls {
-    display: flex;
-    padding: .85rem 0;
-    justify-content: flex-end;
-}
-
-.analytics-context {
-    border-bottom: 0;
-}
-
 .admin-list {
     border-top: 1px solid var(--admin-line);
 }

@@ -157,6 +157,19 @@
             </span>
         </x-slot:status>
 
+        @if ($available)
+            <x-admin.metrics :columns="count($kpis)" aria-label="Traffic summary">
+                @foreach ($kpis as $kpi)
+                    <x-admin.metric
+                        :label="$kpi['label']"
+                        :value="$kpi['value']"
+                        :description="$kpi['comparison']"
+                        class="{{ is_numeric($kpi['delta']) && $kpi['delta'] > 0 ? 'is-up' : (is_numeric($kpi['delta']) && $kpi['delta'] < 0 ? 'is-down' : '') }}"
+                    />
+                @endforeach
+            </x-admin.metrics>
+        @endif
+
         <x-admin.controls class="analytics-controls" aria-label="Analytics date range">
             <x-slot:actions>
                 <div class="admin-data-control-group analytics-context-actions">
@@ -204,17 +217,6 @@
                     <span>Updated {{ $matomo['generated_at'] }}</span>
                 @endif
             </div>
-
-            <x-admin.metrics :columns="count($kpis)" aria-label="Traffic summary">
-                @foreach ($kpis as $kpi)
-                    <x-admin.metric
-                        :label="$kpi['label']"
-                        :value="$kpi['value']"
-                        :description="$kpi['comparison']"
-                        class="{{ is_numeric($kpi['delta']) && $kpi['delta'] > 0 ? 'is-up' : (is_numeric($kpi['delta']) && $kpi['delta'] < 0 ? 'is-down' : '') }}"
-                    />
-                @endforeach
-            </x-admin.metrics>
 
             <section class="analytics-section analytics-geography">
                 <div class="analytics-section__head">
