@@ -20,84 +20,94 @@
         </x-admin.metrics>
 
         <section aria-label="Pages editor">
-            <div class="admin-task-controls admin-task-controls--pages" aria-label="Page controls">
-                <label class="admin-task-field">
-                    <span>SEARCH</span>
-                    <input
-                        type="search"
-                        value="{{ $search }}"
-                        placeholder="Search pages"
-                        wire:model.live.debounce.300ms="search"
-                    >
-                </label>
-
-                <label class="admin-task-field">
-                    <span>TYPE</span>
-                    <select wire:model.live="typeFilter" aria-label="Filter by page type">
-                        <option value="">All types</option>
-                        @foreach ($typeOptions as $value => $label)
-                            <option value="{{ $value }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </label>
-
-                <label class="admin-task-field">
-                    <span>STATUS</span>
-                    <select wire:model.live="statusFilter" aria-label="Filter by page status">
-                        <option value="">All statuses</option>
-                        <option value="published">Published</option>
-                        <option value="hidden">Unpublished</option>
-                    </select>
-                </label>
-
-                <div class="admin-task-control-group">
-                    <span class="admin-task-control-label">FILTER</span>
-                    <div class="admin-task-control-actions">
-                        <button class="admin-action" type="button" wire:click="resetFilters" @disabled(! $filtersActive)>Reset</button>
-                    </div>
-                </div>
-
-                <div class="admin-task-control-group">
-                    <span class="admin-task-control-label">PAGES</span>
-                    <div class="admin-task-control-actions">
-                        <button
-                            class="admin-action"
-                            type="button"
-                            disabled
-                            title="No collection-wide Pages settings are defined by the current domain contract."
-                        >Settings</button>
-                        <button class="admin-action" type="button" wire:click="startAddingPage">Add page</button>
-                    </div>
-                </div>
-
-                <div class="admin-task-control-group admin-selection" x-data="{ open: false }">
-                    <span class="admin-task-control-label">SELECTION</span>
-                    <div class="admin-selection__anchor">
-                        <button
-                            class="admin-action admin-selection__trigger"
-                            type="button"
-                            x-on:click="open = ! open"
-                            x-bind:aria-expanded="open"
-                            aria-haspopup="menu"
+            <x-admin.controls class="admin-task-controls admin-task-controls--pages" aria-label="Page controls">
+                <x-slot:search>
+                    <label class="admin-task-field">
+                        <span>SEARCH</span>
+                        <input
+                            type="search"
+                            value="{{ $search }}"
+                            placeholder="Search pages"
+                            wire:model.live.debounce.300ms="search"
                         >
-                            <span>Selected</span>
-                            <span class="admin-selection__count">{{ $selectedCount }}</span>
-                        </button>
-                        <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
-                            <button class="admin-action" type="button" role="menuitem" wire:click="bulkPublish" @disabled($selectedCount === 0)>Publish selected</button>
-                            <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpublish" @disabled($selectedCount === 0)>Unpublish selected</button>
-                            <button
-                                class="admin-action is-danger"
-                                type="button"
-                                role="menuitem"
-                                wire:click="bulkDelete"
-                                wire:confirm="Delete the selected pages that satisfy their safety rules?"
-                                @disabled($selectedCount === 0)
-                            >Delete selected</button>
+                    </label>
+                </x-slot:search>
+
+                <x-slot:filters>
+                    <label class="admin-task-field">
+                        <span>TYPE</span>
+                        <select wire:model.live="typeFilter" aria-label="Filter by page type">
+                            <option value="">All types</option>
+                            @foreach ($typeOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+
+                    <label class="admin-task-field">
+                        <span>STATUS</span>
+                        <select wire:model.live="statusFilter" aria-label="Filter by page status">
+                            <option value="">All statuses</option>
+                            <option value="published">Published</option>
+                            <option value="hidden">Unpublished</option>
+                        </select>
+                    </label>
+                </x-slot:filters>
+
+                <x-slot:reset>
+                    <div class="admin-task-control-group">
+                        <span class="admin-task-control-label">FILTER</span>
+                        <div class="admin-task-control-actions">
+                            <button class="admin-action" type="button" wire:click="resetFilters" @disabled(! $filtersActive)>Reset</button>
                         </div>
                     </div>
-                </div>
-            </div>
+                </x-slot:reset>
+
+                <x-slot:actions>
+                    <div class="admin-task-control-group">
+                        <span class="admin-task-control-label">PAGES</span>
+                        <div class="admin-task-control-actions">
+                            <button
+                                class="admin-action"
+                                type="button"
+                                disabled
+                                title="No collection-wide Pages settings are defined by the current domain contract."
+                            >Settings</button>
+                            <button class="admin-action" type="button" wire:click="startAddingPage">Add page</button>
+                        </div>
+                    </div>
+                </x-slot:actions>
+
+                <x-slot:selection>
+                    <div class="admin-task-control-group admin-selection" x-data="{ open: false }">
+                        <span class="admin-task-control-label">SELECTION</span>
+                        <div class="admin-selection__anchor">
+                            <button
+                                class="admin-action admin-selection__trigger"
+                                type="button"
+                                x-on:click="open = ! open"
+                                x-bind:aria-expanded="open"
+                                aria-haspopup="menu"
+                            >
+                                <span>Selected</span>
+                                <span class="admin-selection__count">{{ $selectedCount }}</span>
+                            </button>
+                            <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
+                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkPublish" @disabled($selectedCount === 0)>Publish selected</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpublish" @disabled($selectedCount === 0)>Unpublish selected</button>
+                                <button
+                                    class="admin-action is-danger"
+                                    type="button"
+                                    role="menuitem"
+                                    wire:click="bulkDelete"
+                                    wire:confirm="Delete the selected pages that satisfy their safety rules?"
+                                    @disabled($selectedCount === 0)
+                                >Delete selected</button>
+                            </div>
+                        </div>
+                    </div>
+                </x-slot:selection>
+            </x-admin.controls>
 
             @if (! $reorderEnabled)
                 <p class="admin-task-note">

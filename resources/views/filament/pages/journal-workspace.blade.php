@@ -21,94 +21,104 @@
         </x-admin.metrics>
 
         <x-admin.section aria-label="{{ $isBlog ? 'Blog entries' : 'Exhibition entries' }}">
-            <div class="admin-control-bar" aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}">
-                <label class="admin-field admin-control-bar__search">
-                    <span class="admin-field__label">Search {{ $entryLabel }}</span>
-                    <input
-                        type="search"
-                        wire:model.live.debounce.300ms="search"
-                        placeholder="{{ $isBlog ? 'Title or excerpt' : 'Title, venue, place or date' }}"
-                        autocomplete="off"
-                    >
-                </label>
+            <x-admin.controls aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}">
+                <x-slot:search>
+                    <label class="admin-field admin-control-bar__search">
+                        <span class="admin-field__label">Search {{ $entryLabel }}</span>
+                        <input
+                            type="search"
+                            wire:model.live.debounce.300ms="search"
+                            placeholder="{{ $isBlog ? 'Title or excerpt' : 'Title, venue, place or date' }}"
+                            autocomplete="off"
+                        >
+                    </label>
+                </x-slot:search>
 
-                <label class="admin-field">
-                    <span class="admin-field__label">Status</span>
-                    <select wire:model.live="statusFilter">
-                        <option value="any">Any</option>
-                        @if ($isBlog)
-                            <option value="draft">Draft</option>
-                            <option value="scheduled">Scheduled</option>
-                            <option value="published">Published</option>
-                            <option value="unpublished">Unpublished</option>
-                            <option value="archived">Archived</option>
-                        @else
-                            <option value="published">Published</option>
-                            <option value="unpublished">Unpublished</option>
-                        @endif
-                    </select>
-                </label>
-
-                @unless ($isBlog)
+                <x-slot:filters>
                     <label class="admin-field">
-                        <span class="admin-field__label">Timing</span>
-                        <select wire:model.live="timingFilter">
+                        <span class="admin-field__label">Status</span>
+                        <select wire:model.live="statusFilter">
                             <option value="any">Any</option>
-                            <option value="upcoming">Upcoming</option>
-                            <option value="current">Current</option>
-                            <option value="past">Past</option>
-                            <option value="unknown">Unknown</option>
+                            @if ($isBlog)
+                                <option value="draft">Draft</option>
+                                <option value="scheduled">Scheduled</option>
+                                <option value="published">Published</option>
+                                <option value="unpublished">Unpublished</option>
+                                <option value="archived">Archived</option>
+                            @else
+                                <option value="published">Published</option>
+                                <option value="unpublished">Unpublished</option>
+                            @endif
                         </select>
                     </label>
-                @endunless
 
-                <div class="admin-control-group">
-                    <span class="admin-control-group__label">Filter</span>
-                    <div class="admin-control-group__actions">
-                        <button class="admin-action" type="button" wire:click="resetFilters">Reset</button>
-                    </div>
-                </div>
+                    @unless ($isBlog)
+                        <label class="admin-field">
+                            <span class="admin-field__label">Timing</span>
+                            <select wire:model.live="timingFilter">
+                                <option value="any">Any</option>
+                                <option value="upcoming">Upcoming</option>
+                                <option value="current">Current</option>
+                                <option value="past">Past</option>
+                                <option value="unknown">Unknown</option>
+                            </select>
+                        </label>
+                    @endunless
+                </x-slot:filters>
 
-                <div class="admin-control-group">
-                    <span class="admin-control-group__label">Journal</span>
-                    <div class="admin-control-group__actions">
-                        <button class="admin-action" type="button" wire:click="mountAction('journalSettings')">Settings</button>
-                        <button class="admin-action" type="button" wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')">Add {{ $entryLabelSingular }}</button>
-                        @if ($journalPublicUrl)
-                            <a class="admin-action" href="{{ $journalPublicUrl }}" target="_blank" rel="noopener">Preview</a>
-                        @else
-                            <button class="admin-action" type="button" disabled title="Publish this Journal in Pages before previewing it">Preview</button>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="admin-control-group admin-selection" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
-                    <span class="admin-control-group__label">Selection</span>
-                    <div class="admin-selection__anchor">
-                        <button
-                            class="admin-action admin-selection__trigger"
-                            type="button"
-                            x-on:click="open = ! open"
-                            x-bind:aria-expanded="open.toString()"
-                            aria-haspopup="menu"
-                            @disabled($selectedIds === [])
-                        >
-                            Selected {{ $entryLabel }} <span class="admin-selection__count">{{ count($selectedIds) }}</span>
-                        </button>
-                        <div class="admin-selection__menu" role="menu" x-show="open" x-cloak x-on:click.outside="open = false">
-                            <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false">Move selected up</button>
-                            <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('down')" x-on:click="open = false">Move selected down</button>
-                            @if ($isBlog)
-                                <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedPosts" x-on:click="open = false">Publish selected</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="unpublishSelectedPosts" x-on:click="open = false">Unpublish selected</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="archiveSelectedPosts" x-on:click="open = false">Archive selected</button>
-                                <button class="admin-action" type="button" role="menuitem" wire:click="restoreSelectedPosts" x-on:click="open = false">Restore selected to draft</button>
-                            @endif
-                            <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('{{ $isBlog ? 'deleteSelectedPosts' : 'deleteSelectedExhibitions' }}')" x-on:click="open = false">Delete selected</button>
+                <x-slot:reset>
+                    <div class="admin-control-group">
+                        <span class="admin-control-group__label">Filter</span>
+                        <div class="admin-control-group__actions">
+                            <button class="admin-action" type="button" wire:click="resetFilters">Reset</button>
                         </div>
                     </div>
-                </div>
-            </div>
+                </x-slot:reset>
+
+                <x-slot:actions>
+                    <div class="admin-control-group">
+                        <span class="admin-control-group__label">Journal</span>
+                        <div class="admin-control-group__actions">
+                            <button class="admin-action" type="button" wire:click="mountAction('journalSettings')">Settings</button>
+                            <button class="admin-action" type="button" wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')">Add {{ $entryLabelSingular }}</button>
+                            @if ($journalPublicUrl)
+                                <a class="admin-action" href="{{ $journalPublicUrl }}" target="_blank" rel="noopener">Preview</a>
+                            @else
+                                <button class="admin-action" type="button" disabled title="Publish this Journal in Pages before previewing it">Preview</button>
+                            @endif
+                        </div>
+                    </div>
+                </x-slot:actions>
+
+                <x-slot:selection>
+                    <div class="admin-control-group admin-selection" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+                        <span class="admin-control-group__label">Selection</span>
+                        <div class="admin-selection__anchor">
+                            <button
+                                class="admin-action admin-selection__trigger"
+                                type="button"
+                                x-on:click="open = ! open"
+                                x-bind:aria-expanded="open.toString()"
+                                aria-haspopup="menu"
+                                @disabled($selectedIds === [])
+                            >
+                                Selected {{ $entryLabel }} <span class="admin-selection__count">{{ count($selectedIds) }}</span>
+                            </button>
+                            <div class="admin-selection__menu" role="menu" x-show="open" x-cloak x-on:click.outside="open = false">
+                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('up')" x-on:click="open = false">Move selected up</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedEntries('down')" x-on:click="open = false">Move selected down</button>
+                                @if ($isBlog)
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="publishSelectedPosts" x-on:click="open = false">Publish selected</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="unpublishSelectedPosts" x-on:click="open = false">Unpublish selected</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="archiveSelectedPosts" x-on:click="open = false">Archive selected</button>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="restoreSelectedPosts" x-on:click="open = false">Restore selected to draft</button>
+                                @endif
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('{{ $isBlog ? 'deleteSelectedPosts' : 'deleteSelectedExhibitions' }}')" x-on:click="open = false">Delete selected</button>
+                            </div>
+                        </div>
+                    </div>
+                </x-slot:selection>
+            </x-admin.controls>
 
             <x-admin.table class="admin-table--data">
                 <table>

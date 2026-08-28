@@ -1,6 +1,5 @@
 /* Home-only Hero presentation. Generic controls/tables/pagers come from shared admin references. */
 
-.home-hero-actions,
 .home-skip-tools {
     padding: .85rem 0;
 }
@@ -8,7 +7,10 @@
 .admin-home-workspace .admin-data-controls {
     grid-template-columns: minmax(14rem, 2fr) minmax(8rem, .75fr) minmax(8rem, .75fr) auto auto;
     padding: 1rem 0;
-    border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-home-workspace .admin-data-controls.home-artwork-source-controls {
+    grid-template-columns: minmax(14rem, 2fr) minmax(8rem, .75fr) minmax(8rem, .75fr) auto auto auto;
 }
 
 .home-hero-surface {
@@ -292,7 +294,8 @@
 }
 
 @media (max-width: 760px) {
-    .admin-home-workspace .admin-data-controls {
+    .admin-home-workspace .admin-data-controls,
+    .admin-home-workspace .admin-data-controls.home-artwork-source-controls {
         grid-template-columns: 1fr;
     }
 

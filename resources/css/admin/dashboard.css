@@ -6,7 +6,6 @@
 .admin-dashboard .admin-data-controls {
     grid-template-columns: minmax(14rem, 2fr) minmax(8rem, .75fr) auto;
     padding: 1rem 0;
-    border-bottom: 1px solid var(--admin-line);
 }
 
 .admin-dashboard .admin-data-table td {

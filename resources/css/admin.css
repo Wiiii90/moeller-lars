@@ -59,11 +59,14 @@
     gap: 1.25rem;
     padding: 0 0 var(--admin-section-gap);
     align-items: center;
-    border-bottom: 1px solid var(--admin-line-strong);
 }
 
 .admin-workspace__heading {
     min-width: 0;
+}
+
+.admin-workspace__status {
+    justify-self: end;
 }
 
 .admin-section__kicker,
@@ -225,7 +228,7 @@
 
 .admin-metrics {
     gap: 0;
-    border-bottom: 1px solid var(--admin-line-strong);
+    border-block: 1px solid var(--admin-line-strong);
 }
 
 .admin-metric {
@@ -242,9 +245,36 @@
 }
 
 .admin-metric__detail {
+    display: block;
     margin-top: .35rem;
     color: var(--admin-muted);
     font-size: .72rem;
+}
+
+.admin-metric.is-up .admin-metric__detail {
+    color: var(--admin-success);
+}
+
+.admin-metric.is-down .admin-metric__detail {
+    color: var(--admin-danger);
+}
+
+.journal-workspace .admin-data-controls {
+    display: flex;
+    gap: .85rem;
+    padding: .85rem 0;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.analytics-controls {
+    display: flex;
+    padding: .85rem 0;
+    justify-content: flex-end;
+}
+
+.analytics-context {
+    border-bottom: 0;
 }
 
 .admin-list {
@@ -312,7 +342,6 @@
 .admin-table {
     width: 100%;
     overflow-x: auto;
-    border-block: 1px solid var(--admin-line);
 }
 
 .admin-table table {
@@ -326,6 +355,10 @@
     border-bottom: 1px solid var(--admin-line);
     text-align: left;
     vertical-align: middle;
+}
+
+.admin-table tbody tr:last-child td {
+    border-bottom: 0;
 }
 
 .fi-page-header-main-ctn {
@@ -375,6 +408,10 @@
         grid-template-columns: 1fr;
         gap: 1rem;
         align-items: start;
+    }
+
+    .admin-workspace__status {
+        justify-self: end;
     }
 
     .admin-workspace__summary,

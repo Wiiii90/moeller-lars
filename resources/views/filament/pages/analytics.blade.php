@@ -141,38 +141,38 @@
         $localTimeAvailable = $reportAvailability->isAvailable('local_time');
     @endphp
 
-    <div class="analytics-dashboard">
-        <header class="analytics-head">
-            <div class="analytics-head__intro">
-                <p class="analytics-kicker">Site intelligence</p>
-                <h2>Human analytics</h2>
-            </div>
+    <x-admin.workspace title="Analytics" class="analytics-dashboard">
+        <x-slot:status>
+            <span @class([
+                'analytics-status',
+                'is-live' => $status === 'available',
+                'is-stale' => $status === 'stale',
+                'is-unavailable' => in_array($status, ['disabled', 'unavailable'], true),
+            ])>
+                @if ($status === 'available') Live Matomo
+                @elseif ($status === 'stale') Cached Matomo
+                @elseif ($status === 'disabled') Reporting disabled
+                @else Reporting unavailable
+                @endif
+            </span>
+        </x-slot:status>
 
-            <div class="analytics-head__controls">
-                <span @class([
-                    'analytics-status',
-                    'is-live' => $status === 'available',
-                    'is-stale' => $status === 'stale',
-                    'is-unavailable' => in_array($status, ['disabled', 'unavailable'], true),
-                ])>
-                    @if ($status === 'available') Live Matomo
-                    @elseif ($status === 'stale') Cached Matomo
-                    @elseif ($status === 'disabled') Reporting disabled
-                    @else Reporting unavailable
-                    @endif
-                </span>
-
-                <div class="analytics-range" role="group" aria-label="Analytics date range">
-                    @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', '12m' => '12 months'] as $preset => $label)
-                        <button
-                            type="button"
-                            wire:click="setRange('{{ $preset }}')"
-                            class="analytics-range__button {{ $range === $preset ? 'is-active' : '' }}"
-                        >{{ $label }}</button>
-                    @endforeach
+        <x-admin.controls class="analytics-controls" aria-label="Analytics date range">
+            <x-slot:actions>
+                <div class="admin-data-control-group analytics-context-actions">
+                    <span class="admin-data-control-label">Range</span>
+                    <div class="analytics-range" role="group" aria-label="Analytics date range">
+                        @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', '12m' => '12 months'] as $preset => $label)
+                            <button
+                                type="button"
+                                wire:click="setRange('{{ $preset }}')"
+                                class="analytics-range__button {{ $range === $preset ? 'is-active' : '' }}"
+                            >{{ $label }}</button>
+                        @endforeach
+                    </div>
                 </div>
-            </div>
-        </header>
+            </x-slot:actions>
+        </x-admin.controls>
 
         <div wire:loading.flex wire:target="setRange" class="analytics-loading">Updating reports…</div>
 
@@ -205,18 +205,16 @@
                 @endif
             </div>
 
-            <section class="analytics-kpi-strip" aria-label="Traffic summary">
+            <x-admin.metrics :columns="count($kpis)" aria-label="Traffic summary">
                 @foreach ($kpis as $kpi)
-                    <div class="analytics-kpi">
-                        <span>{{ $kpi['label'] }}</span>
-                        <strong>{{ $kpi['value'] }}</strong>
-                        <small @class([
-                            'is-up' => is_numeric($kpi['delta']) && $kpi['delta'] > 0,
-                            'is-down' => is_numeric($kpi['delta']) && $kpi['delta'] < 0,
-                        ])>{{ $kpi['comparison'] }}</small>
-                    </div>
+                    <x-admin.metric
+                        :label="$kpi['label']"
+                        :value="$kpi['value']"
+                        :description="$kpi['comparison']"
+                        class="{{ is_numeric($kpi['delta']) && $kpi['delta'] > 0 ? 'is-up' : (is_numeric($kpi['delta']) && $kpi['delta'] < 0 ? 'is-down' : '') }}"
+                    />
                 @endforeach
-            </section>
+            </x-admin.metrics>
 
             <section class="analytics-section analytics-geography">
                 <div class="analytics-section__head">
@@ -562,5 +560,5 @@
                 <p class="analytics-empty analytics-empty--section">No local operational aggregates yet.</p>
             @endif
         </section>
-    </div>
+    </x-admin.workspace>
 </x-filament-panels::page>

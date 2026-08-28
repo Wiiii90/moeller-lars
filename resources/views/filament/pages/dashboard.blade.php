@@ -91,26 +91,32 @@
         </section>
 
         <x-admin.section class="admin-dashboard__feed-section" aria-label="Dashboard feed">
-            <div class="admin-data-controls admin-dashboard__feed-controls" aria-label="Dashboard feed filters">
-                <label class="admin-data-field">
-                    <span>Search</span>
-                    <input type="search" wire:model.live.debounce.300ms="feedSearch" placeholder="Title, sender or message" autocomplete="off">
-                </label>
+            <x-admin.controls class="admin-dashboard__feed-controls" aria-label="Dashboard feed filters">
+                <x-slot:search>
+                    <label class="admin-data-field">
+                        <span>Search</span>
+                        <input type="search" wire:model.live.debounce.300ms="feedSearch" placeholder="Title, sender or message" autocomplete="off">
+                    </label>
+                </x-slot:search>
 
-                <label class="admin-data-field">
-                    <span>Type</span>
-                    <select wire:model.live="feedType">
-                        @foreach ($feedTypes as $value => $label)
-                            <option value="{{ $value }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </label>
+                <x-slot:filters>
+                    <label class="admin-data-field">
+                        <span>Type</span>
+                        <select wire:model.live="feedType">
+                            @foreach ($feedTypes as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                </x-slot:filters>
 
-                <div class="admin-data-control-group">
-                    <span class="admin-data-control-label">Filter</span>
-                    <button class="admin-action" type="button" wire:click="resetFeed">Reset</button>
-                </div>
-            </div>
+                <x-slot:reset>
+                    <div class="admin-data-control-group">
+                        <span class="admin-data-control-label">Filter</span>
+                        <button class="admin-action" type="button" wire:click="resetFeed">Reset</button>
+                    </div>
+                </x-slot:reset>
+            </x-admin.controls>
 
             <x-admin.table class="admin-data-table">
                 <table>

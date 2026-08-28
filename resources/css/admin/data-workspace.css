@@ -8,7 +8,6 @@
     padding: .85rem 0;
     align-items: flex-end;
     flex-wrap: wrap;
-    border-bottom: 1px solid var(--admin-line-strong);
 }
 
 .admin-control-bar__search {
@@ -123,8 +122,12 @@
 
 .admin-data-table,
 .admin-table--data,
-.media-workspace__table-wrap,
 .journal-workspace__table-wrap {
+    overflow: auto;
+    border-block: 0 !important;
+}
+
+.media-workspace__table-wrap {
     overflow: auto;
     border-top: 0 !important;
     border-bottom: 1px solid var(--admin-line) !important;

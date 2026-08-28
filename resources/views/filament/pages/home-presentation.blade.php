@@ -11,17 +11,6 @@
         @endif
 
         @if ($template === 'artwork')
-            <div class="home-hero-actions admin-data-control-group">
-                <span class="admin-data-control-label">Hero Artwork</span>
-                <div class="admin-toolbar">
-                    <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
-                    @if ($heroGroupSource === 'manual')
-                        <button class="admin-action" type="button" wire:click="mountAction('addHeroArtwork')">Add artwork</button>
-                    @endif
-                    <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
-                </div>
-            </div>
-
             <div class="home-hero-surface" aria-label="Hero Artwork">
                 <div class="home-hero-surface__visual">
                     @if ($currentArtwork && $currentArtwork['thumbnail_url'])
@@ -123,44 +112,68 @@
                 $visibleSourceIds = collect($sourceRows->items())->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
             @endphp
 
-            <div class="admin-data-controls" aria-label="Gallery source controls">
-                <label class="admin-data-field">
-                    <span>Search</span>
-                    <input type="search" wire:model.live.debounce.300ms="sourceSearch" placeholder="Gallery" autocomplete="off">
-                </label>
-                <label class="admin-data-field">
-                    <span>Status</span>
-                    <select wire:model.live="sourceStatusFilter">
-                        <option value="any">Any</option>
-                        <option value="published">Published</option>
-                        <option value="unpublished">Unpublished</option>
-                    </select>
-                </label>
-                <label class="admin-data-field">
-                    <span>Source</span>
-                    <select wire:model.live="sourceHomeFilter">
-                        <option value="any">Any</option>
-                        <option value="enabled">Enabled</option>
-                        <option value="disabled">Unavailable / Disabled</option>
-                    </select>
-                </label>
-                <div class="admin-data-control-group">
-                    <span class="admin-data-control-label">Filter</span>
-                    <button class="admin-action" type="button" wire:click="resetSourceFilters">Reset</button>
-                </div>
-                <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
-                    <span class="admin-data-control-label">Selection</span>
-                    <div class="admin-selection__anchor">
-                        <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedSourceIds === [])>
-                            Selected Galleries <span class="admin-selection__count">{{ count($selectedSourceIds) }}</span>
-                        </button>
-                        <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
-                            <button class="admin-action" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(true)" x-on:click="open = false">Enable preference</button>
-                            <button class="admin-action" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(false)" x-on:click="open = false">Disable preference</button>
+            <x-admin.controls class="home-artwork-source-controls" aria-label="Gallery source controls">
+                <x-slot:search>
+                    <label class="admin-data-field">
+                        <span>Search</span>
+                        <input type="search" wire:model.live.debounce.300ms="sourceSearch" placeholder="Gallery" autocomplete="off">
+                    </label>
+                </x-slot:search>
+
+                <x-slot:filters>
+                    <label class="admin-data-field">
+                        <span>Status</span>
+                        <select wire:model.live="sourceStatusFilter">
+                            <option value="any">Any</option>
+                            <option value="published">Published</option>
+                            <option value="unpublished">Unpublished</option>
+                        </select>
+                    </label>
+                    <label class="admin-data-field">
+                        <span>Source</span>
+                        <select wire:model.live="sourceHomeFilter">
+                            <option value="any">Any</option>
+                            <option value="enabled">Enabled</option>
+                            <option value="disabled">Unavailable / Disabled</option>
+                        </select>
+                    </label>
+                </x-slot:filters>
+
+                <x-slot:reset>
+                    <div class="admin-data-control-group">
+                        <span class="admin-data-control-label">Filter</span>
+                        <button class="admin-action" type="button" wire:click="resetSourceFilters">Reset</button>
+                    </div>
+                </x-slot:reset>
+
+                <x-slot:actions>
+                    <div class="admin-data-control-group">
+                        <span class="admin-data-control-label">Hero Artwork</span>
+                        <div class="admin-toolbar">
+                            <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
+                            @if ($heroGroupSource === 'manual')
+                                <button class="admin-action" type="button" wire:click="mountAction('addHeroArtwork')">Add artwork</button>
+                            @endif
+                            <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
                         </div>
                     </div>
-                </div>
-            </div>
+                </x-slot:actions>
+
+                <x-slot:selection>
+                    <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
+                        <span class="admin-data-control-label">Selection</span>
+                        <div class="admin-selection__anchor">
+                            <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedSourceIds === [])>
+                                Selected Galleries <span class="admin-selection__count">{{ count($selectedSourceIds) }}</span>
+                            </button>
+                            <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(true)" x-on:click="open = false">Enable preference</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="setSelectedGalleryEligibility(false)" x-on:click="open = false">Disable preference</button>
+                            </div>
+                        </div>
+                    </div>
+                </x-slot:selection>
+            </x-admin.controls>
 
             @if ($sourceRows->count() > 0)
                 <x-admin.table class="admin-data-table">
@@ -260,44 +273,58 @@
                 $visibleComponentTargets = collect($components)->pluck('target')->values()->all();
             @endphp
 
-            <div class="admin-data-controls" aria-label="Home component controls">
-                <label class="admin-data-field">
-                    <span>Search</span>
-                    <input type="search" wire:model.live.debounce.300ms="componentSearch" placeholder="Components" autocomplete="off">
-                </label>
-                <label class="admin-data-field">
-                    <span>Type</span>
-                    <select wire:model.live="componentType">
-                        <option value="any">Any</option>
-                        @foreach ($componentTypeOptions as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
-                    </select>
-                </label>
-                <div class="admin-data-control-group">
-                    <span class="admin-data-control-label">Filter</span>
-                    <button class="admin-action" type="button" wire:click="resetComponentFilters">Reset</button>
-                </div>
-                <div class="admin-data-control-group">
-                    <span class="admin-data-control-label">{{ strtoupper($templateLabel) }}</span>
-                    <div class="admin-toolbar">
-                        <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
-                        <button class="admin-action" type="button" wire:click="mountAction('addComponent')">Add component</button>
-                        <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
+            <x-admin.controls aria-label="Home component controls">
+                <x-slot:search>
+                    <label class="admin-data-field">
+                        <span>Search</span>
+                        <input type="search" wire:model.live.debounce.300ms="componentSearch" placeholder="Components" autocomplete="off">
+                    </label>
+                </x-slot:search>
+
+                <x-slot:filters>
+                    <label class="admin-data-field">
+                        <span>Type</span>
+                        <select wire:model.live="componentType">
+                            <option value="any">Any</option>
+                            @foreach ($componentTypeOptions as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
+                        </select>
+                    </label>
+                </x-slot:filters>
+
+                <x-slot:reset>
+                    <div class="admin-data-control-group">
+                        <span class="admin-data-control-label">Filter</span>
+                        <button class="admin-action" type="button" wire:click="resetComponentFilters">Reset</button>
                     </div>
-                </div>
-                <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
-                    <span class="admin-data-control-label">Selection</span>
-                    <div class="admin-selection__anchor">
-                        <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedComponentTargets === [])>
-                            Selected components <span class="admin-selection__count">{{ count($selectedComponentTargets) }}</span>
-                        </button>
-                        <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
-                            <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('up')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected up</button>
-                            <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('down')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected down</button>
-                            <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false">Delete selected</button>
+                </x-slot:reset>
+
+                <x-slot:actions>
+                    <div class="admin-data-control-group">
+                        <span class="admin-data-control-label">{{ strtoupper($templateLabel) }}</span>
+                        <div class="admin-toolbar">
+                            <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
+                            <button class="admin-action" type="button" wire:click="mountAction('addComponent')">Add component</button>
+                            <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
                         </div>
                     </div>
-                </div>
-            </div>
+                </x-slot:actions>
+
+                <x-slot:selection>
+                    <div class="admin-data-control-group admin-selection" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape.window="open = false">
+                        <span class="admin-data-control-label">Selection</span>
+                        <div class="admin-selection__anchor">
+                            <button class="admin-action admin-selection__trigger" type="button" x-on:click="open = ! open" x-bind:aria-expanded="open.toString()" aria-haspopup="menu" @disabled($selectedComponentTargets === [])>
+                                Selected components <span class="admin-selection__count">{{ count($selectedComponentTargets) }}</span>
+                            </button>
+                            <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('up')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected up</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="moveSelectedComponents('down')" x-on:click="open = false" @disabled(! $reorderEnabled)>Move selected down</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedComponents')" x-on:click="open = false">Delete selected</button>
+                            </div>
+                        </div>
+                    </div>
+                </x-slot:selection>
+            </x-admin.controls>
 
             @if ($components !== [])
                 <x-admin.table class="admin-data-table">

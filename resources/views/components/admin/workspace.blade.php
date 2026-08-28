@@ -13,6 +13,12 @@
                 {{ $summary }}
             </div>
         @endisset
+
+        @isset($status)
+            <div class="admin-workspace__status">
+                {{ $status }}
+            </div>
+        @endisset
     </header>
 
     <div class="admin-workspace__body">
