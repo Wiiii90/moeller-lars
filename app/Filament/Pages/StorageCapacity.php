@@ -9,6 +9,7 @@ use App\Models\MediaAsset;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 final class StorageCapacity extends Page
@@ -36,9 +37,50 @@ final class StorageCapacity extends Page
 
     public int $unusedAssets = 0;
 
+    public string $search = '';
+
+    public string $useFilter = '';
+
     public function mount(): void
     {
         $this->loadCapacity();
+    }
+
+    public function resetTableFilters(): void
+    {
+        $this->search = '';
+        $this->useFilter = '';
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function filteredBreakdown(): array
+    {
+        $search = Str::lower(trim($this->search));
+
+        return array_values(array_filter($this->breakdown, function (array $row) use ($search): bool {
+            if ($this->useFilter !== '' && ($row['key'] ?? null) !== $this->useFilter) {
+                return false;
+            }
+
+            return $search === '' || Str::contains(Str::lower((string) ($row['label'] ?? '')), $search);
+        }));
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function filteredHeavyConsumers(): array
+    {
+        $search = Str::lower(trim($this->search));
+
+        if ($search === '') {
+            return $this->heavyConsumers;
+        }
+
+        return array_values(array_filter($this->heavyConsumers, static function (array $row) use ($search): bool {
+            $filename = (string) ($row['label'] ?? '');
+            $classification = (string) ($row['classification'] ?? '');
+
+            return Str::contains(Str::lower($filename.' '.$classification), $search);
+        }));
     }
 
     private function loadCapacity(): void

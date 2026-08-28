@@ -407,13 +407,6 @@ html:not(.dark) .fi-sidebar-nav {
     font-weight: 550;
 }
 
-.admin-storage__details summary {
-    padding: .75rem 0;
-    color: var(--admin-muted);
-    font-size: .76rem;
-    cursor: pointer;
-}
-
 @media (max-width: 1050px) {
     .admin-gallery-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
