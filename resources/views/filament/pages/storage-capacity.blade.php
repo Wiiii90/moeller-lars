@@ -1,9 +1,11 @@
 <x-filament-panels::page>
     <x-admin.workspace title="Storage allowance" class="admin-storage">
-        <x-slot:summary>
-            <div><strong>{{ $availableAssets }}</strong><span>Assets</span></div>
-            <div><strong>{{ $unusedAssets }}</strong><span>Unused</span></div>
-        </x-slot:summary>
+        <x-admin.metrics :columns="4" aria-label="Storage metrics">
+            <x-admin.metric label="Assets" :value="$availableAssets" description="Available media" />
+            <x-admin.metric label="Unused" :value="$unusedAssets" description="Unreferenced media" />
+            <x-admin.metric label="Original media" :value="$capacity['authoritative']" :description="$capacity['original_files'].' authoritative files'" />
+            <x-admin.metric label="Generated derivatives" :value="$capacity['generated']" :description="$capacity['generated_files'].' rebuildable files · outside the allowance'" />
+        </x-admin.metrics>
 
         @if (! $capacity['measurement_available'])
             <x-admin.empty-state :kicker="$capacity['status_label']" :title="$capacity['configuration_valid'] ? 'Current usage cannot be verified' : 'The configured allowance cannot be verified'">
@@ -30,11 +32,6 @@
                     </div>
                 </div>
             </x-admin.section>
-
-            <x-admin.metrics :columns="2" aria-label="Storage classes">
-                <x-admin.metric label="Original media" :value="$capacity['authoritative']" :detail="$capacity['original_files'].' authoritative files'" />
-                <x-admin.metric label="Generated derivatives" :value="$capacity['generated']" :detail="$capacity['generated_files'].' rebuildable files · outside the allowance'" />
-            </x-admin.metrics>
 
             @if ($breakdown !== [])
                 <x-admin.section kicker="Breakdown" title="Originals by library use">

@@ -1,29 +1,38 @@
 <x-filament-panels::page>
     <x-admin.workspace title="Activity">
-        <x-admin.section kicker="Filters" title="Activity scope">
-            <div class="admin-filter-groups" aria-label="Activity filters">
-                <x-admin.toolbar aria-label="Time range">
-                    @foreach ($periodOptions as $value => $label)
-                        <a
-                            class="admin-action {{ $period === $value ? 'is-primary' : '' }}"
-                            href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $value, 'area' => $area, 'family' => $family])) }}"
-                        >{{ $label }}</a>
-                    @endforeach
-                </x-admin.toolbar>
-                <x-admin.toolbar aria-label="Editorial area">
-                    <a class="admin-action {{ $area === null ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'family' => $family])) }}">All areas</a>
-                    @foreach ($areaOptions as $value => $label)
-                        <a class="admin-action {{ $area === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $value, 'family' => $family])) }}">{{ $label }}</a>
-                    @endforeach
-                </x-admin.toolbar>
-                <x-admin.toolbar aria-label="Change type">
-                    <a class="admin-action {{ $family === null ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $area])) }}">All changes</a>
-                    @foreach ($familyOptions as $value => $label)
-                        <a class="admin-action {{ $family === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $area, 'family' => $value])) }}">{{ $label }}</a>
-                    @endforeach
-                </x-admin.toolbar>
-            </div>
-        </x-admin.section>
+        <x-admin.controls aria-label="Activity filters">
+            <x-slot:filters>
+                <div class="admin-data-control-group">
+                    <span class="admin-data-control-label">Time range</span>
+                    <x-admin.toolbar aria-label="Time range">
+                        @foreach ($periodOptions as $value => $label)
+                            <a
+                                class="admin-action {{ $period === $value ? 'is-primary' : '' }}"
+                                href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $value, 'area' => $area, 'family' => $family])) }}"
+                            >{{ $label }}</a>
+                        @endforeach
+                    </x-admin.toolbar>
+                </div>
+                <div class="admin-data-control-group">
+                    <span class="admin-data-control-label">Editorial area</span>
+                    <x-admin.toolbar aria-label="Editorial area">
+                        <a class="admin-action {{ $area === null ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'family' => $family])) }}">All areas</a>
+                        @foreach ($areaOptions as $value => $label)
+                            <a class="admin-action {{ $area === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $value, 'family' => $family])) }}">{{ $label }}</a>
+                        @endforeach
+                    </x-admin.toolbar>
+                </div>
+                <div class="admin-data-control-group">
+                    <span class="admin-data-control-label">Change type</span>
+                    <x-admin.toolbar aria-label="Change type">
+                        <a class="admin-action {{ $family === null ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $area])) }}">All changes</a>
+                        @foreach ($familyOptions as $value => $label)
+                            <a class="admin-action {{ $family === $value ? 'is-primary' : '' }}" href="{{ request()->url().'?'.http_build_query(array_filter(['period' => $period, 'area' => $area, 'family' => $value])) }}">{{ $label }}</a>
+                        @endforeach
+                    </x-admin.toolbar>
+                </div>
+            </x-slot:filters>
+        </x-admin.controls>
 
         <x-admin.section kicker="History" title="Administrative activity">
             @if ($activity !== [])
