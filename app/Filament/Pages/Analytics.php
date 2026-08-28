@@ -28,6 +28,8 @@ final class Analytics extends Page
 
     public string $range = '30d';
 
+    public string $search = '';
+
     /** @var array<string, mixed> */
     public array $matomo = [];
 
@@ -155,10 +157,6 @@ final class Analytics extends Page
      */
     private function buildKpis(array $report): array
     {
-        if (! in_array($report['status'] ?? null, ['available', 'stale'], true)) {
-            return [];
-        }
-
         $definitions = [
             'nb_visits' => 'Visits',
             'nb_uniq_visitors' => 'Unique visitors',
@@ -168,11 +166,26 @@ final class Analytics extends Page
             'bounce_rate' => 'Bounce rate',
         ];
 
+        $status = $report['status'] ?? null;
+        $available = in_array($status, ['available', 'stale'], true);
+        $unavailableDescription = $status === 'disabled' ? 'Reporting disabled' : 'Reporting unavailable';
         $metrics = $report['metrics'] ?? [];
         $comparison = $report['comparison'] ?? [];
         $kpis = [];
 
         foreach ($definitions as $key => $label) {
+            if (! $available) {
+                $kpis[] = [
+                    'key' => $key,
+                    'label' => $label,
+                    'value' => '—',
+                    'comparison' => $unavailableDescription,
+                    'delta' => null,
+                ];
+
+                continue;
+            }
+
             $rawValue = $metrics[$key] ?? null;
             $delta = $comparison[$key] ?? null;
             if ($rawValue === null) {

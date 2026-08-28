@@ -74,6 +74,39 @@
         );
 
         $contentRows = $matomo['content'] ?? [];
+        $searchTerm = mb_strtolower(trim($search));
+        $contentTableRows = $contentRows;
+        if ($searchTerm !== '') {
+            $contentTableRows = array_values(array_filter(
+                $contentRows,
+                static function (array $row) use ($metricDisplay, $searchTerm): bool {
+                    $displayedText = implode(' ', [
+                        (string) ($row['label'] ?? ''),
+                        $metricDisplay($row, 'nb_hits'),
+                        $metricDisplay($row),
+                    ]);
+
+                    return str_contains(mb_strtolower($displayedText), $searchTerm);
+                },
+            ));
+        }
+
+        $operationalTableRows = $operational;
+        if ($searchTerm !== '') {
+            $operationalTableRows = array_values(array_filter(
+                $operational,
+                static function (array $row) use ($searchTerm): bool {
+                    $displayedText = implode(' ', [
+                        (string) ($row['date'] ?? ''),
+                        (string) ($row['label'] ?? ''),
+                        (string) ($row['display_value'] ?? ''),
+                    ]);
+
+                    return str_contains(mb_strtolower($displayedText), $searchTerm);
+                },
+            ));
+        }
+
         $journeyGroups = [
             'Entry pages' => ['report' => 'entry_pages', 'rows' => $matomo['entry_pages'] ?? [], 'metric' => 'nb_entrances'],
             'Exit pages' => ['report' => 'exit_pages', 'rows' => $matomo['exit_pages'] ?? [], 'metric' => 'nb_exits'],
@@ -157,67 +190,18 @@
             </span>
         </x-slot:status>
 
-        @if ($available)
-            <x-admin.metrics :columns="count($kpis)" aria-label="Traffic summary">
-                @foreach ($kpis as $kpi)
-                    <x-admin.metric
-                        :label="$kpi['label']"
-                        :value="$kpi['value']"
-                        :description="$kpi['comparison']"
-                        class="{{ is_numeric($kpi['delta']) && $kpi['delta'] > 0 ? 'is-up' : (is_numeric($kpi['delta']) && $kpi['delta'] < 0 ? 'is-down' : '') }}"
-                    />
-                @endforeach
-            </x-admin.metrics>
-        @endif
-
-        <x-admin.controls class="analytics-controls" aria-label="Analytics date range">
-            <x-slot:actions>
-                <div class="admin-data-control-group analytics-context-actions">
-                    <span class="admin-data-control-label">Range</span>
-                    <div class="analytics-range" role="group" aria-label="Analytics date range">
-                        @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', '12m' => '12 months'] as $preset => $label)
-                            <button
-                                type="button"
-                                wire:click="setRange('{{ $preset }}')"
-                                class="analytics-range__button {{ $range === $preset ? 'is-active' : '' }}"
-                            >{{ $label }}</button>
-                        @endforeach
-                    </div>
-                </div>
-            </x-slot:actions>
-        </x-admin.controls>
-
-        <div wire:loading.flex wire:target="setRange" class="analytics-loading">Updating reports…</div>
-
-        @if ($status === 'disabled')
-            <div class="analytics-notice is-warning">
-                <strong>Matomo reporting is disabled.</strong>
-                <span>{{ $matomo['message'] ?? 'The read-only Reporting API is not enabled for this runtime.' }}</span>
-            </div>
-        @elseif ($status === 'unavailable')
-            <div class="analytics-notice is-danger">
-                <strong>Matomo reporting is unavailable.</strong>
-                <span>{{ $matomo['message'] ?? 'The Reporting API could not be read.' }}</span>
-            </div>
-        @elseif ($status === 'stale')
-            <div class="analytics-notice is-warning">
-                <strong>Showing cached Matomo aggregates.</strong>
-                <span>{{ $matomo['message'] ?? 'Live reporting is temporarily unavailable.' }}</span>
-            </div>
-        @endif
+        <x-admin.metrics :columns="6" aria-label="Traffic summary">
+            @foreach ($kpis as $kpi)
+                <x-admin.metric
+                    :label="$kpi['label']"
+                    :value="$kpi['value']"
+                    :description="$kpi['comparison']"
+                    class="{{ is_numeric($kpi['delta']) && $kpi['delta'] > 0 ? 'is-up' : (is_numeric($kpi['delta']) && $kpi['delta'] < 0 ? 'is-down' : '') }}"
+                />
+            @endforeach
+        </x-admin.metrics>
 
         @if ($available)
-            <div class="analytics-context">
-                <strong>{{ $matomo['range']['label'] ?? 'Selected range' }}</strong>
-                @if (filled($matomo['range']['start'] ?? null) && filled($matomo['range']['end'] ?? null))
-                    <span>{{ $matomo['range']['start'] }} – {{ $matomo['range']['end'] }}</span>
-                @endif
-                <span>Matomo Reporting API</span>
-                @if (filled($matomo['generated_at'] ?? null))
-                    <span>Updated {{ $matomo['generated_at'] }}</span>
-                @endif
-            </div>
-
             <section class="analytics-section analytics-geography">
                 <div class="analytics-section__head">
                     <div>
@@ -328,6 +312,74 @@
                     </div>
                 @endif
             </section>
+        @endif
+
+        <x-admin.controls class="analytics-controls" aria-label="Analytics report controls">
+            <x-slot:search>
+                <label class="admin-data-field">
+                    <span>Search</span>
+                    <input
+                        type="search"
+                        wire:model.live.debounce.300ms="search"
+                        placeholder="Search report rows"
+                        autocomplete="off"
+                    >
+                </label>
+            </x-slot:search>
+
+            <x-slot:reset>
+                <div class="admin-data-control-group">
+                    <span class="admin-data-control-label">Filter</span>
+                    <button class="admin-action" type="button" wire:click="$set('search', '')" @disabled(trim($search) === '')>Reset</button>
+                </div>
+            </x-slot:reset>
+
+            <x-slot:actions>
+                <div class="admin-data-control-group">
+                    <span class="admin-data-control-label">Analytics</span>
+                    <x-admin.toolbar aria-label="Analytics date range">
+                        @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', '12m' => '12 months'] as $preset => $label)
+                            <button
+                                type="button"
+                                wire:click="setRange('{{ $preset }}')"
+                                class="admin-action {{ $range === $preset ? 'is-primary' : '' }}"
+                            >{{ $label }}</button>
+                        @endforeach
+                    </x-admin.toolbar>
+                </div>
+            </x-slot:actions>
+        </x-admin.controls>
+
+        <div wire:loading.flex wire:target="setRange" class="analytics-loading">Updating reports…</div>
+
+        @if ($status === 'disabled')
+            <div class="analytics-notice is-warning">
+                <strong>Matomo reporting is disabled.</strong>
+                <span>{{ $matomo['message'] ?? 'The read-only Reporting API is not enabled for this runtime.' }}</span>
+            </div>
+        @elseif ($status === 'unavailable')
+            <div class="analytics-notice is-danger">
+                <strong>Matomo reporting is unavailable.</strong>
+                <span>{{ $matomo['message'] ?? 'The Reporting API could not be read.' }}</span>
+            </div>
+        @elseif ($status === 'stale')
+            <div class="analytics-notice is-warning">
+                <strong>Showing cached Matomo aggregates.</strong>
+                <span>{{ $matomo['message'] ?? 'Live reporting is temporarily unavailable.' }}</span>
+            </div>
+        @endif
+
+        @if ($available)
+            <div class="analytics-context">
+                <strong>{{ $matomo['range']['label'] ?? 'Selected range' }}</strong>
+                @if (filled($matomo['range']['start'] ?? null) && filled($matomo['range']['end'] ?? null))
+                    <span>{{ $matomo['range']['start'] }} – {{ $matomo['range']['end'] }}</span>
+                @endif
+                <span>Matomo Reporting API</span>
+                @if (filled($matomo['generated_at'] ?? null))
+                    <span>Updated {{ $matomo['generated_at'] }}</span>
+                @endif
+            </div>
 
             <section class="analytics-section analytics-overview">
                 <div class="analytics-section__head">
@@ -417,15 +469,29 @@
                                 <p class="analytics-empty">Content report unavailable.</p>
                             @elseif ($contentRows === [])
                                 <p class="analytics-empty">No content activity in this period.</p>
+                            @elseif ($contentTableRows === [])
+                                <p class="analytics-empty">No content rows match this search.</p>
                             @else
-                                <table class="analytics-table">
-                                    <thead><tr><th>Content</th><th>Views</th><th>Visits</th></tr></thead>
-                                    <tbody>
-                                    @foreach (array_slice($contentRows, 0, 12) as $row)
-                                        <tr><td>{{ $row['label'] }}</td><td>{{ $metricDisplay($row, 'nb_hits') }}</td><td>{{ $metricDisplay($row) }}</td></tr>
-                                    @endforeach
-                                    </tbody>
-                                </table>
+                                <x-admin.table class="admin-table--data">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Content</th>
+                                                <th scope="col">Views</th>
+                                                <th scope="col">Visits</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (array_slice($contentTableRows, 0, 12) as $row)
+                                                <tr>
+                                                    <td>{{ $row['label'] }}</td>
+                                                    <td>{{ $metricDisplay($row, 'nb_hits') }}</td>
+                                                    <td>{{ $metricDisplay($row) }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </x-admin.table>
                             @endif
                         </div>
 
@@ -547,19 +613,31 @@
                 @endforeach
             </div>
 
-            @if ($operational !== [])
-                <div class="analytics-table-wrap analytics-table-wrap--operations">
-                    <table class="analytics-table">
-                        <thead><tr><th>Date</th><th>Metric</th><th>Value</th></tr></thead>
+            @if ($operational === [])
+                <p class="analytics-empty analytics-empty--section">No local operational aggregates yet.</p>
+            @elseif ($operationalTableRows === [])
+                <p class="analytics-empty analytics-empty--section">No operational rows match this search.</p>
+            @else
+                <x-admin.table class="admin-table--data analytics-table-wrap--operations">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th scope="col">Date</th>
+                                <th scope="col">Metric</th>
+                                <th scope="col">Value</th>
+                            </tr>
+                        </thead>
                         <tbody>
-                            @foreach ($operational as $row)
-                                <tr><td>{{ $row['date'] }}</td><td>{{ $row['label'] }}</td><td>{{ $row['display_value'] }}</td></tr>
+                            @foreach ($operationalTableRows as $row)
+                                <tr>
+                                    <td>{{ $row['date'] }}</td>
+                                    <td>{{ $row['label'] }}</td>
+                                    <td>{{ $row['display_value'] }}</td>
+                                </tr>
                             @endforeach
                         </tbody>
                     </table>
-                </div>
-            @else
-                <p class="analytics-empty analytics-empty--section">No local operational aggregates yet.</p>
+                </x-admin.table>
             @endif
         </section>
     </x-admin.workspace>
