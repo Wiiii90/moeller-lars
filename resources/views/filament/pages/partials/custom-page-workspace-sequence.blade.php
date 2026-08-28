@@ -10,10 +10,10 @@
                     >
                 </label>
                 <span class="custom-page-component-sequence__drag-heading" aria-label="Drag"></span>
-                <span>Position</span>
-                <span>Component</span>
-                <span>Content</span>
-                <span>Status</span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span class="custom-page-component-sequence__status-heading">Status</span>
                 <span class="custom-page-component-sequence__actions-heading">Actions</span>
             </div>
 
@@ -93,20 +93,11 @@
                                                     <input type="checkbox" value="{{ $child['target'] }}" wire:model.live="selectedChildTargets">
                                                 </label>
 
-                                                <button class="admin-drag-handle custom-page-child-row__drag" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $child['entry'] }}">⋮⋮</button>
-
-                                                <span class="admin-position" aria-label="Position {{ $child['position'] }}">
-                                                    {{ str_pad((string) $child['position'], 2, '0', STR_PAD_LEFT) }}
-                                                </span>
-
-                                                <div class="custom-page-child-row__type">
-                                                    @if ($child['kind'] === 'cv')
-                                                        CV Entry
-                                                    @elseif ($child['kind'] === 'list')
-                                                        List Entry
-                                                    @else
-                                                        {{ $child['entry'] }}
-                                                    @endif
+                                                <div class="custom-page-child-row__position">
+                                                    <button class="admin-drag-handle custom-page-child-row__drag" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $child['entry'] }}">⋮⋮</button>
+                                                    <span class="admin-position" aria-label="Position {{ $child['position'] }}">
+                                                        {{ str_pad((string) $child['position'], 2, '0', STR_PAD_LEFT) }}
+                                                    </span>
                                                 </div>
 
                                                 <div class="custom-page-child-row__content">
@@ -121,7 +112,10 @@
                                                             <small>{{ $child['detail'] }}</small>
                                                         @endif
                                                     @else
-                                                        <strong>{{ $child['detail'] }}</strong>
+                                                        <strong>{{ $child['entry'] }}</strong>
+                                                        @if ($child['detail'] !== '')
+                                                            <small>{{ $child['detail'] }}</small>
+                                                        @endif
                                                     @endif
                                                 </div>
 
