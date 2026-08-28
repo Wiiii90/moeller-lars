@@ -37,6 +37,8 @@
 
 .custom-page-child-row__content { grid-column: 5; }
 
+.custom-page-child-row.admin-hierarchy__row.is-child .admin-hierarchy__content { padding-left: 0; }
+
 .custom-page-child-row.is-parent-unpublished { opacity: .58; }
 .custom-page-child-row.is-parent-unpublished:focus-within,
 .custom-page-child-row.is-parent-unpublished:hover { opacity: .78; }

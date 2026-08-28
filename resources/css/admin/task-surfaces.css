@@ -458,6 +458,11 @@
     font-weight: 580;
 }
 
+.admin-hierarchy__content > span {
+    color: var(--admin-muted);
+    font-size: .68rem;
+}
+
 .admin-hierarchy__content small {
     color: var(--admin-muted);
     font-size: .68rem;
