@@ -339,28 +339,38 @@
     min-width: 0;
     gap: .4rem;
     align-items: center;
+}
+
+.admin-row-actions.admin-toolbar {
     justify-content: flex-start;
     flex-wrap: nowrap;
     white-space: nowrap;
 }
 
+.admin-row-actions .admin-action--state {
+    justify-content: flex-start;
+    text-align: left;
+}
+
 .admin-table__actions {
     width: 1%;
     padding-right: 0 !important;
-    text-align: right !important;
+    text-align: left !important;
     white-space: nowrap;
 }
 
 .admin-table__actions > .admin-toolbar {
     min-height: 2.4rem;
-    justify-content: flex-end;
+    justify-content: flex-start;
     flex-wrap: nowrap;
+    white-space: nowrap;
 }
 
 .admin-hierarchy {
     --admin-hierarchy-select-column: 2.5rem;
     --admin-hierarchy-drag-column: 2rem;
     --admin-hierarchy-position-column: max(4.4rem, calc((var(--admin-hierarchy-position-digits, 2) * .72rem) + 1.2rem));
+    --admin-hierarchy-actions-column: 20rem;
     --admin-hierarchy-row-gap: .7rem;
     position: relative;
     overflow-x: auto;
@@ -375,7 +385,7 @@
         minmax(12rem, 1fr)
         8.5rem
         8rem
-        max-content;
+        var(--admin-hierarchy-actions-column);
 }
 
 .admin-hierarchy__header,
@@ -388,7 +398,7 @@
 
 .admin-hierarchy__header {
     min-height: 2.35rem;
-    border-bottom: 1px solid var(--admin-line-strong);
+    border-bottom: 1px solid var(--admin-line);
     color: var(--admin-muted);
     font-size: .61rem;
     font-weight: 700;
@@ -401,7 +411,7 @@
 
 .admin-hierarchy__group {
     position: relative;
-    border-bottom: 1px solid var(--admin-line-strong);
+    border-bottom: 1px solid var(--admin-line);
 }
 
 .admin-hierarchy__group:last-child { border-bottom: 0; }
@@ -454,16 +464,6 @@
 }
 
 .admin-hierarchy__row.is-child .admin-hierarchy__content { padding-left: 1.15rem; }
-.admin-hierarchy__row.is-child .admin-hierarchy__content::before {
-    position: absolute;
-    top: .12rem;
-    left: .12rem;
-    width: .55rem;
-    height: .62rem;
-    border-bottom: 1px solid var(--admin-line-strong);
-    border-left: 1px solid var(--admin-line-strong);
-    content: "";
-}
 
 .admin-hierarchy__context-note,
 .admin-task-note,
@@ -479,6 +479,7 @@
 
 .admin-bottom-add {
     padding: .35rem 0 .2rem;
+    border-top: 1px solid var(--admin-line);
     border-bottom: 1px solid var(--admin-line);
 }
 

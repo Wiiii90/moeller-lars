@@ -1,5 +1,5 @@
-        <section class="custom-page-component-sequence" aria-label="Page component sequence">
-            <div class="custom-page-component-sequence__header">
+        <section class="custom-page-component-sequence admin-hierarchy" aria-label="Page component sequence">
+            <div class="custom-page-component-sequence__header admin-hierarchy__header">
                 <label class="admin-hierarchy__selection" aria-label="Select all visible components and entries">
                     <input
                         type="checkbox"
@@ -29,11 +29,11 @@
                 <div class="custom-page-component-sequence__rows" @if ($reorderEnabled) wire:sort="sortComponent" @endif>
                     @foreach ($components as $component)
                         <article
-                            class="custom-page-component"
+                            class="custom-page-component admin-hierarchy__group"
                             wire:key="custom-component-{{ $component['target'] }}"
                             @if ($reorderEnabled) wire:sort:item="{{ $component['target'] }}" @endif
                         >
-                            <div class="custom-page-component__header">
+                            <div class="custom-page-component__header admin-hierarchy__row">
                                 <label class="admin-hierarchy__selection" aria-label="Select {{ $component['type_label'] }}">
                                     <input type="checkbox" value="{{ $component['target'] }}" wire:model.live="selectedComponentTargets">
                                 </label>
@@ -57,7 +57,7 @@
                                     </select>
                                 </div>
 
-                                <div class="custom-page-component__content">
+                                <div class="custom-page-component__content admin-hierarchy__content">
                                     <strong>{{ $component['content']['primary'] }}</strong>
                                     @if ($component['content']['secondary'] !== '')
                                         <span>{{ $component['content']['secondary'] }}</span>
@@ -81,17 +81,20 @@
                             </div>
 
                             @if ($component['children'] !== [])
-                                <div class="custom-page-component__children">
-                                    <div class="custom-page-component__children-rows" @if ($reorderEnabled) wire:sort="sortChild" @endif>
+                                <div class="custom-page-component__children admin-hierarchy__children">
+                                    <div class="custom-page-component__children-rows admin-hierarchy__children-rows" @if ($reorderEnabled) wire:sort="sortChild" @endif>
                                         @foreach ($component['children'] as $child)
                                             <div
-                                                class="custom-page-child-row {{ ($child['parent_published'] ?? true) ? '' : 'is-parent-unpublished' }}"
+                                                class="custom-page-child-row admin-hierarchy__row is-child {{ ($child['parent_published'] ?? true) ? '' : 'is-parent-unpublished' }}"
                                                 wire:key="child-{{ $component['target'] }}-{{ $child['key'] }}"
                                                 @if ($reorderEnabled) wire:sort:item="{{ $child['target'] }}" @endif
                                             >
                                                 <label class="admin-hierarchy__selection" aria-label="Select {{ $child['entry'] }}">
                                                     <input type="checkbox" value="{{ $child['target'] }}" wire:model.live="selectedChildTargets">
                                                 </label>
+
+                                                <span aria-hidden="true"></span>
+                                                <span aria-hidden="true"></span>
 
                                                 <div class="custom-page-child-row__position">
                                                     <button class="admin-drag-handle custom-page-child-row__drag" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $child['entry'] }}">⋮⋮</button>
@@ -100,7 +103,7 @@
                                                     </span>
                                                 </div>
 
-                                                <div class="custom-page-child-row__content">
+                                                <div class="custom-page-child-row__content admin-hierarchy__content">
                                                     @if ($child['kind'] === 'cv' || $child['kind'] === 'list')
                                                         <strong>
                                                             @if ($child['date'] !== '')
