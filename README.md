@@ -72,6 +72,7 @@ Start with:
 
 - [AGENTS.md](AGENTS.md) — branch/reconciliation/worker workflow and central technology rules
 - [ui-skills.md](ui-skills.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
+- [worker-prompt-skill.md](worker-prompt-skill.md) — compact execution-only worker-prompt contract
 - [followup-skill.md](followup-skill.md) — how to hand a long orchestration session to a new chat without losing exact Git/runtime/review state
 
 ## Releases

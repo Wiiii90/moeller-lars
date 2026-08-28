@@ -24,6 +24,7 @@ Repository-root workflow documents are intentionally kept close to `AGENTS.md` b
 
 - [AGENTS.md](../AGENTS.md) — branch/orchestration/worker/reconciliation contract and central technology rules
 - [ui-skills.md](../ui-skills.md) — admin-only UI grammar for heading/action rows, metrics, filters, selection, tables, grids, DnD, dialogs and browser acceptance
+- [worker-prompt-skill.md](../worker-prompt-skill.md) — compact execution-only worker-prompt contract
 - [followup-skill.md](../followup-skill.md) — lossless continuation-prompt contract for handing a long orchestration chat to a new chat
 
 ## Live work and acceptance status

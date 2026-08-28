@@ -32,19 +32,23 @@ Avoid:
 
 For a normal primary admin workspace, use this vertical sequence when applicable:
 
-1. one visible page heading matching the navigation destination;
-2. optional metric strip;
-3. one page/action or search/filter/control row;
+1. one heading row containing the page title and, only when meaningful, a right-aligned status;
+2. shared `x-admin.metrics` immediately after the heading when factual metrics are meaningful;
+3. shared `x-admin.controls` when search, filters, context actions or selection are needed;
 4. the actual task surface;
 5. pager/add-row/footer controls where the task requires them.
 
-Do not add a decorative kicker above the page heading.
+The workspace heading owns **no separator**. Do not add a decorative kicker above it.
 
-Do not interpret this as a requirement to add fake metrics or a fake toolbar to a page that does not need them.
+The metric strip owns its complete visual box: top border, bottom border and vertical separators between metrics. Do not move those borders onto the heading, controls or table.
+
+The controls row owns **no separator**. It groups controls; it is not a visual box around the task surface.
+
+Do not interpret the stack as a requirement to add fake metrics, fake status or fake controls to a page that does not need them.
 
 ## 3. Page/action control group
 
-The canonical action-group geometry is the pattern used by Gallery/Files and should be reused by Home/Custom/Journal when applicable.
+The canonical action-group geometry used by existing admin workspaces should be reused when a contextual page action group is meaningful.
 
 Structure:
 
@@ -67,11 +71,6 @@ PAGE
 Settings  Add component  Preview
 ```
 
-```text
-CUSTOM / UNDER CONSTRUCTION
-Settings  Add component  Preview
-```
-
 For Home, the label is the active template name rather than the generic word Home when that is the meaningful control context.
 
 Rules:
@@ -86,6 +85,12 @@ Rules:
 
 Use the shared `x-admin.metrics` / `x-admin.metric` system.
 
+Metrics follow the heading directly when present and own their complete visual box:
+
+- top border;
+- bottom border;
+- vertical separators between metric cells.
+
 Do not build page-specific metric card CSS unless the metric is genuinely a different visualization.
 
 Rules:
@@ -98,6 +103,8 @@ Rules:
 - if overflow is unavoidable, use the shared metric behavior rather than a page-local height patch;
 - do not use prose such as “Public behavior” or “Template status” as fake statistics.
 
+The current Analytics, Activity and Storage specialist workspaces each use six meaningful metrics. That is a composition decision for those workspaces, **not** a rule that every admin page must have six metrics.
+
 Examples of useful facts:
 
 - counts by state/type;
@@ -108,23 +115,38 @@ Examples of useful facts:
 
 ## 5. Search/filter/control row
 
-A normal searchable task surface uses labels above controls and a shared baseline.
+Use shared `x-admin.controls` for the normal workspace control row.
 
-Typical grammar:
+The semantic order is:
 
 ```text
-Search | Type/Status/etc. | Filter | Selection
+Search | filters | Reset/Filter | context actions | Selection
+```
+
+Not every workspace needs every group, but present groups keep that order. For example:
+
+```text
+Search | Use | Filter
+```
+
+or:
+
+```text
+Search | Type | Filter | Preview | Selection
 ```
 
 Rules:
 
 - search is usually live with a bounded debounce such as `wire:model.live.debounce.300ms`;
 - use one control height across inputs/selects/buttons;
-- `Filter`/Reset occupies a stable control group;
+- filter selects follow Search;
+- Reset/Filter follows the filters it controls;
+- workspace/context actions follow filter controls and precede Selection;
+- one visible Selection group comes last when the task surface supports selection;
 - avoid chips or secondary mini-toolbars floating inside the search row;
-- avoid multiple visible selection groups for one table hierarchy;
 - reset filters explicitly to the neutral state;
-- search/filter state should not silently change persisted order.
+- search/filter state should not silently change persisted order;
+- the controls row owns no top/bottom separator.
 
 ## 6. Selection and multi-actions
 
@@ -141,20 +163,26 @@ Rules:
 - destructive bulk actions require the same domain safeguards as row actions;
 - selection should be cleared/reprojected after mutations that invalidate positional targets.
 
-## 7. Table grammar
+## 7. Flat table grammar
 
 Prefer flat tables for list-oriented editorial work instead of cards pretending to be rows.
 
+**Media Files is the strongest current visual reference for the normal flat-table presentation.** It is not conceptually an exception; its table geometry demonstrates the shared table grammar where that grammar applies.
+
 Shared principles:
 
+- use shared `x-admin.table` for ordinary tables;
 - one canonical header row;
 - stable columns from header through every row;
-- action cells share one alignment and right edge;
-- avoid nested child tables with their own duplicate headers when children belong to the parent task table;
+- ordinary tables have no outer top or bottom border;
+- table-header and row separators use normal `var(--admin-line)`;
+- action cells share stable geometry;
 - row identity/content should ellipsize rather than push action columns around;
-- normal desktop action bars should be `nowrap`; responsive wrapping belongs at an intentional breakpoint;
+- normal desktop action bars run left-to-right and are `nowrap`; responsive wrapping belongs at an intentional breakpoint;
 - state indicators occupy a stable column;
 - do not conditionally remove a leading action if that makes every following action shift.
+
+Do not add wrapper borders merely because a table primitive could support them. The shared table's internal header/row lines provide the normal separation.
 
 ### Stable action order
 
@@ -168,7 +196,7 @@ If View is unavailable for a draft/archived state and no protected preview exist
 
 ## 8. Ranked tables and Position
 
-New convention: ranked/ordered admin tables should expose a human-readable **Position** where that helps the editor understand order.
+Ranked/ordered admin tables should expose a human-readable **Position** where that helps the editor understand order.
 
 Use a 1-based display rank. Do not expose sparse/zero-based internal persistence values directly.
 
@@ -176,7 +204,7 @@ Compact forms such as `01`, `02`, `03` are acceptable.
 
 This convention should be propagated deliberately as pages are reviewed; do not create a broad site-wide rewrite just to add Position everywhere in one worker.
 
-Journal already uses visible Position and is the current reference for the convention.
+Journal already uses visible Position and is a current reference for the convention.
 
 ## 9. Drag and ordering
 
@@ -193,52 +221,39 @@ Do not build custom HTML5 `draggable`/dragstart/drop state machines.
 Rules:
 
 - drag handles share one visual geometry on a given table hierarchy;
-- use `.custom-page-row__drag` as the current shared drag-handle authority for the Custom/Home component-table family;
 - ordering is persisted by the canonical domain ordering service;
 - drag is disabled when Search/filters/pagination make canonical order ambiguous;
 - ↑/↓ actions remain as a keyboard/explicit fallback where the workspace already uses them;
 - filtered reorder must not pretend that a filtered projection is the complete canonical sequence.
 
-## 10. Parent/child hierarchical tables
+## 10. Hierarchy table grammar
 
-When child rows are part of the same editorial table, they align to the **same global columns**.
+Pages and Custom Page are hierarchy extensions of the shared flat-table grammar. They use the existing `admin-hierarchy` primitive rather than creating separate page-local table systems.
 
-Current Custom Page reference:
-
-Parent:
-
-```text
-[Selection] [Drag] [Component] [Content] [Status] [Actions]
-```
-
-Child:
-
-```text
-[Selection] [Drag] [Kind] [Content] [Status] [Actions]
-```
+When child rows are part of the same editorial table, they align to the same global column system.
 
 Rules:
 
-- no nested `Content | Status | Actions` child header;
-- do not indent the entire child table and thereby destroy global alignment;
-- hierarchy may be shown with a restrained connector line;
-- connector axis aligns with the parent drag column/handle axis;
-- parent and child action cells use the same sixth-column geometry;
-- child rows may be more compact, but their column starts do not float.
+- no nested child table with duplicate headers;
+- do not indent an entire child table and thereby destroy global alignment;
+- do **not** add a decorative child connector, vertical branch or L-line;
+- normal hierarchy header/row separators use `var(--admin-line)`;
+- `Status` and `Actions` headings align with their row content;
+- row actions run left-to-right and `nowrap` on normal desktop geometry;
+- state-action slots keep reserved width where required, while the state-action text itself is left-aligned;
+- the hierarchy Actions column remains stable across parent/child/state variants;
+- bottom Add rows use normal thin top and bottom separators;
+- hierarchy is expressed by row structure/content, not by decorative connector graphics.
+
+A hierarchy extension may add selection/drag/position/identity columns appropriate to its domain, but it does not replace the shared table grammar.
 
 ## 11. Home component table
 
-Home component templates currently use:
+Home component templates currently use a shared ordered component-table grammar without inventing an independent publish Status column for components that do not have an independent publish lifecycle.
 
-```text
-[Selection] [Drag] [Component] [Content] [Actions]
-```
+Use the same shared table/control geometry as other applicable workspaces without forcing Custom Page-specific status semantics onto Home.
 
-There is no artificial Status column because Home components do not have an independent publish lifecycle.
-
-Use the same component-table grammar as Custom where appropriate, without forcing Custom-specific status semantics onto Home.
-
-Home tools:
+Home tools keep the normal semantic control order:
 
 ```text
 Search | Type | Filter | Selection
@@ -251,7 +266,7 @@ Types:
 - Rich Text;
 - Divider.
 
-DnD is enabled only in neutral filter state. Bottom full-width `+ Add component` remains a valid add affordance even when the top action group also has Add component.
+DnD is enabled only in neutral filter state. Bottom full-width `+ Add component` remains a valid add affordance even when a top context action also has Add component.
 
 ## 12. Journal table references
 
@@ -269,18 +284,63 @@ Current Exhibitions table:
 
 For Exhibition identity, keep the secondary line concise, e.g. `Venue · City`; do not dump full street/country metadata into the collection row.
 
-## 13. Gallery and Media Files are accepted style references
+Blog/Exhibitions remain ordinary shared tables where tabular. Do not add top/bottom wrapper separator lines merely because a generic table primitive could support them.
 
-Gallery and Media Files / Files are currently browser/product accepted and are the primary style references for the admin where their geometry applies.
+## 13. Specialist insight workspace composition
 
-A worker changing another admin page must inspect their actual current Blade/CSS/shared-primitives at the exact working base instead of approximating them from prose.
+Analytics, Activity and Storage are specialist insight/operations workspaces. They reuse the shared heading, metrics, controls and table grammar around one large task-specific visualization.
 
-Use them as authorities for applicable shared presentation dimensions such as:
+### Analytics
+
+Use this composition:
+
+1. heading row with `Analytics` and right-aligned Reporting status;
+2. six shared traffic metrics;
+3. large Geography/world-map visualization;
+4. shared controls in the semantic order `Search | Filter | Analytics range`;
+5. remaining report sections, using shared tables wherever the result is tabular.
+
+The world-map surface is task-specific visualization; the heading, metrics, controls and tables are shared grammar.
+
+### Activity
+
+Use this composition:
+
+1. heading row with `Activity`;
+2. six shared activity metrics;
+3. large 24-hour clock + calendar visualization;
+4. shared controls in the semantic order `Search | Editorial area | Change type | Filter | Activity`;
+5. shared Activity table.
+
+The clock/calendar is task-specific visualization; the surrounding workspace grammar is shared.
+
+### Storage
+
+Use this composition:
+
+1. heading row with `Storage` and right-aligned capacity status;
+2. six shared storage metrics;
+3. large storage ring/composition with **no heading above it**;
+4. shared controls in the semantic order `Search | Use | Filter`;
+5. `Breakdown` shared table;
+6. `Details` / `Largest originals` shared table.
+
+The storage ring/composition is task-specific visualization. Do not insert an extra section heading above it merely to match another page.
+
+These exact six-metric compositions are specialist workspace decisions. They do not establish a universal six-metric rule for the admin.
+
+## 14. Accepted/current visual references
+
+Media Files / Files is the strongest current visual reference for flat table geometry. Gallery remains an accepted/current reference for the shared workspace shell around its distinct visual Artwork/contact-sheet task.
+
+A worker changing another admin page must inspect the actual current Blade/CSS/shared primitives at the exact working base instead of approximating them from prose.
+
+Use current references as authorities for applicable shared presentation dimensions such as:
 
 - overall workspace/content width;
-- page heading placement and typography;
+- heading placement and typography;
 - metric-strip placement and geometry;
-- control labels, heights and spacing;
+- control labels, heights, order and spacing;
 - table/grid header and row treatment;
 - action alignment;
 - general density, borders and typography.
@@ -290,11 +350,11 @@ Their task surfaces remain distinct:
 - Gallery is a visual Artwork/contact-sheet workflow;
 - Media Files is a dense reusable media-library workflow.
 
-Do not turn Custom, Journal, Home, Pages or General into the wrong task model merely for consistency. Reuse the **accepted shell, controls and geometry**, then keep the task-specific surface appropriate to the page.
+Do not turn Custom Page, Journal, Home, Pages, General or specialist insight workspaces into the wrong task model merely for consistency. Reuse the **accepted/shared shell, controls and geometry**, then keep the task-specific surface appropriate to the page.
 
-Do not introduce a competing page-local width, card family, toolbar grammar, table grammar, metric implementation or typography system when the accepted references/shared primitives already solve that dimension.
+Do not introduce a competing page-local width, card family, toolbar grammar, table grammar, metric implementation or typography system when the shared primitives/current references already solve that dimension.
 
-## 14. Theme and shared-primitive enforcement
+## 15. Theme and shared-primitive enforcement
 
 The admin theme is an implementation authority, not optional inspiration.
 
@@ -306,12 +366,12 @@ For shared presentation concerns, reuse the existing theme tokens and Blade prim
 - `--admin-*` tokens;
 - `x-admin.workspace`;
 - `x-admin.metrics` / `x-admin.metric`;
-- `x-admin.section`;
+- `x-admin.controls`;
 - `x-admin.table`;
-- `x-admin.toolbar`;
-- `x-admin.empty-state`;
+- existing `admin-hierarchy` hierarchy primitive;
+- `x-admin.section`, `x-admin.add-row`, `x-admin.empty-state` and other existing shared composition primitives where applicable;
 - `admin-action` and other existing shared control classes;
-- accepted Gallery and Media Files implementations for concrete composition examples.
+- current accepted/reference implementations for concrete composition examples.
 
 Without an explicit, task-specific reason, the following are source-review failures:
 
@@ -324,35 +384,40 @@ Without an explicit, task-specific reason, the following are source-review failu
 - copying shared geometry into `.pages-*`, `.general-*`, `.home-*`, `.journal-*` or similar selectors merely to make one page self-contained;
 - large pixel-tuning patches whose only purpose is to imitate geometry that already exists in the theme/reference pages.
 
-Feature-local CSS is allowed for genuinely feature-specific surfaces, for example an artwork contact sheet, media preview, drag affordance unique to a domain surface, or a task-specific visualization. It must not redefine the shared shell around that surface.
+Feature-local CSS is allowed only for genuinely task-specific visualization/layout, for example an artwork contact sheet, media preview, Analytics world map, Activity clock/calendar or Storage ring/composition. It must not redefine the shared shell, metrics, controls or ordinary table geometry around that surface.
 
 If the theme or shared primitive cannot express a needed shared pattern, fix or extend the shared authority deliberately. Do not fork it locally first and promise to centralize later.
+
+**Shared ownership does not outrank browser-accepted presentation.** Do not broaden a shared selector so that already accepted consumers gain new borders, separators, connector lines, spacing, widths, offsets or action geometry. If centralization cannot preserve the accepted computed result, defer the centralization or scope the primitive more precisely.
 
 ### Required implementation order
 
 For visual/admin work:
 
 1. read `ui-skills.md`;
-2. inspect the exact accepted Gallery/Media Files reference code relevant to the requested geometry;
+2. inspect the exact current accepted/reference code relevant to the requested geometry;
 3. inspect existing shared Blade primitives and theme tokens;
 4. compose the target page from those authorities;
-5. add feature-local CSS only for task-specific behavior that remains;
+5. add feature-local CSS only for task-specific visualization/layout that remains;
 6. explain every new shared-looking selector or token in the worker handoff.
 
 ### Source-review gate
 
-A visual worker result is not source-coherent until the reviewer checks the changed Blade/CSS for theme bypasses.
+A visual worker result is not source-coherent until the reviewer checks the changed Blade/CSS for theme bypasses **and for blast radius on already accepted consumers**.
 
-The reviewer should reject the change before reconciliation when a page recreates an existing shared primitive locally, even if the markup is functional and the worker claims visual consistency.
+Reject the change before reconciliation when a page recreates an existing shared primitive locally, even if the markup is functional and the worker claims visual consistency.
+
+Also reject a shared-theme change when it changes an already accepted consumer without an explicit current browser requirement.
 
 The handoff for visual work must state:
 
-- which accepted reference files were inspected;
+- which current reference files were inspected;
 - which shared primitives/tokens were reused;
 - which new CSS/classes were added;
-- why each new class is genuinely task-specific rather than a duplicate of the theme.
+- why each new class is genuinely task-specific rather than a duplicate of the theme;
+- whether any already accepted surface is expected to change visually.
 
-## 15. Sections, kickers and information hierarchy
+## 16. Sections, kickers and information hierarchy
 
 Use explicit section titles where a workspace has multiple real task surfaces.
 
@@ -365,9 +430,11 @@ Current Home artwork
 
 when `Current Home artwork` already communicates the section.
 
-Likewise avoid eyebrow/kicker labels on every row/card. Information hierarchy should come from page heading, metric strip, control labels, table headers and section titles.
+Likewise avoid eyebrow/kicker labels on every row/card. Information hierarchy should come from page heading, metric strip, control labels, table headers and real section titles.
 
-## 16. Dialogs and overlays
+A specialist visualization may intentionally have no heading when its accepted composition already makes its role clear, as with the Storage ring/composition.
+
+## 17. Dialogs and overlays
 
 Dialogs are a shared primitive.
 
@@ -387,7 +454,7 @@ Do not fix one broken dialog by creating a page-local fake modal.
 
 Large editorial dialogs should order content according to the actual editorial task, not persistence schema order.
 
-## 17. Rich Text editor UI
+## 18. Rich Text editor UI
 
 There is one central Rich Text technology: `AdminRichText` backed by Filament `MarkdownEditor`.
 
@@ -401,7 +468,7 @@ Media insertion belongs with the editor controls/action area and uses the lazy M
 
 Canonical asset ALT should be reused unless a product surface explicitly supports a true occurrence-level override. Journal structured Cover/Gallery currently use Media Files ALT exclusively at runtime.
 
-## 18. Media picker behavior
+## 19. Media picker behavior
 
 Use the central lazy `MediaAssetSelect` pattern.
 
@@ -409,7 +476,9 @@ Do not eagerly `pluck()` hundreds of MediaAsset options merely because a normal 
 
 The picker should narrow by allowed media kind and query lazily. This is both a UI consistency and performance rule.
 
-## 19. Performance as UI quality
+Opening a Settings/dialog action must not eagerly materialize the entire Media library when the initial dialog state does not require it. Treat a cold opener dominated by full-library hydration/preload as a regression.
+
+## 20. Performance as UI quality
 
 A slow first click is a product bug even when local Docker amplifies it.
 
@@ -423,7 +492,7 @@ When browser review reports latency:
 
 Avoid adding caches blindly before identifying what is repeated or unnecessarily eager.
 
-## 20. Empty states
+## 21. Empty states
 
 Empty states should be concise and task-oriented.
 
@@ -438,24 +507,25 @@ Avoid paragraphs explaining obvious states.
 
 If the empty state is caused by active filters, distinguish it from a genuinely empty dataset.
 
-## 21. Responsive behavior
+## 22. Responsive behavior
 
 Desktop alignment is primary for these editorial tables, but responsive behavior must be intentional.
 
 - use horizontal overflow for wide data tables when preserving column meaning is better than arbitrary wrapping;
 - only collapse to stacked/mobile composition at explicit breakpoints;
 - do not let one child/action toolbar wrap independently and create a pseudo-card inside a table;
-- maintain control labels/action grouping when tool rows wrap.
+- maintain control labels/action grouping when control rows wrap;
+- preserve stable hierarchy action geometry until an intentional responsive breakpoint changes the presentation.
 
-## 22. CSS ownership
+## 23. CSS ownership
 
 The canonical theme entrypoint is `resources/css/admin.css`; feature modules live under `resources/css/admin/`.
 
 Before adding a selector, determine whether the rule belongs to:
 
 1. a shared token/component;
-2. a shared table/control family;
-3. a genuinely feature-specific layout.
+2. a shared workspace/metrics/controls/table/hierarchy family;
+3. a genuinely feature-specific visualization/layout.
 
 Do not fix a central geometry problem with multiple page-local pixel patches.
 
@@ -465,52 +535,55 @@ Important current shared/admin modules include:
 - `layouts.css`;
 - `forms.css`;
 - `dialogs.css`;
-- `gallery.css`;
-- `media.css`;
-- `home.css`;
-- `custom-page.css`;
-- `journal.css`.
+- `data-workspace.css` / shared task-surface rules where present;
+- feature modules such as `gallery.css`, `media.css`, `home.css`, `custom-page.css`, `journal.css`, `analytics.css` and `activity.css` only for their genuine feature-specific needs.
 
 Important shared Blade primitives include:
 
 - `components/admin/workspace.blade.php`;
 - `metrics.blade.php`;
 - `metric.blade.php`;
-- `section.blade.php`;
+- `controls.blade.php`;
 - `table.blade.php`;
-- `toolbar.blade.php`;
+- `add-row.blade.php`;
+- `section.blade.php`;
 - `empty-state.blade.php`.
 
-## 23. Browser acceptance and presentation reset
+The existing `admin-hierarchy` primitive owns hierarchy-specific shared presentation for Pages and Custom Page.
+
+## 24. Browser acceptance and presentation reset
 
 Static source review, passing focused tests and a running container do not establish visual/product acceptance.
 
-The user's review of the current built candidate is authoritative for presentation. If the user rejects a layout, width, cards/panels, metrics treatment, toolbar, table geometry, typography or wording, that rejected presentation is not a preservation requirement merely because it already exists, passed a source review or is asserted by a temporary test.
+The user's review of the current built candidate is authoritative for presentation. If the user rejects a layout, width, cards/panels, metrics treatment, control row, table geometry, typography or wording, that rejected presentation is not a preservation requirement merely because it already exists, passed a source review or is asserted by a temporary test.
 
-When the user names Gallery, Media Files or another accepted current page as a visual reference, inspect the exact reference implementation and reuse its primitives/tokens for the dimensions named. “Keep it consistent” without reading the reference code is not sufficient.
+When the user names Media Files, Gallery or another current accepted page as a visual reference, inspect the exact reference implementation and reuse its primitives/tokens for the dimensions named. “Keep it consistent” without reading the reference code is not sufficient.
+
+Once a surface has been browser/product accepted for the current cycle, reconciliation/centralization must not change its computed presentation unless the user explicitly reopens that question.
 
 If a page has survived repeated visual repair passes while retaining the same rejected structure, stop layering patches onto it. Preserve valid domain behavior, persistence, safety guards and central technologies, but rebuild the presentation layer from the accepted reference/shared grammar when necessary.
 
 Do not create durable UI tests whose purpose is to memorialize a repair round, branch name, candidate chronology or unaccepted markup. Tests should protect stable functional/domain behavior; browser presentation becomes a durable reference after browser/product acceptance.
 
-## 24. Browser-review checklist
+## 25. Browser-review checklist
 
 For every admin slice, inspect at least:
 
-- page/action label geometry;
-- metric strip alignment/height;
-- Search/filter/Selection baseline;
-- table/grid header alignment;
+- heading title/status geometry and absence of a heading separator;
+- metric-strip alignment/height and complete metric-owned border box;
+- shared control order `Search -> filters -> Reset/Filter -> context actions -> Selection` and absence of a controls separator;
+- ordinary table outer-border behavior and `var(--admin-line)` header/row separators;
 - selection + drag geometry;
 - Position where applicable;
-- action order and stable slots;
-- parent/child alignment;
+- action order, `nowrap` behavior and stable slots;
+- hierarchy alignment, stable Actions column and absence of decorative child connector/L-line;
+- bottom Add-row thin top/bottom separators where applicable;
+- specialist visualization composition for Analytics, Activity and Storage;
 - empty states;
 - dialog size/scroll/focus/popovers;
 - filtered reorder behavior;
 - obvious first-click/navigation latency;
 - whether an existing shared component was bypassed by a new local structure;
-- whether the page matches the accepted Gallery/Media Files reference geometry where applicable;
 - whether page-local CSS duplicates an existing theme token or primitive.
 
 Browser acceptance is allowed to reject a technically correct implementation for poor/inconsistent UI. That feedback becomes the next source requirement.

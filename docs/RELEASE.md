@@ -30,17 +30,22 @@ Tag existence alone is not release evidence. A deployable release candidate requ
 
 ## Browser reconciliation versus release
 
-Admin/browser polish may use a temporary local combined branch such as `reconcile/admin-v0.3-browser` and a lightweight local preview image.
+Admin/browser polish may use a temporary combined source branch and a lightweight local preview image. Exact branch names and candidate SHAs are orchestration state and belong in the current continuation prompt, not this durable release contract.
 
 That loop is deliberately separate from release qualification:
 
 1. reconcile accepted worker diffs on one combined source branch;
-2. run only the migrations required by that candidate against the isolated local preview database;
-3. build/recreate the local preview once per coherent browser cycle;
-4. collect browser/editorial acceptance;
-5. repeat only when the accepted fix set changes.
+2. preserve already browser-accepted presentation exactly while resolving shared files;
+3. run only the migrations required by that candidate against the preserved isolated local preview database;
+4. build/recreate the local preview once per coherent browser cycle;
+5. collect browser/editorial acceptance immediately;
+6. repeat only when the accepted fix set changes.
 
 A local container being healthy means only that the candidate boots. It is not browser acceptance, Validation acceptance or release qualification.
+
+Reconciliation is not permission for an extra visual cleanup. Once a surface is browser-accepted for the current cycle, centralization/ownership work must not add or remove borders, separators, hierarchy connectors, spacing, widths, footer/add-row offsets, typography or action geometry. If a shared cleanup would visibly change an accepted surface, preserve the accepted presentation and defer that cleanup.
+
+Do not insert a discretionary cleanup, full test-suite run or CI wait between a source-coherent browser candidate and the user's browser review unless a concrete build/migration/security/data-integrity risk requires it.
 
 Do not trigger the canonical full release suite merely to inspect a CSS/Blade/editorial-workspace iteration unless a concrete risk warrants it.
 
@@ -82,6 +87,8 @@ npm run build
 
 Browser/product acceptance remains separate evidence.
 
+For a browser-only polish cycle, use the narrowest checks required to establish that the candidate can be built and safely opened. Do not make broad Pest/full CI a prerequisite merely to inspect the current UI. A test harness that aborts before assertions because its DB/environment is missing is an infrastructure finding, not dozens of product failures.
+
 ## Runtime interface
 
 - protocol: HTTP;
@@ -98,7 +105,42 @@ The current project workflow may reuse the lightweight local browser preview doc
 
 - browser URL `http://127.0.0.1:8001`;
 - application image internal port `8080`;
-- local preview Dockerfile `storage/local-validation-snapshot/Dockerfile.local-preview`.
+- local preview Dockerfile `storage/local-validation-snapshot/Dockerfile.local-preview`;
+- canonical local checkout `P:\moeller-lars`, operated by the user.
+
+Remote workers/chats normally cannot mount `P:\moeller-lars`. They must not stop merely because that Windows path is unavailable remotely. Local build/migration/container/browser commands are supplied as copy-paste PowerShell and executed by the user.
+
+The local preview derives from the application runtime image whose Production startup path uses the Production entrypoint. That Production entrypoint intentionally requires Production configuration such as `APP_ENV=production`, HTTPS `APP_URL`, secure cookies and other production guards. It is **not** the local HTTP-preview startup path.
+
+For `http://127.0.0.1:8001`, bypass the Production entrypoint and start through the normal PHP image entrypoint, for example:
+
+```text
+--entrypoint docker-php-entrypoint
+```
+
+with a local command equivalent to:
+
+```text
+php artisan optimize:clear && exec apache2-foreground
+```
+
+Do not weaken Production guards to make the local preview boot.
+
+The ignored local preview Dockerfile is an overlay. Before building, compare the candidate against the currently running source and include every changed runtime-owned directory needed by the candidate. An older overlay that copies only `app/`, `routes/` and `resources/` is insufficient when the candidate also changes `config/` or `database/`.
+
+The local sequence is intentionally short:
+
+1. verify exact source SHA and clean tree;
+2. build the exact candidate;
+3. apply only required forward migrations to the **preserved local DB**;
+4. recreate only the web container while preserving the existing DB and media;
+5. bypass the Production entrypoint;
+6. wait for container health and verify `/up`;
+7. return immediately to browser review.
+
+Do not use destructive local resets, recreate the database from scratch or discard canonical local media merely to inspect a browser candidate.
+
+Multi-step PowerShell instructions must be one atomic `& { ... }` block with `$ErrorActionPreference = 'Stop'`. Print a success banner only after the final health/HTTP check passes; do not send loose pasted commands that can continue after an earlier `throw`.
 
 Local container names/mount source paths are iteration details, not Production topology. The current follow-up prompt carries their exact transient values when needed.
 

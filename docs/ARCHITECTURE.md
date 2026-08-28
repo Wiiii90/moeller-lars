@@ -75,17 +75,24 @@ Navigation-only nodes do not get fake editors. Persistence Resource/model names 
 
 The canonical theme entrypoint is `resources/css/admin.css`, importing feature/shared modules from `resources/css/admin/`.
 
-The detailed admin-only UI grammar is maintained in [`../ui-skills.md`](../ui-skills.md). Durable shared principles include:
+The detailed admin-only UI grammar is maintained in [`../ui-skills.md`](../ui-skills.md). Shared presentation ownership is explicit:
 
-- one visible page heading per normal workspace;
-- no decorative kicker/eyebrow layer above that heading;
-- shared `x-admin.metrics`/`x-admin.metric` technology for factual metrics;
-- compact action/filter rows with labels above controls;
-- one visible Selection control per task surface;
-- flat stable table/grid geometry rather than card walls;
+- `x-admin.workspace` owns the normal workspace shell and heading row, including an optional right-aligned status;
+- `x-admin.metrics` / `x-admin.metric` own factual metric composition and the metric strip's complete border/separator box;
+- `x-admin.controls` owns the shared Search/filter/reset/context-action/Selection row;
+- `x-admin.table` owns ordinary flat table presentation;
+- the existing `admin-hierarchy` primitive extends that table grammar for Pages and Custom Page hierarchy presentation;
+- feature CSS owns only genuinely task-specific visualization/layout and must not duplicate the shared workspace, metrics, controls or ordinary table grammar.
+
+Durable shared principles include:
+
+- one visible page heading per normal workspace, with no decorative kicker/eyebrow layer and no heading-owned separator;
+- factual metrics only where meaningful rather than a fixed metric count on every page;
+- compact controls in the shared semantic order defined by `ui-skills.md`;
+- flat stable table geometry rather than card walls, with hierarchy as an extension rather than a separate table system;
 - native Livewire ordering rather than custom HTML5 DnD;
 - consistent dialogs/overlays as a shared primitive;
-- task-specific content surfaces while reusing shared geometry/tokens.
+- task-specific visualization surfaces while reusing shared geometry/tokens around them.
 
 A technically running browser candidate is not UI acceptance. Current browser feedback is authoritative for iterative admin polish.
 

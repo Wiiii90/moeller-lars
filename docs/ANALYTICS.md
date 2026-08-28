@@ -66,6 +66,16 @@ High-frequency interactions such as zoom should be de-duplicated/bounded rather 
 
 `/admin/analytics` is an application-owned artist dashboard backed by Matomo's Reporting API rather than a second analytics database.
 
+Its current artist-facing workspace composition is:
+
+1. heading row with `Analytics` and a right-aligned Reporting status;
+2. six shared traffic metrics using the normal admin metric strip;
+3. one large Geography/world-map visualization;
+4. shared controls in the order `Search | Filter | Analytics range`;
+5. the remaining report sections, using shared tables wherever the report output is tabular.
+
+The world map is Analytics-specific visualization; the heading, metrics, controls and table treatment remain part of the shared admin workspace grammar. The six-metric choice is specific to this Reporting workspace and is not a global rule for every admin page.
+
 Supported aggregate reporting includes, where Matomo provides it:
 
 - visits and unique visitors;

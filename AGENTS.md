@@ -2,9 +2,10 @@
 
 This file is the default working contract for coding agents, review/orchestration chats and parallel workers in `Wiiii90/moeller-lars`.
 
-Two companion files are part of this contract:
+Three companion files are part of this contract:
 
 - [`ui-skills.md`](ui-skills.md) — canonical artist-admin UI grammar and browser-review conventions;
+- [`worker-prompt-skill.md`](worker-prompt-skill.md) — mandatory compact execution-only worker-prompt contract;
 - [`followup-skill.md`](followup-skill.md) — how to create a lossless continuation prompt when a long orchestration chat is handed to a fresh chat.
 
 ## Source of truth
@@ -33,11 +34,11 @@ Use the current artist-facing concepts:
 
 Legacy names such as `CV`, `Vita`, persistence model/table names or old migration terms may remain as migration/data-model evidence. They are not permission to recreate obsolete admin IA or parallel runtime concepts.
 
-## Current orchestration model
+## Orchestration model
 
-`main` is protected. The admin-completion integration line remains `integration/admin-v0.3-final` until the tranche is explicitly accepted and promoted.
+`main` is protected. Exact integration/reconciliation branch names and exact current SHAs are transient orchestration state. Put them in the current continuation or worker prompt, not in this durable contract.
 
-Browser-heavy reconciliation may use one temporary combined branch such as `reconcile/admin-v0.3-browser`. That branch is a review candidate, not a release branch and not proof of product acceptance.
+Browser-heavy reconciliation may use one temporary combined branch. That branch is a review candidate, not a release branch and not proof of product acceptance.
 
 When several browser-fix workers run in parallel:
 
@@ -51,7 +52,28 @@ When several browser-fix workers run in parallel:
 8. cross-branch consequences are fixed explicitly in a small reconciliation commit;
 9. only after the combined source state is coherent is one browser build/migration/review cycle performed.
 
-Do not mutate the original feature branches merely to create a browser candidate. Do not rebase, merge to `main`, deploy Production or retarget PRs unless the orchestrator explicitly asks.
+Do not mutate original feature branches merely to create a browser candidate. Do not rebase, merge to `main`, deploy Production or retarget PRs unless the orchestrator explicitly asks.
+
+### Presentation freeze during reconciliation
+
+Reconciliation is an **integration task, not a redesign task**.
+
+Once a page/surface has been browser/product accepted for the current cycle, its visible presentation is frozen unless the user explicitly reopens that presentation question. A reconciliation or centralization worker may move ownership between shared files only when the resulting browser presentation remains unchanged.
+
+Do not introduce, remove or alter any of the following merely to make shared CSS look more uniform:
+
+- table/control separators or borders;
+- hierarchy connector lines or vertical bars;
+- workspace/table widths;
+- control or row spacing;
+- add-row/footer placement;
+- metric geometry;
+- action alignment/order/slot width;
+- typography, density or visual hierarchy.
+
+If a shared-primitive cleanup changes an already accepted surface, the cleanup is wrong. Preserve the accepted presentation and solve ownership without changing computed output. Do not add a new shared rule to multiple accepted consumers merely because it is aesthetically or architecturally convenient.
+
+After individually accepted visual branches are reconciled, **do not run another discretionary cleanup/centralization pass before the browser build**. Build the coherent candidate immediately and return to browser review. Any additional cleanup waits until after the user has reviewed the combined candidate and explicitly authorizes it.
 
 ## Browser-review loop
 
@@ -63,12 +85,14 @@ Visual/admin work follows this order:
 4. classify findings into functional bugs, interaction defects, layout/style inconsistencies, performance, missing behavior and architecture/centralization mistakes;
 5. create a fresh narrowly scoped worker from an exact base;
 6. statically review the returned diff;
-7. reconcile accepted work;
-8. perform one new local/Validation browser cycle.
+7. reconcile accepted work without changing already accepted presentation;
+8. perform one new local browser cycle immediately.
 
 Do **not** call a candidate final merely because it boots, migrations succeed or a 500 disappears. Browser/editorial acceptance is separate evidence.
 
-Do not rebuild after every comment or every worker. Prefer one combined build after all intended side diffs for that cycle are reconciled.
+Do not rebuild after every comment or every worker. Prefer one coherent browser build after all intended side diffs for that review cycle are reconciled.
+
+Do not put a broad test/cleanup phase between a source-coherent browser candidate and the user's browser review unless a concrete build, migration, security or data-integrity risk requires it. The browser loop is supposed to be fast.
 
 ## Browser acceptance authority
 
@@ -93,7 +117,7 @@ Do not encode rejected or unreviewed presentation details into durable tests or 
 
 ## Admin theme enforcement
 
-For authenticated admin UI, `ui-skills.md`, the shared `x-admin.*` Blade primitives, `resources/css/admin.css`, shared `resources/css/admin/*` modules, and accepted Gallery/Media Files implementations are mandatory implementation authorities.
+For authenticated admin UI, `ui-skills.md`, the shared `x-admin.*` Blade primitives, `resources/css/admin.css`, shared `resources/css/admin/*` modules, and accepted/current reference implementations are mandatory implementation authorities.
 
 Wrapping a page in `x-admin.workspace` is not sufficient if the page then recreates the rest of the visual system locally.
 
@@ -104,14 +128,16 @@ Without an explicit task-specific justification, treat these patterns as source-
 - page-local control, button, action, metric, table, row, toolbar or workspace systems that duplicate existing shared primitives;
 - page-specific content widths or control heights that diverge from the accepted shell;
 - feature CSS used to reproduce generic theme geometry under selectors such as `.pages-*`, `.general-*`, `.home-*` or `.journal-*`;
-- large pixel-tuning patches that imitate Gallery/Media Files instead of reusing the same primitives/tokens.
+- large pixel-tuning patches that imitate an accepted reference instead of reusing the same primitives/tokens.
 
-Feature-local CSS is valid only for genuinely feature-specific task surfaces. If a shared primitive is insufficient, extend the shared authority deliberately instead of forking it locally.
+Feature-local CSS is valid only for genuinely task-specific visualization/layout. If a shared primitive is insufficient, extend the shared authority deliberately instead of forking it locally.
+
+**Theme centralization never overrides presentation freeze.** A shared primitive that would change an already accepted surface must be scoped/refined or left alone until the user explicitly accepts the broader visual change.
 
 For every visual worker, the prompt must require the worker to:
 
 1. read `ui-skills.md`;
-2. inspect the exact accepted Gallery/Media Files reference code relevant to the requested geometry;
+2. inspect the exact current accepted/reference code relevant to the requested geometry;
 3. inspect the shared Blade/CSS primitives before adding local structure;
 4. reuse those authorities first;
 5. list in the handoff which reference files and shared primitives were actually used;
@@ -136,7 +162,11 @@ Static review, `git diff --check`, tiny syntax checks and focused contract check
 
 Tests added during browser work should encode durable product/domain behavior, not temporary orchestration states. Avoid durable test names tied to repair rounds, browser passes, branch choreography or candidate labels when a stable behavior-based name is available. Do not add a broad “acceptance” test merely to memorialize an intermediate browser candidate.
 
-The user's repeated request to inspect a change quickly is not an invitation to reinstall dependencies or recreate infrastructure.
+Do not create source-string tests whose main purpose is to freeze exact CSS class names, selector ownership, Blade strings or file placement. Those tests are allowed only for a durable security/build invariant that cannot be protected more directly. Prefer tests for domain behavior, persistence, authorization, destructive guards, redirects, migration invariants and other user-observable behavior.
+
+A failed test harness/environment is not a product failure. If every test aborts before assertions because test infrastructure is missing, report the harness failure once; do not treat the count as dozens of product regressions and do not block a browser-only review on repairing the whole test harness.
+
+The user's repeated request to inspect a change quickly is not an invitation to reinstall dependencies, recreate infrastructure or start a broad test-cleanup project.
 
 ## Git and remote verification
 
@@ -153,6 +183,20 @@ When a side branch was intentionally created from an older shared base, review i
 
 Avoid force pushes during browser reconciliation. If an accidental bad commit is already public but a normal forward repair can restore the correct tree, prefer a repair commit and verify the **net tree diff** afterward.
 
+## Remote workers versus the user's local checkout
+
+`P:\moeller-lars` is the user's canonical local Windows checkout. Remote workers/orchestration environments normally **cannot mount or inspect that path**.
+
+Therefore:
+
+- never instruct a remote worker to “work exclusively in `P:\moeller-lars` or STOP” unless that worker has explicitly demonstrated access to the user's machine;
+- inability to see `P:\moeller-lars` from a remote environment is expected, not a blocker;
+- remote workers may inspect/write GitHub source branches, but local runtime/browser operations are executed by the user;
+- when local state must be checked or changed, provide the user with copy-paste PowerShell commands and use the returned output;
+- do not create substitute clones/worktrees merely because the user's local disk is unavailable remotely.
+
+Worker prompts must distinguish **remote source work** from **user-executed local runtime work** explicitly.
+
 ## PowerShell safety
 
 The canonical local repository path is `P:\moeller-lars`.
@@ -162,6 +206,17 @@ PowerShell variables are case-insensitive. Do not use automatic/read-only variab
 - never use `$Home`/`$HOME` for file content;
 - never use `$Args` for Docker argument splatting;
 - use names such as `$HomeText`, `$RunArgs`, `$DockerArgs`, `$EnvVars`.
+
+All multi-step runtime/build/migration/start instructions given to the user must be one atomic script block:
+
+```powershell
+& {
+    $ErrorActionPreference = 'Stop'
+    # commands
+}
+```
+
+Do not send a loose sequence of commands that can continue after a `throw` in an interactive pasted session. A success banner/sentinel belongs **inside the same atomic block and only after all required health/HTTP checks pass**.
 
 For scripted file replacement:
 
@@ -195,6 +250,16 @@ Current durable local interface assumptions:
 - preview Dockerfile: `storage/local-validation-snapshot/Dockerfile.local-preview`;
 - canonical private media mount destination: `/var/www/html/storage/app/private`.
 
+The runtime image uses the Production entrypoint for Production startup, and that entrypoint intentionally requires Production-only settings (`APP_ENV=production`, HTTPS URL, secure cookie settings, etc.). **Local HTTP preview must bypass the Production entrypoint.** Start the preview with the normal PHP image entrypoint (for example `--entrypoint docker-php-entrypoint`) and run the local command such as `php artisan optimize:clear && exec apache2-foreground`.
+
+Do not copy the old local environment into the Production entrypoint and then try to satisfy Production guards for `http://127.0.0.1:8001`. Do not weaken Production guards for local convenience.
+
+The ignored local preview Dockerfile is an overlay. Before building a new candidate, compare the candidate against the currently running source and ensure every changed runtime-owned directory needed by the candidate is included. In particular, changes under `config/` and `database/` must not be silently omitted just because an older overlay only copied `app/`, `routes/` and `resources/`.
+
+A local preview sequence should be: verify exact SHA/clean tree → build exact candidate → apply only required forward migrations against the **preserved local DB** → recreate only the web container while **preserving DB and media** → bypass Production entrypoint → wait for health → verify `/up` → return immediately to browser review.
+
+Do not use destructive local resets, recreate the database from scratch, or discard canonical local media merely to inspect a new browser candidate.
+
 Exact transient branch SHAs, mount source paths and commands belong in the current follow-up prompt, not as timeless architecture facts in this file.
 
 ## Fast Validation preview
@@ -227,7 +292,8 @@ The admin is still under browser acceptance. Existing work is a starting point, 
 - when a genuinely shared defect is discovered, fix the shared authority intentionally;
 - do not introduce a second Rich Text, media-selection, table, modal or drag/drop technology to unblock one page;
 - consult `ui-skills.md` before changing admin workspace geometry;
-- when the user explicitly rejects the current presentation or asks for a reset, do not preserve that rejected structure merely to minimize the diff.
+- when the user explicitly rejects the current presentation or asks for a reset, do not preserve that rejected structure merely to minimize the diff;
+- when the user has explicitly accepted a presentation, do not change it again during reconciliation/cleanup without a new explicit browser requirement.
 
 ## Central technology rules
 
@@ -264,23 +330,33 @@ Use native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) 
 
 ## Worker prompt delivery
 
-Whenever a worker, repair, or handoff prompt is emitted for copy/paste, the entire prompt must be inside exactly one contiguous fenced Markdown code block. Do not split it across multiple fenced blocks, use quote/indent formatting for the prompt, or place any part of the prompt outside that code block.
+`worker-prompt-skill.md` is mandatory before creating any worker prompt.
 
-A worker prompt should state:
+The worker is an **executing hand**, not a product designer or co-orchestrator. The orchestrator must decide the implementation direction before delegation.
 
-- repository;
-- exact base SHA and branch strategy;
-- allowed scope;
-- explicit non-goals;
-- browser findings/root causes already known;
-- central technologies that must be reused;
-- checks that are and are not required;
-- commit/push rules;
-- exact handoff fields expected.
+Default worker prompts should be **20–60 lines** and stay below roughly **100 lines** unless the user explicitly asks for a larger handoff.
 
-For visual work, the prompt must additionally identify the current browser acceptance state and any user-designated reference surface. Do not describe rejected current markup as a preservation requirement unless the user explicitly accepted it.
+Do not paste project history, long style/architecture essays, repeated generic exclusions or copies of this file into a worker prompt. Point the worker to `AGENTS.md` / `ui-skills.md` and then state only the concrete task.
 
-For visual work, prompts must make theme/reference reuse operational rather than aspirational: name the accepted references, require inspection of their actual source at the base, prohibit duplicate local presentation systems, and require the handoff to enumerate reused primitives and any justified feature-local CSS.
+A worker prompt should normally contain only:
+
+- repository + exact base SHA + branch name;
+- exact files/components to inspect or edit;
+- exact changes to make;
+- a short task-specific `DO NOT CHANGE` list;
+- the few checks actually required;
+- commit/push instruction;
+- short handoff fields.
+
+Do not delegate product/UI decisions with vague instructions such as `improve`, `harmonize`, `make consistent`, `choose the best layout`, `refactor as needed` or `clean up related UI`.
+
+A concrete user decision is binding. State it literally. If implementation exposes a genuine unspecified product/UI choice, the worker must leave that part unchanged when safe and report the ambiguity instead of inventing a decision.
+
+For shared CSS/components, name the intended consumers and explicitly state whether all other consumers must remain visually unchanged.
+
+A prompt intended for a worker must be one complete contiguous fenced code block so it has one Copy button.
+
+Remote workers must not be told to access `P:\moeller-lars` unless local-machine access is explicitly available. Local runtime steps belong in user-executed PowerShell instructions.
 
 ## Worker handoff
 
@@ -290,18 +366,13 @@ A normal handoff contains:
 - base SHA;
 - new head SHA;
 - changed files;
-- actual behavior/root-cause changes;
+- exact changes made;
 - checks actually run;
-- remote head verification;
-- unresolved blocker if one remains.
+- unresolved ambiguity/blocker.
 
-For visual work, also include:
+The handoff should be short. No implementation diary.
 
-- accepted reference files inspected;
-- shared Blade/CSS primitives reused;
-- new CSS/classes/tokens added and why each is task-specific.
-
-The orchestrator then reviews the code independently. Long implementation diaries are not acceptance evidence. A worker must not self-declare browser/product acceptance for a presentation it cannot see in the user's running candidate.
+The orchestrator then reviews the code independently and must reject scope expansion or product/UI decisions that were not explicitly delegated. A worker must not self-declare browser/product acceptance for a presentation it cannot see in the user's running candidate.
 
 ## Continuation handoffs
 

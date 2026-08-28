@@ -30,6 +30,7 @@ At minimum consider:
 
 - `AGENTS.md` for workflow/orchestration/technology rules;
 - `ui-skills.md` for reusable admin UI grammar;
+- `worker-prompt-skill.md` for compact execution-only worker prompts;
 - architecture/media/migration/release docs for durable contract changes.
 
 Do not stuff every transient SHA into durable docs. Exact temporary state belongs in the follow-up prompt.
@@ -57,8 +58,8 @@ Include:
 
 - repository;
 - canonical local path;
-- protected integration/main constraints;
-- current combined branch;
+- protected `main`/integration constraints that actually apply to the current work;
+- current combined branch when one exists;
 - exact current head SHA;
 - relevant base SHA;
 - side branches and their accepted/rejected status;
@@ -69,7 +70,11 @@ Explicitly distinguish:
 - historical feature branches;
 - temporary worker side branches;
 - current combined browser branch;
-- integration/release branches.
+- integration/release branches when they actually exist.
+
+Exact current branch names and SHAs belong here rather than in durable docs.
+
+Also state that `P:\moeller-lars` is the **user-operated local checkout**. Remote workers/chats normally cannot see that path and must not treat the missing mount as a blocker. Local commands are executed by the user from copy-paste PowerShell supplied by the orchestrator.
 
 ### Current runtime/browser state
 
@@ -84,6 +89,8 @@ When local browser review is in progress, include exact known operational facts:
 - whether the current running image differs from a newer docs-only Git head.
 
 Do not invent unknown paths. If a mount source is dynamic, show the command used to read it from the existing container.
+
+Record whether the local preview bypasses the Production entrypoint. The Production image intentionally rejects local-style configuration; a local HTTP preview based on that image must use the normal PHP entrypoint and start Apache/Laravel without the Production guard.
 
 ### Current product acceptance state
 
@@ -110,6 +117,14 @@ Include only the details that materially constrain future fixes, such as:
 
 Point the next chat to the durable docs instead of duplicating every stable rule verbatim.
 
+### Presentation freeze
+
+If any surface has already been browser/product accepted in the current cycle, list it explicitly as frozen presentation.
+
+A reconciliation/cleanup worker may not change its borders, separators, connector lines, widths, spacing, add-row/footer position, metric geometry, typography or action geometry merely to centralize shared CSS. If shared ownership cannot be changed without visible differences, preserve the accepted presentation and defer the cleanup.
+
+After accepted visual side branches are reconciled, the next action is normally the local browser build/review — not another discretionary cleanup pass.
+
 ### Known dirt / incidents
 
 Do not hide mistakes that can confuse Git history or future debugging.
@@ -120,7 +135,9 @@ Examples:
 - side branch based on an older shared base;
 - migration run that first failed before DB mutation and later succeeded;
 - unreachable/no-op commit not referenced by a branch;
-- local cache/image known to have represented an older candidate.
+- local cache/image known to have represented an older candidate;
+- local preview command that copied Production entrypoint semantics and therefore exited before Apache started;
+- test suite that aborted before assertions because the test DB environment was missing.
 
 Explain whether the **current tree is clean despite the history** and how that was verified.
 
@@ -151,7 +168,27 @@ For sequential workers:
 
 - base the next worker on the current accepted combined head when that is intentional.
 
+**Every new orchestrator must read `worker-prompt-skill.md` before creating a worker prompt.**
+
+Worker prompts are execution instructions, not mini-specifications or design essays. The orchestrator decides the implementation direction first; the worker executes it.
+
+Default worker prompts should be about **20–60 lines** and stay below roughly **100 lines** unless the user explicitly asks for a larger handoff. Do not repeat `AGENTS.md`, `ui-skills.md`, project history or long lists of generic exclusions inside the prompt.
+
+A worker prompt should normally contain only:
+
+- exact repo/base/branch;
+- exact files/components to inspect or edit;
+- exact requested changes;
+- a short task-specific `DO NOT CHANGE` list;
+- required checks;
+- commit/push instruction;
+- short handoff fields.
+
+Do not delegate product/UI choices with phrases such as `improve`, `harmonize`, `make consistent`, `choose the best layout`, `refactor as needed` or `clean up related UI`. If the user has made a concrete decision, state that decision literally in the prompt. If a genuine unspecified product choice appears during implementation, the worker leaves it unchanged when safe and reports it instead of inventing a decision.
+
 Worker prompts must be one contiguous fenced code block.
+
+Never tell a remote worker to “work exclusively in `P:\moeller-lars` or STOP” unless that worker has explicitly demonstrated access to the user's local machine. Remote source work and user-executed local runtime work are separate phases.
 
 ### Worker review workflow
 
@@ -162,8 +199,11 @@ For every returned worker:
 3. compare exact base→head;
 4. inspect actual code/diff independently;
 5. identify cross-branch/shared-file effects;
-6. accept/reject before integration;
-7. avoid broad tests unless the actual change warrants them.
+6. reject any product/UI decision that was not explicitly delegated;
+7. accept/reject before integration;
+8. avoid broad tests unless the actual change warrants them.
+
+For visual workers, review not only whether the new target looks source-coherent but also whether any already accepted consumer of changed shared CSS could change presentation. Broad shared selector changes require explicit scrutiny.
 
 ### Reconciliation workflow
 
@@ -172,9 +212,12 @@ Give explicit rules:
 - cherry-pick/union only accepted diffs;
 - resolve shared files intentionally;
 - make cross-branch compatibility fixes in a separate small commit;
+- preserve browser-accepted presentation exactly while reconciling ownership;
+- no new shared border/separator/connector/spacing rule without a current browser requirement;
 - inspect net diff after any repair;
 - push fast-forward where possible;
-- do not rewrite public history merely to make it pretty when a safe forward repair is clearer.
+- do not rewrite public history merely to make it pretty when a safe forward repair is clearer;
+- do not run a discretionary “final cleanup” after visual branches are accepted and before the next browser build.
 
 ### Build/migration/browser workflow
 
@@ -183,14 +226,19 @@ If the next chat will need it, include the exact command pattern currently prove
 Prefer:
 
 - one build after the intended set of fixes is reconciled;
+- only risk-appropriate checks before a browser-only review;
 - verbose migration output;
 - stop on migration failure;
 - reuse existing network/env/media mounts;
+- ensure the local preview overlay includes every changed runtime-owned area (including `config/` and `database/` when changed);
 - replace only the web container;
+- preserve the existing local database and media rather than resetting them;
+- bypass the Production entrypoint for local HTTP preview;
 - inspect status/log tail;
+- verify `/up`;
 - then return directly to browser review.
 
-Do not trigger dependency reinstalls or a full test suite just to look at the page.
+Do not trigger dependency reinstalls, broad Pest, a full test-suite cleanup or CI merely to look at the page. Do not destructively reset local DB/media for a browser candidate.
 
 ## 4. Command quality requirements
 
@@ -203,7 +251,17 @@ PowerShell rules:
 - use `$HomeText`, `$RunArgs`, `$MigrationArgs`, `$EnvVars`, etc.;
 - verify expected HEAD before destructive/reconciliation operations;
 - verify clean working tree;
-- stop when a command fails;
+- use one atomic script block for multi-step local operations:
+
+```powershell
+& {
+    $ErrorActionPreference = 'Stop'
+    # commands
+}
+```
+
+- do not rely on a loose interactive paste where commands after `throw` can still be executed separately;
+- print a success banner only inside the atomic block and only after the final health/HTTP assertion succeeds;
 - show `git diff --stat`, `git diff --check`, log and status around risky manual edits.
 
 Avoid enormous scripts when a few clear commands are enough. Include a longer block only when it genuinely prevents repeated manual mistakes.
@@ -216,8 +274,11 @@ The continuation prompt should explicitly tell the new chat:
 - treat the user's browser observation as authoritative acceptance input;
 - distinguish a technically present feature from a good/consistent implementation;
 - use `ui-skills.md` when evaluating consistency;
+- read `worker-prompt-skill.md` before delegating any repair;
+- treat previously browser-accepted surfaces as presentation-frozen during reconciliation;
 - collect screenshots/text feedback if provided;
 - do not repeatedly build while feedback is still being gathered;
+- do not put broad tests/cleanup between a ready browser candidate and the user's review;
 - do not call the candidate final before the user accepts it.
 
 ## 6. What not to put in the follow-up prompt
