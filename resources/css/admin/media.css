@@ -1,12 +1,12 @@
 @import './dialogs.css';
 
-.media-workspace__upload-section,
-.media-workspace__library {
+.media-workspace__upload-section {
     border-bottom-color: var(--admin-line-strong);
 }
 
 .media-workspace__library {
     --media-task-surface-header-height: 2.25rem;
+    border-bottom: 0;
 }
 
 .media-workspace__dropzone {
@@ -217,10 +217,31 @@
     text-decoration: none;
 }
 
+.media-workspace__thumb button {
+    display: grid;
+    width: 3.6rem;
+    height: 3rem;
+    padding: 0;
+    place-items: center;
+    overflow: hidden;
+    border: 0;
+    background: var(--admin-subtle);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
 .media-workspace__thumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.media-workspace__thumb button:focus-visible,
+.media-workspace__visual:focus-visible,
+.media-workspace__filename-button:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
 }
 
 .media-workspace__thumb span,
@@ -319,8 +340,8 @@
 }
 
 .media-workspace__state.is-available::before {
-    border-color: var(--admin-muted);
-    background: var(--admin-muted);
+    border-color: var(--admin-success);
+    background: var(--admin-success);
 }
 
 .media-workspace__state.is-quarantined::before {
@@ -330,6 +351,7 @@
 
 .media-workspace__state.is-deleted::before {
     border-color: var(--admin-danger);
+    background: var(--admin-danger);
 }
 
 .media-workspace__size {
@@ -404,12 +426,18 @@
     min-width: 0;
     min-height: 0;
     aspect-ratio: 4 / 3;
+    padding: 0;
     place-items: center;
     overflow: hidden;
     contain: layout paint;
     isolation: isolate;
-    background: var(--admin-subtle);
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
     text-decoration: none;
+    cursor: pointer;
 }
 
 .media-workspace__visual img,
@@ -608,6 +636,144 @@
     line-height: 1.5;
 }
 
+/* Media file dialog presentation belongs to Media Files, not the shared admin entrypoint. */
+.media-file-dialog__content {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.media-file-dialog__preview {
+    display: grid;
+    min-height: 26rem;
+    max-height: 62vh;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--admin-line);
+    background: var(--admin-subtle);
+}
+
+.media-file-dialog__preview img,
+.media-file-dialog__preview video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: 62vh;
+    object-fit: contain;
+}
+
+.media-file-dialog__preview p,
+.media-file-dialog__empty {
+    margin: 0;
+    color: var(--admin-muted);
+    font-size: .75rem;
+}
+
+.media-file-dialog__sequence {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 1rem;
+    padding-bottom: .85rem;
+    align-items: center;
+    border-bottom: 1px solid var(--admin-line);
+    color: var(--admin-muted);
+    font-size: .72rem;
+}
+
+.media-file-dialog__sequence > span {
+    text-align: center;
+}
+
+.media-file-dialog__details {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.media-file-dialog__details > section {
+    min-width: 0;
+    padding-right: 1.2rem;
+}
+
+.media-file-dialog__details > section + section {
+    padding-right: 0;
+    padding-left: 1.2rem;
+    border-left: 1px solid var(--admin-line);
+}
+
+.media-file-dialog__details h3 {
+    margin: 0 0 .55rem;
+    color: var(--admin-muted);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+}
+
+.media-file-dialog__details dl {
+    display: grid;
+    margin: 0;
+}
+
+.media-file-dialog__details dl > div {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, .4fr) minmax(0, 1fr);
+    gap: .8rem;
+    padding: .46rem 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.media-file-dialog__details dt,
+.media-file-dialog__details dd,
+.media-file-dialog__references strong,
+.media-file-dialog__references span {
+    font-size: .73rem;
+}
+
+.media-file-dialog__details dt,
+.media-file-dialog__references span {
+    color: var(--admin-muted);
+}
+
+.media-file-dialog__details dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--admin-text);
+}
+
+.media-file-dialog__checksum {
+    overflow-wrap: anywhere;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: .67rem !important;
+}
+
+.media-file-dialog__references {
+    display: grid;
+    border-top: 1px solid var(--admin-line);
+}
+
+.media-file-dialog__references a,
+.media-file-dialog__references > div {
+    display: grid;
+    grid-template-columns: minmax(8rem, .55fr) minmax(0, 1fr);
+    gap: .8rem;
+    padding: .6rem 0;
+    border-bottom: 1px solid var(--admin-line);
+    color: inherit;
+    text-decoration: none;
+}
+
+.media-file-dialog__references strong {
+    color: var(--admin-text);
+    font-weight: 600;
+}
+
+.media-file-dialog__references span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 @media (max-width: 1180px) {
     .media-workspace__controls {
         grid-template-columns: minmax(14rem, 2fr) repeat(3, minmax(8rem, 1fr));
@@ -667,6 +833,47 @@
     }
 
     .media-inspector__sequence > span {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    .media-file-dialog {
+        width: calc(100vw - 1rem) !important;
+        max-width: none !important;
+        max-height: calc(100dvh - 1rem);
+    }
+
+    .media-file-dialog__preview {
+        min-height: min(48vh, 24rem);
+        max-height: 52vh;
+    }
+
+    .media-file-dialog__preview img,
+    .media-file-dialog__preview video {
+        max-height: 52vh;
+    }
+
+    .media-file-dialog__details {
+        grid-template-columns: 1fr;
+    }
+
+    .media-file-dialog__details > section,
+    .media-file-dialog__details > section + section {
+        padding-inline: 0;
+    }
+
+    .media-file-dialog__details > section + section {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--admin-line);
+        border-left: 0;
+    }
+
+    .media-file-dialog__sequence {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .media-file-dialog__sequence > span {
         grid-column: 1 / -1;
         grid-row: 1;
     }
@@ -864,9 +1071,16 @@
     width: 100%;
     min-width: 0;
     max-width: 100%;
+    padding: 0;
     overflow: hidden;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
     text-overflow: ellipsis;
     white-space: nowrap;
+    cursor: pointer;
 }
 
 .media-workspace .media-workspace__filename-button strong {

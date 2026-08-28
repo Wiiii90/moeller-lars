@@ -6,6 +6,7 @@ it('keeps reconciled admin primitives on one canonical authority and one shared 
     $taskCss = (string) file_get_contents(resource_path('css/admin/task-surfaces.css'));
     $customCss = (string) file_get_contents(resource_path('css/admin/custom-page.css'));
     $dashboardCss = (string) file_get_contents(resource_path('css/admin/dashboard.css'));
+    $mediaCss = (string) file_get_contents(resource_path('css/admin/media.css'));
     $theme = (string) file_get_contents(resource_path('views/filament/partials/admin-theme.blade.php'));
     $vite = (string) file_get_contents(base_path('vite.config.js'));
     $pagesRow = (string) file_get_contents(resource_path('views/filament/pages/partials/site-section-row.blade.php'));
@@ -15,9 +16,22 @@ it('keeps reconciled admin primitives on one canonical authority and one shared 
 
     expect(file_exists(resource_path('css/admin/editorial-primitives.css')))->toBeFalse()
         ->and(substr_count($adminCss, "@import './admin/data-workspace.css';"))->toBe(1)
+        ->and(substr_count($adminCss, "@import './admin/media.css';"))->toBe(1)
         ->and(substr_count($dataCss, "@import './task-surfaces.css';"))->toBe(1)
-        ->and($theme)->not->toContain('data-workspace.css', 'task-surfaces.css', 'editorial-primitives.css')
-        ->and($vite)->not->toContain('data-workspace.css', 'task-surfaces.css', 'editorial-primitives.css')
+        ->and($theme)->not->toContain('data-workspace.css', 'task-surfaces.css', 'editorial-primitives.css', 'admin/media.css')
+        ->and($vite)->not->toContain('data-workspace.css', 'task-surfaces.css', 'editorial-primitives.css', 'admin/media.css')
+        ->and($adminCss)->not->toContain('.media-workspace__', '.media-file-dialog__', '.media-inspector__')
+        ->and($mediaCss)->toContain(
+            '.media-workspace__thumb button',
+            '.media-workspace__visual',
+            '.media-workspace__filename-button',
+            '.media-workspace__state.is-available::before',
+            '.media-file-dialog__content {',
+            '.media-file-dialog__preview {',
+            '.media-file-dialog__details {',
+            '.media-file-dialog__references {',
+        )
+        ->and($mediaCss)->not->toContain('.admin-pager', '.admin-position {', '.admin-action--state')
         ->and($taskCss)->toContain('--admin-control-text-inset:')
         ->and($taskCss)->toContain('.admin-position {')
         ->and($taskCss)->toContain('.admin-action--state {')
