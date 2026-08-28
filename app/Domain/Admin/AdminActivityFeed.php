@@ -41,6 +41,7 @@ final class AdminActivityFeed
         int $perPage = 30,
         ?User $actor = null,
         int $days = self::ACTIVITY_WINDOW_DAYS,
+        ?string $search = null,
     ): array {
         $days = in_array($days, self::FILTER_WINDOWS, true) ? $days : self::ACTIVITY_WINDOW_DAYS;
 
@@ -53,6 +54,25 @@ final class AdminActivityFeed
         $actionKeys = $this->filteredActionKeys($area, $family);
         if ($actionKeys !== null) {
             $query->whereIn('action', $actionKeys);
+        }
+
+        $search = trim((string) $search);
+        if ($search !== '') {
+            $searchActionKeys = $this->searchActionKeys($search);
+            $normalizedSearch = mb_strtolower($search);
+
+            $query->where(function ($query) use ($searchActionKeys, $normalizedSearch): void {
+                if ($searchActionKeys !== []) {
+                    $query->whereIn('action', $searchActionKeys)
+                        ->orWhereHas('adminUser', static fn ($adminUserQuery) => $adminUserQuery
+                            ->whereRaw('LOWER(name) LIKE ?', ['%'.$normalizedSearch.'%']));
+
+                    return;
+                }
+
+                $query->whereHas('adminUser', static fn ($adminUserQuery) => $adminUserQuery
+                    ->whereRaw('LOWER(name) LIKE ?', ['%'.$normalizedSearch.'%']));
+            });
         }
 
         /** @var LengthAwarePaginator<int, AuditEvent> $paginator */
@@ -98,6 +118,25 @@ final class AdminActivityFeed
         }
 
         return array_values(array_intersect($areaKeys, $familyKeys));
+    }
+
+    /** @return array<int, string> */
+    private function searchActionKeys(string $search): array
+    {
+        return array_values(array_filter(
+            AdminActionCatalog::keys(),
+            static function (string $key) use ($search): bool {
+                $definition = AdminActionCatalog::definition($key);
+
+                foreach ([$definition['label'], $definition['area'], $definition['family']] as $value) {
+                    if (mb_stripos($value, $search) !== false) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
+        ));
     }
 
     /**

@@ -3,6 +3,7 @@
 @import './admin/forms.css';
 @import './admin/data-workspace.css';
 @import './admin/analytics.css';
+@import './admin/activity.css';
 @import './admin/media.css';
 
 :root {

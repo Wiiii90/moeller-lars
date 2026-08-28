@@ -1,0 +1,171 @@
+.activity-time-visual {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 5rem);
+    padding: clamp(2rem, 4vw, 3.5rem) 0;
+    align-items: center;
+    border-bottom: 1px solid var(--admin-line-strong);
+}
+
+.activity-clock {
+    display: grid;
+    min-width: 0;
+    place-items: center;
+}
+
+.activity-clock__face {
+    position: relative;
+    width: min(100%, 31rem);
+    aspect-ratio: 1;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: 50%;
+}
+
+.activity-clock__axis {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    background: var(--admin-line);
+    transform: translate(-50%, -50%);
+}
+
+.activity-clock__axis--vertical {
+    width: 1px;
+    height: 84%;
+}
+
+.activity-clock__axis--horizontal {
+    width: 84%;
+    height: 1px;
+}
+
+.activity-clock__label {
+    position: absolute;
+    z-index: 2;
+    color: var(--admin-muted);
+    font-size: .72rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.activity-clock__label--00 {
+    top: 4%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.activity-clock__label--06 {
+    top: 50%;
+    right: 4%;
+    transform: translateY(-50%);
+}
+
+.activity-clock__label--12 {
+    bottom: 4%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.activity-clock__label--18 {
+    top: 50%;
+    left: 4%;
+    transform: translateY(-50%);
+}
+
+.activity-clock__marker {
+    position: absolute;
+    top: var(--activity-y);
+    left: var(--activity-x);
+    z-index: 3;
+    width: .58rem;
+    height: .58rem;
+    border: 2px solid var(--admin-surface);
+    border-radius: 50%;
+    background: var(--admin-accent);
+    box-shadow: 0 0 0 1px var(--admin-accent);
+    transform: translate(-50%, -50%);
+}
+
+.activity-calendar {
+    display: grid;
+    min-width: 0;
+    gap: .75rem;
+}
+
+.activity-calendar__month {
+    color: var(--admin-text);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.activity-calendar__weekdays,
+.activity-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.activity-calendar__weekdays span {
+    padding: 0 .35rem .45rem;
+    color: var(--admin-muted);
+    font-size: .62rem;
+    font-weight: 650;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.activity-calendar__day {
+    display: grid;
+    min-height: 4.6rem;
+    padding: .55rem;
+    align-content: space-between;
+    border-top: 1px solid var(--admin-line);
+    border-right: 1px solid var(--admin-line);
+    color: var(--admin-muted);
+    font-size: .72rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.activity-calendar__day:nth-child(7n + 1) {
+    border-left: 1px solid var(--admin-line);
+}
+
+.activity-calendar__day:nth-last-child(-n + 7) {
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.activity-calendar__day strong {
+    color: var(--admin-text);
+    font-size: 1rem;
+    font-weight: 580;
+    justify-self: end;
+}
+
+.activity-calendar__day.is-empty {
+    background: var(--admin-subtle);
+}
+
+.activity-workspace__controls {
+    grid-template-columns: minmax(15rem, 1.5fr) minmax(10rem, .8fr) minmax(10rem, .8fr) auto auto;
+    padding: .85rem 0;
+}
+
+@media (max-width: 1000px) {
+    .activity-time-visual {
+        grid-template-columns: 1fr;
+    }
+
+    .activity-workspace__controls {
+        grid-template-columns: minmax(14rem, 1.4fr) repeat(2, minmax(9rem, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .activity-calendar__day {
+        min-height: 3.5rem;
+        padding: .4rem;
+    }
+
+    .activity-workspace__controls {
+        grid-template-columns: 1fr;
+    }
+}
