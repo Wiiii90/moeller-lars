@@ -9,50 +9,83 @@
         <section class="admin-dashboard__overview" aria-label="Storage, Activity and Analytics overview">
             <article class="admin-dashboard__overview-column">
                 <header class="admin-dashboard__overview-head">
-                    <div><span>Storage</span><strong>{{ $storage['label'] }}</strong></div>
-                    <a href="{{ $storage['url'] }}">Open</a>
+                    <span>Storage</span>
+                    <a class="admin-action" href="{{ $storage['url'] }}">Open</a>
                 </header>
 
                 <div class="admin-dashboard__storage-visual">
                     <div
                         class="admin-dashboard__storage-ring {{ $storage['percent'] === null ? 'is-empty' : '' }}"
-                        style="--dashboard-storage-used: {{ $storage['percent'] ?? 0 }}%"
+                        @if ($storage['percent'] !== null) style="--dashboard-storage-used: {{ $storage['percent'] }}%" @endif
                         aria-label="{{ $storage['percent'] === null ? $storage['label'] : $storage['percent'].' percent of configured storage allowance used' }}"
                     >
                         <strong>{{ $storage['percent'] === null ? '—' : $storage['percent'].'%' }}</strong>
                     </div>
-                    <p>
-                        @if ($storage['remaining'] !== null)
-                            {{ $storage['remaining'] }} remaining.
-                        @else
-                            {{ $storage['detail'] }}
-                        @endif
-                    </p>
                 </div>
+                <p class="admin-dashboard__facts">
+                    <span>Used <strong>{{ $storage['used'] }}</strong></span>
+                    <span aria-hidden="true">·</span>
+                    <span>Remaining <strong>{{ $storage['remaining'] }}</strong></span>
+                    <span aria-hidden="true">·</span>
+                    <span>Allowance <strong>{{ $storage['allowance'] }}</strong></span>
+                </p>
             </article>
 
             <article class="admin-dashboard__overview-column">
                 <header class="admin-dashboard__overview-head">
-                    <div><span>Activity</span><strong>Editorial pulse</strong></div>
-                    <a href="{{ $activity['url'] }}">Open</a>
+                    <span>Activity</span>
+                    <a class="admin-action" href="{{ $activity['url'] }}">Open</a>
                 </header>
 
-                <div class="admin-dashboard__pulse" role="img" aria-label="Editorial changes per day for the last 14 days">
-                    @foreach ($activity['points'] as $point)
-                        <span
-                            @class(['is-zero' => $point['count'] === 0])
-                            style="--dashboard-pulse-height: {{ number_format($point['height'], 1, '.', '') }}%"
-                            title="{{ $point['label'] }} · {{ $point['count'] }} {{ $point['count'] === 1 ? 'change' : 'changes' }}"
-                        ></span>
-                    @endforeach
+                <div class="admin-dashboard__activity-visual" aria-label="Activity time preview">
+                    <div class="activity-clock admin-dashboard__activity-clock" aria-label="24-hour activity clock for the last 30 days">
+                        <div class="activity-clock__face">
+                            <span class="activity-clock__label activity-clock__label--00">00</span>
+                            <span class="activity-clock__label activity-clock__label--06">06</span>
+                            <span class="activity-clock__label activity-clock__label--12">12</span>
+                            <span class="activity-clock__label activity-clock__label--18">18</span>
+                            <span class="activity-clock__axis activity-clock__axis--vertical" aria-hidden="true"></span>
+                            <span class="activity-clock__axis activity-clock__axis--horizontal" aria-hidden="true"></span>
+                            @foreach ($activity['clock_points'] as $point)
+                                <span
+                                    class="activity-clock__marker"
+                                    style="--activity-x: {{ number_format($point['x'], 4, '.', '') }}%; --activity-y: {{ number_format($point['y'], 4, '.', '') }}%"
+                                    role="img"
+                                    aria-label="Change at {{ $point['label'] }}"
+                                    title="{{ $point['label'] }}"
+                                ></span>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="activity-calendar admin-dashboard__activity-calendar" aria-label="Activity calendar for {{ $activity['calendar_label'] }}">
+                        <strong class="activity-calendar__month">{{ $activity['calendar_label'] }}</strong>
+                        <div class="activity-calendar__weekdays" aria-hidden="true">
+                            @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $weekday)
+                                <span>{{ $weekday }}</span>
+                            @endforeach
+                        </div>
+                        <div class="activity-calendar__grid">
+                            @foreach ($activity['calendar_days'] as $day)
+                                @if ($day === null)
+                                    <span class="activity-calendar__day is-empty" aria-hidden="true"></span>
+                                @else
+                                    <span class="activity-calendar__day" aria-label="{{ $day['date'] }}: {{ $day['count'] }} changes">
+                                        <span>{{ $day['day'] }}</span>
+                                        <strong>{{ $day['count'] }}</strong>
+                                    </span>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
-                <p class="admin-dashboard__overview-note">{{ number_format($activity['chart_changes']) }} changes in the last 14 days</p>
+                <p class="admin-dashboard__facts">{{ number_format($activity['recent_changes']) }} changes · last 30 days</p>
             </article>
 
             <article class="admin-dashboard__overview-column">
                 <header class="admin-dashboard__overview-head">
-                    <div><span>Analytics</span><strong>{{ $analytics['status_label'] }} · {{ $analytics['range'] }}</strong></div>
-                    <a href="{{ $analytics['url'] }}">Open</a>
+                    <span>Analytics</span>
+                    <a class="admin-action" href="{{ $analytics['url'] }}">Open</a>
                 </header>
 
                 @if (in_array($analytics['status'], ['available', 'stale'], true))
@@ -87,6 +120,13 @@
                 @else
                     <p class="admin-dashboard__overview-unavailable">{{ $analytics['message'] }}</p>
                 @endif
+                <p class="admin-dashboard__facts">
+                    <span>Visits <strong>{{ $analytics['visits_display'] }}</strong></span>
+                    <span aria-hidden="true">·</span>
+                    <span>Unique visitors <strong>{{ $analytics['visitors_display'] }}</strong></span>
+                    <span aria-hidden="true">·</span>
+                    <span>last 30 days</span>
+                </p>
             </article>
         </section>
 
