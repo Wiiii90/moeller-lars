@@ -66,7 +66,7 @@ it('uses General as the canonical singleton route with no global save action', f
     $this->get($legacyUrl)->assertRedirect(General::getUrl());
 });
 
-it('renders six shared status metrics and the four accepted General sections', function (): void {
+it('renders six direct status metrics and the four accepted General sections', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'background_mode' => 'solid',
         'background_color' => '#334455',
@@ -83,26 +83,39 @@ it('renders six shared status metrics and the four accepted General sections', f
     $this->get(General::getUrl())
         ->assertOk()
         ->assertSee('Appearance')
+        ->assertSee('Favicon')
+        ->assertSee('Background')
         ->assertSee('Solid')
         ->assertSee('Public email')
         ->assertSee('Contact delivery')
         ->assertSee('Social profiles')
-        ->assertSee('Media copyright')
-        ->assertSee('Legal text')
+        ->assertSee('Legal')
         ->assertSee('Contact')
         ->assertSee('Social links')
-        ->assertSee('Legal &amp; media', false)
+        ->assertDontSee('Legal &amp; media', false)
+        ->assertDontSee('Media copyright')
+        ->assertDontSee('Legal text')
         ->assertDontSee('Site identity')
-        ->assertDontSee('Public contact')
         ->assertDontSee('Save changes');
 
     $metricSource = file_get_contents(resource_path('views/filament/schemas/components/general-status-metrics.blade.php'));
-    expect(substr_count((string) $metricSource, '<x-admin.metric '))->toBe(6);
+    expect(substr_count((string) $metricSource, '<x-admin.metric '))->toBe(6)
+        ->and($metricSource)->toContain('label="Favicon"')
+        ->and($metricSource)->toContain('label="Background"')
+        ->and($metricSource)->toContain('label="Public email"')
+        ->and($metricSource)->toContain('label="Contact delivery"')
+        ->and($metricSource)->toContain('label="Social profiles"')
+        ->and($metricSource)->toContain('label="Legal"');
 });
 
-it('uses the shared form and boolean grammar without restoring rejected General presentation', function (): void {
+it('uses shared section form color help and data-table grammar', function (): void {
     $pageSource = file_get_contents(app_path('Filament/Pages/General.php'));
+    $adminFormSource = file_get_contents(app_path('Filament/Support/AdminForm.php'));
+    $colorSource = file_get_contents(app_path('Filament/Support/AdminColorControl.php'));
+    $helpSource = file_get_contents(app_path('Filament/Support/AdminHelp.php'));
+    $helpViewSource = file_get_contents(resource_path('views/components/admin/help.blade.php'));
     $viewSource = file_get_contents(resource_path('views/filament/pages/general.blade.php'));
+    $faviconSource = file_get_contents(resource_path('views/filament/schemas/components/favicon-preview.blade.php'));
     $socialSource = file_get_contents(resource_path('views/filament/schemas/components/general-social-links.blade.php'));
     $booleanSource = file_get_contents(app_path('Filament/Support/AdminBooleanControl.php'));
     $formsCss = file_get_contents(resource_path('css/admin/forms.css'));
@@ -110,28 +123,71 @@ it('uses the shared form and boolean grammar without restoring rejected General 
     expect($pageSource)->toContain("AdminForm::section('Appearance', 'admin-form-controls')")
         ->and($pageSource)->toContain("AdminForm::section('Contact', 'admin-form-controls')")
         ->and($pageSource)->toContain("AdminForm::section('Social links', 'admin-form-controls')")
-        ->and($pageSource)->toContain("AdminForm::section('Legal & media', 'admin-form-controls')")
+        ->and($pageSource)->toContain("AdminForm::section('Legal', 'admin-form-controls')")
         ->and(substr_count((string) $pageSource, "'admin-form-controls'"))->toBe(4)
         ->and($pageSource)->toContain('MediaAssetSelect::make')
+        ->and($pageSource)->toContain('AdminColorControl::make')
+        ->and($pageSource)->toContain('AdminHelp::make')
+        ->and($pageSource)->toContain("Radio::make('background_mode')")
+        ->and($pageSource)->not->toContain('->visible(')
         ->and($pageSource)->not->toContain('Repeater::')
         ->and($pageSource)->not->toContain('Toggle::')
         ->and($pageSource)->not->toContain('settingsSection(')
+        ->and($pageSource)->not->toContain('Empty uses the server fallback.')
+        ->and($adminFormSource)->toContain('Filament\\Schemas\\Components\\Section')
+        ->and($adminFormSource)->not->toContain('Fieldset')
+        ->and($colorSource)->toContain('ColorPicker::make')
+        ->and($helpSource)->toContain("view('components.admin.help'")
+        ->and($helpViewSource)->toContain('x-on:mouseenter')
+        ->and($helpViewSource)->toContain('x-on:focusin')
+        ->and($helpViewSource)->toContain('x-on:click.stop')
         ->and($viewSource)->not->toContain('general-workspace__sheet')
-        ->and($socialSource)->toContain('<x-admin.table')
+        ->and($faviconSource)->toContain('Site icon')
+        ->and($faviconSource)->toContain('wire:click="removeFavicon"')
+        ->and($socialSource)->toContain('<x-admin.table class="admin-table--data"')
         ->and($socialSource)->toContain('AdminBooleanControl::options')
         ->and($socialSource)->toContain('class="admin-form-control admin-boolean-control"')
+        ->and($socialSource)->toContain('>Up</button>')
+        ->and($socialSource)->toContain('>Down</button>')
         ->and($socialSource)->toContain('class="admin-action is-danger"')
         ->and($socialSource)->toContain('>Delete</button>')
         ->and($socialSource)->toContain('<x-admin.add-row')
-        ->and($socialSource)->not->toContain('trash')
         ->and($booleanSource)->toContain('->native()')
         ->and($booleanSource)->not->toContain('native(false)')
-        ->and($booleanSource)->toContain("'class' => 'admin-form-control admin-boolean-control'")
-        ->and($formsCss)->toContain('.admin-form-controls .fi-input-wrp')
-        ->and($formsCss)->toContain('.admin-form-controls .fi-input')
-        ->and($formsCss)->toContain('.admin-form-controls .fi-select-input')
-        ->and($formsCss)->toContain('.admin-form-controls textarea.fi-input')
+        ->and($formsCss)->toContain('.admin-form-section + .admin-form-section')
+        ->and($formsCss)->toContain('border-bottom: 1px solid var(--admin-line)')
+        ->and($formsCss)->toContain('.admin-help__trigger')
         ->and($formsCss)->not->toContain('.general-');
+});
+
+it('keeps background mode geometry stable and maps shared color slots to existing fields', function (): void {
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'background_mode' => 'solid',
+        'background_color' => '#123456',
+        'background_gradient_start' => '#112233',
+        'background_gradient_end' => '#445566',
+    ]);
+
+    $component = Livewire::test(General::class)
+        ->assertSet('data.background_primary_color', '#123456')
+        ->assertSet('data.background_secondary_color', '#445566')
+        ->set('data.background_mode', 'gradient')
+        ->call('syncAppearanceControlState')
+        ->assertSet('data.background_primary_color', '#112233')
+        ->call('persistAppearanceColor', 'primary', '#AABBCC')
+        ->call('persistAppearanceColor', 'secondary', '#DDEEFF');
+
+    $fresh = PublicContentSetting::general();
+    expect($fresh->getAttribute('background_gradient_start'))->toBe('#AABBCC')
+        ->and($fresh->getAttribute('background_gradient_end'))->toBe('#DDEEFF')
+        ->and($fresh->getAttribute('background_color'))->toBe('#123456');
+
+    $component
+        ->set('data.background_mode', 'solid')
+        ->call('syncAppearanceControlState')
+        ->call('persistAppearanceColor', 'primary', '#ABCDEF');
+
+    expect(PublicContentSetting::general()->getAttribute('background_color'))->toBe('#ABCDEF');
 });
 
 it('persists changed text once and skips normalized no-op commits', function (): void {
