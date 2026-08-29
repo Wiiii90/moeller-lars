@@ -4,7 +4,7 @@
     border-bottom-color: var(--admin-line-strong);
 }
 
-.media-workspace__library {
+.admin-section.media-workspace__library {
     --media-task-surface-header-height: 2.25rem;
     border-bottom: 0;
 }
@@ -163,43 +163,8 @@
 /* Selection treatment is specific to the Media Files table. */
 .media-workspace__table tbody tr.is-selected {
     background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
-}
-
-.media-workspace__table tbody tr.is-selected > td {
-    box-shadow:
-        inset 0 2px 0 var(--admin-accent),
-        inset 0 -2px 0 var(--admin-accent);
-}
-
-.media-workspace__table tbody tr.is-selected > td:first-child {
-    box-shadow:
-        inset 2px 0 0 var(--admin-accent),
-        inset 0 2px 0 var(--admin-accent),
-        inset 0 -2px 0 var(--admin-accent);
-}
-
-.media-workspace__table tbody tr.is-selected > td:last-child {
-    box-shadow:
-        inset -2px 0 0 var(--admin-accent),
-        inset 0 2px 0 var(--admin-accent),
-        inset 0 -2px 0 var(--admin-accent);
-}
-
-.media-workspace__table tbody tr.is-selected + tr.is-selected > td {
-    box-shadow: inset 0 -2px 0 var(--admin-accent);
-}
-
-.media-workspace__table tbody tr.is-selected + tr.is-selected > td:first-child {
-    box-shadow:
-        inset 2px 0 0 var(--admin-accent),
-        inset 0 -2px 0 var(--admin-accent);
-}
-
-.media-workspace__table tbody tr.is-selected + tr.is-selected > td:last-child {
-    box-shadow:
-        inset -2px 0 0 var(--admin-accent),
-        inset 0 2px 0 var(--admin-accent),
-        inset 0 -2px 0 var(--admin-accent);
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
 }
 
 .media-workspace__thumb-head,
