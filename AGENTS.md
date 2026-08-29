@@ -94,6 +94,39 @@ Do not rebuild after every comment or every worker. Prefer one coherent browser 
 
 Do not put a broad test/cleanup phase between a source-coherent browser candidate and the user's browser review unless a concrete build, migration, security or data-integrity risk requires it. The browser loop is supposed to be fast.
 
+## Browser-cycle repository hygiene
+
+Repository hygiene happens **after** a coherent browser cycle is accepted or a candidate/workstream is definitively superseded, and **before** the next tranche starts. It is distinct from the prohibited discretionary cleanup between a source-ready candidate and its browser review.
+
+Do not clean branches while browser findings are still being collected.
+
+Once the cycle is settled:
+
+1. close PRs that are explicitly superseded by the accepted/current combined line;
+2. delete integrated or superseded worker, repair and reconciliation branches;
+3. then run `git fetch origin --prune`.
+
+Branches are temporary workspaces, not permanent project history. Durable history belongs in commits, PR discussions, Issues and docs.
+
+Retain:
+
+- `main`;
+- the active combined/integration candidate;
+- branches carrying unresolved work;
+- genuinely active docs/worker branches.
+
+Never delete a branch merely because Git reports `DIVERGED`. Cherry-picked or reconciled work may legitimately be `DIVERGED`; cleanup decisions use the actual integration/reconciliation provenance instead of branch topology alone.
+
+Do not delete a source branch that is still required by a running worker or an active reconciliation.
+
+Normal command forms:
+
+```sh
+gh pr close <number> --repo Wiiii90/moeller-lars --comment "..."
+gh api --method DELETE repos/Wiiii90/moeller-lars/git/refs/heads%2F<branch>
+git fetch origin --prune
+```
+
 ## Browser acceptance authority
 
 Static source review cannot approve presentation. Use precise acceptance language:

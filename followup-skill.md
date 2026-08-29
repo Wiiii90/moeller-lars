@@ -76,6 +76,19 @@ Exact current branch names and SHAs belong here rather than in durable docs.
 
 Also state that `P:\moeller-lars` is the **user-operated local checkout**. Remote workers/chats normally cannot see that path and must not treat the missing mount as a blocker. Local commands are executed by the user from copy-paste PowerShell supplied by the orchestrator.
 
+### Repository hygiene state
+
+Every continuation handoff must state:
+
+- previous browser-cycle cleanup: `DONE` / `PENDING`;
+- intentionally retained open PRs;
+- intentionally retained active branches;
+- obsolete PRs/branches still pending cleanup.
+
+A new chat must not repeat cleanup already recorded as completed.
+
+After browser acceptance or definitive supersession, repository hygiene normally happens before starting the next tranche. This is distinct from the prohibited discretionary cleanup between a source-ready candidate and its browser review.
+
 ### Current runtime/browser state
 
 When local browser review is in progress, include exact known operational facts:
