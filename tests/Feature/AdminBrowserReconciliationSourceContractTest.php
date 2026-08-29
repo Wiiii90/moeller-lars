@@ -81,7 +81,7 @@ it('keeps the central AdminRichText repair as the single shared editor source', 
     $customForms = (string) file_get_contents(app_path('Filament/Pages/Concerns/CustomPageWorkspaceForms.php'));
 
     expect($richText)->toContain("'x-on:admin-rich-text-image-insert'")
-        ->and($richText)->not->toContain("\\$el.addEventListener('admin-rich-text-image-insert'")
+        ->and($richText)->not->toContain('$el.addEventListener')
         ->and($journalSchema)->toContain('AdminRichText::schema')
         ->and($customForms)->toContain('AdminRichText::schema')
         ->and($customForms)->not->toContain('MarkdownEditor::make');
