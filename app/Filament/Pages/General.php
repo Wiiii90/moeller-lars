@@ -16,9 +16,12 @@ use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 use UnitEnum;
@@ -79,75 +82,85 @@ final class General extends Page
         return $schema
             ->components([
                 AdminForm::section('Appearance', 'admin-form-controls')
-                    ->columns(4)
+                    ->columns(2)
                     ->schema([
-                        MediaAssetSelect::make(
-                            'favicon_media_asset_id',
-                            'faviconMediaAsset',
-                            fn (callable $get): string => filled($get('favicon_media_asset_id'))
-                                ? 'Replace from Media Files'
-                                : 'Choose from Media Files',
-                            imagesOnly: true,
-                            includeDimensions: false,
-                        )
-                            ->nullable()
-                            ->live()
-                            ->afterStateUpdated(self::persist('favicon_media_asset_id'))
-                            ->columnSpan(2),
-                        View::make('filament.schemas.components.favicon-preview')
-                            ->columnSpan(2),
-                        Radio::make('background_mode')
-                            ->label('Background mode')
-                            ->options([
-                                PublicAppearance::MODE_DEFAULT => 'Default',
-                                PublicAppearance::MODE_SOLID => 'Solid',
-                                PublicAppearance::MODE_GRADIENT => 'Gradient',
-                            ])
-                            ->inline()
-                            ->required()
-                            ->live()
-                            ->afterStateUpdated(function ($livewire): void {
-                                if ($livewire instanceof self) {
-                                    $livewire->persistChangedField('background_mode');
-                                    $livewire->syncAppearanceControlState();
-                                }
-                            })
-                            ->columnSpanFull(),
-                        AdminColorControl::make('background_primary_color', 'Primary color')
-                            ->disabled(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_DEFAULT)
-                            ->lazy()
-                            ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(function ($livewire, mixed $state): void {
-                                if ($livewire instanceof self) {
-                                    $livewire->persistAppearanceColor('primary', $state);
-                                }
-                            }),
-                        AdminColorControl::make('background_secondary_color', 'Secondary color')
-                            ->disabled(fn (callable $get): bool => $get('background_mode') !== PublicAppearance::MODE_GRADIENT)
-                            ->lazy()
-                            ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(function ($livewire, mixed $state): void {
-                                if ($livewire instanceof self) {
-                                    $livewire->persistAppearanceColor('secondary', $state);
-                                }
-                            }),
-                        Hidden::make('background_color'),
-                        Hidden::make('background_gradient_start'),
-                        Hidden::make('background_gradient_end'),
-                        TextInput::make('background_gradient_angle')
-                            ->label('Angle')
-                            ->numeric()
-                            ->integer()
-                            ->minValue(0)
-                            ->maxValue(360)
-                            ->step(1)
-                            ->suffix('°')
-                            ->placeholder((string) PublicAppearance::DEFAULT_GRADIENT_ANGLE)
-                            ->nullable()
-                            ->lazy()
-                            ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(self::persist('background_gradient_angle'))
-                            ->disabled(fn (callable $get): bool => $get('background_mode') !== PublicAppearance::MODE_GRADIENT),
+                        Group::make([
+                            Text::make('Site icon')
+                                ->extraAttributes(['class' => 'admin-form-area-title']),
+                            MediaAssetSelect::make(
+                                'favicon_media_asset_id',
+                                'faviconMediaAsset',
+                                fn (callable $get): string => filled($get('favicon_media_asset_id'))
+                                    ? 'Replace from Media Files'
+                                    : 'Choose from Media Files',
+                                imagesOnly: true,
+                                includeDimensions: false,
+                            )
+                                ->placeholder('Choose from Media Files')
+                                ->selectablePlaceholder(false)
+                                ->extraFieldWrapperAttributes(['class' => 'admin-favicon-control'])
+                                ->nullable()
+                                ->live()
+                                ->afterStateUpdated(self::persist('favicon_media_asset_id')),
+                            View::make('filament.schemas.components.favicon-actions'),
+                        ])
+                            ->extraAttributes(['class' => 'admin-form-area']),
+                        Group::make([
+                            Text::make('Background')
+                                ->extraAttributes(['class' => 'admin-form-area-title']),
+                            Radio::make('background_mode')
+                                ->label('Mode')
+                                ->options([
+                                    PublicAppearance::MODE_DEFAULT => 'Default',
+                                    PublicAppearance::MODE_SOLID => 'Solid',
+                                    PublicAppearance::MODE_GRADIENT => 'Gradient',
+                                ])
+                                ->inline()
+                                ->required()
+                                ->live()
+                                ->afterStateUpdated(function ($livewire): void {
+                                    if ($livewire instanceof self) {
+                                        $livewire->persistChangedField('background_mode');
+                                        $livewire->syncAppearanceControlState();
+                                    }
+                                }),
+                            AdminColorControl::make('background_primary_color', 'Primary color')
+                                ->disabled(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_DEFAULT)
+                                ->lazy()
+                                ->extraInputAttributes(self::commitOnEnterAttributes())
+                                ->afterStateUpdated(function ($livewire, mixed $state): void {
+                                    if ($livewire instanceof self) {
+                                        $livewire->persistAppearanceColor('primary', $state);
+                                    }
+                                }),
+                            AdminColorControl::make('background_secondary_color', 'Secondary color')
+                                ->disabled(fn (callable $get): bool => $get('background_mode') !== PublicAppearance::MODE_GRADIENT)
+                                ->lazy()
+                                ->extraInputAttributes(self::commitOnEnterAttributes())
+                                ->afterStateUpdated(function ($livewire, mixed $state): void {
+                                    if ($livewire instanceof self) {
+                                        $livewire->persistAppearanceColor('secondary', $state);
+                                    }
+                                }),
+                            Hidden::make('background_color'),
+                            Hidden::make('background_gradient_start'),
+                            Hidden::make('background_gradient_end'),
+                            TextInput::make('background_gradient_angle')
+                                ->label('Angle')
+                                ->numeric()
+                                ->integer()
+                                ->minValue(0)
+                                ->maxValue(360)
+                                ->step(1)
+                                ->suffix('°')
+                                ->placeholder((string) PublicAppearance::DEFAULT_GRADIENT_ANGLE)
+                                ->nullable()
+                                ->lazy()
+                                ->extraInputAttributes(self::commitOnEnterAttributes())
+                                ->afterStateUpdated(self::persist('background_gradient_angle'))
+                                ->disabled(fn (callable $get): bool => $get('background_mode') !== PublicAppearance::MODE_GRADIENT),
+                        ])
+                            ->extraAttributes(['class' => 'admin-form-area']),
                     ]),
                 AdminForm::section('Contact', 'admin-form-controls')
                     ->columns(2)
@@ -164,16 +177,12 @@ final class General extends Page
                             ->live()
                             ->afterStateUpdated(self::persist('show_public_email')),
                         TextInput::make('contact_recipient_email')
-                            ->label('Contact form recipient')
+                            ->label(self::contactRecipientLabel())
                             ->email()
                             ->maxLength(254)
                             ->nullable()
                             ->lazy()
                             ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->hint(AdminHelp::make(
-                                'About contact form delivery',
-                                'Contact-form messages are delivered privately to this address. It can be different from the public email.',
-                            ))
                             ->afterStateUpdated(self::persist('contact_recipient_email'))
                             ->columnSpanFull(),
                     ]),
@@ -183,6 +192,7 @@ final class General extends Page
                             ->columnSpanFull(),
                     ]),
                 AdminForm::section('Legal', 'admin-form-controls')
+                    ->columns(2)
                     ->schema([
                         TextInput::make('default_media_copyright_notice')
                             ->label('Default copyright notice')
@@ -339,6 +349,18 @@ final class General extends Page
                 $livewire->persistChangedField($field);
             }
         };
+    }
+
+    private static function contactRecipientLabel(): HtmlString
+    {
+        return new HtmlString(
+            '<span class="admin-form-label-with-help">Contact form recipient'.
+            AdminHelp::make(
+                'About contact form delivery',
+                'Contact-form messages are delivered privately to this address. It can be different from the public email.',
+            )->toHtml().
+            '</span>',
+        );
     }
 
     private function clearPersistenceErrors(string $field): void
