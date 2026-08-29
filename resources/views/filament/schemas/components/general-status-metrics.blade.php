@@ -20,7 +20,7 @@
     $legalStatus = $copyrightSet && $disclaimerSet ? 'Complete' : (($copyrightSet || $disclaimerSet) ? 'Partial' : 'Empty');
 @endphp
 
-<x-admin.metrics :columns="6" aria-label="General status">
+<x-admin.metrics class="admin-metrics--open-bottom" :columns="6" aria-label="General status">
     <x-admin.metric label="Favicon" :value="$faviconStatus">Site icon</x-admin.metric>
     <x-admin.metric label="Background" :value="$backgroundMode">Public site</x-admin.metric>
     <x-admin.metric label="Public email" :value="$publicEmailStatus">Public contact</x-admin.metric>
