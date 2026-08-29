@@ -16,12 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->prepend(UseCommittedPublicState::class);
         $middleware->append(RecordOperationalMetrics::class);
 
         $middleware->web(
-            prepend: [
-                UseCommittedPublicState::class,
-            ],
             append: [
                 SecurityHeaders::class,
             ],

@@ -27,7 +27,7 @@ final class UseCommittedPublicState
 
     private function isPublicReadRequest(Request $request): bool
     {
-        if ($request->is('admin', 'admin/*', 'preview', 'preview/*', 'livewire', 'livewire/*')) {
+        if ($request->is('admin', 'admin/*', 'preview', 'preview/*', 'livewire', 'livewire/*', 'up')) {
             return false;
         }
 

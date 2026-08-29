@@ -97,25 +97,22 @@ class AdminPanelProvider extends PanelProvider
             ->icon(Heroicon::OutlinedEye)
             ->url(route('preview.home'))
             ->openUrlInNewTab();
+        $hasPendingChanges = app(PublicationService::class)->hasPendingChanges();
         $commitItem = NavigationItem::make('Commit')
             ->group(null)
             ->icon(Heroicon::OutlinedCheckCircle)
             ->url('#')
-            ->extraAttributes(function (): array {
-                if (! app(PublicationService::class)->hasPendingChanges()) {
-                    return [
-                        'aria-disabled' => 'true',
-                        'data-publication-commit' => 'disabled',
-                        'style' => 'opacity: .5;',
-                        'x-on:click.prevent' => 'void 0',
-                    ];
-                }
-
-                return [
-                    'data-publication-commit' => 'enabled',
-                    'x-on:click.prevent' => "\$dispatch('publication-commit-open')",
-                ];
-            });
+            ->extraAttributes([
+                'aria-disabled' => $hasPendingChanges ? 'false' : 'true',
+                'data-publication-commit' => $hasPendingChanges ? 'enabled' : 'disabled',
+                'style' => $hasPendingChanges ? '' : 'opacity: .5;',
+                'x-data' => '{ publicationPending: '.($hasPendingChanges ? 'true' : 'false').' }',
+                'x-on:publication-state-changed.window' => 'publicationPending = Boolean($event.detail.pending)',
+                'x-bind:aria-disabled' => '(! publicationPending).toString()',
+                'x-bind:data-publication-commit' => "publicationPending ? 'enabled' : 'disabled'",
+                'x-bind:style' => "publicationPending ? '' : 'opacity: .5;'",
+                'x-on:click.prevent' => "if (publicationPending) { \$dispatch('publication-commit') }",
+            ]);
 
         return $builder
             ->items([
