@@ -39,7 +39,7 @@ final class DashboardOverview
 
         $metrics = [
             ['label' => 'Visits', 'value' => $analytics['visits_display'], 'detail' => 'Last 30 days'],
-            ['label' => 'Visitors', 'value' => $analytics['visitors_display'], 'detail' => 'Last 30 days'],
+            ['label' => 'Unique visitors', 'value' => $analytics['visitors_display'], 'detail' => 'Last 30 days'],
             ['label' => 'Published artworks', 'value' => number_format($publishedArtworks), 'detail' => 'Public now'],
             ['label' => 'Published pages', 'value' => number_format($publishedPages), 'detail' => 'Navigation groups excluded'],
             ['label' => 'Storage used', 'value' => $storage['percent'] === null ? '—' : $storage['percent'].'%', 'detail' => $storage['metric_detail']],

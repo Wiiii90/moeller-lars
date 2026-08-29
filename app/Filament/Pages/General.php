@@ -44,11 +44,17 @@ final class General extends Page
     ];
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGlobeAlt;
+
     protected static string|UnitEnum|null $navigationGroup = null;
+
     protected static ?string $navigationLabel = 'General';
+
     protected static ?string $title = 'General';
+
     protected static ?string $slug = 'general';
+
     protected static ?int $navigationSort = 1;
+
     protected string $view = 'filament.pages.general';
 
     /** @var array<string, mixed>|null */

@@ -305,7 +305,7 @@ it('locks the dashboard source to shared workspace metrics controls table pager 
 
     expect($view)->toContain('<x-admin.workspace title="Dashboard"')
         ->and($view)->toContain('<x-admin.metrics :columns="6"')
-        ->and($view)->toContain('admin-data-controls')
+        ->and($view)->toContain('<x-admin.controls')
         ->and($view)->toContain('<span>Type</span>')
         ->and($view)->toContain('<x-admin.table class="admin-data-table">')
         ->and($view)->toContain('<th scope="col">Type</th>')
@@ -320,7 +320,7 @@ it('locks the dashboard source to shared workspace metrics controls table pager 
         ->and($page)->not->toContain('ArtistDashboard')
         ->and($overview)->toContain(
             "['label' => 'Visits'",
-            "['label' => 'Visitors'",
+            "['label' => 'Unique visitors'",
             "['label' => 'Published artworks'",
             "['label' => 'Published pages'",
             "['label' => 'Storage used'",
