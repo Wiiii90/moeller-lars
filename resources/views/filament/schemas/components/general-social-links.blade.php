@@ -10,16 +10,10 @@
         ->values()
         ->all();
     $visibleIndexes = collect($rows)->pluck('index')->map(static fn (mixed $index): int => (int) $index)->all();
-    $total = $generalPage->socialFilteredCount();
-    $page = $generalPage->socialPage;
-    $pageSize = $generalPage->socialPageSize;
-    $pages = $generalPage->socialPages();
-    $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
-    $resultEnd = $total === 0 ? 0 : min($total, $page * $pageSize);
     $dragEnabled = $generalPage->canDragSortSocialLinks();
 @endphp
 
-<x-admin.controls aria-label="Social links controls">
+<x-admin.controls class="general-social-controls" aria-label="Social links controls">
     <x-slot:search>
         <label class="admin-field admin-control-bar__search">
             <span class="admin-field__label">Search</span>
@@ -130,7 +124,7 @@
                         <button
                             class="admin-action admin-order-action"
                             type="button"
-                            @if ($dragEnabled) wire:sort:handle title="Drag to reorder" @else disabled title="Drag reorder is available only with no search/filter and all social links on one page" @endif
+                            @if ($dragEnabled) wire:sort:handle title="Drag to reorder" @else disabled title="Drag reorder is available only with no search and Visibility set to Any" @endif
                             aria-label="Drag social link {{ $index + 1 }} to reorder"
                         >⠿</button>
                     </td>
@@ -175,8 +169,8 @@
                     </td>
                     <td class="admin-table__actions">
                         <x-admin.toolbar>
-                            <button class="admin-action" type="button" wire:click="moveSocialLink({{ $index }}, 'up')" @disabled($index === 0)>Up</button>
-                            <button class="admin-action" type="button" wire:click="moveSocialLink({{ $index }}, 'down')" @disabled($index === count($links) - 1)>Down</button>
+                            <button class="admin-action admin-order-action" type="button" wire:click="moveSocialLink({{ $index }}, 'up')" @disabled($index === 0) aria-label="Move social link {{ $index + 1 }} up">↑</button>
+                            <button class="admin-action admin-order-action" type="button" wire:click="moveSocialLink({{ $index }}, 'down')" @disabled($index === count($links) - 1) aria-label="Move social link {{ $index + 1 }} down">↓</button>
                             <button class="admin-action is-danger" type="button" wire:click="deleteSocialLink({{ $index }})">Delete</button>
                         </x-admin.toolbar>
                     </td>
@@ -190,14 +184,6 @@
     </table>
 </x-admin.table>
 
-<footer class="admin-pager">
-    <label class="admin-pager__size">
-        <span>Per page</span>
-        <select wire:model.live.number="socialPageSize"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
-    </label>
-    <span class="admin-pager__range">@if ($total === 0)0 of 0 @else{{ $resultStart }}–{{ $resultEnd }} of {{ $total }}@endif</span>
-    <x-admin.toolbar class="admin-pager__actions">
-        <button class="admin-action" type="button" wire:click="previousSocialPage" @disabled($page <= 1)>Previous</button>
-        <button class="admin-action" type="button" wire:click="nextSocialPage" @disabled($page >= $pages)>Next</button>
-    </x-admin.toolbar>
-</footer>
+<div class="general-social-bottom-add">
+    <button class="admin-action" type="button" wire:click="addSocialLink">+ Add social link</button>
+</div>

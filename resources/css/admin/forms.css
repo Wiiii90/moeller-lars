@@ -30,10 +30,6 @@
     letter-spacing: .01em;
 }
 
-.admin-metrics.admin-metrics--open-bottom {
-    border-bottom: 0;
-}
-
 .admin-form-area {
     display: grid;
     min-width: 0;
@@ -182,9 +178,43 @@
     margin-top: .2rem;
 }
 
+.general-form-controls {
+    margin-top: var(--admin-section-gap);
+}
+
+.general-social-controls {
+    grid-template-columns: minmax(12rem, 1fr) auto auto auto auto;
+}
+
+.general-social-bottom-add {
+    padding: .35rem 0 .2rem;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.general-form-controls .admin-form-label-with-help .admin-help {
+    height: 1em;
+    align-self: center;
+}
+
+.general-status-metrics .admin-metric__label,
+.general-status-metrics .admin-metric__value,
+.general-status-metrics .admin-metric__detail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.general-separator {
+    width: 100%;
+    border: 0;
+    border-top: 1px solid var(--admin-line);
+}
+
 .admin-favicon-control .fi-select-input-btn {
     min-height: 4.5rem;
+    padding-inline-end: .75rem !important;
     align-items: center;
+    background-image: none !important;
 }
 
 .admin-favicon-control .fi-select-input-value-label {
@@ -213,8 +243,44 @@
     white-space: nowrap;
 }
 
+.admin-favicon-control .fi-input-wrp-suffix {
+    border: 0 !important;
+}
+
+.admin-favicon-control .general-site-icon-remove {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+    min-height: 1.75rem !important;
+    padding: 0 !important;
+    border: 1px solid transparent !important;
+    border-radius: 9999px !important;
+    background: transparent !important;
+    color: var(--admin-muted) !important;
+    box-shadow: none !important;
+}
+
+.admin-favicon-control .general-site-icon-remove:hover,
+.admin-favicon-control .general-site-icon-remove:focus-visible {
+    border-color: var(--admin-line) !important;
+    background: var(--admin-subtle) !important;
+    color: var(--admin-text) !important;
+}
+
+.admin-favicon-control .general-site-icon-remove:focus-visible {
+    outline: 1px solid var(--admin-text) !important;
+    outline-offset: 1px;
+}
+
 .admin-favicon-control__actions {
     justify-content: flex-start;
+}
+
+.general-color-control .fi-fo-color-picker-panel {
+    z-index: 50 !important;
+    border: 1px solid var(--admin-line-strong) !important;
+    border-radius: 0 !important;
+    background: var(--admin-surface) !important;
+    box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12) !important;
 }
 
 .admin-form-control,
@@ -468,6 +534,10 @@
 }
 
 @media (max-width: 760px) {
+    .general-social-controls {
+        grid-template-columns: 1fr;
+    }
+
     .admin-component-image-preview,
     .admin-favicon-preview {
         grid-template-columns: 1fr;
