@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Contact\ContactDeliveryReadiness;
 use App\Domain\Content\SiteNodeType;
+use App\Domain\Publication\CommittedRead;
 use App\Mail\WebsiteContactMessage;
 use App\Models\ContactMessage;
 use App\Models\CustomPageSetting;
@@ -18,11 +19,31 @@ class PublicContactController extends Controller
 {
     private const RECEIVED_MESSAGE = 'Your message was received.';
 
-    public function __construct(private readonly ContactDeliveryReadiness $deliveryReadiness) {}
+    public function __construct(
+        private readonly ContactDeliveryReadiness $deliveryReadiness,
+        private readonly CommittedRead $committedRead,
+    ) {}
 
     public function submit(Request $request): RedirectResponse
     {
-        abort_unless($this->publishedContactFormExists(), 404);
+        $deliveryContext = $this->committedRead->run(function (): array {
+            if (! $this->publishedContactFormExists()) {
+                return ['form_exists' => false];
+            }
+
+            $generalSettings = PublicContentSetting::general();
+            $delivery = $this->deliveryReadiness->snapshot($generalSettings);
+
+            return [
+                'form_exists' => true,
+                'recipient' => $this->deliveryReadiness->resolveRecipient($generalSettings),
+                'sender_address' => $this->deliveryReadiness->senderAddress(),
+                'sender_name' => $this->deliveryReadiness->senderName(),
+                'mailer_ready' => $delivery['mailer_ready'],
+            ];
+        });
+
+        abort_unless($deliveryContext['form_exists'], 404);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],
@@ -38,12 +59,12 @@ class PublicContactController extends Controller
             'mail_delivery_status' => ContactMessage::DELIVERY_PENDING,
         ]);
 
-        $generalSettings = PublicContentSetting::general();
-        $recipient = $this->deliveryReadiness->resolveRecipient($generalSettings);
-        $senderAddress = $this->deliveryReadiness->senderAddress();
-        $delivery = $this->deliveryReadiness->snapshot($generalSettings);
+        $recipient = $deliveryContext['recipient'] ?? null;
+        $senderAddress = $deliveryContext['sender_address'] ?? null;
+        $senderName = $deliveryContext['sender_name'] ?? null;
+        $mailerReady = (bool) ($deliveryContext['mailer_ready'] ?? false);
 
-        if ($recipient === null || $senderAddress === null || ! $delivery['mailer_ready']) {
+        if (! is_string($recipient) || ! is_string($senderAddress) || ! $mailerReady) {
             $contactMessage->markMailUnavailable();
 
             return back()->with('contact_success', self::RECEIVED_MESSAGE);
@@ -55,7 +76,7 @@ class PublicContactController extends Controller
                 visitorEmail: $data['email'],
                 messageBody: $data['message'],
                 senderAddress: $senderAddress,
-                senderName: $this->deliveryReadiness->senderName(),
+                senderName: is_string($senderName) ? $senderName : (string) config('app.name', 'Website'),
             ));
             $contactMessage->markMailDelivered();
         } catch (Throwable $exception) {

@@ -2,7 +2,6 @@
 
 namespace App\Domain\Admin;
 
-use App\Domain\Publication\PublicationSnapshot;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
@@ -18,6 +17,7 @@ use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\PublicationCheckpointEvent;
+use App\Models\PublicationEventState;
 use App\Models\SiteSection;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -48,7 +48,7 @@ final class AdminActivityFeed
         $days = in_array($days, self::FILTER_WINDOWS, true) ? $days : self::ACTIVITY_WINDOW_DAYS;
 
         $query = AuditEvent::query()
-            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint'])
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState'])
             ->where('occurred_at', '>=', now()->subDays($days))
             ->orderByDesc('occurred_at')
             ->orderByDesc('id');
@@ -91,7 +91,7 @@ final class AdminActivityFeed
     {
         /** @var EloquentCollection<int, AuditEvent> $events */
         $events = AuditEvent::query()
-            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint'])
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState'])
             ->where('occurred_at', '>=', now()->subDays(self::ACTIVITY_WINDOW_DAYS))
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
@@ -165,7 +165,7 @@ final class AdminActivityFeed
             $checkpoint = $checkpointEvent instanceof PublicationCheckpointEvent
                 ? $checkpointEvent->getRelationValue('checkpoint')
                 : null;
-            $publicationTracked = PublicationSnapshot::tracksAuditEntityType($entityType);
+            $publicationEventState = $event->getRelationValue('publicationEventState');
 
             if (is_array($receipt)) {
                 $inverseLabel = (string) $receipt['inverse_label'];
@@ -189,7 +189,9 @@ final class AdminActivityFeed
                 'timestamp' => $occurredAt->format('Y-m-d H:i'),
                 'publication_status' => $checkpoint !== null
                     ? 'committed'
-                    : ($publicationTracked ? 'pending' : null),
+                    : ($publicationEventState instanceof PublicationEventState
+                        ? (string) $publicationEventState->getAttribute('status')
+                        : null),
                 'checkpoint_id' => $checkpoint?->getKey(),
                 'checkpoint_message' => $checkpoint?->getAttribute('message'),
                 'checkpoint_at' => $checkpoint?->getAttribute('published_at')?->format('Y-m-d H:i'),

@@ -9,7 +9,11 @@ use Illuminate\Validation\ValidationException;
 
 final class PublicationService
 {
-    public function __construct(private readonly PublicationMediaCleanupService $mediaCleanup) {}
+    public function __construct(
+        private readonly PublicationMediaCleanupService $mediaCleanup,
+        private readonly PublicationEventStateService $eventStates,
+        private readonly PublicationSchemaGuard $schemaGuard,
+    ) {}
 
     public function hasPendingChanges(): bool
     {
@@ -77,6 +81,7 @@ final class PublicationService
 
         $checkpoint = DB::transaction(function () use ($actor, $message): ?PublicationCheckpoint {
             DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
+            $this->schemaGuard->assertParity();
             DB::statement(
                 'LOCK TABLE '.implode(', ', array_map(
                     static fn (string $table): string => 'public.'.$table,
@@ -89,14 +94,7 @@ final class PublicationService
                 return null;
             }
 
-            $pendingAuditEventIds = DB::table('audit_events')
-                ->leftJoin('publication_checkpoint_events', 'publication_checkpoint_events.audit_event_id', '=', 'audit_events.id')
-                ->whereNull('publication_checkpoint_events.audit_event_id')
-                ->whereIn('audit_events.entity_type', PublicationSnapshot::AUDIT_ENTITY_TYPES)
-                ->orderBy('audit_events.id')
-                ->pluck('audit_events.id')
-                ->map(static fn (mixed $id): int => (int) $id)
-                ->all();
+            $pendingAuditEventIds = $this->eventStates->pendingEventIdsForCommit();
 
             DB::statement(
                 'TRUNCATE TABLE '.implode(', ', array_map(
