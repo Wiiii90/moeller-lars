@@ -1,8 +1,10 @@
 <?php
 
 use App\Domain\Admin\AdminActivityFeed;
+use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationSnapshot;
 use App\Http\Middleware\ProtectArtistPreview;
@@ -100,6 +102,41 @@ it('keeps working state private until one idempotent Commit checkpoint promotes 
         ->and($committedActivity['checkpoint_id'])->toBe((int) $checkpoint->getKey());
 });
 
+
+it('associates only publication-scoped audit events with Commit checkpoints', function (): void {
+    $nonPublicationEvent = app(AdminAuditService::class)->record(
+        $this->actor,
+        'blog_setting.updated',
+        'blog_setting',
+        1,
+    );
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'legal_disclaimer' => 'Publication scoped '.fake()->uuid(),
+    ]);
+    $publicationEvent = AuditEvent::query()
+        ->where('action', 'public_content_setting.updated')
+        ->latest('id')
+        ->firstOrFail();
+
+    $checkpoint = app(PublicationService::class)->commit($this->actor, 'Scoped audit mapping');
+
+    expect($checkpoint)->toBeInstanceOf(PublicationCheckpoint::class)
+        ->and(PublicationCheckpointEvent::query()->where('audit_event_id', $publicationEvent->getKey())->exists())->toBeTrue()
+        ->and(PublicationCheckpointEvent::query()->where('audit_event_id', $nonPublicationEvent->getKey())->exists())->toBeFalse();
+
+    $activity = collect(app(AdminActivityFeed::class)->recent(20));
+    $nonPublicationActivity = $activity->firstWhere('id', (int) $nonPublicationEvent->getKey());
+    $publicationActivity = $activity->firstWhere('id', (int) $publicationEvent->getKey());
+
+    expect($nonPublicationActivity)->not->toBeNull()
+        ->and($nonPublicationActivity['publication_status'])->toBeNull()
+        ->and($nonPublicationActivity['checkpoint_id'])->toBeNull()
+        ->and($publicationActivity)->not->toBeNull()
+        ->and($publicationActivity['publication_status'])->toBe('committed')
+        ->and($publicationActivity['checkpoint_id'])->toBe((int) $checkpoint->getKey());
+});
+
 it('keeps Preview authentication and private indexing protections unchanged', function (): void {
     Auth::guard('web')->logout();
 
@@ -152,6 +189,42 @@ it('defers deletion of files that still belong to the committed snapshot until C
 
     Storage::disk(config('media.disk'))->assertMissing($asset->getAttribute('storage_key'));
     Storage::disk(config('media.disk'))->assertMissing($variant->getAttribute('storage_key'));
+    expect(DB::table('publication_media_cleanups')->count())->toBe(0);
+});
+
+
+it('retains working-only media while a Working reference still needs the file', function (): void {
+    Storage::fake(config('media.disk'));
+
+    $asset = MediaAsset::query()->create([
+        'storage_key' => 'originals/working-reference.jpg',
+        'original_filename' => 'working-reference.jpg',
+        'mime_type' => 'image/jpeg',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', 'orig'),
+        'state' => 'available',
+        'alt_text' => 'Working reference',
+    ]);
+    Storage::disk(config('media.disk'))->put($asset->getAttribute('storage_key'), 'orig');
+
+    $settings = PublicContentSetting::general();
+    $settings->setAttribute('favicon_media_asset_id', $asset->getKey());
+    $settings->save();
+    $asset->setAttribute('state', 'deleted');
+    $asset->save();
+
+    $cleanup = app(PublicationMediaCleanupService::class);
+    $cleanup->queue((int) $asset->getKey(), [(string) $asset->getAttribute('storage_key')]);
+    $cleanup->drain();
+
+    Storage::disk(config('media.disk'))->assertExists($asset->getAttribute('storage_key'));
+    expect(DB::table('publication_media_cleanups')->count())->toBe(1);
+
+    $settings->setAttribute('favicon_media_asset_id', null);
+    $settings->save();
+    $cleanup->drain();
+
+    Storage::disk(config('media.disk'))->assertMissing($asset->getAttribute('storage_key'));
     expect(DB::table('publication_media_cleanups')->count())->toBe(0);
 });
 

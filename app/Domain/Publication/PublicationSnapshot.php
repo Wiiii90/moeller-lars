@@ -26,6 +26,26 @@ final class PublicationSnapshot
         'redirects',
     ];
 
+    /** @var list<string> */
+    public const AUDIT_ENTITY_TYPES = [
+        'artwork_category',
+        'artwork',
+        'artwork_media',
+        'media_asset',
+        'media_variant',
+        'site_section',
+        'custom_page_setting',
+        'journal_setting',
+        'journal_entry_media',
+        'home_presentation_setting',
+        'cv_entry',
+        'exhibition',
+        'exhibition_media',
+        'blog_post',
+        'public_content_setting',
+        'redirect',
+    ];
+
     /** @var array<string, array{area:string, entity:string}> */
     public const GROUPS = [
         'site_sections' => ['area' => 'Website', 'entity' => 'Pages and navigation'],
@@ -45,4 +65,9 @@ final class PublicationSnapshot
         'media_assets' => ['area' => 'Files', 'entity' => 'Media files'],
         'media_variants' => ['area' => 'Files', 'entity' => 'Media variants'],
     ];
+
+    public static function tracksAuditEntityType(string $entityType): bool
+    {
+        return in_array($entityType, self::AUDIT_ENTITY_TYPES, true);
+    }
 }

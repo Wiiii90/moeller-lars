@@ -92,6 +92,7 @@ final class PublicationService
             $pendingAuditEventIds = DB::table('audit_events')
                 ->leftJoin('publication_checkpoint_events', 'publication_checkpoint_events.audit_event_id', '=', 'audit_events.id')
                 ->whereNull('publication_checkpoint_events.audit_event_id')
+                ->whereIn('audit_events.entity_type', PublicationSnapshot::AUDIT_ENTITY_TYPES)
                 ->orderBy('audit_events.id')
                 ->pluck('audit_events.id')
                 ->map(static fn (mixed $id): int => (int) $id)

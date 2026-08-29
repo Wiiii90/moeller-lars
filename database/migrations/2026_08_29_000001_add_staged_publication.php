@@ -49,6 +49,7 @@ return new class extends Migration
 
         $createdAt = now();
         DB::table('audit_events')
+            ->whereIn('entity_type', PublicationSnapshot::AUDIT_ENTITY_TYPES)
             ->orderBy('id')
             ->pluck('id')
             ->chunk(500)

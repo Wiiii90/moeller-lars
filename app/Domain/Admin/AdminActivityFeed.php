@@ -2,6 +2,7 @@
 
 namespace App\Domain\Admin;
 
+use App\Domain\Publication\PublicationSnapshot;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
@@ -164,6 +165,7 @@ final class AdminActivityFeed
             $checkpoint = $checkpointEvent instanceof PublicationCheckpointEvent
                 ? $checkpointEvent->getRelationValue('checkpoint')
                 : null;
+            $publicationTracked = PublicationSnapshot::tracksAuditEntityType($entityType);
 
             if (is_array($receipt)) {
                 $inverseLabel = (string) $receipt['inverse_label'];
@@ -185,7 +187,9 @@ final class AdminActivityFeed
                 'actor' => $adminUser?->getAttribute('name') ?? 'Admin',
                 'when' => $occurredAt->diffForHumans(),
                 'timestamp' => $occurredAt->format('Y-m-d H:i'),
-                'publication_status' => $checkpoint === null ? 'pending' : 'committed',
+                'publication_status' => $checkpoint !== null
+                    ? 'committed'
+                    : ($publicationTracked ? 'pending' : null),
                 'checkpoint_id' => $checkpoint?->getKey(),
                 'checkpoint_message' => $checkpoint?->getAttribute('message'),
                 'checkpoint_at' => $checkpoint?->getAttribute('published_at')?->format('Y-m-d H:i'),

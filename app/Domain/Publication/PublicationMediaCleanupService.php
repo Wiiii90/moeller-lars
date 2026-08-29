@@ -2,6 +2,8 @@
 
 namespace App\Domain\Publication;
 
+use App\Domain\Media\MediaReferenceQuery;
+use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -9,6 +11,8 @@ use Throwable;
 
 final class PublicationMediaCleanupService
 {
+    public function __construct(private readonly MediaReferenceQuery $referenceQuery) {}
+
     /** @param list<string> $storageKeys */
     public function queue(int $mediaAssetId, array $storageKeys): void
     {
@@ -31,6 +35,13 @@ final class PublicationMediaCleanupService
     /** @param list<string> $storageKeys */
     public function deleteNow(array $storageKeys): void
     {
+        $mediaAssetId = $this->resolveMediaAssetId($storageKeys);
+        if ($mediaAssetId !== null && ! $this->canDeletePhysicalMedia($mediaAssetId)) {
+            $this->queue($mediaAssetId, $storageKeys);
+
+            return;
+        }
+
         $failed = [];
 
         foreach (array_values(array_unique($storageKeys)) as $key) {
@@ -51,18 +62,15 @@ final class PublicationMediaCleanupService
     public function drain(): void
     {
         $rows = DB::table('publication_media_cleanups')
-            ->leftJoin('committed.media_assets', 'committed.media_assets.id', '=', 'publication_media_cleanups.media_asset_id')
-            ->where(function ($query): void {
-                $query->whereNull('committed.media_assets.id')
-                    ->orWhere('committed.media_assets.state', 'deleted');
-            })
-            ->orderBy('publication_media_cleanups.id')
-            ->get([
-                'publication_media_cleanups.id',
-                'publication_media_cleanups.storage_key',
-            ]);
+            ->orderBy('id')
+            ->get(['id', 'media_asset_id', 'storage_key']);
 
         foreach ($rows as $row) {
+            $mediaAssetId = (int) $row->media_asset_id;
+            if (! $this->canDeletePhysicalMedia($mediaAssetId)) {
+                continue;
+            }
+
             $key = (string) $row->storage_key;
             if (! $this->deleteKey($key)) {
                 continue;
@@ -70,6 +78,50 @@ final class PublicationMediaCleanupService
 
             DB::table('publication_media_cleanups')->where('id', $row->id)->delete();
         }
+    }
+
+    /** @param list<string> $storageKeys */
+    private function resolveMediaAssetId(array $storageKeys): ?int
+    {
+        $keys = array_values(array_unique(array_filter(
+            $storageKeys,
+            static fn (mixed $key): bool => is_string($key) && $key !== '',
+        )));
+        if ($keys === []) {
+            return null;
+        }
+
+        $assetId = DB::table('media_assets')->whereIn('storage_key', $keys)->value('id');
+        if (is_numeric($assetId)) {
+            return (int) $assetId;
+        }
+
+        $variantAssetId = DB::table('media_variants')->whereIn('storage_key', $keys)->value('media_asset_id');
+
+        return is_numeric($variantAssetId) ? (int) $variantAssetId : null;
+    }
+
+    private function canDeletePhysicalMedia(int $mediaAssetId): bool
+    {
+        $committedRequiresAsset = DB::table('committed.media_assets')
+            ->where('id', $mediaAssetId)
+            ->where('state', '<>', 'deleted')
+            ->exists();
+        if ($committedRequiresAsset) {
+            return false;
+        }
+
+        /** @var MediaAsset|null $workingAsset */
+        $workingAsset = MediaAsset::query()->find($mediaAssetId);
+        if (! $workingAsset instanceof MediaAsset) {
+            return true;
+        }
+
+        if ((string) $workingAsset->getAttribute('state') !== 'deleted') {
+            return false;
+        }
+
+        return ! $this->referenceQuery->isReferenced($workingAsset);
     }
 
     private function deleteKey(string $key): bool
