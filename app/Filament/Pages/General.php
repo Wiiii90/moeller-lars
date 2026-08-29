@@ -11,6 +11,7 @@ use App\Filament\Support\AdminHelp;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -124,6 +125,9 @@ final class General extends Page
                                     $livewire->persistAppearanceColor('secondary', $state);
                                 }
                             }),
+                        Hidden::make('background_color'),
+                        Hidden::make('background_gradient_start'),
+                        Hidden::make('background_gradient_end'),
                         TextInput::make('background_gradient_angle')
                             ->label('Angle')
                             ->numeric()
