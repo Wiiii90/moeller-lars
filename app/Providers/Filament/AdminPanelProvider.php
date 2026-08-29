@@ -43,12 +43,17 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('Lars Möller')
             ->homeUrl(fn (): string => route('home'))
             ->breadcrumbs(false)
+            ->globalSearch(false)
             ->colors([
                 'primary' => Color::Amber,
             ])
             ->renderHook(
                 PanelsRenderHook::STYLES_AFTER,
                 fn (): string => view('filament.partials.admin-theme')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_FOOTER,
+                fn (): string => view('filament.partials.sidebar-preview')->render(),
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

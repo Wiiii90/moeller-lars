@@ -3,9 +3,6 @@
 namespace App\Providers;
 
 use App\Domain\Content\PublicSiteContext;
-use Filament\Support\Facades\FilamentView;
-use Filament\View\PanelsRenderHook;
-use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,11 +15,6 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::USER_MENU_BEFORE,
-            fn (): ViewContract => view('filament.partials.topbar-sign-out'),
-        );
-
         View::composer('layouts.app', function ($view): void {
             $view->with(app(PublicSiteContext::class)->layoutData());
         });

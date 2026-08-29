@@ -19,7 +19,7 @@ final class SiteNodePresentation
             SiteNodeType::Home => Heroicon::OutlinedHome,
             SiteNodeType::Gallery => Heroicon::OutlinedPhoto,
             SiteNodeType::Journal => Heroicon::OutlinedNewspaper,
-            SiteNodeType::CustomPage => Heroicon::OutlinedDocumentText,
+            SiteNodeType::CustomPage => Heroicon::OutlinedWindow,
             SiteNodeType::NavigationNode => Heroicon::OutlinedFolder,
         };
     }

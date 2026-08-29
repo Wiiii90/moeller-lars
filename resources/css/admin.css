@@ -371,8 +371,6 @@
     line-height: 1.05;
 }
 
-.admin-topbar-sign-out .fi-btn,
-.fi-global-search .fi-input-wrp,
 .fi-topbar .fi-icon-btn,
 .fi-sidebar-item-btn {
     min-height: var(--admin-control-height) !important;
