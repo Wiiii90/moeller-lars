@@ -89,7 +89,7 @@ it('renders the exact six General metrics from persisted settings and audit even
     $this->get(General::getUrl())
         ->assertOk()
         ->assertSee('Last changed')
-        ->assertSee($settings->updated_at->format('Y-m-d H:i'))
+        ->assertSee($settings->updated_at->format('j M · H:i'))
         ->assertSee('Changes · 30d')
         ->assertSee((string) $changes)
         ->assertSee('Public email')
@@ -101,18 +101,26 @@ it('renders the exact six General metrics from persisted settings and audit even
 
     $metricSource = file_get_contents(resource_path('views/filament/schemas/components/general-status-metrics.blade.php'));
     expect(substr_count((string) $metricSource, '<x-admin.metric '))->toBe(6)
+        ->and($metricSource)->toContain('<x-admin.metrics')
+        ->and(substr_count((string) $metricSource, ' description='))->toBe(6)
         ->and($metricSource)->toContain('label="Last changed"')
+        ->and($metricSource)->toContain('description="General settings"')
         ->and($metricSource)->toContain('label="Changes · 30d"')
+        ->and($metricSource)->toContain('description="General updates"')
         ->and($metricSource)->toContain('label="Public email"')
+        ->and($metricSource)->toContain('description="Public contact"')
         ->and($metricSource)->toContain('label="Contact delivery"')
+        ->and($metricSource)->toContain('description="Private recipient"')
         ->and($metricSource)->toContain('label="Social profiles"')
+        ->and($metricSource)->toContain('description="Visible / configured"')
         ->and($metricSource)->toContain('label="Legal"')
+        ->and($metricSource)->toContain('description="Copyright + disclaimer"')
         ->and($metricSource)->toContain("->where('entity_id', (int) \$settings->getKey())")
         ->and($metricSource)->toContain("->where('occurred_at', '>=', now()->subDays(30))")
         ->and($metricSource)->not->toContain('admin-metrics--open-bottom');
 });
 
-it('keeps the General browser contract flat and reuses shared control table and pager grammar', function (): void {
+it('keeps the General browser contract flat and reuses shared control and table grammar', function (): void {
     $pageSource = file_get_contents(app_path('Filament/Pages/General.php'));
     $adminFormSource = file_get_contents(app_path('Filament/Support/AdminForm.php'));
     $colorSource = file_get_contents(app_path('Filament/Support/AdminColorControl.php'));
@@ -123,6 +131,7 @@ it('keeps the General browser contract flat and reuses shared control table and 
     $socialSource = file_get_contents(resource_path('views/filament/schemas/components/general-social-links.blade.php'));
     $metricSource = file_get_contents(resource_path('views/filament/schemas/components/general-status-metrics.blade.php'));
     $booleanSource = file_get_contents(app_path('Filament/Support/AdminBooleanControl.php'));
+    $formsCss = file_get_contents(resource_path('css/admin/forms.css'));
     $controlOrderMatches = preg_match(
         '/<x-slot:search>.*?<span class="admin-field__label">Visibility<\/span>.*?<x-slot:reset>.*?<span class="admin-control-group__label">Social links<\/span>.*?<x-slot:selection>/s',
         $socialSource,
@@ -132,7 +141,7 @@ it('keeps the General browser contract flat and reuses shared control table and 
         $socialSource,
     );
     $generalOrderMatches = preg_match(
-        "/'Site icon'.*?->label\('Background'\).*?general-separator'.*?general-social-links'.*?general-separator'.*?TextInput::make\('public_email'\).*?AdminBooleanControl::make\('show_public_email'.*?TextInput::make\('contact_recipient_email'\).*?general-separator'.*?TextInput::make\('default_media_copyright_notice'\).*?Textarea::make\('legal_disclaimer'\)/s",
+        "/'Site icon'.*?->label\('Background'\).*?general-separator'.*?general-social-links'.*?general-separator'.*?TextInput::make\('public_email'\).*?AdminBooleanControl::make\('show_public_email'.*?TextInput::make\('contact_recipient_email'\).*?general-separator'.*?TextInput::make\('default_media_copyright_notice'\).*?TextInput::make\('legal_disclaimer'\)/s",
         $pageSource,
     );
 
@@ -148,6 +157,10 @@ it('keeps the General browser contract flat and reuses shared control table and 
         ->and(substr_count((string) $pageSource, "View::make('filament.schemas.components.general-separator')"))->toBe(3)
         ->and($pageSource)->toContain('MediaAssetSelect::make')
         ->and($pageSource)->toContain("'Site icon'")
+        ->and($pageSource)->toContain("->label('Remove site icon')")
+        ->and($pageSource)->toContain("->icon('heroicon-m-x-mark')")
+        ->and($pageSource)->toContain('->iconButton()')
+        ->and($pageSource)->not->toContain("->label('Remove')")
         ->and($pageSource)->not->toContain("Text::make('Site icon')")
         ->and($pageSource)->not->toContain('Replace from Media Files')
         ->and($pageSource)->not->toContain('favicon-preview')
@@ -159,10 +172,13 @@ it('keeps the General browser contract flat and reuses shared control table and 
         ->and($pageSource)->toContain("->label('Background')")
         ->and($pageSource)->toContain("->visible(fn (callable \$get): bool => \$get('background_mode') === PublicAppearance::MODE_GRADIENT)")
         ->and($pageSource)->toContain('AdminColorControl::make')
+        ->and($pageSource)->toContain("->extraFieldWrapperAttributes(['class' => 'general-color-control'])")
         ->and($pageSource)->toContain('AdminHelp::make')
         ->and($pageSource)->not->toContain('Repeater::')
         ->and($pageSource)->not->toContain('Toggle::')
         ->and($pageSource)->not->toContain('settingsSection(')
+        ->and($pageSource)->toContain("TextInput::make('legal_disclaimer')")
+        ->and($pageSource)->not->toContain("Textarea::make('legal_disclaimer')")
         ->and($adminFormSource)->toContain('Filament\\Schemas\\Components\\Section')
         ->and($adminFormSource)->not->toContain('Fieldset')
         ->and($colorSource)->toContain('ColorPicker::make')
@@ -171,9 +187,26 @@ it('keeps the General browser contract flat and reuses shared control table and 
         ->and($helpViewSource)->toContain('x-on:focusin')
         ->and($helpViewSource)->toContain('x-on:click.stop')
         ->and($viewSource)->not->toContain('general-workspace__sheet')
-        ->and($separatorSource)->toContain('border-[var(--admin-line)]')
+        ->and($separatorSource)->toContain('class="general-separator"')
+        ->and($separatorSource)->not->toContain('border-[var(--admin-line)]')
+        ->and($formsCss)->toContain('.general-separator')
+        ->and($formsCss)->toContain('border-top: 1px solid var(--admin-line);')
+        ->and($formsCss)->not->toContain('admin-metrics--open-bottom')
+        ->and($formsCss)->toContain('.general-form-controls')
+        ->and($formsCss)->toContain('margin-top: var(--admin-section-gap);')
+        ->and($formsCss)->toContain('.general-status-metrics .admin-metric__label')
+        ->and($formsCss)->toContain('white-space: nowrap;')
+        ->and($formsCss)->toContain('.admin-favicon-control .fi-input-wrp-suffix')
+        ->and($formsCss)->toContain('.admin-favicon-control .general-site-icon-remove')
+        ->and($formsCss)->toContain('background-image: none !important;')
+        ->and($formsCss)->toContain('border-radius: 9999px !important;')
+        ->and($formsCss)->toContain('.general-color-control .fi-fo-color-picker-panel')
+        ->and($formsCss)->toContain('border: 1px solid var(--admin-line-strong) !important;')
+        ->and($formsCss)->toContain('background: var(--admin-surface) !important;')
         ->and($metricSource)->not->toContain('admin-metrics--open-bottom')
-        ->and($socialSource)->toContain('<x-admin.controls')
+        ->and($socialSource)->toContain('<x-admin.controls class="general-social-controls"')
+        ->and($formsCss)->toContain('.general-social-controls')
+        ->and($formsCss)->toContain('grid-template-columns: minmax(12rem, 1fr) auto auto auto auto;')
         ->and($socialSource)->toContain('<x-slot:search>')
         ->and($socialSource)->toContain('wire:model.live.debounce.300ms="socialSearch"')
         ->and($socialSource)->toContain('wire:model.live="socialVisibility"')
@@ -184,21 +217,23 @@ it('keeps the General browser contract flat and reuses shared control table and 
         ->and($socialSource)->toContain('<x-admin.table class="admin-table--data"')
         ->and($socialSource)->toContain('>Drag</th>')
         ->and($socialSource)->toContain('>Position</th>')
+        ->and($socialSource)->toContain('<span class="admin-position">')
         ->and($socialSource)->toContain('wire:sort="sortSocialLink"')
         ->and($socialSource)->toContain('AdminBooleanControl::options')
         ->and($socialSource)->toContain('class="admin-form-control admin-boolean-control"')
         ->and($socialSource)->toContain('wire:blur="updateSocialLink')
-        ->and($socialSource)->toContain('>Up</button>')
-        ->and($socialSource)->toContain('>Down</button>')
+        ->and($socialSource)->toContain('class="admin-action admin-order-action"')
+        ->and($socialSource)->toContain('>↑</button>')
+        ->and($socialSource)->toContain('>↓</button>')
+        ->and($socialSource)->not->toContain('>Up</button>')
+        ->and($socialSource)->not->toContain('>Down</button>')
         ->and($socialSource)->toContain('>Delete</button>')
         ->and($socialSource)->toContain('Bulk Delete')
-        ->and($socialSource)->toContain('class="admin-pager"')
-        ->and($socialSource)->toContain('wire:model.live.number="socialPageSize"')
-        ->and($socialSource)->toContain('<option value="25"')
-        ->and($socialSource)->toContain('<option value="50"')
-        ->and($socialSource)->toContain('<option value="100"')
-        ->and($socialSource)->toContain('>Previous</button>')
-        ->and($socialSource)->toContain('>Next</button>')
+        ->and($socialSource)->toContain('<x-admin.add-row wire:click="addSocialLink">Add social link</x-admin.add-row>')
+        ->and($socialSource)->not->toContain('class="admin-pager"')
+        ->and($socialSource)->not->toContain('socialPageSize')
+        ->and($socialSource)->not->toContain('>Previous</button>')
+        ->and($socialSource)->not->toContain('>Next</button>')
         ->and($booleanSource)->toContain('->native()')
         ->and($booleanSource)->not->toContain('native(false)');
 });
@@ -392,7 +427,7 @@ it('persists social link add update visibility order and delete without a repeat
         ->and(generalSettingsAuditCount())->toBeGreaterThan($auditBefore);
 });
 
-it('filters paginates selects and drag-reorders social links by array position', function (): void {
+it('filters selects and drag-reorders social links by array position', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'social_links' => [
             ['platform' => 'instagram', 'url' => 'https://example.invalid/alpha', 'visible' => true],
@@ -401,7 +436,6 @@ it('filters paginates selects and drag-reorders social links by array position',
     ]);
 
     $component = Livewire::test(General::class)
-        ->assertSet('socialPageSize', 25)
         ->assertSet('socialVisibility', 'any')
         ->assertSet('socialSearch', '')
         ->call('sortSocialLink', 1, 0);
@@ -409,11 +443,17 @@ it('filters paginates selects and drag-reorders social links by array position',
     $fresh = PublicContentSetting::general();
     expect($fresh->getAttribute('social_links')[0]['platform'])->toBe('facebook');
 
-    $component
-        ->set('socialSearch', 'alpha');
+    $component->set('socialSearch', 'alpha');
 
-    expect($component->instance()->socialFilteredCount())->toBe(1)
+    expect($component->instance()->socialVisibleRows())->toHaveCount(1)
         ->and($component->instance()->canDragSortSocialLinks())->toBeFalse();
+
+    $component->call('resetSocialFilters');
+    expect($component->instance()->canDragSortSocialLinks())->toBeTrue();
+
+    $component
+        ->set('socialVisibility', 'hidden');
+    expect($component->instance()->canDragSortSocialLinks())->toBeFalse();
 
     $component
         ->call('resetSocialFilters')
@@ -421,6 +461,20 @@ it('filters paginates selects and drag-reorders social links by array position',
         ->call('deleteSelectedSocialLinks');
 
     expect(PublicContentSetting::general()->getAttribute('social_links'))->toHaveCount(1);
+});
+
+it('loads a persisted legal disclaimer unchanged without writing on mount', function (): void {
+    $legalDisclaimer = 'Obwohl ich die Inhalte sowie die hier aufgeführten Verweise regelmäßig pflege, kann ich für diese nicht haften.';
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'legal_disclaimer' => $legalDisclaimer,
+    ]);
+    $auditBefore = generalSettingsAuditCount();
+
+    Livewire::test(General::class)
+        ->assertSet('data.legal_disclaimer', $legalDisclaimer);
+
+    expect(PublicContentSetting::general()->getAttribute('legal_disclaimer'))->toBe($legalDisclaimer)
+        ->and(generalSettingsAuditCount())->toBe($auditBefore);
 });
 
 it('persists boolean media copyright and legal settings through event-driven controls', function (): void {

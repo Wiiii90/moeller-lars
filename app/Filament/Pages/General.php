@@ -13,7 +13,6 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Group;
@@ -30,8 +29,6 @@ use UnitEnum;
  */
 final class General extends Page
 {
-    private const SOCIAL_PAGE_SIZES = [25, 50, 100];
-
     private const PERSISTED_FIELDS = [
         'favicon_media_asset_id',
         'background_mode',
@@ -71,10 +68,6 @@ final class General extends Page
     /** @var list<int> */
     public array $selectedSocialLinkIndexes = [];
 
-    public int $socialPage = 1;
-
-    public int $socialPageSize = 25;
-
     public function mount(): void
     {
         $data = PublicContentSetting::general()->only(self::PERSISTED_FIELDS);
@@ -83,7 +76,6 @@ final class General extends Page
             $data['background_mode'] = PublicAppearance::MODE_SOLID;
             $data['background_color'] = PublicAppearance::DEFAULT_PAGE_COLOR;
         }
-
 
         $this->data = $data;
         $this->syncAppearanceControlState();
@@ -114,9 +106,11 @@ final class General extends Page
                         ->live()
                         ->suffixAction(
                             Action::make('removeFavicon')
-                                ->label('Remove')
-                                ->button()
+                                ->label('Remove site icon')
+                                ->icon('heroicon-m-x-mark')
+                                ->iconButton()
                                 ->color('gray')
+                                ->extraAttributes(['class' => 'general-site-icon-remove'])
                                 ->visible(fn (callable $get): bool => filled($get('favicon_media_asset_id')))
                                 ->action(function ($livewire): void {
                                     if ($livewire instanceof self) {
@@ -148,6 +142,7 @@ final class General extends Page
 
                         Group::make([
                             AdminColorControl::make('background_primary_color', 'Primary color')
+                                ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
                                 ->lazy()
                                 ->extraInputAttributes(self::commitOnEnterAttributes())
                                 ->afterStateUpdated(function ($livewire, mixed $state): void {
@@ -156,6 +151,7 @@ final class General extends Page
                                     }
                                 }),
                             AdminColorControl::make('background_secondary_color', 'Secondary color')
+                                ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
                                 ->lazy()
                                 ->extraInputAttributes(self::commitOnEnterAttributes())
                                 ->afterStateUpdated(function ($livewire, mixed $state): void {
@@ -234,18 +230,17 @@ final class General extends Page
                             ->lazy()
                             ->extraInputAttributes(self::commitOnEnterAttributes())
                             ->afterStateUpdated(self::persist('default_media_copyright_notice')),
-                        Textarea::make('legal_disclaimer')
+                        TextInput::make('legal_disclaimer')
                             ->label('Legal disclaimer')
-                            ->rows(8)
                             ->nullable()
                             ->lazy()
-                            ->afterStateUpdated(self::persist('legal_disclaimer'))
-                            ->columnSpan(2),
+                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                            ->afterStateUpdated(self::persist('legal_disclaimer')),
                     ])
-                        ->columns(3)
+                        ->columns(2)
                         ->columnSpanFull(),
                 ])
-                    ->extraAttributes(['class' => 'admin-form-controls'])
+                    ->extraAttributes(['class' => 'admin-form-controls general-form-controls'])
                     ->columnSpanFull(),
             ])
             ->record(PublicContentSetting::general())
@@ -379,7 +374,6 @@ final class General extends Page
         $this->data['social_links'] = $links;
         $this->clearSocialSelection();
         $this->persistChangedField('social_links');
-        $this->clampSocialPage();
     }
 
     public function toggleSocialSelection(int $index): void
@@ -424,12 +418,6 @@ final class General extends Page
         $this->data['social_links'] = array_values($links);
         $this->clearSocialSelection();
         $this->persistChangedField('social_links');
-        $this->clampSocialPage();
-    }
-
-    public function updatedSocialSearch(): void
-    {
-        $this->socialPage = 1;
     }
 
     public function updatedSocialVisibility(): void
@@ -437,44 +425,18 @@ final class General extends Page
         if (! in_array($this->socialVisibility, ['any', 'visible', 'hidden'], true)) {
             $this->socialVisibility = 'any';
         }
-
-        $this->socialPage = 1;
-    }
-
-    public function updatedSocialPageSize(mixed $value): void
-    {
-        $size = filter_var($value, FILTER_VALIDATE_INT);
-        $this->socialPageSize = in_array($size, self::SOCIAL_PAGE_SIZES, true) ? $size : 25;
-        $this->socialPage = 1;
     }
 
     public function resetSocialFilters(): void
     {
         $this->socialSearch = '';
         $this->socialVisibility = 'any';
-        $this->socialPage = 1;
-    }
-
-    public function previousSocialPage(): void
-    {
-        if ($this->socialPage > 1) {
-            $this->socialPage--;
-        }
-    }
-
-    public function nextSocialPage(): void
-    {
-        if ($this->socialPage < $this->socialPages()) {
-            $this->socialPage++;
-        }
     }
 
     public function canDragSortSocialLinks(): bool
     {
         return trim($this->socialSearch) === ''
-            && $this->socialVisibility === 'any'
-            && $this->socialPage === 1
-            && count($this->socialLinks()) <= $this->socialPageSize;
+            && $this->socialVisibility === 'any';
     }
 
     public function persistChangedField(string $field): void
@@ -534,33 +496,7 @@ final class General extends Page
             }
         }
 
-        $offset = ($this->socialPage - 1) * $this->socialPageSize;
-
-        return array_slice($rows, $offset, $this->socialPageSize);
-    }
-
-    public function socialFilteredCount(): int
-    {
-        $search = mb_strtolower(trim($this->socialSearch));
-        $visibility = $this->socialVisibility;
-
-        return count(array_filter($this->socialLinks(), static function (array $link) use ($search, $visibility): bool {
-            $matchesSearch = $search === ''
-                || str_contains(mb_strtolower((string) ($link['platform'] ?? '')), $search)
-                || str_contains(mb_strtolower((string) ($link['url'] ?? '')), $search);
-            $isVisible = (bool) ($link['visible'] ?? true);
-
-            return $matchesSearch && match ($visibility) {
-                'visible' => $isVisible,
-                'hidden' => ! $isVisible,
-                default => true,
-            };
-        }));
-    }
-
-    public function socialPages(): int
-    {
-        return max(1, (int) ceil($this->socialFilteredCount() / $this->socialPageSize));
+        return $rows;
     }
 
     private static function persist(string $field): \Closure
@@ -664,11 +600,6 @@ final class General extends Page
     private function clearSocialSelection(): void
     {
         $this->selectedSocialLinkIndexes = [];
-    }
-
-    private function clampSocialPage(): void
-    {
-        $this->socialPage = min($this->socialPage, $this->socialPages());
     }
 
     /** @return array<string, string> */
