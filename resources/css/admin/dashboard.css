@@ -3,13 +3,9 @@
     gap: 0;
 }
 
-.admin-dashboard .admin-data-controls {
-    grid-template-columns: minmax(14rem, 2fr) minmax(8rem, .75fr) auto;
-    padding: 1rem 0;
-}
-
-.admin-dashboard .admin-data-table td {
-    height: 3.1rem;
+.admin-dashboard__feed-controls {
+    grid-template-columns: minmax(14rem, 1fr) minmax(8rem, max-content) auto;
+    padding: .85rem 0;
 }
 
 .admin-dashboard .admin-data-row {
@@ -157,32 +153,29 @@
 
 .admin-dashboard__overview-column {
     min-width: 0;
-    padding: 1.2rem 1.4rem 1.25rem 0;
+    padding: 1.2rem 1rem 1.25rem 0;
 }
 
 .admin-dashboard__overview-column + .admin-dashboard__overview-column {
-    padding-left: 1.4rem;
+    padding-left: 1rem;
     border-left: 1px solid var(--admin-line);
 }
 
 .admin-dashboard__overview-column:last-child {
-    padding-right: 0;
+    padding-right: 1rem;
 }
 
 .admin-dashboard__overview-head {
     display: flex;
     gap: 1rem;
-    align-items: start;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 1rem;
+    margin-bottom: .85rem;
 }
 
-.admin-dashboard__overview-head > div {
-    min-width: 0;
-}
-
-.admin-dashboard__overview-head span {
+.admin-dashboard__overview-head > span {
     display: block;
+    min-width: 0;
     color: var(--admin-muted);
     font-size: .65rem;
     font-weight: 700;
@@ -190,41 +183,20 @@
     text-transform: uppercase;
 }
 
-.admin-dashboard__overview-head strong {
-    display: block;
-    margin-top: .18rem;
-    overflow: hidden;
-    color: var(--admin-text);
-    font-size: .92rem;
-    font-weight: 620;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.admin-dashboard__overview-head a {
-    color: var(--admin-muted);
-    font-size: .7rem;
-    text-decoration: none;
-}
-
-.admin-dashboard__overview-head a:hover,
-.admin-dashboard__overview-head a:focus-visible {
-    color: var(--admin-text);
-    text-decoration: underline;
-    text-underline-offset: .18rem;
+.admin-dashboard__overview-head .admin-action {
+    flex: 0 0 auto;
 }
 
 .admin-dashboard__storage-visual {
     display: grid;
-    grid-template-columns: 6.4rem minmax(0, 1fr);
-    gap: 1.25rem;
-    align-items: center;
+    min-height: 11rem;
+    place-items: center;
 }
 
 .admin-dashboard__storage-ring {
     position: relative;
     display: grid;
-    width: 6.4rem;
+    width: min(100%, 10.5rem);
     aspect-ratio: 1;
     place-items: center;
     border-radius: 50%;
@@ -234,10 +206,13 @@
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    background: conic-gradient(var(--admin-text) var(--dashboard-storage-used), var(--admin-line) 0);
+    background: conic-gradient(
+        var(--admin-text) var(--dashboard-storage-used),
+        var(--admin-line) 0
+    );
     content: "";
-    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - .55rem), #000 0);
-    mask: radial-gradient(farthest-side, transparent calc(100% - .55rem), #000 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - .7rem), #000 0);
+    mask: radial-gradient(farthest-side, transparent calc(100% - .7rem), #000 0);
 }
 
 .admin-dashboard__storage-ring.is-empty::before {
@@ -247,44 +222,79 @@
 .admin-dashboard__storage-ring strong {
     position: relative;
     z-index: 1;
-    font-size: 1.05rem;
+    font-size: 1.3rem;
     font-weight: 620;
     font-variant-numeric: tabular-nums;
 }
 
-.admin-dashboard__storage-visual p,
-.admin-dashboard__overview-note,
+.admin-dashboard__activity-visual {
+    display: grid;
+    min-height: 11rem;
+    grid-template-columns: minmax(5.5rem, .58fr) minmax(0, 1.42fr);
+    gap: .6rem;
+    align-items: center;
+}
+
+.admin-dashboard__activity-clock .activity-clock__face {
+    width: min(100%, 7rem);
+}
+
+.admin-dashboard__activity-clock .activity-clock__label {
+    font-size: .54rem;
+}
+
+.admin-dashboard__activity-clock .activity-clock__marker {
+    width: .42rem;
+    height: .42rem;
+    border-width: 1px;
+}
+
+.admin-dashboard__activity-calendar {
+    gap: .35rem;
+}
+
+.admin-dashboard__activity-calendar .activity-calendar__month {
+    font-size: .72rem;
+}
+
+.admin-dashboard__activity-calendar .activity-calendar__weekdays span {
+    padding: 0 .1rem .22rem;
+    font-size: .48rem;
+    letter-spacing: .02em;
+    text-align: center;
+}
+
+.admin-dashboard__activity-calendar .activity-calendar__day {
+    min-height: 1.55rem;
+    padding: .18rem;
+    font-size: .52rem;
+}
+
+.admin-dashboard__activity-calendar .activity-calendar__day strong {
+    font-size: .64rem;
+}
+
+.admin-dashboard__facts,
 .admin-dashboard__overview-unavailable {
     margin: 0;
     color: var(--admin-muted);
-    font-size: .72rem;
-    line-height: 1.5;
+    font-size: .68rem;
+    line-height: 1.45;
 }
 
-.admin-dashboard__pulse {
-    display: grid;
-    height: 6.4rem;
-    grid-template-columns: repeat(14, minmax(0, 1fr));
-    gap: .28rem;
-    align-items: end;
-    padding-top: .45rem;
-    border-bottom: 1px solid var(--admin-line-strong);
+.admin-dashboard__facts {
+    display: flex;
+    min-height: 1.8em;
+    gap: .18rem .34rem;
+    margin-top: .6rem;
+    align-items: baseline;
+    flex-wrap: wrap;
 }
 
-.admin-dashboard__pulse span {
-    display: block;
-    min-height: 1px;
-    height: max(1px, var(--dashboard-pulse-height));
-    background: var(--admin-text);
-    opacity: .72;
-}
-
-.admin-dashboard__pulse span.is-zero {
-    background: var(--admin-line);
-}
-
-.admin-dashboard__overview-note {
-    margin-top: .55rem;
+.admin-dashboard__facts strong {
+    color: var(--admin-text);
+    font-weight: 620;
+    font-variant-numeric: tabular-nums;
 }
 
 .admin-dashboard__map .analytics-world__canvas {
@@ -296,10 +306,14 @@
 }
 
 .admin-dashboard__overview-unavailable {
-    min-height: 6.4rem;
     display: flex;
+    min-height: 11rem;
     align-items: center;
     border-block: 1px solid var(--admin-line);
+}
+
+.admin-dashboard__feed-section {
+    border-bottom: 0;
 }
 
 @media (max-width: 980px) {
@@ -318,15 +332,32 @@
     .admin-dashboard__overview-column:last-child {
         border-bottom: 0;
     }
+
+    .admin-dashboard__activity-visual {
+        grid-template-columns: minmax(7rem, .5fr) minmax(0, 1.5fr);
+        gap: 1rem;
+    }
+
+    .admin-dashboard__activity-clock .activity-clock__face {
+        width: min(100%, 8rem);
+    }
 }
 
 @media (max-width: 760px) {
-    .admin-dashboard .admin-data-controls {
+    .admin-dashboard__feed-controls {
         grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 520px) {
+    .admin-dashboard__activity-visual {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-dashboard__activity-clock .activity-clock__face {
+        width: min(100%, 7rem);
+    }
+
     .admin-detail-dialog__meta {
         grid-template-columns: 1fr;
     }

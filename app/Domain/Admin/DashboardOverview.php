@@ -157,10 +157,22 @@ final class DashboardOverview
                 'detail' => 'Open Storage for a current measurement.',
                 'metric_detail' => 'No cached measurement',
                 'percent' => null,
-                'remaining' => null,
+                'used' => '—',
+                'remaining' => '—',
+                'allowance' => '—',
                 'url' => $url,
             ];
         }
+
+        $used = is_int($snapshot['authoritative_bytes'] ?? null)
+            ? MediaStorageUnits::formatBytes($snapshot['authoritative_bytes'])
+            : '—';
+        $remaining = is_int($snapshot['remaining_bytes'] ?? null)
+            ? MediaStorageUnits::formatBytes($snapshot['remaining_bytes'])
+            : '—';
+        $allowance = is_int($snapshot['quota_bytes'] ?? null)
+            ? MediaStorageUnits::formatBytes($snapshot['quota_bytes'])
+            : '—';
 
         if (! ($snapshot['configuration_valid'] ?? true)) {
             return [
@@ -169,7 +181,9 @@ final class DashboardOverview
                 'detail' => 'The runtime allowance configuration needs operator attention.',
                 'metric_detail' => 'Allowance unavailable',
                 'percent' => null,
-                'remaining' => null,
+                'used' => $used,
+                'remaining' => $remaining,
+                'allowance' => $allowance,
                 'url' => $url,
             ];
         }
@@ -181,7 +195,9 @@ final class DashboardOverview
                 'detail' => 'Storage usage is measurable, but no artist allowance is configured.',
                 'metric_detail' => 'Allowance not configured',
                 'percent' => null,
-                'remaining' => null,
+                'used' => $used,
+                'remaining' => $remaining,
+                'allowance' => $allowance,
                 'url' => $url,
             ];
         }
@@ -193,13 +209,14 @@ final class DashboardOverview
                 'detail' => 'Existing files remain readable; Storage can retry the authoritative measurement.',
                 'metric_detail' => 'Measurement unavailable',
                 'percent' => null,
-                'remaining' => null,
+                'used' => $used,
+                'remaining' => $remaining,
+                'allowance' => $allowance,
                 'url' => $url,
             ];
         }
 
         $ratio = is_numeric($snapshot['authoritative_ratio'] ?? null) ? (float) $snapshot['authoritative_ratio'] : null;
-        $remainingBytes = is_int($snapshot['remaining_bytes'] ?? null) ? $snapshot['remaining_bytes'] : null;
         $status = is_string($snapshot['status'] ?? null) ? $snapshot['status'] : 'unavailable';
 
         return [
@@ -213,29 +230,45 @@ final class DashboardOverview
             'detail' => null,
             'metric_detail' => 'Cached authoritative originals',
             'percent' => $ratio === null ? null : (int) round(min(1.0, max(0.0, $ratio)) * 100),
-            'remaining' => $remainingBytes === null ? null : MediaStorageUnits::formatBytes($remainingBytes),
+            'used' => $used,
+            'remaining' => $remaining,
+            'allowance' => $allowance,
             'url' => $url,
         ];
     }
 
-    /** @return array{recent_changes:int,chart_changes:int,points:list<array{date:string,label:string,count:int,height:float}>,max:int,url:string} */
+    /**
+     * @return array{
+     *   recent_changes:int,
+     *   clock_points:list<array{label:string,x:float,y:float}>,
+     *   calendar_label:string,
+     *   calendar_days:list<array{day:int,date:string,count:int}|null>,
+     *   url:string
+     * }
+     */
     private function activityOverview(): array
     {
         $today = now()->startOfDay();
+        $tomorrow = $today->copy()->addDay();
         $metricStart = $today->copy()->subDays(29);
-        $chartStart = $today->copy()->subDays(13);
+        $monthStart = $today->copy()->startOfMonth();
+        $queryStart = $metricStart->lessThan($monthStart) ? $metricStart : $monthStart;
 
         /** @var EloquentCollection<int, AuditEvent> $events */
         $events = AuditEvent::query()
-            ->where('occurred_at', '>=', $metricStart)
+            ->where('occurred_at', '>=', $queryStart)
+            ->where('occurred_at', '<', $tomorrow)
             ->orderBy('occurred_at')
             ->get(['occurred_at']);
 
-        $buckets = [];
-        for ($offset = 0; $offset < 14; $offset++) {
-            $date = $chartStart->copy()->addDays($offset);
-            $buckets[$date->toDateString()] = 0;
+        $calendarCounts = [];
+        for ($day = 1; $day <= $monthStart->daysInMonth; $day++) {
+            $date = $monthStart->copy()->addDays($day - 1);
+            $calendarCounts[$date->toDateString()] = 0;
         }
+
+        $recentChanges = 0;
+        $clockPoints = [];
 
         foreach ($events as $event) {
             $occurredAt = $event->getAttribute('occurred_at');
@@ -243,28 +276,46 @@ final class DashboardOverview
                 continue;
             }
 
+            if ($occurredAt->greaterThanOrEqualTo($metricStart)) {
+                $recentChanges++;
+                $minutes = ((int) $occurredAt->format('G') * 60) + (int) $occurredAt->format('i');
+                $angle = $minutes / (24 * 60) * 2 * pi();
+
+                $clockPoints[] = [
+                    'label' => $occurredAt->format('M j · H:i'),
+                    'x' => 50 + (42 * sin($angle)),
+                    'y' => 50 - (42 * cos($angle)),
+                ];
+            }
+
             $date = $occurredAt->toDateString();
-            if (array_key_exists($date, $buckets)) {
-                $buckets[$date]++;
+            if (array_key_exists($date, $calendarCounts)) {
+                $calendarCounts[$date]++;
             }
         }
 
-        $max = max(1, ...array_values($buckets));
-        $points = [];
-        foreach ($buckets as $date => $count) {
-            $points[] = [
+        $calendarDays = [];
+        for ($offset = 1; $offset < $monthStart->dayOfWeekIso; $offset++) {
+            $calendarDays[] = null;
+        }
+
+        foreach ($calendarCounts as $date => $count) {
+            $calendarDays[] = [
+                'day' => (int) date('j', strtotime($date)),
                 'date' => $date,
-                'label' => date('M j', strtotime($date)),
                 'count' => $count,
-                'height' => $count === 0 ? 0.0 : max(8.0, round(($count / $max) * 100.0, 1)),
             ];
         }
 
+        while (count($calendarDays) % 7 !== 0) {
+            $calendarDays[] = null;
+        }
+
         return [
-            'recent_changes' => $events->count(),
-            'chart_changes' => array_sum(array_values($buckets)),
-            'points' => $points,
-            'max' => max(array_values($buckets)),
+            'recent_changes' => $recentChanges,
+            'clock_points' => $clockPoints,
+            'calendar_label' => $monthStart->format('F Y'),
+            'calendar_days' => $calendarDays,
             'url' => Activity::getUrl(),
         ];
     }
