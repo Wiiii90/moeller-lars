@@ -5,13 +5,13 @@
     $visibilityOptions = \App\Filament\Support\AdminBooleanControl::options('Visible', 'Hidden');
 @endphp
 
-<x-admin.table aria-label="Social links">
+<x-admin.table class="admin-table--data" aria-label="Social links">
     <table>
         <thead>
             <tr>
                 <th scope="col">Platform</th>
                 <th scope="col">Profile URL</th>
-                <th scope="col">Visible</th>
+                <th scope="col">Visibility</th>
                 <th scope="col">Actions</th>
             </tr>
         </thead>
@@ -58,8 +58,8 @@
                     </td>
                     <td>
                         <div class="admin-toolbar">
-                            <button class="admin-action" type="button" wire:click="moveSocialLink({{ $index }}, 'up')" @disabled($index === 0)>↑</button>
-                            <button class="admin-action" type="button" wire:click="moveSocialLink({{ $index }}, 'down')" @disabled($index === count($links) - 1)>↓</button>
+                            <button class="admin-action" type="button" wire:click="moveSocialLink({{ $index }}, 'up')" @disabled($index === 0)>Up</button>
+                            <button class="admin-action" type="button" wire:click="moveSocialLink({{ $index }}, 'down')" @disabled($index === count($links) - 1)>Down</button>
                             <button class="admin-action is-danger" type="button" wire:click="deleteSocialLink({{ $index }})">Delete</button>
                         </div>
                     </td>

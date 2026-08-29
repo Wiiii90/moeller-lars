@@ -5,11 +5,13 @@ namespace App\Filament\Pages;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
 use App\Filament\Support\AdminBooleanControl;
+use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\AdminHelp;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
@@ -55,7 +57,9 @@ final class General extends Page
     {
         $data = PublicContentSetting::general()->only(self::PERSISTED_FIELDS);
         $data['background_mode'] = $data['background_mode'] ?? PublicAppearance::MODE_DEFAULT;
-        $this->form->fill($data);
+        $this->data = $data;
+        $this->syncAppearanceControlState();
+        $this->form->fill($this->data);
     }
 
     public function getBreadcrumbs(): array
@@ -68,45 +72,58 @@ final class General extends Page
         return $schema
             ->components([
                 AdminForm::section('Appearance', 'admin-form-controls')
-                    ->columns(2)
+                    ->columns(4)
                     ->schema([
-                        MediaAssetSelect::make('favicon_media_asset_id', 'faviconMediaAsset', 'Favicon', imagesOnly: true)
+                        MediaAssetSelect::make(
+                            'favicon_media_asset_id',
+                            'faviconMediaAsset',
+                            fn (callable $get): string => filled($get('favicon_media_asset_id'))
+                                ? 'Replace from Media Files'
+                                : 'Choose from Media Files',
+                            imagesOnly: true,
+                            includeDimensions: false,
+                        )
                             ->nullable()
                             ->live()
-                            ->afterStateUpdated(self::persist('favicon_media_asset_id')),
-                        Select::make('background_mode')
-                            ->label('Public site background')
-                            ->options(PublicAppearance::modeOptions())
+                            ->afterStateUpdated(self::persist('favicon_media_asset_id'))
+                            ->columnSpan(2),
+                        View::make('filament.schemas.components.favicon-preview')
+                            ->columnSpan(2),
+                        Radio::make('background_mode')
+                            ->label('Background mode')
+                            ->options([
+                                PublicAppearance::MODE_DEFAULT => 'Default',
+                                PublicAppearance::MODE_SOLID => 'Solid',
+                                PublicAppearance::MODE_GRADIENT => 'Gradient',
+                            ])
+                            ->inline()
                             ->required()
                             ->live()
-                            ->afterStateUpdated(self::persist('background_mode')),
-                        TextInput::make('background_color')
-                            ->label('Background color')
-                            ->placeholder(PublicAppearance::DEFAULT_PAGE_COLOR)
-                            ->maxLength(7)
-                            ->nullable()
+                            ->afterStateUpdated(function ($livewire): void {
+                                if ($livewire instanceof self) {
+                                    $livewire->persistChangedField('background_mode');
+                                    $livewire->syncAppearanceControlState();
+                                }
+                            })
+                            ->columnSpanFull(),
+                        AdminColorControl::make('background_primary_color', 'Primary color')
+                            ->disabled(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_DEFAULT)
                             ->lazy()
                             ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(self::persist('background_color'))
-                            ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_SOLID),
-                        TextInput::make('background_gradient_start')
-                            ->label('Start color')
-                            ->placeholder(PublicAppearance::DEFAULT_PAGE_COLOR)
-                            ->maxLength(7)
-                            ->nullable()
+                            ->afterStateUpdated(function ($livewire, mixed $state): void {
+                                if ($livewire instanceof self) {
+                                    $livewire->persistAppearanceColor('primary', $state);
+                                }
+                            }),
+                        AdminColorControl::make('background_secondary_color', 'Secondary color')
+                            ->disabled(fn (callable $get): bool => $get('background_mode') !== PublicAppearance::MODE_GRADIENT)
                             ->lazy()
                             ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(self::persist('background_gradient_start'))
-                            ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
-                        TextInput::make('background_gradient_end')
-                            ->label('End color')
-                            ->placeholder(PublicAppearance::DEFAULT_PAGE_COLOR)
-                            ->maxLength(7)
-                            ->nullable()
-                            ->lazy()
-                            ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(self::persist('background_gradient_end'))
-                            ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
+                            ->afterStateUpdated(function ($livewire, mixed $state): void {
+                                if ($livewire instanceof self) {
+                                    $livewire->persistAppearanceColor('secondary', $state);
+                                }
+                            }),
                         TextInput::make('background_gradient_angle')
                             ->label('Angle')
                             ->numeric()
@@ -114,12 +131,13 @@ final class General extends Page
                             ->minValue(0)
                             ->maxValue(360)
                             ->step(1)
+                            ->suffix('°')
                             ->placeholder((string) PublicAppearance::DEFAULT_GRADIENT_ANGLE)
                             ->nullable()
                             ->lazy()
                             ->extraInputAttributes(self::commitOnEnterAttributes())
                             ->afterStateUpdated(self::persist('background_gradient_angle'))
-                            ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
+                            ->disabled(fn (callable $get): bool => $get('background_mode') !== PublicAppearance::MODE_GRADIENT),
                     ]),
                 AdminForm::section('Contact', 'admin-form-controls')
                     ->columns(2)
@@ -142,7 +160,10 @@ final class General extends Page
                             ->nullable()
                             ->lazy()
                             ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->helperText('Empty uses the server fallback.')
+                            ->hint(AdminHelp::make(
+                                'About contact form delivery',
+                                'Contact-form messages are delivered privately to this address. It can be different from the public email.',
+                            ))
                             ->afterStateUpdated(self::persist('contact_recipient_email'))
                             ->columnSpanFull(),
                     ]),
@@ -151,10 +172,10 @@ final class General extends Page
                         View::make('filament.schemas.components.general-social-links')
                             ->columnSpanFull(),
                     ]),
-                AdminForm::section('Legal & media', 'admin-form-controls')
+                AdminForm::section('Legal', 'admin-form-controls')
                     ->schema([
                         TextInput::make('default_media_copyright_notice')
-                            ->label('Default media copyright')
+                            ->label('Default copyright notice')
                             ->maxLength(500)
                             ->nullable()
                             ->lazy()
@@ -162,14 +183,67 @@ final class General extends Page
                             ->afterStateUpdated(self::persist('default_media_copyright_notice')),
                         Textarea::make('legal_disclaimer')
                             ->label('Legal disclaimer')
-                            ->rows(6)
+                            ->rows(8)
                             ->nullable()
                             ->lazy()
-                            ->afterStateUpdated(self::persist('legal_disclaimer')),
+                            ->afterStateUpdated(self::persist('legal_disclaimer'))
+                            ->columnSpanFull(),
                     ]),
             ])
             ->record(PublicContentSetting::general())
             ->statePath('data');
+    }
+
+    public function removeFavicon(): void
+    {
+        if (! is_array($this->data)) {
+            return;
+        }
+
+        $this->data['favicon_media_asset_id'] = null;
+        $this->persistChangedField('favicon_media_asset_id');
+    }
+
+    public function persistAppearanceColor(string $slot, mixed $value): void
+    {
+        if (! is_array($this->data)) {
+            return;
+        }
+
+        $mode = $this->data['background_mode'] ?? PublicAppearance::MODE_DEFAULT;
+        $field = match ($slot) {
+            'primary' => $mode === PublicAppearance::MODE_GRADIENT ? 'background_gradient_start' : 'background_color',
+            'secondary' => $mode === PublicAppearance::MODE_GRADIENT ? 'background_gradient_end' : null,
+            default => null,
+        };
+
+        if ($field === null || $mode === PublicAppearance::MODE_DEFAULT) {
+            return;
+        }
+
+        $alias = $slot === 'primary' ? 'background_primary_color' : 'background_secondary_color';
+        $this->resetErrorBag('data.'.$alias);
+        $this->data[$field] = $value;
+        $this->persistChangedField($field);
+
+        foreach ($this->getErrorBag()->get('data.'.$field) as $message) {
+            $this->addError('data.'.$alias, $message);
+        }
+
+        $this->syncAppearanceControlState();
+    }
+
+    public function syncAppearanceControlState(): void
+    {
+        if (! is_array($this->data)) {
+            return;
+        }
+
+        $mode = $this->data['background_mode'] ?? PublicAppearance::MODE_DEFAULT;
+        $this->data['background_primary_color'] = $mode === PublicAppearance::MODE_GRADIENT
+            ? ($this->data['background_gradient_start'] ?? null)
+            : ($this->data['background_color'] ?? null);
+        $this->data['background_secondary_color'] = $this->data['background_gradient_end'] ?? null;
     }
 
     public function addSocialLink(): void
@@ -232,6 +306,9 @@ final class General extends Page
 
         try {
             app(AdminSettingsService::class)->updatePublicContent($record, [$field => $candidate]);
+            if (in_array($field, ['background_color', 'background_gradient_start', 'background_gradient_end'], true)) {
+                $this->data[$field] = $candidate;
+            }
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $key => $messages) {
                 $errorKey = str_starts_with($key, 'data.') ? $key : 'data.'.$key;
