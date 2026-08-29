@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
 use App\Filament\Pages\Dashboard;
@@ -17,9 +18,11 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationBuilder;
+use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Icons\Heroicon;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -52,8 +55,8 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => view('filament.partials.admin-theme')->render(),
             )
             ->renderHook(
-                PanelsRenderHook::SIDEBAR_FOOTER,
-                fn (): string => view('filament.partials.sidebar-preview')->render(),
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.partials.publication-commit-dialog')->render(),
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -89,6 +92,30 @@ class AdminPanelProvider extends PanelProvider
         $analyticsItem = Analytics::getNavigationItems()[0]->group(null);
         $activityItem = Activity::getNavigationItems()[0]->group(null);
         $storageItem = StorageCapacity::getNavigationItems()[0]->group(null);
+        $previewItem = NavigationItem::make('Preview')
+            ->group(null)
+            ->icon(Heroicon::OutlinedEye)
+            ->url(route('preview.home'))
+            ->openUrlInNewTab();
+        $commitItem = NavigationItem::make('Commit')
+            ->group(null)
+            ->icon(Heroicon::OutlinedCheckCircle)
+            ->url('#')
+            ->extraAttributes(function (): array {
+                if (! app(PublicationService::class)->hasPendingChanges()) {
+                    return [
+                        'aria-disabled' => 'true',
+                        'data-publication-commit' => 'disabled',
+                        'style' => 'opacity: .5;',
+                        'x-on:click.prevent' => 'void 0',
+                    ];
+                }
+
+                return [
+                    'data-publication-commit' => 'enabled',
+                    'x-on:click.prevent' => "\$dispatch('publication-commit-open')",
+                ];
+            });
 
         return $builder
             ->items([
@@ -99,6 +126,8 @@ class AdminPanelProvider extends PanelProvider
                 $analyticsItem,
                 $activityItem,
                 $storageItem,
+                $previewItem,
+                $commitItem,
             ]);
     }
 }

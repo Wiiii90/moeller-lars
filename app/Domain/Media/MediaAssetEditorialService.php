@@ -9,6 +9,8 @@ use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\JournalEntryMediaService;
 use App\Domain\Content\RichTextMediaReference;
+use App\Domain\Publication\PublicationMediaCleanupService;
+use App\Domain\Publication\PublicationSnapshot;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
@@ -21,10 +23,7 @@ use App\Models\PublicContentSetting;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
-use Throwable;
 
 class MediaAssetEditorialService
 {
@@ -35,6 +34,7 @@ class MediaAssetEditorialService
         private readonly CustomPageEditorialService $customPages,
         private readonly CvEntryEditorialService $cvEntries,
         private readonly HomePresentationEditorialService $homePresentation,
+        private readonly PublicationMediaCleanupService $publicationMediaCleanup,
     ) {}
 
     public function updateMetadata(MediaAsset $asset, array $data): MediaAsset
@@ -135,8 +135,14 @@ class MediaAssetEditorialService
         $actor = $this->adminAuditService->requireActor();
         $assetId = (int) $asset->getKey();
         $keys = [];
+        $deferCleanup = false;
 
-        DB::transaction(function () use ($assetId, $actor, &$keys): void {
+        DB::transaction(function () use ($assetId, $actor, &$keys, &$deferCleanup): void {
+            DB::select('SELECT pg_advisory_xact_lock(?)', [PublicationSnapshot::LOCK_KEY]);
+            $deferCleanup = DB::table('committed.media_assets')
+                ->where('id', $assetId)
+                ->where('state', '<>', 'deleted')
+                ->exists();
             /** @var MediaAsset|null $locked */
             $locked = MediaAsset::query()
                 ->whereKey($assetId)
@@ -161,9 +167,15 @@ class MediaAssetEditorialService
             $locked->setAttribute('state', 'deleted');
             $locked->save();
             $this->adminAuditService->record($actor, 'media.deleted', 'media_asset', $locked->getKey());
+
+            if ($deferCleanup) {
+                $this->publicationMediaCleanup->queue($assetId, $keys);
+            }
         });
 
-        $this->cleanup($keys);
+        if (! $deferCleanup) {
+            $this->publicationMediaCleanup->deleteNow($keys);
+        }
 
         return true;
     }
@@ -461,31 +473,6 @@ class MediaAssetEditorialService
         }
 
         return array_values(array_unique(array_filter($keys, static fn (string $key): bool => $key !== '')));
-    }
-
-    /** @param array<string> $keys */
-    private function cleanup(array $keys): void
-    {
-        $disk = Storage::disk(config('media.disk'));
-        $failed = [];
-
-        foreach ($keys as $key) {
-            try {
-                if ($disk->exists($key) && ! $disk->delete($key)) {
-                    $failed[] = $key;
-                    continue;
-                }
-                if ($disk->exists($key)) {
-                    $failed[] = $key;
-                }
-            } catch (Throwable) {
-                $failed[] = $key;
-            }
-        }
-
-        if ($failed !== []) {
-            throw new RuntimeException('Media storage cleanup failed for: '.implode(', ', array_unique($failed)));
-        }
     }
 
     private function plainText(mixed $value, int $maxLength, bool $emptyToNull): ?string

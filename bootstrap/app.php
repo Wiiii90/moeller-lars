@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\RecordOperationalMetrics;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\UseCommittedPublicState;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,9 +18,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         $middleware->append(RecordOperationalMetrics::class);
 
-        $middleware->web(append: [
-            SecurityHeaders::class,
-        ]);
+        $middleware->web(
+            prepend: [
+                UseCommittedPublicState::class,
+            ],
+            append: [
+                SecurityHeaders::class,
+            ],
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash([

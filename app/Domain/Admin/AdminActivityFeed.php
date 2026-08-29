@@ -16,6 +16,7 @@ use App\Models\BlogPost;
 use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
+use App\Models\PublicationCheckpointEvent;
 use App\Models\SiteSection;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -46,7 +47,7 @@ final class AdminActivityFeed
         $days = in_array($days, self::FILTER_WINDOWS, true) ? $days : self::ACTIVITY_WINDOW_DAYS;
 
         $query = AuditEvent::query()
-            ->with('adminUser:id,name')
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint'])
             ->where('occurred_at', '>=', now()->subDays($days))
             ->orderByDesc('occurred_at')
             ->orderByDesc('id');
@@ -89,7 +90,7 @@ final class AdminActivityFeed
     {
         /** @var EloquentCollection<int, AuditEvent> $events */
         $events = AuditEvent::query()
-            ->with('adminUser:id,name')
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint'])
             ->where('occurred_at', '>=', now()->subDays(self::ACTIVITY_WINDOW_DAYS))
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
@@ -159,6 +160,10 @@ final class AdminActivityFeed
             $adminUser = $event->getRelationValue('adminUser');
             $receipt = $undoReceipts[(int) $event->getKey()] ?? null;
             $undo = null;
+            $checkpointEvent = $event->getRelationValue('publicationCheckpointEvent');
+            $checkpoint = $checkpointEvent instanceof PublicationCheckpointEvent
+                ? $checkpointEvent->getRelationValue('checkpoint')
+                : null;
 
             if (is_array($receipt)) {
                 $inverseLabel = (string) $receipt['inverse_label'];
@@ -180,6 +185,10 @@ final class AdminActivityFeed
                 'actor' => $adminUser?->getAttribute('name') ?? 'Admin',
                 'when' => $occurredAt->diffForHumans(),
                 'timestamp' => $occurredAt->format('Y-m-d H:i'),
+                'publication_status' => $checkpoint === null ? 'pending' : 'committed',
+                'checkpoint_id' => $checkpoint?->getKey(),
+                'checkpoint_message' => $checkpoint?->getAttribute('message'),
+                'checkpoint_at' => $checkpoint?->getAttribute('published_at')?->format('Y-m-d H:i'),
                 'undo' => $undo,
             ];
         })->values()->all();

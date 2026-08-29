@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['admin_user_id', 'action', 'entity_type', 'entity_id', 'occurred_at', 'request_id', 'metadata'])]
 #[Guarded(['id'])]
@@ -35,5 +36,10 @@ class AuditEvent extends Model
     public function adminUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'admin_user_id');
+    }
+
+    public function publicationCheckpointEvent(): HasOne
+    {
+        return $this->hasOne(PublicationCheckpointEvent::class);
     }
 }
