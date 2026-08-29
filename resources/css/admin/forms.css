@@ -186,6 +186,16 @@
     grid-template-columns: minmax(12rem, 1fr) auto auto auto auto;
 }
 
+.general-social-bottom-add {
+    padding: .35rem 0 .2rem;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.general-form-controls .admin-form-label-with-help .admin-help {
+    height: 1em;
+    align-self: center;
+}
+
 .general-status-metrics .admin-metric__label,
 .general-status-metrics .admin-metric__value,
 .general-status-metrics .admin-metric__detail {

@@ -184,4 +184,6 @@
     </table>
 </x-admin.table>
 
-<x-admin.add-row wire:click="addSocialLink">Add social link</x-admin.add-row>
+<div class="general-social-bottom-add">
+    <button class="admin-action" type="button" wire:click="addSocialLink">+ Add social link</button>
+</div>
