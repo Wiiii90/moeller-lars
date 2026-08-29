@@ -238,10 +238,6 @@
     outline: 0;
 }
 
-.admin-compact-number-control {
-    max-width: 8rem;
-}
-
 .admin-help {
     position: relative;
     display: inline-flex;
@@ -424,9 +420,5 @@
 
     .admin-rich-text-image-insert__external-row {
         grid-template-columns: 1fr;
-    }
-
-    .admin-compact-number-control {
-        max-width: none;
     }
 }
