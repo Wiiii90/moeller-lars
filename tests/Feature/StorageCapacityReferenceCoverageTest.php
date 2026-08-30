@@ -100,7 +100,7 @@ it('includes custom page home site identity and rich text paths in the Storage r
         'position' => 0,
     ]);
 
-    $rows = collect(Livewire::test(StorageCapacity::class)->get('fileRows'))->keyBy('filename');
+    $rows = collect(Livewire::test(StorageCapacity::class)->get('files'))->keyBy('filename');
 
     expect($rows['custom-page.jpg']['state'])->toBe('referenced')
         ->and($rows['custom-page.jpg']['use_labels'])->toContain('Custom pages')
