@@ -92,6 +92,16 @@ final class StorageCapacity extends Page
 
     public function updatedReferenceFilter(): void
     {
+        if ($this->referenceFilter !== 'all') {
+            $target = collect($this->referenceOptions)->first(
+                fn (array $row): bool => ($row['key'] ?? null) === $this->referenceFilter,
+            );
+            if (is_array($target)) {
+                $this->referenceState = 'referenced';
+                $this->areaFilter = (string) ($target['area'] ?? 'all');
+            }
+        }
+
         $this->refreshFromFirstPage();
     }
 
