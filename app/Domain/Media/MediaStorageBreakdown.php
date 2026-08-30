@@ -8,44 +8,55 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 final class MediaStorageBreakdown
 {
     /** @var array<string, string> */
-    private const LABELS = [
-        'artworks' => 'Artworks',
-        'exhibitions' => 'Exhibitions',
-        'vita' => 'Vita / CV',
-        'blog' => 'Blog',
-        'shared' => 'Shared across sections',
+    private const AREA_LABELS = [
+        'galleries' => 'Galleries',
+        'journal' => 'Journal',
+        'cv' => 'CV',
+        'home' => 'Home',
+        'custom-pages' => 'Custom pages',
+        'site-identity' => 'Site identity',
+        'referenced' => 'Referenced',
+        'shared' => 'Shared across areas',
         'unassigned' => 'Unassigned library media',
         'uncatalogued' => 'Uncatalogued originals',
     ];
 
-    /**
-     * @param  array<string, int>  $authoritativeFiles
-     * @return list<array{key:string,label:string,bytes:int,files:int,percent:float}>
-     */
-    public function build(array $authoritativeFiles): array
+    /** @return array<string, string> */
+    public static function areaLabels(): array
     {
-        return $this->analyze($authoritativeFiles, 0)['breakdown'];
+        return self::AREA_LABELS;
     }
 
     /**
-     * Build exclusive library-use attribution and a small, path-free list of the
-     * largest authoritative originals from the same measured file snapshot.
+     * Build one file-level storage model from the measured authoritative snapshot.
+     * Every measured original contributes its bytes exactly once to the exclusive
+     * area breakdown. Multi-use originals expose every concrete reference in the
+     * file rows but land in the Shared bucket for the overview.
      *
-     * @param  array<string, int>  $authoritativeFiles
-     * @return array{breakdown:list<array{key:string,label:string,bytes:int,files:int,percent:float}>,heavy_consumers:list<array{label:string,classification:string,bytes:int}>}
+     * Target statistics are deliberately non-exclusive: they answer "how much
+     * storage is used by files referenced here?" and therefore may overlap across
+     * targets. A file is still counted at most once inside any individual target.
+     *
+     * @param array<string, int> $authoritativeFiles
+     * @param EloquentCollection<int, MediaAsset> $assets
+     * @param array<int, list<array{area:string,area_label:string,target_key:string,target_label:string,type:string,label:string,url:?string}>> $referencesByMediaId
+     * @param list<int> $referencedIds
+     * @return array{
+     *   breakdown:list<array{key:string,label:string,bytes:int,files:int,percent:float}>,
+     *   file_rows:list<array<string,mixed>>,
+     *   target_breakdown:list<array{key:string,label:string,area:string,area_label:string,bytes:int,files:int}>,
+     *   attention:array<string,mixed>
+     * }
      */
-    public function analyze(array $authoritativeFiles, int $heavyLimit = 5): array
-    {
+    public function analyze(
+        array $authoritativeFiles,
+        EloquentCollection $assets,
+        array $referencesByMediaId,
+        array $referencedIds,
+    ): array {
         $normalized = $this->normalize($authoritativeFiles);
-        if ($normalized === []) {
-            return ['breakdown' => [], 'heavy_consumers' => []];
-        }
-
-        /** @var EloquentCollection<int, MediaAsset> $assets */
-        $assets = MediaAsset::query()
-            ->withCount(['artworks', 'exhibitions', 'cvEntries', 'blogPosts'])
-            ->whereIn('storage_key', array_keys($normalized))
-            ->get(['id', 'storage_key', 'original_filename']);
+        $totalBytes = (int) array_sum($normalized);
+        $referencedSet = array_fill_keys(array_map('intval', $referencedIds), true);
 
         /** @var array<string, MediaAsset> $assetsByStorageKey */
         $assetsByStorageKey = [];
@@ -58,95 +69,175 @@ final class MediaStorageBreakdown
 
         /** @var array<string, array{bytes:int,files:int}> $buckets */
         $buckets = [];
-        foreach (self::LABELS as $key => $_label) {
+        foreach (self::AREA_LABELS as $key => $_label) {
             $buckets[$key] = ['bytes' => 0, 'files' => 0];
         }
 
+        /** @var array<string, array{key:string,label:string,area:string,area_label:string,bytes:int,files:int}> $targets */
+        $targets = [];
+        $fileRows = [];
+        $unreferencedBytes = 0;
+        $unreferencedFiles = 0;
+
         foreach ($normalized as $storageKey => $bytes) {
-            $bucket = $this->classify($assetsByStorageKey[$storageKey] ?? null);
+            $asset = $assetsByStorageKey[$storageKey] ?? null;
+            $assetId = $asset instanceof MediaAsset ? (int) $asset->getKey() : null;
+            $references = $assetId === null ? [] : ($referencesByMediaId[$assetId] ?? []);
+            $referenced = $assetId !== null && isset($referencedSet[$assetId]);
+
+            $areas = [];
+            foreach ($references as $reference) {
+                $area = (string) ($reference['area'] ?? 'referenced');
+                $areaLabel = (string) ($reference['area_label'] ?? self::AREA_LABELS['referenced']);
+                $areas[$area] = $areaLabel;
+            }
+
+            $bucket = $this->bucketFor($asset, $referenced, array_keys($areas));
             $buckets[$bucket]['bytes'] += $bytes;
             $buckets[$bucket]['files']++;
+
+            if ($asset instanceof MediaAsset && ! $referenced) {
+                $unreferencedBytes += $bytes;
+                $unreferencedFiles++;
+            }
+
+            $targetsSeenForFile = [];
+            foreach ($references as $reference) {
+                $targetKey = (string) ($reference['target_key'] ?? '');
+                if ($targetKey === '' || isset($targetsSeenForFile[$targetKey])) {
+                    continue;
+                }
+                $targetsSeenForFile[$targetKey] = true;
+                $targets[$targetKey] ??= [
+                    'key' => $targetKey,
+                    'label' => (string) ($reference['target_label'] ?? $reference['label'] ?? 'Reference'),
+                    'area' => (string) ($reference['area'] ?? 'referenced'),
+                    'area_label' => (string) ($reference['area_label'] ?? self::AREA_LABELS['referenced']),
+                    'bytes' => 0,
+                    'files' => 0,
+                ];
+                $targets[$targetKey]['bytes'] += $bytes;
+                $targets[$targetKey]['files']++;
+            }
+
+            $mime = $asset instanceof MediaAsset ? (string) $asset->getAttribute('mime_type') : '';
+            $filename = $asset instanceof MediaAsset ? trim((string) $asset->getAttribute('original_filename')) : '';
+            $state = $asset === null ? 'uncatalogued' : ($referenced ? 'referenced' : 'unreferenced');
+            $useLabels = array_values(array_unique(array_values($areas)));
+
+            if ($useLabels === []) {
+                $useLabels = match ($state) {
+                    'uncatalogued' => [self::AREA_LABELS['uncatalogued']],
+                    'unreferenced' => [self::AREA_LABELS['unassigned']],
+                    default => [self::AREA_LABELS['referenced']],
+                };
+            }
+
+            $fileRows[] = [
+                'asset_id' => $assetId,
+                'filename' => $filename !== '' ? $filename : 'Uncatalogued original',
+                'mime' => $mime,
+                'type_label' => $mime !== '' ? MediaTypePolicy::label($mime) : 'Unknown type',
+                'kind' => $mime !== '' ? MediaTypePolicy::kind($mime) : 'unknown',
+                'bytes' => $bytes,
+                'share' => $totalBytes > 0 ? round(($bytes / $totalBytes) * 100, 2) : 0.0,
+                'bucket_key' => $bucket,
+                'area_keys' => array_keys($areas),
+                'use_labels' => $useLabels,
+                'references' => $references,
+                'reference_count' => count($references),
+                'state' => $state,
+                'state_label' => match ($state) {
+                    'referenced' => 'Referenced',
+                    'unreferenced' => 'Unused',
+                    default => 'Uncatalogued',
+                },
+            ];
         }
 
-        $totalBytes = (int) array_sum($normalized);
-        $rows = [];
-        foreach (self::LABELS as $key => $label) {
+        usort($fileRows, static fn (array $left, array $right): int => ($right['bytes'] <=> $left['bytes']) ?: strcmp((string) $left['filename'], (string) $right['filename']));
+
+        $breakdown = [];
+        foreach (self::AREA_LABELS as $key => $label) {
             if ($buckets[$key]['files'] === 0) {
                 continue;
             }
 
-            $rows[] = [
+            $breakdown[] = [
                 'key' => $key,
                 'label' => $label,
                 'bytes' => $buckets[$key]['bytes'],
                 'files' => $buckets[$key]['files'],
-                'percent' => $totalBytes > 0
-                    ? round(($buckets[$key]['bytes'] / $totalBytes) * 100, 1)
-                    : 0.0,
+                'percent' => $totalBytes > 0 ? round(($buckets[$key]['bytes'] / $totalBytes) * 100, 1) : 0.0,
             ];
         }
+        usort($breakdown, static fn (array $left, array $right): int => ($right['bytes'] <=> $left['bytes']) ?: strcmp((string) $left['label'], (string) $right['label']));
 
-        arsort($normalized, SORT_NUMERIC);
-        $heavyConsumers = [];
-        foreach (array_slice($normalized, 0, max(0, $heavyLimit), true) as $storageKey => $bytes) {
-            $asset = $assetsByStorageKey[$storageKey] ?? null;
-            $bucket = $this->classify($asset);
-            $filename = $asset instanceof MediaAsset
-                ? $asset->getAttribute('original_filename')
-                : null;
+        $targetBreakdown = array_values($targets);
+        usort($targetBreakdown, static fn (array $left, array $right): int => ($right['bytes'] <=> $left['bytes']) ?: strcmp((string) $left['label'], (string) $right['label']));
 
-            $heavyConsumers[] = [
-                'label' => is_string($filename) && trim($filename) !== '' ? $filename : 'Uncatalogued original',
-                'classification' => self::LABELS[$bucket],
-                'bytes' => $bytes,
-            ];
+        $largestGallery = null;
+        foreach ($targetBreakdown as $target) {
+            if ($target['area'] === 'galleries') {
+                $largestGallery = $target;
+                break;
+            }
         }
 
-        return ['breakdown' => $rows, 'heavy_consumers' => $heavyConsumers];
+        $largestUnreferenced = null;
+        foreach ($fileRows as $row) {
+            if ($row['state'] === 'unreferenced') {
+                $largestUnreferenced = $row;
+                break;
+            }
+        }
+
+        return [
+            'breakdown' => $breakdown,
+            'file_rows' => $fileRows,
+            'target_breakdown' => $targetBreakdown,
+            'attention' => [
+                'largest_file' => $fileRows[0] ?? null,
+                'largest_area' => $breakdown[0] ?? null,
+                'largest_gallery' => $largestGallery,
+                'largest_unreferenced' => $largestUnreferenced,
+                'unreferenced_files' => $unreferencedFiles,
+                'unreferenced_bytes' => $unreferencedBytes,
+            ],
+        ];
     }
 
-    /**
-     * @param  array<string, int>  $authoritativeFiles
-     * @return array<string, int>
-     */
+    /** @param array<string, int> $authoritativeFiles @return array<string, int> */
     private function normalize(array $authoritativeFiles): array
     {
         $normalized = [];
         foreach ($authoritativeFiles as $storageKey => $bytes) {
-            if ($storageKey === '' || $bytes < 0) {
+            if (! is_string($storageKey) || $storageKey === '' || ! is_numeric($bytes) || (int) $bytes < 0) {
                 continue;
             }
 
-            $normalized[$storageKey] = $bytes;
+            $normalized[$storageKey] = (int) $bytes;
         }
 
         return $normalized;
     }
 
-    private function classify(?MediaAsset $asset): string
+    /** @param list<string> $areas */
+    private function bucketFor(?MediaAsset $asset, bool $referenced, array $areas): string
     {
-        if ($asset === null) {
+        if (! $asset instanceof MediaAsset) {
             return 'uncatalogued';
         }
-
-        $uses = [];
-        if ((int) $asset->getAttribute('artworks_count') > 0) {
-            $uses[] = 'artworks';
+        if (! $referenced) {
+            return 'unassigned';
         }
-        if ((int) $asset->getAttribute('exhibitions_count') > 0) {
-            $uses[] = 'exhibitions';
+        if (count($areas) === 1) {
+            return $areas[0];
         }
-        if ((int) $asset->getAttribute('cv_entries_count') > 0) {
-            $uses[] = 'vita';
-        }
-        if ((int) $asset->getAttribute('blog_posts_count') > 0) {
-            $uses[] = 'blog';
+        if (count($areas) > 1) {
+            return 'shared';
         }
 
-        return match (count($uses)) {
-            0 => 'unassigned',
-            1 => $uses[0],
-            default => 'shared',
-        };
+        return 'referenced';
     }
 }
