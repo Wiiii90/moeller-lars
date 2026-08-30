@@ -73,7 +73,8 @@ it('removes the large operational presentation while keeping application telemet
         ->toContain("(\$row['name'] ?? null) !== 'bot:request'")
         ->and($query)
         ->toContain("'bot:%'", "'error:%'", "'performance:%'", "'operation:%'", "'storage:%'", "'deployment:%'", "'security:%'")
-        ->and($recorder)->toContain('DailyMetric::query()->upsert');
+        ->and($recorder)
+        ->toContain('INSERT INTO daily_metrics', 'DB::statement');
 });
 
 it('projects disabled empty and missing analytics values without inventing zeroes', function (): void {
