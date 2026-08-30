@@ -69,9 +69,10 @@ it('uses rendered cv_list media as the canonical CV reference and ignores legacy
 
     $inUse = MediaAsset::query();
     $catalog->applyUsageFilter($inUse, 'in-use');
-    expect($inUse->pluck('id')->all())
-        ->toContain($portrait->getKey())
-        ->not->toContain($legacyImage->getKey(), $legacyBody->getKey());
+    $inUseIds = $inUse->pluck('id')->all();
+    expect($inUseIds)->toContain($portrait->getKey());
+    expect($inUseIds)->not->toContain($legacyImage->getKey());
+    expect($inUseIds)->not->toContain($legacyBody->getKey());
 
     $cv = MediaAsset::query();
     $catalog->applyUsageFilter($cv, 'cv');
@@ -83,7 +84,8 @@ it('uses rendered cv_list media as the canonical CV reference and ignores legacy
 
     $unreferenced = MediaAsset::query();
     $catalog->applyUsageFilter($unreferenced, 'unreferenced');
-    expect($unreferenced->pluck('id')->all())
-        ->toContain($legacyImage->getKey(), $legacyBody->getKey())
-        ->not->toContain($portrait->getKey());
+    $unreferencedIds = $unreferenced->pluck('id')->all();
+    expect($unreferencedIds)->toContain($legacyImage->getKey());
+    expect($unreferencedIds)->toContain($legacyBody->getKey());
+    expect($unreferencedIds)->not->toContain($portrait->getKey());
 });
