@@ -1,8 +1,6 @@
 .analytics-visual-stage {
     display: grid;
     grid-template-columns: minmax(0, 2.45fr) minmax(17rem, .9fr);
-    height: var(--admin-visual-stage-height);
-    margin-top: var(--admin-section-space);
     overflow: hidden;
 }
 
@@ -295,9 +293,7 @@
 }
 
 .analytics-detail-surface {
-    margin-top: var(--admin-section-space);
-    padding-top: var(--admin-section-space);
-    border-top: 1px solid var(--admin-line-strong);
+    min-width: 0;
 }
 
 .analytics-controls {
@@ -316,15 +312,6 @@
     color: var(--admin-muted);
     font-size: .68rem;
     text-align: left;
-}
-
-.analytics-pager-boundary {
-    padding-top: var(--admin-section-gap);
-    border-top: 1px solid var(--admin-line-strong);
-}
-
-.analytics-pager-boundary .admin-pager {
-    margin-top: 0;
 }
 
 @media (max-width: 1050px) {
@@ -360,21 +347,14 @@
 
 @media (max-width: 760px) {
     .analytics-visual-stage {
-        height: auto;
         grid-template-columns: 1fr;
         overflow: visible;
     }
 
-    .analytics-world {
-        height: var(--admin-visual-stage-height);
-    }
-
     .analytics-stage-rail {
-        height: auto;
         padding: var(--admin-section-gap) 0 0;
         border-top: 1px solid var(--admin-line);
         border-left: 0;
-        overflow: visible;
     }
 
     .analytics-controls {
