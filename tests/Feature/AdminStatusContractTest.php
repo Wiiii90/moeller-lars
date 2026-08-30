@@ -5,6 +5,7 @@ it('keeps workspace health status separate from shared row entity status', funct
     $adminCss = file_get_contents(resource_path('css/admin.css'));
     $taskCss = file_get_contents(resource_path('css/admin/task-surfaces.css'));
     $analytics = file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
+    $analyticsCss = file_get_contents(resource_path('css/admin/analytics.css'));
     $storage = file_get_contents(resource_path('views/filament/pages/storage-capacity.blade.php'));
     $storageCss = file_get_contents(resource_path('css/admin/storage.css'));
 
@@ -20,6 +21,8 @@ it('keeps workspace health status separate from shared row entity status', funct
         ->and($analytics)
         ->toContain('<x-admin.status :tone="$workspaceStatusTone">')
         ->not->toContain('analytics-status')
+        ->and($analyticsCss)
+        ->not->toContain('.analytics-status')
         ->and($storage)
         ->toContain("'admin-status'")
         ->not->toContain('admin-storage__state')
