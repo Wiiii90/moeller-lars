@@ -262,8 +262,7 @@ final class StorageCapacity extends Page
     private function loadTable(?array $analysis = null): void
     {
         $analysis ??= $this->analysis();
-        $rawRows = is_array($analysis['file_rows'] ?? null) ? $analysis['file_rows'] : [];
-        $rows = $this->filteredFileRows($rawRows);
+        $rows = $this->filteredFileRows($this->analysisRows($analysis, 'file_rows'));
         $this->total = count($rows);
         $this->pages = max(1, (int) ceil($this->total / $this->pageSize));
         $this->page = min(max(1, $this->page), $this->pages);
@@ -291,19 +290,14 @@ final class StorageCapacity extends Page
     /** @param array<string,mixed> $analysis */
     private function projectAnalysis(array $analysis): void
     {
-        $breakdown = is_array($analysis['breakdown'] ?? null) ? $analysis['breakdown'] : [];
         $this->breakdown = array_map(function (array $row): array {
             $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
 
             return $row;
-        }, $breakdown);
+        }, $this->analysisRows($analysis, 'breakdown'));
 
         $usedAreas = [];
-        $fileRows = is_array($analysis['file_rows'] ?? null) ? $analysis['file_rows'] : [];
-        foreach ($fileRows as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
+        foreach ($this->analysisRows($analysis, 'file_rows') as $row) {
             foreach (is_array($row['area_keys'] ?? null) ? $row['area_keys'] : [] as $area) {
                 if (is_string($area) && $area !== '') {
                     $usedAreas[$area] = true;
@@ -321,12 +315,11 @@ final class StorageCapacity extends Page
             }
         }
 
-        $targets = is_array($analysis['target_breakdown'] ?? null) ? $analysis['target_breakdown'] : [];
         $this->referenceOptions = array_map(function (array $row): array {
             $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
 
             return $row;
-        }, $targets);
+        }, $this->analysisRows($analysis, 'target_breakdown'));
 
         $attention = is_array($analysis['attention'] ?? null) ? $analysis['attention'] : [];
         foreach (['largest_file', 'largest_unreferenced'] as $key) {
@@ -351,12 +344,7 @@ final class StorageCapacity extends Page
     {
         $search = Str::lower(trim($this->search));
 
-        return array_values(array_filter($rows, function (mixed $candidate) use ($search): bool {
-            if (! is_array($candidate)) {
-                return false;
-            }
-            $row = $candidate;
-
+        return array_values(array_filter($rows, function (array $row) use ($search): bool {
             if ($this->referenceState !== 'all' && ($row['state'] ?? null) !== $this->referenceState) {
                 return false;
             }
@@ -408,12 +396,40 @@ final class StorageCapacity extends Page
         return $row;
     }
 
+    /** @param array<string,mixed> $analysis @return list<array<string,mixed>> */
+    private function analysisRows(array $analysis, string $key): array
+    {
+        $value = $analysis[$key] ?? null;
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($value as $row) {
+            if (is_array($row)) {
+                $rows[] = $row;
+            }
+        }
+
+        return $rows;
+    }
+
     /** @param array<string,mixed> $snapshot @return array<string,int> */
     private function authoritativeFiles(array $snapshot): array
     {
-        $files = $snapshot['authoritative_file_bytes'] ?? null;
+        $value = $snapshot['authoritative_file_bytes'] ?? null;
+        if (! is_array($value)) {
+            return [];
+        }
 
-        return is_array($files) ? $files : [];
+        $files = [];
+        foreach ($value as $path => $bytes) {
+            if (is_string($path) && is_int($bytes) && $bytes >= 0) {
+                $files[$path] = $bytes;
+            }
+        }
+
+        return $files;
     }
 
     private function normalizePageSize(mixed $value): int
