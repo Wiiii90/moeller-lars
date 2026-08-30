@@ -12,7 +12,6 @@ use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\ArtworkCategory;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
-use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\HomePresentationSetting;
 use App\Models\JournalEntryMedia;
@@ -486,20 +485,29 @@ final class MediaReferenceCatalog
             }
 
             foreach ($settings->components() as $component) {
-                if (($component['type'] ?? null) === 'image'
-                    && is_numeric($component['media_asset_id'] ?? null)
-                    && (int) $component['media_asset_id'] > 0) {
-                    $this->appendReferenceRow($rows, (int) $component['media_asset_id'], [
+                $type = $component['type'] ?? null;
+                $mediaId = $component['media_asset_id'] ?? null;
+
+                if ($type === 'image' && is_numeric($mediaId) && (int) $mediaId > 0) {
+                    $this->appendReferenceRow($rows, (int) $mediaId, [
                         'type' => 'Custom Page: '.$this->nodeLabel($node),
                         'label' => 'Image component',
                         'url' => $this->presentation->workspaceUrl($node),
                     ]);
                 }
 
-                if (($component['type'] ?? null) === 'text' && is_string($component['body'] ?? null)) {
+                if ($type === 'cv_list' && is_numeric($mediaId) && (int) $mediaId > 0) {
+                    $this->appendReferenceRow($rows, (int) $mediaId, [
+                        'type' => 'CV',
+                        'label' => $this->nodeLabel($node).' — Portrait',
+                        'url' => $this->presentation->workspaceUrl($node),
+                    ]);
+                }
+
+                if ($type === 'text' && is_string($component['body'] ?? null)) {
                     $title = trim((string) ($component['title'] ?? ''));
-                    foreach (RichTextMediaReference::ids($component['body']) as $mediaId) {
-                        $this->appendReferenceRow($rows, $mediaId, [
+                    foreach (RichTextMediaReference::ids($component['body']) as $richTextMediaId) {
+                        $this->appendReferenceRow($rows, $richTextMediaId, [
                             'type' => 'Custom Page: '.$this->nodeLabel($node),
                             'label' => $title === '' ? 'Rich Text component' : 'Rich Text · '.$title,
                             'url' => $this->presentation->workspaceUrl($node),
@@ -507,44 +515,20 @@ final class MediaReferenceCatalog
                     }
                 }
 
-                if (($component['type'] ?? null) === 'list' && is_array($component['items'] ?? null)) {
+                if ($type === 'list' && is_array($component['items'] ?? null)) {
                     foreach ($component['items'] as $item) {
                         if (! is_array($item) || ! is_string($item['body'] ?? null)) {
                             continue;
                         }
                         $itemTitle = trim((string) ($item['title'] ?? ''));
-                        foreach (RichTextMediaReference::ids($item['body']) as $mediaId) {
-                            $this->appendReferenceRow($rows, $mediaId, [
+                        foreach (RichTextMediaReference::ids($item['body']) as $richTextMediaId) {
+                            $this->appendReferenceRow($rows, $richTextMediaId, [
                                 'type' => 'Custom Page: '.$this->nodeLabel($node),
                                 'label' => $itemTitle === '' ? 'List item Rich Text' : 'List item Rich Text · '.$itemTitle,
                                 'url' => $this->presentation->workspaceUrl($node),
                             ]);
                         }
                     }
-                }
-            }
-        }
-
-        $cvUrl = $this->cvWorkspaceUrl();
-        foreach (CvEntry::query()->get(['id', 'title', 'section', 'body', 'image_media_asset_id']) as $entry) {
-            $title = trim((string) $entry->getAttribute('title')) ?: 'CV entry';
-            $imageId = $entry->getAttribute('image_media_asset_id');
-            if (is_numeric($imageId) && (int) $imageId > 0) {
-                $this->appendReferenceRow($rows, (int) $imageId, [
-                    'type' => 'CV',
-                    'label' => $title.' — Image',
-                    'url' => $cvUrl,
-                ]);
-            }
-
-            $body = $entry->getAttribute('body');
-            if (is_string($body)) {
-                foreach (RichTextMediaReference::ids($body) as $mediaId) {
-                    $this->appendReferenceRow($rows, $mediaId, [
-                        'type' => 'CV',
-                        'label' => $title.' — Rich Text image',
-                        'url' => $cvUrl,
-                    ]);
                 }
             }
         }
@@ -593,25 +577,6 @@ final class MediaReferenceCatalog
 
         $rows[$mediaId] ??= [];
         $rows[$mediaId][] = $row;
-    }
-
-    private function cvWorkspaceUrl(): ?string
-    {
-        foreach ($this->customPageNodes() as $node) {
-            $settings = $node->getRelationValue('customPageSetting');
-            if (! $settings instanceof CustomPageSetting) {
-                continue;
-            }
-
-            $hasCvList = collect($settings->components())->contains(
-                static fn (array $component): bool => ($component['type'] ?? null) === 'cv_list',
-            );
-            if ($hasCvList) {
-                return $this->presentation->workspaceUrl($node);
-            }
-        }
-
-        return null;
     }
 
     private function nodeLabel(SiteSection $node): string
