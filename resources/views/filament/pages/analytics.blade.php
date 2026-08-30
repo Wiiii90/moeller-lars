@@ -172,22 +172,23 @@
         $localTimeMax = $maxMetric($localTimeRows);
         $weekdayAvailable = $reportAvailability->isAvailable('series');
         $localTimeAvailable = $reportAvailability->isAvailable('local_time');
+        $workspaceStatusTone = match ($status) {
+            'available' => 'success',
+            'stale' => 'warning',
+            'disabled', 'unavailable' => 'danger',
+            default => 'neutral',
+        };
     @endphp
 
     <x-admin.workspace title="Analytics" class="analytics-dashboard">
         <x-slot:status>
-            <span @class([
-                'analytics-status',
-                'is-live' => $status === 'available',
-                'is-stale' => $status === 'stale',
-                'is-unavailable' => in_array($status, ['disabled', 'unavailable'], true),
-            ])>
+            <x-admin.status :tone="$workspaceStatusTone">
                 @if ($status === 'available') Live Matomo
                 @elseif ($status === 'stale') Cached Matomo
                 @elseif ($status === 'disabled') Reporting disabled
                 @else Reporting unavailable
                 @endif
-            </span>
+            </x-admin.status>
         </x-slot:status>
 
         <x-admin.metrics :columns="6" aria-label="Traffic summary">
