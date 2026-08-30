@@ -31,12 +31,16 @@ function activityReconciliationEvent(
     ]);
 }
 
-it('uses the central Activity table and pager without Laravel default pagination markup', function (): void {
+it('uses the shared Visual Stage plus central Activity table and pager', function (): void {
     $view = (string) file_get_contents(resource_path('views/filament/pages/activity.blade.php'));
     $activityCss = (string) file_get_contents(resource_path('css/admin/activity.css'));
     $dataCss = (string) file_get_contents(resource_path('css/admin/data-workspace.css'));
 
     expect($view)->toContain(
+        'activity-atlas__grid admin-visual-stage admin-visual-stage--stackable',
+        'activity-atlas__visual admin-visual-stage__pane',
+        'activity-publication admin-visual-stage__pane',
+        'class="admin-visual-stage-followup"',
         '<x-admin.table class="admin-table--data activity-workspace__table">',
         '<th scope="col">Publication</th>',
         'class="admin-status is-published">Committed',
@@ -50,8 +54,18 @@ it('uses the central Activity table and pager without Laravel default pagination
         '>Next</a>',
     )
         ->and($view)->not->toContain('$paginator->links()', 'activity-pagination')
-        ->and($activityCss)->not->toContain('.activity-pagination', '.activity-action', '.activity-table')
-        ->and($dataCss)->toMatch('/\.admin-pager\s*\{[^}]*border-top:\s*1px solid var\(--admin-line\);/s')
+        ->and($activityCss)->not->toContain(
+            '.activity-pagination',
+            '.activity-action',
+            '.activity-table',
+            'min-height: clamp(23rem',
+            'min-height: 23rem',
+            'min-height: 22rem',
+            'min-height: 21rem',
+            'min-height: 19rem',
+        )
+        ->and($dataCss)->toMatch('/\.admin-visual-stage\s*\{[^}]*height:\s*var\(--admin-visual-stage-height\);/s')
+        ->and($dataCss)->toMatch('/\.admin-pager\s*\{[^}]*border-top:\s*1px solid var\(--admin-line-strong\);/s')
         ->and($dataCss)->not->toMatch('/\.admin-pager\s*\{[^}]*border-bottom:/s');
 });
 
