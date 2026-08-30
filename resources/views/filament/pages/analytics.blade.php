@@ -125,7 +125,7 @@
         </x-admin.metrics>
 
         <section
-            class="analytics-visual-stage"
+            class="analytics-visual-stage admin-visual-stage admin-visual-stage--stackable"
             aria-label="Analytics Visual Stage"
             x-data="{
                 selectedCountry: @js($initialCountry),
@@ -136,13 +136,13 @@
                 selectCountry(country) { this.selectedCountry = country; this.activeCountry = country },
             }"
         >
-            <figure class="analytics-world" aria-label="World visitor map">
+            <figure class="analytics-world admin-visual-stage__pane" aria-label="World visitor map">
                 <div class="analytics-world__canvas">
                     @if ($mapViewExists)
                         @include('filament.generated.analytics-world-map')
                     @else
                         <div class="analytics-map-build-warning" role="status">
-                            Map geometry is unavailable in this build.
+                            Map geometry unavailable in this build.
                         </div>
                     @endif
 
@@ -165,7 +165,7 @@
                 </div>
             </figure>
 
-            <aside class="analytics-stage-rail" aria-label="Geography context">
+            <aside class="analytics-stage-rail admin-visual-stage__pane" aria-label="Geography context">
                 <div class="analytics-stage-rail__heading">
                     <div>
                         <span>Human visits</span>
@@ -265,7 +265,7 @@
             </aside>
         </section>
 
-        <section class="analytics-detail-surface" aria-label="Analytics detail table">
+        <section class="analytics-detail-surface admin-visual-stage-followup" aria-label="Analytics detail table">
             <x-admin.controls class="analytics-controls" aria-label="Analytics report controls">
                 <x-slot:search>
                     <label class="admin-data-field">
@@ -344,27 +344,25 @@
             </x-admin.table>
 
             @if ($detailTable['total'] > 12)
-                <div class="analytics-pager-boundary">
-                    <footer class="admin-pager" aria-label="Analytics detail pagination">
-                        <label class="admin-pager__size">
-                            <span>Per page</span>
-                            <select wire:model.live.number="detailPageSize">
-                                <option value="12">12</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                            </select>
-                        </label>
+                <footer class="admin-pager" aria-label="Analytics detail pagination">
+                    <label class="admin-pager__size">
+                        <span>Per page</span>
+                        <select wire:model.live.number="detailPageSize">
+                            <option value="12">12</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                    </label>
 
-                        <span class="admin-pager__range">
-                            {{ $detailTable['start'] }}–{{ $detailTable['end'] }} of {{ $detailTable['total'] }}
-                        </span>
+                    <span class="admin-pager__range">
+                        {{ $detailTable['start'] }}–{{ $detailTable['end'] }} of {{ $detailTable['total'] }}
+                    </span>
 
-                        <div class="admin-pager__actions admin-toolbar">
-                            <button class="admin-action" type="button" wire:click="previousDetailPage" @disabled($detailTable['page'] <= 1)>Previous</button>
-                            <button class="admin-action" type="button" wire:click="nextDetailPage" @disabled($detailTable['page'] >= $detailTable['pages'])>Next</button>
-                        </div>
-                    </footer>
-                </div>
+                    <div class="admin-pager__actions admin-toolbar">
+                        <button class="admin-action" type="button" wire:click="previousDetailPage" @disabled($detailTable['page'] <= 1)>Previous</button>
+                        <button class="admin-action" type="button" wire:click="nextDetailPage" @disabled($detailTable['page'] >= $detailTable['pages'])>Next</button>
+                    </div>
+                </footer>
             @endif
         </section>
     </x-admin.workspace>
