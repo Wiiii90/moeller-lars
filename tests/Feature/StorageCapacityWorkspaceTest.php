@@ -8,7 +8,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
-use App\Models\CvEntry;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -106,6 +105,34 @@ function storageWorkspaceJournal(string $title, string $template): SiteSection
     ]);
 }
 
+function storageWorkspaceCvPage(MediaAsset $portrait, string $title = 'Biography'): SiteSection
+{
+    static $sequence = 0;
+    $sequence++;
+
+    $section = SiteSection::query()->create([
+        'type' => SiteNodeType::CustomPage->value,
+        'template' => null,
+        'title' => $title,
+        'navigation_label' => $title,
+        'slug' => str($title)->slug()->append('-storage-cv-'.$sequence)->toString(),
+        'state' => 'hidden',
+        'position' => 850 + $sequence,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
+    ]);
+    $section->customPageSetting()->create([
+        'blocks' => [[
+            'type' => 'cv_list',
+            'published' => true,
+            'media_asset_id' => $portrait->getKey(),
+        ]],
+    ]);
+
+    return $section;
+}
+
 it('keeps allowance accounting authoritative-original-only while generated derivatives stay rebuildable', function (): void {
     config()->set('media.quota_bytes', 100);
     $asset = storageWorkspaceAsset('allowance.jpg', 80);
@@ -148,7 +175,7 @@ it('distinguishes unconfigured allowance from unavailable configuration', functi
         ->and($unavailable['status_label'])->toBe('Allowance unavailable');
 });
 
-it('recognizes concrete gallery journal and CV references from the canonical reference world', function (): void {
+it('recognizes concrete gallery journal and rendered cv_list references from the canonical reference world', function (): void {
     $galleryAsset = storageWorkspaceAsset('gallery-file.jpg', 120);
     [$gallery] = storageWorkspaceGallery('Selected Works');
     storageWorkspaceAttachArtwork($galleryAsset, $gallery, 'Blue field');
@@ -172,23 +199,16 @@ it('recognizes concrete gallery journal and CV references from the canonical ref
     ]);
 
     $cvAsset = storageWorkspaceAsset('cv-file.jpg', 70);
-    CvEntry::query()->create([
-        'section' => 'Biography',
-        'title' => 'Portrait',
-        'state' => 'draft',
-        'position' => 0,
-        'year_text' => '2026',
-        'image_media_asset_id' => $cvAsset->getKey(),
-    ]);
+    storageWorkspaceCvPage($cvAsset, 'Biography');
 
-    $rows = collect(Livewire::test(StorageCapacity::class)->get('fileRows'))->keyBy('filename');
+    $rows = collect(Livewire::test(StorageCapacity::class)->get('files'))->keyBy('filename');
 
     expect($rows['gallery-file.jpg']['use_labels'])->toContain('Galleries')
         ->and(collect($rows['gallery-file.jpg']['references'])->pluck('target_label')->all())->toContain('Selected Works')
         ->and($rows['journal-file.jpg']['use_labels'])->toContain('Journal')
         ->and(collect($rows['journal-file.jpg']['references'])->pluck('target_label')->all())->toContain('Blog post · Inside the studio')
         ->and($rows['cv-file.jpg']['use_labels'])->toContain('CV')
-        ->and(collect($rows['cv-file.jpg']['references'])->pluck('target_label')->all())->toContain('Portrait');
+        ->and(collect($rows['cv-file.jpg']['references'])->pluck('target_label')->all())->toContain('Biography');
 });
 
 it('keeps multi-use original bytes exclusive in the overview while exposing all uses', function (): void {
@@ -214,7 +234,7 @@ it('keeps multi-use original bytes exclusive in the overview while exposing all 
     ]);
 
     $component = Livewire::test(StorageCapacity::class);
-    $row = collect($component->get('fileRows'))->firstWhere('filename', 'shared.jpg');
+    $row = collect($component->get('files'))->firstWhere('filename', 'shared.jpg');
     $breakdown = collect($component->get('breakdown'));
 
     expect($row['use_labels'])->toContain('Galleries', 'Journal')
@@ -227,7 +247,7 @@ it('marks unreferenced catalogued assets and measured uncatalogued originals sep
     storageWorkspaceAsset('unused.jpg', 80);
     Storage::disk('local')->put('originals/not-in-media-files.bin', str_repeat('z', 55));
 
-    $rows = collect(Livewire::test(StorageCapacity::class)->get('fileRows'));
+    $rows = collect(Livewire::test(StorageCapacity::class)->get('files'));
     $unused = $rows->firstWhere('filename', 'unused.jpg');
     $uncatalogued = $rows->firstWhere('state', 'uncatalogued');
 
@@ -275,22 +295,34 @@ it('filters file rows by search area reference and reference state and keeps vis
         ->assertSet('referenceFilter', 'all');
 });
 
-it('paginates authoritative originals on file level and returns to page one after filtering', function (): void {
-    foreach (range(1, 30) as $index) {
-        storageWorkspaceAsset(sprintf('page-%02d.jpg', $index), 30 + $index);
+it('keeps the full file analysis server-side while paging and filtering a larger library', function (): void {
+    foreach (range(1, 130) as $index) {
+        storageWorkspaceAsset(sprintf('page-%03d.jpg', $index), 30 + $index);
     }
 
-    Livewire::test(StorageCapacity::class)
-        ->assertSet('total', 30)
-        ->assertSet('pages', 2)
-        ->assertCount('files', 25)
-        ->call('nextPage')
+    $component = Livewire::test(StorageCapacity::class)
+        ->assertSet('total', 130)
+        ->assertSet('pages', 6)
+        ->assertCount('files', 25);
+
+    $token = $component->get('analysisToken');
+    $publicState = get_object_vars($component->instance());
+
+    expect($token)->toBeString()->not->toBe('')
+        ->and(Cache::has('media-storage:analysis:'.$token))->toBeTrue()
+        ->and(property_exists(StorageCapacity::class, 'fileRows'))->toBeFalse()
+        ->and($publicState)->not->toHaveKey('fileRows')
+        ->and(count($component->get('files')))->toBeLessThanOrEqual(25);
+
+    $component->call('nextPage')
         ->assertSet('page', 2)
-        ->assertCount('files', 5)
-        ->set('search', 'page-30')
+        ->assertCount('files', 25)
+        ->assertSet('analysisToken', $token)
+        ->set('search', 'page-130')
         ->assertSet('page', 1)
         ->assertSet('total', 1)
-        ->assertCount('files', 1);
+        ->assertCount('files', 1)
+        ->assertSet('analysisToken', $token);
 });
 
 it('renders one productive Storage table and no legacy Largest originals section', function (): void {
