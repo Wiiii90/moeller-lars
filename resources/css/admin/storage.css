@@ -1,14 +1,10 @@
 /* Storage-specific visualization and file-analysis presentation. */
 
 .admin-storage__visual-stage {
-    box-sizing: border-box;
     display: grid;
-    height: var(--admin-visual-stage-height);
     grid-template-columns: minmax(0, 1.45fr) minmax(18rem, .75fr);
     gap: clamp(1.5rem, 3vw, 3rem);
-    padding: var(--admin-section-space) 0;
     overflow: hidden;
-    border-bottom: 1px solid var(--admin-line-strong);
 }
 
 .admin-storage__visual-main,
@@ -398,25 +394,23 @@ button.admin-storage__attention-row:focus-visible {
     background: transparent;
 }
 
-@media (max-width: 1050px) {
+@media (max-width: 760px) {
     .admin-storage__visual-stage {
-        height: auto;
-        min-height: var(--admin-visual-stage-height);
         grid-template-columns: 1fr;
         overflow: visible;
+    }
+
+    .admin-storage__visual-main {
+        grid-template-columns: 1fr;
+        align-items: start;
+        overflow-y: auto;
+        overscroll-behavior: contain;
     }
 
     .admin-storage__context {
         padding: 1.25rem 0 0;
         border-top: 1px solid var(--admin-line);
         border-left: 0;
-    }
-}
-
-@media (max-width: 760px) {
-    .admin-storage__visual-main {
-        grid-template-columns: 1fr;
-        align-items: start;
     }
 
     .admin-storage__capacity-orbit {
