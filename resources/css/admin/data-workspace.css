@@ -2,6 +2,24 @@
 
 /* Shared flat data/control/table/pager grammar for admin workspaces. */
 
+.admin-visual-stage {
+    box-sizing: border-box;
+    height: var(--admin-visual-stage-height);
+    min-height: 0;
+    margin: var(--admin-section-space) 0;
+}
+
+.admin-visual-stage > .admin-visual-stage__pane {
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 0;
+}
+
+.admin-visual-stage + .admin-data-controls {
+    padding: var(--admin-section-space) 0 var(--admin-section-gap);
+    border-top: 1px solid var(--admin-line-strong);
+}
+
 .admin-control-bar {
     display: flex;
     gap: .85rem;
@@ -241,6 +259,12 @@
     font-size: .72rem;
 }
 
+.admin-pager {
+    margin-top: 0;
+    padding-top: var(--admin-section-gap);
+    border-top: 1px solid var(--admin-line-strong);
+}
+
 .admin-pager__size,
 .media-workspace__pager-size,
 .journal-workspace__pager-size {
@@ -312,6 +336,14 @@
 }
 
 @media (max-width: 760px) {
+    .admin-visual-stage--stackable {
+        height: auto;
+    }
+
+    .admin-visual-stage--stackable > .admin-visual-stage__pane {
+        height: var(--admin-visual-stage-height);
+    }
+
     .admin-control-bar {
         align-items: stretch;
     }
