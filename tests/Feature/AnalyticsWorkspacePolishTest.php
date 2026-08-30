@@ -2,12 +2,15 @@
 
 use App\Filament\Pages\Analytics;
 
-it('keeps the Visual Stage structurally present across reporting states', function (): void {
+it('keeps the shared Visual Stage structurally present across reporting states', function (): void {
     $view = (string) file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
-    $css = (string) file_get_contents(resource_path('css/admin/analytics.css'));
+    $analyticsCss = (string) file_get_contents(resource_path('css/admin/analytics.css'));
+    $dataCss = (string) file_get_contents(resource_path('css/admin/data-workspace.css'));
 
     expect($view)
-        ->toContain('class="analytics-visual-stage"')
+        ->toContain('analytics-visual-stage admin-visual-stage admin-visual-stage--stackable')
+        ->toContain('analytics-world admin-visual-stage__pane')
+        ->toContain('analytics-stage-rail admin-visual-stage__pane')
         ->toContain('aria-label="Analytics Visual Stage"')
         ->toContain("\$status === 'disabled' => 'No reporting data for this environment.'")
         ->toContain("\$status === 'unavailable' => 'Reporting data is currently unavailable.'")
@@ -16,9 +19,10 @@ it('keeps the Visual Stage structurally present across reporting states', functi
         ->toContain("@include('filament.generated.analytics-world-map')")
         ->not->toContain('@if ($available)')
         ->not->toContain('Matomo reporting is disabled.')
-        ->and($css)
-        ->toContain('height: var(--admin-visual-stage-height);')
-        ->not->toContain('--analytics-visual-stage-height', '--analytics-stage-height');
+        ->and($analyticsCss)
+        ->not->toContain('height: var(--admin-visual-stage-height);', '--analytics-visual-stage-height', '--analytics-stage-height')
+        ->and($dataCss)
+        ->toMatch('/\.admin-visual-stage\s*\{[^}]*height:\s*var\(--admin-visual-stage-height\);/s');
 });
 
 it('uses loaded country data for client-side map and ranking selection without Matomo fanout', function (): void {
@@ -38,9 +42,10 @@ it('uses loaded country data for client-side map and ranking selection without M
 
 it('keeps one central detail table and its controls together after the Visual Stage', function (): void {
     $view = (string) file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
+    $css = (string) file_get_contents(resource_path('css/admin/analytics.css'));
 
-    $stage = strpos($view, 'class="analytics-visual-stage"');
-    $detail = strpos($view, 'class="analytics-detail-surface"');
+    $stage = strpos($view, 'analytics-visual-stage admin-visual-stage admin-visual-stage--stackable');
+    $detail = strpos($view, 'analytics-detail-surface admin-visual-stage-followup');
     $controls = strpos($view, '<x-admin.controls class="analytics-controls"');
     $table = strpos($view, '<x-admin.table class="admin-table--data analytics-detail-table"');
 
@@ -53,11 +58,12 @@ it('keeps one central detail table and its controls together after the Visual St
         ->and($controls)->toBeLessThan($table)
         ->and(substr_count($view, '<x-admin.table'))->toBe(1)
         ->and($view)->toContain('class="admin-pager"')
-        ->toContain('class="analytics-pager-boundary"')
-        ->not->toContain('->links()', 'links()');
+        ->not->toContain('analytics-pager-boundary')
+        ->not->toContain('->links()', 'links()')
+        ->and($css)->not->toContain('.analytics-pager-boundary');
 });
 
-it('removes the large operational presentation while keeping application telemetry semantically separate', function (): void {
+it('removes the large operational presentation and public payload while keeping bot telemetry separate', function (): void {
     $view = (string) file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
     $page = (string) file_get_contents(app_path('Filament/Pages/Analytics.php'));
     $query = (string) file_get_contents(app_path('Domain/Analytics/OperationalMetricsQuery.php'));
@@ -70,7 +76,9 @@ it('removes the large operational presentation while keeping application telemet
         ->toContain('Human analytics · Matomo')
         ->and($page)
         ->toContain('buildApplicationSignals')
+        ->toContain("->filter(static fn (DailyMetric \$metric): bool => \$metric->getAttribute('metric_name') === 'bot:request')")
         ->toContain("(\$row['name'] ?? null) !== 'bot:request'")
+        ->not->toContain('public array $operational = []', 'public array $operationalSummary = []', 'buildOperationalSummary')
         ->and($query)
         ->toContain("'bot:%'", "'error:%'", "'performance:%'", "'operation:%'", "'storage:%'", "'deployment:%'", "'security:%'")
         ->and($recorder)
