@@ -78,8 +78,7 @@
     justify-self: end;
 }
 
-.admin-status,
-.analytics-status {
+.admin-workspace-status {
     display: inline-flex;
     align-items: center;
     gap: .42rem;
@@ -88,21 +87,18 @@
     font-weight: 650;
 }
 
-.admin-status::before,
-.analytics-status::before {
+.admin-workspace-status::before {
     width: .46rem;
     height: .46rem;
+    flex: 0 0 auto;
     border-radius: 50%;
     background: var(--admin-faint);
     content: '';
 }
 
-.admin-status.is-success::before,
-.analytics-status.is-live::before { background: var(--admin-success); }
-.admin-status.is-warning::before,
-.analytics-status.is-stale::before { background: var(--admin-accent); }
-.admin-status.is-danger::before,
-.analytics-status.is-unavailable::before { background: var(--admin-danger); }
+.admin-workspace-status.is-success::before { background: var(--admin-success); }
+.admin-workspace-status.is-warning::before { background: var(--admin-accent); }
+.admin-workspace-status.is-danger::before { background: var(--admin-danger); }
 
 .admin-section__kicker,
 .admin-empty-state__kicker,
