@@ -19,13 +19,16 @@ final class MediaStorageAnalysisStore
 
     /**
      * Build the complete file analysis once, keep it server-side, and return
-     * only the opaque cache token plus the analysis needed by the current request.
+     * only the opaque cache token plus compact library metrics and the analysis
+     * needed by the current request.
      *
      * @param array<string, int> $authoritativeFiles
-     * @return array{token:string,analysis:array<string,mixed>}
+     * @return array{token:string,analysis:array<string,mixed>,metrics:array{files:int,images:int,videos:int,audio:int,unreferenced:int,bytes:int}}
      */
     public function create(array $authoritativeFiles): array
     {
+        $metrics = $this->references->libraryMetrics();
+
         /** @var EloquentCollection<int, MediaAsset> $assets */
         $assets = new EloquentCollection();
         if ($authoritativeFiles !== []) {
@@ -48,7 +51,7 @@ final class MediaStorageAnalysisStore
         $token = Str::random(48);
         Cache::put($this->cacheKey($token), $analysis, self::CACHE_SECONDS);
 
-        return ['token' => $token, 'analysis' => $analysis];
+        return ['token' => $token, 'analysis' => $analysis, 'metrics' => $metrics];
     }
 
     /** @return array<string,mixed>|null */
