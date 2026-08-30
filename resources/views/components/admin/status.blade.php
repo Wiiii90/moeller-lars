@@ -3,7 +3,7 @@
 ])
 
 <span {{ $attributes->class([
-    'admin-status',
+    'admin-workspace-status',
     'is-success' => $tone === 'success',
     'is-warning' => $tone === 'warning',
     'is-danger' => $tone === 'danger',
