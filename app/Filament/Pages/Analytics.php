@@ -26,9 +26,28 @@ final class Analytics extends Page
 
     protected string $view = 'filament.pages.analytics';
 
+    /** @var array<string, string> */
+    private const DETAIL_REPORTS = [
+        'content' => 'Content',
+        'geography' => 'Geography',
+        'acquisition' => 'Acquisition',
+        'interactions' => 'Interactions',
+        'artwork' => 'Artwork',
+        'technology' => 'Technology',
+    ];
+
+    /** @var list<int> */
+    private const DETAIL_PAGE_SIZES = [12, 25, 50];
+
     public string $range = '30d';
 
     public string $search = '';
+
+    public string $detailReport = 'content';
+
+    public int $detailPage = 1;
+
+    public int $detailPageSize = 12;
 
     /** @var array<string, mixed> */
     public array $matomo = [];
@@ -56,6 +75,9 @@ final class Analytics extends Page
     /** @var array<string, int|float|string> */
     public array $operationalSummary = [];
 
+    /** @var array<int, array{label:string,value:string,detail:string}> */
+    public array $applicationSignals = [];
+
     public function mount(): void
     {
         $this->loadRange();
@@ -68,7 +90,131 @@ final class Analytics extends Page
         }
 
         $this->range = $range;
+        $this->detailPage = 1;
         $this->loadRange();
+    }
+
+    public function setDetailReport(string $report): void
+    {
+        if (! array_key_exists($report, self::DETAIL_REPORTS)) {
+            return;
+        }
+
+        $this->detailReport = $report;
+        $this->search = '';
+        $this->detailPage = 1;
+    }
+
+    public function updatedDetailReport(string $report): void
+    {
+        if (! array_key_exists($report, self::DETAIL_REPORTS)) {
+            $this->detailReport = 'content';
+        }
+
+        $this->search = '';
+        $this->detailPage = 1;
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->detailPage = 1;
+    }
+
+    public function updatedDetailPageSize(int $size): void
+    {
+        if (! in_array($size, self::DETAIL_PAGE_SIZES, true)) {
+            $this->detailPageSize = 12;
+        }
+
+        $this->detailPage = 1;
+    }
+
+    public function previousDetailPage(): void
+    {
+        $this->detailPage = max(1, $this->detailPage - 1);
+    }
+
+    public function nextDetailPage(): void
+    {
+        $pages = (int) ($this->detailTable()['pages'] ?? 1);
+        $this->detailPage = min(max(1, $pages), $this->detailPage + 1);
+    }
+
+    /** @return array<string, string> */
+    public function detailReportOptions(): array
+    {
+        return self::DETAIL_REPORTS;
+    }
+
+    /**
+     * @return array{
+     *     columns:list<string>,
+     *     rows:list<list<string>>,
+     *     state:string,
+     *     message:string|null,
+     *     partial:string|null,
+     *     total:int,
+     *     page:int,
+     *     pages:int,
+     *     start:int,
+     *     end:int
+     * }
+     */
+    public function detailTable(): array
+    {
+        $definition = $this->detailDefinition($this->detailReport);
+
+        if ($definition['state'] === 'unavailable') {
+            return [
+                ...$definition,
+                'total' => 0,
+                'page' => 1,
+                'pages' => 1,
+                'start' => 0,
+                'end' => 0,
+            ];
+        }
+
+        $rows = $definition['rows'];
+        $search = mb_strtolower(trim($this->search));
+        if ($search !== '') {
+            $rows = array_values(array_filter(
+                $rows,
+                static fn (array $row): bool => str_contains(
+                    mb_strtolower(implode(' ', array_map(static fn (mixed $value): string => (string) $value, $row))),
+                    $search,
+                ),
+            ));
+        }
+
+        $total = count($rows);
+        $pageSize = in_array($this->detailPageSize, self::DETAIL_PAGE_SIZES, true)
+            ? $this->detailPageSize
+            : 12;
+        $pages = max(1, (int) ceil($total / $pageSize));
+        $page = min(max(1, $this->detailPage), $pages);
+        $start = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
+        $end = $total === 0 ? 0 : min($total, $page * $pageSize);
+        $pageRows = array_slice($rows, ($page - 1) * $pageSize, $pageSize);
+
+        $message = $definition['message'];
+        if ($total === 0 && $search !== '') {
+            $message = 'No rows match this search.';
+        } elseif ($total === 0 && $message === null) {
+            $message = 'No detail rows in this period.';
+        }
+
+        return [
+            ...$definition,
+            'rows' => $pageRows,
+            'state' => $total === 0 ? 'empty' : 'available',
+            'message' => $message,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'start' => $start,
+            'end' => $end,
+        ];
     }
 
     public function selectArtwork(string $analyticsKey): void
@@ -150,6 +296,321 @@ final class Analytics extends Page
             ->values()
             ->all();
         $this->operationalSummary = $this->buildOperationalSummary($this->operational);
+        $this->applicationSignals = $this->buildApplicationSignals($this->operational);
+    }
+
+    /**
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function detailDefinition(string $report): array
+    {
+        $report = array_key_exists($report, self::DETAIL_REPORTS) ? $report : 'content';
+        $columns = $this->detailColumns($report);
+        $status = $this->matomo['status'] ?? null;
+
+        if (! in_array($status, ['available', 'stale'], true)) {
+            return $this->unavailableDetail(
+                $columns,
+                $status === 'disabled'
+                    ? 'No reporting data for this environment.'
+                    : 'Reporting data is currently unavailable.',
+            );
+        }
+
+        return match ($report) {
+            'geography' => $this->geographyDetail($columns),
+            'acquisition' => $this->acquisitionDetail($columns),
+            'interactions' => $this->interactionDetail($columns),
+            'artwork' => $this->artworkDetail($columns),
+            'technology' => $this->technologyDetail($columns),
+            default => $this->contentDetail($columns),
+        };
+    }
+
+    /** @return list<string> */
+    private function detailColumns(string $report): array
+    {
+        return match ($report) {
+            'geography' => ['Country', 'Visits', 'Share', 'Rank', 'Tracked actions'],
+            'acquisition' => ['Type', 'Source', 'Visits', 'Unique visitors', 'Tracked actions'],
+            'interactions' => ['Event', 'Events', 'Visits', 'Unique visitors'],
+            'artwork' => ['Artwork', 'Gallery', 'Detail views', 'Opens', 'Zooms', 'Active time', 'Average active'],
+            'technology' => ['Type', 'Item', 'Visits', 'Unique visitors', 'Bounce rate'],
+            default => ['Content', 'Views', 'Visits', 'Bounce rate', 'Average time'],
+        };
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function contentDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        if (! $availability->isAvailable('content')) {
+            return $this->unavailableDetail($columns, 'Content report is unavailable.');
+        }
+
+        $rows = [];
+        foreach ($this->matomo['content'] ?? [] as $row) {
+            if (! is_array($row) || ! is_string($row['label'] ?? null)) {
+                continue;
+            }
+
+            $rows[] = [
+                $row['label'],
+                $this->formatNullableInteger($row['nb_hits'] ?? null),
+                $this->formatNullableInteger($row['nb_visits'] ?? null),
+                $this->formatNullablePercentage($row['bounce_rate'] ?? null),
+                $this->formatNullableDuration($row['avg_time_on_page'] ?? null),
+            ];
+        }
+
+        return $this->availableDetail($columns, $rows, 'No content activity in this period.');
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function geographyDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        if (! $availability->isAvailable('countries')) {
+            return $this->unavailableDetail($columns, 'Country-level visit report is unavailable.');
+        }
+
+        $countryRows = array_values(array_filter(
+            $this->matomo['countries'] ?? [],
+            static fn (mixed $row): bool => is_array($row) && is_string($row['label'] ?? null),
+        ));
+        usort($countryRows, static function (array $a, array $b): int {
+            $aVisits = is_numeric($a['nb_visits'] ?? null) ? (float) $a['nb_visits'] : -1.0;
+            $bVisits = is_numeric($b['nb_visits'] ?? null) ? (float) $b['nb_visits'] : -1.0;
+
+            return $bVisits <=> $aVisits;
+        });
+
+        $totalVisits = is_numeric($this->matomo['metrics']['nb_visits'] ?? null)
+            ? (float) $this->matomo['metrics']['nb_visits']
+            : null;
+        $rank = 0;
+        $rows = [];
+        foreach ($countryRows as $row) {
+            $visits = is_numeric($row['nb_visits'] ?? null) ? (float) $row['nb_visits'] : null;
+            $rankLabel = '—';
+            if ($visits !== null) {
+                $rank++;
+                $rankLabel = number_format($rank);
+            }
+
+            $share = null;
+            if ($visits !== null && $totalVisits !== null) {
+                $share = $totalVisits > 0 ? ($visits / $totalVisits) * 100 : 0.0;
+            }
+
+            $rows[] = [
+                (string) $row['label'],
+                $this->formatNullableInteger($visits),
+                $this->formatNullablePercentage($share),
+                $rankLabel,
+                $this->formatNullableInteger($row['nb_actions'] ?? null),
+            ];
+        }
+
+        return $this->availableDetail($columns, $rows, 'No country-level visits in this period.');
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function acquisitionDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        $groups = [
+            'referrer_websites' => 'Website',
+            'socials' => 'Social network',
+            'search_engines' => 'Search engine',
+            'ai_assistants' => 'AI assistant',
+            'campaigns' => 'Campaign',
+        ];
+        $availableGroups = 0;
+        $unavailableGroups = 0;
+        $rows = [];
+
+        foreach ($groups as $report => $label) {
+            if (! $availability->isAvailable($report)) {
+                $unavailableGroups++;
+                continue;
+            }
+
+            $availableGroups++;
+            foreach ($this->matomo[$report] ?? [] as $row) {
+                if (! is_array($row) || ! is_string($row['label'] ?? null)) {
+                    continue;
+                }
+
+                $rows[] = [
+                    $label,
+                    $row['label'],
+                    $this->formatNullableInteger($row['nb_visits'] ?? null),
+                    $this->formatNullableInteger($row['nb_uniq_visitors'] ?? null),
+                    $this->formatNullableInteger($row['nb_actions'] ?? null),
+                ];
+            }
+        }
+
+        if ($availableGroups === 0) {
+            return $this->unavailableDetail($columns, 'Acquisition reports are unavailable.');
+        }
+
+        return $this->availableDetail(
+            $columns,
+            $rows,
+            'No acquisition activity in this period.',
+            $unavailableGroups > 0 ? 'Some acquisition reports are unavailable.' : null,
+        );
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function interactionDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        if (! $availability->isAvailable('events')) {
+            return $this->unavailableDetail($columns, 'Interaction event report is unavailable.');
+        }
+
+        $rows = [];
+        foreach ($this->matomo['events'] ?? [] as $row) {
+            if (! is_array($row) || ! is_string($row['label'] ?? null)) {
+                continue;
+            }
+
+            $rows[] = [
+                $this->humanizeLabel($row['label']),
+                $this->formatNullableInteger($row['nb_events'] ?? null),
+                $this->formatNullableInteger($row['nb_visits'] ?? null),
+                $this->formatNullableInteger($row['nb_uniq_visitors'] ?? null),
+            ];
+        }
+
+        return $this->availableDetail($columns, $rows, 'No tracked interactions in this period.');
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function artworkDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        if (! $availability->isAvailable('artwork_events')) {
+            return $this->unavailableDetail($columns, 'Per-artwork interaction report is unavailable.');
+        }
+
+        $rows = [];
+        foreach ($this->artworkAttention as $row) {
+            $rows[] = [
+                (string) ($row['title'] ?? 'Untitled'),
+                (string) ($row['category'] ?? 'No Gallery'),
+                $this->formatNullableInteger($row['detail_views'] ?? null),
+                $this->formatNullableInteger($row['viewer_opens'] ?? null),
+                $this->formatNullableInteger($row['zooms'] ?? null),
+                (string) ($row['attention_label'] ?? '—'),
+                (string) ($row['average_attention_label'] ?? '—'),
+            ];
+        }
+
+        return $this->availableDetail(
+            $columns,
+            $rows,
+            'No stable per-artwork interaction data is available for this period yet.',
+        );
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function technologyDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        $groups = [
+            'devices' => 'Device',
+            'browsers' => 'Browser',
+            'operating_systems' => 'Operating system',
+        ];
+        $availableGroups = 0;
+        $unavailableGroups = 0;
+        $rows = [];
+
+        foreach ($groups as $report => $label) {
+            if (! $availability->isAvailable($report)) {
+                $unavailableGroups++;
+                continue;
+            }
+
+            $availableGroups++;
+            foreach ($this->matomo[$report] ?? [] as $row) {
+                if (! is_array($row) || ! is_string($row['label'] ?? null)) {
+                    continue;
+                }
+
+                $rows[] = [
+                    $label,
+                    $row['label'],
+                    $this->formatNullableInteger($row['nb_visits'] ?? null),
+                    $this->formatNullableInteger($row['nb_uniq_visitors'] ?? null),
+                    $this->formatNullablePercentage($row['bounce_rate'] ?? null),
+                ];
+            }
+        }
+
+        if ($availableGroups === 0) {
+            return $this->unavailableDetail($columns, 'Technology reports are unavailable.');
+        }
+
+        return $this->availableDetail(
+            $columns,
+            $rows,
+            'No technology distribution in this period.',
+            $unavailableGroups > 0 ? 'Some technology reports are unavailable.' : null,
+        );
+    }
+
+    /**
+     * @param list<string> $columns
+     * @param list<list<string>> $rows
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function availableDetail(array $columns, array $rows, ?string $emptyMessage = null, ?string $partial = null): array
+    {
+        return [
+            'columns' => $columns,
+            'rows' => $rows,
+            'state' => $rows === [] ? 'empty' : 'available',
+            'message' => $rows === [] ? $emptyMessage : null,
+            'partial' => $partial,
+        ];
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string,partial:null}
+     */
+    private function unavailableDetail(array $columns, string $message): array
+    {
+        return [
+            'columns' => $columns,
+            'rows' => [],
+            'state' => 'unavailable',
+            'message' => $message,
+            'partial' => null,
+        ];
     }
 
     /** @param array<string, mixed> $report
@@ -168,7 +629,6 @@ final class Analytics extends Page
 
         $status = $report['status'] ?? null;
         $available = in_array($status, ['available', 'stale'], true);
-        $unavailableDescription = $status === 'disabled' ? 'Reporting disabled' : 'Reporting unavailable';
         $metrics = $report['metrics'] ?? [];
         $comparison = $report['comparison'] ?? [];
         $kpis = [];
@@ -179,7 +639,7 @@ final class Analytics extends Page
                     'key' => $key,
                     'label' => $label,
                     'value' => '—',
-                    'comparison' => $unavailableDescription,
+                    'comparison' => 'Not measured',
                     'delta' => null,
                 ];
 
@@ -472,6 +932,35 @@ final class Analytics extends Page
         ];
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array{label:string,value:string,detail:string}>
+     */
+    private function buildApplicationSignals(array $rows): array
+    {
+        $botRequests = 0;
+        $measured = false;
+
+        foreach ($rows as $row) {
+            if (($row['name'] ?? null) !== 'bot:request' || ! is_numeric($row['value'] ?? null)) {
+                continue;
+            }
+
+            $measured = true;
+            $botRequests += (int) round((float) $row['value']);
+        }
+
+        if (! $measured) {
+            return [];
+        }
+
+        return [[
+            'label' => 'Bot requests',
+            'value' => number_format($botRequests),
+            'detail' => 'Application telemetry',
+        ]];
+    }
+
     private function formatMetric(string $key, float $value): string
     {
         return match ($key) {
@@ -481,6 +970,26 @@ final class Analytics extends Page
             'bounce_rate' => number_format($value, 1).'%',
             default => (string) $value,
         };
+    }
+
+    private function formatNullableInteger(mixed $value): string
+    {
+        return is_numeric($value) ? number_format((int) round((float) $value)) : '—';
+    }
+
+    private function formatNullablePercentage(mixed $value): string
+    {
+        return is_numeric($value) ? number_format((float) $value, 1).'%' : '—';
+    }
+
+    private function formatNullableDuration(mixed $value): string
+    {
+        return is_numeric($value) ? $this->formatDuration((int) round((float) $value)) : '—';
+    }
+
+    private function humanizeLabel(string $label): string
+    {
+        return ucwords(str_replace(['_', '-'], ' ', trim($label)));
     }
 
     private function formatDuration(int $seconds): string
