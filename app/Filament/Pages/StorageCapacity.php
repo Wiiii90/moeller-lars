@@ -37,6 +37,9 @@ final class StorageCapacity extends Page
     /** @var list<array<string, mixed>> */
     public array $breakdown = [];
 
+    /** @var list<array{key:string,label:string}> */
+    public array $areaOptions = [];
+
     /** @var list<array<string, mixed>> */
     public array $fileRows = [];
 
@@ -122,7 +125,7 @@ final class StorageCapacity extends Page
 
     public function selectArea(string $area): void
     {
-        $valid = collect($this->breakdown)->pluck('key')->contains($area);
+        $valid = collect($this->areaOptions)->pluck('key')->contains($area);
         if (! $valid) {
             return;
         }
@@ -284,6 +287,25 @@ final class StorageCapacity extends Page
 
             return $row;
         }, $analysis['file_rows']);
+
+        $usedAreas = [];
+        foreach ($this->fileRows as $row) {
+            foreach (is_array($row['area_keys'] ?? null) ? $row['area_keys'] : [] as $area) {
+                if (is_string($area) && $area !== '') {
+                    $usedAreas[$area] = true;
+                }
+            }
+            $bucket = $row['bucket_key'] ?? null;
+            if (is_string($bucket) && $bucket !== '') {
+                $usedAreas[$bucket] = true;
+            }
+        }
+        $this->areaOptions = [];
+        foreach (MediaStorageBreakdown::areaLabels() as $key => $label) {
+            if (isset($usedAreas[$key])) {
+                $this->areaOptions[] = ['key' => $key, 'label' => $label];
+            }
+        }
 
         $this->referenceOptions = array_map(function (array $row): array {
             $row['display_bytes'] = MediaStorageUnits::formatBytes((int) $row['bytes']);
