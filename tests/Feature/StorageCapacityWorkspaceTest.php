@@ -340,15 +340,19 @@ it('renders one productive Storage table and no legacy Largest originals section
         ->and($html)->not->toContain('Add');
 });
 
-it('uses a shared Visual Stage token for Analytics and Storage without a Storage-local fixed stage height', function (): void {
-    $adminCss = file_get_contents(resource_path('css/admin.css'));
-    $storageCss = file_get_contents(resource_path('css/admin/storage.css'));
+it('uses the shared outer Visual Stage contract for Storage without a local height family', function (): void {
+    $adminCss = (string) file_get_contents(resource_path('css/admin.css'));
+    $dataCss = (string) file_get_contents(resource_path('css/admin/data-workspace.css'));
+    $storageCss = (string) file_get_contents(resource_path('css/admin/storage.css'));
+    $view = (string) file_get_contents(resource_path('views/filament/pages/storage-capacity.blade.php'));
 
     expect($adminCss)->toContain('--admin-visual-stage-height:')
-        ->and($adminCss)->toContain('.analytics-world__canvas')
-        ->and($adminCss)->toContain('height: var(--admin-visual-stage-height)')
+        ->and($dataCss)->toMatch('/\.admin-visual-stage\s*\{[^}]*height:\s*var\(--admin-visual-stage-height\);/s')
+        ->and($view)->toContain('admin-storage__visual-stage admin-visual-stage admin-visual-stage--stackable')
+        ->and($view)->toContain('admin-storage__visual-main admin-visual-stage__pane')
+        ->and($view)->toContain('admin-storage__context admin-visual-stage__pane')
         ->and($storageCss)->toContain('.admin-storage__visual-stage')
-        ->and($storageCss)->toContain('height: var(--admin-visual-stage-height)')
+        ->and($storageCss)->not->toContain('height: var(--admin-visual-stage-height)', 'min-height: var(--admin-visual-stage-height)')
         ->and($storageCss)->not->toMatch('/admin-storage__visual-stage\s*\{[^}]*height:\s*\d+(?:\.\d+)?(?:px|rem)/s');
 });
 
