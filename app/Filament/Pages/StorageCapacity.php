@@ -5,12 +5,11 @@ namespace App\Filament\Pages;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaStorageBreakdown;
 use App\Domain\Media\MediaStorageUnits;
+use App\Filament\Support\MediaStorageAnalysisStore;
 use App\Filament\Support\MediaStorageReferenceCatalog;
-use App\Models\MediaAsset;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
 use UnitEnum;
 
@@ -41,9 +40,6 @@ final class StorageCapacity extends Page
     public array $areaOptions = [];
 
     /** @var list<array<string, mixed>> */
-    public array $fileRows = [];
-
-    /** @var list<array<string, mixed>> */
     public array $files = [];
 
     /** @var list<array<string, mixed>> */
@@ -51,6 +47,8 @@ final class StorageCapacity extends Page
 
     /** @var array<string, mixed> */
     public array $attention = [];
+
+    public string $analysisToken = '';
 
     public int $availableAssets = 0;
 
@@ -252,44 +250,60 @@ final class StorageCapacity extends Page
         $this->availableAssets = $metrics['files'];
         $this->unusedAssets = $metrics['unreferenced'];
 
-        $authoritativeFiles = is_array($snapshot['authoritative_file_bytes'] ?? null)
-            ? $snapshot['authoritative_file_bytes']
-            : [];
+        $stored = app(MediaStorageAnalysisStore::class)->create($this->authoritativeFiles($snapshot));
+        $this->analysisToken = $stored['token'];
+        $this->projectAnalysis($stored['analysis']);
 
-        /** @var EloquentCollection<int, MediaAsset> $assets */
-        $assets = new EloquentCollection();
-        if ($authoritativeFiles !== []) {
-            $assetQuery = MediaAsset::query()->whereIn('storage_key', array_keys($authoritativeFiles));
-            $referenceCatalog->eagerLoad($assetQuery);
-            $assets = $assetQuery->get();
+        $this->pageSize = $this->normalizePageSize($this->pageSize);
+        $this->loadTable($stored['analysis']);
+    }
+
+    /** @param array<string,mixed>|null $analysis */
+    private function loadTable(?array $analysis = null): void
+    {
+        $analysis ??= $this->analysis();
+        $rawRows = is_array($analysis['file_rows'] ?? null) ? $analysis['file_rows'] : [];
+        $rows = $this->filteredFileRows($rawRows);
+        $this->total = count($rows);
+        $this->pages = max(1, (int) ceil($this->total / $this->pageSize));
+        $this->page = min(max(1, $this->page), $this->pages);
+        $slice = array_slice($rows, ($this->page - 1) * $this->pageSize, $this->pageSize);
+        $this->files = array_map($this->presentFileRow(...), $slice);
+    }
+
+    /** @return array<string,mixed> */
+    private function analysis(): array
+    {
+        $store = app(MediaStorageAnalysisStore::class);
+        $analysis = $store->get($this->analysisToken);
+        if (is_array($analysis)) {
+            return $analysis;
         }
 
-        $referencesByAssetId = $referenceCatalog->referencesByAssetId($assets);
-        $referencedIds = $referenceCatalog->referencedIds(
-            $assets->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all(),
-        );
-        $analysis = app(MediaStorageBreakdown::class)->analyze(
-            $authoritativeFiles,
-            $assets,
-            $referencesByAssetId,
-            $referencedIds,
-        );
+        $snapshot = app(MediaCapacityService::class)->cachedSnapshot();
+        $stored = $store->create($this->authoritativeFiles($snapshot));
+        $this->analysisToken = $stored['token'];
+        $this->projectAnalysis($stored['analysis']);
 
+        return $stored['analysis'];
+    }
+
+    /** @param array<string,mixed> $analysis */
+    private function projectAnalysis(array $analysis): void
+    {
+        $breakdown = is_array($analysis['breakdown'] ?? null) ? $analysis['breakdown'] : [];
         $this->breakdown = array_map(function (array $row): array {
-            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) $row['bytes']);
+            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
 
             return $row;
-        }, $analysis['breakdown']);
-
-        $this->fileRows = array_map(function (array $row): array {
-            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) $row['bytes']);
-            $row['display_share'] = number_format((float) $row['share'], ((float) $row['share']) < 1 ? 2 : 1).'%';
-
-            return $row;
-        }, $analysis['file_rows']);
+        }, $breakdown);
 
         $usedAreas = [];
-        foreach ($this->fileRows as $row) {
+        $fileRows = is_array($analysis['file_rows'] ?? null) ? $analysis['file_rows'] : [];
+        foreach ($fileRows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
             foreach (is_array($row['area_keys'] ?? null) ? $row['area_keys'] : [] as $area) {
                 if (is_string($area) && $area !== '') {
                     $usedAreas[$area] = true;
@@ -307,45 +321,42 @@ final class StorageCapacity extends Page
             }
         }
 
+        $targets = is_array($analysis['target_breakdown'] ?? null) ? $analysis['target_breakdown'] : [];
         $this->referenceOptions = array_map(function (array $row): array {
-            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) $row['bytes']);
+            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
 
             return $row;
-        }, $analysis['target_breakdown']);
+        }, $targets);
 
-        $attention = $analysis['attention'];
+        $attention = is_array($analysis['attention'] ?? null) ? $analysis['attention'] : [];
         foreach (['largest_file', 'largest_unreferenced'] as $key) {
             if (is_array($attention[$key] ?? null)) {
-                $attention[$key]['display_bytes'] = MediaStorageUnits::formatBytes((int) $attention[$key]['bytes']);
+                $attention[$key] = $this->presentFileRow($attention[$key]);
             }
         }
         foreach (['largest_area', 'largest_gallery'] as $key) {
             if (is_array($attention[$key] ?? null)) {
-                $attention[$key]['display_bytes'] = MediaStorageUnits::formatBytes((int) $attention[$key]['bytes']);
+                $attention[$key]['display_bytes'] = MediaStorageUnits::formatBytes((int) ($attention[$key]['bytes'] ?? 0));
             }
         }
         $attention['unreferenced_display_bytes'] = MediaStorageUnits::formatBytes((int) ($attention['unreferenced_bytes'] ?? 0));
         $this->attention = $attention;
-
-        $this->pageSize = $this->normalizePageSize($this->pageSize);
-        $this->loadTable();
     }
 
-    private function loadTable(): void
-    {
-        $rows = $this->filteredFileRows();
-        $this->total = count($rows);
-        $this->pages = max(1, (int) ceil($this->total / $this->pageSize));
-        $this->page = min(max(1, $this->page), $this->pages);
-        $this->files = array_slice($rows, ($this->page - 1) * $this->pageSize, $this->pageSize);
-    }
-
-    /** @return list<array<string, mixed>> */
-    private function filteredFileRows(): array
+    /**
+     * @param list<array<string,mixed>> $rows
+     * @return list<array<string,mixed>>
+     */
+    private function filteredFileRows(array $rows): array
     {
         $search = Str::lower(trim($this->search));
 
-        return array_values(array_filter($this->fileRows, function (array $row) use ($search): bool {
+        return array_values(array_filter($rows, function (mixed $candidate) use ($search): bool {
+            if (! is_array($candidate)) {
+                return false;
+            }
+            $row = $candidate;
+
             if ($this->referenceState !== 'all' && ($row['state'] ?? null) !== $this->referenceState) {
                 return false;
             }
@@ -385,6 +396,24 @@ final class StorageCapacity extends Page
 
             return Str::contains(Str::lower($text), $search);
         }));
+    }
+
+    /** @param array<string,mixed> $row @return array<string,mixed> */
+    private function presentFileRow(array $row): array
+    {
+        $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
+        $share = is_numeric($row['share'] ?? null) ? (float) $row['share'] : 0.0;
+        $row['display_share'] = number_format($share, $share < 1 ? 2 : 1).'%';
+
+        return $row;
+    }
+
+    /** @param array<string,mixed> $snapshot @return array<string,int> */
+    private function authoritativeFiles(array $snapshot): array
+    {
+        $files = $snapshot['authoritative_file_bytes'] ?? null;
+
+        return is_array($files) ? $files : [];
     }
 
     private function normalizePageSize(mixed $value): int
