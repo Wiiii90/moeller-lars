@@ -184,7 +184,4 @@
     </table>
 </x-admin.table>
 
-<x-admin.add-row
-    label="Add social link"
-    wire:click="addSocialLink"
-/>
+<x-admin.add-row wire:click="addSocialLink">Add social link</x-admin.add-row>
