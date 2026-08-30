@@ -5,6 +5,13 @@ it('uses reconciled shared primitives for Home data and editorial task surfaces'
     $css = (string) file_get_contents(resource_path('css/admin/home.css'));
     $sharedCss = (string) file_get_contents(resource_path('css/admin/data-workspace.css'));
 
+    preg_match(
+        '/\.admin-pager,\s*\.media-workspace__pager,\s*\.journal-workspace__pager\s*\{(?<block>.*?)\}/s',
+        $sharedCss,
+        $pagerMatches,
+    );
+    $pagerCss = (string) ($pagerMatches['block'] ?? '');
+
     expect($view)
         ->toContain('admin-visual-stage admin-visual-stage--stackable')
         ->toContain('admin-visual-stage__pane')
@@ -36,6 +43,7 @@ it('uses reconciled shared primitives for Home data and editorial task surfaces'
         ->and($sharedCss)->toContain('.admin-visual-stage {')
         ->and($sharedCss)->toContain('height: var(--admin-visual-stage-height);')
         ->and($sharedCss)->toContain('.admin-visual-stage + .admin-data-controls {')
-        ->and($sharedCss)->toContain('border-top: 1px solid var(--admin-line-strong);')
-        ->and($sharedCss)->not->toContain('border-bottom: 1px solid var(--admin-line-strong);');
+        ->and($pagerCss)->not->toBe('')
+        ->and($pagerCss)->toContain('border-top: 1px solid var(--admin-line-strong);')
+        ->and($pagerCss)->not->toContain('border-bottom');
 });
