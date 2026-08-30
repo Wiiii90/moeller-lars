@@ -1,6 +1,5 @@
 .activity-atlas {
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--admin-line-strong);
+    min-width: 0;
 }
 
 .activity-atlas__header,
@@ -14,7 +13,6 @@
 
 .activity-atlas__header {
     min-height: var(--admin-control-height);
-    margin-bottom: .85rem;
 }
 
 .activity-atlas__heading,
@@ -50,19 +48,19 @@
     gap: clamp(1.5rem, 3.5vw, 3rem);
     min-width: 0;
     align-items: stretch;
+    overflow: hidden;
 }
 
 .activity-atlas__visual {
     display: grid;
     min-width: 0;
-    min-height: clamp(23rem, 33vw, 27.5rem);
 }
 
 .activity-atlas__panel {
     display: grid;
     grid-area: 1 / 1;
     min-width: 0;
-    min-height: inherit;
+    min-height: 0;
     align-content: stretch;
 }
 
@@ -263,10 +261,13 @@
 .activity-publication {
     display: grid;
     min-width: 0;
+    min-height: 0;
     grid-template-rows: auto auto auto minmax(0, 1fr) auto;
     align-content: start;
     padding-left: clamp(1.1rem, 2vw, 1.75rem);
     border-left: 1px solid var(--admin-line);
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .activity-publication__header {
@@ -371,7 +372,7 @@
 
 .activity-workspace__controls {
     grid-template-columns: minmax(15rem, 1.5fr) minmax(10rem, .8fr) minmax(10rem, .8fr) auto auto;
-    padding: .85rem 0;
+    padding: 0 0 var(--admin-section-gap);
 }
 
 .activity-workspace__table table {
@@ -405,22 +406,15 @@
         gap: 1.5rem;
     }
 
-    .activity-atlas__visual {
-        min-height: 23rem;
-    }
-
     .activity-workspace__controls {
         grid-template-columns: minmax(14rem, 1.4fr) repeat(2, minmax(9rem, 1fr));
     }
 }
 
-@media (max-width: 840px) {
+@media (max-width: 760px) {
     .activity-atlas__grid {
         grid-template-columns: 1fr;
-    }
-
-    .activity-atlas__visual {
-        min-height: 22rem;
+        overflow: visible;
     }
 
     .activity-publication {
@@ -459,10 +453,6 @@
 
     .activity-atlas__header {
         flex-direction: column;
-    }
-
-    .activity-atlas__visual {
-        min-height: 21rem;
     }
 
     .activity-rhythm__chart {
@@ -509,10 +499,6 @@
 }
 
 @media (max-width: 520px) {
-    .activity-atlas__visual {
-        min-height: 19rem;
-    }
-
     .activity-rhythm__chart {
         width: min(100%, 17rem);
         max-height: 17rem;
