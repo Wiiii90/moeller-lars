@@ -65,7 +65,7 @@ it('distinguishes two concrete galleries for one original without double-countin
     }
 
     $component = Livewire::test(StorageCapacity::class);
-    $row = collect($component->get('fileRows'))->firstWhere('filename', 'multi-gallery.jpg');
+    $row = collect($component->get('files'))->firstWhere('filename', 'multi-gallery.jpg');
     $galleryTargets = collect($row['references'])
         ->where('area', 'galleries')
         ->pluck('target_label')
