@@ -295,7 +295,7 @@
 
         @if ($paginator->hasPages())
             <footer class="admin-pager" aria-label="Activity pagination">
-                <span class="admin-pager__size" aria-hidden="true"></span>
+                <span class="admin-pager__size">Page {{ $paginator->currentPage() }} of {{ $paginator->lastPage() }}</span>
                 <span class="admin-pager__range">{{ $paginator->firstItem() ?? 0 }}–{{ $paginator->lastItem() ?? 0 }} of {{ $paginator->total() }}</span>
                 <div class="admin-pager__actions admin-toolbar">
                     @if ($paginator->previousPageUrl())
