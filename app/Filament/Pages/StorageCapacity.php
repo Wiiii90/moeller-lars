@@ -6,7 +6,6 @@ use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaStorageBreakdown;
 use App\Domain\Media\MediaStorageUnits;
 use App\Filament\Support\MediaStorageAnalysisStore;
-use App\Filament\Support\MediaStorageReferenceCatalog;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -245,13 +244,10 @@ final class StorageCapacity extends Page
             'unit_note' => 'Decimal units · 1 GB = 1,000,000,000 bytes',
         ];
 
-        $referenceCatalog = app(MediaStorageReferenceCatalog::class);
-        $metrics = $referenceCatalog->libraryMetrics();
-        $this->availableAssets = $metrics['files'];
-        $this->unusedAssets = $metrics['unreferenced'];
-
         $stored = app(MediaStorageAnalysisStore::class)->create($this->authoritativeFiles($snapshot));
         $this->analysisToken = $stored['token'];
+        $this->availableAssets = $stored['metrics']['files'];
+        $this->unusedAssets = $stored['metrics']['unreferenced'];
         $this->projectAnalysis($stored['analysis']);
 
         $this->pageSize = $this->normalizePageSize($this->pageSize);
@@ -282,6 +278,8 @@ final class StorageCapacity extends Page
         $snapshot = app(MediaCapacityService::class)->cachedSnapshot();
         $stored = $store->create($this->authoritativeFiles($snapshot));
         $this->analysisToken = $stored['token'];
+        $this->availableAssets = $stored['metrics']['files'];
+        $this->unusedAssets = $stored['metrics']['unreferenced'];
         $this->projectAnalysis($stored['analysis']);
 
         return $stored['analysis'];
