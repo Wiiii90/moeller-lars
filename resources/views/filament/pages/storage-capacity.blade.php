@@ -15,8 +15,8 @@
             <x-admin.metric label="Allowance" :value="$capacity['allowance'] ?? '—'">Operator-controlled · read only</x-admin.metric>
         </x-admin.metrics>
 
-        <section class="admin-storage__visual-stage" aria-label="Storage capacity and distribution">
-            <div class="admin-storage__visual-main">
+        <section class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--stackable" aria-label="Storage capacity and distribution">
+            <div class="admin-storage__visual-main admin-visual-stage__pane">
                 <div class="admin-storage__capacity-group">
                     <div
                         @class([
@@ -91,7 +91,7 @@
                 </div>
             </div>
 
-            <aside class="admin-storage__context" aria-label="Storage context and attention">
+            <aside class="admin-storage__context admin-visual-stage__pane" aria-label="Storage context and attention">
                 <div class="admin-storage__context-block">
                     <p class="admin-storage__eyebrow">Capacity context</p>
                     <dl class="admin-storage__facts">
@@ -136,7 +136,7 @@
             </aside>
         </section>
 
-        <form wire:submit.prevent class="admin-storage__data-surface">
+        <form wire:submit.prevent class="admin-storage__data-surface admin-visual-stage-followup">
             <x-admin.controls class="admin-storage__controls" aria-label="Storage file controls">
                 <x-slot:search>
                     <label class="admin-data-field">
