@@ -20,6 +20,16 @@
     border-top: 1px solid var(--admin-line-strong);
 }
 
+.admin-visual-stage + .admin-visual-stage-followup {
+    padding-top: var(--admin-section-space);
+    border-top: 1px solid var(--admin-line-strong);
+}
+
+.admin-visual-stage-followup > .admin-data-controls {
+    padding-top: 0;
+    padding-bottom: var(--admin-section-gap);
+}
+
 .admin-control-bar {
     display: flex;
     gap: .85rem;
