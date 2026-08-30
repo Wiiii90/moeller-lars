@@ -6,18 +6,20 @@ use Illuminate\Support\Facades\DB;
 
 final class CommittedRead
 {
-    /**
-     * @template TValue
-     * @param callable(): TValue $callback
-     * @return TValue
-     */
+    public function __construct(
+        private readonly PublicationReadContext $readContext,
+    ) {}
+
     public function run(callable $callback): mixed
     {
-        return DB::transaction(function () use ($callback): mixed {
-            DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
-            DB::statement('SET LOCAL search_path TO committed, public');
+        return $this->readContext->runCommitted(function () use ($callback): mixed {
+            return DB::transaction(function () use ($callback): mixed {
+                if (DB::transactionLevel() === 1) {
+                    DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+                }
 
-            return $callback();
-        }, attempts: 1);
+                return $callback();
+            }, attempts: 1);
+        });
     }
 }

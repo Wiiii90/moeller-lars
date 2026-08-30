@@ -10,6 +10,7 @@ final class AdminColorControl
     {
         return ColorPicker::make($name)
             ->label($label)
-            ->nullable();
+            ->nullable()
+            ->extraAttributes(['class' => 'admin-color-control']);
     }
 }
