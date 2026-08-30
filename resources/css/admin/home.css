@@ -4,29 +4,45 @@
     padding: .85rem 0;
 }
 
-.admin-home-workspace .admin-data-controls {
+.admin-home-workspace .admin-data-controls:not(.home-artwork-source-controls) {
     grid-template-columns: minmax(14rem, 2fr) minmax(8rem, .75fr) minmax(8rem, .75fr) auto auto;
-    padding: 1rem 0;
+    padding: var(--admin-section-gap) 0;
 }
 
 .admin-home-workspace .admin-data-controls.home-artwork-source-controls {
-    grid-template-columns: minmax(14rem, 2fr) minmax(8rem, .75fr) minmax(8rem, .75fr) auto auto auto;
+    display: flex;
+    gap: var(--admin-section-gap);
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.home-artwork-source-controls > .admin-data-field:first-child {
+    flex: 1 1 14rem;
+}
+
+.home-artwork-source-controls > .admin-data-field:not(:first-child) {
+    flex: 0 1 9rem;
+}
+
+.home-artwork-source-controls > .admin-data-control-group {
+    flex: 0 0 auto;
+}
+
+.home-artwork-source-controls > .admin-selection {
+    margin-left: auto;
 }
 
 .home-hero-surface {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
-    gap: 1.25rem;
+    gap: var(--admin-section-gap);
     min-width: 0;
-    height: 30rem;
-    margin-bottom: 1.25rem;
     align-items: stretch;
 }
 
 .home-hero-surface__visual {
     display: grid;
     min-width: 0;
-    height: 30rem;
     place-items: center;
     overflow: hidden;
     border: 1px solid var(--admin-line);
@@ -52,7 +68,6 @@
 .home-hero-rail {
     display: flex;
     min-width: 0;
-    height: 30rem;
     flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--admin-line);
@@ -287,19 +302,22 @@
 }
 
 @media (max-width: 760px) {
-    .admin-home-workspace .admin-data-controls,
-    .admin-home-workspace .admin-data-controls.home-artwork-source-controls {
+    .admin-home-workspace .admin-data-controls:not(.home-artwork-source-controls) {
         grid-template-columns: 1fr;
+    }
+
+    .home-artwork-source-controls > .admin-data-field:first-child,
+    .home-artwork-source-controls > .admin-data-field:not(:first-child),
+    .home-artwork-source-controls > .admin-data-control-group {
+        flex: 1 1 100%;
+    }
+
+    .home-artwork-source-controls > .admin-selection {
+        margin-left: 0;
     }
 
     .home-hero-surface {
         grid-template-columns: 1fr;
-        height: auto;
-    }
-
-    .home-hero-surface__visual,
-    .home-hero-rail {
-        height: 24rem;
     }
 
     .home-workspace__skip-row {
