@@ -241,6 +241,12 @@
     font-size: .72rem;
 }
 
+.admin-pager {
+    margin-top: 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--admin-line);
+}
+
 .admin-pager__size,
 .media-workspace__pager-size,
 .journal-workspace__pager-size {
