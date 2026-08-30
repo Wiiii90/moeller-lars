@@ -253,12 +253,16 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     gap: 1rem;
-    margin-top: 0;
-    padding-top: var(--admin-section-gap);
+    margin-top: 1rem;
     align-items: center;
-    border-top: 1px solid var(--admin-line-strong);
     color: var(--admin-muted);
     font-size: .72rem;
+}
+
+.admin-pager {
+    margin-top: 0;
+    padding-top: var(--admin-section-gap);
+    border-top: 1px solid var(--admin-line-strong);
 }
 
 .admin-pager__size,
