@@ -5,6 +5,7 @@
 @import './admin/analytics.css';
 @import './admin/activity.css';
 @import './admin/media.css';
+@import './admin/storage.css';
 
 :root {
     --admin-text: #181818;
@@ -27,6 +28,13 @@
     --admin-workspace-gutter: 2rem;
     --admin-sidebar-width: 18rem;
     --admin-sidebar-half-width: 9rem;
+    /*
+     * Visual Stage: the accepted Analytics map is 2:1 inside the 80rem
+     * workspace's 2.5fr/.75fr geography grid. Its maximum visible canvas is
+     * therefore 29.81rem high. Responsive overrides retain the existing map
+     * aspect behavior rather than introducing page-local stage heights.
+     */
+    --admin-visual-stage-height: 29.81rem;
     --admin-workspace-visual-shift: clamp(
         0rem,
         calc(50vw - var(--admin-sidebar-half-width) - var(--admin-workspace-half-width) - var(--admin-workspace-gutter)),
@@ -69,6 +77,32 @@
 .admin-workspace__status {
     justify-self: end;
 }
+
+.admin-status,
+.analytics-status {
+    display: inline-flex;
+    align-items: center;
+    gap: .42rem;
+    color: var(--admin-muted);
+    font-size: .72rem;
+    font-weight: 650;
+}
+
+.admin-status::before,
+.analytics-status::before {
+    width: .46rem;
+    height: .46rem;
+    border-radius: 50%;
+    background: var(--admin-faint);
+    content: '';
+}
+
+.admin-status.is-success::before,
+.analytics-status.is-live::before { background: var(--admin-success); }
+.admin-status.is-warning::before,
+.analytics-status.is-stale::before { background: var(--admin-accent); }
+.admin-status.is-danger::before,
+.analytics-status.is-unavailable::before { background: var(--admin-danger); }
 
 .admin-section__kicker,
 .admin-empty-state__kicker,
@@ -344,6 +378,12 @@
     border-bottom: 0;
 }
 
+/* Shared Visual Stage consumer: preserve the accepted Analytics map height. */
+.analytics-world__canvas {
+    height: var(--admin-visual-stage-height);
+    aspect-ratio: auto;
+}
+
 .fi-page-header-main-ctn {
     gap: var(--admin-section-gap);
 }
@@ -384,6 +424,12 @@
     margin-top: 0;
 }
 
+@media (max-width: 1050px) {
+    :root {
+        --admin-visual-stage-height: 50vw;
+    }
+}
+
 @media (max-width: 900px) {
     .admin-workspace__header {
         grid-template-columns: 1fr;
@@ -408,5 +454,11 @@
     .admin-list__row--media {
         grid-template-columns: 1fr;
         gap: .7rem;
+    }
+}
+
+@media (max-width: 720px) {
+    :root {
+        --admin-visual-stage-height: 58.8235vw;
     }
 }
