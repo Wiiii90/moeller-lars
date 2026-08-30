@@ -29,10 +29,9 @@
     --admin-sidebar-width: 18rem;
     --admin-sidebar-half-width: 9rem;
     /*
-     * Visual Stage: the accepted Analytics map is 2:1 inside the 80rem
-     * workspace's 2.5fr/.75fr geography grid. Its maximum visible canvas is
-     * therefore 29.81rem high. Responsive overrides retain the existing map
-     * aspect behavior rather than introducing page-local stage heights.
+     * Visual Stage: outer height of a large admin visualization surface on
+     * desktop. Page-specific panes fill this stage; responsive stacking stays
+     * in the shared Visual Stage primitive rather than page-local height rules.
      */
     --admin-visual-stage-height: 29.81rem;
     --admin-workspace-visual-shift: clamp(
@@ -372,12 +371,6 @@
 
 .admin-table tbody tr:last-child td {
     border-bottom: 0;
-}
-
-/* Shared Visual Stage consumer: preserve the accepted Analytics map height. */
-.analytics-world__canvas {
-    height: var(--admin-visual-stage-height);
-    aspect-ratio: auto;
 }
 
 .fi-page-header-main-ctn {
