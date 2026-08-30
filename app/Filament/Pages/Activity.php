@@ -104,7 +104,7 @@ final class Activity extends Page
             $peakHour = (int) array_search($peakCount, $hourly, true);
         }
 
-        $calendarStart = CarbonImmutable::now()->startOfDay()->subDays($days - 1);
+        $calendarStart = CarbonImmutable::now()->subDays($days)->startOfDay();
         $calendarEnd = CarbonImmutable::now()->startOfDay();
         $calendarGridStart = $calendarStart->startOfWeek(CarbonInterface::MONDAY);
         $calendarGridEnd = $calendarEnd->endOfWeek(CarbonInterface::SUNDAY);
