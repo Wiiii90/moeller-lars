@@ -253,8 +253,9 @@
                                 <td class="admin-storage__number">{{ $row['display_share'] }}</td>
                                 <td>
                                     <span @class([
-                                        'admin-storage__state',
-                                        'is-unused' => $row['state'] === 'unreferenced',
+                                        'admin-status',
+                                        'is-referenced' => $row['state'] === 'referenced',
+                                        'is-unreferenced' => $row['state'] === 'unreferenced',
                                         'is-uncatalogued' => $row['state'] === 'uncatalogued',
                                     ])>{{ $row['state_label'] }}</span>
                                 </td>
