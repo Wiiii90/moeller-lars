@@ -7,7 +7,6 @@ use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SiteNodeType;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
-use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\HomePresentationSetting;
 use App\Models\JournalEntryMedia;
@@ -18,7 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 final class MediaReferenceQuery
 {
     /** @var list<string> */
-    private const CANONICAL_RELATIONS = ['artworks', 'journalEntryMedia', 'siteIdentitySettings', 'cvEntries'];
+    private const CANONICAL_RELATIONS = ['artworks', 'journalEntryMedia', 'siteIdentitySettings'];
 
     /** @var list<int>|null */
     private ?array $directContentMediaIds = null;
@@ -65,7 +64,7 @@ final class MediaReferenceQuery
     {
         $blocks = $settings->components();
         $mediaIds = collect($blocks)
-            ->filter(static fn (array $component): bool => ($component['type'] ?? null) === 'image')
+            ->filter(static fn (array $component): bool => in_array($component['type'] ?? null, ['image', 'cv_list'], true))
             ->pluck('media_asset_id')
             ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
             ->map(static fn (mixed $id): int => (int) $id)
@@ -80,6 +79,26 @@ final class MediaReferenceQuery
     public function customPageReferencesAsset(CustomPageSetting $settings, int $mediaAssetId): bool
     {
         return in_array($mediaAssetId, $this->mediaIdsForCustomPage($settings), true);
+    }
+
+    /** @return list<int> */
+    public function mediaIdsForCv(): array
+    {
+        $ids = [];
+        foreach (CustomPageSetting::query()->get(['id', 'blocks']) as $settings) {
+            foreach ($settings->components() as $component) {
+                if (($component['type'] ?? null) !== 'cv_list') {
+                    continue;
+                }
+
+                $mediaId = $component['media_asset_id'] ?? null;
+                if (is_numeric($mediaId) && (int) $mediaId > 0) {
+                    $ids[] = (int) $mediaId;
+                }
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /** @return list<int> */
@@ -139,20 +158,6 @@ final class MediaReferenceQuery
     }
 
     /** @return list<int> */
-    public function mediaIdsForCv(): array
-    {
-        $direct = CvEntry::query()
-            ->whereNotNull('image_media_asset_id')
-            ->pluck('image_media_asset_id')
-            ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->all();
-        $richText = $this->richTextIds(CvEntry::query()->whereNotNull('body')->pluck('body'));
-
-        return array_values(array_unique(array_merge($direct, $richText)));
-    }
-
-    /** @return list<int> */
     public function mediaIdsForHome(HomePresentationSetting $settings): array
     {
         $ids = [];
@@ -191,7 +196,6 @@ final class MediaReferenceQuery
             $ids = array_merge($ids, $this->mediaIdsForCustomPage($settings));
         }
 
-        $ids = array_merge($ids, $this->richTextIds(CvEntry::query()->whereNotNull('body')->pluck('body')));
         $ids = array_merge($ids, $this->richTextIds(BlogPost::query()->whereNotNull('body')->pluck('body')));
         $ids = array_merge($ids, $this->richTextIds(Exhibition::query()->whereNotNull('description')->pluck('description')));
 
