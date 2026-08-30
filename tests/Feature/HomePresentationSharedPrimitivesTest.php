@@ -9,15 +9,18 @@ it('uses reconciled shared primitives for Home data and editorial task surfaces'
         ->toContain('admin-selection')
         ->toContain('admin-drag-handle')
         ->toContain('admin-position')
-        ->toContain('admin-bottom-add')
+        ->toContain('<x-admin.add-row')
         ->toContain('admin-pager')
+        ->not->toContain('admin-bottom-add')
         ->not->toContain('journal-workspace__')
         ->not->toContain('custom-page-row__drag')
         ->not->toContain('custom-page-component-add-row')
         ->not->toContain('admin-position-badge')
         ->not->toContain('admin-action-slot')
+        ->and(substr_count($view, '<x-admin.add-row'))->toBe(2)
         ->and($css)->not->toContain('custom-page-')
         ->and($css)->not->toContain('.admin-position {')
         ->and($css)->not->toContain('.admin-pager {')
-        ->and($css)->not->toContain('.admin-action.is-danger');
+        ->and($css)->not->toContain('.admin-action.is-danger')
+        ->and($css)->not->toContain('.admin-bottom-add');
 });

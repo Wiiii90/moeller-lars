@@ -40,8 +40,11 @@ it('uses the shared admin presentation contract instead of a Pages-local theme',
         ->toContain('label="In navigation"')
         ->toContain('admin-task-controls admin-task-controls--pages')
         ->toContain('admin-hierarchy admin-hierarchy--pages')
-        ->toContain('admin-bottom-add')
+        ->toContain('<x-admin.add-row')
+        ->toContain('wire:click="startAddingPage"')
+        ->toContain('>Add page</x-admin.add-row>')
         ->toContain('admin-pager')
+        ->not->toContain('admin-bottom-add')
         ->not->toContain('<style>')
         ->not->toContain('--pages-')
         ->not->toContain('min-width: 96rem')
@@ -79,7 +82,7 @@ it('uses the shared admin presentation contract instead of a Pages-local theme',
         ->toContain('.admin-hierarchy__row.is-child .admin-hierarchy__content::before')
         ->toContain('.admin-position {')
         ->toContain('.admin-action--state {')
-        ->toContain('.admin-bottom-add')
+        ->not->toContain('.admin-bottom-add')
         ->not->toContain('.admin-pager {')
         ->and($dataCss)->toContain('.admin-pager,')
         ->and($customPageCss)->toContain('.custom-page-component-sequence {')
@@ -88,7 +91,8 @@ it('uses the shared admin presentation contract instead of a Pages-local theme',
         ->and($customPageCss)->not->toContain('.admin-action.is-danger')
         ->and($customPageCss)->not->toContain('.admin-pager')
         ->and($journalWorkspace)->toContain('class="admin-position"')
-        ->and($journalWorkspace)->toContain('class="admin-bottom-add"')
+        ->and($journalWorkspace)->toContain('<x-admin.add-row')
+        ->and($journalWorkspace)->not->toContain('admin-bottom-add')
         ->and($journalWorkspace)->toContain('class="admin-pager"');
 });
 

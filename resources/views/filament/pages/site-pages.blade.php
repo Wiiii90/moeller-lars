@@ -203,12 +203,10 @@
                 </div>
             </x-admin.table>
 
-            <div class="admin-bottom-add">
-                <button class="admin-action" type="button" wire:click="startAddingPage" aria-expanded="{{ $addingPage ? 'true' : 'false' }}">
-                    <span class="admin-bottom-add__plus" aria-hidden="true">+</span>
-                    <span class="admin-bottom-add__label">Add page</span>
-                </button>
-            </div>
+            <x-admin.add-row
+                wire:click="startAddingPage"
+                aria-expanded="{{ $addingPage ? 'true' : 'false' }}"
+            >Add page</x-admin.add-row>
 
             @if ($addingPage)
                 <form class="admin-task-form" wire:submit="createPage">

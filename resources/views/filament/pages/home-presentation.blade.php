@@ -93,11 +93,8 @@
                     @endif
 
                     @if ($heroGroupSource === 'manual')
-                        <div class="admin-bottom-add home-hero-rail__add">
-                            <button class="admin-action" type="button" wire:click="mountAction('addHeroArtwork')">
-                                <span class="admin-bottom-add__plus" aria-hidden="true">+</span>
-                                <span class="admin-bottom-add__label">Add artwork</span>
-                            </button>
+                        <div class="home-hero-rail__add">
+                            <x-admin.add-row wire:click="mountAction('addHeroArtwork')">Add artwork</x-admin.add-row>
                         </div>
                     @endif
 
@@ -389,12 +386,7 @@
                 </x-admin.empty-state>
             @endif
 
-            <div class="admin-bottom-add home-components__add">
-                <button class="admin-action" type="button" wire:click="mountAction('addComponent')">
-                    <span class="admin-bottom-add__plus" aria-hidden="true">+</span>
-                    <span class="admin-bottom-add__label">Add component</span>
-                </button>
-            </div>
+            <x-admin.add-row wire:click="mountAction('addComponent')">Add component</x-admin.add-row>
 
         @elseif ($template === 'skip_home')
             <div class="home-skip-tools admin-data-control-group" aria-label="Skip Home actions">

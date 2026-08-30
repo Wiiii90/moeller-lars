@@ -204,18 +204,11 @@
 
 .home-hero-rail__add {
     flex: 0 0 auto;
-    margin: 0;
-    padding: 0;
     border-top: 1px solid var(--admin-line);
-    border-bottom: 0;
 }
 
-.home-hero-rail__add .admin-action {
+.home-hero-rail__add .admin-add-row {
     width: 100%;
-}
-
-.home-components__add {
-    margin-top: 0;
 }
 
 .home-source-candidates {

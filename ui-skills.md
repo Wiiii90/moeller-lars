@@ -308,10 +308,13 @@ For shared presentation concerns, reuse the existing theme tokens and Blade prim
 - `x-admin.metrics` / `x-admin.metric`;
 - `x-admin.section`;
 - `x-admin.table`;
+- `x-admin.add-row` for persistent bottom-add controls directly below tables/task surfaces;
 - `x-admin.toolbar`;
 - `x-admin.empty-state`;
 - `admin-action` and other existing shared control classes;
 - accepted Gallery and Media Files implementations for concrete composition examples.
+
+Persistent bottom-add actions directly below tables/task surfaces use `x-admin.add-row`. Do not recreate their plus mark, typography, dimensions, spacing, hover or focus behavior in page-local markup/CSS.
 
 Without an explicit, task-specific reason, the following are source-review failures:
 
@@ -478,6 +481,7 @@ Important shared Blade primitives include:
 - `metric.blade.php`;
 - `section.blade.php`;
 - `table.blade.php`;
+- `add-row.blade.php`;
 - `toolbar.blade.php`;
 - `empty-state.blade.php`.
 

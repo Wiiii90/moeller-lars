@@ -8,6 +8,10 @@
     flex-wrap: wrap;
 }
 
+.admin-section.journal-workspace__entries {
+    border-bottom: 0;
+}
+
 .journal-visual {
     width: 5rem;
 }

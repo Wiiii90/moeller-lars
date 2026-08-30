@@ -1,9 +1,4 @@
-        <div class="admin-bottom-add">
-            <button class="admin-action" type="button" wire:click="mountAction('addComponent')">
-                <span class="admin-bottom-add__plus" aria-hidden="true">+</span>
-                <span class="admin-bottom-add__label">Add component</span>
-            </button>
-        </div>
+        <x-admin.add-row wire:click="mountAction('addComponent')">Add component</x-admin.add-row>
 
         <footer class="admin-pager">
             <label class="admin-pager__size">

@@ -18,6 +18,15 @@ it('keeps Blog and Exhibitions on one Journal presentation source with one visua
         ->and($view)->not->toContain('>View</');
 });
 
+it('keeps a permanent shared add row between the Journal table and pager for both templates', function (): void {
+    $view = (string) file_get_contents(resource_path('views/filament/pages/journal-workspace.blade.php'));
+
+    expect($view)
+        ->toContain("\$entryLabelSingular = \$isBlog ? 'post' : 'exhibition';")
+        ->toContain("</x-admin.table>\n\n            <x-admin.add-row wire:click=\"mountAction('{{ \$isBlog ? 'addPost' : 'addExhibition' }}')\">Add {{ \$entryLabelSingular }}</x-admin.add-row>\n\n            <footer class=\"admin-pager\">")
+        ->toContain('class="journal-workspace__entries"');
+});
+
 it('projects Blog and Exhibition cover thumbnails before the shared Blade renders rows', function (): void {
     $workspace = (string) file_get_contents(app_path('Filament/Pages/JournalWorkspace.php'));
 
@@ -36,10 +45,12 @@ it('keeps Journal visual and action geometry stable without rebuilding the share
         ->and($journalCss)->toContain('width: 5rem;')
         ->and($journalCss)->toContain('.journal-visual__thumbnail {')
         ->and($journalCss)->toContain('width: 3.6rem;', 'height: 3rem;', 'object-fit: cover;')
+        ->and($journalCss)->toContain('.admin-section.journal-workspace__entries {', 'border-bottom: 0;')
         ->and($taskCss)->toContain('.admin-table__actions {')
         ->and($taskCss)->toContain('text-align: right !important;')
         ->and($taskCss)->toContain('justify-content: flex-end;')
         ->and($taskCss)->toContain('.admin-action--state {', 'min-width: 7.75rem;')
+        ->and($taskCss)->not->toContain('.admin-bottom-add')
         ->and($dataCss)->toContain('.admin-pager,')
         ->and($dataCss)->not->toContain('.admin-action--state');
 });

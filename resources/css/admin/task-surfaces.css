@@ -482,39 +482,6 @@
     font-size: .74rem;
 }
 
-.admin-bottom-add {
-    padding: .35rem 0 .2rem;
-    border-top: 1px solid var(--admin-line);
-    border-bottom: 1px solid var(--admin-line);
-}
-
-.admin-bottom-add .admin-action {
-    min-height: 2.8rem;
-    padding-inline: .5rem;
-    gap: .55rem;
-    justify-content: flex-start;
-    color: var(--admin-muted);
-}
-
-.admin-bottom-add .admin-action:hover,
-.admin-bottom-add .admin-action:focus-visible { color: var(--admin-text); }
-
-.admin-bottom-add__plus {
-    display: grid;
-    width: 1.65rem;
-    height: 1.65rem;
-    place-items: center;
-    border: 1px solid var(--admin-line-strong);
-    border-radius: .2rem;
-    font-size: 1rem;
-    line-height: 1;
-}
-
-.admin-bottom-add__label {
-    font-size: .73rem;
-    font-weight: 600;
-}
-
 .admin-task-form {
     display: grid;
     grid-template-columns: minmax(9rem, .8fr) minmax(12rem, 1.35fr) minmax(10rem, 1fr) minmax(9rem, .8fr) auto;

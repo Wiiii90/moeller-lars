@@ -20,7 +20,7 @@
             @endforeach
         </x-admin.metrics>
 
-        <x-admin.section aria-label="{{ $isBlog ? 'Blog entries' : 'Exhibition entries' }}">
+        <x-admin.section class="journal-workspace__entries" aria-label="{{ $isBlog ? 'Blog entries' : 'Exhibition entries' }}">
             <x-admin.controls aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}">
                 <x-slot:search>
                     <label class="admin-field admin-control-bar__search">
@@ -255,6 +255,8 @@
                     @endif
                 @endif
             </x-admin.table>
+
+            <x-admin.add-row wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')">Add {{ $entryLabelSingular }}</x-admin.add-row>
 
             <footer class="admin-pager">
                 <label class="admin-pager__size">
