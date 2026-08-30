@@ -8,10 +8,8 @@ use App\Domain\Analytics\MatomoReportingClient;
 use App\Domain\Analytics\OperationalMetricsQuery;
 use App\Models\DailyMetric;
 use BackedEnum;
-use Carbon\CarbonInterface;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use LogicException;
 use UnitEnum;
 
 final class Analytics extends Page
@@ -68,12 +66,6 @@ final class Analytics extends Page
 
     /** @var array<int, array{label:string,value:string,detail:string}> */
     public array $audienceHighlights = [];
-
-    /** @var array<int, array<string, mixed>> */
-    public array $operational = [];
-
-    /** @var array<string, int|float|string> */
-    public array $operationalSummary = [];
 
     /** @var array<int, array{label:string,value:string,detail:string}> */
     public array $applicationSignals = [];
@@ -270,33 +262,15 @@ final class Analytics extends Page
             default => 30,
         };
 
-        $metrics = app(OperationalMetricsQuery::class)->recent($days);
-        $this->operational = $metrics
-            ->map(static function (DailyMetric $metric): array {
-                $metricDate = $metric->getAttribute('metric_date');
-                if (! $metricDate instanceof CarbonInterface) {
-                    throw new LogicException('Operational metric date is invalid.');
-                }
-
-                $sampleCount = $metric->getAttribute('sample_count');
-                $value = (float) $metric->getAttribute('value');
-                $metricName = (string) $metric->getAttribute('metric_name');
-                $samples = $sampleCount === null ? null : (int) $sampleCount;
-
-                return [
-                    'date' => $metricDate->toDateString(),
-                    'name' => $metricName,
-                    'label' => self::operationalLabel($metricName),
-                    'value' => $value,
-                    'display_value' => self::operationalDisplayValue($metricName, $value, $samples),
-                    'unit' => (string) $metric->getAttribute('unit'),
-                    'sample_count' => $samples,
-                ];
-            })
+        $botRows = app(OperationalMetricsQuery::class)->recent($days)
+            ->filter(static fn (DailyMetric $metric): bool => $metric->getAttribute('metric_name') === 'bot:request')
+            ->map(static fn (DailyMetric $metric): array => [
+                'name' => 'bot:request',
+                'value' => (float) $metric->getAttribute('value'),
+            ])
             ->values()
             ->all();
-        $this->operationalSummary = $this->buildOperationalSummary($this->operational);
-        $this->applicationSignals = $this->buildApplicationSignals($this->operational);
+        $this->applicationSignals = $this->buildApplicationSignals($botRows);
     }
 
     /**
@@ -876,62 +850,6 @@ final class Analytics extends Page
         return $rankedRows[0];
     }
 
-    /** @param array<int, array<string, mixed>> $rows
-     * @return array<string, int|float|string>
-     */
-    private function buildOperationalSummary(array $rows): array
-    {
-        $notFound = 0;
-        $serverErrors = 0;
-        $requestExceptions = 0;
-        $bots = 0;
-        $adminRequests = 0;
-        $duration = 0.0;
-        $durationSamples = 0;
-        $adminDuration = 0.0;
-        $adminDurationSamples = 0;
-
-        foreach ($rows as $row) {
-            $name = (string) $row['name'];
-            $value = (float) $row['value'];
-            $samples = (int) ($row['sample_count'] ?? 0);
-
-            if ($name === 'error:http_404') {
-                $notFound += (int) round($value);
-            }
-            if ($name === 'error:http_5xx') {
-                $serverErrors += (int) round($value);
-            }
-            if ($name === 'error:request_exception') {
-                $requestExceptions += (int) round($value);
-            }
-            if ($name === 'bot:request') {
-                $bots += (int) round($value);
-            }
-            if ($name === 'operation:admin_request') {
-                $adminRequests += (int) round($value);
-            }
-            if ($name === 'performance:request_duration_ms') {
-                $duration += $value;
-                $durationSamples += $samples;
-            }
-            if ($name === 'performance:admin_request_duration_ms') {
-                $adminDuration += $value;
-                $adminDurationSamples += $samples;
-            }
-        }
-
-        return [
-            '5xx responses' => $serverErrors,
-            'Request exceptions' => $requestExceptions,
-            '404 responses' => $notFound,
-            'Bot requests' => $bots,
-            'Average response' => $durationSamples > 0 ? round($duration / $durationSamples, 1).' ms' : 'No data',
-            'Admin requests' => $adminRequests,
-            'Average admin response' => $adminDurationSamples > 0 ? round($adminDuration / $adminDurationSamples, 1).' ms' : 'No data',
-        ];
-    }
-
     /**
      * @param array<int, array<string, mixed>> $rows
      * @return array<int, array{label:string,value:string,detail:string}>
@@ -1002,28 +920,5 @@ final class Analytics extends Page
         $remaining = $seconds % 60;
 
         return $minutes.'m '.str_pad((string) $remaining, 2, '0', STR_PAD_LEFT).'s';
-    }
-
-    private static function operationalLabel(string $metricName): string
-    {
-        return match ($metricName) {
-            'error:http_404' => 'HTTP 404 responses',
-            'error:http_5xx' => 'HTTP 5xx responses',
-            'error:request_exception' => 'Request exceptions',
-            'bot:request' => 'Bot requests',
-            'operation:admin_request' => 'Admin requests',
-            'performance:request_duration_ms' => 'Average request duration',
-            'performance:admin_request_duration_ms' => 'Average admin request duration',
-            default => str_replace([':', '_'], [' · ', ' '], $metricName),
-        };
-    }
-
-    private static function operationalDisplayValue(string $metricName, float $value, ?int $samples): string
-    {
-        if (str_starts_with($metricName, 'performance:') && $samples !== null && $samples > 0) {
-            return number_format($value / $samples, 1).' ms avg';
-        }
-
-        return number_format($value, str_contains((string) $value, '.') ? 1 : 0);
     }
 }
