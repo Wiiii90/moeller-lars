@@ -5,11 +5,7 @@ it('uses reconciled shared primitives for Home data and editorial task surfaces'
     $css = (string) file_get_contents(resource_path('css/admin/home.css'));
     $sharedCss = (string) file_get_contents(resource_path('css/admin/data-workspace.css'));
 
-    preg_match(
-        '/\.admin-pager,\s*\.media-workspace__pager,\s*\.journal-workspace__pager\s*\{(?<block>.*?)\}/s',
-        $sharedCss,
-        $pagerMatches,
-    );
+    preg_match('/\.admin-pager\s*\{(?<block>.*?)\}/s', $sharedCss, $pagerMatches);
     $pagerCss = (string) ($pagerMatches['block'] ?? '');
 
     expect($view)
@@ -25,6 +21,8 @@ it('uses reconciled shared primitives for Home data and editorial task surfaces'
         ->toContain('admin-position')
         ->toContain('<x-admin.add-row')
         ->toContain('admin-pager')
+        ->toContain('>Previous</button>')
+        ->toContain('>Next</button>')
         ->not->toContain('admin-bottom-add')
         ->not->toContain('journal-workspace__')
         ->not->toContain('custom-page-row__drag')
