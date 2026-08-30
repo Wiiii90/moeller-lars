@@ -10,6 +10,7 @@
 }
 
 .admin-visual-stage > .admin-visual-stage__pane {
+    box-sizing: border-box;
     height: 100%;
     min-height: 0;
 }
