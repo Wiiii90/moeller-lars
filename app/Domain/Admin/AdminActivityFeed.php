@@ -213,7 +213,7 @@ final class AdminActivityFeed
         ?string $search = null,
     ): Builder {
         $days = in_array($days, self::FILTER_WINDOWS, true) ? $days : self::ACTIVITY_WINDOW_DAYS;
-        $query = AuditEvent::query()->where('occurred_at', '>=', now()->startOfDay()->subDays($days - 1));
+        $query = AuditEvent::query()->where('occurred_at', '>=', now()->subDays($days));
 
         $actionKeys = $this->filteredActionKeys($area, $family);
         if ($actionKeys !== null) {
