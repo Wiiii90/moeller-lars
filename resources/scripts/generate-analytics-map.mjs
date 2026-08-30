@@ -39,7 +39,7 @@ async function downloadSource() {
 
 async function writeOfflineFallback(error) {
     const reason = error instanceof Error ? error.message : String(error);
-    const blade = `{{-- Natural Earth map generation was unavailable during this build.\n     The analytics geography table remains canonical; this SVG intentionally degrades to an empty map.\n     Source commit: ${sourceCommit}\n     Source Git blob: ${sourceBlob} --}}\n<svg class="analytics-world__svg" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet" data-map-source-unavailable="true"></svg>\n`;
+    const blade = `{{-- Natural Earth map generation was unavailable during this build.\n     The analytics geography table remains canonical; this SVG intentionally degrades to an empty map.\n     Source commit: ${sourceCommit}\n     Source Git blob: ${sourceBlob} --}}\n<svg class="analytics-world__svg" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet" data-map-source-unavailable="true">\n    <text class="analytics-world__fallback-label" x="600" y="300">Map geometry unavailable in this build.</text>\n</svg>\n`;
 
     await mkdir(dirname(output), { recursive: true });
     await writeFile(output, blade, 'utf8');
