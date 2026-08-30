@@ -33,8 +33,8 @@
                 </x-admin.toolbar>
             </header>
 
-            <div class="activity-atlas__grid">
-                <div class="activity-atlas__visual">
+            <div class="activity-atlas__grid admin-visual-stage admin-visual-stage--stackable" aria-label="Activity visualization">
+                <div class="activity-atlas__visual admin-visual-stage__pane">
                     <div class="activity-atlas__panel activity-rhythm" x-show="mode === 'clock'">
                         <div class="activity-atlas__panel-heading">
                             <div>
@@ -115,7 +115,7 @@
                     </div>
                 </div>
 
-                <aside class="activity-publication" aria-label="Publication context">
+                <aside class="activity-publication admin-visual-stage__pane" aria-label="Publication context">
                     <header class="activity-publication__header">
                         <span>Publication</span>
                         <strong>Current state</strong>
@@ -159,72 +159,72 @@
                     <p class="activity-publication__scope">Publication context is global current state. Activity filters apply to the atlas and table.</p>
                 </aside>
             </div>
+
+            @php
+                $activityUrl = static function (array $values): string {
+                    $query = array_filter(
+                        $values,
+                        static fn (mixed $value): bool => $value !== null && $value !== '',
+                    );
+
+                    return request()->url().($query === [] ? '' : '?'.http_build_query($query));
+                };
+            @endphp
+
+            <form method="get" action="{{ request()->url() }}" class="admin-visual-stage-followup">
+                <input type="hidden" name="period" value="{{ $period }}">
+                <x-admin.controls class="activity-workspace__controls" aria-label="Activity controls">
+                    <x-slot:search>
+                        <label class="admin-data-field">
+                            <span>Search</span>
+                            <input type="search" name="search" value="{{ $search }}" placeholder="Search change or actor">
+                        </label>
+                    </x-slot:search>
+
+                    <x-slot:filters>
+                        <label class="admin-data-field">
+                            <span>Editorial area</span>
+                            <select name="area" onchange="this.form.submit()">
+                                <option value="">All areas</option>
+                                @foreach ($areaOptions as $value => $label)
+                                    <option value="{{ $value }}" @selected($area === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="admin-data-field">
+                            <span>Change type</span>
+                            <select name="family" onchange="this.form.submit()">
+                                <option value="">All changes</option>
+                                @foreach ($familyOptions as $value => $label)
+                                    <option value="{{ $value }}" @selected($family === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                    </x-slot:filters>
+
+                    <x-slot:reset>
+                        <div class="admin-data-control-group">
+                            <span class="admin-data-control-label">Filter</span>
+                            <a class="admin-action" href="{{ $activityUrl(['period' => $period]) }}">Reset</a>
+                        </div>
+                    </x-slot:reset>
+
+                    <x-slot:actions>
+                        <div class="admin-data-control-group">
+                            <span class="admin-data-control-label">Activity</span>
+                            <x-admin.toolbar aria-label="Activity period">
+                                @foreach ($periodOptions as $value => $label)
+                                    <a
+                                        class="admin-action {{ $period === $value ? 'is-primary' : '' }}"
+                                        href="{{ $activityUrl(['period' => $value, 'search' => $search, 'area' => $area, 'family' => $family]) }}"
+                                    >{{ $label }}</a>
+                                @endforeach
+                            </x-admin.toolbar>
+                        </div>
+                    </x-slot:actions>
+                </x-admin.controls>
+            </form>
         </section>
-
-        @php
-            $activityUrl = static function (array $values): string {
-                $query = array_filter(
-                    $values,
-                    static fn (mixed $value): bool => $value !== null && $value !== '',
-                );
-
-                return request()->url().($query === [] ? '' : '?'.http_build_query($query));
-            };
-        @endphp
-
-        <form method="get" action="{{ request()->url() }}">
-            <input type="hidden" name="period" value="{{ $period }}">
-            <x-admin.controls class="activity-workspace__controls" aria-label="Activity controls">
-                <x-slot:search>
-                    <label class="admin-data-field">
-                        <span>Search</span>
-                        <input type="search" name="search" value="{{ $search }}" placeholder="Search change or actor">
-                    </label>
-                </x-slot:search>
-
-                <x-slot:filters>
-                    <label class="admin-data-field">
-                        <span>Editorial area</span>
-                        <select name="area" onchange="this.form.submit()">
-                            <option value="">All areas</option>
-                            @foreach ($areaOptions as $value => $label)
-                                <option value="{{ $value }}" @selected($area === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </label>
-                    <label class="admin-data-field">
-                        <span>Change type</span>
-                        <select name="family" onchange="this.form.submit()">
-                            <option value="">All changes</option>
-                            @foreach ($familyOptions as $value => $label)
-                                <option value="{{ $value }}" @selected($family === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </label>
-                </x-slot:filters>
-
-                <x-slot:reset>
-                    <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">Filter</span>
-                        <a class="admin-action" href="{{ $activityUrl(['period' => $period]) }}">Reset</a>
-                    </div>
-                </x-slot:reset>
-
-                <x-slot:actions>
-                    <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">Activity</span>
-                        <x-admin.toolbar aria-label="Activity period">
-                            @foreach ($periodOptions as $value => $label)
-                                <a
-                                    class="admin-action {{ $period === $value ? 'is-primary' : '' }}"
-                                    href="{{ $activityUrl(['period' => $value, 'search' => $search, 'area' => $area, 'family' => $family]) }}"
-                                >{{ $label }}</a>
-                            @endforeach
-                        </x-admin.toolbar>
-                    </div>
-                </x-slot:actions>
-            </x-admin.controls>
-        </form>
 
         <x-admin.table class="admin-table--data activity-workspace__table">
             @if ($activity !== [])
