@@ -184,10 +184,7 @@
     </table>
 </x-admin.table>
 
-<div class="admin-control-bar">
-    <div class="admin-control-group">
-        <div class="admin-control-group__actions">
-            <button class="admin-action" type="button" wire:click="addSocialLink">Add social link</button>
-        </div>
-    </div>
-</div>
+<x-admin.add-row
+    label="Add social link"
+    wire:click="addSocialLink"
+/>

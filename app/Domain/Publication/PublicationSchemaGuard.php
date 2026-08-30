@@ -54,7 +54,6 @@ final class PublicationSchemaGuard
         foreach ($rows as $row) {
             $signature[] = [
                 'column_name' => (string) $row->column_name,
-                'ordinal_position' => (int) $row->ordinal_position,
                 'data_type' => (string) $row->data_type,
                 'udt_name' => (string) $row->udt_name,
                 'is_nullable' => (string) $row->is_nullable,

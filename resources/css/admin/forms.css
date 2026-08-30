@@ -270,31 +270,23 @@
     justify-content: flex-start;
 }
 
-.admin-color-control.fi-fo-color-picker {
-    position: relative;
-    overflow: visible !important;
-}
-
 .admin-color-control.fi-fo-color-picker .fi-input-wrp-content {
-    display: flex;
     min-width: 0;
-    min-height: calc(var(--admin-control-height) - 1px);
+    gap: .5rem;
+    padding-inline-end: .5rem;
     align-items: center;
 }
 
 .admin-color-control.fi-fo-color-picker .fi-input {
-    order: 2;
     min-width: 0;
-    padding-inline-start: .15rem !important;
     flex: 1 1 auto;
 }
 
 .admin-color-control.fi-fo-color-picker .fi-fo-color-picker-preview {
-    order: 1;
-    width: .85rem !important;
-    height: .85rem !important;
-    margin: 0 .45rem 0 var(--admin-control-text-inset, .25rem) !important;
-    flex: 0 0 .85rem !important;
+    width: 1rem !important;
+    height: 1rem !important;
+    margin: 0 !important;
+    flex: 0 0 1rem !important;
     border: 1px solid var(--admin-line-strong);
     border-radius: 0 !important;
     background-clip: padding-box;
@@ -307,9 +299,7 @@
     background-color: transparent !important;
 }
 
-.admin-color-control.fi-fo-color-picker .fi-fo-color-picker-panel,
-.general-color-control .fi-fo-color-picker-panel {
-    z-index: 60 !important;
+.admin-color-control.fi-fo-color-picker .fi-fo-color-picker-panel {
     border: 1px solid var(--admin-line-strong) !important;
     border-radius: 0 !important;
     background: var(--admin-surface) !important;
