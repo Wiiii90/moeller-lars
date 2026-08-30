@@ -11,8 +11,8 @@
         @endif
 
         @if ($template === 'artwork')
-            <div class="home-hero-surface" aria-label="Hero Artwork">
-                <div class="home-hero-surface__visual">
+            <div class="home-hero-surface admin-visual-stage admin-visual-stage--stackable" aria-label="Hero Artwork">
+                <div class="home-hero-surface__visual admin-visual-stage__pane">
                     @if ($currentArtwork && $currentArtwork['thumbnail_url'])
                         <img src="{{ $currentArtwork['thumbnail_url'] }}" alt="" loading="eager" decoding="async">
                     @else
@@ -20,7 +20,7 @@
                     @endif
                 </div>
 
-                <div class="home-hero-rail" aria-label="Hero group">
+                <div class="home-hero-rail admin-visual-stage__pane" aria-label="Hero group">
                     <div class="home-hero-rail__summary">
                         <strong>{{ $heroGroupSource === 'manual' ? 'Manual' : 'Automatic' }} · {{ ucfirst($heroDisplayStrategy) }}</strong>
                         <span>
@@ -199,7 +199,7 @@
                                 <th scope="col">Source</th>
                                 <th scope="col">Artworks</th>
                                 <th scope="col">Newest Year</th>
-                                <th scope="col">Actions</th>
+                                <th scope="col" class="admin-table__actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -231,9 +231,9 @@
                                     <td><span class="admin-status {{ $gallery['effective_enabled'] ? 'is-published' : '' }}">{{ $gallery['source_label'] }}</span></td>
                                     <td>{{ number_format($gallery['published_artworks']) }}</td>
                                     <td>{{ $gallery['newest_year'] ?: '—' }}</td>
-                                    <td>
-                                        <div class="admin-toolbar">
-                                            <button class="admin-action" type="button" wire:click="toggleGalleryEligibility({{ $gallery['id'] }})">{{ $gallery['preference_enabled'] ? 'Disable preference' : 'Enable preference' }}</button>
+                                    <td class="admin-table__actions">
+                                        <div class="admin-row-actions admin-toolbar">
+                                            <button class="admin-action admin-action--state" type="button" wire:click="toggleGalleryEligibility({{ $gallery['id'] }})">{{ $gallery['preference_enabled'] ? 'Disable preference' : 'Enable preference' }}</button>
                                             <a class="admin-action" href="{{ $gallery['workspace_url'] }}">Open Gallery</a>
                                         </div>
                                     </td>
