@@ -2,7 +2,6 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Media\MediaReferenceQuery;
 use App\Models\MediaAsset;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -11,7 +10,6 @@ final class MediaStorageReferenceCatalog
 {
     public function __construct(
         private readonly MediaReferenceCatalog $catalog,
-        private readonly MediaReferenceQuery $referenceQuery,
     ) {}
 
     /** @param Builder<MediaAsset> $query */
@@ -27,9 +25,8 @@ final class MediaStorageReferenceCatalog
     }
 
     /**
-     * Resolve the canonical referenced set in one bounded query. The same
-     * MediaReferenceQuery powers the Files workspace's in-use/unreferenced
-     * filters, so Storage does not maintain a second definition of "unused".
+     * Resolve the canonical referenced set in one bounded query through the
+     * exact same MediaReferenceCatalog instance used by Media Files.
      *
      * @param list<int> $assetIds
      * @return list<int>
@@ -47,7 +44,7 @@ final class MediaStorageReferenceCatalog
 
         /** @var Builder<MediaAsset> $query */
         $query = MediaAsset::query()->whereIn('id', $assetIds);
-        $this->referenceQuery->apply($query, true);
+        $this->catalog->applyReferenceFilter($query, true);
 
         return $query->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all();
     }
