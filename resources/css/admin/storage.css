@@ -383,31 +383,17 @@ button.admin-storage__attention-row:focus-visible {
     margin-top: .35rem;
 }
 
-.admin-storage__state {
-    display: inline-flex;
-    gap: .38rem;
-    align-items: center;
-    color: var(--admin-muted);
-    font-size: .7rem;
-    white-space: nowrap;
-}
-
-.admin-storage__state::before {
-    width: .42rem;
-    height: .42rem;
-    flex: 0 0 .42rem;
-    border: 1px solid var(--admin-success);
-    border-radius: 50%;
+.admin-storage .admin-status.is-referenced::before {
+    border-color: var(--admin-success);
     background: var(--admin-success);
-    content: "";
 }
 
-.admin-storage__state.is-unused::before {
+.admin-storage .admin-status.is-unreferenced::before {
     border-color: var(--admin-accent);
     background: transparent;
 }
 
-.admin-storage__state.is-uncatalogued::before {
+.admin-storage .admin-status.is-uncatalogued::before {
     border-color: var(--admin-danger);
     background: transparent;
 }
