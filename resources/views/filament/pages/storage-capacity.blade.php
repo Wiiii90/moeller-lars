@@ -155,8 +155,8 @@
                         <span>Area</span>
                         <select wire:model.live="areaFilter">
                             <option value="all">All areas</option>
-                            @foreach ($breakdown as $row)
-                                <option value="{{ $row['key'] }}">{{ $row['label'] }}</option>
+                            @foreach ($areaOptions as $area)
+                                <option value="{{ $area['key'] }}">{{ $area['label'] }}</option>
                             @endforeach
                         </select>
                     </label>
