@@ -270,19 +270,30 @@
     justify-content: flex-start;
 }
 
+.admin-color-control.fi-fo-color-picker {
+    width: 100%;
+}
+
 .admin-color-control.fi-fo-color-picker .fi-input-wrp-content {
+    width: 100%;
     min-width: 0;
-    gap: .5rem;
-    padding-inline-end: .5rem;
+    gap: .55rem;
+    padding-inline: var(--admin-control-text-inset, .25rem);
     align-items: center;
 }
 
 .admin-color-control.fi-fo-color-picker .fi-input {
+    order: 2;
+    width: 100%;
     min-width: 0;
+    padding-inline: 0 !important;
     flex: 1 1 auto;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .02em;
 }
 
 .admin-color-control.fi-fo-color-picker .fi-fo-color-picker-preview {
+    order: 1;
     width: 1rem !important;
     height: 1rem !important;
     margin: 0 !important;
@@ -300,10 +311,11 @@
 }
 
 .admin-color-control.fi-fo-color-picker .fi-fo-color-picker-panel {
-    border: 1px solid var(--admin-line-strong) !important;
-    border-radius: 0 !important;
-    background: var(--admin-surface) !important;
-    box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12) !important;
+    order: 3;
+    overflow: hidden;
+    border: 1px solid var(--admin-line-strong);
+    background: var(--admin-surface);
+    box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);
 }
 
 .admin-form-control,
