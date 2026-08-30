@@ -1,24 +1,3 @@
-.analytics-status {
-    display: inline-flex;
-    align-items: center;
-    gap: .42rem;
-    color: var(--admin-muted);
-    font-size: .72rem;
-    font-weight: 650;
-}
-
-.analytics-status::before {
-    width: .46rem;
-    height: .46rem;
-    border-radius: 50%;
-    background: var(--admin-faint);
-    content: '';
-}
-
-.analytics-status.is-live::before { background: var(--admin-success); }
-.analytics-status.is-stale::before { background: var(--admin-accent); }
-.analytics-status.is-unavailable::before { background: var(--admin-danger); }
-
 .analytics-controls {
     grid-template-columns: minmax(14rem, 1fr) auto auto;
     padding: .85rem 0;
