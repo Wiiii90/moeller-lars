@@ -169,6 +169,8 @@ it('returns bounded current staged activity and ordered checkpoint context', fun
     $initial = PublicationCheckpoint::query()
         ->where('message', 'Initial public state')
         ->firstOrFail();
+    $initial->setAttribute('published_at', now()->subHours(2));
+    $initial->save();
 
     $staged = activityReconciliationEvent($actor, 'blog_setting.updated', now()->subMinutes(4));
     PublicationEventState::query()->create([
@@ -213,12 +215,12 @@ it('returns bounded current staged activity and ordered checkpoint context', fun
         ->and($context['latest']['message'])->toBe('Latest checkpoint')
         ->and($context['latest']['change_count'])->toBe(5)
         ->and(array_column($context['recent'], 'id'))->toBe([
-            (int) $initial->getKey(),
             (int) $older->getKey(),
+            (int) $initial->getKey(),
         ])
         ->and(array_column($context['recent'], 'message'))->toBe([
-            'Initial public state',
             'Older checkpoint',
+            'Initial public state',
         ]);
 });
 
