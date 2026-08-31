@@ -79,7 +79,8 @@ it('uses the shared admin presentation contract instead of a Pages-local theme',
 
     expect($taskCss)
         ->toContain('.admin-hierarchy {')
-        ->toContain('.admin-hierarchy__row.is-child .admin-hierarchy__content::before')
+        ->toContain('.admin-hierarchy__row.is-child {')
+        ->toContain('.admin-hierarchy__row.is-child .admin-hierarchy__content { padding-left: 1.15rem; }')
         ->toContain('.admin-position {')
         ->toContain('.admin-action--state {')
         ->not->toContain('.admin-bottom-add')
