@@ -12,6 +12,7 @@ use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
 use App\Models\CvEntry;
+use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -114,14 +115,19 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
     ]);
 
     $journal = workspaceReferenceNode(SiteNodeType::Journal->value, 'Artist Blog', JournalTemplate::Blog->value);
-    BlogPost::query()->create([
+    $post = BlogPost::query()->create([
         'site_section_id' => $journal->id,
         'slug' => 'studio-notes',
         'title' => 'Studio notes',
         'body' => 'Body',
         'state' => 'draft',
         'position' => 0,
-        'cover_media_asset_id' => $journalAsset->id,
+    ]);
+    JournalEntryMedia::query()->create([
+        'blog_post_id' => $post->id,
+        'media_asset_id' => $journalAsset->id,
+        'role' => JournalEntryMedia::ROLE_COVER,
+        'position' => 0,
     ]);
 
     $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'CV');
@@ -144,8 +150,8 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
 
     $catalog->loadAssetReferences($journalAsset);
     expect($catalog->references($journalAsset))->toContainEqual([
-        'type' => 'Journal: Artist Blog',
-        'label' => 'Studio notes',
+        'type' => 'Journal: Blog',
+        'label' => 'Studio notes — Cover image',
         'url' => app(SiteNodePresentation::class)->workspaceUrl($journal),
     ]);
 
