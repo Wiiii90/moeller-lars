@@ -6,6 +6,8 @@ use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkSelectionOrder;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -17,6 +19,12 @@ trait GalleryWorkspaceMoveActions
     {
         if (! in_array($direction, ['up', 'down'], true)) {
             throw new InvalidArgumentException('Artwork order direction must be up or down.');
+        }
+
+        if (! $this->artworkReorderingAvailable()) {
+            Notification::make()->title('Clear filters to reorder')->warning()->send();
+
+            return;
         }
 
         $orderedIds = $this->orderedArtworkIds();
@@ -32,14 +40,58 @@ trait GalleryWorkspaceMoveActions
 
         [$orderedIds[$index], $orderedIds[$targetIndex]] = [$orderedIds[$targetIndex], $orderedIds[$index]];
         $this->saveArtworkOrder($orderedIds);
+        $this->refreshWorkspaceAfterMutation();
         Notification::make()->title('Gallery order updated')->success()->send();
-        $this->loadArtworks();
+    }
+
+    public function sortArtwork(int|string $artworkId, int|string $position): void
+    {
+        if (! $this->artworkReorderingAvailable()) {
+            return;
+        }
+
+        if (
+            (! is_int($artworkId) && (! is_string($artworkId) || ! ctype_digit($artworkId)))
+            || (! is_int($position) && (! is_string($position) || ! ctype_digit($position)))
+        ) {
+            return;
+        }
+
+        $artworkId = (int) $artworkId;
+        $position = (int) $position;
+        $orderedIds = $this->orderedArtworkIds();
+        $from = array_search($artworkId, $orderedIds, true);
+
+        if ($from === false || $position < 0 || $position >= count($orderedIds) || $from === $position) {
+            return;
+        }
+
+        $next = $orderedIds;
+        array_splice($next, $from, 1);
+        array_splice($next, $position, 0, [$artworkId]);
+
+        try {
+            $this->saveArtworkOrder($next);
+        } catch (ValidationException $exception) {
+            $this->notifyValidationFailure('Gallery order was not updated', $exception);
+
+            return;
+        }
+
+        $this->refreshWorkspaceAfterMutation();
+        Notification::make()->title('Gallery order updated')->success()->send();
     }
 
     public function moveSelectedArtworks(string $direction): void
     {
         if (! in_array($direction, ['up', 'down'], true)) {
             throw new InvalidArgumentException('Artwork order direction must be up or down.');
+        }
+
+        if (! $this->artworkReorderingAvailable()) {
+            Notification::make()->title('Clear filters to reorder')->warning()->send();
+
+            return;
         }
 
         $selectedIds = array_keys($this->selectedArtworkIdSet());
@@ -51,19 +103,44 @@ trait GalleryWorkspaceMoveActions
 
         $orderedIds = ArtworkSelectionOrder::moveOneSlot($this->orderedArtworkIds(), $selectedIds, $direction);
         $this->saveArtworkOrder($orderedIds);
-        $this->loadArtworks();
+        $this->refreshWorkspaceAfterMutation();
         Notification::make()->title('Selected artworks reordered')->success()->send();
     }
 
-    public function reassignArtwork(int $artworkId): void
+    public function moveArtworkToGalleryAction(): Action
     {
-        $targetGalleryId = (int) ($this->moveTargetGalleryIds[$artworkId] ?? 0);
-        if ($targetGalleryId <= 0) {
-            Notification::make()->title('Choose a destination Gallery')->warning()->send();
+        return Action::make('moveArtworkToGallery')
+            ->label('Move to Gallery')
+            ->modalHeading(fn (array $arguments): string => 'Move '.$this->actionArtwork($arguments)->getAttribute('title'))
+            ->schema([
+                Select::make('target_gallery_id')
+                    ->label('Destination Gallery')
+                    ->options(fn (): array => collect($this->moveTargets)->pluck('name', 'id')->all())
+                    ->required(),
+            ])
+            ->action(function (array $data, array $arguments): void {
+                $this->reassignArtworkTo((int) ($arguments['artwork'] ?? 0), (int) ($data['target_gallery_id'] ?? 0));
+            });
+    }
 
-            return;
-        }
+    public function moveSelectedToGalleryAction(): Action
+    {
+        return Action::make('moveSelectedToGallery')
+            ->label('Move to Gallery')
+            ->modalHeading('Move selected artworks')
+            ->schema([
+                Select::make('target_gallery_id')
+                    ->label('Destination Gallery')
+                    ->options(fn (): array => collect($this->moveTargets)->pluck('name', 'id')->all())
+                    ->required(),
+            ])
+            ->action(function (array $data): void {
+                $this->reassignSelectedArtworksTo((int) ($data['target_gallery_id'] ?? 0));
+            });
+    }
 
+    private function reassignArtworkTo(int $artworkId, int $targetGalleryId): void
+    {
         $galleryId = (int) $this->galleryContext['id'];
         /** @var Artwork|null $artwork */
         $artwork = Artwork::query()->whereKey($artworkId)->where('artwork_category_id', $galleryId)->first();
@@ -84,19 +161,17 @@ trait GalleryWorkspaceMoveActions
             return;
         }
 
-        unset($this->moveTargetGalleryIds[$artworkId]);
         $this->selectedArtworkIds = array_values(array_filter(
             $this->selectedArtworkIds,
             static fn (int|string $id): bool => (int) $id !== $artworkId,
         ));
 
-        $this->loadArtworks();
+        $this->refreshWorkspaceAfterMutation();
         Notification::make()->title('Artwork moved')->body('Media references were preserved.')->success()->send();
     }
 
-    public function reassignSelectedArtworks(): void
+    private function reassignSelectedArtworksTo(int $targetGalleryId): void
     {
-        $targetGalleryId = (int) $this->batchTargetGalleryId;
         $galleryId = (int) $this->galleryContext['id'];
         /** @var ArtworkCategory|null $destination */
         $destination = ArtworkCategory::query()->whereKey($targetGalleryId)->where('id', '<>', $galleryId)->first();
@@ -121,7 +196,14 @@ trait GalleryWorkspaceMoveActions
 
         $count = $artworks->count();
         $this->clearSelection();
-        $this->loadArtworks();
+        $this->refreshWorkspaceAfterMutation();
         Notification::make()->title($count === 1 ? 'Artwork moved' : $count.' artworks moved')->body('Media references remain shared and unchanged.')->success()->send();
+    }
+
+    private function artworkReorderingAvailable(): bool
+    {
+        return trim($this->search) === ''
+            && $this->statusFilter === 'any'
+            && $this->readinessFilter === 'any';
     }
 }

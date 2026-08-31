@@ -9,7 +9,6 @@ use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
-use Filament\Actions\Action;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use LogicException;
@@ -19,19 +18,6 @@ final class ViewMediaAsset extends ViewRecord
     protected static string $resource = MediaAssetResource::class;
 
     protected string $view = 'filament.resources.media-assets.pages.view-media-asset';
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('library')
-                ->label('Back to Files')
-                ->url(MediaAssetResource::getUrl('index')),
-            Action::make('edit')
-                ->label('Edit metadata')
-                ->visible(fn (): bool => $this->mediaAssetRecord()->getAttribute('state') !== 'deleted')
-                ->url(fn (): string => MediaAssetResource::getUrl('edit', ['record' => $this->mediaAssetRecord()])),
-        ];
-    }
 
     protected function getViewData(): array
     {

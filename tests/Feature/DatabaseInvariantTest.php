@@ -11,6 +11,7 @@ use App\Models\SiteSection;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -100,4 +101,23 @@ it('enforces Home as the only singleton SiteSection type', function (): void {
         'created_at' => now(),
         'updated_at' => now(),
     ]))->toThrow(QueryException::class);
+});
+
+it('keeps Home published while allowing it to be hidden from public navigation', function (): void {
+    /** @var SiteSection $home */
+    $home = SiteSection::query()->where('type', SiteSection::TYPE_HOME)->firstOrFail();
+    $home->fill([
+        'show_in_navigation' => false,
+        'navigation_label' => null,
+    ]);
+    $home->save();
+
+    expect($home->fresh())
+        ->state->toBe('published')
+        ->show_in_navigation->toBeFalse()
+        ->navigation_label->toBeNull();
+
+    $home->setAttribute('state', 'hidden');
+    expect(fn () => $home->save())->toThrow(ValidationException::class);
+    expect(fn () => $home->delete())->toThrow(ValidationException::class);
 });

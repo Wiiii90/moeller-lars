@@ -8,10 +8,8 @@ use App\Domain\Analytics\MatomoReportingClient;
 use App\Domain\Analytics\OperationalMetricsQuery;
 use App\Models\DailyMetric;
 use BackedEnum;
-use Carbon\CarbonInterface;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use LogicException;
 use UnitEnum;
 
 final class Analytics extends Page
@@ -26,7 +24,28 @@ final class Analytics extends Page
 
     protected string $view = 'filament.pages.analytics';
 
+    /** @var array<string, string> */
+    private const DETAIL_REPORTS = [
+        'content' => 'Content',
+        'geography' => 'Geography',
+        'acquisition' => 'Acquisition',
+        'interactions' => 'Interactions',
+        'artwork' => 'Artwork',
+        'technology' => 'Technology',
+    ];
+
+    /** @var list<int> */
+    private const DETAIL_PAGE_SIZES = [12, 25, 50];
+
     public string $range = '30d';
+
+    public string $search = '';
+
+    public string $detailReport = 'content';
+
+    public int $detailPage = 1;
+
+    public int $detailPageSize = 12;
 
     /** @var array<string, mixed> */
     public array $matomo = [];
@@ -48,11 +67,8 @@ final class Analytics extends Page
     /** @var array<int, array{label:string,value:string,detail:string}> */
     public array $audienceHighlights = [];
 
-    /** @var array<int, array<string, mixed>> */
-    public array $operational = [];
-
-    /** @var array<string, int|float|string> */
-    public array $operationalSummary = [];
+    /** @var array<int, array{label:string,value:string,detail:string}> */
+    public array $applicationSignals = [];
 
     public function mount(): void
     {
@@ -66,7 +82,131 @@ final class Analytics extends Page
         }
 
         $this->range = $range;
+        $this->detailPage = 1;
         $this->loadRange();
+    }
+
+    public function setDetailReport(string $report): void
+    {
+        if (! array_key_exists($report, self::DETAIL_REPORTS)) {
+            return;
+        }
+
+        $this->detailReport = $report;
+        $this->search = '';
+        $this->detailPage = 1;
+    }
+
+    public function updatedDetailReport(string $report): void
+    {
+        if (! array_key_exists($report, self::DETAIL_REPORTS)) {
+            $this->detailReport = 'content';
+        }
+
+        $this->search = '';
+        $this->detailPage = 1;
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->detailPage = 1;
+    }
+
+    public function updatedDetailPageSize(int $size): void
+    {
+        if (! in_array($size, self::DETAIL_PAGE_SIZES, true)) {
+            $this->detailPageSize = 12;
+        }
+
+        $this->detailPage = 1;
+    }
+
+    public function previousDetailPage(): void
+    {
+        $this->detailPage = max(1, $this->detailPage - 1);
+    }
+
+    public function nextDetailPage(): void
+    {
+        $pages = (int) $this->detailTable()['pages'];
+        $this->detailPage = min(max(1, $pages), $this->detailPage + 1);
+    }
+
+    /** @return array<string, string> */
+    public function detailReportOptions(): array
+    {
+        return self::DETAIL_REPORTS;
+    }
+
+    /**
+     * @return array{
+     *     columns:list<string>,
+     *     rows:list<list<string>>,
+     *     state:string,
+     *     message:string|null,
+     *     partial:string|null,
+     *     total:int,
+     *     page:int,
+     *     pages:int,
+     *     start:int,
+     *     end:int
+     * }
+     */
+    public function detailTable(): array
+    {
+        $definition = $this->detailDefinition($this->detailReport);
+
+        if ($definition['state'] === 'unavailable') {
+            return [
+                ...$definition,
+                'total' => 0,
+                'page' => 1,
+                'pages' => 1,
+                'start' => 0,
+                'end' => 0,
+            ];
+        }
+
+        $rows = $definition['rows'];
+        $search = mb_strtolower(trim($this->search));
+        if ($search !== '') {
+            $rows = array_values(array_filter(
+                $rows,
+                static fn (array $row): bool => str_contains(
+                    mb_strtolower(implode(' ', array_map(static fn (mixed $value): string => (string) $value, $row))),
+                    $search,
+                ),
+            ));
+        }
+
+        $total = count($rows);
+        $pageSize = in_array($this->detailPageSize, self::DETAIL_PAGE_SIZES, true)
+            ? $this->detailPageSize
+            : 12;
+        $pages = max(1, (int) ceil($total / $pageSize));
+        $page = min(max(1, $this->detailPage), $pages);
+        $start = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
+        $end = $total === 0 ? 0 : min($total, $page * $pageSize);
+        $pageRows = array_slice($rows, ($page - 1) * $pageSize, $pageSize);
+
+        $message = $definition['message'];
+        if ($total === 0 && $search !== '') {
+            $message = 'No rows match this search.';
+        } elseif ($total === 0 && $message === null) {
+            $message = 'No detail rows in this period.';
+        }
+
+        return [
+            ...$definition,
+            'rows' => $pageRows,
+            'state' => $total === 0 ? 'empty' : 'available',
+            'message' => $message,
+            'total' => $total,
+            'page' => $page,
+            'pages' => $pages,
+            'start' => $start,
+            'end' => $end,
+        ];
     }
 
     public function selectArtwork(string $analyticsKey): void
@@ -122,32 +262,329 @@ final class Analytics extends Page
             default => 30,
         };
 
-        $metrics = app(OperationalMetricsQuery::class)->recent($days);
-        $this->operational = $metrics
-            ->map(static function (DailyMetric $metric): array {
-                $metricDate = $metric->getAttribute('metric_date');
-                if (! $metricDate instanceof CarbonInterface) {
-                    throw new LogicException('Operational metric date is invalid.');
-                }
-
-                $sampleCount = $metric->getAttribute('sample_count');
-                $value = (float) $metric->getAttribute('value');
-                $metricName = (string) $metric->getAttribute('metric_name');
-                $samples = $sampleCount === null ? null : (int) $sampleCount;
-
-                return [
-                    'date' => $metricDate->toDateString(),
-                    'name' => $metricName,
-                    'label' => self::operationalLabel($metricName),
-                    'value' => $value,
-                    'display_value' => self::operationalDisplayValue($metricName, $value, $samples),
-                    'unit' => (string) $metric->getAttribute('unit'),
-                    'sample_count' => $samples,
-                ];
-            })
+        $botRows = app(OperationalMetricsQuery::class)->recent($days)
+            ->filter(static fn (DailyMetric $metric): bool => $metric->getAttribute('metric_name') === 'bot:request')
+            ->map(static fn (DailyMetric $metric): array => [
+                'name' => 'bot:request',
+                'value' => (float) $metric->getAttribute('value'),
+            ])
             ->values()
             ->all();
-        $this->operationalSummary = $this->buildOperationalSummary($this->operational);
+        $this->applicationSignals = $this->buildApplicationSignals($botRows);
+    }
+
+    /**
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function detailDefinition(string $report): array
+    {
+        $report = array_key_exists($report, self::DETAIL_REPORTS) ? $report : 'content';
+        $columns = $this->detailColumns($report);
+        $status = $this->matomo['status'] ?? null;
+
+        if (! in_array($status, ['available', 'stale'], true)) {
+            return $this->unavailableDetail(
+                $columns,
+                $status === 'disabled'
+                    ? 'No reporting data for this environment.'
+                    : 'Reporting data is currently unavailable.',
+            );
+        }
+
+        return match ($report) {
+            'geography' => $this->geographyDetail($columns),
+            'acquisition' => $this->acquisitionDetail($columns),
+            'interactions' => $this->interactionDetail($columns),
+            'artwork' => $this->artworkDetail($columns),
+            'technology' => $this->technologyDetail($columns),
+            default => $this->contentDetail($columns),
+        };
+    }
+
+    /** @return list<string> */
+    private function detailColumns(string $report): array
+    {
+        return match ($report) {
+            'geography' => ['Country', 'Visits', 'Share', 'Rank', 'Tracked actions'],
+            'acquisition' => ['Type', 'Source', 'Visits', 'Unique visitors', 'Tracked actions'],
+            'interactions' => ['Event', 'Events', 'Visits', 'Unique visitors'],
+            'artwork' => ['Artwork', 'Gallery', 'Detail views', 'Opens', 'Zooms', 'Active time', 'Average active'],
+            'technology' => ['Type', 'Item', 'Visits', 'Unique visitors', 'Bounce rate'],
+            default => ['Content', 'Views', 'Visits', 'Bounce rate', 'Average time'],
+        };
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function contentDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        if (! $availability->isAvailable('content')) {
+            return $this->unavailableDetail($columns, 'Content report is unavailable.');
+        }
+
+        $rows = [];
+        foreach ($this->matomo['content'] ?? [] as $row) {
+            if (! is_array($row) || ! is_string($row['label'] ?? null)) {
+                continue;
+            }
+
+            $rows[] = [
+                $row['label'],
+                $this->formatNullableInteger($row['nb_hits'] ?? null),
+                $this->formatNullableInteger($row['nb_visits'] ?? null),
+                $this->formatNullablePercentage($row['bounce_rate'] ?? null),
+                $this->formatNullableDuration($row['avg_time_on_page'] ?? null),
+            ];
+        }
+
+        return $this->availableDetail($columns, $rows, 'No content activity in this period.');
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function geographyDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        if (! $availability->isAvailable('countries')) {
+            return $this->unavailableDetail($columns, 'Country-level visit report is unavailable.');
+        }
+
+        $countryRows = array_values(array_filter(
+            $this->matomo['countries'] ?? [],
+            static fn (mixed $row): bool => is_array($row) && is_string($row['label'] ?? null),
+        ));
+        usort($countryRows, static function (array $a, array $b): int {
+            $aVisits = is_numeric($a['nb_visits'] ?? null) ? (float) $a['nb_visits'] : -1.0;
+            $bVisits = is_numeric($b['nb_visits'] ?? null) ? (float) $b['nb_visits'] : -1.0;
+
+            return $bVisits <=> $aVisits;
+        });
+
+        $totalVisits = is_numeric($this->matomo['metrics']['nb_visits'] ?? null)
+            ? (float) $this->matomo['metrics']['nb_visits']
+            : null;
+        $rank = 0;
+        $rows = [];
+        foreach ($countryRows as $row) {
+            $visits = is_numeric($row['nb_visits'] ?? null) ? (float) $row['nb_visits'] : null;
+            $rankLabel = '—';
+            if ($visits !== null) {
+                $rank++;
+                $rankLabel = number_format($rank);
+            }
+
+            $share = null;
+            if ($visits !== null && $totalVisits !== null) {
+                $share = $totalVisits > 0 ? ($visits / $totalVisits) * 100 : 0.0;
+            }
+
+            $rows[] = [
+                (string) $row['label'],
+                $this->formatNullableInteger($visits),
+                $this->formatNullablePercentage($share),
+                $rankLabel,
+                $this->formatNullableInteger($row['nb_actions'] ?? null),
+            ];
+        }
+
+        return $this->availableDetail($columns, $rows, 'No country-level visits in this period.');
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function acquisitionDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        $groups = [
+            'referrer_websites' => 'Website',
+            'socials' => 'Social network',
+            'search_engines' => 'Search engine',
+            'ai_assistants' => 'AI assistant',
+            'campaigns' => 'Campaign',
+        ];
+        $availableGroups = 0;
+        $unavailableGroups = 0;
+        $rows = [];
+
+        foreach ($groups as $report => $label) {
+            if (! $availability->isAvailable($report)) {
+                $unavailableGroups++;
+                continue;
+            }
+
+            $availableGroups++;
+            foreach ($this->matomo[$report] ?? [] as $row) {
+                if (! is_array($row) || ! is_string($row['label'] ?? null)) {
+                    continue;
+                }
+
+                $rows[] = [
+                    $label,
+                    $row['label'],
+                    $this->formatNullableInteger($row['nb_visits'] ?? null),
+                    $this->formatNullableInteger($row['nb_uniq_visitors'] ?? null),
+                    $this->formatNullableInteger($row['nb_actions'] ?? null),
+                ];
+            }
+        }
+
+        if ($availableGroups === 0) {
+            return $this->unavailableDetail($columns, 'Acquisition reports are unavailable.');
+        }
+
+        return $this->availableDetail(
+            $columns,
+            $rows,
+            'No acquisition activity in this period.',
+            $unavailableGroups > 0 ? 'Some acquisition reports are unavailable.' : null,
+        );
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function interactionDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        if (! $availability->isAvailable('events')) {
+            return $this->unavailableDetail($columns, 'Interaction event report is unavailable.');
+        }
+
+        $rows = [];
+        foreach ($this->matomo['events'] ?? [] as $row) {
+            if (! is_array($row) || ! is_string($row['label'] ?? null)) {
+                continue;
+            }
+
+            $rows[] = [
+                $this->humanizeLabel($row['label']),
+                $this->formatNullableInteger($row['nb_events'] ?? null),
+                $this->formatNullableInteger($row['nb_visits'] ?? null),
+                $this->formatNullableInteger($row['nb_uniq_visitors'] ?? null),
+            ];
+        }
+
+        return $this->availableDetail($columns, $rows, 'No tracked interactions in this period.');
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function artworkDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        if (! $availability->isAvailable('artwork_events')) {
+            return $this->unavailableDetail($columns, 'Per-artwork interaction report is unavailable.');
+        }
+
+        $rows = [];
+        foreach ($this->artworkAttention as $row) {
+            $rows[] = [
+                (string) ($row['title'] ?? 'Untitled'),
+                (string) ($row['category'] ?? 'No Gallery'),
+                $this->formatNullableInteger($row['detail_views'] ?? null),
+                $this->formatNullableInteger($row['viewer_opens'] ?? null),
+                $this->formatNullableInteger($row['zooms'] ?? null),
+                (string) ($row['attention_label'] ?? '—'),
+                (string) ($row['average_attention_label'] ?? '—'),
+            ];
+        }
+
+        return $this->availableDetail(
+            $columns,
+            $rows,
+            'No stable per-artwork interaction data is available for this period yet.',
+        );
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function technologyDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        $groups = [
+            'devices' => 'Device',
+            'browsers' => 'Browser',
+            'operating_systems' => 'Operating system',
+        ];
+        $availableGroups = 0;
+        $unavailableGroups = 0;
+        $rows = [];
+
+        foreach ($groups as $report => $label) {
+            if (! $availability->isAvailable($report)) {
+                $unavailableGroups++;
+                continue;
+            }
+
+            $availableGroups++;
+            foreach ($this->matomo[$report] ?? [] as $row) {
+                if (! is_array($row) || ! is_string($row['label'] ?? null)) {
+                    continue;
+                }
+
+                $rows[] = [
+                    $label,
+                    $row['label'],
+                    $this->formatNullableInteger($row['nb_visits'] ?? null),
+                    $this->formatNullableInteger($row['nb_uniq_visitors'] ?? null),
+                    $this->formatNullablePercentage($row['bounce_rate'] ?? null),
+                ];
+            }
+        }
+
+        if ($availableGroups === 0) {
+            return $this->unavailableDetail($columns, 'Technology reports are unavailable.');
+        }
+
+        return $this->availableDetail(
+            $columns,
+            $rows,
+            'No technology distribution in this period.',
+            $unavailableGroups > 0 ? 'Some technology reports are unavailable.' : null,
+        );
+    }
+
+    /**
+     * @param list<string> $columns
+     * @param list<list<string>> $rows
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function availableDetail(array $columns, array $rows, ?string $emptyMessage = null, ?string $partial = null): array
+    {
+        return [
+            'columns' => $columns,
+            'rows' => $rows,
+            'state' => $rows === [] ? 'empty' : 'available',
+            'message' => $rows === [] ? $emptyMessage : null,
+            'partial' => $partial,
+        ];
+    }
+
+    /**
+     * @param list<string> $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string,partial:null}
+     */
+    private function unavailableDetail(array $columns, string $message): array
+    {
+        return [
+            'columns' => $columns,
+            'rows' => [],
+            'state' => 'unavailable',
+            'message' => $message,
+            'partial' => null,
+        ];
     }
 
     /** @param array<string, mixed> $report
@@ -155,10 +592,6 @@ final class Analytics extends Page
      */
     private function buildKpis(array $report): array
     {
-        if (! in_array($report['status'] ?? null, ['available', 'stale'], true)) {
-            return [];
-        }
-
         $definitions = [
             'nb_visits' => 'Visits',
             'nb_uniq_visitors' => 'Unique visitors',
@@ -168,11 +601,25 @@ final class Analytics extends Page
             'bounce_rate' => 'Bounce rate',
         ];
 
+        $status = $report['status'] ?? null;
+        $available = in_array($status, ['available', 'stale'], true);
         $metrics = $report['metrics'] ?? [];
         $comparison = $report['comparison'] ?? [];
         $kpis = [];
 
         foreach ($definitions as $key => $label) {
+            if (! $available) {
+                $kpis[] = [
+                    'key' => $key,
+                    'label' => $label,
+                    'value' => '—',
+                    'comparison' => 'Not measured',
+                    'delta' => null,
+                ];
+
+                continue;
+            }
+
             $rawValue = $metrics[$key] ?? null;
             $delta = $comparison[$key] ?? null;
             if ($rawValue === null) {
@@ -403,60 +850,33 @@ final class Analytics extends Page
         return $rankedRows[0];
     }
 
-    /** @param array<int, array<string, mixed>> $rows
-     * @return array<string, int|float|string>
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array{label:string,value:string,detail:string}>
      */
-    private function buildOperationalSummary(array $rows): array
+    private function buildApplicationSignals(array $rows): array
     {
-        $notFound = 0;
-        $serverErrors = 0;
-        $requestExceptions = 0;
-        $bots = 0;
-        $adminRequests = 0;
-        $duration = 0.0;
-        $durationSamples = 0;
-        $adminDuration = 0.0;
-        $adminDurationSamples = 0;
+        $botRequests = 0;
+        $measured = false;
 
         foreach ($rows as $row) {
-            $name = (string) $row['name'];
-            $value = (float) $row['value'];
-            $samples = (int) ($row['sample_count'] ?? 0);
+            if (($row['name'] ?? null) !== 'bot:request' || ! is_numeric($row['value'] ?? null)) {
+                continue;
+            }
 
-            if ($name === 'error:http_404') {
-                $notFound += (int) round($value);
-            }
-            if ($name === 'error:http_5xx') {
-                $serverErrors += (int) round($value);
-            }
-            if ($name === 'error:request_exception') {
-                $requestExceptions += (int) round($value);
-            }
-            if ($name === 'bot:request') {
-                $bots += (int) round($value);
-            }
-            if ($name === 'operation:admin_request') {
-                $adminRequests += (int) round($value);
-            }
-            if ($name === 'performance:request_duration_ms') {
-                $duration += $value;
-                $durationSamples += $samples;
-            }
-            if ($name === 'performance:admin_request_duration_ms') {
-                $adminDuration += $value;
-                $adminDurationSamples += $samples;
-            }
+            $measured = true;
+            $botRequests += (int) round((float) $row['value']);
         }
 
-        return [
-            '5xx responses' => $serverErrors,
-            'Request exceptions' => $requestExceptions,
-            '404 responses' => $notFound,
-            'Bot requests' => $bots,
-            'Average response' => $durationSamples > 0 ? round($duration / $durationSamples, 1).' ms' : 'No data',
-            'Admin requests' => $adminRequests,
-            'Average admin response' => $adminDurationSamples > 0 ? round($adminDuration / $adminDurationSamples, 1).' ms' : 'No data',
-        ];
+        if (! $measured) {
+            return [];
+        }
+
+        return [[
+            'label' => 'Bot requests',
+            'value' => number_format($botRequests),
+            'detail' => 'Application telemetry',
+        ]];
     }
 
     private function formatMetric(string $key, float $value): string
@@ -470,6 +890,26 @@ final class Analytics extends Page
         };
     }
 
+    private function formatNullableInteger(mixed $value): string
+    {
+        return is_numeric($value) ? number_format((int) round((float) $value)) : '—';
+    }
+
+    private function formatNullablePercentage(mixed $value): string
+    {
+        return is_numeric($value) ? number_format((float) $value, 1).'%' : '—';
+    }
+
+    private function formatNullableDuration(mixed $value): string
+    {
+        return is_numeric($value) ? $this->formatDuration((int) round((float) $value)) : '—';
+    }
+
+    private function humanizeLabel(string $label): string
+    {
+        return ucwords(str_replace(['_', '-'], ' ', trim($label)));
+    }
+
     private function formatDuration(int $seconds): string
     {
         if ($seconds < 60) {
@@ -480,28 +920,5 @@ final class Analytics extends Page
         $remaining = $seconds % 60;
 
         return $minutes.'m '.str_pad((string) $remaining, 2, '0', STR_PAD_LEFT).'s';
-    }
-
-    private static function operationalLabel(string $metricName): string
-    {
-        return match ($metricName) {
-            'error:http_404' => 'HTTP 404 responses',
-            'error:http_5xx' => 'HTTP 5xx responses',
-            'error:request_exception' => 'Request exceptions',
-            'bot:request' => 'Bot requests',
-            'operation:admin_request' => 'Admin requests',
-            'performance:request_duration_ms' => 'Average request duration',
-            'performance:admin_request_duration_ms' => 'Average admin request duration',
-            default => str_replace([':', '_'], [' · ', ' '], $metricName),
-        };
-    }
-
-    private static function operationalDisplayValue(string $metricName, float $value, ?int $samples): string
-    {
-        if (str_starts_with($metricName, 'performance:') && $samples !== null && $samples > 0) {
-            return number_format($value / $samples, 1).' ms avg';
-        }
-
-        return number_format($value, str_contains((string) $value, '.') ? 1 : 0);
     }
 }

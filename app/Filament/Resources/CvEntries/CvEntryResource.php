@@ -7,13 +7,13 @@ use App\Filament\Resources\CvEntries\Pages\CreateCvEntry;
 use App\Filament\Resources\CvEntries\Pages\EditCvEntry;
 use App\Filament\Resources\CvEntries\Pages\ListCvEntries;
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\AdminRichText;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\CvEntry;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -58,26 +58,13 @@ class CvEntryResource extends Resource
                     DatePicker::make('ends_on')->nullable(),
                     TextInput::make('organisation')->maxLength(240)->nullable(),
                     TextInput::make('location')->maxLength(240)->nullable(),
-                    MarkdownEditor::make('body')
-                        ->label('Details')
-                        ->toolbarButtons([
-                            ['bold', 'italic', 'link'],
-                            ['bulletList', 'orderedList'],
-                            ['undo', 'redo'],
-                        ])
-                        ->helperText('Formatting is limited to emphasis, links and lists so it stays compatible with the public Vita renderer.')
-                        ->maxLength(10000)
+                    ...AdminRichText::schema('body', 'Details', 10000),
+                    MediaAssetSelect::makeId('image_media_asset_id', 'Image from Media Files', imagesOnly: true)
                         ->nullable()
                         ->columnSpanFull(),
                     TextInput::make('external_url')->url()->maxLength(2048)->nullable()->columnSpanFull(),
                 ])
                 ->columns(2),
-            AdminForm::section('Presentation')
-                ->schema([
-                    MediaAssetSelect::make('image_media_asset_id', 'imageMediaAsset', 'Image')
-                        ->nullable()
-                        ->columnSpanFull(),
-                ]),
         ]);
     }
 

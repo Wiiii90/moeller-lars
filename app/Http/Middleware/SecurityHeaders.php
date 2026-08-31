@@ -9,8 +9,18 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class SecurityHeaders
 {
+    public const STYLE_NONCE_ATTRIBUTE = 'public_csp_style_nonce';
+
     public function handle(Request $request, Closure $next): Response
     {
+        $isPublicRequest = $request->is('admin', 'admin/*') === false;
+        $styleNonce = null;
+
+        if ($isPublicRequest) {
+            $styleNonce = base64_encode(random_bytes(18));
+            $request->attributes->set(self::STYLE_NONCE_ATTRIBUTE, $styleNonce);
+        }
+
         /** @var Response $response */
         $response = $next($request);
 
@@ -19,18 +29,20 @@ final class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
-        if ($request->is('admin', 'admin/*') === false) {
-            $response->headers->set('Content-Security-Policy', $this->publicContentSecurityPolicy());
+        if ($isPublicRequest && is_string($styleNonce)) {
+            $response->headers->set('Content-Security-Policy', $this->publicContentSecurityPolicy($styleNonce));
         }
 
         return $response;
     }
 
-    private function publicContentSecurityPolicy(): string
+    private function publicContentSecurityPolicy(string $styleNonce): string
     {
         $scriptSources = ["'self'"];
+        $styleSources = ["'self'", "'nonce-{$styleNonce}'"];
         $connectSources = ["'self'"];
         $imageSources = ["'self'", 'data:'];
+        $frameSources = ["'self'", 'https://www.openstreetmap.org'];
 
         if ((bool) config('analytics.matomo.tracking_enabled')) {
             $baseUrl = config('analytics.matomo.base_url');
@@ -58,10 +70,11 @@ final class SecurityHeaders
         return implode('; ', [
             "default-src 'self'",
             'script-src '.implode(' ', $scriptSources),
-            "style-src 'self'",
+            'style-src '.implode(' ', $styleSources),
             'img-src '.implode(' ', $imageSources),
             "font-src 'self' data:",
             'connect-src '.implode(' ', $connectSources),
+            'frame-src '.implode(' ', $frameSources),
             "object-src 'none'",
             "base-uri 'self'",
             "frame-ancestors 'none'",

@@ -2,12 +2,17 @@
 
 namespace App\Domain\Content;
 
+use App\Domain\Media\PublicMedia;
+use App\Models\MediaAsset;
 use Illuminate\Support\HtmlString;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
+use League\CommonMark\Extension\CommonMark\Node\Block\BlockQuote;
+use League\CommonMark\Extension\CommonMark\Node\Block\Heading;
 use League\CommonMark\Extension\CommonMark\Node\Block\ListBlock;
 use League\CommonMark\Extension\CommonMark\Node\Block\ListItem;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Emphasis;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Image;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Strong;
 use League\CommonMark\Node\Block\Document;
@@ -16,6 +21,7 @@ use League\CommonMark\Node\Inline\Newline;
 use League\CommonMark\Node\Inline\Text;
 use League\CommonMark\Parser\MarkdownParser;
 use League\CommonMark\Renderer\HtmlRenderer;
+use LogicException;
 use Throwable;
 
 final class SafeRichTextRenderer
@@ -24,6 +30,7 @@ final class SafeRichTextRenderer
 
     public function __construct(
         private readonly SafeLinkPolicy $safeLinkPolicy,
+        private readonly PublicMedia $publicMedia,
     ) {
         $this->environment = new Environment([
             'html_input' => 'strip',
@@ -35,17 +42,30 @@ final class SafeRichTextRenderer
             ],
         ]);
         $this->environment->addExtension(new CommonMarkCoreExtension);
+        $this->environment->addRenderer(
+            Image::class,
+            new CanonicalMediaImageRenderer($this->publicMedia, $this->safeLinkPolicy),
+            100,
+        );
     }
 
-    public function assertValid(string $source): void
-    {
-        $this->validate($this->parse($source));
+    public function assertValid(
+        string $source,
+        bool $allowEmbeddedMedia = false,
+        bool $requirePublicMedia = false,
+    ): void {
+        $this->validate($this->parse($source), $source, $allowEmbeddedMedia, $requirePublicMedia);
     }
 
     public function render(string $source): HtmlString
     {
         $document = $this->parse($source);
-        $this->validate($document);
+        $this->validate(
+            $document,
+            $source,
+            allowEmbeddedMedia: true,
+            requirePublicMedia: true,
+        );
 
         if ($source === '') {
             return new HtmlString('');
@@ -63,9 +83,15 @@ final class SafeRichTextRenderer
         }
     }
 
-    private function validate(Document $document): void
-    {
+    private function validate(
+        Document $document,
+        string $source,
+        bool $allowEmbeddedMedia,
+        bool $requirePublicMedia,
+    ): void {
+        $parsedImageIds = [];
         $walker = $document->walker();
+
         while ($event = $walker->next()) {
             if (! $event->isEntering()) {
                 continue;
@@ -74,19 +100,99 @@ final class SafeRichTextRenderer
             $node = $event->getNode();
             if (! $node instanceof Document
                 && ! $node instanceof Paragraph
+                && ! $node instanceof Heading
+                && ! $node instanceof BlockQuote
                 && ! $node instanceof ListBlock
                 && ! $node instanceof ListItem
                 && ! $node instanceof Text
                 && ! $node instanceof Newline
                 && ! $node instanceof Emphasis
                 && ! $node instanceof Strong
-                && ! $node instanceof Link) {
+                && ! $node instanceof Link
+                && ! $node instanceof Image) {
                 throw UnsafeRichTextException::unsupportedSyntax();
             }
 
             if ($node instanceof Link && ! $this->safeLinkPolicy->isAllowed($node->getUrl())) {
                 throw UnsafeRichTextException::unsafeLink();
             }
+
+            if ($node instanceof Image) {
+                if (! $allowEmbeddedMedia) {
+                    throw UnsafeRichTextException::unsupportedSyntax();
+                }
+
+                $url = $node->getUrl();
+                $mediaAssetId = RichTextMediaReference::idFromUrl($url);
+                if ($mediaAssetId !== null) {
+                    $parsedImageIds[] = $mediaAssetId;
+                    continue;
+                }
+
+                if (! $this->isAllowedExternalImageUrl($url)) {
+                    throw UnsafeRichTextException::unsupportedSyntax();
+                }
+            }
         }
+
+        $references = RichTextMediaReference::references($source);
+        $sourceImageIds = array_map(
+            static fn (array $reference): int => $reference['media_asset_id'],
+            $references,
+        );
+        if ($parsedImageIds !== $sourceImageIds) {
+            throw UnsafeRichTextException::unsupportedSyntax();
+        }
+
+        foreach ($references as $reference) {
+            $override = $reference['alt_text_override'];
+            if ($override !== null && (trim($override) === '' || mb_strlen($override) > 500)) {
+                throw UnsafeRichTextException::unsupportedSyntax();
+            }
+        }
+
+        $uniqueIds = array_values(array_unique($sourceImageIds));
+        if ($uniqueIds === []) {
+            return;
+        }
+
+        $assets = MediaAsset::query()
+            ->whereIn('id', $uniqueIds)
+            ->where('state', 'available')
+            ->where('mime_type', 'like', 'image/%')
+            ->with('variants')
+            ->get()
+            ->keyBy(fn (MediaAsset $asset): int => (int) $asset->getKey());
+
+        if ($assets->count() !== count($uniqueIds)) {
+            throw UnsafeRichTextException::unsupportedSyntax();
+        }
+
+        if (! $requirePublicMedia) {
+            return;
+        }
+
+        foreach ($references as $reference) {
+            /** @var MediaAsset|null $asset */
+            $asset = $assets->get($reference['media_asset_id']);
+            if (! $asset instanceof MediaAsset) {
+                throw UnsafeRichTextException::unsupportedSyntax();
+            }
+
+            try {
+                $this->publicMedia->altTextForAsset($asset, $reference['alt_text_override']);
+                $this->publicMedia->thumbnailVariantForAsset($asset);
+            } catch (LogicException) {
+                throw UnsafeRichTextException::unsupportedSyntax();
+            }
+        }
+    }
+
+    private function isAllowedExternalImageUrl(string $url): bool
+    {
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true)
+            && $this->safeLinkPolicy->isAllowed($url);
     }
 }

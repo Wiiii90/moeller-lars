@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Domain\Content\SafeLinkPolicy;
-use App\Domain\Content\SafeRichTextRenderer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +26,10 @@ class CvEntry extends Model
         ];
     }
 
+    /**
+     * Historical relation retained for imported records. New/public CV presentation
+     * uses the canonical image configured on the CV List component instead.
+     */
     public function imageMediaAsset(): BelongsTo
     {
         return $this->belongsTo(MediaAsset::class, 'image_media_asset_id');
@@ -46,32 +49,12 @@ class CvEntry extends Model
                 }
             }
 
-            $body = $entry->getAttribute('body');
-            if ($body !== null) {
-                if (! is_string($body)) {
-                    throw ValidationException::withMessages(['body' => 'CV body content must be text.']);
-                }
-                app(SafeRichTextRenderer::class)->assertValid($body);
-            }
-
             $externalUrl = $entry->getAttribute('external_url');
             if ($externalUrl !== null) {
                 if (! is_string($externalUrl)
                     || ! str_starts_with(strtolower($externalUrl), 'https://')
                     || ! app(SafeLinkPolicy::class)->isAllowed($externalUrl)) {
                     throw ValidationException::withMessages(['external_url' => 'CV links must be valid HTTPS URLs.']);
-                }
-            }
-
-            $imageId = $entry->getAttribute('image_media_asset_id');
-            if ($imageId !== null) {
-                $asset = MediaAsset::query()->find($imageId);
-                $alt = $asset?->getAttribute('alt_text');
-                if (! $asset instanceof MediaAsset
-                    || $asset->getAttribute('state') !== 'available'
-                    || ! is_string($alt)
-                    || trim($alt) === '') {
-                    throw ValidationException::withMessages(['image_media_asset_id' => 'Published CV images require an available asset with canonical ALT text.']);
                 }
             }
 

@@ -29,7 +29,7 @@ it('keeps Home singular while configurable page types remain reusable', function
         ->and($exhibitions->template)->toBe(JournalTemplate::Exhibitions->value);
 });
 
-it('builds navigation from published SiteSections and keeps navigation nodes route-less', function (): void {
+it('builds navigation from published SiteSections and keeps navigation groups route-less', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $service = app(SiteSectionEditorialService::class);
 
@@ -66,16 +66,32 @@ it('uses current SiteSection state as the public availability gate', function ()
     $this->get('/statement-architecture')->assertNotFound();
 });
 
-it('rejects unsupported nested page trees', function (): void {
+it('keeps page type out of hierarchy compatibility', function (): void {
+    foreach (SiteNodeType::cases() as $child) {
+        expect($child->canHaveParent())->toBeTrue()
+            ->and($child->canContainChildren())->toBeTrue()
+            ->and($child->canChangePlacement())->toBeTrue();
+
+        foreach (SiteNodeType::cases() as $parent) {
+            expect($child->canBeChildOf($parent))->toBeTrue();
+        }
+    }
+
+    expect(SiteNodeType::Home->canChangePublication())->toBeFalse()
+        ->and(SiteNodeType::Home->canConvert())->toBeFalse()
+        ->and(SiteNodeType::Home->canDelete())->toBeFalse();
+});
+
+it('rejects level three trees without introducing type pairing rules', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
     $service = app(SiteSectionEditorialService::class);
 
-    $group = $service->createNavigationGroup('Parent');
-    $child = $service->createCustomPage('Child', 'child-architecture');
+    $parent = $service->createCustomPage('Parent', 'parent-architecture');
+    $child = $service->createNavigationGroup('Child Group');
     $journal = $service->createJournal('Journal', 'journal-architecture', JournalTemplate::Blog->value);
 
-    $service->updatePlacement($child, 'hidden', false, (int) $group->getKey());
+    $service->updatePlacement($child, 'hidden', false, (int) $parent->getKey());
 
     expect(fn () => $service->updatePlacement($journal, 'hidden', false, (int) $child->getKey()))
-        ->toThrow(ValidationException::class, 'The parent must be a top-level section that supports submenu entries.');
+        ->toThrow(ValidationException::class, 'The parent must be a top-level page.');
 });

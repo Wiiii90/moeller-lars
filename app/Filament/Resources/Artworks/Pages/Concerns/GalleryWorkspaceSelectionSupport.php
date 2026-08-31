@@ -3,8 +3,6 @@
 namespace App\Filament\Resources\Artworks\Pages\Concerns;
 
 use App\Domain\Artwork\GalleryEditorialService;
-use App\Filament\Pages\SitePages;
-use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
@@ -87,8 +85,6 @@ trait GalleryWorkspaceSelectionSupport
     private function clearSelection(): void
     {
         $this->selectedArtworkIds = [];
-        $this->batchTargetGalleryId = null;
-        $this->moveTargetGalleryIds = [];
     }
 
     private function loadGallery(int $galleryId): void
@@ -96,21 +92,17 @@ trait GalleryWorkspaceSelectionSupport
         /** @var ArtworkCategory $gallery */
         $gallery = ArtworkCategory::query()->findOrFail($galleryId);
         /** @var SiteSection $section */
-        $section = $gallery->siteSection()->with('parent')->firstOrFail();
-        /** @var SiteSection|null $parent */
-        $parent = $section->getRelationValue('parent');
-        $isPublished = $section->getAttribute('state') === 'published';
+        $section = $gallery->siteSection()->firstOrFail();
 
         $this->galleryContext = [
             'id' => (int) $gallery->getKey(),
             'name' => (string) $gallery->getAttribute('name'),
             'slug' => (string) $gallery->getAttribute('slug'),
             'state' => (string) $section->getAttribute('state'),
-            'parent_name' => $parent?->getAttribute('title'),
             'path' => '/'.ltrim((string) $gallery->getAttribute('slug'), '/'),
-            'pages_url' => SitePages::getUrl(),
-            'all_artworks_url' => ArtworkResource::getUrl('index'),
-            'public_url' => $isPublished ? route('site.section', ['section' => $gallery->getAttribute('slug')]) : null,
+            'public_url' => $section->getAttribute('state') === 'published'
+                ? route('site.section', ['section' => $gallery->getAttribute('slug')])
+                : null,
         ];
     }
 

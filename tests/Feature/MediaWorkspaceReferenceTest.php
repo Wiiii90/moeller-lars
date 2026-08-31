@@ -3,6 +3,7 @@
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaReferenceQuery;
 use App\Filament\Resources\MediaAssets\Pages\ListMediaAssets;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Filament\Support\SiteNodePresentation;
@@ -11,10 +12,10 @@ use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
 use App\Models\CvEntry;
+use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use App\Models\User;
-use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
@@ -114,14 +115,19 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
     ]);
 
     $journal = workspaceReferenceNode(SiteNodeType::Journal->value, 'Artist Blog', JournalTemplate::Blog->value);
-    BlogPost::query()->create([
+    $post = BlogPost::query()->create([
         'site_section_id' => $journal->id,
         'slug' => 'studio-notes',
         'title' => 'Studio notes',
         'body' => 'Body',
         'state' => 'draft',
         'position' => 0,
-        'cover_media_asset_id' => $journalAsset->id,
+    ]);
+    JournalEntryMedia::query()->create([
+        'blog_post_id' => $post->id,
+        'media_asset_id' => $journalAsset->id,
+        'role' => JournalEntryMedia::ROLE_COVER,
+        'position' => 0,
     ]);
 
     $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'CV');
@@ -138,14 +144,14 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
     $catalog->loadAssetReferences($galleryAsset);
     expect($catalog->references($galleryAsset))->toContainEqual([
         'type' => 'Gallery: Paintings',
-        'label' => 'The Red Painting',
+        'label' => 'The Red Painting — Primary image',
         'url' => app(SiteNodePresentation::class)->workspaceUrl($gallery),
     ]);
 
     $catalog->loadAssetReferences($journalAsset);
     expect($catalog->references($journalAsset))->toContainEqual([
-        'type' => 'Journal: Artist Blog',
-        'label' => 'Studio notes',
+        'type' => 'Journal: Blog',
+        'label' => 'Studio notes — Cover image',
         'url' => app(SiteNodePresentation::class)->workspaceUrl($journal),
     ]);
 
@@ -218,7 +224,7 @@ it('counts available images videos and audio in the six library metrics', functi
 
 it('projects migrated CV media through the canonical Custom Page usage only', function (): void {
     $asset = workspaceReferenceAsset('cv-reference.jpg');
-    CvEntry::query()->create([
+    $legacyEntry = CvEntry::query()->create([
         'section' => 'Biography',
         'title' => 'Portrait',
         'state' => 'draft',
@@ -260,8 +266,23 @@ it('projects migrated CV media through the canonical Custom Page usage only', fu
     $catalog->applyUsageFilter($specificCustomPage, 'node:'.$custom->id);
     expect($specificCustomPage->pluck('id')->all())->toContain($asset->id);
 
-    expect(fn () => app(MediaAssetEditorialService::class)->delete($asset))
-        ->toThrow(ValidationException::class);
+    expect(app(MediaAssetEditorialService::class)->delete($asset))->toBeTrue();
+
+    $deletedAsset = $asset->fresh();
+    $settings = $custom->customPageSetting()->firstOrFail();
+    $remainingMediaIds = collect($settings->components())
+        ->pluck('media_asset_id')
+        ->filter(static fn (mixed $id): bool => is_numeric($id))
+        ->map(static fn (mixed $id): int => (int) $id)
+        ->all();
+    $afterDeleteCatalog = app(MediaReferenceCatalog::class);
+    $afterDeleteCatalog->loadAssetReferences($deletedAsset);
+
+    expect($deletedAsset->getAttribute('state'))->toBe('deleted')
+        ->and($remainingMediaIds)->not->toContain((int) $asset->getKey())
+        ->and($legacyEntry->fresh()->getAttribute('image_media_asset_id'))->toBeNull()
+        ->and(app(MediaReferenceQuery::class)->isReferenced($deletedAsset))->toBeFalse()
+        ->and($afterDeleteCatalog->references($deletedAsset))->toBe([]);
 });
 
 it('ignores legacy CV media pointers that the current Custom Page runtime does not render', function (): void {
@@ -332,7 +353,7 @@ it('opens Preview and Edit as workspace actions and saves canonical metadata in 
         ->and($asset->getAttribute('state'))->toBe('available');
 });
 
-it('blocks deletion while a Custom Page image component references the asset', function (): void {
+it('removes Custom Page image references before deleting the asset', function (): void {
     $asset = workspaceReferenceAsset('custom-page.jpg');
     $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'CV');
     $custom->customPageSetting()->create([
@@ -343,7 +364,16 @@ it('blocks deletion while a Custom Page image component references the asset', f
         ]],
     ]);
 
-    expect(fn () => app(MediaAssetEditorialService::class)->delete($asset))
-        ->toThrow(ValidationException::class);
-    expect($asset->fresh()->state)->toBe('available');
+    expect(app(MediaReferenceQuery::class)->isReferenced($asset))->toBeTrue();
+    expect(app(MediaAssetEditorialService::class)->delete($asset))->toBeTrue();
+
+    $deletedAsset = $asset->fresh();
+    $settings = $custom->customPageSetting()->firstOrFail();
+    $afterDeleteCatalog = app(MediaReferenceCatalog::class);
+    $afterDeleteCatalog->loadAssetReferences($deletedAsset);
+
+    expect($deletedAsset->getAttribute('state'))->toBe('deleted')
+        ->and($settings->components())->toBe([])
+        ->and(app(MediaReferenceQuery::class)->isReferenced($deletedAsset))->toBeFalse()
+        ->and($afterDeleteCatalog->references($deletedAsset))->toBe([]);
 });

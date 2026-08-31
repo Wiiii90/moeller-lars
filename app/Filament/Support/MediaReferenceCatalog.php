@@ -2,22 +2,36 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\JournalTemplate;
+use App\Domain\Content\RichTextMediaReference;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\MediaReferenceQuery;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\ArtworkCategory;
+use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
+use App\Models\Exhibition;
+use App\Models\HomePresentationSetting;
+use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
 final class MediaReferenceCatalog
 {
     /** @var EloquentCollection<int, SiteSection>|null */
     private ?EloquentCollection $nodes = null;
+
+    /** @var array<int, list<array{type:string,label:string,url:?string}>>|null */
+    private ?array $contentReferenceRowsByMediaId = null;
+
+    private ?HomePresentationSetting $homeSettings = null;
+
+    private bool $homeSettingsLoaded = false;
 
     public function __construct(
         private readonly SiteNodePresentation $presentation,
@@ -32,7 +46,7 @@ final class MediaReferenceCatalog
             SiteNodeType::Journal->value => ['label' => 'Journals', 'options' => []],
             SiteNodeType::CustomPage->value => ['label' => 'Custom pages', 'options' => []],
         ];
-        $broadLabels = [
+        $broad = [
             SiteNodeType::Gallery->value => 'Any Gallery',
             SiteNodeType::Journal->value => 'Any Journal',
             SiteNodeType::CustomPage->value => 'Any Custom Page',
@@ -40,34 +54,31 @@ final class MediaReferenceCatalog
 
         foreach ($this->nodes() as $node) {
             $type = $node->nodeType();
-            if (! isset($groups[$type->value])) {
-                continue;
+            if (isset($groups[$type->value])) {
+                $groups[$type->value]['options'][] = [
+                    'value' => 'node:'.$node->getKey(),
+                    'label' => $this->nodeLabel($node),
+                ];
             }
-
-            $groups[$type->value]['options'][] = [
-                'value' => 'node:'.$node->getKey(),
-                'label' => $this->nodeLabel($node),
-            ];
         }
 
         foreach ($groups as $type => &$group) {
-            if ($group['options'] === []) {
-                continue;
+            if ($group['options'] !== []) {
+                array_unshift($group['options'], [
+                    'value' => 'kind:'.$type,
+                    'label' => $broad[$type],
+                ]);
             }
-
-            array_unshift($group['options'], [
-                'value' => 'kind:'.$type,
-                'label' => $broadLabels[$type],
-            ]);
         }
         unset($group);
 
         $groups['site'] = [
             'label' => 'Site',
-            'options' => [[
-                'value' => 'site-identity',
-                'label' => 'Site identity',
-            ]],
+            'options' => [
+                ['value' => 'home', 'label' => 'Home'],
+                ['value' => 'cv', 'label' => 'CV'],
+                ['value' => 'site-identity', 'label' => 'Site identity'],
+            ],
         ];
 
         return array_values(array_filter(
@@ -82,13 +93,11 @@ final class MediaReferenceCatalog
         if ($usage === 'all') {
             return;
         }
-
         if ($usage === 'in-use') {
             $this->referenceQuery->apply($query, true);
 
             return;
         }
-
         if ($usage === 'unreferenced') {
             $this->referenceQuery->apply($query, false);
 
@@ -104,13 +113,22 @@ final class MediaReferenceCatalog
         if ($destination === 'all') {
             return;
         }
-
         if ($destination === 'site-identity') {
             $query->whereHas('siteIdentitySettings');
 
             return;
         }
+        if ($destination === 'home') {
+            $this->applyHomeDestination($query);
 
+            return;
+        }
+        if ($destination === 'cv') {
+            $ids = $this->referenceQuery->mediaIdsForCv();
+            $ids === [] ? $query->whereRaw('1 = 0') : $query->whereIn('media_assets.id', $ids);
+
+            return;
+        }
         if (str_starts_with($destination, 'kind:')) {
             $type = SiteNodeType::tryFrom(substr($destination, 5));
             if ($type === null || ! in_array($type, [SiteNodeType::Gallery, SiteNodeType::Journal, SiteNodeType::CustomPage], true)) {
@@ -118,7 +136,6 @@ final class MediaReferenceCatalog
 
                 return;
             }
-
             $this->applyKindDestination($query, $type);
 
             return;
@@ -131,34 +148,20 @@ final class MediaReferenceCatalog
             return;
         }
 
-        $type = $node->nodeType();
-        if ($type === SiteNodeType::Gallery) {
-            $this->applyGalleryDestination($query, $node);
-
-            return;
-        }
-        if ($type === SiteNodeType::Journal) {
-            $this->applyJournalDestination($query, $node);
-
-            return;
-        }
-        if ($type === SiteNodeType::CustomPage) {
-            $this->applyCustomPageDestination($query, $node);
-
-            return;
-        }
-
-        $query->whereRaw('1 = 0');
+        match ($node->nodeType()) {
+            SiteNodeType::Gallery => $this->applyGalleryDestination($query, $node),
+            SiteNodeType::Journal => $this->applyJournalDestination($query, $node),
+            SiteNodeType::CustomPage => $this->applyCustomPageDestination($query, $node),
+            default => $query->whereRaw('1 = 0'),
+        };
     }
 
     /** @return array{files:int,images:int,videos:int,audio:int,unreferenced:int,bytes:int} */
     public function libraryMetrics(): array
     {
-        /** @var Builder<MediaAsset> $available */
         $available = MediaAsset::query()
             ->where('state', 'available')
             ->whereIn('mime_type', MediaTypePolicy::acceptedMimeTypes());
-
         $unreferenced = clone $available;
         $this->referenceQuery->apply($unreferenced, false);
 
@@ -184,8 +187,8 @@ final class MediaReferenceCatalog
         $query->with([
             'variants',
             'artworks.category.siteSection',
-            'exhibitions.siteSection',
-            'blogPosts.siteSection',
+            'journalEntryMedia.blogPost.siteSection',
+            'journalEntryMedia.exhibition.siteSection',
             'siteIdentitySettings',
         ]);
     }
@@ -194,8 +197,8 @@ final class MediaReferenceCatalog
     {
         $asset->loadMissing([
             'artworks.category.siteSection',
-            'exhibitions.siteSection',
-            'blogPosts.siteSection',
+            'journalEntryMedia.blogPost.siteSection',
+            'journalEntryMedia.exhibition.siteSection',
             'siteIdentitySettings',
         ]);
     }
@@ -204,55 +207,58 @@ final class MediaReferenceCatalog
     public function references(MediaAsset $asset): array
     {
         $rows = [];
+        $kind = MediaTypePolicy::kind((string) $asset->getAttribute('mime_type'));
+        $noun = match ($kind) {
+            'video' => 'video',
+            'audio' => 'audio',
+            default => 'image',
+        };
 
         foreach ($asset->getRelation('artworks') as $artwork) {
-            /** @var ArtworkCategory|null $category */
             $category = $artwork->getRelationValue('category');
-            $node = $category?->getRelationValue('siteSection');
-            $galleryLabel = $node instanceof SiteSection
+            $node = $category instanceof ArtworkCategory ? $category->getRelationValue('siteSection') : null;
+            $gallery = $node instanceof SiteSection
                 ? $this->nodeLabel($node)
                 : trim((string) ($category?->getAttribute('name') ?? 'Gallery'));
-
+            $pivot = $artwork->getRelationValue('pivot');
+            $role = $pivot instanceof Pivot ? (string) $pivot->getAttribute('role') : 'additional';
             $rows[] = [
-                'type' => 'Gallery: '.$galleryLabel,
-                'label' => (string) $artwork->getAttribute('title'),
+                'type' => 'Gallery: '.$gallery,
+                'label' => (string) $artwork->getAttribute('title').' — '.($role === 'primary' ? 'Primary ' : 'Additional ').$noun,
                 'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
             ];
         }
 
-        foreach ($asset->getRelation('exhibitions') as $exhibition) {
-            $node = $exhibition->getRelationValue('siteSection');
-            $journalLabel = $node instanceof SiteSection ? $this->nodeLabel($node) : 'Journal';
-            $rows[] = [
-                'type' => 'Journal: '.$journalLabel,
-                'label' => (string) $exhibition->getAttribute('title'),
-                'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
-            ];
-        }
-
-        foreach ($asset->getRelation('blogPosts') as $post) {
-            $node = $post->getRelationValue('siteSection');
-            $journalLabel = $node instanceof SiteSection ? $this->nodeLabel($node) : 'Journal';
-            $rows[] = [
-                'type' => 'Journal: '.$journalLabel,
-                'label' => (string) $post->getAttribute('title'),
-                'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
-            ];
-        }
-
-        foreach ($this->customPageNodes() as $node) {
-            $settings = $node->getRelationValue('customPageSetting');
-            if (! $settings instanceof CustomPageSetting) {
+        foreach ($asset->getRelation('journalEntryMedia') as $usage) {
+            if (! $usage instanceof JournalEntryMedia) {
                 continue;
             }
 
-            if ($this->referenceQuery->customPageReferencesAsset($settings, (int) $asset->getKey())) {
-                $rows[] = [
-                    'type' => 'Custom Page: '.$this->nodeLabel($node),
-                    'label' => 'Image component',
-                    'url' => $this->presentation->workspaceUrl($node),
-                ];
+            $entry = $usage->getRelationValue('blogPost');
+            $template = 'Blog';
+            if ($entry === null) {
+                $entry = $usage->getRelationValue('exhibition');
+                $template = 'Exhibitions';
             }
+            if ($entry === null) {
+                continue;
+            }
+
+            $node = $entry->getRelationValue('siteSection');
+            $role = match ((string) $usage->getAttribute('role')) {
+                JournalEntryMedia::ROLE_COVER => 'Cover image',
+                JournalEntryMedia::ROLE_GALLERY => 'Gallery image',
+                default => 'Journal image',
+            };
+            $rows[] = [
+                'type' => 'Journal: '.$template,
+                'label' => (string) $entry->getAttribute('title').' — '.$role,
+                'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
+            ];
+        }
+
+        foreach ($this->contentReferenceRowsByMediaId()[(int) $asset->getKey()] ?? [] as $row) {
+            $rows[] = $row;
         }
 
         foreach ($asset->getRelation('siteIdentitySettings') as $setting) {
@@ -265,8 +271,7 @@ final class MediaReferenceCatalog
 
         $unique = [];
         foreach ($rows as $row) {
-            $key = implode('|', [$row['type'], $row['label'], $row['url'] ?? '']);
-            $unique[$key] = $row;
+            $unique[implode('|', [$row['type'], $row['label'], $row['url'] ?? ''])] = $row;
         }
 
         return array_values($unique);
@@ -292,78 +297,74 @@ final class MediaReferenceCatalog
     /** @return EloquentCollection<int, SiteSection> */
     private function customPageNodes(): EloquentCollection
     {
-        return $this->nodes()->filter(
-            static fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::CustomPage,
+        return $this->nodes()
+            ->filter(fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::CustomPage);
+    }
+
+    /** @return EloquentCollection<int, SiteSection> */
+    private function journalNodes(): EloquentCollection
+    {
+        return $this->nodes()
+            ->filter(fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::Journal);
+    }
+
+    private function homeNode(): ?SiteSection
+    {
+        $node = $this->nodes()->first(
+            fn (SiteSection $candidate): bool => $candidate->nodeType() === SiteNodeType::Home,
         );
+
+        return $node instanceof SiteSection ? $node : null;
     }
 
     private function nodeForDestination(string $destination): ?SiteSection
     {
-        if (! preg_match('/^node:(\d+)$/', $destination, $matches)) {
+        if (preg_match('/^node:(\d+)$/', $destination, $matches) !== 1) {
             return null;
         }
 
-        return $this->nodes()->first(
-            static fn (SiteSection $node): bool => (int) $node->getKey() === (int) $matches[1],
+        $node = $this->nodes()->first(
+            fn (SiteSection $candidate): bool => (int) $candidate->getKey() === (int) $matches[1],
         );
+
+        return $node instanceof SiteSection ? $node : null;
     }
 
     /** @param Builder<MediaAsset> $query */
     private function applyKindDestination(Builder $query, SiteNodeType $type): void
     {
         if ($type === SiteNodeType::Gallery) {
-            $categoryIds = $this->nodes()
-                ->filter(static fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::Gallery)
+            $ids = $this->nodes()
+                ->filter(fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::Gallery)
                 ->pluck('artwork_category_id')
                 ->filter(static fn (mixed $id): bool => is_numeric($id))
                 ->map(static fn (mixed $id): int => (int) $id)
                 ->values()
                 ->all();
-
-            $categoryIds === []
+            $ids === []
                 ? $query->whereRaw('1 = 0')
-                : $query->whereHas('artworks', static function (Builder $artworks) use ($categoryIds): void {
-                    $artworks->whereIn('artwork_category_id', $categoryIds);
-                });
+                : $query->whereHas('artworks', fn (Builder $artwork) => $artwork->whereIn('artwork_category_id', $ids));
 
             return;
         }
 
         if ($type === SiteNodeType::Journal) {
-            $nodeIds = $this->nodes()
-                ->filter(static fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::Journal)
-                ->modelKeys();
-
-            if ($nodeIds === []) {
-                $query->whereRaw('1 = 0');
-
-                return;
-            }
-
-            $query->where(function (Builder $references) use ($nodeIds): void {
-                $references->whereHas('blogPosts', static function (Builder $posts) use ($nodeIds): void {
-                    $posts->whereIn('site_section_id', $nodeIds);
-                })->orWhereHas('exhibitions', static function (Builder $exhibitions) use ($nodeIds): void {
-                    $exhibitions->whereIn('site_section_id', $nodeIds);
-                });
-            });
+            $ids = $this->referenceQuery->mediaIdsForJournalSections($this->journalNodes());
+            $ids === [] ? $query->whereRaw('1 = 0') : $query->whereIn('media_assets.id', $ids);
 
             return;
         }
 
         if ($type === SiteNodeType::CustomPage) {
-            $mediaIds = [];
+            $ids = [];
             foreach ($this->customPageNodes() as $node) {
                 $settings = $node->getRelationValue('customPageSetting');
                 if ($settings instanceof CustomPageSetting) {
-                    $mediaIds = array_merge($mediaIds, $this->referenceQuery->mediaIdsForCustomPage($settings));
+                    $ids = array_merge($ids, $this->referenceQuery->mediaIdsForCustomPage($settings));
                 }
             }
-
-            $mediaIds = array_values(array_unique($mediaIds));
-            $mediaIds === []
-                ? $query->whereRaw('1 = 0')
-                : $query->whereIn('media_assets.id', $mediaIds);
+            $ids = array_values(array_unique($ids));
+            $ids === [] ? $query->whereRaw('1 = 0') : $query->whereIn('media_assets.id', $ids);
 
             return;
         }
@@ -374,38 +375,27 @@ final class MediaReferenceCatalog
     /** @param Builder<MediaAsset> $query */
     private function applyGalleryDestination(Builder $query, SiteSection $node): void
     {
-        $categoryId = $node->getAttribute('artwork_category_id');
-        if (! is_numeric($categoryId)) {
+        $id = $node->getAttribute('artwork_category_id');
+        if (! is_numeric($id)) {
             $query->whereRaw('1 = 0');
 
             return;
         }
 
-        $query->whereHas('artworks', static function (Builder $artworks) use ($categoryId): void {
-            $artworks->where('artwork_category_id', (int) $categoryId);
-        });
+        $query->whereHas('artworks', fn (Builder $artwork) => $artwork->where('artwork_category_id', (int) $id));
     }
 
     /** @param Builder<MediaAsset> $query */
     private function applyJournalDestination(Builder $query, SiteSection $node): void
     {
-        if ($node->journalTemplate() === JournalTemplate::Blog) {
-            $query->whereHas('blogPosts', static function (Builder $posts) use ($node): void {
-                $posts->where('site_section_id', $node->getKey());
-            });
+        if (! in_array($node->journalTemplate(), [JournalTemplate::Blog, JournalTemplate::Exhibitions], true)) {
+            $query->whereRaw('1 = 0');
 
             return;
         }
 
-        if ($node->journalTemplate() === JournalTemplate::Exhibitions) {
-            $query->whereHas('exhibitions', static function (Builder $exhibitions) use ($node): void {
-                $exhibitions->where('site_section_id', $node->getKey());
-            });
-
-            return;
-        }
-
-        $query->whereRaw('1 = 0');
+        $ids = $this->referenceQuery->mediaIdsForJournalSection($node);
+        $ids === [] ? $query->whereRaw('1 = 0') : $query->whereIn('media_assets.id', $ids);
     }
 
     /** @param Builder<MediaAsset> $query */
@@ -418,10 +408,175 @@ final class MediaReferenceCatalog
             return;
         }
 
-        $mediaIds = $this->referenceQuery->mediaIdsForCustomPage($settings);
-        $mediaIds === []
-            ? $query->whereRaw('1 = 0')
-            : $query->whereIn('media_assets.id', $mediaIds);
+        $ids = $this->referenceQuery->mediaIdsForCustomPage($settings);
+        $ids === [] ? $query->whereRaw('1 = 0') : $query->whereIn('media_assets.id', $ids);
+    }
+
+    /** @param Builder<MediaAsset> $query */
+    private function applyHomeDestination(Builder $query): void
+    {
+        $settings = $this->homeSettings();
+        if (! $settings instanceof HomePresentationSetting) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        $ids = $this->referenceQuery->mediaIdsForHome($settings);
+        $ids === [] ? $query->whereRaw('1 = 0') : $query->whereIn('media_assets.id', $ids);
+    }
+
+    private function homeSettings(): ?HomePresentationSetting
+    {
+        if ($this->homeSettingsLoaded) {
+            return $this->homeSettings;
+        }
+
+        $this->homeSettingsLoaded = true;
+        $settings = HomePresentationSetting::query()->first();
+        $this->homeSettings = $settings instanceof HomePresentationSetting ? $settings : null;
+
+        return $this->homeSettings;
+    }
+
+    /** @return array<int, list<array{type:string,label:string,url:?string}>> */
+    private function contentReferenceRowsByMediaId(): array
+    {
+        if ($this->contentReferenceRowsByMediaId !== null) {
+            return $this->contentReferenceRowsByMediaId;
+        }
+
+        $rows = [];
+
+        foreach (BlogPost::query()->with('siteSection')->whereNotNull('body')->get(['id', 'site_section_id', 'title', 'body']) as $post) {
+            $body = $post->getAttribute('body');
+            if (! is_string($body)) {
+                continue;
+            }
+            $node = $post->getRelationValue('siteSection');
+            foreach (RichTextMediaReference::ids($body) as $mediaId) {
+                $this->appendReferenceRow($rows, $mediaId, [
+                    'type' => 'Journal: Blog',
+                    'label' => (string) $post->getAttribute('title').' — Rich Text image',
+                    'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
+                ]);
+            }
+        }
+
+        foreach (Exhibition::query()->with('siteSection')->whereNotNull('description')->get(['id', 'site_section_id', 'title', 'description']) as $exhibition) {
+            $description = $exhibition->getAttribute('description');
+            if (! is_string($description)) {
+                continue;
+            }
+            $node = $exhibition->getRelationValue('siteSection');
+            foreach (RichTextMediaReference::ids($description) as $mediaId) {
+                $this->appendReferenceRow($rows, $mediaId, [
+                    'type' => 'Journal: Exhibitions',
+                    'label' => (string) $exhibition->getAttribute('title').' — Rich Text image',
+                    'url' => $node instanceof SiteSection ? $this->presentation->workspaceUrl($node) : null,
+                ]);
+            }
+        }
+
+        foreach ($this->customPageNodes() as $node) {
+            $settings = $node->getRelationValue('customPageSetting');
+            if (! $settings instanceof CustomPageSetting) {
+                continue;
+            }
+
+            foreach ($settings->components() as $component) {
+                $type = $component['type'] ?? null;
+                $mediaId = $component['media_asset_id'] ?? null;
+
+                if ($type === 'image' && is_numeric($mediaId) && (int) $mediaId > 0) {
+                    $this->appendReferenceRow($rows, (int) $mediaId, [
+                        'type' => 'Custom Page: '.$this->nodeLabel($node),
+                        'label' => 'Image component',
+                        'url' => $this->presentation->workspaceUrl($node),
+                    ]);
+                }
+
+                if ($type === 'cv_list' && is_numeric($mediaId) && (int) $mediaId > 0) {
+                    $this->appendReferenceRow($rows, (int) $mediaId, [
+                        'type' => 'CV',
+                        'label' => $this->nodeLabel($node).' — Portrait',
+                        'url' => $this->presentation->workspaceUrl($node),
+                    ]);
+                }
+
+                if ($type === 'text' && is_string($component['body'] ?? null)) {
+                    $title = trim((string) ($component['title'] ?? ''));
+                    foreach (RichTextMediaReference::ids($component['body']) as $richTextMediaId) {
+                        $this->appendReferenceRow($rows, $richTextMediaId, [
+                            'type' => 'Custom Page: '.$this->nodeLabel($node),
+                            'label' => $title === '' ? 'Rich Text component' : 'Rich Text · '.$title,
+                            'url' => $this->presentation->workspaceUrl($node),
+                        ]);
+                    }
+                }
+
+                if ($type === 'list' && is_array($component['items'] ?? null)) {
+                    foreach ($component['items'] as $item) {
+                        if (! is_array($item) || ! is_string($item['body'] ?? null)) {
+                            continue;
+                        }
+                        $itemTitle = trim((string) ($item['title'] ?? ''));
+                        foreach (RichTextMediaReference::ids($item['body']) as $richTextMediaId) {
+                            $this->appendReferenceRow($rows, $richTextMediaId, [
+                                'type' => 'Custom Page: '.$this->nodeLabel($node),
+                                'label' => $itemTitle === '' ? 'List item Rich Text' : 'List item Rich Text · '.$itemTitle,
+                                'url' => $this->presentation->workspaceUrl($node),
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+
+        $homeNode = $this->homeNode();
+        $homeUrl = $homeNode instanceof SiteSection ? $this->presentation->workspaceUrl($homeNode) : null;
+        foreach (HomePresentationSetting::query()->get(['id', 'configuration']) as $settings) {
+            foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $template) {
+                foreach ($settings->components($template) as $component) {
+                    if (($component['type'] ?? null) === 'image'
+                        && is_numeric($component['media_asset_id'] ?? null)
+                        && (int) $component['media_asset_id'] > 0) {
+                        $this->appendReferenceRow($rows, (int) $component['media_asset_id'], [
+                            'type' => 'Home: '.$template->label(),
+                            'label' => 'Image component',
+                            'url' => $homeUrl,
+                        ]);
+                    }
+
+                    if (($component['type'] ?? null) === 'text' && is_string($component['body'] ?? null)) {
+                        $title = trim((string) ($component['title'] ?? ''));
+                        foreach (RichTextMediaReference::ids($component['body']) as $mediaId) {
+                            $this->appendReferenceRow($rows, $mediaId, [
+                                'type' => 'Home: '.$template->label(),
+                                'label' => $title === '' ? 'Rich Text component' : 'Rich Text · '.$title,
+                                'url' => $homeUrl,
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return $this->contentReferenceRowsByMediaId = $rows;
+    }
+
+    /**
+     * @param array<int, list<array{type:string,label:string,url:?string}>> $rows
+     * @param array{type:string,label:string,url:?string} $row
+     */
+    private function appendReferenceRow(array &$rows, int $mediaId, array $row): void
+    {
+        if ($mediaId <= 0) {
+            return;
+        }
+
+        $rows[$mediaId] ??= [];
+        $rows[$mediaId][] = $row;
     }
 
     private function nodeLabel(SiteSection $node): string

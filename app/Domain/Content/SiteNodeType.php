@@ -23,6 +23,12 @@ enum SiteNodeType: string
         return $options;
     }
 
+    /** @return array<string, string> */
+    public static function editableOptions(): array
+    {
+        return self::creatableOptions();
+    }
+
     public function label(?JournalTemplate $journalTemplate = null): string
     {
         if ($this === self::Journal && $journalTemplate !== null) {
@@ -34,7 +40,7 @@ enum SiteNodeType: string
             self::Gallery => 'Gallery',
             self::Journal => 'Journal',
             self::CustomPage => 'Custom Page',
-            self::NavigationNode => 'Navigation Node',
+            self::NavigationNode => 'Navigation Group',
         };
     }
 
@@ -53,14 +59,18 @@ enum SiteNodeType: string
         return in_array($this, [self::Gallery, self::Journal, self::CustomPage], true);
     }
 
+    /**
+     * Site-section type does not participate in hierarchy compatibility.
+     * Depth and cycle rules are enforced by SiteSection and SiteSectionOrderService.
+     */
     public function canContainChildren(): bool
     {
-        return in_array($this, [self::Gallery, self::NavigationNode], true);
+        return true;
     }
 
     public function canHaveParent(): bool
     {
-        return ! in_array($this, [self::Home, self::NavigationNode], true);
+        return true;
     }
 
     public function canDelete(): bool
@@ -70,21 +80,21 @@ enum SiteNodeType: string
 
     public function canChangePlacement(): bool
     {
+        return true;
+    }
+
+    public function canChangePublication(): bool
+    {
+        return $this !== self::Home;
+    }
+
+    public function canConvert(): bool
+    {
         return $this !== self::Home;
     }
 
     public function canBeChildOf(self $parent): bool
     {
-        if (! $this->canHaveParent() || ! $parent->canContainChildren()) {
-            return false;
-        }
-
-        return match ($this) {
-            self::Gallery => in_array($parent, [self::Gallery, self::NavigationNode], true),
-            self::Journal,
-            self::CustomPage => $parent === self::NavigationNode,
-            self::Home,
-            self::NavigationNode => false,
-        };
+        return true;
     }
 }

@@ -1,0 +1,155 @@
+/*
+ * Shared Filament dialog geometry.
+ * Native Filament remains responsible for open/close state, Escape handling,
+ * focus trapping/restoration and nested interactive components.
+ */
+html {
+    scrollbar-gutter: stable;
+}
+
+@media (min-width: 1024px) {
+    /*
+     * A transformed ancestor becomes the containing block for fixed children.
+     * Keep the existing visual workspace shift without trapping viewport modals
+     * inside the admin content column.
+     */
+    .fi-main {
+        position: relative;
+        inset-inline-start: calc(0rem - var(--admin-workspace-visual-shift));
+        transform: none;
+    }
+}
+
+.fi-modal-close-overlay {
+    position: fixed;
+    inset: 0;
+}
+
+.fi-modal-window {
+    max-height: calc(100dvh - 2rem);
+}
+
+.fi-modal-header,
+.fi-modal-footer {
+    flex: 0 0 auto;
+}
+
+.fi-modal-content {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.media-file-dialog .fi-modal-footer-actions,
+.admin-task-dialog .fi-modal-footer-actions {
+    width: 100%;
+    align-items: center;
+    gap: .5rem;
+}
+
+.media-file-dialog .media-dialog-footer__cancel,
+.admin-task-dialog .admin-dialog-footer__cancel {
+    order: 10;
+    margin-inline-end: auto;
+}
+
+.media-file-dialog .media-dialog-footer__utility {
+    order: 20;
+}
+
+.media-file-dialog .media-dialog-footer__primary,
+.admin-task-dialog .admin-dialog-footer__primary {
+    order: 30;
+    margin-inline-start: auto;
+}
+
+.media-delete-dialog {
+    display: grid;
+    gap: .75rem;
+    color: var(--admin-text);
+}
+
+.media-delete-dialog > p {
+    margin: 0;
+    color: var(--admin-muted);
+    font-size: .78rem;
+    line-height: 1.55;
+}
+
+.media-delete-dialog__references {
+    display: grid;
+    max-height: 15rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-block: 1px solid var(--admin-line);
+    scrollbar-gutter: stable;
+}
+
+.media-delete-dialog__references > div {
+    display: grid;
+    grid-template-columns: minmax(8rem, .55fr) minmax(0, 1fr);
+    gap: .8rem;
+    padding: .6rem 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.media-delete-dialog__references > div:last-child {
+    border-bottom: 0;
+}
+
+.media-delete-dialog__references strong,
+.media-delete-dialog__references span {
+    min-width: 0;
+    font-size: .73rem;
+}
+
+.media-delete-dialog__references strong {
+    color: var(--admin-text);
+    font-weight: 600;
+}
+
+.media-delete-dialog__references span {
+    color: var(--admin-muted);
+}
+
+@supports not (height: 100dvh) {
+    .fi-modal-window {
+        max-height: calc(100vh - 2rem);
+    }
+}
+
+@media (max-width: 760px) {
+    .fi-modal-window {
+        max-height: calc(100dvh - 1rem);
+    }
+
+    .media-file-dialog .fi-modal-footer-actions,
+    .admin-task-dialog .fi-modal-footer-actions {
+        flex-wrap: wrap;
+    }
+
+    .media-file-dialog .media-dialog-footer__cancel,
+    .media-file-dialog .media-dialog-footer__primary,
+    .admin-task-dialog .admin-dialog-footer__cancel,
+    .admin-task-dialog .admin-dialog-footer__primary {
+        margin-inline: 0;
+    }
+
+    .media-file-dialog .media-dialog-footer__primary,
+    .admin-task-dialog .admin-dialog-footer__primary {
+        margin-inline-start: auto;
+    }
+
+    .media-delete-dialog__references > div {
+        grid-template-columns: minmax(0, 1fr);
+        gap: .2rem;
+    }
+
+    @supports not (height: 100dvh) {
+        .fi-modal-window {
+            max-height: calc(100vh - 1rem);
+        }
+    }
+}

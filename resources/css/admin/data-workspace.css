@@ -1,0 +1,438 @@
+@import './task-surfaces.css';
+
+/* Shared flat data/control/table/pager grammar for admin workspaces. */
+
+.admin-visual-stage {
+    box-sizing: border-box;
+    height: var(--admin-visual-stage-height);
+    min-height: 0;
+    margin: var(--admin-section-space) 0;
+}
+
+.admin-visual-stage > .admin-visual-stage__pane {
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 0;
+}
+
+.admin-visual-stage + .admin-data-controls {
+    padding: var(--admin-section-space) 0 var(--admin-section-gap);
+    border-top: 1px solid var(--admin-line-strong);
+}
+
+.admin-visual-stage + .admin-visual-stage-followup {
+    padding-top: var(--admin-section-space);
+    border-top: 1px solid var(--admin-line-strong);
+}
+
+.admin-visual-stage-followup > .admin-data-controls {
+    padding-top: 0;
+    padding-bottom: var(--admin-section-gap);
+}
+
+.admin-control-bar {
+    display: flex;
+    gap: .85rem;
+    padding: .85rem 0;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.admin-control-bar__search {
+    flex: 1 1 16rem;
+}
+
+.admin-data-controls,
+.media-workspace__controls,
+.journal-workspace__controls {
+    display: grid;
+    gap: .85rem;
+    align-items: end;
+}
+
+.admin-field,
+.admin-control-group,
+.admin-data-field,
+.admin-data-control-group,
+.media-workspace__field,
+.media-workspace__control-group,
+.journal-workspace__field,
+.journal-workspace__control-group {
+    display: grid;
+    min-width: 0;
+    gap: .28rem;
+    align-content: end;
+}
+
+.admin-field {
+    min-width: 7rem;
+}
+
+.admin-field__label,
+.admin-control-group__label,
+.admin-data-field > span,
+.admin-data-control-label,
+.media-workspace__field > span,
+.media-workspace__control-label,
+.journal-workspace__field > span,
+.journal-workspace__control-label {
+    color: var(--admin-muted);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .09em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.admin-field input,
+.admin-field select,
+.admin-data-field input,
+.admin-data-field select,
+.media-workspace__field input,
+.media-workspace__field select,
+.journal-workspace__field input,
+.journal-workspace__field select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: var(--admin-control-height);
+    min-height: var(--admin-control-height);
+    padding: .45rem var(--admin-control-text-inset, .25rem);
+    border: 0;
+    border-bottom: 1px solid var(--admin-line);
+    border-radius: 0;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: .78rem;
+    outline: none;
+}
+
+.admin-field input:focus,
+.admin-field select:focus,
+.admin-data-field input:focus,
+.admin-data-field select:focus,
+.media-workspace__field input:focus,
+.media-workspace__field select:focus,
+.journal-workspace__field input:focus,
+.journal-workspace__field select:focus {
+    border-color: var(--admin-accent);
+}
+
+.admin-field input::placeholder,
+.admin-data-field input::placeholder,
+.media-workspace__field input::placeholder,
+.journal-workspace__field input::placeholder {
+    color: var(--admin-faint);
+    opacity: 1;
+}
+
+.admin-control-group__actions {
+    display: flex;
+    min-height: var(--admin-control-height);
+    gap: .35rem;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.admin-control-bar .admin-action,
+.admin-data-controls .admin-action,
+.media-workspace__controls .admin-action,
+.journal-workspace__controls .admin-action {
+    min-height: var(--admin-control-height);
+}
+
+.admin-data-control-group > .admin-action,
+.media-workspace__control-group > .admin-action,
+.journal-workspace__control-group > .admin-action {
+    justify-self: start;
+}
+
+.admin-data-table,
+.admin-table--data,
+.journal-workspace__table-wrap {
+    overflow: auto;
+    border-block: 0 !important;
+}
+
+.media-workspace__table-wrap {
+    overflow: auto;
+    border-top: 0 !important;
+    border-bottom: 1px solid var(--admin-line) !important;
+}
+
+.admin-data-table,
+.admin-table--data,
+.journal-workspace__table-wrap {
+    --admin-data-header-padding: 0 .6rem;
+    --admin-data-cell-padding: .62rem .6rem;
+}
+
+.media-workspace__table-wrap {
+    --admin-data-header-padding: .75rem .6rem;
+    --admin-data-cell-padding: .75rem .6rem;
+}
+
+.admin-data-table > table,
+.admin-table--data table,
+.media-workspace__table,
+.journal-workspace__table {
+    width: 100%;
+    min-width: 60rem;
+    border-collapse: collapse;
+}
+
+.media-workspace__table,
+.journal-workspace__table {
+    min-width: 68rem;
+}
+
+.admin-table:is(.admin-data-table, .admin-table--data, .media-workspace__table-wrap, .journal-workspace__table-wrap) thead tr,
+.admin-table:is(.admin-data-table, .admin-table--data, .media-workspace__table-wrap, .journal-workspace__table-wrap) th {
+    height: 2.25rem;
+}
+
+.admin-table:is(.admin-data-table, .admin-table--data, .media-workspace__table-wrap, .journal-workspace__table-wrap) th {
+    padding: var(--admin-data-header-padding);
+    border-bottom: 1px solid var(--admin-line);
+    color: var(--admin-muted);
+    font-size: .64rem;
+    font-weight: 650;
+    letter-spacing: .08em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.admin-table:is(.admin-data-table, .admin-table--data, .media-workspace__table-wrap, .journal-workspace__table-wrap) td {
+    padding: var(--admin-data-cell-padding);
+    border-bottom: 1px solid var(--admin-line);
+    color: var(--admin-muted);
+    font-size: .76rem;
+    vertical-align: middle;
+}
+
+.admin-table:is(.admin-data-table, .admin-table--data, .media-workspace__table-wrap, .journal-workspace__table-wrap) tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.admin-table--data tbody tr:hover,
+.media-workspace__table tbody tr:hover,
+.journal-workspace__table tbody tr:hover {
+    background: var(--admin-subtle);
+}
+
+.admin-data-table > .admin-empty-state,
+.admin-table--data > .admin-empty-state,
+.journal-workspace__table-wrap > .admin-empty-state {
+    min-height: 5.2rem;
+    padding: 1.35rem .6rem;
+    border: 0;
+}
+
+.admin-table__identity {
+    min-width: 14rem;
+    max-width: 28rem;
+}
+
+.admin-table__identity strong,
+.admin-table__identity small {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-table__identity strong {
+    color: var(--admin-text);
+    font-size: .8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.admin-table__identity small {
+    margin-top: .17rem;
+    color: var(--admin-muted);
+    font-size: .66rem;
+    line-height: 1.4;
+}
+
+.admin-pager,
+.media-workspace__pager,
+.journal-workspace__pager {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+    align-items: center;
+    color: var(--admin-muted);
+    font-size: .72rem;
+}
+
+.admin-pager {
+    margin-top: 0;
+    padding-top: var(--admin-section-gap);
+    border-top: 1px solid var(--admin-line-strong);
+}
+
+.admin-pager__size,
+.media-workspace__pager-size,
+.journal-workspace__pager-size {
+    display: inline-flex;
+    gap: .45rem;
+    align-items: center;
+    justify-self: start;
+    white-space: nowrap;
+}
+
+.admin-pager__size > span,
+.media-workspace__pager-size > span,
+.journal-workspace__pager-size > span {
+    color: var(--admin-muted);
+    font-size: .68rem;
+}
+
+.admin-pager__size select,
+.media-workspace__pager-size select,
+.journal-workspace__pager-size select {
+    height: 2rem;
+    min-width: 3.5rem;
+    padding: .3rem 1.35rem .3rem .45rem;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: .72rem;
+    cursor: pointer;
+}
+
+.admin-pager__size select:hover,
+.admin-pager__size select:focus-visible,
+.media-workspace__pager-size select:hover,
+.media-workspace__pager-size select:focus-visible,
+.journal-workspace__pager-size select:hover,
+.journal-workspace__pager-size select:focus-visible {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    outline: none;
+}
+
+.admin-pager__range,
+.media-workspace__pager-range,
+.journal-workspace__pager-range {
+    justify-self: center;
+    color: var(--admin-muted);
+    font-size: .72rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.admin-pager__actions,
+.media-workspace__pager-actions,
+.journal-workspace__pager-actions {
+    justify-self: end;
+    flex-wrap: nowrap;
+}
+
+@media (max-width: 900px) {
+    .admin-control-group {
+        flex: 1 1 auto;
+    }
+
+    .admin-toolbar.admin-pager__actions {
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 760px) {
+    .admin-visual-stage--stackable {
+        height: auto;
+    }
+
+    .admin-visual-stage--stackable > .admin-visual-stage__pane {
+        height: var(--admin-visual-stage-height);
+    }
+
+    .admin-control-bar {
+        align-items: stretch;
+    }
+
+    .admin-field,
+    .admin-control-group,
+    .admin-data-control-group,
+    .media-workspace__control-group,
+    .journal-workspace__control-group {
+        width: 100%;
+    }
+
+    .admin-control-group__actions {
+        flex-wrap: wrap;
+    }
+
+    .media-workspace__controls,
+    .journal-workspace__controls.is-blog,
+    .journal-workspace__controls.is-exhibitions {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-pager,
+    .media-workspace__pager,
+    .journal-workspace__pager {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .admin-pager__range,
+    .media-workspace__pager-range,
+    .journal-workspace__pager-range {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    .admin-pager__size,
+    .media-workspace__pager-size,
+    .journal-workspace__pager-size {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .admin-pager__actions,
+    .media-workspace__pager-actions,
+    .journal-workspace__pager-actions {
+        grid-column: 2;
+        grid-row: 2;
+    }
+}
+
+@media (max-width: 520px) {
+    .admin-pager,
+    .media-workspace__pager,
+    .journal-workspace__pager {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-pager__range,
+    .admin-pager__size,
+    .admin-pager__actions,
+    .media-workspace__pager-range,
+    .media-workspace__pager-size,
+    .media-workspace__pager-actions,
+    .journal-workspace__pager-range,
+    .journal-workspace__pager-size,
+    .journal-workspace__pager-actions {
+        grid-column: 1;
+        justify-self: start;
+    }
+
+    .admin-pager__range,
+    .media-workspace__pager-range,
+    .journal-workspace__pager-range { grid-row: 1; }
+
+    .admin-pager__size,
+    .media-workspace__pager-size,
+    .journal-workspace__pager-size { grid-row: 2; }
+
+    .admin-pager__actions,
+    .media-workspace__pager-actions,
+    .journal-workspace__pager-actions { grid-row: 3; }
+}

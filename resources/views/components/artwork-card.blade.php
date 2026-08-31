@@ -1,4 +1,4 @@
-@props(['artwork', 'media', 'showCategoryLink' => false, 'eager' => false])
+@props(['artwork', 'media', 'showCategoryLink' => false, 'showDetails' => true, 'eager' => false])
 
 @php
     $originalUrl = $media->originalUrl($artwork);
@@ -7,7 +7,7 @@
     $mime = $media->mimeType($artwork);
     $isVideo = $kind === 'video';
     $thumbnail = $isVideo ? null : $media->thumbnailVariant($artwork);
-    $imageUrl = $thumbnail ? route('media.variant', $thumbnail) : null;
+    $imageUrl = $thumbnail ? $media->variantUrl($thumbnail) : null;
     $category = $artwork->getRelationValue('category');
     $thumbnailWidth = (int) ($thumbnail?->getAttribute('width') ?? 0);
     $thumbnailHeight = (int) ($thumbnail?->getAttribute('height') ?? 0);
@@ -56,21 +56,25 @@
         @endif
     </a>
 
-    <div class="artwork-card__footer">
-        <a
-            class="artwork-label-trigger"
-            href="{{ $detailUrl }}"
-            aria-label="View details for {{ $artwork->title }}"
-        >
-            <x-artwork-label :artwork="$artwork" />
-        </a>
-
-        @if ($showCategoryLink && $category !== null)
-            <nav class="artwork-card__actions" aria-label="Artwork navigation">
-                <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}">
-                    {{ $category->name }} <span aria-hidden="true">→</span>
+    @if ($showDetails || ($showCategoryLink && $category !== null))
+        <div class="artwork-card__footer">
+            @if ($showDetails)
+                <a
+                    class="artwork-label-trigger"
+                    href="{{ $detailUrl }}"
+                    aria-label="View details for {{ $artwork->title }}"
+                >
+                    <x-artwork-label :artwork="$artwork" />
                 </a>
-            </nav>
-        @endif
-    </div>
+            @endif
+
+            @if ($showCategoryLink && $category !== null)
+                <nav class="artwork-card__actions" aria-label="Artwork navigation">
+                    <a class="artwork-context-button artwork-context-button--category" href="{{ $preview->url(route('site.section', ['section' => $category->slug])) }}">
+                        {{ $category->name }} <span aria-hidden="true">→</span>
+                    </a>
+                </nav>
+            @endif
+        </div>
+    @endif
 </article>

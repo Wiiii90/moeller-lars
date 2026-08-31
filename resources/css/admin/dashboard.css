@@ -1,0 +1,378 @@
+.admin-dashboard .admin-workspace__body {
+    display: grid;
+    gap: 0;
+}
+
+.admin-dashboard__feed-controls {
+    grid-template-columns: minmax(14rem, 1fr) minmax(8rem, max-content) auto;
+    padding: .85rem 0;
+}
+
+.admin-dashboard .admin-data-row {
+    cursor: pointer;
+}
+
+.admin-dashboard .admin-data-row:hover {
+    background: var(--admin-subtle);
+}
+
+.admin-dashboard .admin-data-row:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+}
+
+.admin-dashboard .admin-data-nowrap,
+.admin-dashboard .admin-data-status {
+    white-space: nowrap;
+}
+
+.admin-dashboard .admin-data-title {
+    min-width: 11rem;
+    max-width: 18rem;
+    overflow: hidden;
+    color: var(--admin-text) !important;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-dashboard .admin-data-sender {
+    min-width: 13rem;
+    max-width: 18rem;
+}
+
+.admin-dashboard .admin-data-sender strong,
+.admin-dashboard .admin-data-sender small {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-dashboard .admin-data-sender strong {
+    color: var(--admin-text);
+    font-size: .76rem;
+    font-weight: 600;
+}
+
+.admin-dashboard .admin-data-sender small {
+    margin-top: .12rem;
+    color: var(--admin-muted);
+    font-size: .68rem;
+}
+
+.admin-dashboard .admin-data-message {
+    min-width: 18rem;
+    max-width: 32rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-dashboard .admin-data-status {
+    width: 5.25rem;
+    min-width: 5.25rem;
+}
+
+.admin-dashboard .admin-data-status > span {
+    display: inline-block;
+    width: 4.25rem;
+}
+
+.admin-detail-dialog {
+    display: grid;
+    gap: 1rem;
+    color: var(--admin-text);
+}
+
+.admin-detail-dialog__meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    border-block: 1px solid var(--admin-line);
+}
+
+.admin-detail-dialog__meta > div {
+    min-width: 0;
+    padding: .7rem 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-detail-dialog__meta > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+}
+
+.admin-detail-dialog__meta > div:nth-child(even) {
+    padding-left: 1rem;
+    border-left: 1px solid var(--admin-line);
+}
+
+.admin-detail-dialog dt,
+.admin-detail-dialog__message > span {
+    color: var(--admin-muted);
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.admin-detail-dialog dd {
+    min-width: 0;
+    margin: .2rem 0 0;
+    overflow-wrap: anywhere;
+    color: var(--admin-text);
+    font-size: .76rem;
+    line-height: 1.45;
+}
+
+.admin-detail-dialog a {
+    color: inherit;
+    text-underline-offset: .16rem;
+}
+
+.admin-detail-dialog__message {
+    display: grid;
+    gap: .35rem;
+}
+
+.admin-detail-dialog__message p {
+    margin: 0;
+    color: var(--admin-text);
+    font-size: .82rem;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.admin-dashboard__overview {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    border-bottom: 1px solid var(--admin-line-strong);
+}
+
+.admin-dashboard__overview-column {
+    min-width: 0;
+    grid-column: span 2;
+    padding: 1.2rem 1rem 1.25rem 0;
+}
+
+.admin-dashboard__overview-column + .admin-dashboard__overview-column {
+    padding-left: 1rem;
+    border-left: 1px solid var(--admin-line);
+}
+
+.admin-dashboard__overview-column:last-child {
+    padding-right: 1rem;
+}
+
+.admin-dashboard__overview-head {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .85rem;
+}
+
+.admin-dashboard__overview-head > span {
+    display: block;
+    min-width: 0;
+    color: var(--admin-muted);
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .055em;
+    text-transform: uppercase;
+}
+
+.admin-dashboard__overview-head .admin-action {
+    flex: 0 0 auto;
+}
+
+.admin-dashboard__storage-visual {
+    display: grid;
+    min-height: 11rem;
+    place-items: center;
+}
+
+.admin-dashboard__storage-ring {
+    position: relative;
+    display: grid;
+    width: min(100%, 10.5rem);
+    aspect-ratio: 1;
+    place-items: center;
+    border-radius: 50%;
+}
+
+.admin-dashboard__storage-ring::before {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--admin-text) var(--dashboard-storage-used),
+        var(--admin-line) 0
+    );
+    content: "";
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - .7rem), #000 0);
+    mask: radial-gradient(farthest-side, transparent calc(100% - .7rem), #000 0);
+}
+
+.admin-dashboard__storage-ring.is-empty::before {
+    background: var(--admin-line);
+}
+
+.admin-dashboard__storage-ring strong {
+    position: relative;
+    z-index: 1;
+    font-size: 1.3rem;
+    font-weight: 620;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-dashboard__activity-visual {
+    display: grid;
+    min-height: 11rem;
+    grid-template-columns: minmax(5.5rem, .58fr) minmax(0, 1.42fr);
+    gap: .6rem;
+    align-items: center;
+}
+
+.admin-dashboard__activity-clock .activity-clock__face {
+    width: min(100%, 7rem);
+}
+
+.admin-dashboard__activity-clock .activity-clock__label {
+    font-size: .54rem;
+}
+
+.admin-dashboard__activity-clock .activity-clock__marker {
+    width: .42rem;
+    height: .42rem;
+    border-width: 1px;
+}
+
+.admin-dashboard__activity-calendar {
+    gap: .35rem;
+}
+
+.admin-dashboard__activity-calendar .activity-calendar__month {
+    font-size: .72rem;
+}
+
+.admin-dashboard__activity-calendar .activity-calendar__weekdays span {
+    padding: 0 .1rem .22rem;
+    font-size: .48rem;
+    letter-spacing: .02em;
+    text-align: center;
+}
+
+.admin-dashboard__activity-calendar .activity-calendar__day {
+    min-height: 1.55rem;
+    padding: .18rem;
+    font-size: .52rem;
+}
+
+.admin-dashboard__activity-calendar .activity-calendar__day strong {
+    font-size: .64rem;
+}
+
+.admin-dashboard__facts,
+.admin-dashboard__overview-unavailable {
+    margin: 0;
+    color: var(--admin-muted);
+    font-size: .68rem;
+    line-height: 1.45;
+}
+
+.admin-dashboard__facts {
+    display: flex;
+    min-height: 1.8em;
+    gap: .18rem .34rem;
+    margin-top: .6rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+
+.admin-dashboard__facts strong {
+    color: var(--admin-text);
+    font-weight: 620;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-dashboard__map .analytics-world__canvas {
+    min-height: 0;
+}
+
+.admin-dashboard__map figcaption {
+    min-height: 1.8em;
+}
+
+.admin-dashboard__overview-unavailable {
+    display: flex;
+    min-height: 11rem;
+    align-items: center;
+    border-block: 1px solid var(--admin-line);
+}
+
+.admin-dashboard__feed-section {
+    border-bottom: 0;
+}
+
+@media (max-width: 980px) {
+    .admin-dashboard__overview {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column:last-child {
+        grid-column: 1 / -1;
+        padding: 1.1rem 0;
+        border-left: 0;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-dashboard__overview-column:last-child {
+        border-bottom: 0;
+    }
+
+    .admin-dashboard__activity-visual {
+        grid-template-columns: minmax(7rem, .5fr) minmax(0, 1.5fr);
+        gap: 1rem;
+    }
+
+    .admin-dashboard__activity-clock .activity-clock__face {
+        width: min(100%, 8rem);
+    }
+}
+
+@media (max-width: 760px) {
+    .admin-dashboard__feed-controls {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .admin-dashboard__activity-visual {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-dashboard__activity-clock .activity-clock__face {
+        width: min(100%, 7rem);
+    }
+
+    .admin-detail-dialog__meta {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-detail-dialog__meta > div,
+    .admin-detail-dialog__meta > div:nth-child(even),
+    .admin-detail-dialog__meta > div:nth-last-child(-n + 2) {
+        padding: .65rem 0;
+        border-left: 0;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-detail-dialog__meta > div:last-child {
+        border-bottom: 0;
+    }
+}

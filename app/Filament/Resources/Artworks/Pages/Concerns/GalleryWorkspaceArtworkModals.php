@@ -54,8 +54,7 @@ trait GalleryWorkspaceArtworkModals
                 }
 
                 $this->pendingPrimaryMediaAssetId = null;
-                $this->directUploadMessage = null;
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Artwork draft created')->success()->send();
             });
     }
@@ -123,7 +122,7 @@ trait GalleryWorkspaceArtworkModals
                     }
                 });
 
-                $this->loadArtworks();
+                $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Artwork saved')->success()->send();
             });
     }

@@ -1,0 +1,5 @@
+/* Pages-only DnD semantics. Generic presentation remains in task-surfaces.css. */
+
+.admin-hierarchy--pages .admin-hierarchy__children-rows[data-drop-target="true"]:empty {
+    min-height: .45rem;
+}

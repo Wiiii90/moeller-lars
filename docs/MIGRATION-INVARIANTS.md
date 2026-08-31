@@ -4,154 +4,183 @@ These invariants define the lossless, reviewable boundary between the frozen leg
 
 ## Artwork source accounting
 
-The reviewed legacy artwork source contains the factual categories `paintings`, `drawings` and `prints` used by the legacy public site.
-
 For every in-scope source Artwork:
-- source identity and factual editorial fields are accounted for;
-- target Gallery assignment/order is explicit where the migrated Artwork is assigned;
-- no unexplained source/target count difference is accepted;
-- legacy provenance remains evidence and never becomes a runtime fallback;
-- target public ordering is persisted rather than inferred from IDs/database order.
 
-The current application additionally supports an unassigned Artwork state for later editorial detach/remove workflows. That runtime capability does not change the migration requirement that imported source Artworks reconcile to their intended mapped Galleries.
+- source identity/factual editorial fields are accounted for;
+- target Gallery assignment/order is explicit;
+- no unexplained source/target count difference is accepted;
+- provenance remains evidence, never runtime fallback;
+- public ordering is persisted rather than inferred from IDs/insertion order.
+
+The current application also supports a later editorial unassigned Artwork state; that does not change imported-source reconciliation.
 
 ## Media and original-file integrity
 
-Canonical originals are retained. Generated derivatives never replace the authoritative original.
+Canonical originals are retained. Generated derivatives never replace authority.
 
-Migration/reconciliation records enough evidence to prove each in-scope original:
-- source path/name provenance;
-- target MediaAsset identity;
-- byte size;
-- content MIME classification;
-- SHA-256 checksum;
-- required content references.
+Migration/reconciliation records enough evidence for source path/name provenance, target MediaAsset identity, byte size, content MIME, SHA-256 and required references.
 
-Missing/corrupt/unsupported/ambiguous files are explicit findings. They are not silently discarded or substituted.
-
-Deduplication may share one canonical original only when every intended usage relationship is preserved.
+Missing/corrupt/unsupported/ambiguous files are explicit findings. Deduplication may share one canonical original only when every intended usage remains represented.
 
 ## ALT semantics
 
-Meaningful legacy ALT/title semantics are preserved where valid. Accessibility corrections may be made when legacy ALT is empty/misleading/unsafe, but the change must be explicit.
+Meaningful legacy ALT semantics are preserved where valid, but current runtime authority follows the consumer contract.
 
-Required public ALT is not manufactured from filenames/IDs at runtime.
+- `MediaAsset.alt_text` is canonical asset-level ALT;
+- Artwork may use an explicitly supported usage override;
+- structured Journal Cover/Gallery runtime uses MediaAsset ALT exclusively;
+- historical Journal override columns/values may remain as compatibility evidence but do not control rendering/readiness;
+- required public ALT is never manufactured from filenames/IDs.
+
+## Rich Text media canonicalization
+
+Current canonical Rich Text embedded-image syntax is Markdown `media:<id>` through `RichTextMediaReference`.
+
+Legacy Journal inline-media runtime tokens/roles are migration evidence only.
+
+Forward Journal canonicalization must:
+
+- recognize only the exact reviewed legacy token form;
+- resolve each token unambiguously to its canonical MediaAsset;
+- abort on missing/duplicate/unresolved/orphan evidence;
+- replace occurrences with central Markdown references;
+- remove legacy inline Journal media rows after successful resolution;
+- verify no runtime inline role/token remains;
+- preserve structured Cover/Gallery usages independently.
+
+Do not reintroduce legacy token parsing as a normal runtime fallback after migration.
 
 ## Date and ordering semantics
 
-Legacy Gallery display order is reconciled into explicit target positions. Equal-date rows are not silently ordered by source ID, target ID, insertion order or incidental DB behavior.
+Legacy Gallery display order is reconciled into explicit target positions. Equal-date rows are not silently ordered by source/target ID or incidental DB order.
 
-When authoritative legacy ordering cannot be established, migration records an explicit reviewed/editorial exception.
+When authoritative ordering cannot be established, migration records an explicit reviewed/editorial exception.
 
-The Home candidate/winner for the reviewed snapshot must reconcile with the approved source behavior while using current Gallery eligibility and Artwork date/feature semantics.
+The Home candidate/winner for the reviewed snapshot reconciles with approved source behavior while current runtime uses explicit Gallery eligibility and Artwork date/tie-break semantics.
 
 ## Vita/CV and Exhibition source accounting
 
-The reviewed legacy Vita source is `txt/vita.txt` plus the public portrait.
+Reviewed legacy Vita textual inventory contains exactly **31 source rows**:
 
-The reviewed textual inventory contains exactly **31 source rows**. The approved canonical partition is:
 - **2 Biography/CV source rows**;
-- **29 Exhibition rows** in `exhibitions`.
+- **29 Exhibition rows**.
 
-A source row is accounted for exactly once. Exhibition rows must not remain duplicated as CV content.
+Each source row is accounted once. Exhibition rows are not duplicated as CV content. Portrait provenance reconciles by source identity/bytes/SHA-256/MediaAsset attachment.
 
-Portrait identity/provenance is reconciled by byte size, SHA-256 and canonical MediaAsset attachment.
+Public CV/Vita placement is a Custom Page composition, not a dedicated runtime Site Node type.
 
-The runtime Site Structure has no dedicated `vita` node type. Public CV/Vita presentation is a **Custom Page** composition consuming the canonical migrated content/settings.
+## Exhibition address invariant
+
+Canonical Exhibition address fields are structured:
+
+- `location_text` = street address only;
+- `city` = city;
+- `country` = country.
+
+Forward cleanup may remove only conservative obvious duplicates where `location_text` equals city, country or the already-structured city/country combination. It must not invent a street address when none is known.
+
+Public/admin composition deduplicates Street, City and Country rather than storing combined location prose in the street field.
+
+## Exhibition archived-state invariant
+
+Historical archived Exhibitions may predate `archived_from_state`.
+
+Forward reconciliation for `state=archived` with missing previous state uses deterministic evidence:
+
+- `published_at` present → previous state `published`;
+- otherwise → `draft`.
+
+Restoring a historical candidate toward Published still passes current public-readiness validation. If readiness fails, the record restores safely to Draft rather than becoming un-restorable or incorrectly public.
+
+New archive operations record the exact previous Draft/Published state.
+
+## Exhibition optional presentation features
+
+Gallery and Map are explicit per-Exhibition presentation features.
+
+- `gallery_enabled=false` does not delete/detach stored Journal Gallery media;
+- disabled Gallery rows remain canonical reference evidence;
+- ordinary public media delivery excludes disabled Gallery media;
+- Cover publication remains independent of Gallery enabled state;
+- `map_enabled` controls public map presentation;
+- enabled Map requires valid geodata under the canonical geocoding workflow;
+- `map_shape` is currently `wide` or `square`;
+- Map presentation is not inferred merely from Exhibition timing.
+
+## Journal template retention invariant
+
+A Journal may switch active template Blog ↔ Exhibitions without destructive conversion.
+
+- BlogPost rows remain owned by the Journal while Exhibitions is active;
+- Exhibition rows remain owned while Blog is active;
+- switching back restores access to retained rows;
+- no template change deletes or converts entries;
+- media reference/deletion accounting includes both retained worlds regardless of active template;
+- public rendering follows only the current supported active Journal template/lifecycle.
 
 ## Contact migration/content invariant
 
 Contact is not a dedicated runtime Site Node/page type.
 
-Migration must preserve the reviewed Contact/public-profile data required by the target, but normalize it into the current architecture:
-- visitor-facing Contact presentation is a reusable structured Contact component that may be composed into a Custom Page such as CV;
-- public email/social/global contact identity is owned by canonical General settings;
-- private Contact delivery recipient is owned by General/runtime fallback;
-- no migration invariant requires a standalone `/contact` Site Node/admin destination;
-- SMTP credentials/server mail topology are never migration content.
+Migration preserves reviewed contact/profile data while normalizing it into:
 
-If historical Contact placement data existed, its content/provenance must be accounted for without recreating the rejected standalone Contact architecture.
+- reusable structured Contact component in Custom Page composition;
+- General-owned public email/social/global identity;
+- General/runtime private delivery recipient;
+- no SMTP/server secrets as migration content.
 
 ## Canonical Site Node projection
 
-Runtime types are defined by `SiteNodeType`: Home, Gallery, Journal, Custom Page and Navigation Node.
+Runtime types are Home, Gallery, Journal, Custom Page and Navigation Node.
 
-Reconciliation requires:
-- exactly one **Home** Site Node;
-- Home has no slug, is published and navigation-visible;
-- every migrated `artwork_categories` row has one matching **Gallery** Site Node;
-- no Gallery Site Node references a missing Gallery persistence record;
-- Gallery hierarchy obeys current parent rules;
-- migrated CV/Vita placement is a **Custom Page** with required `custom_page_settings`;
-- migrated Blog placement is a **Journal / Blog** with `journal_settings` and owned Posts;
-- migrated Exhibitions placement is a **Journal / Exhibitions** with `journal_settings` and owned Exhibitions;
-- Navigation Nodes are structural only and need no legacy counterpart unless explicitly mapped;
-- no standalone Contact Site Node is required by the canonical target.
-
-There is no migration invariant requiring singleton runtime types named `vita`, `contact`, `blog` or `exhibitions`.
+Reconciliation requires exactly one Home; one matching Gallery Site Node per migrated Gallery persistence row; valid Gallery hierarchy; Custom Page placement for migrated CV/Vita; Journal Blog/Exhibitions placement/settings/ownership; structural-only Navigation Nodes where required; no standalone Contact node requirement.
 
 ## Custom Page and Journal integrity
 
-Every Custom Page requires exactly one `CustomPageSetting` record and its ordered structured components must pass current validation.
+Every Custom Page requires exactly one `CustomPageSetting` and valid ordered components.
 
-Every Journal requires a supported `JournalTemplate` and one `JournalSetting`. Blog Posts/Exhibitions must belong to the correct template-specific Journal and not become orphaned.
+Every Journal requires a supported active `JournalTemplate` and one `JournalSetting`. Retained inactive Blog/Exhibition rows remain owned and non-orphaned; current active projection/public behavior must not require destructive data conversion.
 
 Missing required settings are not repaired at read time through silent fallback records.
 
 ## Fresh import versus protected canonical data
 
-A clean-database source import remains repeatable for migration rehearsal/reconstruction.
+A clean-database source import remains repeatable for rehearsal/reconstruction.
 
-Once reviewed data exists in protected Validation or Production state:
+Once reviewed data exists in protected Validation/Production:
+
 - it is canonical application data;
-- target schema evolution uses forward Laravel migrations;
-- the source importer is not rerun destructively into non-empty canonical tables;
+- target evolution uses forward Laravel migrations;
+- source importer is not rerun destructively into non-empty canonical tables;
 - reconciliation is read-only except for explicitly approved forward migrations/editorial corrections.
 
-A failed forward migration/reconciliation is a release blocker, not permission to erase protected evidence.
+A failed forward migration is a release blocker, not permission to erase protected evidence.
 
 ## Redirect and public-route reconciliation
 
-Legacy PHP/query URLs are historical evidence, not a blanket compatibility surface.
+Legacy PHP/query URLs are evidence, not blanket compatibility surface.
 
-Migration/cutover checks only redirects with an explicit SEO/external-link/product requirement. New-application slug changes may create redirects under the current redirect policy.
+Current typed routes include Home `/`, Gallery/Journal/Custom `/{section-slug}`, Journal entry `/{section-slug}/{entry-slug}`, Artwork `/artworks/{slug}`; Navigation Nodes have no public URL.
 
-Public route reconciliation verifies the typed route model:
-- Home `/`;
-- Gallery/Journal/Custom Page `/{section-slug}`;
-- Journal entry `/{section-slug}/{entry-slug}`;
-- Artwork detail `/artworks/{slug}`;
-- Navigation Nodes have no public URL.
-
-No standalone Contact route is required merely because the legacy site had Contact-related content. Unknown/malformed routes fail safely without legacy debug behavior.
+No standalone Contact route is required merely because legacy content had Contact semantics.
 
 ## Validation output
 
-`php artisan legacy:validate <manifest>` is a read-only reconciliation tool for the reviewed source snapshot.
-
-A successful report makes visible:
-- source/target counts;
-- media/checksum integrity;
-- provenance coverage;
-- ordering differences;
-- Site Node projection;
-- Vita/CV/Exhibition accounting;
-- required route/redirect checks;
-- warnings and explicit reviewed exceptions.
+`php artisan legacy:validate <manifest>` is read-only reconciliation for the reviewed source snapshot. It makes counts, checksum/provenance, ordering, Site Node projection, Vita/CV/Exhibition accounting, route checks, warnings and reviewed exceptions visible.
 
 No unexplained discrepancy is silently normalized.
 
 ## Acceptance boundary
 
-Migration reconciliation is necessary but not sufficient for Production acceptance. Separate gates remain application CI, exact release identity, protected Validation, public/browser comparison, admin acceptance, editorial approval and platform backup/restore/rollback readiness.
+Migration reconciliation is necessary but not sufficient for Production acceptance. Separate gates remain application verification, exact release identity, protected Validation, public/admin browser acceptance, editorial approval and platform backup/restore/rollback readiness.
 
 ## Explicit exclusions
 
-Never migrated as target runtime authorities:
-- legacy authentication/users/sessions/password material;
-- DB/mail/API credentials or server secrets;
-- legacy SQL/table architecture;
-- legacy admin/upload/parser/debug implementation;
-- workshop/development tooling outside the approved artist-site target.
+Never migrated as runtime authorities:
 
-Secrets, private dumps and authoritative private media must not appear in Git, migration reports or screenshots.
+- legacy authentication/users/sessions/passwords;
+- DB/mail/API credentials or server secrets;
+- legacy SQL/table/admin/upload/parser/debug implementation;
+- workshop/development tooling outside approved artist-site target.
+
+Secrets/private dumps/authoritative private media must not appear in Git, migration reports or screenshots.

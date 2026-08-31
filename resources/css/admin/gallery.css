@@ -1,0 +1,471 @@
+/* Gallery workspace-specific interaction and control polish. */
+
+.admin-gallery-upload {
+    display: block;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-gallery-upload__dropzone {
+    position: relative;
+    display: grid;
+    box-sizing: border-box;
+    width: 100%;
+    height: 5.25rem;
+    min-height: 5.25rem;
+    padding: .8rem 1.1rem;
+    align-items: center;
+    overflow: hidden;
+    border: 1px dashed var(--admin-line-strong);
+    background: color-mix(in srgb, var(--admin-subtle) 55%, transparent);
+}
+
+.admin-gallery-upload__dropzone:focus-within {
+    border-style: solid;
+    border-color: var(--admin-accent);
+}
+
+.admin-gallery-upload__input {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.admin-gallery-upload__copy {
+    display: grid;
+    min-width: 0;
+    gap: .14rem;
+    pointer-events: none;
+}
+
+.admin-gallery-upload__copy strong {
+    color: var(--admin-text);
+    font-size: .82rem;
+    font-weight: 580;
+}
+
+.admin-gallery-upload__copy span {
+    color: var(--admin-muted);
+    font-size: .68rem;
+    line-height: 1.35;
+}
+
+.admin-gallery-upload__copy span.is-error {
+    color: var(--admin-danger);
+}
+
+.admin-gallery-upload__progress {
+    position: absolute;
+    right: 1.1rem;
+    bottom: .5rem;
+    left: 1.1rem;
+    z-index: 3;
+    display: block;
+    height: 3px;
+    pointer-events: none;
+}
+
+.admin-gallery-upload__progress-track,
+.admin-gallery-upload__progress-fill {
+    display: block;
+    height: 100%;
+}
+
+.admin-gallery-upload__progress-track {
+    width: 100%;
+    overflow: hidden;
+    background: var(--admin-line);
+}
+
+.admin-gallery-upload__progress-fill {
+    width: 0;
+    background: var(--admin-muted);
+    transition: width .12s linear;
+}
+
+.gallery-workspace__controls {
+    display: grid;
+    grid-template-columns: minmax(11rem, 1.5fr) minmax(6.4rem, .65fr) minmax(8rem, .8fr) auto auto auto;
+    gap: .55rem;
+    padding: .85rem 0;
+    align-items: end;
+    border-bottom: 1px solid var(--admin-line-strong);
+}
+
+.gallery-workspace__field,
+.gallery-workspace__control-group {
+    display: grid;
+    min-width: 0;
+    gap: .28rem;
+}
+
+.gallery-workspace__field > span,
+.gallery-workspace__control-label {
+    color: var(--admin-muted);
+    font-size: .61rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.gallery-workspace__field input,
+.gallery-workspace__field select {
+    box-sizing: border-box;
+    width: 100%;
+    height: var(--admin-control-height);
+    min-width: 0;
+    padding: .42rem .5rem;
+    border: 0;
+    border-bottom: 1px solid var(--admin-line-strong);
+    border-radius: 0;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: .75rem;
+    outline: none;
+}
+
+.gallery-workspace__field input:focus,
+.gallery-workspace__field select:focus {
+    border-bottom-color: var(--admin-accent);
+}
+
+.gallery-workspace__search input::placeholder {
+    color: var(--admin-faint);
+    opacity: 1;
+}
+
+.gallery-workspace__control-group > .admin-action,
+.gallery-workspace__control-group > .fi-btn,
+.gallery-workspace__control-group > div > .admin-action {
+    min-height: var(--admin-control-height);
+}
+
+.gallery-workspace__gallery-actions {
+    display: flex;
+    min-width: 0;
+    gap: .35rem;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.gallery-workspace__selection {
+    position: relative;
+}
+
+.gallery-workspace__selection-anchor {
+    position: relative;
+}
+
+.gallery-workspace__selection-trigger {
+    min-width: 9.5rem;
+    gap: .42rem;
+    justify-content: center;
+}
+
+.gallery-workspace__selection-count {
+    display: inline-flex;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: 999px;
+    font-size: .55rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.gallery-workspace__selection-menu {
+    position: absolute;
+    top: calc(100% + .35rem);
+    right: 0;
+    z-index: 30;
+    display: grid;
+    width: max-content;
+    min-width: 12.5rem;
+    padding: .35rem;
+    border: 1px solid var(--admin-line-strong);
+    background: var(--admin-surface);
+    box-shadow: 0 .7rem 2rem rgba(0, 0, 0, .12);
+}
+
+.dark .gallery-workspace__selection-menu {
+    background: rgb(24, 24, 27);
+}
+
+.gallery-workspace__selection-menu .admin-action {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.gallery-workspace__visual {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    text-decoration: none;
+    user-select: none;
+    cursor: pointer;
+}
+
+.gallery-workspace__visual img,
+.gallery-workspace__visual video {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.gallery-workspace__visual:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: -2px;
+}
+
+.gallery-workspace__card {
+    position: relative;
+}
+
+.gallery-workspace__primary-actions {
+    position: absolute;
+    top: .7rem;
+    right: .7rem;
+    z-index: 6;
+    display: flex;
+    gap: .18rem;
+    align-items: center;
+}
+
+.gallery-workspace__card.is-selected::after,
+.gallery-workspace__card:has(.gallery-workspace__selection-checkbox input:checked)::after {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    box-sizing: border-box;
+    border: 2px solid var(--admin-accent);
+    content: "";
+    pointer-events: none;
+}
+
+.gallery-workspace__title-editor {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 1.25rem;
+}
+
+.gallery-workspace__title-button {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: text;
+}
+
+.gallery-workspace__title-button:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.gallery-workspace__title-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 1.25rem;
+    min-width: 0;
+    padding: 0 0 .1rem;
+    border: 0;
+    border-bottom: 1px solid var(--admin-accent);
+    border-radius: 0;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: .92rem;
+    font-weight: 550;
+    line-height: 1.2;
+    outline: none;
+}
+
+.admin-gallery-grid__state > span {
+    color: var(--admin-faint);
+}
+
+.admin-gallery-grid__actions {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: .65rem;
+    padding: 0 .65rem .8rem;
+    align-items: center;
+}
+
+.gallery-workspace__selection-checkbox {
+    display: inline-flex;
+    width: auto;
+    min-width: 0;
+    height: 1.78rem;
+    gap: .35rem;
+    align-items: center;
+    justify-self: start;
+    color: var(--admin-muted);
+    font-size: .68rem;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.gallery-workspace__selection-checkbox input[type="checkbox"] {
+    display: grid;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin: 0;
+    padding: 0;
+    appearance: none;
+    place-content: center;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: .22rem;
+    background: transparent;
+    color: var(--admin-text);
+    cursor: pointer;
+}
+
+.gallery-workspace__selection-checkbox input[type="checkbox"]::before {
+    width: .52rem;
+    height: .3rem;
+    border-bottom: 2px solid currentColor;
+    border-left: 2px solid currentColor;
+    content: "";
+    transform: translateY(-.04rem) rotate(-45deg) scale(0);
+    transform-origin: center;
+}
+
+.gallery-workspace__selection-checkbox input[type="checkbox"]:checked {
+    border-color: var(--admin-accent);
+    background: var(--admin-accent);
+}
+
+.gallery-workspace__selection-checkbox input[type="checkbox"]:checked::before {
+    transform: translateY(-.04rem) rotate(-45deg) scale(1);
+}
+
+.gallery-workspace__selection-checkbox input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.gallery-workspace__card-actions {
+    display: flex;
+    min-width: 0;
+    gap: .18rem;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+}
+
+.gallery-workspace__icon-action {
+    display: grid;
+    width: 1.78rem;
+    height: 1.78rem;
+    flex: 0 0 1.78rem;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-muted);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.gallery-workspace__icon-action svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.gallery-workspace__icon-action:hover,
+.gallery-workspace__icon-action:focus-visible {
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+}
+
+.gallery-workspace__icon-action:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.gallery-workspace__icon-action:disabled {
+    opacity: .38;
+    cursor: default;
+}
+
+.gallery-workspace__primary-action {
+    border: 1px solid var(--admin-line-strong);
+    background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
+}
+
+.dark .gallery-workspace__primary-action {
+    background: rgba(20, 20, 20, .78);
+}
+
+.gallery-workspace__drag-handle {
+    cursor: grab;
+}
+
+.gallery-workspace__drag-handle:active {
+    cursor: grabbing;
+}
+
+.gallery-workspace__drag-handle[aria-disabled="true"] {
+    opacity: .42;
+    cursor: not-allowed;
+}
+
+.gallery-workspace__order-action {
+    min-width: 1.65rem;
+    padding-inline: .3rem;
+}
+
+@media (max-width: 1180px) {
+    .gallery-workspace__controls {
+        grid-template-columns: minmax(12rem, 1fr) repeat(3, minmax(7rem, auto));
+    }
+}
+
+@media (max-width: 760px) {
+    .gallery-workspace__controls {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .gallery-workspace__search,
+    .gallery-workspace__gallery,
+    .gallery-workspace__selection {
+        grid-column: 1 / -1;
+    }
+
+    .gallery-workspace__gallery-actions {
+        flex-wrap: wrap;
+    }
+
+    .gallery-workspace__selection-menu {
+        right: auto;
+        left: 0;
+    }
+
+    .admin-gallery-grid__actions {
+        align-items: start;
+    }
+
+    .gallery-workspace__card-actions {
+        flex-wrap: wrap;
+    }
+}

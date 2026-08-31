@@ -5,16 +5,20 @@ namespace App\Filament\Pages;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaStorageBreakdown;
 use App\Domain\Media\MediaStorageUnits;
-use App\Models\MediaAsset;
+use App\Filament\Support\MediaStorageAnalysisStore;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 final class StorageCapacity extends Page
 {
+    /** @var list<int> */
+    private const PAGE_SIZES = [25, 50, 100];
+
+    private const DEFAULT_PAGE_SIZE = 25;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCircleStack;
 
     protected static string|UnitEnum|null $navigationGroup = 'Insights';
@@ -31,94 +35,405 @@ final class StorageCapacity extends Page
     /** @var list<array<string, mixed>> */
     public array $breakdown = [];
 
+    /** @var list<array{key:string,label:string}> */
+    public array $areaOptions = [];
+
     /** @var list<array<string, mixed>> */
-    public array $heavyConsumers = [];
+    public array $files = [];
+
+    /** @var list<array<string, mixed>> */
+    public array $referenceOptions = [];
+
+    /** @var array<string, mixed> */
+    public array $attention = [];
+
+    public string $analysisToken = '';
 
     public int $availableAssets = 0;
 
     public int $unusedAssets = 0;
+
+    public string $search = '';
+
+    public string $areaFilter = 'all';
+
+    public string $referenceState = 'all';
+
+    public string $referenceFilter = 'all';
+
+    public int $page = 1;
+
+    public int $pageSize = self::DEFAULT_PAGE_SIZE;
+
+    public int $total = 0;
+
+    public int $pages = 1;
 
     public function mount(): void
     {
         $this->loadCapacity();
     }
 
-    public function refreshCapacity(): void
+    public function updatedSearch(): void
     {
-        app(MediaCapacityService::class)->forgetCachedSnapshot();
-        $this->loadCapacity();
-        Notification::make()->title('Storage measurement refreshed')->success()->send();
+        $this->refreshFromFirstPage();
     }
 
-    protected function getHeaderActions(): array
+    public function updatedAreaFilter(): void
     {
-        return [
-            Action::make('refresh')
-                ->label('Refresh measurement')
-                ->icon(Heroicon::OutlinedArrowPath)
-                ->action(function (): void {
-                    $this->refreshCapacity();
-                }),
-        ];
+        $this->referenceFilter = 'all';
+        $this->refreshFromFirstPage();
+    }
+
+    public function updatedReferenceState(): void
+    {
+        $this->refreshFromFirstPage();
+    }
+
+    public function updatedReferenceFilter(): void
+    {
+        if ($this->referenceFilter !== 'all') {
+            $target = collect($this->referenceOptions)->first(
+                fn (array $row): bool => ($row['key'] ?? null) === $this->referenceFilter,
+            );
+            if (is_array($target)) {
+                $this->referenceState = 'referenced';
+                $this->areaFilter = (string) ($target['area'] ?? 'all');
+            }
+        }
+
+        $this->refreshFromFirstPage();
+    }
+
+    public function updatedPageSize(mixed $value): void
+    {
+        $this->pageSize = $this->normalizePageSize($value);
+        $this->refreshFromFirstPage();
+    }
+
+    public function resetTableFilters(): void
+    {
+        $this->search = '';
+        $this->areaFilter = 'all';
+        $this->referenceState = 'all';
+        $this->referenceFilter = 'all';
+        $this->refreshFromFirstPage();
+    }
+
+    public function selectArea(string $area): void
+    {
+        $valid = collect($this->areaOptions)->pluck('key')->contains($area);
+        if (! $valid) {
+            return;
+        }
+
+        $this->areaFilter = $area;
+        $this->referenceFilter = 'all';
+        $this->page = 1;
+        $this->loadTable();
+    }
+
+    public function selectReferenceState(string $state): void
+    {
+        if (! in_array($state, ['all', 'referenced', 'unreferenced', 'uncatalogued'], true)) {
+            return;
+        }
+
+        $this->referenceState = $state;
+        $this->areaFilter = 'all';
+        $this->referenceFilter = 'all';
+        $this->page = 1;
+        $this->loadTable();
+    }
+
+    public function selectReference(string $reference): void
+    {
+        $target = collect($this->referenceOptions)->first(
+            static fn (array $row): bool => ($row['key'] ?? null) === $reference,
+        );
+        if (! is_array($target)) {
+            return;
+        }
+
+        $this->referenceFilter = $reference;
+        $this->referenceState = 'referenced';
+        $this->areaFilter = (string) ($target['area'] ?? 'all');
+        $this->page = 1;
+        $this->loadTable();
+    }
+
+    public function previousPage(): void
+    {
+        if ($this->page <= 1) {
+            return;
+        }
+
+        $this->page--;
+        $this->loadTable();
+    }
+
+    public function nextPage(): void
+    {
+        if ($this->page >= $this->pages) {
+            return;
+        }
+
+        $this->page++;
+        $this->loadTable();
+    }
+
+    private function refreshFromFirstPage(): void
+    {
+        $this->page = 1;
+        $this->loadTable();
     }
 
     private function loadCapacity(): void
     {
         $capacityService = app(MediaCapacityService::class);
         $snapshot = $capacityService->cachedSnapshot();
-        $ratio = is_float($snapshot['authoritative_ratio']) ? $snapshot['authoritative_ratio'] : null;
-        $configurationValid = $snapshot['configuration_valid'];
+        $ratio = is_numeric($snapshot['authoritative_ratio'] ?? null)
+            ? (float) $snapshot['authoritative_ratio']
+            : null;
+        $configurationValid = (bool) ($snapshot['configuration_valid'] ?? false);
+        $configured = (bool) ($snapshot['configured'] ?? false);
+        $measurementAvailable = (bool) ($snapshot['measurement_available'] ?? false);
+        $status = (string) ($snapshot['status'] ?? 'unavailable');
 
         $this->capacity = [
-            'configured' => $snapshot['configured'],
+            'configured' => $configured,
             'configuration_valid' => $configurationValid,
-            'measurement_available' => $snapshot['measurement_available'],
-            'status' => $snapshot['status'],
-            'status_label' => match ($snapshot['status']) {
+            'measurement_available' => $measurementAvailable,
+            'status' => $status,
+            'status_tone' => match ($status) {
+                'healthy' => 'success',
+                'near_capacity' => 'warning',
+                'full', 'unavailable' => 'danger',
+                default => 'neutral',
+            },
+            'status_label' => match ($status) {
                 'full' => 'Allowance full',
                 'near_capacity' => 'Near capacity',
                 'healthy' => 'Healthy',
                 'unavailable' => $configurationValid ? 'Measurement unavailable' : 'Allowance unavailable',
                 default => 'Allowance not configured',
             },
-            'action' => match ($snapshot['status']) {
+            'action' => match ($status) {
                 'full' => 'New media uploads are blocked until unused originals are removed or the operator raises the allowance.',
-                'near_capacity' => 'Capacity is approaching the configured ceiling. Review unused media before the next larger upload.',
+                'near_capacity' => 'Capacity is approaching the configured ceiling. Review unused originals before the next larger upload.',
                 'unavailable' => $configurationValid
                     ? 'Existing media remains readable. New uploads stay blocked while authoritative usage cannot be verified.'
                     : 'The operator storage allowance is invalid. Existing media remains readable; new uploads stay blocked until the runtime configuration is corrected.',
+                'unconfigured' => 'Authoritative storage is measured, but no operator allowance is configured.',
                 default => null,
             },
-            'percent' => $ratio === null ? 0 : (int) round(min(1, $ratio) * 100),
-            'authoritative' => MediaStorageUnits::formatBytes($snapshot['authoritative_bytes']),
-            'generated' => MediaStorageUnits::formatBytes($snapshot['generated_bytes']),
-            'remaining' => $snapshot['configured'] ? MediaStorageUnits::formatBytes($snapshot['remaining_bytes']) : '—',
-            'allowance' => MediaStorageUnits::formatBytes($snapshot['quota_bytes']),
-            'original_files' => $snapshot['original_files'] ?? 0,
-            'generated_files' => $snapshot['generated_files'] ?? 0,
+            'percent' => $configured && $measurementAvailable && $ratio !== null
+                ? (int) round(min(1, max(0, $ratio)) * 100)
+                : null,
+            'authoritative' => MediaStorageUnits::formatBytes($snapshot['authoritative_bytes'] ?? null),
+            'generated' => MediaStorageUnits::formatBytes($snapshot['generated_bytes'] ?? null),
+            'remaining' => $configured && $measurementAvailable
+                ? MediaStorageUnits::formatBytes($snapshot['remaining_bytes'] ?? null)
+                : '—',
+            'allowance' => $configured && $configurationValid
+                ? MediaStorageUnits::formatBytes($snapshot['quota_bytes'] ?? null)
+                : '—',
+            'original_files' => (int) ($snapshot['original_files'] ?? 0),
+            'generated_files' => (int) ($snapshot['generated_files'] ?? 0),
             'warning_threshold' => $capacityService->warningThresholdPercent().'%',
             'unit_note' => 'Decimal units · 1 GB = 1,000,000,000 bytes',
         ];
 
-        $analysis = app(MediaStorageBreakdown::class)->analyze($snapshot['authoritative_file_bytes'] ?? []);
+        $stored = app(MediaStorageAnalysisStore::class)->create($this->authoritativeFiles($snapshot));
+        $this->analysisToken = $stored['token'];
+        $this->availableAssets = $stored['metrics']['files'];
+        $this->unusedAssets = $stored['metrics']['unreferenced'];
+        $this->projectAnalysis($stored['analysis']);
+
+        $this->pageSize = $this->normalizePageSize($this->pageSize);
+        $this->loadTable($stored['analysis']);
+    }
+
+    /** @param array<string,mixed>|null $analysis */
+    private function loadTable(?array $analysis = null): void
+    {
+        $analysis ??= $this->analysis();
+        $rows = $this->filteredFileRows($this->analysisRows($analysis, 'file_rows'));
+        $this->total = count($rows);
+        $this->pages = max(1, (int) ceil($this->total / $this->pageSize));
+        $this->page = min(max(1, $this->page), $this->pages);
+        $slice = array_slice($rows, ($this->page - 1) * $this->pageSize, $this->pageSize);
+        $this->files = array_map($this->presentFileRow(...), $slice);
+    }
+
+    /** @return array<string,mixed> */
+    private function analysis(): array
+    {
+        $store = app(MediaStorageAnalysisStore::class);
+        $analysis = $store->get($this->analysisToken);
+        if (is_array($analysis)) {
+            return $analysis;
+        }
+
+        $snapshot = app(MediaCapacityService::class)->cachedSnapshot();
+        $stored = $store->create($this->authoritativeFiles($snapshot));
+        $this->analysisToken = $stored['token'];
+        $this->availableAssets = $stored['metrics']['files'];
+        $this->unusedAssets = $stored['metrics']['unreferenced'];
+        $this->projectAnalysis($stored['analysis']);
+
+        return $stored['analysis'];
+    }
+
+    /** @param array<string,mixed> $analysis */
+    private function projectAnalysis(array $analysis): void
+    {
         $this->breakdown = array_map(function (array $row): array {
-            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) $row['bytes']);
+            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
 
             return $row;
-        }, $analysis['breakdown']);
-        $this->heavyConsumers = array_map(function (array $row): array {
-            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) $row['bytes']);
+        }, $this->analysisRows($analysis, 'breakdown'));
+
+        $usedAreas = [];
+        foreach ($this->analysisRows($analysis, 'file_rows') as $row) {
+            foreach (is_array($row['area_keys'] ?? null) ? $row['area_keys'] : [] as $area) {
+                if (is_string($area) && $area !== '') {
+                    $usedAreas[$area] = true;
+                }
+            }
+            $bucket = $row['bucket_key'] ?? null;
+            if (is_string($bucket) && $bucket !== '') {
+                $usedAreas[$bucket] = true;
+            }
+        }
+        $this->areaOptions = [];
+        foreach (MediaStorageBreakdown::areaLabels() as $key => $label) {
+            if (isset($usedAreas[$key])) {
+                $this->areaOptions[] = ['key' => $key, 'label' => $label];
+            }
+        }
+
+        $this->referenceOptions = array_map(function (array $row): array {
+            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
 
             return $row;
-        }, $analysis['heavy_consumers']);
+        }, $this->analysisRows($analysis, 'target_breakdown'));
 
-        $this->availableAssets = MediaAsset::query()->where('state', 'available')->count();
-        $this->unusedAssets = MediaAsset::query()
-            ->where('state', 'available')
-            ->whereDoesntHave('artworks')
-            ->whereDoesntHave('exhibitions')
-            ->whereDoesntHave('cvEntries')
-            ->whereDoesntHave('blogPosts')
-            ->count();
+        $attention = is_array($analysis['attention'] ?? null) ? $analysis['attention'] : [];
+        foreach (['largest_file', 'largest_unreferenced'] as $key) {
+            if (is_array($attention[$key] ?? null)) {
+                $attention[$key] = $this->presentFileRow($attention[$key]);
+            }
+        }
+        foreach (['largest_area', 'largest_gallery'] as $key) {
+            if (is_array($attention[$key] ?? null)) {
+                $attention[$key]['display_bytes'] = MediaStorageUnits::formatBytes((int) ($attention[$key]['bytes'] ?? 0));
+            }
+        }
+        $attention['unreferenced_display_bytes'] = MediaStorageUnits::formatBytes((int) ($attention['unreferenced_bytes'] ?? 0));
+        $this->attention = $attention;
+    }
+
+    /**
+     * @param list<array<string,mixed>> $rows
+     * @return list<array<string,mixed>>
+     */
+    private function filteredFileRows(array $rows): array
+    {
+        $search = Str::lower(trim($this->search));
+
+        return array_values(array_filter($rows, function (array $row) use ($search): bool {
+            if ($this->referenceState !== 'all' && ($row['state'] ?? null) !== $this->referenceState) {
+                return false;
+            }
+
+            if ($this->areaFilter !== 'all') {
+                $areaKeys = is_array($row['area_keys'] ?? null) ? $row['area_keys'] : [];
+                $bucket = (string) ($row['bucket_key'] ?? '');
+                if (! in_array($this->areaFilter, $areaKeys, true) && $bucket !== $this->areaFilter) {
+                    return false;
+                }
+            }
+
+            $references = is_array($row['references'] ?? null) ? $row['references'] : [];
+            if ($this->referenceFilter !== 'all' && ! collect($references)->contains(
+                fn (array $reference): bool => ($reference['target_key'] ?? null) === $this->referenceFilter,
+            )) {
+                return false;
+            }
+
+            if ($search === '') {
+                return true;
+            }
+
+            $referenceText = collect($references)->flatMap(static fn (array $reference): array => [
+                (string) ($reference['area_label'] ?? ''),
+                (string) ($reference['target_label'] ?? ''),
+                (string) ($reference['type'] ?? ''),
+                (string) ($reference['label'] ?? ''),
+            ])->implode(' ');
+            $text = implode(' ', [
+                (string) ($row['filename'] ?? ''),
+                (string) ($row['type_label'] ?? ''),
+                implode(' ', is_array($row['use_labels'] ?? null) ? $row['use_labels'] : []),
+                (string) ($row['state_label'] ?? ''),
+                $referenceText,
+            ]);
+
+            return Str::contains(Str::lower($text), $search);
+        }));
+    }
+
+    /** @param array<string,mixed> $row @return array<string,mixed> */
+    private function presentFileRow(array $row): array
+    {
+        $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
+        $share = is_numeric($row['share'] ?? null) ? (float) $row['share'] : 0.0;
+        $row['display_share'] = number_format($share, $share < 1 ? 2 : 1).'%';
+
+        return $row;
+    }
+
+    /** @param array<string,mixed> $analysis @return list<array<string,mixed>> */
+    private function analysisRows(array $analysis, string $key): array
+    {
+        $value = $analysis[$key] ?? null;
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($value as $row) {
+            if (is_array($row)) {
+                $rows[] = $row;
+            }
+        }
+
+        return $rows;
+    }
+
+    /** @param array<string,mixed> $snapshot @return array<string,int> */
+    private function authoritativeFiles(array $snapshot): array
+    {
+        $value = $snapshot['authoritative_file_bytes'] ?? null;
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $files = [];
+        foreach ($value as $path => $bytes) {
+            if (is_string($path) && is_int($bytes) && $bytes >= 0) {
+                $files[$path] = $bytes;
+            }
+        }
+
+        return $files;
+    }
+
+    private function normalizePageSize(mixed $value): int
+    {
+        $pageSize = is_numeric($value) ? (int) $value : self::DEFAULT_PAGE_SIZE;
+
+        return in_array($pageSize, self::PAGE_SIZES, true) ? $pageSize : self::DEFAULT_PAGE_SIZE;
     }
 }

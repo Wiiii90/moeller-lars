@@ -1,0 +1,515 @@
+.activity-atlas {
+    min-width: 0;
+}
+
+.activity-atlas__header,
+.activity-atlas__panel-heading {
+    display: flex;
+    min-width: 0;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.activity-atlas__header {
+    min-height: var(--admin-control-height);
+}
+
+.activity-atlas__heading,
+.activity-atlas__panel-heading > div,
+.activity-publication__header {
+    display: grid;
+    min-width: 0;
+    gap: .18rem;
+}
+
+.activity-atlas__kicker,
+.activity-publication__header > span,
+.activity-publication__staged > span,
+.activity-publication__latest > span,
+.activity-publication__recent > span {
+    color: var(--admin-muted);
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.activity-atlas__heading > strong,
+.activity-publication__header > strong {
+    color: var(--admin-text);
+    font-size: 1rem;
+    font-weight: 620;
+}
+
+.activity-atlas__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2.45fr) minmax(15rem, .8fr);
+    gap: clamp(1.5rem, 3.5vw, 3rem);
+    min-width: 0;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.activity-atlas__visual {
+    display: grid;
+    min-width: 0;
+}
+
+.activity-atlas__panel {
+    display: grid;
+    grid-area: 1 / 1;
+    min-width: 0;
+    min-height: 0;
+    align-content: stretch;
+}
+
+.activity-atlas__panel-heading {
+    align-self: start;
+}
+
+.activity-atlas__panel-heading strong {
+    display: block;
+    color: var(--admin-text);
+    font-size: .86rem;
+    font-weight: 600;
+}
+
+.activity-atlas__panel-heading span,
+.activity-atlas__summary,
+.activity-atlas__caption,
+.activity-publication__scope {
+    color: var(--admin-muted);
+    font-size: .68rem;
+    line-height: 1.45;
+}
+
+.activity-atlas__summary {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.activity-rhythm {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: .45rem;
+}
+
+.activity-rhythm__figure {
+    display: grid;
+    min-height: 0;
+    place-items: center;
+}
+
+.activity-rhythm__chart {
+    width: min(100%, 22rem);
+    max-height: 22rem;
+    aspect-ratio: 1;
+    overflow: visible;
+}
+
+.activity-rhythm__ring,
+.activity-rhythm__inner-ring {
+    fill: none;
+    stroke: var(--admin-line);
+    stroke-width: 1;
+}
+
+.activity-rhythm__inner-ring {
+    stroke-dasharray: 2 5;
+}
+
+.activity-rhythm__bar {
+    stroke-linecap: round;
+}
+
+.activity-rhythm__bar.is-empty {
+    stroke: var(--admin-line-strong);
+    stroke-width: 2;
+}
+
+.activity-rhythm__bar.is-active {
+    stroke: var(--admin-accent);
+    stroke-width: 4;
+}
+
+.activity-rhythm__label,
+.activity-rhythm__total,
+.activity-rhythm__total-label {
+    fill: var(--admin-muted);
+    text-anchor: middle;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+}
+
+.activity-rhythm__label {
+    font-size: 9px;
+    font-weight: 650;
+}
+
+.activity-rhythm__label--06,
+.activity-rhythm__label--18 {
+    dominant-baseline: middle;
+}
+
+.activity-rhythm__total {
+    fill: var(--admin-text);
+    font-size: 24px;
+    font-weight: 580;
+}
+
+.activity-rhythm__total-label {
+    font-size: 8px;
+    font-weight: 650;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.activity-atlas__caption {
+    max-width: 36rem;
+    margin: 0;
+    align-self: end;
+}
+
+.activity-calendar {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 1rem;
+}
+
+.activity-calendar__plot {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: .65rem;
+    min-width: 0;
+    align-items: start;
+    align-self: center;
+}
+
+.activity-calendar__weekdays {
+    display: grid;
+    grid-template-rows: repeat(7, 1.05rem);
+    gap: .18rem;
+}
+
+.activity-calendar__weekdays span {
+    display: flex;
+    height: 1.05rem;
+    align-items: center;
+    color: var(--admin-muted);
+    font-size: .55rem;
+    font-weight: 650;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.activity-calendar__cells {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1.05rem;
+    grid-template-rows: repeat(7, 1.05rem);
+    gap: .18rem;
+    min-width: 0;
+    overflow-x: auto;
+    padding-bottom: .25rem;
+    align-content: start;
+    justify-content: start;
+}
+
+.activity-calendar__day {
+    box-sizing: border-box;
+    display: block;
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 1px solid var(--admin-line);
+    background: transparent;
+}
+
+.activity-calendar__day.is-outside {
+    border-color: transparent;
+}
+
+.activity-calendar__day.is-level-1 {
+    background: color-mix(in srgb, var(--admin-accent) 18%, transparent);
+}
+
+.activity-calendar__day.is-level-2 {
+    background: color-mix(in srgb, var(--admin-accent) 36%, transparent);
+}
+
+.activity-calendar__day.is-level-3 {
+    background: color-mix(in srgb, var(--admin-accent) 60%, transparent);
+}
+
+.activity-calendar__day.is-level-4 {
+    border-color: var(--admin-accent);
+    background: var(--admin-accent);
+}
+
+.activity-calendar__legend {
+    display: flex;
+    gap: .28rem;
+    align-items: center;
+    align-self: end;
+    color: var(--admin-muted);
+    font-size: .6rem;
+}
+
+.activity-calendar__legend .activity-calendar__day {
+    width: .7rem;
+    height: .7rem;
+}
+
+.activity-publication {
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    align-content: start;
+    padding-left: clamp(1.1rem, 2vw, 1.75rem);
+    border-left: 1px solid var(--admin-line);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.activity-publication__header {
+    padding-bottom: .8rem;
+}
+
+.activity-publication__staged {
+    display: grid;
+    gap: .18rem;
+    padding: .8rem 0;
+    border-block: 1px solid var(--admin-line);
+}
+
+.activity-publication__staged > strong {
+    color: var(--admin-text);
+    font-size: 1.8rem;
+    font-weight: 520;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.activity-publication__staged > small,
+.activity-publication__latest > small,
+.activity-publication__recent small {
+    color: var(--admin-muted);
+    font-size: .66rem;
+    line-height: 1.4;
+}
+
+.activity-publication__latest {
+    display: grid;
+    gap: .24rem;
+    padding: .8rem 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.activity-publication__latest > strong,
+.activity-publication__recent article strong {
+    color: var(--admin-text);
+    font-size: .76rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.activity-publication__latest > p {
+    display: -webkit-box;
+    margin: .15rem 0 0;
+    overflow: hidden;
+    color: var(--admin-text);
+    font-size: .72rem;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.activity-publication__latest.is-empty {
+    color: var(--admin-muted);
+}
+
+.activity-publication__recent {
+    min-height: 0;
+    padding-top: .8rem;
+}
+
+.activity-publication__recent > span {
+    display: block;
+    margin-bottom: .25rem;
+}
+
+.activity-publication__recent article {
+    display: grid;
+    gap: .12rem;
+    padding: .52rem 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.activity-publication__recent article > div {
+    display: flex;
+    min-width: 0;
+    gap: .6rem;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.activity-publication__recent article span {
+    color: var(--admin-muted);
+    font-size: .64rem;
+    white-space: nowrap;
+}
+
+.activity-publication__recent small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-publication__scope {
+    margin: .7rem 0 0;
+    align-self: end;
+}
+
+.activity-workspace__controls {
+    grid-template-columns: minmax(15rem, 1.5fr) minmax(10rem, .8fr) minmax(10rem, .8fr) auto auto;
+    padding: 0 0 var(--admin-section-gap);
+}
+
+.activity-workspace__table table {
+    min-width: 70rem;
+}
+
+.activity-publication-cell {
+    min-width: 11rem;
+    max-width: 17rem;
+}
+
+.activity-publication-cell > small {
+    display: block;
+    max-width: 16rem;
+    margin-top: .18rem;
+    overflow: hidden;
+    color: var(--admin-muted);
+    font-size: .64rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-publication-cell__empty {
+    color: var(--admin-faint);
+}
+
+@media (max-width: 1080px) {
+    .activity-atlas__grid {
+        grid-template-columns: minmax(0, 1.75fr) minmax(14rem, .8fr);
+        gap: 1.5rem;
+    }
+
+    .activity-workspace__controls {
+        grid-template-columns: minmax(14rem, 1.4fr) repeat(2, minmax(9rem, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .activity-atlas__grid {
+        grid-template-columns: 1fr;
+        overflow: visible;
+    }
+
+    .activity-publication {
+        grid-template-columns: minmax(8rem, .65fr) minmax(11rem, 1fr) minmax(0, 1.3fr);
+        grid-template-rows: auto auto;
+        gap: 0 1.25rem;
+        padding: 1rem 0 0;
+        border-top: 1px solid var(--admin-line);
+        border-left: 0;
+    }
+
+    .activity-publication__header {
+        grid-column: 1 / -1;
+    }
+
+    .activity-publication__staged,
+    .activity-publication__latest {
+        border-block: 0;
+        border-bottom: 0;
+    }
+
+    .activity-publication__recent {
+        padding-top: .8rem;
+    }
+
+    .activity-publication__scope {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 700px) {
+    .activity-atlas__header,
+    .activity-atlas__panel-heading {
+        align-items: flex-start;
+    }
+
+    .activity-atlas__header {
+        flex-direction: column;
+    }
+
+    .activity-rhythm__chart {
+        width: min(100%, 19rem);
+        max-height: 19rem;
+    }
+
+    .activity-calendar__cells {
+        grid-auto-columns: .95rem;
+        grid-template-rows: repeat(7, .95rem);
+    }
+
+    .activity-calendar__day {
+        width: .95rem;
+        height: .95rem;
+    }
+
+    .activity-calendar__weekdays {
+        grid-template-rows: repeat(7, .95rem);
+    }
+
+    .activity-calendar__weekdays span {
+        height: .95rem;
+    }
+
+    .activity-publication {
+        grid-template-columns: 1fr;
+    }
+
+    .activity-publication__header,
+    .activity-publication__scope {
+        grid-column: 1;
+    }
+
+    .activity-publication__staged,
+    .activity-publication__latest,
+    .activity-publication__recent {
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .activity-workspace__controls {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .activity-rhythm__chart {
+        width: min(100%, 17rem);
+        max-height: 17rem;
+    }
+
+    .activity-atlas__panel-heading {
+        display: grid;
+        justify-content: stretch;
+    }
+
+    .activity-atlas__summary {
+        white-space: normal;
+    }
+}

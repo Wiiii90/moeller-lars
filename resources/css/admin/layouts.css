@@ -9,15 +9,67 @@
     display: none;
 }
 
-.admin-topbar-sign-out {
-    display: inline-flex;
-    align-items: center;
-}
-
 html:not(.dark) .fi-sidebar,
 html:not(.dark) .fi-sidebar-header,
 html:not(.dark) .fi-sidebar-nav {
     background: #fff !important;
+}
+
+.fi-sidebar-header .fi-logo {
+    letter-spacing: .035em;
+}
+
+.admin-sidebar-preview {
+    border-top: 1px solid var(--admin-line);
+}
+
+/* Keep the Pages row and its tree on one shared disclosure geometry. */
+.admin-sidebar-tree__root {
+    --admin-tree-icon-visual-size: 1.5rem;
+    --admin-tree-label-inset: calc((var(--admin-tree-icon-slot) - var(--admin-tree-icon-visual-size)) / 2);
+    --admin-tree-top-indent: calc(
+        var(--admin-tree-icon-slot) + (var(--admin-tree-disclosure-slot) / 2) - (var(--admin-tree-icon-slot) / 2)
+    );
+    --admin-tree-top-trunk-x: calc(var(--admin-tree-top-indent) / 2);
+    --admin-tree-connector-gap: calc(var(--admin-tree-label-inset) / 2);
+}
+
+.admin-sidebar-tree__root,
+.admin-sidebar-tree__root.fi-active,
+.admin-sidebar-tree__root.fi-sidebar-item-has-active-child-items {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+.admin-sidebar-tree__node-row,
+.admin-sidebar-tree__icon-link,
+.admin-sidebar-tree__node-icon,
+.admin-sidebar-tree__disclosure-slot,
+.admin-sidebar-tree__node-label-link,
+.admin-sidebar-tree__node-label-static {
+    box-sizing: border-box;
+    height: var(--admin-tree-row-height);
+    min-height: var(--admin-tree-row-height);
+    margin-block: 0 !important;
+}
+
+.admin-sidebar-tree__node-label-link,
+.admin-sidebar-tree__node-label-static {
+    padding: 0 .5rem 0 var(--admin-tree-label-inset) !important;
+    border-width: 0 !important;
+}
+
+.admin-sidebar-tree__node[data-admin-site-section-depth="0"]::after {
+    width: calc(
+        var(--admin-tree-top-indent) - var(--admin-tree-top-trunk-x) - var(--admin-tree-connector-gap)
+    );
+}
+
+.admin-sidebar-tree__node:not([data-admin-site-section-depth="0"])::after {
+    width: calc(
+        var(--admin-tree-nested-indent) - var(--admin-tree-nested-trunk-x) - var(--admin-tree-connector-gap)
+    );
 }
 
 @media (min-width: 1024px) {
@@ -30,35 +82,6 @@ html:not(.dark) .fi-sidebar-nav {
 
     .fi-sidebar-nav {
         padding-top: var(--admin-shell-content-inset) !important;
-    }
-
-    .fi-topbar {
-        position: relative;
-        isolation: isolate;
-    }
-
-    .fi-topbar-end {
-        position: static;
-    }
-
-    .fi-topbar-end > .fi-global-search-ctn {
-        position: absolute;
-        left: calc(50% - var(--admin-workspace-visual-shift));
-        z-index: 20;
-        width: min(42rem, calc(100% - 24rem));
-        transform: translateX(-50%);
-        pointer-events: auto;
-    }
-
-    .fi-topbar-end > .fi-global-search-ctn .fi-global-search {
-        width: 100%;
-    }
-
-    .fi-topbar .fi-global-search-results-ctn {
-        inset-inline: 0;
-        z-index: 30;
-        width: 100%;
-        max-width: none;
     }
 }
 
@@ -405,13 +428,6 @@ html:not(.dark) .fi-sidebar-nav {
     color: var(--admin-text);
     font-size: .84rem;
     font-weight: 550;
-}
-
-.admin-storage__details summary {
-    padding: .75rem 0;
-    color: var(--admin-muted);
-    font-size: .76rem;
-    cursor: pointer;
 }
 
 @media (max-width: 1050px) {

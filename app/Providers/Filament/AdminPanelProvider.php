@@ -2,15 +2,15 @@
 
 namespace App\Providers\Filament;
 
+use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\General;
 use App\Filament\Pages\SitePages;
 use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
-use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Filament\Support\SiteNavigation;
-use App\Filament\Widgets\ArtistDashboard;
 use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
 use Filament\Http\Middleware\Authenticate;
@@ -31,8 +31,6 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-use function Filament\Support\original_request;
-
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -48,6 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('Lars Möller')
             ->homeUrl(fn (): string => route('home'))
             ->breadcrumbs(false)
+            ->globalSearch(false)
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -55,11 +54,14 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::STYLES_AFTER,
                 fn (): string => view('filament.partials.admin-theme')->render(),
             )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.partials.publication-commit-dialog')->render(),
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([])
             ->widgets([
-                ArtistDashboard::class,
                 ContactHealth::class,
             ])
             ->navigation(fn (NavigationBuilder $builder): NavigationBuilder => $this->navigation($builder))
@@ -82,6 +84,7 @@ class AdminPanelProvider extends PanelProvider
 
     private function navigation(NavigationBuilder $builder): NavigationBuilder
     {
+        $generalItem = General::getNavigationItems()[0]->group(null);
         $pagesItem = SitePages::getNavigationItems()[0]
             ->group(null)
             ->childItems(app(SiteNavigation::class)->items())
@@ -89,20 +92,39 @@ class AdminPanelProvider extends PanelProvider
         $analyticsItem = Analytics::getNavigationItems()[0]->group(null);
         $activityItem = Activity::getNavigationItems()[0]->group(null);
         $storageItem = StorageCapacity::getNavigationItems()[0]->group(null);
+        $previewItem = NavigationItem::make('Preview')
+            ->group(null)
+            ->icon(Heroicon::OutlinedEye)
+            ->url(route('preview.home'))
+            ->openUrlInNewTab();
+        $hasPendingChanges = app(PublicationService::class)->hasPendingChanges();
+        $commitItem = NavigationItem::make('Commit')
+            ->group(null)
+            ->icon(Heroicon::OutlinedCheckCircle)
+            ->url('#')
+            ->extraAttributes([
+                'aria-disabled' => $hasPendingChanges ? 'false' : 'true',
+                'data-publication-commit' => $hasPendingChanges ? 'enabled' : 'disabled',
+                'style' => $hasPendingChanges ? '' : 'opacity: .5;',
+                'x-data' => '{ publicationPending: '.($hasPendingChanges ? 'true' : 'false').' }',
+                'x-on:publication-state-changed.window' => 'publicationPending = Boolean($event.detail.pending)',
+                'x-bind:aria-disabled' => '(! publicationPending).toString()',
+                'x-bind:data-publication-commit' => "publicationPending ? 'enabled' : 'disabled'",
+                'x-bind:style' => "publicationPending ? '' : 'opacity: .5;'",
+                'x-on:click.prevent' => "if (publicationPending) { \$dispatch('publication-commit') }",
+            ]);
 
         return $builder
             ->items([
                 ...Dashboard::getNavigationItems(),
-                NavigationItem::make('General')
-                    ->icon(Heroicon::OutlinedGlobeAlt)
-                    ->isActiveWhen(fn (): bool => original_request()->routeIs(PublicContentSettingResource::getNavigationItemActiveRoutePattern()))
-                    ->sort(1)
-                    ->url(fn (): string => PublicContentSettingResource::getNavigationUrl()),
+                $generalItem,
                 ...MediaAssetResource::getNavigationItems(),
                 $pagesItem,
                 $analyticsItem,
                 $activityItem,
                 $storageItem,
+                $previewItem,
+                $commitItem,
             ]);
     }
 }

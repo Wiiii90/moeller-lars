@@ -4,16 +4,17 @@ namespace App\Filament\Resources\Artworks;
 
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
+use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\Pages\CreateArtwork;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
 use App\Filament\Resources\Artworks\Pages\ListArtworks;
 use App\Filament\Resources\Artworks\Pages\ManageGalleryArtworks;
 use App\Filament\Resources\Artworks\Pages\ViewArtwork;
 use App\Filament\Resources\Artworks\RelationManagers\GalleryImagesRelationManager;
+use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Filament\Support\AdminForm;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
-use App\Models\ArtworkMaterialPreset;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -52,6 +53,22 @@ class ArtworkResource extends Resource
     protected static ?string $navigationLabel = 'All artworks';
 
     protected static ?int $navigationSort = 10;
+
+    public static function getUrl(?string $name = null, array $parameters = [], bool $isAbsolute = true, ?string $panel = null, ?Model $tenant = null, bool $shouldGuessMissingParameters = false, ?string $configuration = null): string
+    {
+        if ($name === 'gallery') {
+            return GalleryWorkspace::getUrl(
+                ['gallery' => $parameters['gallery'] ?? null],
+                $isAbsolute,
+                $panel,
+                $tenant,
+                $shouldGuessMissingParameters,
+                $configuration,
+            );
+        }
+
+        return parent::getUrl($name, $parameters, $isAbsolute, $panel, $tenant, $shouldGuessMissingParameters, $configuration);
+    }
 
     public static function getRecordTitleAttribute(): ?string
     {
@@ -96,11 +113,7 @@ class ArtworkResource extends Resource
 
                             return ArtworkCategory::query()->whereKey($galleryId)->exists() ? $galleryId : null;
                         }),
-                    TextInput::make('medium')
-                        ->label('Material')
-                        ->nullable()
-                        ->maxLength(240)
-                        ->datalist(fn (): array => ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all()),
+                    ArtworkMaterialSelect::make(),
                     TextInput::make('dimensions')->nullable()->maxLength(240),
                     Textarea::make('description')->nullable()->maxLength(10000)->columnSpanFull(),
                 ])

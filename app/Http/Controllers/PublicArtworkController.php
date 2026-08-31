@@ -21,14 +21,6 @@ class PublicArtworkController extends Controller
         private readonly SitePreviewContext $preview,
     ) {}
 
-    public function home(): View
-    {
-        return view('pages.home', [
-            'artwork' => $this->artworks->latestForHome(),
-            'media' => $this->media,
-        ]);
-    }
-
     public function category(string $category): View|RedirectResponse
     {
         $sectionQuery = SiteSection::query()
