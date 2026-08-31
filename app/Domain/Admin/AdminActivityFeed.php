@@ -231,14 +231,16 @@ final class AdminActivityFeed
             $query->where(function (Builder $query) use ($searchActionKeys, $normalizedSearch): void {
                 if ($searchActionKeys !== []) {
                     $query->whereIn('action', $searchActionKeys);
-                    $query->orWhereHas('adminUser', static fn (Builder $adminUserQuery): Builder => $adminUserQuery
-                        ->whereRaw('LOWER(name) LIKE ?', ['%'.$normalizedSearch.'%']));
+                    $query->orWhereHas('adminUser', static function (Builder $adminUserQuery) use ($normalizedSearch): void {
+                        $adminUserQuery->whereRaw('LOWER(name) LIKE ?', ['%'.$normalizedSearch.'%']);
+                    });
 
                     return;
                 }
 
-                $query->whereHas('adminUser', static fn (Builder $adminUserQuery): Builder => $adminUserQuery
-                    ->whereRaw('LOWER(name) LIKE ?', ['%'.$normalizedSearch.'%']));
+                $query->whereHas('adminUser', static function (Builder $adminUserQuery) use ($normalizedSearch): void {
+                    $adminUserQuery->whereRaw('LOWER(name) LIKE ?', ['%'.$normalizedSearch.'%']);
+                });
             });
         }
 
