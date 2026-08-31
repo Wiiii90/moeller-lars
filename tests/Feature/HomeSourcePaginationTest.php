@@ -13,20 +13,13 @@ beforeEach(function (): void {
 
 function homeSourcePaginationSettings(): HomePresentationSetting
 {
-    $home = SiteSection::query()->create([
-        'type' => SiteSection::TYPE_HOME,
-        'title' => 'Home',
-        'navigation_label' => 'Home',
-        'slug' => null,
-        'state' => 'published',
-        'position' => 0,
-        'show_in_navigation' => true,
-        'parent_id' => null,
-        'artwork_category_id' => null,
-    ]);
+    $home = SiteSection::query()
+        ->where('type', SiteSection::TYPE_HOME)
+        ->firstOrFail();
 
-    $settings = new HomePresentationSetting;
-    $settings->setAttribute('site_section_id', $home->getKey());
+    $settings = HomePresentationSetting::query()
+        ->where('site_section_id', $home->getKey())
+        ->firstOrFail();
     $settings->setAttribute('template', 'artwork');
     $settings->setAttribute('configuration', HomePresentationEditorialService::defaults());
     $settings->save();
