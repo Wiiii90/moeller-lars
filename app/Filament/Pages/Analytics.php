@@ -128,7 +128,7 @@ final class Analytics extends Page
 
     public function nextDetailPage(): void
     {
-        $pages = (int) ($this->detailTable()['pages'] ?? 1);
+        $pages = (int) $this->detailTable()['pages'];
         $this->detailPage = min(max(1, $pages), $this->detailPage + 1);
     }
 
