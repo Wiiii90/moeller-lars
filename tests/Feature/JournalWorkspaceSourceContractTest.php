@@ -36,7 +36,7 @@ it('projects Blog and Exhibition cover thumbnails before the shared Blade render
         ->and($workspace)->toContain("route('admin.media.variant', \$variant)");
 });
 
-it('keeps Journal visual and action geometry stable without rebuilding the shared data workspace', function (): void {
+it('keeps Journal visual and action geometry on the current shared data workspace contract', function (): void {
     $journalCss = (string) file_get_contents(resource_path('css/admin/journal.css'));
     $dataCss = (string) file_get_contents(resource_path('css/admin/data-workspace.css'));
     $taskCss = (string) file_get_contents(resource_path('css/admin/task-surfaces.css'));
@@ -47,8 +47,10 @@ it('keeps Journal visual and action geometry stable without rebuilding the share
         ->and($journalCss)->toContain('width: 3.6rem;', 'height: 3rem;', 'object-fit: cover;')
         ->and($journalCss)->toContain('.admin-section.journal-workspace__entries {', 'border-bottom: 0;')
         ->and($taskCss)->toContain('.admin-table__actions {')
-        ->and($taskCss)->toContain('text-align: right !important;')
-        ->and($taskCss)->toContain('justify-content: flex-end;')
+        ->and($taskCss)->toContain('text-align: left !important;')
+        ->and($taskCss)->toContain('.admin-table__actions > .admin-toolbar {')
+        ->and($taskCss)->toContain('justify-content: flex-start;')
+        ->and($taskCss)->toContain('white-space: nowrap;')
         ->and($taskCss)->toContain('.admin-action--state {', 'min-width: 7.75rem;')
         ->and($taskCss)->not->toContain('.admin-bottom-add')
         ->and($dataCss)->toContain('.admin-pager,')
@@ -64,5 +66,5 @@ it('keeps the shared Journal editor Gallery source and the central rich text fix
         ->and(substr_count($schema, 'private static function galleryImages()'))->toBe(1)
         ->and($schema)->toContain("if (\$template === JournalTemplate::Exhibitions) {\n            \$components[] = self::mapSection();")
         ->and($richText)->toContain("'x-on:admin-rich-text-image-insert'")
-        ->and($richText)->not->toContain("\\$el.addEventListener('admin-rich-text-image-insert'");
+        ->and($richText)->not->toContain('$el.addEventListener(\'admin-rich-text-image-insert\'');
 });
