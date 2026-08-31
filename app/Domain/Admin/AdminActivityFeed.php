@@ -80,7 +80,7 @@ final class AdminActivityFeed
         ?string $search = null,
     ): array {
         $query = $this->filteredQuery($area, $family, $days, $search);
-        $driver = $query->getConnection()->getDriverName();
+        $driver = $query->getModel()->getConnection()->getDriverName();
         $hourExpression = match ($driver) {
             'sqlite' => "CAST(strftime('%H', occurred_at) AS INTEGER)",
             'mysql', 'mariadb' => 'HOUR(occurred_at)',
@@ -161,12 +161,15 @@ final class AdminActivityFeed
             ->whereDoesntHave('auditEvent.publicationCheckpointEvent')
             ->count();
 
-        $checkpoints = PublicationCheckpoint::query()
+        /** @var EloquentCollection<int, PublicationCheckpoint> $checkpointModels */
+        $checkpointModels = PublicationCheckpoint::query()
             ->with('adminUser:id,name')
             ->orderByDesc('published_at')
             ->orderByDesc('id')
             ->limit($limit)
-            ->get()
+            ->get();
+
+        $checkpoints = $checkpointModels
             ->map(static function (PublicationCheckpoint $checkpoint): array {
                 /** @var CarbonInterface $publishedAt */
                 $publishedAt = $checkpoint->getAttribute('published_at');
@@ -227,14 +230,14 @@ final class AdminActivityFeed
 
             $query->where(function (Builder $query) use ($searchActionKeys, $normalizedSearch): void {
                 if ($searchActionKeys !== []) {
-                    $query->whereIn('action', $searchActionKeys)
-                        ->orWhereHas('adminUser', static fn (Builder $adminUserQuery) => $adminUserQuery
-                            ->whereRaw('LOWER(name) LIKE ?', ['%'.$normalizedSearch.'%']));
+                    $query->whereIn('action', $searchActionKeys);
+                    $query->orWhereHas('adminUser', static fn (Builder $adminUserQuery): Builder => $adminUserQuery
+                        ->whereRaw('LOWER(name) LIKE ?', ['%'.$normalizedSearch.'%']));
 
                     return;
                 }
 
-                $query->whereHas('adminUser', static fn (Builder $adminUserQuery) => $adminUserQuery
+                $query->whereHas('adminUser', static fn (Builder $adminUserQuery): Builder => $adminUserQuery
                     ->whereRaw('LOWER(name) LIKE ?', ['%'.$normalizedSearch.'%']));
             });
         }
