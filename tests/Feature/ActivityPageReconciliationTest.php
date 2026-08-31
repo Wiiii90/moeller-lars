@@ -166,6 +166,9 @@ it('projects staged committed and not-pending publication states without conflat
 it('returns bounded current staged activity and ordered checkpoint context', function (): void {
     $actor = User::factory()->admin()->create();
     $feed = app(AdminActivityFeed::class);
+    $initial = PublicationCheckpoint::query()
+        ->where('message', 'Initial public state')
+        ->firstOrFail();
 
     $staged = activityReconciliationEvent($actor, 'blog_setting.updated', now()->subMinutes(4));
     PublicationEventState::query()->create([
@@ -209,8 +212,14 @@ it('returns bounded current staged activity and ordered checkpoint context', fun
         ->and($context['latest']['id'])->toBe((int) $latest->getKey())
         ->and($context['latest']['message'])->toBe('Latest checkpoint')
         ->and($context['latest']['change_count'])->toBe(5)
-        ->and($context['recent'])->toHaveCount(1)
-        ->and($context['recent'][0]['id'])->toBe((int) $older->getKey());
+        ->and(array_column($context['recent'], 'id'))->toBe([
+            (int) $initial->getKey(),
+            (int) $older->getKey(),
+        ])
+        ->and(array_column($context['recent'], 'message'))->toBe([
+            'Initial public state',
+            'Older checkpoint',
+        ]);
 });
 
 it('keeps Activity overview aggregation query count fixed as event volume grows', function (): void {
