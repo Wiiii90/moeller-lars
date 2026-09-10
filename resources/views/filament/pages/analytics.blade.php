@@ -100,6 +100,10 @@
         };
         $detailTable = $this->detailTable();
         $detailReportOptions = $this->detailReportOptions();
+        $detailReportLabel = $detailReportOptions[$detailReport] ?? 'Analytics';
+        $detailEmptyTitle = trim($search) !== ''
+            ? 'No matching '.$detailReportLabel.' rows'
+            : ($detailTable['state'] === 'unavailable' ? $detailReportLabel.' unavailable' : 'No '.$detailReportLabel.' data');
     @endphp
 
     <x-admin.workspace title="Analytics" class="analytics-dashboard">
@@ -167,10 +171,7 @@
 
             <aside class="analytics-stage-rail admin-visual-stage__pane" aria-label="Geography context">
                 <div class="analytics-stage-rail__heading">
-                    <div>
-                        <span>Human visits</span>
-                        <strong>Geography</strong>
-                    </div>
+                    <strong>Geography</strong>
                     <small>Matomo</small>
                 </div>
 
@@ -195,18 +196,18 @@
                     </dl>
                 @else
                     <div class="analytics-stage-empty">
-                        <strong>Geography context</strong>
+                        <strong>Geography</strong>
                         <p>{{ $stageMessage }}</p>
                     </div>
                 @endif
 
-                <div class="analytics-stage-ranking">
-                    <div class="analytics-stage-ranking__head">
-                        <strong>Top countries</strong>
-                        <span>Visits</span>
-                    </div>
+                @if ($topCountries !== [])
+                    <div class="analytics-stage-ranking">
+                        <div class="analytics-stage-ranking__head">
+                            <strong>Top countries</strong>
+                            <span>Visits</span>
+                        </div>
 
-                    @if ($topCountries !== [])
                         @foreach ($topCountries as $row)
                             @php
                                 $label = (string) $row['label'];
@@ -228,10 +229,8 @@
                                 <strong>{{ $visits === null ? '—' : number_format($visits) }}</strong>
                             </button>
                         @endforeach
-                    @else
-                        <p class="analytics-stage-ranking__empty">{{ $stageMessage }}</p>
-                    @endif
-                </div>
+                    </div>
+                @endif
 
                 @if ($stageHighlights !== [] || $applicationSignals !== [])
                     <div class="analytics-stage-signals">
@@ -314,33 +313,39 @@
             </x-admin.controls>
 
             <x-admin.table class="admin-table--data analytics-detail-table">
-                @if ($detailTable['rows'] !== [])
-                    <table>
-                        @if ($detailTable['partial'])
-                            <caption>{{ $detailTable['partial'] }}</caption>
-                        @endif
-                        <thead>
+                <table>
+                    @if ($detailTable['partial'])
+                        <caption>{{ $detailTable['partial'] }}</caption>
+                    @endif
+                    <thead>
+                        <tr>
+                            @foreach ($detailTable['columns'] as $column)
+                                <th scope="col">{{ $column }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($detailTable['rows'] as $row)
                             <tr>
-                                @foreach ($detailTable['columns'] as $column)
-                                    <th scope="col">{{ $column }}</th>
+                                @foreach ($row as $cell)
+                                    <td class="{{ $loop->first ? 'admin-table__identity' : '' }}">{{ $cell }}</td>
                                 @endforeach
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($detailTable['rows'] as $row)
-                                <tr>
-                                    @foreach ($row as $cell)
-                                        <td class="{{ $loop->first ? 'admin-table__identity' : '' }}">{{ $cell }}</td>
-                                    @endforeach
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @else
-                    <x-admin.empty-state title="No analytics detail rows">
-                        <p>{{ $detailTable['message'] }}</p>
-                    </x-admin.empty-state>
-                @endif
+                        @empty
+                            <tr>
+                                <td class="admin-table__empty-cell" colspan="{{ max(1, count($detailTable['columns'])) }}">
+                                    <x-admin.empty-state :title="$detailEmptyTitle" minimal>
+                                        @if (trim($search) !== '')
+                                            <x-slot:actions>
+                                                <button class="admin-action" type="button" wire:click="$set('search', '')">Clear search</button>
+                                            </x-slot:actions>
+                                        @endif
+                                    </x-admin.empty-state>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </x-admin.table>
 
             @if ($detailTable['total'] > 12)
