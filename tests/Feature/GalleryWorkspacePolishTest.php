@@ -7,6 +7,7 @@ use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\PublicMedia;
+use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -16,6 +17,7 @@ use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
@@ -84,6 +86,25 @@ function polishThumbnail(MediaAsset $asset): MediaVariant
         'width' => 10,
         'height' => 5,
     ]);
+}
+
+function polishUnavailableGalleryAnalytics(): void
+{
+    app()->instance(ArtistReportingService::class, new class
+    {
+        /** @param list<string> $artworkAnalyticsKeys */
+        public function gallery(string $publicPath, array $artworkAnalyticsKeys, string $range = '30d'): array
+        {
+            return [
+                'status' => 'unavailable',
+                'page' => [],
+                'artworks' => [
+                    'state' => 'unavailable',
+                    'rows' => [],
+                ],
+            ];
+        }
+    });
 }
 
 it('detaches a draft from its Gallery without deleting artwork media or shared MediaAssets', function (): void {
@@ -264,6 +285,11 @@ it('keeps Gallery upload and Edit integration on the canonical media and Filamen
         ->and($viewSource)->toContain('accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"')
         ->and($viewSource)->not->toContain('audio/')
         ->and($viewSource)->toContain("mountAction('editArtwork'")
+        ->and($viewSource)->toContain('class="admin-drag-handle"')
+        ->and($viewSource)->toContain('wire:sort:handle')
+        ->and($viewSource)->toContain('>⋮⋮</button>')
+        ->and($viewSource)->not->toContain('gallery-workspace__drag-handle')
+        ->and($viewSource)->not->toContain('heroicon-m-arrows-up-down')
         ->and($viewSource)->not->toContain('Batch actions')
         ->and($viewSource)->not->toContain('Move selected artworks</');
 });
@@ -301,6 +327,53 @@ it('moves an artwork between Galleries without mutating its MediaAsset', functio
         ->and((int) $remaining->fresh()->position)->toBe(0)
         ->and((int) ArtworkMedia::query()->where('artwork_id', $moved->getKey())->value('media_asset_id'))->toBe((int) $asset->getKey())
         ->and(MediaAsset::query()->whereKey($asset->getKey())->exists())->toBeTrue();
+});
+
+it('moves an artwork through the Gallery workspace action without losing its destination or MediaAsset', function (): void {
+    $source = polishGallery();
+    $destination = polishGallery();
+    $asset = polishAsset();
+    $moved = polishArtwork($source, ['position' => 0]);
+    $remaining = polishArtwork($source, ['position' => 1]);
+    polishPrimary($moved, $asset);
+    polishUnavailableGalleryAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $source->getKey()])
+        ->mountAction('moveArtworkToGallery', ['artwork' => $moved->getKey()])
+        ->fillForm(['target_gallery_id' => $destination->getKey()])
+        ->callMountedAction();
+
+    $fresh = $moved->fresh('category');
+
+    expect((int) $fresh->getAttribute('artwork_category_id'))->toBe((int) $destination->getKey())
+        ->and((int) $fresh->getRelation('category')->getKey())->toBe((int) $destination->getKey())
+        ->and(Artwork::query()->whereKey($moved->getKey())->where('artwork_category_id', $source->getKey())->exists())->toBeFalse()
+        ->and(Artwork::query()->whereKey($moved->getKey())->where('artwork_category_id', $destination->getKey())->exists())->toBeTrue()
+        ->and((int) ArtworkMedia::query()->where('artwork_id', $moved->getKey())->where('role', 'primary')->value('media_asset_id'))->toBe((int) $asset->getKey())
+        ->and((int) $remaining->fresh()->position)->toBe(0);
+});
+
+it('detaches Gallery artworks after their shared primary Media File is deleted from the Gallery workspace', function (): void {
+    $source = polishGallery();
+    $otherGallery = polishGallery();
+    $asset = polishAsset();
+    $deletedFromSource = polishArtwork($source, ['position' => 0]);
+    $remainingInSource = polishArtwork($source, ['position' => 1]);
+    $alsoAffected = polishArtwork($otherGallery, ['position' => 0]);
+    polishPrimary($deletedFromSource, $asset);
+    polishPrimary($alsoAffected, $asset);
+    polishUnavailableGalleryAnalytics();
+
+    Livewire::test(GalleryWorkspace::class, ['gallery' => $source->getKey()])
+        ->mountAction('deletePrimaryMedia', ['artwork' => $deletedFromSource->getKey()])
+        ->callMountedAction();
+
+    expect(Artwork::query()->whereKey($deletedFromSource->getKey())->exists())->toBeTrue()
+        ->and($deletedFromSource->fresh()->getAttribute('artwork_category_id'))->toBeNull()
+        ->and($alsoAffected->fresh()->getAttribute('artwork_category_id'))->toBeNull()
+        ->and((int) $remainingInSource->fresh()->position)->toBe(0)
+        ->and(ArtworkMedia::query()->where('media_asset_id', $asset->getKey())->exists())->toBeFalse()
+        ->and($asset->fresh()->getAttribute('state'))->toBe('deleted');
 });
 
 it('requires unpublish before detach and preserves the historical publication timestamp when unpublishing', function (): void {
