@@ -7,6 +7,7 @@ use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\PublicMedia;
+use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
@@ -264,7 +265,7 @@ it('renders the six Gallery metrics and per-artwork analytics from one canonical
 
 it('keeps Gallery upload and Edit integration on the canonical media and Filament modal paths', function (): void {
     $projectionSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/Concerns/GalleryWorkspaceDataProjection.php'));
-    $uploadSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/Concerns/GalleryWorkspaceUploadSettings.php'));
+    $uploadSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/Concerns/GalleryWorkspaceDirectUpload.php'));
     $modalSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/Concerns/GalleryWorkspaceArtworkModals.php'));
     $viewSource = file_get_contents(resource_path('views/filament/resources/artworks/pages/manage-gallery-artworks.blade.php'));
 
@@ -278,8 +279,10 @@ it('keeps Gallery upload and Edit integration on the canonical media and Filamen
     /** @var string $modalSource */
     /** @var string $viewSource */
     expect(substr_count($projectionSource, 'app(ArtistReportingService::class)->gallery('))->toBe(1)
-        ->and($uploadSource)->toContain('app(MediaIngestService::class)->ingest($upload)')
-        ->and($uploadSource)->toContain("Notification::make()->title('Media upload failed')")
+        ->and($uploadSource)->toContain('$ingest = app(MediaIngestService::class);')
+        ->and($uploadSource)->toContain('$result = $ingest->ingestUnique($upload);')
+        ->and($uploadSource)->toContain('$this->notifyDirectUploadResult($summary, $added, $duplicates, $failures);')
+        ->and($uploadSource)->toContain("'Upload failed'")
         ->and($modalSource)->toContain("Action::make('editArtwork')")
         ->and($modalSource)->toContain('ArtworkPrimaryMediaService::class')
         ->and($viewSource)->toContain('accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"')
@@ -413,6 +416,8 @@ it('renders a published video artwork through the public viewer with native cont
     $video = polishAsset('video/mp4');
     polishPrimary($artwork, $video);
     $published = app(ArtworkPublicationService::class)->publish($artwork);
+    $actor = User::query()->findOrFail((int) auth('web')->id());
+    app(PublicationService::class)->commit($actor);
 
     $response = $this->get(route('artworks.show', ['slug' => $published->getAttribute('slug')]));
 
