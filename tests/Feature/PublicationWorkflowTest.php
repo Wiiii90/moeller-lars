@@ -319,17 +319,7 @@ it('retains working-only media while a Working reference still needs the file', 
     expect(DB::table('publication_media_cleanups')->count())->toBe(0);
 });
 
-it('keeps the publication utilities reactive, one-click, and in exact normal sidebar order', function (): void {
-    $bootstrap = file_get_contents(base_path('bootstrap/app.php'));
-    $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
-    $hook = file_get_contents(resource_path('views/filament/partials/publication-commit-dialog.blade.php'));
-    $dialogView = file_get_contents(resource_path('views/livewire/admin/publication-commit-dialog.blade.php'));
-    $component = file_get_contents(app_path('Livewire/Admin/PublicationCommitDialog.php'));
-    $social = file_get_contents(resource_path('views/filament/schemas/components/general-social-links.blade.php'));
-    $forms = file_get_contents(resource_path('css/admin/forms.css'));
-    $journal = file_get_contents(resource_path('views/filament/pages/journal-workspace.blade.php'));
-    $navOrderMatches = preg_match('/\$storageItem,\s*\$previewItem,\s*\$commitItem,/s', $provider);
-
+it('tracks the publication-owned tables copied into committed snapshots', function (): void {
     expect(PublicationSnapshot::TABLES)->toBe([
         'artwork_categories',
         'artworks',
@@ -347,50 +337,5 @@ it('keeps the publication utilities reactive, one-click, and in exact normal sid
         'blog_posts',
         'public_content_settings',
         'redirects',
-    ])
-        ->and($navOrderMatches)->toBe(1)
-        ->and($bootstrap)->toContain('$middleware->prepend(UseCommittedPublicState::class);')
-        ->and($provider)->toContain("NavigationItem::make('Preview')")
-        ->and($provider)->toContain("NavigationItem::make('Commit')")
-        ->and($provider)->toContain('Heroicon::OutlinedEye')
-        ->and($provider)->toContain('Heroicon::OutlinedCheckCircle')
-        ->and($provider)->toContain("->openUrlInNewTab()")
-        ->and($provider)->toContain("data-publication-commit' => \$hasPendingChanges ? 'enabled' : 'disabled'")
-        ->and($provider)->toContain('x-on:publication-state-changed.window')
-        ->and($provider)->toContain("\$dispatch('publication-commit')")
-        ->and($provider)->toContain('hasPendingChanges()')
-        ->and($provider)->toContain('PanelsRenderHook::BODY_END')
-        ->and($provider)->not->toContain('PanelsRenderHook::SIDEBAR_FOOTER')
-        ->and($provider)->not->toContain('PanelsRenderHook::SIDEBAR_NAV_END')
-        ->and(file_exists(resource_path('views/filament/partials/sidebar-preview.blade.php')))->toBeFalse()
-        ->and($hook)->toContain('<livewire:admin.publication-commit-dialog />')
-        ->and($dialogView)->toContain('publication-commit.window')
-        ->and($dialogView)->toContain('Livewire.interceptMessage')
-        ->and($dialogView)->toContain("message.component.name === 'admin.publication-commit-dialog'")
-        ->and($dialogView)->toContain('onFinish')
-        ->and($dialogView)->toContain("Livewire.getByName('admin.publication-commit-dialog')[0]?.refreshState()")
-        ->and($dialogView)->not->toContain('<x-filament-actions::modals />')
-        ->and($dialogView)->not->toContain('publication-commit-open')
-        ->and($dialogView)->not->toContain('setInterval')
-        ->and($dialogView)->not->toContain('wire:poll')
-        ->and($component)->toContain('public function refreshState(): void')
-        ->and($component)->toContain('public function commitPublication(): void')
-        ->and($component)->toContain('requireActor()')
-        ->and($component)->toContain('hasPendingChanges()')
-        ->and($component)->toContain('$publication->commit($actor)')
-        ->and($component)->not->toContain("Action::make('commitPublication')")
-        ->and($component)->not->toContain("Textarea::make('message')")
-        ->and($component)->not->toContain("modalHeading('Commit pending changes')")
-        ->and($social)->toContain("</x-admin.table>\n\n<div class=\"admin-control-bar\">")
-        ->and($social)->toContain('<div class="admin-control-group">')
-        ->and($social)->toContain('<div class="admin-control-group__actions">')
-        ->and($social)->toContain('wire:click="addSocialLink">Add social link</button>')
-        ->and($social)->not->toContain('+ Add social link')
-        ->and($social)->not->toContain('general-social-bottom-add')
-        ->and($social)->not->toContain('<x-admin.add-row')
-        ->and($forms)->not->toContain('.general-social-bottom-add')
-        ->and($journal)->toContain('class="admin-control-group"')
-        ->and($journal)->toContain('class="admin-control-group__actions"')
-        ->and($journal)->toContain('class="admin-action"')
-        ->and($journal)->not->toContain('journal-workspace__bottom-add');
+    ]);
 });

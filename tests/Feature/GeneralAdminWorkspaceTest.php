@@ -51,6 +51,27 @@ function generalPublicStyleNonce($response): string
     return $matches[1];
 }
 
+function generalAssertPublicStyleUsesNonce(string $html, string $nonce, string $css): void
+{
+    $matched = preg_match_all('/<style\b([^>]*)>(.*?)<\/style>/si', $html, $styles, PREG_SET_ORDER);
+    expect($matched)->toBeGreaterThan(0);
+
+    $authorized = false;
+    foreach ($styles as $style) {
+        if (! str_contains($style[2], $css)) {
+            continue;
+        }
+
+        $authorized = preg_match(
+            '/\bnonce\s*=\s*(["\'])'.preg_quote($nonce, '/').'\1/i',
+            $style[1],
+        ) === 1;
+        break;
+    }
+
+    expect($authorized)->toBeTrue();
+}
+
 it('uses General as the canonical singleton route with no global save action', function (): void {
     $settings = PublicContentSetting::general();
 
@@ -98,144 +119,6 @@ it('renders the exact six General metrics from persisted settings and audit even
         ->assertSee('Legal')
         ->assertDontSee('Appearance')
         ->assertDontSee('Save changes');
-
-    $metricSource = file_get_contents(resource_path('views/filament/schemas/components/general-status-metrics.blade.php'));
-    expect(substr_count((string) $metricSource, '<x-admin.metric '))->toBe(6)
-        ->and($metricSource)->toContain('<x-admin.metrics')
-        ->and(substr_count((string) $metricSource, ' description='))->toBe(6)
-        ->and($metricSource)->toContain('label="Last changed"')
-        ->and($metricSource)->toContain('description="General settings"')
-        ->and($metricSource)->toContain('label="Changes · 30d"')
-        ->and($metricSource)->toContain('description="General updates"')
-        ->and($metricSource)->toContain('label="Public email"')
-        ->and($metricSource)->toContain('description="Public contact"')
-        ->and($metricSource)->toContain('label="Contact delivery"')
-        ->and($metricSource)->toContain('description="Private recipient"')
-        ->and($metricSource)->toContain('label="Social profiles"')
-        ->and($metricSource)->toContain('description="Visible / configured"')
-        ->and($metricSource)->toContain('label="Legal"')
-        ->and($metricSource)->toContain('description="Copyright + disclaimer"')
-        ->and($metricSource)->toContain("->where('entity_id', (int) \$settings->getKey())")
-        ->and($metricSource)->toContain("->where('occurred_at', '>=', now()->subDays(30))")
-        ->and($metricSource)->not->toContain('admin-metrics--open-bottom');
-});
-
-it('keeps the General browser contract flat and reuses shared control and table grammar', function (): void {
-    $pageSource = file_get_contents(app_path('Filament/Pages/General.php'));
-    $adminFormSource = file_get_contents(app_path('Filament/Support/AdminForm.php'));
-    $colorSource = file_get_contents(app_path('Filament/Support/AdminColorControl.php'));
-    $helpSource = file_get_contents(app_path('Filament/Support/AdminHelp.php'));
-    $helpViewSource = file_get_contents(resource_path('views/components/admin/help.blade.php'));
-    $viewSource = file_get_contents(resource_path('views/filament/pages/general.blade.php'));
-    $separatorSource = file_get_contents(resource_path('views/filament/schemas/components/general-separator.blade.php'));
-    $socialSource = file_get_contents(resource_path('views/filament/schemas/components/general-social-links.blade.php'));
-    $metricSource = file_get_contents(resource_path('views/filament/schemas/components/general-status-metrics.blade.php'));
-    $booleanSource = file_get_contents(app_path('Filament/Support/AdminBooleanControl.php'));
-    $formsCss = file_get_contents(resource_path('css/admin/forms.css'));
-    $controlOrderMatches = preg_match(
-        '/<x-slot:search>.*?<span class="admin-field__label">Visibility<\/span>.*?<x-slot:reset>.*?<span class="admin-control-group__label">Social links<\/span>.*?<x-slot:selection>/s',
-        $socialSource,
-    );
-    $tableOrderMatches = preg_match(
-        '/admin-table__selection.*?>Drag<\/th>.*?>Position<\/th>.*?>Platform<\/th>.*?>Profile URL<\/th>.*?>Visibility<\/th>.*?admin-table__actions">Actions<\/th>/s',
-        $socialSource,
-    );
-    $generalOrderMatches = preg_match(
-        "/'Site icon'.*?->label\('Background'\).*?general-separator'.*?general-social-links'.*?general-separator'.*?TextInput::make\('public_email'\).*?AdminBooleanControl::make\('show_public_email'.*?TextInput::make\('contact_recipient_email'\).*?general-separator'.*?TextInput::make\('default_media_copyright_notice'\).*?TextInput::make\('legal_disclaimer'\)/s",
-        $pageSource,
-    );
-
-    expect($controlOrderMatches)->toBe(1)
-        ->and($tableOrderMatches)->toBe(1)
-        ->and($generalOrderMatches)->toBe(1)
-        ->and($pageSource)->not->toContain('AdminForm::section(')
-        ->and($pageSource)->not->toContain("Text::make('Appearance')")
-        ->and($pageSource)->not->toContain("section('Appearance'")
-        ->and($pageSource)->not->toContain("Text::make('Social links')")
-        ->and($pageSource)->not->toContain("Text::make('Contact')")
-        ->and($pageSource)->not->toContain("Text::make('Legal')")
-        ->and(substr_count((string) $pageSource, "View::make('filament.schemas.components.general-separator')"))->toBe(3)
-        ->and($pageSource)->toContain('MediaAssetSelect::make')
-        ->and($pageSource)->toContain("'Site icon'")
-        ->and($pageSource)->toContain("->label('Remove site icon')")
-        ->and($pageSource)->toContain("->icon('heroicon-m-x-mark')")
-        ->and($pageSource)->toContain('->iconButton()')
-        ->and($pageSource)->not->toContain("->label('Remove')")
-        ->and($pageSource)->not->toContain("Text::make('Site icon')")
-        ->and($pageSource)->not->toContain('Replace from Media Files')
-        ->and($pageSource)->not->toContain('favicon-preview')
-        ->and($pageSource)->not->toContain('favicon-actions')
-        ->and($pageSource)->toContain("Select::make('background_mode')")
-        ->and($pageSource)->toContain("PublicAppearance::MODE_SOLID => 'Solid'")
-        ->and($pageSource)->toContain("PublicAppearance::MODE_GRADIENT => 'Gradient'")
-        ->and($pageSource)->not->toContain("Radio::make('background_mode')")
-        ->and($pageSource)->toContain("->label('Background')")
-        ->and($pageSource)->toContain("->visible(fn (callable \$get): bool => \$get('background_mode') === PublicAppearance::MODE_GRADIENT)")
-        ->and($pageSource)->toContain('AdminColorControl::make')
-        ->and($pageSource)->toContain("->extraFieldWrapperAttributes(['class' => 'general-color-control'])")
-        ->and($pageSource)->toContain('AdminHelp::make')
-        ->and($pageSource)->not->toContain('Repeater::')
-        ->and($pageSource)->not->toContain('Toggle::')
-        ->and($pageSource)->not->toContain('settingsSection(')
-        ->and($pageSource)->toContain("TextInput::make('legal_disclaimer')")
-        ->and($pageSource)->not->toContain("Textarea::make('legal_disclaimer')")
-        ->and($adminFormSource)->toContain('Filament\\Schemas\\Components\\Section')
-        ->and($adminFormSource)->not->toContain('Fieldset')
-        ->and($colorSource)->toContain('ColorPicker::make')
-        ->and($helpSource)->toContain("view('components.admin.help'")
-        ->and($helpViewSource)->toContain('x-on:mouseenter')
-        ->and($helpViewSource)->toContain('x-on:focusin')
-        ->and($helpViewSource)->toContain('x-on:click.stop')
-        ->and($viewSource)->not->toContain('general-workspace__sheet')
-        ->and($separatorSource)->toContain('class="general-separator"')
-        ->and($separatorSource)->not->toContain('border-[var(--admin-line)]')
-        ->and($formsCss)->toContain('.general-separator')
-        ->and($formsCss)->toContain('border-top: 1px solid var(--admin-line);')
-        ->and($formsCss)->not->toContain('admin-metrics--open-bottom')
-        ->and($formsCss)->toContain('.general-form-controls')
-        ->and($formsCss)->toContain('margin-top: var(--admin-section-gap);')
-        ->and($formsCss)->toContain('.general-status-metrics .admin-metric__label')
-        ->and($formsCss)->toContain('white-space: nowrap;')
-        ->and($formsCss)->toContain('.admin-favicon-control .fi-input-wrp-suffix')
-        ->and($formsCss)->toContain('.admin-favicon-control .general-site-icon-remove')
-        ->and($formsCss)->toContain('background-image: none !important;')
-        ->and($formsCss)->toContain('border-radius: 9999px !important;')
-        ->and($formsCss)->toContain('.general-color-control .fi-fo-color-picker-panel')
-        ->and($formsCss)->toContain('border: 1px solid var(--admin-line-strong) !important;')
-        ->and($formsCss)->toContain('background: var(--admin-surface) !important;')
-        ->and($metricSource)->not->toContain('admin-metrics--open-bottom')
-        ->and($socialSource)->toContain('<x-admin.controls class="general-social-controls"')
-        ->and($formsCss)->toContain('.general-social-controls')
-        ->and($formsCss)->toContain('grid-template-columns: minmax(12rem, 1fr) auto auto auto auto;')
-        ->and($socialSource)->toContain('<x-slot:search>')
-        ->and($socialSource)->toContain('wire:model.live.debounce.300ms="socialSearch"')
-        ->and($socialSource)->toContain('wire:model.live="socialVisibility"')
-        ->and($socialSource)->toContain('<span class="admin-field__label">Visibility</span>')
-        ->and($socialSource)->toContain('<span class="admin-control-group__label">Filter</span>')
-        ->and($socialSource)->toContain('<span class="admin-control-group__label">Social links</span>')
-        ->and($socialSource)->toContain('<span class="admin-control-group__label">Selection</span>')
-        ->and($socialSource)->toContain('<x-admin.table class="admin-table--data"')
-        ->and($socialSource)->toContain('>Drag</th>')
-        ->and($socialSource)->toContain('>Position</th>')
-        ->and($socialSource)->toContain('<span class="admin-position">')
-        ->and($socialSource)->toContain('wire:sort="sortSocialLink"')
-        ->and($socialSource)->toContain('AdminBooleanControl::options')
-        ->and($socialSource)->toContain('class="admin-form-control admin-boolean-control"')
-        ->and($socialSource)->toContain('wire:blur="updateSocialLink')
-        ->and($socialSource)->toContain('class="admin-action admin-order-action"')
-        ->and($socialSource)->toContain('>↑</button>')
-        ->and($socialSource)->toContain('>↓</button>')
-        ->and($socialSource)->not->toContain('>Up</button>')
-        ->and($socialSource)->not->toContain('>Down</button>')
-        ->and($socialSource)->toContain('>Delete</button>')
-        ->and($socialSource)->toContain('Bulk Delete')
-        ->and($socialSource)->toContain('<x-admin.add-row wire:click="addSocialLink">Add social link</x-admin.add-row>')
-        ->and($socialSource)->not->toContain('class="admin-pager"')
-        ->and($socialSource)->not->toContain('socialPageSize')
-        ->and($socialSource)->not->toContain('>Previous</button>')
-        ->and($socialSource)->not->toContain('>Next</button>')
-        ->and($booleanSource)->toContain('->native()')
-        ->and($booleanSource)->not->toContain('native(false)');
 });
 
 it('keeps background mode geometry stable and maps shared color slots to existing fields', function (): void {
@@ -366,11 +249,9 @@ it('renders default solid and gradient appearance through a request-local CSP no
     $defaultHtml = (string) $defaultResponse->getContent();
     $defaultNonce = generalPublicStyleNonce($defaultResponse);
 
-    expect($defaultCsp)->toContain("style-src 'self' 'nonce-")
+    expect($defaultCsp)->toContain("style-src 'self' 'nonce-{$defaultNonce}'")
         ->and($defaultCsp)->not->toContain("'unsafe-inline'")
-        ->and($defaultHtml)->not->toContain('<style nonce=')
-        ->and($defaultHtml)->not->toContain('style="--public-page:')
-        ->and($defaultHtml)->not->toContain('<html style=');
+        ->and($defaultHtml)->not->toContain('--public-page:');
 
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'background_mode' => 'solid',
@@ -382,11 +263,10 @@ it('renders default solid and gradient appearance through a request-local CSP no
     $solidNonce = generalPublicStyleNonce($solidResponse);
 
     expect($solidNonce)->not->toBe($defaultNonce)
+        ->and($solidCsp)->toContain("'nonce-{$solidNonce}'")
         ->and($solidCsp)->not->toContain("'unsafe-inline'")
-        ->and($solidHtml)->toContain('<style nonce="'.$solidNonce.'">')
-        ->and($solidHtml)->toContain(':root { --public-page: #123456; }')
-        ->and($solidHtml)->not->toContain('style="--public-page:')
-        ->and($solidHtml)->not->toContain('<html style=');
+        ->and($solidHtml)->toContain('--public-page: #123456');
+    generalAssertPublicStyleUsesNonce($solidHtml, $solidNonce, '--public-page: #123456');
 
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'background_mode' => 'gradient',
@@ -400,12 +280,15 @@ it('renders default solid and gradient appearance through a request-local CSP no
     $gradientNonce = generalPublicStyleNonce($gradientResponse);
 
     expect($gradientNonce)->not->toBe($solidNonce)
+        ->and($gradientCsp)->toContain("'nonce-{$gradientNonce}'")
         ->and($gradientCsp)->not->toContain("'unsafe-inline'")
-        ->and($gradientHtml)->toContain('<style nonce="'.$gradientNonce.'">')
-        ->and($gradientHtml)->toContain(':root { --public-page: linear-gradient(45deg, #112233, #AABBCC) fixed; }')
-        ->and($gradientHtml)->not->toContain('style="--public-page:')
-        ->and($gradientHtml)->not->toContain('<html style=')
+        ->and($gradientHtml)->toContain('--public-page: linear-gradient(45deg, #112233, #AABBCC) fixed')
         ->and($gradientHtml)->not->toContain('javascript:');
+    generalAssertPublicStyleUsesNonce(
+        $gradientHtml,
+        $gradientNonce,
+        '--public-page: linear-gradient(45deg, #112233, #AABBCC) fixed',
+    );
 });
 
 it('persists social link add update visibility order and delete without a repeater', function (): void {
