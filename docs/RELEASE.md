@@ -10,7 +10,7 @@ Canonical verification/release workflow:
 .github/workflows/release.yml
 ```
 
-It runs for pull requests targeting `dev` or `main`, pushes to either branch and explicit `workflow_dispatch` runs. Release-image publication is restricted to verified non-PR runs on `main`. Checks on dev and worker branches never publish release images. The disposable PostgreSQL service is marked with `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` inside GitHub Actions.
+It runs for pull requests targeting `dev` or `main`, direct pushes to `main`, and explicit `workflow_dispatch` runs. Direct pushes to `dev` do not automatically run the canonical full verification suite. Release-image publication is restricted to verified non-PR runs on `main`. Checks on dev and worker branches never publish release images. The disposable PostgreSQL service is marked with `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` inside GitHub Actions.
 
 Rapid protected-Validation browser workflow:
 
