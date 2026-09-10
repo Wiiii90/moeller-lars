@@ -43,7 +43,31 @@
     flex: 1 1 16rem;
 }
 
-.admin-data-controls,
+.admin-data-controls {
+    display: flex;
+    gap: .85rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.admin-data-controls > * {
+    min-width: 0;
+}
+
+.admin-data-controls > :is(.admin-field, .admin-data-field, .admin-task-field) {
+    flex: 0 1 10rem;
+    min-width: 8rem;
+}
+
+.admin-data-controls--has-search > :first-child {
+    flex: 1 1 16rem;
+    min-width: 12rem;
+}
+
+.admin-data-controls > :is(.admin-control-group, .admin-data-control-group, .admin-task-control-group) {
+    flex: 0 0 auto;
+}
+
 .media-workspace__controls,
 .journal-workspace__controls {
     display: grid;
@@ -375,6 +399,24 @@
 
     .admin-control-bar {
         align-items: stretch;
+    }
+
+    .admin-data-controls {
+        align-items: stretch;
+    }
+
+    .admin-data-controls > :is(
+        .admin-field,
+        .admin-data-field,
+        .admin-task-field,
+        .admin-control-group,
+        .admin-data-control-group,
+        .admin-task-control-group
+    ),
+    .admin-data-controls--has-search > :first-child {
+        width: 100%;
+        max-width: none;
+        flex: 1 1 100%;
     }
 
     .admin-field,

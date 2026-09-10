@@ -5,8 +5,6 @@
 }
 
 .custom-page-workspace__controls {
-    grid-template-columns: minmax(14rem, 1.7fr) minmax(9rem, .7fr) auto auto auto;
-    gap: .65rem;
     padding: .85rem 0;
 }
 
@@ -119,11 +117,6 @@
 }
 
 @media (max-width: 1180px) {
-    .custom-page-workspace__controls {
-        grid-template-columns: minmax(12rem, 1.4fr) minmax(8rem, .7fr) auto auto auto;
-        gap: .55rem;
-    }
-
     .custom-page-component-sequence {
         --admin-hierarchy-row-gap: .55rem;
         --admin-hierarchy-columns:
@@ -139,8 +132,4 @@
 
 @media (max-width: 820px) {
     .custom-page-workspace__page-actions { flex-wrap: wrap; }
-    .custom-page-workspace__controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .custom-page-workspace__search,
-    .custom-page-workspace__page,
-    .custom-page-workspace__selection { grid-column: 1 / -1; }
 }

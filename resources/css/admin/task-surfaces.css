@@ -5,14 +5,7 @@
 }
 
 .admin-task-controls {
-    display: grid;
-    gap: .65rem;
     padding: .85rem 0;
-    align-items: end;
-}
-
-.admin-task-controls--pages {
-    grid-template-columns: minmax(14rem, 1.7fr) minmax(8rem, .72fr) minmax(8rem, .72fr) auto auto auto;
 }
 
 .admin-task-field,
@@ -499,19 +492,9 @@
     white-space: nowrap;
 }
 
-@media (max-width: 1180px) {
-    .admin-task-controls--pages {
-        grid-template-columns: minmax(12rem, 1.4fr) minmax(8rem, .7fr) minmax(8rem, .7fr) auto auto auto;
-        gap: .55rem;
-    }
-}
-
 @media (max-width: 820px) {
-    .admin-task-controls--pages,
     .admin-task-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-    .admin-task-controls--pages .admin-task-field:first-child,
-    .admin-task-controls--pages .admin-selection,
     .admin-task-form .admin-task-field:nth-child(2) { grid-column: 1 / -1; }
 
     .admin-selection__menu { right: auto; left: 0; }

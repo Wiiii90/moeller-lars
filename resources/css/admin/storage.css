@@ -305,18 +305,6 @@ button.admin-storage__attention-row:focus-visible {
     white-space: nowrap;
 }
 
-.admin-storage__controls {
-    display: grid;
-    grid-template-columns:
-        minmax(14rem, 1.4fr)
-        minmax(8rem, .7fr)
-        minmax(9rem, .8fr)
-        minmax(12rem, 1fr)
-        auto;
-    gap: .85rem;
-    align-items: end;
-}
-
 .admin-storage__data-surface {
     margin: 0;
 }
@@ -436,9 +424,5 @@ button.admin-storage__attention-row:focus-visible {
     .admin-storage__segment-track {
         grid-column: 1 / -1;
         grid-row: 2;
-    }
-
-    .admin-storage__controls {
-        grid-template-columns: 1fr;
     }
 }

@@ -2,7 +2,13 @@
     'ariaLabel' => null,
 ])
 
-<div {{ $attributes->class('admin-data-controls') }} @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif>
+<div
+    {{ $attributes->class([
+        'admin-data-controls',
+        'admin-data-controls--has-search' => isset($search),
+    ]) }}
+    @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
+>
     @isset($search)
         {{ $search }}
     @endisset

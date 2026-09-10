@@ -4,7 +4,6 @@
 }
 
 .admin-dashboard__feed-controls {
-    grid-template-columns: minmax(14rem, 1fr) minmax(8rem, max-content) auto;
     padding: .85rem 0;
 }
 
@@ -342,12 +341,6 @@
 
     .admin-dashboard__activity-clock .activity-clock__face {
         width: min(100%, 8rem);
-    }
-}
-
-@media (max-width: 760px) {
-    .admin-dashboard__feed-controls {
-        grid-template-columns: 1fr;
     }
 }
 

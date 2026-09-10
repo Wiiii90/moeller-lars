@@ -182,10 +182,6 @@
     margin-top: var(--admin-section-gap);
 }
 
-.general-social-controls {
-    grid-template-columns: minmax(12rem, 1fr) auto auto auto auto;
-}
-
 .general-form-controls .admin-form-label-with-help .admin-help {
     height: 1em;
     align-self: center;
@@ -561,10 +557,6 @@
 }
 
 @media (max-width: 760px) {
-    .general-social-controls {
-        grid-template-columns: 1fr;
-    }
-
     .admin-component-image-preview,
     .admin-favicon-preview {
         grid-template-columns: 1fr;
