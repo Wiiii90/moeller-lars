@@ -191,14 +191,6 @@
     align-self: center;
 }
 
-.general-status-metrics .admin-metric__label,
-.general-status-metrics .admin-metric__value,
-.general-status-metrics .admin-metric__detail {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .general-separator {
     width: 100%;
     border: 0;
