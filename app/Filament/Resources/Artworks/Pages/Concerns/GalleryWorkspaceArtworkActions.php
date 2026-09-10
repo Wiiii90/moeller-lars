@@ -7,6 +7,7 @@ use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Support\MediaReferenceCatalog;
+use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
@@ -78,6 +79,14 @@ trait GalleryWorkspaceArtworkActions
             ->extraModalWindowAttributes(['class' => 'media-file-dialog'])
             ->action(function (array $arguments): void {
                 $asset = $this->primaryMediaAsset($arguments);
+                $affectedArtworkIds = ArtworkMedia::query()
+                    ->where('media_asset_id', $asset->getKey())
+                    ->where('role', 'primary')
+                    ->pluck('artwork_id')
+                    ->map(static fn (mixed $id): int => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
 
                 try {
                     app(MediaAssetEditorialService::class)->delete($asset);
@@ -88,6 +97,7 @@ trait GalleryWorkspaceArtworkActions
 
                     $fresh = $asset->fresh();
                     if ($fresh instanceof MediaAsset && $fresh->getAttribute('state') === 'deleted') {
+                        $this->detachGalleryArtworksAfterPrimaryMediaDelete($affectedArtworkIds);
                         $this->refreshWorkspaceAfterMutation();
                         Notification::make()
                             ->title('File cleanup failed')
@@ -113,6 +123,7 @@ trait GalleryWorkspaceArtworkActions
                     return;
                 }
 
+                $this->detachGalleryArtworksAfterPrimaryMediaDelete($affectedArtworkIds);
                 $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('File deleted')->success()->send();
             });
@@ -276,6 +287,26 @@ trait GalleryWorkspaceArtworkActions
         }
 
         return $asset;
+    }
+
+    /** @param list<int> $artworkIds */
+    private function detachGalleryArtworksAfterPrimaryMediaDelete(array $artworkIds): void
+    {
+        if ($artworkIds === []) {
+            return;
+        }
+
+        $artworks = Artwork::query()
+            ->whereIn('id', $artworkIds)
+            ->whereNotNull('artwork_category_id')
+            ->orderBy('artwork_category_id')
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($artworks as $artwork) {
+            app(ArtworkGalleryAssignmentService::class)->detach($artwork);
+        }
     }
 
     /** @return list<array{type:string,label:string,url:?string}> */
