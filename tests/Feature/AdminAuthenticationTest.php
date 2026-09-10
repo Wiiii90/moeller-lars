@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Pages\Dashboard;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\User;
@@ -46,10 +47,12 @@ it('denies the admin surface to authenticated non-admin users', function (): voi
         ->assertForbidden();
 });
 
-it('allows admin users into the admin surface', function (): void {
+it('redirects admin users to the canonical dashboard', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web')
         ->get('/admin')
-        ->assertSuccessful();
+        ->assertRedirect(Dashboard::getUrl());
+
+    $this->get('/admin/dashboard')->assertSuccessful();
 });
 
 it('keeps unpublished media private while allowing admin preview', function (): void {

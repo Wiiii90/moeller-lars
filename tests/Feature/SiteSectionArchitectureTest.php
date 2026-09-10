@@ -4,6 +4,7 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\PublicNavigationService;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Publication\PublicationService;
 use App\Models\SiteSection;
 use App\Models\User;
 use App\Routing\SiteNodeRoute;
@@ -52,17 +53,24 @@ it('builds navigation from published SiteSections and keeps navigation groups ro
         ->and($hidden->state)->toBe('hidden');
 });
 
-it('uses current SiteSection state as the public availability gate', function (): void {
-    $this->actingAs(User::factory()->admin()->create(), 'web');
+it('uses committed SiteSection state as the public availability gate', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
     $service = app(SiteSectionEditorialService::class);
     $page = $service->createCustomPage('Statement', 'statement-architecture');
 
     $this->get('/statement-architecture')->assertNotFound();
 
     $service->updatePlacement($page, 'published', false, null);
+    $this->get('/statement-architecture')->assertNotFound();
+
+    app(PublicationService::class)->commit($actor);
     $this->get('/statement-architecture')->assertSuccessful();
 
     $service->updatePlacement($page, 'hidden', false, null);
+    $this->get('/statement-architecture')->assertSuccessful();
+
+    app(PublicationService::class)->commit($actor);
     $this->get('/statement-architecture')->assertNotFound();
 });
 

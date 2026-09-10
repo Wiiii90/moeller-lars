@@ -1,16 +1,23 @@
 <?php
 
+use App\Domain\Publication\PublicationService;
 use App\Mail\WebsiteContactMessage;
 use App\Models\ContactMessage;
 use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
+
+function commitContactWorkingState(): void
+{
+    app(PublicationService::class)->commit(User::factory()->admin()->create());
+}
 
 function enablePublishedContactForm(): void
 {
@@ -39,6 +46,7 @@ function enablePublishedContactForm(): void
         'form_state' => 'enabled',
     ]]);
     $settings->save();
+    commitContactWorkingState();
 }
 
 function contactPayload(array $overrides = []): array
@@ -96,6 +104,7 @@ it('delivers to the private General recipient with the configured sender and vis
     PublicContentSetting::general()->update([
         'contact_recipient_email' => 'private@example.test',
     ]);
+    commitContactWorkingState();
 
     $this->post('/contact', contactPayload())
         ->assertRedirect()
@@ -132,6 +141,7 @@ it('falls back to the runtime recipient when General has no private recipient', 
     Mail::fake();
     enablePublishedContactForm();
     PublicContentSetting::general()->update(['contact_recipient_email' => null]);
+    commitContactWorkingState();
 
     $this->post('/contact', contactPayload())->assertSessionHas('contact_success');
 
@@ -147,6 +157,7 @@ it('keeps a locally received contact when mail delivery is unavailable', functio
     Mail::fake();
     enablePublishedContactForm();
     PublicContentSetting::general()->update(['contact_recipient_email' => null]);
+    commitContactWorkingState();
 
     $this->post('/contact', contactPayload())
         ->assertRedirect()
@@ -254,6 +265,7 @@ it('requires an enabled Contact component on a published Custom Page', function 
         'form_state' => 'enabled',
     ]]);
     $settings->save();
+    commitContactWorkingState();
 
     $this->post('/contact', contactPayload())->assertNotFound();
 
@@ -265,6 +277,7 @@ it('requires an enabled Contact component on a published Custom Page', function 
         'social_platforms' => [],
         'form_state' => 'hidden',
     ]]]);
+    commitContactWorkingState();
 
     $this->post('/contact', contactPayload())->assertNotFound();
 

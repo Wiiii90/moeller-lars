@@ -11,6 +11,7 @@ use App\Domain\Content\PublicNavigationService;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
+use App\Domain\Publication\PublicationService;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
@@ -23,7 +24,8 @@ use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
-    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $this->actor = User::factory()->admin()->create();
+    $this->actingAs($this->actor, 'web');
 });
 
 function acceptanceAsset(string $suffix): MediaAsset
@@ -93,8 +95,15 @@ it('persists Gallery identity settings slug redirects and homepage eligibility',
         ->and($gallery->getAttribute('show_on_home'))->toBeTrue()
         ->and($section->getAttribute('title'))->toBe('Renamed Gallery')
         ->and($section->getAttribute('navigation_label'))->toBe('Renamed Gallery')
-        ->and($section->getAttribute('slug'))->toBe('renamed-gallery')
-        ->and($this->get('/acceptance-gallery')->status())->toBeIn([301, 302]);
+        ->and($section->getAttribute('slug'))->toBe('renamed-gallery');
+
+    $this->get('/acceptance-gallery')->assertNotFound();
+
+    app(PublicationService::class)->commit($this->actor);
+
+    $this->get('/acceptance-gallery')
+        ->assertRedirect('/renamed-gallery')
+        ->assertStatus(301);
 });
 
 it('restricts destructive SiteSection deletion while descendants or Journal entries exist', function (): void {
