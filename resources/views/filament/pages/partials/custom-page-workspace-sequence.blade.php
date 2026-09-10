@@ -9,18 +9,18 @@
                         x-effect="$el.indeterminate = ($wire.selectedComponentTargets.length + $wire.selectedChildTargets.length > 0) && ($wire.selectedComponentTargets.length + $wire.selectedChildTargets.length < {{ $visibleSelectableCount }})"
                     >
                 </label>
-                <span class="custom-page-component-sequence__drag-heading" aria-label="Drag"></span>
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
+                <span class="custom-page-component-sequence__drag-heading"><span class="sr-only">Drag</span></span>
+                <span>Position</span>
+                <span>Component</span>
+                <span>Content</span>
                 <span class="custom-page-component-sequence__status-heading">Status</span>
                 <span class="custom-page-component-sequence__actions-heading">Actions</span>
             </div>
 
             @if ($components === [] && $unfilteredComponentCount === 0)
-                <x-admin.empty-state kicker="" title="No components" :minimal="true" />
+                <x-admin.empty-state title="No components" :minimal="true" />
             @elseif ($components === [])
-                <x-admin.empty-state kicker="" title="No matching components" :minimal="true">
+                <x-admin.empty-state title="No matching components" :minimal="true">
                     <x-slot:actions>
                         <button class="admin-action" type="button" wire:click="resetComponentFilters">Clear filters</button>
                     </x-slot:actions>
@@ -84,6 +84,14 @@
                                 <div class="custom-page-component__children admin-hierarchy__children">
                                     <div class="custom-page-component__children-rows admin-hierarchy__children-rows" @if ($reorderEnabled) wire:sort="sortChild" @endif>
                                         @foreach ($component['children'] as $child)
+                                            @php
+                                                $childKindLabel = match ($child['kind']) {
+                                                    'cv' => 'CV entry',
+                                                    'list' => 'List item',
+                                                    'contact' => 'Contact item',
+                                                    default => ucfirst((string) $child['kind']),
+                                                };
+                                            @endphp
                                             <div
                                                 class="custom-page-child-row admin-hierarchy__row is-child {{ ($child['parent_published'] ?? true) ? '' : 'is-parent-unpublished' }}"
                                                 wire:key="child-{{ $component['target'] }}-{{ $child['key'] }}"
@@ -93,15 +101,13 @@
                                                     <input type="checkbox" value="{{ $child['target'] }}" wire:model.live="selectedChildTargets">
                                                 </label>
 
-                                                <span aria-hidden="true"></span>
-                                                <span aria-hidden="true"></span>
+                                                <button class="admin-drag-handle custom-page-child-row__drag" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $child['entry'] }}">⋮⋮</button>
 
-                                                <div class="custom-page-child-row__position">
-                                                    <button class="admin-drag-handle custom-page-child-row__drag" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $child['entry'] }}">⋮⋮</button>
-                                                    <span class="admin-position" aria-label="Position {{ $child['position'] }}">
-                                                        {{ str_pad((string) $child['position'], 2, '0', STR_PAD_LEFT) }}
-                                                    </span>
-                                                </div>
+                                                <span class="admin-position" aria-label="Position {{ $child['position'] }}">
+                                                    {{ str_pad((string) $child['position'], 2, '0', STR_PAD_LEFT) }}
+                                                </span>
+
+                                                <span class="custom-page-child-row__kind">{{ $childKindLabel }}</span>
 
                                                 <div class="custom-page-child-row__content admin-hierarchy__content">
                                                     @if ($child['kind'] === 'cv' || $child['kind'] === 'list')
