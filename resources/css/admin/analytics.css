@@ -8,6 +8,7 @@
     min-width: 0;
     height: 100%;
     margin: 0;
+    padding-top: var(--admin-section-gap);
 }
 
 .analytics-visual-stage .analytics-world__canvas {
@@ -91,7 +92,7 @@
     display: grid;
     min-width: 0;
     height: 100%;
-    padding-left: 2rem;
+    padding-left: var(--admin-section-space);
     align-content: start;
     border-left: 1px solid var(--admin-line);
     overflow-y: auto;
@@ -100,7 +101,7 @@
 
 .analytics-stage-rail__heading {
     display: flex;
-    min-height: 3.5rem;
+    min-height: calc(var(--admin-control-height) + var(--admin-section-gap));
     gap: 1rem;
     align-items: center;
     justify-content: space-between;
@@ -129,6 +130,10 @@
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
+}
+
+.analytics-stage-signals__source {
+    color: var(--admin-accent);
 }
 
 .analytics-stage-rail__heading strong {

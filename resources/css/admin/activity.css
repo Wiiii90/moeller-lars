@@ -21,7 +21,7 @@
 .activity-atlas__visual-header {
     display: flex;
     min-width: 0;
-    min-height: var(--admin-control-height);
+    min-height: calc(var(--admin-control-height) + var(--admin-section-gap));
     gap: 1rem;
     padding-bottom: var(--admin-section-gap);
     align-items: center;
@@ -187,6 +187,12 @@
     text-transform: uppercase;
 }
 
+.activity-publication__staged > span,
+.activity-publication__latest > span,
+.activity-publication__recent > span {
+    color: var(--admin-accent);
+}
+
 .activity-clock__meta strong,
 .activity-calendar__summary strong {
     min-width: 0;
@@ -316,7 +322,7 @@
 
 .activity-publication__header {
     display: flex;
-    min-height: var(--admin-control-height);
+    min-height: calc(var(--admin-control-height) + var(--admin-section-gap));
     padding-bottom: var(--admin-section-gap);
     align-items: center;
     border-bottom: 1px solid var(--admin-line);
