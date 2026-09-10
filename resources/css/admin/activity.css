@@ -130,8 +130,6 @@
 
 .activity-clock__hand {
     stroke-linecap: round;
-    transform-box: view-box;
-    transform-origin: 160px 160px;
 }
 
 .activity-clock__hand--hour {
