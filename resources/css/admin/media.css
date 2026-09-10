@@ -118,55 +118,6 @@
     flex-wrap: nowrap;
 }
 
-.media-workspace__multi-action-anchor {
-    position: relative;
-    display: inline-flex;
-    min-height: var(--admin-control-height);
-    align-items: stretch;
-}
-
-.media-workspace__multi-action-menu {
-    position: absolute;
-    top: calc(100% + .3rem);
-    right: 0;
-    z-index: 30;
-    display: grid;
-    min-width: 10rem;
-    padding: .25rem;
-    border: 1px solid var(--admin-line-strong);
-    background: var(--admin-surface);
-    box-shadow: 0 .6rem 1.5rem rgba(0, 0, 0, .12);
-}
-
-.dark .media-workspace__multi-action-menu {
-    background: rgb(24, 24, 27);
-}
-
-.media-workspace__multi-action-menu .admin-action {
-    width: 100%;
-    justify-content: flex-start;
-}
-
-.media-workspace__selection-count {
-    display: inline-flex;
-    min-width: 1.2rem;
-    height: 1.2rem;
-    margin-left: .4rem;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--admin-line-strong);
-    border-radius: 999px;
-    font-size: .55rem;
-    font-variant-numeric: tabular-nums;
-}
-
-/* Selection treatment is specific to the Media Files table. */
-.media-workspace__table tbody tr.is-selected {
-    background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
-    outline: 2px solid var(--admin-accent);
-    outline-offset: -2px;
-}
-
 .media-workspace__thumb-head,
 .media-workspace__thumb {
     width: 5rem;
@@ -375,13 +326,7 @@
 }
 
 .media-workspace__grid-item.is-selected::after {
-    position: absolute;
-    inset: 0;
     z-index: 10;
-    box-sizing: border-box;
-    border: 2px solid var(--admin-accent);
-    content: "";
-    pointer-events: none;
 }
 
 .media-workspace__visual {
@@ -850,86 +795,15 @@
     }
 }
 
-/* Media Files selection and preview finish. */
+/* Media Files keeps selection placement; dimensions come from the shared selection authority. */
 .media-workspace__selection-head,
 .media-workspace__selection-cell {
-    width: 2.5rem;
-    padding-inline: .5rem !important;
-    text-align: center !important;
     vertical-align: middle;
 }
 
 .media-workspace__selection-checkbox {
     display: inline-grid;
-    width: 1.125rem;
-    height: 1.125rem;
-    flex: 0 0 1.125rem;
     place-items: center;
-}
-
-.media-workspace__selection-head input[type="checkbox"],
-.media-workspace__selection-cell input[type="checkbox"],
-.media-workspace__selection-checkbox input[type="checkbox"] {
-    display: grid;
-    width: 1.125rem;
-    height: 1.125rem;
-    margin: 0 auto;
-    padding: 0;
-    appearance: none;
-    place-content: center;
-    border: 1px solid var(--admin-line-strong);
-    border-radius: .22rem;
-    background: transparent;
-    color: var(--admin-text);
-    cursor: pointer;
-}
-
-.media-workspace__selection-head input[type="checkbox"]::before,
-.media-workspace__selection-cell input[type="checkbox"]::before,
-.media-workspace__selection-checkbox input[type="checkbox"]::before {
-    width: .52rem;
-    height: .3rem;
-    border-bottom: 2px solid currentColor;
-    border-left: 2px solid currentColor;
-    content: "";
-    transform: translateY(-.04rem) rotate(-45deg) scale(0);
-    transform-origin: center;
-}
-
-.media-workspace__selection-head input[type="checkbox"]:checked,
-.media-workspace__selection-cell input[type="checkbox"]:checked,
-.media-workspace__selection-checkbox input[type="checkbox"]:checked,
-.media-workspace__selection-head input[type="checkbox"]:indeterminate {
-    border-color: var(--admin-accent);
-    background: var(--admin-accent);
-}
-
-.media-workspace__selection-head input[type="checkbox"]:checked::before,
-.media-workspace__selection-cell input[type="checkbox"]:checked::before,
-.media-workspace__selection-checkbox input[type="checkbox"]:checked::before {
-    transform: translateY(-.04rem) rotate(-45deg) scale(1);
-}
-
-.media-workspace__selection-head input[type="checkbox"]:indeterminate::before {
-    width: .56rem;
-    height: 0;
-    border-bottom: 2px solid currentColor;
-    border-left: 0;
-    transform: none;
-}
-
-.media-workspace__selection-head input[type="checkbox"]:focus-visible,
-.media-workspace__selection-cell input[type="checkbox"]:focus-visible,
-.media-workspace__selection-checkbox input[type="checkbox"]:focus-visible {
-    outline: 2px solid var(--admin-accent);
-    outline-offset: 2px;
-}
-
-.media-workspace__selection-head input[type="checkbox"]:disabled,
-.media-workspace__selection-cell input[type="checkbox"]:disabled,
-.media-workspace__selection-checkbox input[type="checkbox"]:disabled {
-    opacity: .4;
-    cursor: default;
 }
 
 .media-file-dialog .media-file-dialog__preview {
@@ -1023,12 +897,6 @@
 .media-workspace__action-icon {
     width: 1rem;
     height: 1rem;
-}
-
-.media-workspace .media-workspace__selection-trigger {
-    min-width: 8.5rem;
-    padding-inline: .58rem;
-    justify-content: center;
 }
 
 .media-workspace .media-workspace__filename-button {
@@ -1127,19 +995,6 @@
 .media-workspace__table .media-workspace__actions > .admin-toolbar {
     justify-content: flex-start;
     flex-wrap: nowrap;
-}
-
-.media-workspace .media-workspace__selection-trigger {
-    display: inline-flex;
-    min-height: var(--admin-control-height);
-    align-items: center;
-    line-height: 1;
-}
-
-.media-workspace__selection-count {
-    flex: 0 0 auto;
-    font-size: .55rem;
-    line-height: 1;
 }
 
 /* Fixed Media Files upload surface and integrated progress. */

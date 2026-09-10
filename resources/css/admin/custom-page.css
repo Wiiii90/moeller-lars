@@ -4,10 +4,6 @@
     display: none;
 }
 
-.custom-page-workspace__controls {
-    padding: .85rem 0;
-}
-
 .custom-page-workspace__page-actions {
     min-height: var(--admin-control-height);
     justify-content: flex-start;
@@ -55,11 +51,7 @@
 }
 
 .custom-page-component-add-row {
-    display: flex;
-    width: 100%;
-    min-height: 2.8rem;
-    margin: 0 0 .35rem;
-    padding: .35rem .5rem .35rem calc(
+    --admin-add-row-inset: calc(
         var(--admin-hierarchy-select-column)
         + var(--admin-hierarchy-drag-column)
         + var(--admin-hierarchy-position-column)
@@ -67,37 +59,7 @@
         + var(--admin-hierarchy-row-gap)
         + var(--admin-hierarchy-row-gap)
     );
-    align-items: center;
-    gap: .55rem;
-    border: 0;
-    background: transparent;
-    color: var(--admin-muted);
-    font: inherit;
-    cursor: pointer;
-    text-align: left;
-}
-
-.custom-page-component-add-row:hover,
-.custom-page-component-add-row:focus-visible {
-    background: var(--admin-subtle);
-    color: var(--admin-text);
-    outline: none;
-}
-
-.custom-page-component-add-row span {
-    display: grid;
-    width: 1.65rem;
-    height: 1.65rem;
-    place-items: center;
-    border: 1px solid var(--admin-line-strong);
-    border-radius: .2rem;
-    font-size: 1rem;
-    line-height: 1;
-}
-
-.custom-page-component-add-row strong {
-    font-size: .73rem;
-    font-weight: 600;
+    margin: 0 0 .35rem;
 }
 
 .custom-page-dialog .fi-modal-footer-actions {

@@ -74,10 +74,22 @@
     align-items: end;
 }
 
+.admin-task-controls,
+.custom-page-workspace__controls,
+.gallery-workspace__controls,
+.media-workspace__controls {
+    padding: .85rem 0;
+    border-bottom: 1px solid var(--admin-line-strong);
+}
+
 .admin-field,
 .admin-control-group,
 .admin-data-field,
 .admin-data-control-group,
+.admin-task-field,
+.admin-task-control-group,
+.gallery-workspace__field,
+.gallery-workspace__control-group,
 .media-workspace__field,
 .media-workspace__control-group {
     display: grid;
@@ -94,6 +106,10 @@
 .admin-control-group__label,
 .admin-data-field > span,
 .admin-data-control-label,
+.admin-task-field > span,
+.admin-task-control-label,
+.gallery-workspace__field > span,
+.gallery-workspace__control-label,
 .media-workspace__field > span,
 .media-workspace__control-label {
     color: var(--admin-muted);
@@ -108,6 +124,10 @@
 .admin-field select,
 .admin-data-field input,
 .admin-data-field select,
+.admin-task-field input,
+.admin-task-field select,
+.gallery-workspace__field input,
+.gallery-workspace__field select,
 .media-workspace__field input,
 .media-workspace__field select {
     box-sizing: border-box;
@@ -130,6 +150,10 @@
 .admin-field select:focus,
 .admin-data-field input:focus,
 .admin-data-field select:focus,
+.admin-task-field input:focus,
+.admin-task-field select:focus,
+.gallery-workspace__field input:focus,
+.gallery-workspace__field select:focus,
 .media-workspace__field input:focus,
 .media-workspace__field select:focus {
     border-color: var(--admin-accent);
@@ -137,6 +161,8 @@
 
 .admin-field input::placeholder,
 .admin-data-field input::placeholder,
+.admin-task-field input::placeholder,
+.gallery-workspace__field input::placeholder,
 .media-workspace__field input::placeholder {
     color: var(--admin-faint);
     opacity: 1;
@@ -152,11 +178,13 @@
 
 .admin-control-bar .admin-action,
 .admin-data-controls .admin-action,
+.gallery-workspace__controls .admin-action,
 .media-workspace__controls .admin-action {
     min-height: var(--admin-control-height);
 }
 
 .admin-data-control-group > .admin-action,
+.gallery-workspace__control-group > .admin-action,
 .media-workspace__control-group > .admin-action {
     justify-self: start;
 }
@@ -279,16 +307,12 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     gap: 1rem;
-    margin-top: 1rem;
-    align-items: center;
-    color: var(--admin-muted);
-    font-size: .72rem;
-}
-
-.admin-pager {
     margin-top: 0;
     padding-top: var(--admin-section-gap);
+    align-items: center;
     border-top: 1px solid var(--admin-line-strong);
+    color: var(--admin-muted);
+    font-size: .72rem;
 }
 
 .admin-pager__meta {
