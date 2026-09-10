@@ -140,7 +140,9 @@
                             </th>
                             <th scope="col" class="admin-table__drag">Drag</th>
                             <th scope="col" class="admin-table__position">Position</th>
-                            <th scope="col" class="journal-visual">Image</th>
+                            @if ($isBlog)
+                                <th scope="col" class="journal-visual">Image</th>
+                            @endif
                             <th scope="col">{{ $isBlog ? 'Post' : 'Exhibition' }}</th>
                             <th scope="col">Status</th>
                             @if ($isBlog)
@@ -153,7 +155,7 @@
                         </tr>
                     </thead>
                     <tbody @if ($dragEnabled) wire:sort="{{ $isBlog ? 'sortPost' : 'sortExhibition' }}" @endif>
-                        @foreach ($entries as $entry)
+                        @forelse ($entries as $entry)
                             <tr
                                 class="{{ in_array($entry['id'], $selectedIds, true) ? 'is-selected' : '' }}"
                                 wire:key="journal-{{ $template }}-{{ $entry['id'] }}"
@@ -168,22 +170,24 @@
                                 </td>
                                 <td class="admin-table__drag">
                                     <button
-                                        class="admin-action admin-order-action"
+                                        class="admin-drag-handle"
                                         type="button"
                                         @if ($dragEnabled) wire:sort:handle title="Drag to reorder" @else disabled title="Drag reorder is available only with no search/filter and all entries on one page" @endif
                                         aria-label="Drag {{ $entry['title'] }} to reorder"
-                                    >⠿</button>
+                                    >⋮⋮</button>
                                 </td>
                                 <td class="admin-table__position"><span class="admin-position">{{ $entry['rank'] }}</span></td>
-                                <td class="journal-visual">
-                                    <div class="journal-visual__thumbnail">
-                                        @if ($entry['thumbnail_url'])
-                                            <img src="{{ $entry['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
-                                        @else
-                                            <span aria-label="No image">—</span>
-                                        @endif
-                                    </div>
-                                </td>
+                                @if ($isBlog)
+                                    <td class="journal-visual">
+                                        <div class="journal-visual__thumbnail">
+                                            @if ($entry['thumbnail_url'])
+                                                <img src="{{ $entry['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                            @else
+                                                <span aria-label="No image">—</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                @endif
                                 <td class="admin-table__identity">
                                     <strong>{{ $entry['title'] }}</strong>
                                     @if ($isBlog && $entry['excerpt'])
@@ -206,22 +210,29 @@
                                     <x-admin.toolbar>
                                         @if ($isBlog)
                                             <button class="admin-action" type="button" wire:click="mountAction('editPost', { post: {{ $entry['id'] }} })">Edit</button>
-                                            @switch($entry['state'])
-                                                @case('published')
-                                                    <button class="admin-action admin-action--state" type="button" wire:click="unpublishPost({{ $entry['id'] }})">Unpublish</button>
-                                                    <button class="admin-action" type="button" wire:click="archivePost({{ $entry['id'] }})">Archive</button>
-                                                    @break
-                                                @case('scheduled')
-                                                    <button class="admin-action admin-action--state" type="button" wire:click="restorePostDraft({{ $entry['id'] }})">Cancel schedule</button>
-                                                    @break
-                                                @case('archived')
-                                                    <button class="admin-action admin-action--state" type="button" wire:click="restorePostDraft({{ $entry['id'] }})">Restore</button>
-                                                    @break
-                                                @default
-                                                    <button class="admin-action admin-action--state" type="button" wire:click="publishPost({{ $entry['id'] }})">Publish</button>
-                                                    <button class="admin-action" type="button" wire:click="mountAction('schedulePost', { post: {{ $entry['id'] }} })">Schedule</button>
-                                                    <button class="admin-action" type="button" wire:click="archivePost({{ $entry['id'] }})">Archive</button>
-                                            @endswitch
+
+                                            @if ($entry['state'] === 'published')
+                                                <button class="admin-action admin-action--state" type="button" wire:click="unpublishPost({{ $entry['id'] }})">Unpublish</button>
+                                            @elseif ($entry['state'] === 'scheduled')
+                                                <button class="admin-action admin-action--state" type="button" wire:click="restorePostDraft({{ $entry['id'] }})">Cancel schedule</button>
+                                            @elseif ($entry['state'] === 'archived')
+                                                <button class="admin-action admin-action--state" type="button" wire:click="restorePostDraft({{ $entry['id'] }})">Restore</button>
+                                            @else
+                                                <button class="admin-action admin-action--state" type="button" wire:click="publishPost({{ $entry['id'] }})">Publish</button>
+                                            @endif
+
+                                            @if (in_array($entry['state'], ['draft', 'unpublished'], true))
+                                                <button class="admin-action" type="button" wire:click="mountAction('schedulePost', { post: {{ $entry['id'] }} })">Schedule</button>
+                                            @else
+                                                <button class="admin-action" type="button" disabled>Schedule</button>
+                                            @endif
+
+                                            @if (in_array($entry['state'], ['draft', 'unpublished', 'published'], true))
+                                                <button class="admin-action" type="button" wire:click="archivePost({{ $entry['id'] }})">Archive</button>
+                                            @else
+                                                <button class="admin-action" type="button" disabled>Archive</button>
+                                            @endif
+
                                             <button class="admin-action admin-order-action" type="button" wire:click="movePost({{ $entry['id'] }}, 'up')" @disabled(! $entry['can_move_up']) aria-label="Move {{ $entry['title'] }} up">↑</button>
                                             <button class="admin-action admin-order-action" type="button" wire:click="movePost({{ $entry['id'] }}, 'down')" @disabled(! $entry['can_move_down']) aria-label="Move {{ $entry['title'] }} down">↓</button>
                                             <button class="admin-action is-danger" type="button" wire:click="mountAction('deletePost', { post: {{ $entry['id'] }} })" @disabled(! $entry['can_delete']) title="{{ $entry['delete_help'] ?? 'Delete post' }}">Delete</button>
@@ -239,21 +250,23 @@
                                     </x-admin.toolbar>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td class="admin-table__empty-cell" colspan="8">
+                                    @if ($unfilteredEntryCount > 0)
+                                        <x-admin.empty-state :title="'No matching '.$entryLabel" minimal>
+                                            <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button></x-slot:actions>
+                                        </x-admin.empty-state>
+                                    @else
+                                        <x-admin.empty-state :title="'No '.$entryLabel.' added to this Journal'" minimal>
+                                            <x-slot:actions><button class="admin-action" type="button" wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')">Add {{ $entryLabelSingular }}</button></x-slot:actions>
+                                        </x-admin.empty-state>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
-
-                @if ($entries === [])
-                    @if ($unfilteredEntryCount > 0)
-                        <x-admin.empty-state :title="'No matching '.$entryLabel" minimal>
-                            <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button></x-slot:actions>
-                        </x-admin.empty-state>
-                    @else
-                        <x-admin.empty-state :title="'No '.$entryLabel.' added to this Journal'" minimal>
-                            <x-slot:actions><button class="admin-action" type="button" wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')">Add {{ $entryLabelSingular }}</button></x-slot:actions>
-                        </x-admin.empty-state>
-                    @endif
-                @endif
             </x-admin.table>
 
             <x-admin.add-row wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')">Add {{ $entryLabelSingular }}</x-admin.add-row>
