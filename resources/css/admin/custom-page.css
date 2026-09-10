@@ -28,14 +28,14 @@
         var(--admin-hierarchy-actions-column);
 }
 
-.custom-page-child-row__position {
-    display: flex;
-    grid-column: 4;
-    gap: .5rem;
-    align-items: center;
+.custom-page-child-row__kind {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--admin-muted);
+    font-size: .7rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-
-.custom-page-child-row__content { grid-column: 5; }
 
 .custom-page-child-row.admin-hierarchy__row.is-child .admin-hierarchy__content { padding-left: 0; }
 
