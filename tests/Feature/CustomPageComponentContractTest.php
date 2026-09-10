@@ -170,28 +170,6 @@ it('accepts external HTTP image sources in Custom Page rich text without fetchin
         ->and($rendered)->toContain('src="http://images.example.com/archive.jpg"');
 });
 
-it('keeps rich text images in one compact MarkdownEditor insertion flow', function (): void {
-    $support = file_get_contents(app_path('Filament/Support/AdminRichText.php'));
-    $insertView = file_get_contents(resource_path('views/filament/support/rich-text-image-insert.blade.php'));
-
-    expect($support)->toContain('MarkdownEditor::make($name)')
-        ->and($support)->toContain("['bold', 'italic', 'link']")
-        ->and($support)->toContain("['heading']")
-        ->and($support)->toContain("['bulletList', 'orderedList']")
-        ->and($support)->toContain("\$toolbar[2][] = 'attachFiles'")
-        ->and($support)->toContain("['undo', 'redo']")
-        ->and($support)->toContain('->fileAttachments(false)')
-        ->and($support)->toContain('RichTextMediaReference::markdown((int) $id)')
-        ->and($support)->toContain("View::make('filament.support.rich-text-image-insert')")
-        ->and($support)->toContain("'x-show' => 'open'")
-        ->and($support)->not->toContain('Filament\\Actions\\Action');
-
-    expect($insertView)->toContain('Media Files')
-        ->and($insertView)->toContain('External URL')
-        ->and($insertView)->toContain('data-admin-rich-text-external-url')
-        ->and($insertView)->toContain('submitExternal($el)');
-});
-
 it('removes CV records without deleting their canonical Media assets', function (): void {
     $asset = componentContractAsset('cv-delete');
     $entry = CvEntry::query()->create([

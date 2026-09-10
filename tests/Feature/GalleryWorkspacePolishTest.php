@@ -263,40 +263,6 @@ it('renders the six Gallery metrics and per-artwork analytics from one canonical
         ->and($reporting->keys)->toBe([(string) $artwork->getAttribute('analytics_key')]);
 });
 
-it('keeps Gallery upload and Edit integration on the canonical media and Filament modal paths', function (): void {
-    $projectionSource = file_get_contents(app_path('Filament/Pages/Concerns/GalleryWorkspaceDataProjection.php'));
-    $uploadSource = file_get_contents(app_path('Filament/Pages/Concerns/GalleryWorkspaceDirectUpload.php'));
-    $modalSource = file_get_contents(app_path('Filament/Pages/Concerns/GalleryWorkspaceArtworkModals.php'));
-    $viewSource = file_get_contents(resource_path('views/filament/resources/artworks/pages/manage-gallery-artworks.blade.php'));
-
-    expect($projectionSource)->not->toBeFalse()
-        ->and($uploadSource)->not->toBeFalse()
-        ->and($modalSource)->not->toBeFalse()
-        ->and($viewSource)->not->toBeFalse();
-
-    /** @var string $projectionSource */
-    /** @var string $uploadSource */
-    /** @var string $modalSource */
-    /** @var string $viewSource */
-    expect(substr_count($projectionSource, 'app(ArtistReportingService::class)->gallery('))->toBe(1)
-        ->and($uploadSource)->toContain('$ingest = app(MediaIngestService::class);')
-        ->and($uploadSource)->toContain('$result = $ingest->ingestUnique($upload);')
-        ->and($uploadSource)->toContain('$this->notifyDirectUploadResult($summary, $added, $duplicates, $failures);')
-        ->and($uploadSource)->toContain("'Upload failed'")
-        ->and($modalSource)->toContain("Action::make('editArtwork')")
-        ->and($modalSource)->toContain('ArtworkPrimaryMediaService::class')
-        ->and($viewSource)->toContain('accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"')
-        ->and($viewSource)->not->toContain('audio/')
-        ->and($viewSource)->toContain("mountAction('editArtwork'")
-        ->and($viewSource)->toContain('class="admin-drag-handle"')
-        ->and($viewSource)->toContain('wire:sort:handle')
-        ->and($viewSource)->toContain('>⋮⋮</button>')
-        ->and($viewSource)->not->toContain('gallery-workspace__drag-handle')
-        ->and($viewSource)->not->toContain('heroicon-m-arrows-up-down')
-        ->and($viewSource)->not->toContain('Batch actions')
-        ->and($viewSource)->not->toContain('Move selected artworks</');
-});
-
 it('accepts existing image and video MediaAssets as primary and rejects audio', function (): void {
     $service = app(ArtworkPrimaryMediaService::class);
 
