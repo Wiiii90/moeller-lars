@@ -26,7 +26,7 @@ No production credentials, database dumps or authoritative production media belo
 
 ## Local development
 
-The normal development Compose stack provides the application container and PostgreSQL 17.
+The normal local Compose stack provides the CLI/development application container and the one persistent PostgreSQL database reused by local browser preview work.
 
 ```sh
 docker compose up -d --build
@@ -34,23 +34,24 @@ docker compose exec app composer install --no-interaction
 docker compose exec app npm ci --ignore-scripts
 ```
 
-Run the core verification used by CI when that level of verification is actually required:
+Run only relevant non-destructive local checks:
 
 ```sh
-docker compose exec app composer test
 docker compose exec app composer analyse
 docker compose exec app vendor/bin/pint --test
 docker compose exec app npm run test:js
 docker compose exec app npm run build
 ```
 
-Stop the stack with:
+Local Feature/Pest runs and destructive database reset/rollback commands are intentionally fail-closed before database destruction. The full Pest suite runs in the disposable GitHub Actions database context defined by [docs/RELEASE.md](docs/RELEASE.md).
+
+Stop the local stack without discarding its database container:
 
 ```sh
-docker compose down
+docker compose stop
 ```
 
-Browser-polish/reconciliation work may deliberately use the existing lightweight local preview loop instead of recreating the development stack. That workflow is governed by [AGENTS.md](AGENTS.md) and the current continuation/orchestration prompt; it is not the canonical Production release path.
+Browser-polish/reconciliation uses the canonical local preview image recipe at [`docker/Dockerfile.local-preview`](docker/Dockerfile.local-preview). Branch/review rules are owned by [AGENTS.md](AGENTS.md); CI, release-image and Validation contracts are owned by [docs/RELEASE.md](docs/RELEASE.md).
 
 ## Site structure
 
@@ -76,11 +77,7 @@ Start with:
 
 ## Releases
 
-`.github/workflows/release.yml` is the canonical GitHub Actions workflow. It verifies pull requests targeting `main` and, for eligible non-PR runs, publishes an immutable image tagged with the exact Git SHA:
-
-```text
-ghcr.io/wiiii90/moeller-lars:<git-sha>
-```
+Daily integration happens on `dev`; `main` is the protected acceptance/release branch. See [docs/RELEASE.md](docs/RELEASE.md) for the canonical CI, image publication and Validation contract.
 
 A green CI run, a local browser candidate or a published preview image does not itself authorize a Production deployment.
 

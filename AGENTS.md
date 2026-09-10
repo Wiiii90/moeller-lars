@@ -35,23 +35,26 @@ Legacy names such as `CV`, `Vita`, persistence model/table names or old migratio
 
 ## Current orchestration model
 
-`main` is protected. The admin-completion integration line remains `integration/admin-v0.3-final` until the tranche is explicitly accepted and promoted.
+`dev` is the daily integration branch. `main` is the protected acceptance/release branch.
+Only `main` and `dev` are permanent. Worker branches use `feat/<scope>`, `fix/<scope>`,
+`chore/<scope>` or `docs/<scope>` and are deleted immediately after integration into `dev`.
+Do not create archive branches/tags or persistent repair/reconcile/integration/browser branches.
 
-Browser-heavy reconciliation may use one temporary combined branch such as `reconcile/admin-v0.3-browser`. That branch is a review candidate, not a release branch and not proof of product acceptance.
+Normal flow: named scope branch -> source review -> `dev` -> browser/product acceptance
+and release qualification -> `main`. Integration does not itself establish browser acceptance.
 
-When several browser-fix workers run in parallel:
+Remote workers start from the exact `dev` SHA named in their prompt and use only their
+assigned branch. They never push to `main` or deploy Validation without explicit instruction.
+For parallel workers, freeze one shared dev base, review each base-to-head net diff, then
+integrate into the latest dev deliberately. Resolve shared files as a union; delete each
+integrated worker branch. Do not create another combined reconciliation branch.
 
-1. freeze one exact shared base SHA;
-2. create one side branch per worker directly from that SHA;
-3. workers do **not** all push directly to the combined reconciliation branch;
-4. each worker returns branch + exact head + changed files + actual checks;
-5. the orchestrator verifies the remote ref and reviews the real base→head diff independently;
-6. accepted side diffs are reconciled/cherry-picked onto the latest combined branch;
-7. shared files are resolved deliberately as a union, never by blindly preferring one worker's version;
-8. cross-branch consequences are fixed explicitly in a small reconciliation commit;
-9. only after the combined source state is coherent is one browser build/migration/review cycle performed.
+Keep browser-accepted presentation unchanged during source reconciliation unless the
+current task explicitly changes it. Repeated visual defects require inspection of the
+actual browser DOM/computed styles when available; do not claim measurements without a browser.
 
-Do not mutate the original feature branches merely to create a browser candidate. Do not rebase, merge to `main`, deploy Production or retarget PRs unless the orchestrator explicitly asks.
+Do not rebase public history, merge to `main`, deploy Production or retarget PRs unless
+explicitly authorized. Keep `dev` and the current task base distinct when dev advances.
 
 ## Orchestrator and worker roles
 
@@ -109,7 +112,7 @@ Visual/admin work follows this order:
 5. create a fresh narrowly scoped worker from an exact base;
 6. statically review the returned diff;
 7. reconcile accepted work;
-8. perform one new local/Validation browser cycle.
+8. review the integrated dev candidate in one local browser cycle; Validation requires explicit authorization.
 
 Do **not** call a candidate final merely because it boots, migrations succeed or a 500 disappears. Browser/editorial acceptance is separate evidence.
 
@@ -138,31 +141,10 @@ Do not encode rejected or unreviewed presentation details into durable tests or 
 
 ## Admin theme enforcement
 
-For authenticated admin UI, `ui-skills.md`, the shared `x-admin.*` Blade primitives, `resources/css/admin.css`, shared `resources/css/admin/*` modules, and accepted Gallery/Media Files implementations are mandatory implementation authorities.
-
-Wrapping a page in `x-admin.workspace` is not sufficient if the page then recreates the rest of the visual system locally.
-
-Without an explicit task-specific justification, treat these patterns as source-review failures:
-
-- inline `<style>` blocks in admin Blade views;
-- page-local CSS variables duplicating shared `--admin-*` tokens;
-- page-local control, button, action, metric, table, row, toolbar or workspace systems that duplicate existing shared primitives;
-- page-specific content widths or control heights that diverge from the accepted shell;
-- feature CSS used to reproduce generic theme geometry under selectors such as `.pages-*`, `.general-*`, `.home-*` or `.journal-*`;
-- large pixel-tuning patches that imitate Gallery/Media Files instead of reusing the same primitives/tokens.
-
-Feature-local CSS is valid only for genuinely feature-specific task surfaces. If a shared primitive is insufficient, extend the shared authority deliberately instead of forking it locally.
-
-For every visual worker, the prompt must require the worker to:
-
-1. read `ui-skills.md`;
-2. inspect the exact accepted Gallery/Media Files reference code relevant to the requested geometry;
-3. inspect the shared Blade/CSS primitives before adding local structure;
-4. reuse those authorities first;
-5. list in the handoff which reference files and shared primitives were actually used;
-6. justify every new shared-looking CSS class or token as genuinely task-specific.
-
-For every visual worker handoff, source review must inspect the actual Blade/CSS diff for theme bypasses before calling the result source coherent. Functional correctness alone is insufficient for reconciliation of visual work.
+[`ui-skills.md`](ui-skills.md) owns the admin presentation contract, accepted references,
+shared primitives, CSS ownership and visual review checklist. Read it before UI work.
+Prompts must identify the exact reference files and workers must enumerate reused primitives
+and justify feature-local CSS. Review actual Blade/CSS changes for bypasses before reconciliation.
 
 ## Verification discipline
 
@@ -177,7 +159,7 @@ Unless a concrete risk requires more, browser-polish workers should not automati
 - CI waits;
 - Validation deployments.
 
-Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. Full canonical verification belongs to the final PR to `main` as defined in `docs/RELEASE.md`.
+Static review, `git diff --check`, tiny syntax checks and focused contract checks are appropriate. CI verifies PRs to `dev` and `main`; `docs/RELEASE.md` owns the workflow details. Local Feature/Pest suites are forbidden against the persistent browser database. Source-string tests are scaffolding unless they protect a durable invariant.
 
 Tests added during browser work should encode durable product/domain behavior, not temporary orchestration states. Avoid durable test names tied to repair rounds, browser passes, branch choreography or candidate labels when a stable behavior-based name is available. Do not add a broad “acceptance” test merely to memorialize an intermediate browser candidate.
 
@@ -225,10 +207,13 @@ For scripted file replacement:
 Use only `P:\moeller-lars` for this repository.
 
 - no sibling scratch clones/copies;
+- no repository searches or scans outside `P:\moeller-lars`;
 - no Git worktrees;
 - no root-drive helper clutter;
 - local snapshots/tooling state stays inside the repository and outside Git;
-- retained local Validation data belongs under `storage/local-validation-snapshot/`.
+- `storage/app/private/**` is protected local user data, never cleanup material;
+- do not create local snapshot/recovery tool trees or a second permanent test database;
+- do not delete or overwrite `.env`, credentials or current media during cleanup.
 
 ## Local browser preview
 
@@ -241,8 +226,14 @@ Current durable local interface assumptions:
 - preview image: `moeller-lars-local-preview`;
 - PostgreSQL container commonly used by the preview: `moeller-lars-postgres-1`;
 - image runtime listens internally on port `8080`;
-- preview Dockerfile: `storage/local-validation-snapshot/Dockerfile.local-preview`;
+- preview Dockerfile: `docker/Dockerfile.local-preview`;
 - canonical private media mount destination: `/var/www/html/storage/app/private`.
+
+The local browser database is the one persistent local development database. Do not run
+`migrate:fresh`, `migrate:refresh`, `migrate:reset` or `db:wipe` locally. Do not spoof CI flags
+to bypass the guard. Local
+Feature/Pest tests and `migrate:fresh` against it are fail-closed; GitHub Actions
+uses an explicit disposable-database context instead.
 
 Exact transient branch SHAs, mount source paths and commands belong in the current follow-up prompt, not as timeless architecture facts in this file.
 
@@ -340,6 +331,11 @@ Prompts must distinguish explicitly between:
 - **OUT OF SCOPE** — behavior, files or neighboring surfaces the worker must not change.
 
 A worker must not re-decide what the user or current contract has already decided.
+
+Keep prompts short and operational (normally 20-60 lines); link authorities instead of
+copying their contents. Classify new tests as durable behavior coverage or temporary
+scaffolding and remove scaffolding before handoff. Runtime PowerShell instructions must
+stop on a failed prerequisite before any container replacement or mutation.
 
 When the desired geometry/structure is already known, do not make the worker infer it primarily from phrases such as “polish this”, “make it consistent”, “make it premium”, “clean it up”, “use best judgment” or “make it like the reference”. Such phrases may supplement concrete requirements, never replace them.
 

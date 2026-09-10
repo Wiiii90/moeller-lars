@@ -4,25 +4,18 @@
 
 ## Target
 
-- [ ] Worker/slice PR targeting an integration/reconciliation branch
-- [ ] Final/release PR targeting `main`
+<!-- Branch authority: AGENTS.md -->
+
+- [ ] Scoped feature/fix/chore/docs PR targeting `dev` (exact dev base SHA recorded)
+- [ ] Acceptance/release PR from `dev` targeting `main`
 
 ## Verification
 
-For worker/slice PRs, list the **risk-appropriate targeted checks actually run**. Do not claim the full release gate unless it ran.
-
-For the final PR targeting `main`, the canonical workflow must cover:
-
-- [ ] Composer install / security audit
-- [ ] Frontend build
-- [ ] Pest
-- [ ] PHPStan
-- [ ] Pint
-- [ ] JavaScript tests
+<!-- List only checks actually run. Canonical CI/release gates and disposable-database rules are owned by docs/RELEASE.md. Local Feature/Pest runs against the persistent preview database are forbidden. -->
 
 Targeted/manual/Validation notes:
 
-<!-- State what was actually exercised. Visual/interaction changes require browser acceptance at the appropriate combined-candidate stage. Do not claim browser/Production validation that was not performed. -->
+<!-- State what was actually exercised. Visual/interaction changes require browser acceptance at the appropriate integrated-candidate stage. Do not claim browser/Production validation that was not performed. -->
 
 ## Admin UI / browser acceptance
 

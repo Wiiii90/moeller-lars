@@ -6,6 +6,10 @@ The source is public for transparency, review and project visibility, but no ope
 
 ## Issues
 
+Internal maintainers and assigned workers follow [AGENTS.md](AGENTS.md). Scoped PRs
+target `dev`; only acceptance/release PRs target `main`. This does not change the
+external-contribution policy above.
+
 Public issues may be used for non-sensitive bug reports or project discussion when appropriate.
 
 Do **not** report vulnerabilities, credentials, private data or reproducible exploit details in a public issue. Follow [SECURITY.md](SECURITY.md) for security reports.

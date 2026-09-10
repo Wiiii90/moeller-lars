@@ -10,7 +10,7 @@ Canonical verification/release workflow:
 .github/workflows/release.yml
 ```
 
-It runs for pull requests targeting `main`, pushes to `main` and explicit `workflow_dispatch` runs. Release-image publication is skipped for normal PR events; eligible verified non-PR runs build the release image.
+It runs for pull requests targeting `dev` or `main`, pushes to either branch and explicit `workflow_dispatch` runs. Release-image publication is restricted to verified non-PR runs on `main`. Checks on dev and worker branches never publish release images. The disposable PostgreSQL service is marked with `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` inside GitHub Actions.
 
 Rapid protected-Validation browser workflow:
 
@@ -30,11 +30,11 @@ Tag existence alone is not release evidence. A deployable release candidate requ
 
 ## Browser reconciliation versus release
 
-Admin/browser polish may use a temporary local combined branch such as `reconcile/admin-v0.3-browser` and a lightweight local preview image.
+The branch/review workflow is defined in [AGENTS.md](../AGENTS.md). Browser review uses an exact dev candidate and the existing lightweight local preview image.
 
 That loop is deliberately separate from release qualification:
 
-1. reconcile accepted worker diffs on one combined source branch;
+1. source-review and integrate worker diffs into dev under the AGENTS contract;
 2. run only the migrations required by that candidate against the isolated local preview database;
 3. build/recreate the local preview once per coherent browser cycle;
 4. collect browser/editorial acceptance;
@@ -57,7 +57,7 @@ When protected Validation is required:
 
 The preview workflow is not release qualification. Do not invent host commands/topology outside the existing platform contract.
 
-When several dependent workers form one product tranche, use one deliberate integration/reconciliation line. Parallel browser-fix workers may use side branches from one exact shared base, then be statically reviewed and reconciled before a combined preview. Do not make every worker independently build/deploy the same tranche.
+Worker integration and branch deletion follow `AGENTS.md`. A protected Validation preview is a separate explicitly authorized operation.
 
 ## Verification gates
 
@@ -70,7 +70,7 @@ The canonical final workflow covers:
 - Pint;
 - JavaScript tests.
 
-Local equivalents when full verification is appropriate:
+Commands used in disposable CI (not a recipe for the persistent local browser database):
 
 ```sh
 composer test
@@ -98,9 +98,13 @@ The current project workflow may reuse the lightweight local browser preview doc
 
 - browser URL `http://127.0.0.1:8001`;
 - application image internal port `8080`;
-- local preview Dockerfile `storage/local-validation-snapshot/Dockerfile.local-preview`.
+- local preview Dockerfile `docker/Dockerfile.local-preview`.
 
 Local container names/mount source paths are iteration details, not Production topology. The current follow-up prompt carries their exact transient values when needed.
+
+The local browser database is persistent and is not a PHPUnit target. Feature/Pest
+tests run only in the explicit disposable CI database context; local preview work
+uses narrow static checks and browser review instead.
 
 ## Media/runtime envelope
 

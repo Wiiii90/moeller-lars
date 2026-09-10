@@ -5,8 +5,11 @@ namespace App\Providers;
 use App\Database\PublicationPostgresGrammar;
 use App\Domain\Content\PublicSiteContext;
 use App\Domain\Publication\PublicationReadContext;
+use App\Support\LocalPreviewDatabaseGuard;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Connection;
 use Illuminate\Database\PostgresConnection;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,6 +32,18 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Event::listen(CommandStarting::class, function (CommandStarting $event): void {
+            if (in_array($event->command, [
+                'db:wipe',
+                'migrate:fresh',
+                'migrate:refresh',
+                'migrate:reset',
+                'migrate:rollback',
+            ], true)) {
+                LocalPreviewDatabaseGuard::assertDestructiveCommandIsAllowed();
+            }
+        });
+
         View::composer('layouts.app', function ($view): void {
             $view->with(app(PublicSiteContext::class)->layoutData());
         });

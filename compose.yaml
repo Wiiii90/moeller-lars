@@ -7,7 +7,9 @@ services:
     volumes:
       - .:/var/www/html
     environment:
-      APP_ENV: testing
+      # This is the sole persistent local browser/dev database context, never a
+      # disposable PHPUnit target. Keep the existing DB name to reuse its data.
+      APP_ENV: local
       APP_KEY: base64:QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=
       PAO_DISABLE: "true"
       DB_CONNECTION: pgsql
@@ -16,6 +18,7 @@ services:
       DB_DATABASE: moeller_lars_testing
       DB_USERNAME: postgres
       DB_PASSWORD: moeller_lars_local
+      MOELLER_LARS_PERSISTENT_PREVIEW: '1'
     depends_on:
       postgres:
         condition: service_healthy
@@ -24,6 +27,8 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
+      # Legacy logical name retained intentionally; this is persistent local
+      # preview/dev data, not a disposable local test database.
       POSTGRES_DB: moeller_lars_testing
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: moeller_lars_local

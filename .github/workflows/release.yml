@@ -2,9 +2,9 @@ name: Verify and build release image
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
@@ -34,12 +34,14 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     env:
+      APP_ENV: testing
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
       DB_DATABASE: moeller_lars_testing
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
+      MOELLER_LARS_DISPOSABLE_TEST_DATABASE: '1'
       MATOMO_TRACKING_ENABLED: false
       MATOMO_REPORTING_ENABLED: false
     steps:
@@ -84,7 +86,7 @@ jobs:
         run: npm run test:js
 
   release-image:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: verify
     outputs:

@@ -1,0 +1,46 @@
+FROM node:22-bookworm-slim AS frontend
+WORKDIR /build
+
+COPY package.json package-lock.json vite.config.js ./
+RUN npm ci --ignore-scripts
+
+COPY resources ./resources
+RUN npm run build
+
+FROM moeller-lars-local-runtime
+WORKDIR /var/www/html
+
+ENV APP_ENV=local \
+    MOELLER_LARS_PERSISTENT_PREVIEW=1
+
+# Candidate-owned runtime source must come from the candidate checkout.
+# Remove directories first so deleted/stale files from the base image
+# cannot survive into the browser candidate.
+RUN rm -rf \
+    /var/www/html/app \
+    /var/www/html/bootstrap \
+    /var/www/html/config \
+    /var/www/html/database \
+    /var/www/html/routes \
+    /var/www/html/resources \
+    /var/www/html/public
+
+# .dockerignore excludes env files, vendor, private media, runtime caches,
+# tests and other local-only material.
+COPY . .
+
+# Keep the runtime dependencies from the base image, but use the frontend
+# assets built from this exact candidate.
+COPY --from=frontend /build/public/build ./public/build
+
+RUN mkdir -p \
+        /var/www/html/bootstrap/cache \
+        /var/www/html/storage/framework/cache \
+        /var/www/html/storage/framework/sessions \
+        /var/www/html/storage/framework/views \
+        /var/www/html/storage/logs \
+    && chown -R www-data:www-data \
+        /var/www/html/bootstrap/cache \
+        /var/www/html/storage
+ENTRYPOINT ["docker-php-entrypoint"]
+CMD ["sh", "-lc", "php artisan optimize:clear && exec apache2-foreground"]
