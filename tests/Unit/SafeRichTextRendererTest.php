@@ -2,11 +2,17 @@
 
 use App\Domain\Content\SafeLinkPolicy;
 use App\Domain\Content\SafeRichTextRenderer;
+use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\UnsafeRichTextException;
+use App\Domain\Media\PublicMedia;
+use App\Routing\SiteNodeRoute;
 
 function contentRenderer(): SafeRichTextRenderer
 {
-    return new SafeRichTextRenderer(new SafeLinkPolicy);
+    return new SafeRichTextRenderer(
+        new SafeLinkPolicy,
+        new PublicMedia(new SitePreviewContext(new SiteNodeRoute)),
+    );
 }
 
 it('escapes raw text while preserving the supported rich-text subset', function (): void {

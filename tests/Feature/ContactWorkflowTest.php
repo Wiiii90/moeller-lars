@@ -14,6 +14,8 @@ uses(RefreshDatabase::class);
 
 function enablePublishedContactForm(): void
 {
+    $position = ((int) (SiteSection::query()->whereNull('parent_id')->max('position') ?? 0)) + 10;
+
     $section = SiteSection::query()->create([
         'type' => SiteSection::TYPE_CUSTOM,
         'template' => null,
@@ -21,7 +23,7 @@ function enablePublishedContactForm(): void
         'navigation_label' => 'Contact test page',
         'slug' => 'contact-test-page',
         'state' => 'published',
-        'position' => 900,
+        'position' => $position,
         'show_in_navigation' => false,
         'parent_id' => null,
         'artwork_category_id' => null,

@@ -1,7 +1,7 @@
 <?php
 
 use App\Domain\Admin\CvEntryEditorialService;
-use App\Domain\Content\SiteNodeRoute;
+use App\Routing\SiteNodeRoute;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Filament\Pages\CustomPageWorkspace;
