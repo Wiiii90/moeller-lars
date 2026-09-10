@@ -210,6 +210,7 @@ it('removes current content references before logically deleting media', functio
     if ($type === 'artwork') {
         $category = ArtworkCategory::create([
             'slug' => 'works',
+            'name' => 'Works',
         ]);
         $artwork = Artwork::create([
             'artwork_category_id' => $category->id,

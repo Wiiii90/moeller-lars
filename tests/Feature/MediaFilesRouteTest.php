@@ -76,6 +76,7 @@ it('allows referenced assets to be downloaded', function (): void {
     $asset = mediaFilesRouteDownloadAsset('referenced-download.jpg', 'referenced-original');
     $category = ArtworkCategory::query()->create([
         'slug' => 'media-download-reference',
+        'name' => 'Media download reference',
     ]);
     $artwork = Artwork::query()->create([
         'artwork_category_id' => $category->id,
