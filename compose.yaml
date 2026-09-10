@@ -32,8 +32,13 @@ services:
       POSTGRES_DB: moeller_lars_testing
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: moeller_lars_local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d moeller_lars_testing"]
       interval: 2s
       timeout: 5s
       retries: 15
+
+volumes:
+  postgres_data:
