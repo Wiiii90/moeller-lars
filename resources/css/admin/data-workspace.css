@@ -6,7 +6,7 @@
     box-sizing: border-box;
     height: var(--admin-visual-stage-height);
     min-height: 0;
-    margin: var(--admin-section-space) 0;
+    margin: var(--admin-section-space) 0 0;
 }
 
 .admin-visual-stage > .admin-visual-stage__pane {
@@ -15,14 +15,15 @@
     min-height: 0;
 }
 
-.admin-visual-stage + .admin-data-controls {
-    padding: var(--admin-section-space) 0 var(--admin-section-gap);
+.admin-visual-stage + .admin-data-controls,
+.admin-visual-stage + .admin-visual-stage-followup {
+    margin-top: var(--admin-section-space);
+    padding-top: var(--admin-section-gap);
     border-top: 1px solid var(--admin-line-strong);
 }
 
-.admin-visual-stage + .admin-visual-stage-followup {
-    padding-top: var(--admin-section-space);
-    border-top: 1px solid var(--admin-line-strong);
+.admin-visual-stage + .admin-data-controls {
+    padding-bottom: var(--admin-section-gap);
 }
 
 .admin-visual-stage-followup > .admin-data-controls {
@@ -230,6 +231,16 @@
     border: 0;
 }
 
+.admin-table .admin-table__empty-cell {
+    padding: 0;
+}
+
+.admin-table__empty-cell > .admin-empty-state {
+    min-height: 5.2rem;
+    padding: 1.35rem .6rem;
+    border: 0;
+}
+
 .admin-table__identity {
     min-width: 14rem;
     max-width: 28rem;
@@ -273,6 +284,14 @@
     margin-top: 0;
     padding-top: var(--admin-section-gap);
     border-top: 1px solid var(--admin-line-strong);
+}
+
+.admin-pager__meta {
+    justify-self: start;
+    color: var(--admin-muted);
+    font-size: .72rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .admin-pager__size,
@@ -389,6 +408,11 @@
         grid-row: 1;
     }
 
+    .admin-pager__meta {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
     .admin-pager__size,
     .media-workspace__pager-size,
     .journal-workspace__pager-size {
@@ -411,6 +435,7 @@
         grid-template-columns: 1fr;
     }
 
+    .admin-pager__meta,
     .admin-pager__range,
     .admin-pager__size,
     .admin-pager__actions,
@@ -428,6 +453,7 @@
     .media-workspace__pager-range,
     .journal-workspace__pager-range { grid-row: 1; }
 
+    .admin-pager__meta,
     .admin-pager__size,
     .media-workspace__pager-size,
     .journal-workspace__pager-size { grid-row: 2; }
