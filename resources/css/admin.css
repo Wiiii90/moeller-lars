@@ -6,6 +6,7 @@
 @import './admin/activity.css';
 @import './admin/media.css';
 @import './admin/storage.css';
+@import './admin/dashboard.css';
 
 :root {
     --admin-text: #181818;

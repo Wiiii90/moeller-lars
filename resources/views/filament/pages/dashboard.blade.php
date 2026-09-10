@@ -38,41 +38,42 @@
                 </header>
 
                 <div class="admin-dashboard__activity-visual" aria-label="Activity time preview">
-                    <div class="activity-clock admin-dashboard__activity-clock" aria-label="24-hour activity clock for the last 30 days">
-                        <div class="activity-clock__face">
-                            <span class="activity-clock__label activity-clock__label--00">00</span>
-                            <span class="activity-clock__label activity-clock__label--06">06</span>
-                            <span class="activity-clock__label activity-clock__label--12">12</span>
-                            <span class="activity-clock__label activity-clock__label--18">18</span>
-                            <span class="activity-clock__axis activity-clock__axis--vertical" aria-hidden="true"></span>
-                            <span class="activity-clock__axis activity-clock__axis--horizontal" aria-hidden="true"></span>
-                            @foreach ($activity['clock_points'] as $point)
-                                <span
-                                    class="activity-clock__marker"
-                                    style="--activity-x: {{ number_format($point['x'], 4, '.', '') }}%; --activity-y: {{ number_format($point['y'], 4, '.', '') }}%"
-                                    role="img"
-                                    aria-label="Change at {{ $point['label'] }}"
-                                    title="{{ $point['label'] }}"
-                                ></span>
-                            @endforeach
-                        </div>
+                    <div class="admin-dashboard__activity-clock" aria-label="24-hour activity clock for the last 30 days">
+                        <span class="admin-dashboard__activity-clock-label admin-dashboard__activity-clock-label--00">00</span>
+                        <span class="admin-dashboard__activity-clock-label admin-dashboard__activity-clock-label--06">06</span>
+                        <span class="admin-dashboard__activity-clock-label admin-dashboard__activity-clock-label--12">12</span>
+                        <span class="admin-dashboard__activity-clock-label admin-dashboard__activity-clock-label--18">18</span>
+                        @foreach ($activity['clock_points'] as $point)
+                            <span
+                                class="admin-dashboard__activity-marker"
+                                style="--dashboard-activity-x: {{ number_format($point['x'], 4, '.', '') }}%; --dashboard-activity-y: {{ number_format($point['y'], 4, '.', '') }}%"
+                                role="img"
+                                aria-label="Change at {{ $point['label'] }}"
+                                title="{{ $point['label'] }}"
+                            ></span>
+                        @endforeach
                     </div>
 
-                    <div class="activity-calendar admin-dashboard__activity-calendar" aria-label="Activity calendar for {{ $activity['calendar_label'] }}">
-                        <strong class="activity-calendar__month">{{ $activity['calendar_label'] }}</strong>
-                        <div class="activity-calendar__weekdays" aria-hidden="true">
+                    <div class="admin-dashboard__activity-calendar" aria-label="Activity calendar for {{ $activity['calendar_label'] }}">
+                        <strong class="admin-dashboard__activity-month">{{ $activity['calendar_label'] }}</strong>
+                        <div class="admin-dashboard__activity-weekdays" aria-hidden="true">
                             @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $weekday)
                                 <span>{{ $weekday }}</span>
                             @endforeach
                         </div>
-                        <div class="activity-calendar__grid">
+                        <div class="admin-dashboard__activity-days">
                             @foreach ($activity['calendar_days'] as $day)
                                 @if ($day === null)
-                                    <span class="activity-calendar__day is-empty" aria-hidden="true"></span>
+                                    <span class="admin-dashboard__activity-day is-empty" aria-hidden="true"></span>
                                 @else
-                                    <span class="activity-calendar__day" aria-label="{{ $day['date'] }}: {{ $day['count'] }} changes">
+                                    <span
+                                        @class(['admin-dashboard__activity-day', 'has-activity' => $day['count'] > 0])
+                                        aria-label="{{ $day['date'] }}: {{ $day['count'] }} changes"
+                                    >
                                         <span>{{ $day['day'] }}</span>
-                                        <strong>{{ $day['count'] }}</strong>
+                                        @if ($day['count'] > 0)
+                                            <strong>{{ $day['count'] }}</strong>
+                                        @endif
                                     </span>
                                 @endif
                             @endforeach
@@ -89,8 +90,8 @@
                 </header>
 
                 @if (in_array($analytics['status'], ['available', 'stale'], true))
-                    <figure class="admin-dashboard__map analytics-world">
-                        <div class="analytics-world__canvas">
+                    <figure class="admin-dashboard__analytics-visual">
+                        <div class="admin-dashboard__analytics-map">
                             @if (view()->exists('filament.generated.analytics-world-map'))
                                 @include('filament.generated.analytics-world-map')
                             @else
@@ -99,15 +100,15 @@
 
                             @foreach ($analytics['map_points'] as $point)
                                 <span
-                                    class="analytics-world__marker"
-                                    style="left: {{ number_format($point['x'], 3, '.', '') }}%; top: {{ number_format($point['y'], 3, '.', '') }}%; width: {{ number_format($point['size'], 2, '.', '') }}px; height: {{ number_format($point['size'], 2, '.', '') }}px;"
+                                    class="admin-dashboard__analytics-marker"
+                                    style="--dashboard-analytics-x: {{ number_format($point['x'], 3, '.', '') }}%; --dashboard-analytics-y: {{ number_format($point['y'], 3, '.', '') }}%; --dashboard-analytics-size: {{ number_format($point['size'], 2, '.', '') }}px;"
                                     tabindex="0"
                                     aria-label="{{ $point['label'] }}: {{ number_format($point['visits']) }} visits"
                                     title="{{ $point['label'] }} · {{ number_format($point['visits']) }} visits"
                                 ></span>
                             @endforeach
                         </div>
-                        <figcaption>
+                        <figcaption class="admin-dashboard__analytics-caption">
                             @if ($analytics['country_state'] === 'unavailable')
                                 Country-level visits unavailable.
                             @elseif ($analytics['country_state'] === 'empty')
