@@ -27,11 +27,21 @@
                 mode: 'clock',
                 now: new Date(),
                 timer: null,
+                timeFormatter: new Intl.DateTimeFormat(undefined, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                }),
                 init() {
+                    this.now = new Date()
+                    if (this.timer !== null) window.clearInterval(this.timer)
                     this.timer = window.setInterval(() => { this.now = new Date() }, 1000)
                 },
                 destroy() {
-                    if (this.timer) window.clearInterval(this.timer)
+                    if (this.timer !== null) {
+                        window.clearInterval(this.timer)
+                        this.timer = null
+                    }
                 },
                 hourAngle() {
                     return ((this.now.getHours() % 12) + (this.now.getMinutes() / 60) + (this.now.getSeconds() / 3600)) * 30
@@ -43,7 +53,7 @@
                     return this.now.getSeconds() * 6
                 },
                 timeLabel() {
-                    return this.now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    return this.timeFormatter.format(this.now)
                 },
             }"
         >
@@ -84,18 +94,16 @@
                                 <circle class="activity-clock__activity-track" cx="160" cy="160" r="134" />
                                 @foreach ($clockActivity as $bucket)
                                     @php
-                                        $activityAngle = deg2rad(($bucket['hour'] * 15) - 90);
-                                        $activityInnerRadius = 127;
-                                        $activityOuterRadius = 141;
                                         $activityRatio = $clockPeakCount > 0 ? sqrt($bucket['count'] / $clockPeakCount) : 0;
                                         $activityOpacity = $bucket['count'] > 0 ? 0.28 + (0.72 * $activityRatio) : 0.12;
                                     @endphp
                                     <line
                                         class="activity-clock__activity-tick {{ $bucket['hour'] === $clockPeakHour ? 'is-peak' : '' }}"
-                                        x1="{{ number_format(160 + ($activityInnerRadius * cos($activityAngle)), 3, '.', '') }}"
-                                        y1="{{ number_format(160 + ($activityInnerRadius * sin($activityAngle)), 3, '.', '') }}"
-                                        x2="{{ number_format(160 + ($activityOuterRadius * cos($activityAngle)), 3, '.', '') }}"
-                                        y2="{{ number_format(160 + ($activityOuterRadius * sin($activityAngle)), 3, '.', '') }}"
+                                        x1="160"
+                                        y1="33"
+                                        x2="160"
+                                        y2="19"
+                                        transform="rotate({{ $bucket['hour'] * 15 }} 160 160)"
                                         opacity="{{ number_format($activityOpacity, 3, '.', '') }}"
                                     >
                                         <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 · {{ number_format($bucket['count']) }} changes</title>
@@ -105,30 +113,25 @@
                                 <circle class="activity-clock__face" cx="160" cy="160" r="112" />
 
                                 @for ($minute = 0; $minute < 60; $minute++)
-                                    @php
-                                        $tickAngle = deg2rad(($minute * 6) - 90);
-                                        $tickInnerRadius = $minute % 5 === 0 ? 101 : 106;
-                                        $tickOuterRadius = 112;
-                                    @endphp
                                     <line
                                         class="activity-clock__tick {{ $minute % 5 === 0 ? 'is-hour' : '' }}"
-                                        x1="{{ number_format(160 + ($tickInnerRadius * cos($tickAngle)), 3, '.', '') }}"
-                                        y1="{{ number_format(160 + ($tickInnerRadius * sin($tickAngle)), 3, '.', '') }}"
-                                        x2="{{ number_format(160 + ($tickOuterRadius * cos($tickAngle)), 3, '.', '') }}"
-                                        y2="{{ number_format(160 + ($tickOuterRadius * sin($tickAngle)), 3, '.', '') }}"
+                                        x1="160"
+                                        y1="{{ $minute % 5 === 0 ? 59 : 54 }}"
+                                        x2="160"
+                                        y2="48"
+                                        transform="rotate({{ $minute * 6 }} 160 160)"
                                     />
                                 @endfor
 
                                 @foreach (range(1, 12) as $hour)
-                                    @php
-                                        $numberAngle = deg2rad(($hour * 30) - 90);
-                                        $numberRadius = 86;
-                                    @endphp
-                                    <text
-                                        class="activity-clock__number"
-                                        x="{{ number_format(160 + ($numberRadius * cos($numberAngle)), 3, '.', '') }}"
-                                        y="{{ number_format(160 + ($numberRadius * sin($numberAngle)), 3, '.', '') }}"
-                                    >{{ $hour }}</text>
+                                    <g transform="rotate({{ $hour * 30 }} 160 160)">
+                                        <text
+                                            class="activity-clock__number"
+                                            x="160"
+                                            y="74"
+                                            transform="rotate({{ $hour * -30 }} 160 74)"
+                                        >{{ $hour }}</text>
+                                    </g>
                                 @endforeach
 
                                 <line
