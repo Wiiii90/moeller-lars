@@ -225,16 +225,14 @@
                                     </button>
                                 @endif
                                 <button
-                                    class="gallery-workspace__icon-action gallery-workspace__primary-action gallery-workspace__drag-handle"
+                                    class="admin-drag-handle"
                                     type="button"
                                     @if ($reorderEnabled) wire:sort:handle @endif
                                     @disabled(! $reorderEnabled)
                                     aria-disabled="{{ $reorderEnabled ? 'false' : 'true' }}"
                                     title="{{ $reorderEnabled ? 'Drag to reorder' : 'Clear filters to reorder' }}"
                                     aria-label="{{ $reorderEnabled ? 'Drag '.$artwork['title'].' to reorder' : 'Clear filters to reorder '.$artwork['title'] }}"
-                                >
-                                    <x-filament::icon icon="heroicon-m-arrows-up-down" />
-                                </button>
+                                >⋮⋮</button>
                             </div>
 
                             <div class="admin-gallery-grid__caption">
