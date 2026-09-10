@@ -6,6 +6,12 @@ final class PublicationSnapshot
 {
     public const LOCK_KEY = 16520260829;
 
+    /**
+     * Framework persistence timestamps do not change publication meaning.
+     * All other columns, including domain timestamps, remain comparison-significant.
+     */
+    public const ROW_DIFFERENCE_SQL = "(to_jsonb(working) - 'created_at' - 'updated_at') IS DISTINCT FROM (to_jsonb(committed) - 'created_at' - 'updated_at')";
+
     /** @var list<string> */
     public const TABLES = [
         'artwork_categories',

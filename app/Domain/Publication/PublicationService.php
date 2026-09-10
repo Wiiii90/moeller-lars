@@ -19,7 +19,7 @@ final class PublicationService
     {
         $parts = array_map(
             static fn (string $table): string => sprintf(
-                'SELECT 1 AS changed FROM public.%1$s AS working FULL OUTER JOIN committed.%1$s AS committed USING (id) WHERE to_jsonb(working) IS DISTINCT FROM to_jsonb(committed)',
+                'SELECT 1 AS changed FROM public.%1$s AS working FULL OUTER JOIN committed.%1$s AS committed USING (id) WHERE '.PublicationSnapshot::ROW_DIFFERENCE_SQL,
                 $table,
             ),
             PublicationSnapshot::TABLES,
@@ -45,7 +45,7 @@ final class PublicationService
 
         foreach (PublicationSnapshot::TABLES as $table) {
             $row = DB::selectOne(sprintf(
-                'SELECT COUNT(*)::int AS aggregate FROM public.%1$s AS working FULL OUTER JOIN committed.%1$s AS committed USING (id) WHERE to_jsonb(working) IS DISTINCT FROM to_jsonb(committed)',
+                'SELECT COUNT(*)::int AS aggregate FROM public.%1$s AS working FULL OUTER JOIN committed.%1$s AS committed USING (id) WHERE '.PublicationSnapshot::ROW_DIFFERENCE_SQL,
                 $table,
             ));
             $count = (int) ($row?->aggregate ?? 0);

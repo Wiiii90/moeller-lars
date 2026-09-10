@@ -129,7 +129,7 @@ final class PublicationEventStateService
             $table = $definition['table'];
             $column = $definition['column'];
             $result = DB::selectOne(
-                "SELECT EXISTS (SELECT 1 FROM public.{$table} AS working FULL OUTER JOIN committed.{$table} AS committed USING (id) WHERE (working.{$column} = ? OR committed.{$column} = ?) AND to_jsonb(working) IS DISTINCT FROM to_jsonb(committed)) AS pending",
+                "SELECT EXISTS (SELECT 1 FROM public.{$table} AS working FULL OUTER JOIN committed.{$table} AS committed USING (id) WHERE (working.{$column} = ? OR committed.{$column} = ?) AND ".PublicationSnapshot::ROW_DIFFERENCE_SQL.') AS pending',
                 [$entityId, $entityId],
             );
 
