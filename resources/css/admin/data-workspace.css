@@ -231,7 +231,7 @@
     border: 0;
 }
 
-.admin-table__empty-cell {
+.admin-table .admin-table__empty-cell {
     padding: 0;
 }
 
