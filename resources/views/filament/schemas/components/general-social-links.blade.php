@@ -122,11 +122,11 @@
                     </td>
                     <td class="admin-table__drag">
                         <button
-                            class="admin-action admin-order-action"
+                            class="admin-drag-handle"
                             type="button"
                             @if ($dragEnabled) wire:sort:handle title="Drag to reorder" @else disabled title="Drag reorder is available only with no search and Visibility set to Any" @endif
                             aria-label="Drag social link {{ $index + 1 }} to reorder"
-                        >⠿</button>
+                        >⋮⋮</button>
                     </td>
                     <td class="admin-table__position"><span class="admin-position">{{ $index + 1 }}</span></td>
                     <td>
@@ -177,7 +177,9 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7">No social links configured.</td>
+                    <td class="admin-table__empty-cell" colspan="7">
+                        <x-admin.empty-state title="No social links configured" minimal />
+                    </td>
                 </tr>
             @endforelse
         </tbody>
