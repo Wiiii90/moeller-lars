@@ -192,87 +192,91 @@
         </form>
 
         <x-admin.table class="admin-table--data admin-storage__table">
-            @if ($files !== [])
-                <table>
-                    <thead>
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Original</th>
+                        <th scope="col">Use</th>
+                        <th scope="col">References</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Original size</th>
+                        <th scope="col">Share</th>
+                        <th scope="col">State</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($files as $row)
                         <tr>
-                            <th scope="col">Original</th>
-                            <th scope="col">Use</th>
-                            <th scope="col">References</th>
-                            <th scope="col">Type</th>
-                            <th scope="col">Original size</th>
-                            <th scope="col">Share</th>
-                            <th scope="col">State</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($files as $row)
-                            <tr>
-                                <td class="admin-table__identity">
-                                    <strong title="{{ $row['filename'] }}">{{ $row['filename'] }}</strong>
-                                    <small>{{ $row['asset_id'] === null ? 'Measured original without Media Files record' : 'Authoritative original' }}</small>
-                                </td>
-                                <td>
-                                    <span class="admin-storage__use">{{ implode(' + ', $row['use_labels']) }}</span>
-                                </td>
-                                <td class="admin-storage__references">
-                                    @if ($row['references'] === [])
-                                        <span>—</span>
-                                    @else
-                                        @foreach (array_slice($row['references'], 0, 2) as $reference)
-                                            <span class="admin-storage__reference">
-                                                @if (! empty($reference['url']))
-                                                    <a href="{{ $reference['url'] }}">{{ $reference['target_label'] }}</a>
-                                                @else
-                                                    <strong>{{ $reference['target_label'] }}</strong>
-                                                @endif
-                                                <small>{{ $reference['label'] }}</small>
-                                            </span>
-                                        @endforeach
-                                        @if (count($row['references']) > 2)
-                                            <details class="admin-storage__reference-more">
-                                                <summary>+ {{ count($row['references']) - 2 }} more</summary>
-                                                <div>
-                                                    @foreach (array_slice($row['references'], 2) as $reference)
-                                                        <span class="admin-storage__reference">
-                                                            @if (! empty($reference['url']))
-                                                                <a href="{{ $reference['url'] }}">{{ $reference['target_label'] }}</a>
-                                                            @else
-                                                                <strong>{{ $reference['target_label'] }}</strong>
-                                                            @endif
-                                                            <small>{{ $reference['label'] }}</small>
-                                                        </span>
-                                                    @endforeach
-                                                </div>
-                                            </details>
-                                        @endif
+                            <td class="admin-table__identity">
+                                <strong title="{{ $row['filename'] }}">{{ $row['filename'] }}</strong>
+                                <small>{{ $row['asset_id'] === null ? 'Measured original without Media Files record' : 'Authoritative original' }}</small>
+                            </td>
+                            <td>
+                                <span class="admin-storage__use">{{ implode(' + ', $row['use_labels']) }}</span>
+                            </td>
+                            <td class="admin-storage__references">
+                                @if ($row['references'] === [])
+                                    <span>—</span>
+                                @else
+                                    @foreach (array_slice($row['references'], 0, 2) as $reference)
+                                        <span class="admin-storage__reference">
+                                            @if (! empty($reference['url']))
+                                                <a href="{{ $reference['url'] }}">{{ $reference['target_label'] }}</a>
+                                            @else
+                                                <strong>{{ $reference['target_label'] }}</strong>
+                                            @endif
+                                            <small>{{ $reference['label'] }}</small>
+                                        </span>
+                                    @endforeach
+                                    @if (count($row['references']) > 2)
+                                        <details class="admin-storage__reference-more">
+                                            <summary>+ {{ count($row['references']) - 2 }} more</summary>
+                                            <div>
+                                                @foreach (array_slice($row['references'], 2) as $reference)
+                                                    <span class="admin-storage__reference">
+                                                        @if (! empty($reference['url']))
+                                                            <a href="{{ $reference['url'] }}">{{ $reference['target_label'] }}</a>
+                                                        @else
+                                                            <strong>{{ $reference['target_label'] }}</strong>
+                                                        @endif
+                                                        <small>{{ $reference['label'] }}</small>
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        </details>
                                     @endif
-                                </td>
-                                <td>{{ $row['type_label'] }}</td>
-                                <td class="admin-storage__number">{{ $row['display_bytes'] }}</td>
-                                <td class="admin-storage__number">{{ $row['display_share'] }}</td>
-                                <td>
-                                    <span @class([
-                                        'admin-status',
-                                        'is-referenced' => $row['state'] === 'referenced',
-                                        'is-unreferenced' => $row['state'] === 'unreferenced',
-                                        'is-uncatalogued' => $row['state'] === 'uncatalogued',
-                                    ])>{{ $row['state_label'] }}</span>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            @else
-                <x-admin.empty-state kicker="No matches" title="No originals match these filters">
-                    <p>Change search, area or reference filters to widen the storage view.</p>
-                </x-admin.empty-state>
-            @endif
+                                @endif
+                            </td>
+                            <td>{{ $row['type_label'] }}</td>
+                            <td class="admin-storage__number">{{ $row['display_bytes'] }}</td>
+                            <td class="admin-storage__number">{{ $row['display_share'] }}</td>
+                            <td>
+                                <span @class([
+                                    'admin-status',
+                                    'is-referenced' => $row['state'] === 'referenced',
+                                    'is-unreferenced' => $row['state'] === 'unreferenced',
+                                    'is-uncatalogued' => $row['state'] === 'uncatalogued',
+                                ])>{{ $row['state_label'] }}</span>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td class="admin-table__empty-cell" colspan="7">
+                                <x-admin.empty-state title="No originals match these filters" minimal>
+                                    <x-slot:actions>
+                                        <button class="admin-action" type="button" wire:click="resetTableFilters">Clear filters</button>
+                                    </x-slot:actions>
+                                </x-admin.empty-state>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </x-admin.table>
 
         <nav class="admin-pager" aria-label="Storage pagination">
             <label class="admin-pager__size">
-                <span>Rows</span>
+                <span>Per page</span>
                 <select wire:model.live="pageSize" aria-label="Rows per page">
                     <option value="25">25</option>
                     <option value="50">50</option>
