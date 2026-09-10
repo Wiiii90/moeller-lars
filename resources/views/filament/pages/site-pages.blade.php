@@ -67,12 +67,6 @@
                     <div class="admin-task-control-group">
                         <span class="admin-task-control-label">PAGES</span>
                         <div class="admin-task-control-actions">
-                            <button
-                                class="admin-action"
-                                type="button"
-                                disabled
-                                title="No collection-wide Pages settings are defined by the current domain contract."
-                            >Settings</button>
                             <button class="admin-action" type="button" wire:click="startAddingPage">Add page</button>
                         </div>
                     </div>
@@ -88,6 +82,7 @@
                                 x-on:click="open = ! open"
                                 x-bind:aria-expanded="open"
                                 aria-haspopup="menu"
+                                @disabled($selectedCount === 0)
                             >
                                 <span>Selected</span>
                                 <span class="admin-selection__count">{{ $selectedCount }}</span>
@@ -108,14 +103,6 @@
                     </div>
                 </x-slot:selection>
             </x-admin.controls>
-
-            @if (! $reorderEnabled)
-                <p class="admin-task-note">
-                    {{ $filtersActive
-                        ? 'Reordering is disabled while Search, Type or Status filters are active.'
-                        : 'Reordering is disabled while only part of the canonical root-page order is visible.' }}
-                </p>
-            @endif
 
             <x-admin.table>
                 <div class="admin-hierarchy admin-hierarchy--pages" role="table" aria-label="Pages">
