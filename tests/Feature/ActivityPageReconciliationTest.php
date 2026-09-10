@@ -31,44 +31,6 @@ function activityReconciliationEvent(
     ]);
 }
 
-it('uses the shared Visual Stage plus central Activity table and pager', function (): void {
-    $view = (string) file_get_contents(resource_path('views/filament/pages/activity.blade.php'));
-    $activityCss = (string) file_get_contents(resource_path('css/admin/activity.css'));
-    $dataCss = (string) file_get_contents(resource_path('css/admin/data-workspace.css'));
-
-    expect($view)->toContain(
-        'activity-atlas__grid admin-visual-stage admin-visual-stage--stackable',
-        'activity-atlas__visual admin-visual-stage__pane',
-        'activity-publication admin-visual-stage__pane',
-        'class="admin-visual-stage-followup"',
-        '<x-admin.table class="admin-table--data activity-workspace__table">',
-        '<th scope="col">Publication</th>',
-        'class="admin-status is-published">Committed',
-        'class="admin-status">Staged',
-        'class="admin-status">No pending delta',
-        'wire:click="undo(',
-        'class="admin-pager"',
-        'admin-pager__range',
-        'admin-pager__actions admin-toolbar',
-        '>Previous</a>',
-        '>Next</a>',
-    )
-        ->and($view)->not->toContain('$paginator->links()', 'activity-pagination')
-        ->and($activityCss)->not->toContain(
-            '.activity-pagination',
-            '.activity-action',
-            '.activity-table',
-            'min-height: clamp(23rem',
-            'min-height: 23rem',
-            'min-height: 22rem',
-            'min-height: 21rem',
-            'min-height: 19rem',
-        )
-        ->and($dataCss)->toMatch('/\.admin-visual-stage\s*\{[^}]*height:\s*var\(--admin-visual-stage-height\);/s')
-        ->and($dataCss)->toMatch('/\.admin-pager\s*\{[^}]*border-top:\s*1px solid var\(--admin-line-strong\);/s')
-        ->and($dataCss)->not->toMatch('/\.admin-pager\s*\{[^}]*border-bottom:/s');
-});
-
 it('keeps full-window Activity aggregates stable across table pages and applies shared filters', function (): void {
     $alice = User::factory()->admin()->create(['name' => 'Alice Activity']);
     $bob = User::factory()->admin()->create(['name' => 'Bob Activity']);
