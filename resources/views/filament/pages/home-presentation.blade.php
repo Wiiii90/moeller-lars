@@ -80,8 +80,8 @@
 
                                     @if ($heroGroupSource === 'manual')
                                         <div class="home-hero-candidate__actions admin-toolbar">
-                                            <button class="admin-action" type="button" wire:click="moveHeroArtwork({{ $row['id'] }}, 'up')" @disabled(! $row['can_move_up']) aria-label="Move {{ $row['title'] }} up">↑</button>
-                                            <button class="admin-action" type="button" wire:click="moveHeroArtwork({{ $row['id'] }}, 'down')" @disabled(! $row['can_move_down']) aria-label="Move {{ $row['title'] }} down">↓</button>
+                                            <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork({{ $row['id'] }}, 'up')" @disabled(! $row['can_move_up']) aria-label="Move {{ $row['title'] }} up">↑</button>
+                                            <button class="admin-action admin-order-action" type="button" wire:click="moveHeroArtwork({{ $row['id'] }}, 'down')" @disabled(! $row['can_move_down']) aria-label="Move {{ $row['title'] }} down">↓</button>
                                             <button class="admin-action is-danger" type="button" wire:click="removeHeroArtwork({{ $row['id'] }})" @disabled(count($manualHeroGroup) === 1)>Remove</button>
                                         </div>
                                     @endif
@@ -107,6 +107,7 @@
             @php
                 $sourceRows = $this->sourceRows();
                 $visibleSourceIds = collect($sourceRows->items())->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
+                $sourceFiltersActive = trim($sourceSearch) !== '' || $sourceStatusFilter !== 'any' || $sourceHomeFilter !== 'any';
             @endphp
 
             <x-admin.controls class="home-artwork-source-controls" aria-label="Gallery source controls">
@@ -139,7 +140,7 @@
                 <x-slot:reset>
                     <div class="admin-data-control-group">
                         <span class="admin-data-control-label">Filter</span>
-                        <button class="admin-action" type="button" wire:click="resetSourceFilters">Reset</button>
+                        <button class="admin-action" type="button" wire:click="resetSourceFilters" @disabled(! $sourceFiltersActive)>Reset</button>
                     </div>
                 </x-slot:reset>
 
@@ -148,9 +149,13 @@
                         <span class="admin-data-control-label">Hero Artwork</span>
                         <div class="admin-toolbar">
                             <button class="admin-action" type="button" wire:click="mountAction('settings')">Settings</button>
-                            @if ($heroGroupSource === 'manual')
-                                <button class="admin-action" type="button" wire:click="mountAction('addHeroArtwork')">Add artwork</button>
-                            @endif
+                            <button
+                                class="admin-action"
+                                type="button"
+                                wire:click="mountAction('addHeroArtwork')"
+                                @disabled($heroGroupSource !== 'manual')
+                                title="{{ $heroGroupSource === 'manual' ? 'Add artwork to the manual Hero group' : 'Switch Hero source to Manual to add artworks directly' }}"
+                            >Add artwork</button>
                             <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
                         </div>
                     </div>
@@ -172,83 +177,85 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            @if ($sourceRows->count() > 0)
-                <x-admin.table class="admin-data-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th scope="col" class="admin-table__selection">
-                                    <input
-                                        type="checkbox"
-                                        x-data="{}"
-                                        wire:click.prevent="toggleVisibleSourceSelection"
-                                        x-effect="
-                                            const visibleIds = @js($visibleSourceIds);
-                                            const selectedIds = $wire.selectedSourceIds.map(Number);
-                                            const selectedCount = visibleIds.filter((id) => selectedIds.includes(id)).length;
-                                            $el.checked = visibleIds.length > 0 && selectedCount === visibleIds.length;
-                                            $el.indeterminate = selectedCount > 0 && selectedCount < visibleIds.length;
-                                        "
-                                        @disabled($visibleSourceIds === [])
-                                        aria-label="Toggle selection for visible Galleries"
-                                    >
-                                </th>
-                                <th scope="col">Gallery</th>
-                                <th scope="col">Candidates</th>
-                                <th scope="col">Status</th>
-                                <th scope="col">Source</th>
-                                <th scope="col">Artworks</th>
-                                <th scope="col">Newest Year</th>
-                                <th scope="col" class="admin-table__actions">Actions</th>
+            <x-admin.table class="admin-data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="admin-table__selection">
+                                <input
+                                    type="checkbox"
+                                    x-data="{}"
+                                    wire:click.prevent="toggleVisibleSourceSelection"
+                                    x-effect="
+                                        const visibleIds = @js($visibleSourceIds);
+                                        const selectedIds = $wire.selectedSourceIds.map(Number);
+                                        const selectedCount = visibleIds.filter((id) => selectedIds.includes(id)).length;
+                                        $el.checked = visibleIds.length > 0 && selectedCount === visibleIds.length;
+                                        $el.indeterminate = selectedCount > 0 && selectedCount < visibleIds.length;
+                                    "
+                                    @disabled($visibleSourceIds === [])
+                                    aria-label="Toggle selection for visible Galleries"
+                                >
+                            </th>
+                            <th scope="col">Gallery</th>
+                            <th scope="col">Candidates</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Source</th>
+                            <th scope="col">Artworks</th>
+                            <th scope="col">Newest Year</th>
+                            <th scope="col" class="admin-table__actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($sourceRows as $gallery)
+                            @php
+                                $selected = in_array($gallery['id'], array_map('intval', $selectedSourceIds), true);
+                            @endphp
+                            <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="home-source-gallery-{{ $gallery['id'] }}">
+                                <td class="admin-table__selection">
+                                    <input type="checkbox" value="{{ $gallery['id'] }}" wire:model.live="selectedSourceIds" aria-label="Select {{ $gallery['name'] }}">
+                                </td>
+                                <td class="admin-table__identity"><strong>{{ $gallery['name'] }}</strong></td>
+                                <td>
+                                    <div class="home-source-candidates" aria-label="Candidates from {{ $gallery['name'] }}">
+                                        @forelse ($gallery['candidates'] as $candidate)
+                                            <a href="{{ $candidate['edit_url'] }}" title="{{ $candidate['title'] }} · {{ $candidate['year'] ?: '—' }}" aria-label="Edit {{ $candidate['title'] }}">
+                                                @if ($candidate['thumbnail_url'])
+                                                    <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
+                                                @else
+                                                    <span>—</span>
+                                                @endif
+                                            </a>
+                                        @empty
+                                            <span class="home-source-candidates__empty">—</span>
+                                        @endforelse
+                                    </div>
+                                </td>
+                                <td><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
+                                <td><span class="admin-status {{ $gallery['effective_enabled'] ? 'is-published' : '' }}">{{ $gallery['source_label'] }}</span></td>
+                                <td>{{ number_format($gallery['published_artworks']) }}</td>
+                                <td>{{ $gallery['newest_year'] ?: '—' }}</td>
+                                <td class="admin-table__actions">
+                                    <div class="admin-row-actions admin-toolbar">
+                                        <button class="admin-action admin-action--state" type="button" wire:click="toggleGalleryEligibility({{ $gallery['id'] }})">{{ $gallery['preference_enabled'] ? 'Disable preference' : 'Enable preference' }}</button>
+                                        <a class="admin-action" href="{{ $gallery['workspace_url'] }}">Open Gallery</a>
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($sourceRows as $gallery)
-                                @php
-                                    $selected = in_array($gallery['id'], array_map('intval', $selectedSourceIds), true);
-                                @endphp
-                                <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="home-source-gallery-{{ $gallery['id'] }}">
-                                    <td class="admin-table__selection">
-                                        <input type="checkbox" value="{{ $gallery['id'] }}" wire:model.live="selectedSourceIds" aria-label="Select {{ $gallery['name'] }}">
-                                    </td>
-                                    <td class="admin-table__identity"><strong>{{ $gallery['name'] }}</strong></td>
-                                    <td>
-                                        <div class="home-source-candidates" aria-label="Candidates from {{ $gallery['name'] }}">
-                                            @forelse ($gallery['candidates'] as $candidate)
-                                                <a href="{{ $candidate['edit_url'] }}" title="{{ $candidate['title'] }} · {{ $candidate['year'] ?: '—' }}" aria-label="Edit {{ $candidate['title'] }}">
-                                                    @if ($candidate['thumbnail_url'])
-                                                        <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
-                                                    @else
-                                                        <span>—</span>
-                                                    @endif
-                                                </a>
-                                            @empty
-                                                <span class="home-source-candidates__empty">—</span>
-                                            @endforelse
-                                        </div>
-                                    </td>
-                                    <td><span class="admin-status {{ $gallery['state'] === 'published' ? 'is-published' : '' }}">{{ $gallery['status_label'] }}</span></td>
-                                    <td><span class="admin-status {{ $gallery['effective_enabled'] ? 'is-published' : '' }}">{{ $gallery['source_label'] }}</span></td>
-                                    <td>{{ number_format($gallery['published_artworks']) }}</td>
-                                    <td>{{ $gallery['newest_year'] ?: '—' }}</td>
-                                    <td class="admin-table__actions">
-                                        <div class="admin-row-actions admin-toolbar">
-                                            <button class="admin-action admin-action--state" type="button" wire:click="toggleGalleryEligibility({{ $gallery['id'] }})">{{ $gallery['preference_enabled'] ? 'Disable preference' : 'Enable preference' }}</button>
-                                            <a class="admin-action" href="{{ $gallery['workspace_url'] }}">Open Gallery</a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </x-admin.table>
-            @else
-                <x-admin.empty-state :title="trim($sourceSearch) !== '' || $sourceStatusFilter !== 'any' || $sourceHomeFilter !== 'any' ? 'No matching Galleries' : 'No Gallery sources'" minimal>
-                    @if (trim($sourceSearch) !== '' || $sourceStatusFilter !== 'any' || $sourceHomeFilter !== 'any')
-                        <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">Clear filters</button></x-slot:actions>
-                    @endif
-                </x-admin.empty-state>
-            @endif
+                        @empty
+                            <tr>
+                                <td class="admin-table__empty-cell" colspan="8">
+                                    <x-admin.empty-state :title="$sourceFiltersActive ? 'No matching Galleries' : 'No Gallery sources'" minimal>
+                                        @if ($sourceFiltersActive)
+                                            <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">Clear filters</button></x-slot:actions>
+                                        @endif
+                                    </x-admin.empty-state>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </x-admin.table>
 
             @if ($sourceRows->total() > $sourceRows->perPage() || $sourceRows->currentPage() > 1)
                 <footer class="admin-pager">
@@ -268,6 +275,7 @@
             @php
                 $reorderEnabled = trim($componentSearch) === '' && $componentType === 'any';
                 $visibleComponentTargets = collect($components)->pluck('target')->values()->all();
+                $componentFiltersActive = trim($componentSearch) !== '' || $componentType !== 'any';
             @endphp
 
             <x-admin.controls aria-label="Home component controls">
@@ -291,7 +299,7 @@
                 <x-slot:reset>
                     <div class="admin-data-control-group">
                         <span class="admin-data-control-label">Filter</span>
-                        <button class="admin-action" type="button" wire:click="resetComponentFilters">Reset</button>
+                        <button class="admin-action" type="button" wire:click="resetComponentFilters" @disabled(! $componentFiltersActive)>Reset</button>
                     </div>
                 </x-slot:reset>
 
@@ -323,68 +331,75 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            @if ($components !== [])
-                <x-admin.table class="admin-data-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th scope="col" class="admin-table__selection">
-                                    <input
-                                        type="checkbox"
-                                        x-data="{}"
-                                        wire:click.prevent="toggleVisibleComponentSelection"
-                                        x-effect="
-                                            const visibleTargets = @js($visibleComponentTargets);
-                                            const selectedTargets = $wire.selectedComponentTargets;
-                                            const selectedCount = visibleTargets.filter((target) => selectedTargets.includes(target)).length;
-                                            $el.checked = visibleTargets.length > 0 && selectedCount === visibleTargets.length;
-                                            $el.indeterminate = selectedCount > 0 && selectedCount < visibleTargets.length;
-                                        "
-                                        aria-label="Toggle selection for visible Home components"
-                                    >
-                                </th>
-                                <th scope="col">Drag</th>
-                                <th scope="col">Position</th>
-                                <th scope="col">Component</th>
-                                <th scope="col">Content</th>
-                                <th scope="col">Actions</th>
+            <x-admin.table class="admin-data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="admin-table__selection">
+                                <input
+                                    type="checkbox"
+                                    x-data="{}"
+                                    wire:click.prevent="toggleVisibleComponentSelection"
+                                    x-effect="
+                                        const visibleTargets = @js($visibleComponentTargets);
+                                        const selectedTargets = $wire.selectedComponentTargets;
+                                        const selectedCount = visibleTargets.filter((target) => selectedTargets.includes(target)).length;
+                                        $el.checked = visibleTargets.length > 0 && selectedCount === visibleTargets.length;
+                                        $el.indeterminate = selectedCount > 0 && selectedCount < visibleTargets.length;
+                                    "
+                                    @disabled($visibleComponentTargets === [])
+                                    aria-label="Toggle selection for visible Home components"
+                                >
+                            </th>
+                            <th scope="col">Drag</th>
+                            <th scope="col">Position</th>
+                            <th scope="col">Component</th>
+                            <th scope="col">Content</th>
+                            <th scope="col" class="admin-table__actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody @if ($reorderEnabled) wire:sort="sortComponent" @endif>
+                        @forelse ($components as $component)
+                            <tr wire:key="home-component-{{ $template }}-{{ $component['target'] }}" @if ($reorderEnabled) wire:sort:item="{{ $component['target'] }}" @endif>
+                                <td class="admin-table__selection">
+                                    <input type="checkbox" value="{{ $component['target'] }}" wire:model.live="selectedComponentTargets" aria-label="Select {{ $component['type_label'] }}">
+                                </td>
+                                <td class="admin-table__drag">
+                                    <button class="admin-drag-handle" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $component['type_label'] }}">⋮⋮</button>
+                                </td>
+                                <td class="admin-table__position"><span class="admin-position">{{ str_pad((string) $component['position'], 2, '0', STR_PAD_LEFT) }}</span></td>
+                                <td>{{ $component['type_label'] }}</td>
+                                <td class="admin-table__identity">
+                                    <strong>{{ $component['content']['primary'] }}</strong>
+                                    @if ($component['content']['secondary'] !== '')<small>{{ $component['content']['secondary'] }}</small>@endif
+                                </td>
+                                <td class="admin-table__actions">
+                                    <div class="admin-row-actions admin-toolbar">
+                                        @if ($component['editable'])
+                                            <button class="admin-action" type="button" wire:click="mountAction('editComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })">Edit</button>
+                                        @else
+                                            <button class="admin-action" type="button" disabled>Edit</button>
+                                        @endif
+                                        <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')" @disabled(! $reorderEnabled || ! $component['can_move_up']) aria-label="Move {{ $component['type_label'] }} up">↑</button>
+                                        <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')" @disabled(! $reorderEnabled || ! $component['can_move_down']) aria-label="Move {{ $component['type_label'] }} down">↓</button>
+                                        <button class="admin-action is-danger" type="button" wire:click="mountAction('removeComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })">Delete</button>
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody @if ($reorderEnabled) wire:sort="sortComponent" @endif>
-                            @foreach ($components as $component)
-                                <tr wire:key="home-component-{{ $template }}-{{ $component['target'] }}" @if ($reorderEnabled) wire:sort:item="{{ $component['target'] }}" @endif>
-                                    <td class="admin-table__selection">
-                                        <input type="checkbox" value="{{ $component['target'] }}" wire:model.live="selectedComponentTargets" aria-label="Select {{ $component['type_label'] }}">
-                                    </td>
-                                    <td>
-                                        <button class="admin-drag-handle" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $component['type_label'] }}">⋮⋮</button>
-                                    </td>
-                                    <td><span class="admin-position">{{ str_pad((string) $component['position'], 2, '0', STR_PAD_LEFT) }}</span></td>
-                                    <td>{{ $component['type_label'] }}</td>
-                                    <td class="admin-table__identity">
-                                        <strong>{{ $component['content']['primary'] }}</strong>
-                                        @if ($component['content']['secondary'] !== '')<small>{{ $component['content']['secondary'] }}</small>@endif
-                                    </td>
-                                    <td>
-                                        <div class="admin-toolbar">
-                                            @if ($component['editable'])<button class="admin-action" type="button" wire:click="mountAction('editComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })">Edit</button>@endif
-                                            <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')" @disabled(! $reorderEnabled || ! $component['can_move_up']) aria-label="Move {{ $component['type_label'] }} up">↑</button>
-                                            <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')" @disabled(! $reorderEnabled || ! $component['can_move_down']) aria-label="Move {{ $component['type_label'] }} down">↓</button>
-                                            <button class="admin-action is-danger" type="button" wire:click="mountAction('removeComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </x-admin.table>
-            @elseif ($componentDataset === [])
-                <x-admin.empty-state title="No components" minimal />
-            @else
-                <x-admin.empty-state title="No matching components" minimal>
-                    <x-slot:actions><button class="admin-action" type="button" wire:click="resetComponentFilters">Clear filters</button></x-slot:actions>
-                </x-admin.empty-state>
-            @endif
+                        @empty
+                            <tr>
+                                <td class="admin-table__empty-cell" colspan="6">
+                                    <x-admin.empty-state :title="$componentDataset === [] ? 'No components' : 'No matching components'" minimal>
+                                        @if ($componentDataset !== [])
+                                            <x-slot:actions><button class="admin-action" type="button" wire:click="resetComponentFilters">Clear filters</button></x-slot:actions>
+                                        @endif
+                                    </x-admin.empty-state>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </x-admin.table>
 
             <x-admin.add-row wire:click="mountAction('addComponent')">Add component</x-admin.add-row>
 
