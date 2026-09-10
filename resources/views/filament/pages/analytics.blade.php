@@ -325,25 +325,35 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($detailTable['rows'] as $row)
-                            <tr>
-                                @foreach ($row as $cell)
-                                    <td class="{{ $loop->first ? 'admin-table__identity' : '' }}">{{ $cell }}</td>
-                                @endforeach
-                            </tr>
-                        @empty
+                        @if ($detailTable['state'] === 'unavailable')
                             <tr>
                                 <td class="admin-table__empty-cell" colspan="{{ max(1, count($detailTable['columns'])) }}">
-                                    <x-admin.empty-state :title="$detailEmptyTitle" minimal>
-                                        @if (trim($search) !== '')
-                                            <x-slot:actions>
-                                                <button class="admin-action" type="button" wire:click="$set('search', '')">Clear search</button>
-                                            </x-slot:actions>
-                                        @endif
-                                    </x-admin.empty-state>
+                                    <x-admin.status tone="danger">
+                                        {{ $detailTable['message'] ?? $detailReportLabel.' unavailable' }}
+                                    </x-admin.status>
                                 </td>
                             </tr>
-                        @endforelse
+                        @else
+                            @forelse ($detailTable['rows'] as $row)
+                                <tr>
+                                    @foreach ($row as $cell)
+                                        <td class="{{ $loop->first ? 'admin-table__identity' : '' }}">{{ $cell }}</td>
+                                    @endforeach
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td class="admin-table__empty-cell" colspan="{{ max(1, count($detailTable['columns'])) }}">
+                                        <x-admin.empty-state :title="$detailEmptyTitle" minimal>
+                                            @if (trim($search) !== '')
+                                                <x-slot:actions>
+                                                    <button class="admin-action" type="button" wire:click="$set('search', '')">Clear search</button>
+                                                </x-slot:actions>
+                                            @endif
+                                        </x-admin.empty-state>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        @endif
                     </tbody>
                 </table>
             </x-admin.table>

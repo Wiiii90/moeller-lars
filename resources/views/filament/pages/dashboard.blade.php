@@ -158,6 +158,11 @@
                 </x-slot:reset>
             </x-admin.controls>
 
+            @php
+                $feedHasRecords = $feedPagination['total'] > 0 || (trim($feedSearch) !== '' || $feedType !== 'all')
+                    && app(\App\Domain\Admin\DashboardFeed::class)->paginate('', 'all', 1, 25)['total'] > 0;
+            @endphp
+
             <x-admin.table class="admin-data-table">
                 <table>
                     <thead>
@@ -199,11 +204,15 @@
                 </table>
 
                 @if ($feed === [])
-                    <x-admin.empty-state title="No matching feed entries" minimal>
-                        <x-slot:actions>
-                            <button class="admin-action" type="button" wire:click="resetFeed">Clear filters</button>
-                        </x-slot:actions>
-                    </x-admin.empty-state>
+                    @if ($feedHasRecords)
+                        <x-admin.empty-state title="No matching feed entries" minimal>
+                            <x-slot:actions>
+                                <button class="admin-action" type="button" wire:click="resetFeed">Clear filters</button>
+                            </x-slot:actions>
+                        </x-admin.empty-state>
+                    @else
+                        <x-admin.empty-state title="No feed entries yet" minimal />
+                    @endif
                 @endif
             </x-admin.table>
 

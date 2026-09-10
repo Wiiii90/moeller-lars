@@ -18,6 +18,9 @@
 
                 return request()->url().($query === [] ? '' : '?'.http_build_query($query));
             };
+            $activitySourceExists = $paginator->total() > 0 || \App\Models\AuditEvent::query()
+                ->where('occurred_at', '>=', now()->subDays(\App\Filament\Support\AdminActivityFeed::ACTIVITY_WINDOW_DAYS))
+                ->exists();
         @endphp
 
         <section
@@ -386,11 +389,15 @@
                     @empty
                         <tr>
                             <td class="admin-table__empty-cell" colspan="7">
-                                <x-admin.empty-state title="No activity matches these filters" minimal>
-                                    <x-slot:actions>
-                                        <a class="admin-action" href="{{ $activityUrl(['period' => $period]) }}">Clear filters</a>
-                                    </x-slot:actions>
-                                </x-admin.empty-state>
+                                @if ($activitySourceExists)
+                                    <x-admin.empty-state title="No matching activity" minimal>
+                                        <x-slot:actions>
+                                            <a class="admin-action" href="{{ $activityUrl([]) }}">Clear filters</a>
+                                        </x-slot:actions>
+                                    </x-admin.empty-state>
+                                @else
+                                    <x-admin.empty-state title="No activity yet" minimal />
+                                @endif
                             </td>
                         </tr>
                     @endforelse

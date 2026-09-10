@@ -184,7 +184,19 @@
                         </div>
                     @else
                         <div class="admin-hierarchy__empty" role="row">
-                            {{ $filtersActive ? 'No pages match the current filters.' : 'No pages exist yet.' }}
+                            @if ($metrics['total'] > 0)
+                                <x-admin.empty-state title="No matching pages" minimal>
+                                    <x-slot:actions>
+                                        <button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button>
+                                    </x-slot:actions>
+                                </x-admin.empty-state>
+                            @else
+                                <x-admin.empty-state title="No pages yet" minimal>
+                                    <x-slot:actions>
+                                        <button class="admin-action" type="button" wire:click="startAddingPage">Add page</button>
+                                    </x-slot:actions>
+                                </x-admin.empty-state>
+                            @endif
                         </div>
                     @endif
                 </div>

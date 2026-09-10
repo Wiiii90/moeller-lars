@@ -108,6 +108,8 @@
                 $sourceRows = $this->sourceRows();
                 $visibleSourceIds = collect($sourceRows->items())->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
                 $sourceFiltersActive = trim($sourceSearch) !== '' || $sourceStatusFilter !== 'any' || $sourceHomeFilter !== 'any';
+                $sourceHasRecords = $sourceRows->total() > 0 || ($sourceFiltersActive
+                    && \App\Models\ArtworkCategory::query()->whereHas('siteSection')->exists());
             @endphp
 
             <x-admin.controls class="home-artwork-source-controls" aria-label="Gallery source controls">
@@ -245,11 +247,13 @@
                         @empty
                             <tr>
                                 <td class="admin-table__empty-cell" colspan="8">
-                                    <x-admin.empty-state :title="$sourceFiltersActive ? 'No matching Galleries' : 'No Gallery sources'" minimal>
-                                        @if ($sourceFiltersActive)
+                                    @if ($sourceHasRecords)
+                                        <x-admin.empty-state title="No matching Galleries" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">Clear filters</button></x-slot:actions>
-                                        @endif
-                                    </x-admin.empty-state>
+                                        </x-admin.empty-state>
+                                    @else
+                                        <x-admin.empty-state title="No Gallery sources" minimal />
+                                    @endif
                                 </td>
                             </tr>
                         @endforelse

@@ -205,71 +205,85 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($files as $row)
-                        <tr>
-                            <td class="admin-table__identity">
-                                <strong title="{{ $row['filename'] }}">{{ $row['filename'] }}</strong>
-                                <small>{{ $row['asset_id'] === null ? 'Measured original without Media Files record' : 'Authoritative original' }}</small>
-                            </td>
-                            <td>
-                                <span class="admin-storage__use">{{ implode(' + ', $row['use_labels']) }}</span>
-                            </td>
-                            <td class="admin-storage__references">
-                                @if ($row['references'] === [])
-                                    <span>—</span>
-                                @else
-                                    @foreach (array_slice($row['references'], 0, 2) as $reference)
-                                        <span class="admin-storage__reference">
-                                            @if (! empty($reference['url']))
-                                                <a href="{{ $reference['url'] }}">{{ $reference['target_label'] }}</a>
-                                            @else
-                                                <strong>{{ $reference['target_label'] }}</strong>
-                                            @endif
-                                            <small>{{ $reference['label'] }}</small>
-                                        </span>
-                                    @endforeach
-                                    @if (count($row['references']) > 2)
-                                        <details class="admin-storage__reference-more">
-                                            <summary>+ {{ count($row['references']) - 2 }} more</summary>
-                                            <div>
-                                                @foreach (array_slice($row['references'], 2) as $reference)
-                                                    <span class="admin-storage__reference">
-                                                        @if (! empty($reference['url']))
-                                                            <a href="{{ $reference['url'] }}">{{ $reference['target_label'] }}</a>
-                                                        @else
-                                                            <strong>{{ $reference['target_label'] }}</strong>
-                                                        @endif
-                                                        <small>{{ $reference['label'] }}</small>
-                                                    </span>
-                                                @endforeach
-                                            </div>
-                                        </details>
-                                    @endif
-                                @endif
-                            </td>
-                            <td>{{ $row['type_label'] }}</td>
-                            <td class="admin-storage__number">{{ $row['display_bytes'] }}</td>
-                            <td class="admin-storage__number">{{ $row['display_share'] }}</td>
-                            <td>
-                                <span @class([
-                                    'admin-status',
-                                    'is-referenced' => $row['state'] === 'referenced',
-                                    'is-unreferenced' => $row['state'] === 'unreferenced',
-                                    'is-uncatalogued' => $row['state'] === 'uncatalogued',
-                                ])>{{ $row['state_label'] }}</span>
-                            </td>
-                        </tr>
-                    @empty
+                    @if (! ($capacity['measurement_available'] ?? false))
                         <tr>
                             <td class="admin-table__empty-cell" colspan="7">
-                                <x-admin.empty-state title="No originals match these filters" minimal>
+                                <x-admin.status tone="danger">Authoritative storage measurement is unavailable.</x-admin.status>
+                            </td>
+                        </tr>
+                    @elseif ($files !== [])
+                        @foreach ($files as $row)
+                            <tr>
+                                <td class="admin-table__identity">
+                                    <strong title="{{ $row['filename'] }}">{{ $row['filename'] }}</strong>
+                                    <small>{{ $row['asset_id'] === null ? 'Measured original without Media Files record' : 'Authoritative original' }}</small>
+                                </td>
+                                <td>
+                                    <span class="admin-storage__use">{{ implode(' + ', $row['use_labels']) }}</span>
+                                </td>
+                                <td class="admin-storage__references">
+                                    @if ($row['references'] === [])
+                                        <span>—</span>
+                                    @else
+                                        @foreach (array_slice($row['references'], 0, 2) as $reference)
+                                            <span class="admin-storage__reference">
+                                                @if (! empty($reference['url']))
+                                                    <a href="{{ $reference['url'] }}">{{ $reference['target_label'] }}</a>
+                                                @else
+                                                    <strong>{{ $reference['target_label'] }}</strong>
+                                                @endif
+                                                <small>{{ $reference['label'] }}</small>
+                                            </span>
+                                        @endforeach
+                                        @if (count($row['references']) > 2)
+                                            <details class="admin-storage__reference-more">
+                                                <summary>+ {{ count($row['references']) - 2 }} more</summary>
+                                                <div>
+                                                    @foreach (array_slice($row['references'], 2) as $reference)
+                                                        <span class="admin-storage__reference">
+                                                            @if (! empty($reference['url']))
+                                                                <a href="{{ $reference['url'] }}">{{ $reference['target_label'] }}</a>
+                                                            @else
+                                                                <strong>{{ $reference['target_label'] }}</strong>
+                                                            @endif
+                                                            <small>{{ $reference['label'] }}</small>
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            </details>
+                                        @endif
+                                    @endif
+                                </td>
+                                <td>{{ $row['type_label'] }}</td>
+                                <td class="admin-storage__number">{{ $row['display_bytes'] }}</td>
+                                <td class="admin-storage__number">{{ $row['display_share'] }}</td>
+                                <td>
+                                    <span @class([
+                                        'admin-status',
+                                        'is-referenced' => $row['state'] === 'referenced',
+                                        'is-unreferenced' => $row['state'] === 'unreferenced',
+                                        'is-uncatalogued' => $row['state'] === 'uncatalogued',
+                                    ])>{{ $row['state_label'] }}</span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    @elseif ($breakdown === [])
+                        <tr>
+                            <td class="admin-table__empty-cell" colspan="7">
+                                <x-admin.empty-state title="No authoritative originals" minimal />
+                            </td>
+                        </tr>
+                    @else
+                        <tr>
+                            <td class="admin-table__empty-cell" colspan="7">
+                                <x-admin.empty-state title="No matching originals" minimal>
                                     <x-slot:actions>
                                         <button class="admin-action" type="button" wire:click="resetTableFilters">Clear filters</button>
                                     </x-slot:actions>
                                 </x-admin.empty-state>
                             </td>
                         </tr>
-                    @endforelse
+                    @endif
                 </tbody>
             </table>
         </x-admin.table>

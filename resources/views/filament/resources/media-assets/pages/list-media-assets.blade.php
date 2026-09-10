@@ -44,6 +44,7 @@
             >
                 <input
                     class="media-workspace__file-input"
+                    id="media-files-upload"
                     type="file"
                     wire:model="directMedia"
                     x-on:change="fileCount = $event.target.files.length"
@@ -97,6 +98,9 @@
                 $someVisibleSelected = $visibleSelectedCount > 0 && ! $allVisibleSelected;
                 $resultStart = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
                 $resultEnd = $total === 0 ? 0 : min($total, $page * $pageSize);
+                $libraryHasRecords = $total > 0 || \App\Models\MediaAsset::query()
+                    ->whereIn('mime_type', \App\Domain\Media\MediaTypePolicy::acceptedMimeTypes())
+                    ->exists();
             @endphp
 
             <div class="media-workspace__controls" aria-label="File search and filters">
@@ -440,11 +444,18 @@
                         </table>
                     </x-admin.table>
                 @endif
-            @else
+            @elseif ($libraryHasRecords)
                 <x-admin.empty-state title="No matching files">
-                    <p>Adjust the search or filters, or add a supported file above.</p>
+                    <p>Adjust the search or filters.</p>
                     <x-slot:actions>
                         <button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button>
+                    </x-slot:actions>
+                </x-admin.empty-state>
+            @else
+                <x-admin.empty-state title="No media files yet">
+                    <p>Upload a supported file to start the library.</p>
+                    <x-slot:actions>
+                        <label class="admin-action" for="media-files-upload">Add files</label>
                     </x-slot:actions>
                 </x-admin.empty-state>
             @endif
