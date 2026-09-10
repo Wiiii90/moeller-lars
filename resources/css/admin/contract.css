@@ -149,6 +149,27 @@
     justify-content: flex-end;
 }
 
+/* Empty datasets keep the table header and use the same in-table geometry. */
+.admin-table__empty-cell {
+    padding: 0 !important;
+}
+
+.admin-table__empty-cell > .admin-empty-state {
+    min-height: 5.2rem;
+    padding: 1.35rem .6rem;
+    border: 0;
+}
+
+/* A pager may show page metadata instead of a page-size selector, but the
+ * left slot keeps the same alignment and typography. */
+.admin-pager__meta {
+    justify-self: start;
+    color: var(--admin-muted);
+    font-size: .72rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 @media (max-width: 760px) {
     .admin-data-controls,
     .admin-task-controls,
@@ -167,5 +188,18 @@
     .journal-workspace__controls > * {
         width: 100%;
         min-width: 0;
+    }
+
+    .admin-pager__meta {
+        grid-column: 1;
+        grid-row: 2;
+    }
+}
+
+@media (max-width: 520px) {
+    .admin-pager__meta {
+        grid-column: 1;
+        grid-row: 2;
+        justify-self: start;
     }
 }
