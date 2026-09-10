@@ -53,6 +53,51 @@ When several browser-fix workers run in parallel:
 
 Do not mutate the original feature branches merely to create a browser candidate. Do not rebase, merge to `main`, deploy Production or retarget PRs unless the orchestrator explicitly asks.
 
+## Orchestrator and worker roles
+
+A General-/Orchestration-/Browser-Review chat is primarily the **State Keeper, Scope Designer, Worker-Prompt Author, Diff Reviewer and Reconciliation-/Browser-Review Orchestrator**.
+
+Keep the orchestrator context focused on:
+
+- exact branches and SHAs;
+- confirmed findings and root causes;
+- user/product decisions;
+- worker handoffs and their review status;
+- reconciliation state;
+- runtime/browser acceptance state.
+
+Do not use the orchestrator as the default implementation worker for large source passes when a worker is intended for that scope. In particular, avoid loading large series of source files/diffs into the general chat and then producing many implementation commits there. Larger source work belongs in dedicated worker chats so implementation detail and diff volume do not consume the orchestration context.
+
+This is scope/context discipline, not a ban on direct changes. The orchestrator may implement when the user explicitly asks it to, or when the change is very small, clearly bounded and cheaper to perform directly than to hand off.
+
+### Audit worker
+
+An **audit worker** is read-only.
+
+It must:
+
+- change no code;
+- identify concrete deviations from the requested/current contract;
+- provide source evidence, root cause and the affected files/components/selectors/structures;
+- report findings without repairing them “while already there”.
+
+### Implementation worker
+
+An **implementation worker** receives confirmed findings and implements only the explicitly described scope.
+
+It must not reopen a general redesign/audit while implementing, nor treat neighboring code as permission for opportunistic cleanup. If audit and implementation are intentionally combined in one worker, the prompt must say so explicitly and still define the audit boundary, implementation boundary and stop conditions.
+
+### No scope expansion
+
+When any worker discovers another bug, UI drift, architecture issue or improvement outside the explicitly allowed scope:
+
+- do **not** repair it automatically;
+- record it under `Out-of-scope findings`;
+- touch it only when the requested change is technically impossible without resolving that point;
+- in that exceptional case, prefer stopping and reporting the blocker rather than inventing a broader scope.
+
+A worker must not interpret instructions such as “polish this” as permission to polish adjacent surfaces.
+
 ## Browser-review loop
 
 Visual/admin work follows this order:
@@ -146,8 +191,12 @@ Never trust a worker handoff text by itself. For every returned worker candidate
 - verify the expected parent/base;
 - compare exact base→head;
 - inspect the actual changed files and critical implementation;
+- map every material prompt requirement to the actual base→head **net diff**;
+- inspect unexpected files, non-requested layout/domain changes, missing requirements, unnecessary parallel primitives and any scope expansion;
 - distinguish reported checks from checks actually evidenced;
 - reject unexpected scope before reconciliation.
+
+A worker handoff is a navigation aid, not proof of scope compliance. The orchestrator's review is requirement → diff, not merely “does this diff look plausible?”.
 
 When a side branch was intentionally created from an older shared base, review it against that base, then reconcile onto the newest combined head deliberately.
 
@@ -270,13 +319,31 @@ A worker prompt should state:
 
 - repository;
 - exact base SHA and branch strategy;
-- allowed scope;
-- explicit non-goals;
-- browser findings/root causes already known;
+- exact allowed scope boundary;
+- explicit non-goals and forbidden neighboring areas;
+- confirmed browser findings and known root cause;
+- exact target state;
+- relevant concrete files/components/selectors when already known;
+- expressly allowed files/areas when the task requires a file boundary;
+- functional/domain invariants that must remain unchanged;
 - central technologies that must be reused;
+- source-verifiable acceptance criteria;
+- stop conditions;
 - checks that are and are not required;
 - commit/push rules;
 - exact handoff fields expected.
+
+Prompts must distinguish explicitly between:
+
+- **CONFIRMED / FIXED** — facts already established by user feedback, current source or contract;
+- **IMPLEMENTATION DISCRETION** — implementation choices the worker may actually make;
+- **OUT OF SCOPE** — behavior, files or neighboring surfaces the worker must not change.
+
+A worker must not re-decide what the user or current contract has already decided.
+
+When the desired geometry/structure is already known, do not make the worker infer it primarily from phrases such as “polish this”, “make it consistent”, “make it premium”, “clean it up”, “use best judgment” or “make it like the reference”. Such phrases may supplement concrete requirements, never replace them.
+
+For example, instead of only saying “make this clock more intuitive”, a prompt with an already-defined composition should name the structural changes: remove the extra header, keep the mode switch inside the stage, use a real dial with defined hands/current browser time, keep activity secondary, and preserve the existing publication-domain logic. This illustrates prompt precision; it is not a durable product requirement for any particular current page.
 
 For visual work, the prompt must additionally identify the current browser acceptance state and any user-designated reference surface. Do not describe rejected current markup as a preservation requirement unless the user explicitly accepted it.
 
@@ -294,6 +361,17 @@ A normal handoff contains:
 - checks actually run;
 - remote head verification;
 - unresolved blocker if one remains.
+
+An implementation-worker handoff must also provide a compact requirement mapping:
+
+- requirement;
+- implemented / not implemented;
+- affected files;
+- relevant deviation or blocker, if any.
+
+Keep this as prompt → diff traceability, not an implementation diary.
+
+Every worker handoff also has an `Out-of-scope findings` section containing either `none` or concrete discovered items that were intentionally not implemented.
 
 For visual work, also include:
 

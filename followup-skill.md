@@ -135,9 +135,23 @@ For browser-heavy work, instruct the new chat to:
 3. consolidate findings into one coherent repair scope;
 4. then create a fresh worker prompt.
 
+### Worker-role and context-budget state
+
+For a worker-based project, make the role split explicit so the next chat does not silently become the implementation worker.
+
+Include:
+
+- that the General chat remains the orchestrator/state keeper;
+- which source work is intentionally delegated to workers;
+- which completed/current workers were **Audit** versus **Implementation** workers;
+- which worker results are accepted, rejected or pending review/reconciliation;
+- which concrete worker type is needed next and why.
+
+If the General chat itself consumed substantial context by loading long source/diff series and performing implementation directly, say so explicitly in the handoff. Treat that as relevant context-budget state and instruct the next session to return to the orchestrator role, retaining only the exact Git state, confirmed findings/decisions, handoffs and acceptance state needed to continue.
+
 ### Worker workflow
 
-State the branch strategy explicitly.
+State the branch strategy explicitly and identify the next worker as Audit, Implementation, or an explicitly bounded combined Audit+Implementation worker.
 
 For parallel workers:
 

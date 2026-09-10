@@ -294,6 +294,35 @@ Do not turn Custom, Journal, Home, Pages or General into the wrong task model me
 
 Do not introduce a competing page-local width, card family, toolbar grammar, table grammar, metric implementation or typography system when the accepted references/shared primitives already solve that dimension.
 
+### Reference conflicts
+
+Two surfaces being current/accepted references does not mean conflicting values are automatically both authoritative for the same shared dimension.
+
+If two relevant reference surfaces use different geometry, tokens or behavior for the **same** shared dimension:
+
+- name the conflict explicitly;
+- name the affected dimension, such as control gap, label size, breakpoint or action alignment;
+- inspect the shared primitive/theme and current source that may already own that dimension;
+- if no unambiguous authority exists, do not standardize that dimension by choosing one reference arbitrarily;
+- return the authority decision to the orchestrator/user, then implement against the decided authority.
+
+Do not turn transient pixel values from a current browser pass into a durable rule merely to resolve the conflict.
+
+### Visual worker prompt contract
+
+For browser/visual repairs, when the desired structure is already known, the worker prompt must describe the composition concretely rather than invite a fresh design interpretation.
+
+State, where applicable:
+
+- the order and slots of controls/content/actions;
+- which elements remain in the same row, stage, table or task surface;
+- what must be removed rather than restyled;
+- which shared primitives/tokens/reference structures must be used;
+- the breakpoint or condition under which responsive restructuring may begin;
+- which neighboring surfaces must remain unchanged.
+
+Do not give a worker free visual discretion over browser feedback that is already unambiguous. Implementation discretion is for technical realization inside the confirmed composition, not for reinterpreting the accepted/rejected layout.
+
 ## 14. Theme and shared-primitive enforcement
 
 The admin theme is an implementation authority, not optional inspiration.
