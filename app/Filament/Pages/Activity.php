@@ -77,24 +77,12 @@ final class Activity extends Page
         $overview = $activityFeed->overview($area, $family, days: $days, search: $search);
         $publicationContext = $activityFeed->publicationContext();
         $hourly = $overview['hourly'];
-        $clockMaximum = max(1, ...$hourly);
         $clockActivity = [];
 
         foreach ($hourly as $hour => $count) {
-            $angle = (((int) $hour / 24) * 2 * pi()) - (pi() / 2);
-            $innerRadius = 79;
-            $barLength = $count > 0
-                ? 10 + (25 * sqrt($count / $clockMaximum))
-                : 4;
-            $outerRadius = $innerRadius + $barLength;
-
             $clockActivity[] = [
                 'hour' => (int) $hour,
                 'count' => (int) $count,
-                'x1' => 120 + ($innerRadius * cos($angle)),
-                'y1' => 120 + ($innerRadius * sin($angle)),
-                'x2' => 120 + ($outerRadius * cos($angle)),
-                'y2' => 120 + ($outerRadius * sin($angle)),
             ];
         }
 
@@ -156,7 +144,6 @@ final class Activity extends Page
                 'latest_at' => $latestAt?->format('Y-m-d H:i'),
             ],
             'clockActivity' => $clockActivity,
-            'clockTotal' => array_sum($hourly),
             'clockPeakHour' => $peakHour,
             'clockPeakCount' => $peakHour !== null ? (int) $hourly[$peakHour] : 0,
             'calendarLabel' => $calendarStart->format('M j').' – '.$calendarEnd->format('M j, Y'),
