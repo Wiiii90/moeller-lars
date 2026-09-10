@@ -117,6 +117,28 @@
     flex-wrap: nowrap;
 }
 
+/* Keep one owned gap at each Visual Stage boundary instead of stacking
+ * the stage margin and follow-up padding into a double gap. */
+.admin-visual-stage {
+    margin: var(--admin-section-space) 0 0;
+}
+
+.admin-visual-stage + .admin-data-controls,
+.admin-visual-stage + .admin-visual-stage-followup {
+    margin-top: var(--admin-section-space);
+    padding-top: var(--admin-section-gap);
+    border-top: 1px solid var(--admin-line-strong);
+}
+
+.admin-visual-stage + .admin-data-controls {
+    padding-bottom: var(--admin-section-gap);
+}
+
+.admin-visual-stage-followup > .admin-data-controls {
+    padding-top: 0;
+    padding-bottom: var(--admin-section-gap);
+}
+
 /* Ordinary data-table actions share one right edge. */
 .admin-table__actions {
     text-align: right !important;
