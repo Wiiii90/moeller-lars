@@ -25,7 +25,7 @@
     </div>
 
     <div role="cell" data-cell="position">
-        <span class="admin-position" title="Stored position {{ $section['position'] }}">{{ $section['position_label'] }}</span>
+        <span class="admin-position">{{ $section['position_label'] }}</span>
     </div>
 
     <div role="cell" data-cell="page-type">
@@ -81,16 +81,19 @@
     <div class="admin-row-actions admin-toolbar" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
         @if ($section['workspace_url'])
             <a class="admin-action" href="{{ $section['workspace_url'] }}">Edit</a>
-        @endif
-
-        @if ($section['can_change_publication'])
-            <button class="admin-action admin-action--state" type="button" wire:click="toggleSectionState({{ $section['id'] }})">
-                {{ $section['state'] === 'published' ? 'Unpublish' : 'Publish' }}
-            </button>
+        @else
+            <button class="admin-action" type="button" disabled>Edit</button>
         @endif
 
         <button
-            class="admin-action"
+            class="admin-action admin-action--state"
+            type="button"
+            wire:click="toggleSectionState({{ $section['id'] }})"
+            @disabled(! $section['can_change_publication'])
+        >{{ $section['state'] === 'published' ? 'Unpublish' : 'Publish' }}</button>
+
+        <button
+            class="admin-action admin-order-action"
             type="button"
             wire:click="moveSection({{ $section['id'] }}, 'up')"
             aria-label="Move {{ $label }} earlier"
@@ -98,20 +101,19 @@
         >↑</button>
 
         <button
-            class="admin-action"
+            class="admin-action admin-order-action"
             type="button"
             wire:click="moveSection({{ $section['id'] }}, 'down')"
             aria-label="Move {{ $label }} later"
             @disabled(! $reorderEnabled || ! $section['can_move_down'])
         >↓</button>
 
-        @if ($section['can_delete'])
-            <button
-                class="admin-action is-danger"
-                type="button"
-                wire:click="deleteSection({{ $section['id'] }})"
-                wire:confirm="Delete this page? Page-specific content, child pages, publication and navigation safety rules still apply."
-            >Delete</button>
-        @endif
+        <button
+            class="admin-action is-danger"
+            type="button"
+            wire:click="deleteSection({{ $section['id'] }})"
+            wire:confirm="Delete this page? Page-specific content, child pages, publication and navigation safety rules still apply."
+            @disabled(! $section['can_delete'])
+        >Delete</button>
     </div>
 </div>
