@@ -380,3 +380,13 @@ The orchestrator then reviews the code independently. Long implementation diarie
 ## Continuation handoffs
 
 When the orchestration chat itself is becoming too large, follow [`followup-skill.md`](followup-skill.md). The new chat should be able to continue from exact Git/browser/runtime state without asking the user to reconstruct it manually.
+
+## Completion gates
+
+A feature, redesign, browser repair or reconciliation is not complete merely because its new path works. Where applicable, completion requires independent browser/product acceptance, shared consistency/reconciliation against current authorities, source/product cleanup, and final verification.
+
+After browser/product acceptance, audit the accepted change for source it created or superseded and remove only what reference-search proves obsolete: superseded routes/pages, dead views/partials, unused CSS/selectors, obsolete aliases/compatibility paths, duplicate presentation paths, stale implementation-specific tests, and imports/classes that became unused.
+
+Preserve still-required compatibility and domain behavior. Audit references, call sites, routes and tests before deletion; never delete from naming alone. This cleanup scope covers only artifacts made obsolete by the accepted change; unrelated cleanup remains out of scope.
+
+Run required CI/final verification against the cleaned final state, not a pre-cleanup candidate. Browser/product acceptance and source cleanup are separate gates: passing one does not imply the other. In the normal flow above, release qualification follows only after applicable cleanup and final verification.
