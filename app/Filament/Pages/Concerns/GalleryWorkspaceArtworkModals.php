@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Artworks\Pages\Concerns;
+namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDraftService;

@@ -1,10 +1,10 @@
 <?php
 
-use App\Domain\Admin\AdminActivityFeed;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Publication\PublicationSchemaGuard;
 use App\Domain\Publication\PublicationService;
+use App\Filament\Support\AdminActivityFeed;
 use App\Mail\WebsiteContactMessage;
 use App\Models\AuditEvent;
 use App\Models\ContactMessage;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Admin;
+namespace App\Filament\Support;
 
 use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\MatomoReportingClient;

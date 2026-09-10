@@ -1,12 +1,12 @@
 <?php
 
-use App\Domain\Admin\AdminActivityFeed;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationSnapshot;
+use App\Filament\Support\AdminActivityFeed;
 use App\Http\Middleware\ProtectArtistPreview;
 use App\Livewire\Admin\PublicationCommitDialog;
 use App\Models\AuditEvent;

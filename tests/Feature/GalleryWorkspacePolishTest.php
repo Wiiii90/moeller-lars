@@ -264,9 +264,9 @@ it('renders the six Gallery metrics and per-artwork analytics from one canonical
 });
 
 it('keeps Gallery upload and Edit integration on the canonical media and Filament modal paths', function (): void {
-    $projectionSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/Concerns/GalleryWorkspaceDataProjection.php'));
-    $uploadSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/Concerns/GalleryWorkspaceDirectUpload.php'));
-    $modalSource = file_get_contents(app_path('Filament/Resources/Artworks/Pages/Concerns/GalleryWorkspaceArtworkModals.php'));
+    $projectionSource = file_get_contents(app_path('Filament/Pages/Concerns/GalleryWorkspaceDataProjection.php'));
+    $uploadSource = file_get_contents(app_path('Filament/Pages/Concerns/GalleryWorkspaceDirectUpload.php'));
+    $modalSource = file_get_contents(app_path('Filament/Pages/Concerns/GalleryWorkspaceArtworkModals.php'));
     $viewSource = file_get_contents(resource_path('views/filament/resources/artworks/pages/manage-gallery-artworks.blade.php'));
 
     expect($projectionSource)->not->toBeFalse()

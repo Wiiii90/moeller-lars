@@ -3,16 +3,16 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Artwork\ArtworkDraftService;
-use App\Filament\Resources\Artworks\Pages\Concerns\GalleryWorkspaceArtworkActions;
-use App\Filament\Resources\Artworks\Pages\Concerns\GalleryWorkspaceArtworkModals;
-use App\Filament\Resources\Artworks\Pages\Concerns\GalleryWorkspaceBatchActions;
-use App\Filament\Resources\Artworks\Pages\Concerns\GalleryWorkspaceDataProjection;
-use App\Filament\Resources\Artworks\Pages\Concerns\GalleryWorkspaceDirectUpload;
-use App\Filament\Resources\Artworks\Pages\Concerns\GalleryWorkspaceFormSupport;
-use App\Filament\Resources\Artworks\Pages\Concerns\GalleryWorkspaceMoveActions;
-use App\Filament\Resources\Artworks\Pages\Concerns\GalleryWorkspaceReadinessSupport;
-use App\Filament\Resources\Artworks\Pages\Concerns\GalleryWorkspaceSelectionSupport;
-use App\Filament\Resources\Artworks\Pages\Concerns\GalleryWorkspaceUploadSettings;
+use App\Filament\Pages\Concerns\GalleryWorkspaceArtworkActions;
+use App\Filament\Pages\Concerns\GalleryWorkspaceArtworkModals;
+use App\Filament\Pages\Concerns\GalleryWorkspaceBatchActions;
+use App\Filament\Pages\Concerns\GalleryWorkspaceDataProjection;
+use App\Filament\Pages\Concerns\GalleryWorkspaceDirectUpload;
+use App\Filament\Pages\Concerns\GalleryWorkspaceFormSupport;
+use App\Filament\Pages\Concerns\GalleryWorkspaceMoveActions;
+use App\Filament\Pages\Concerns\GalleryWorkspaceReadinessSupport;
+use App\Filament\Pages\Concerns\GalleryWorkspaceSelectionSupport;
+use App\Filament\Pages\Concerns\GalleryWorkspaceUploadSettings;
 use App\Models\Artwork;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;

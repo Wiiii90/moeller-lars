@@ -3,9 +3,9 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminActionCatalog;
-use App\Domain\Admin\AdminActivityFeed;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminUndoService;
+use App\Filament\Support\AdminActivityFeed;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;

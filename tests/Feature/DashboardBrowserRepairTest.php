@@ -295,7 +295,7 @@ it('deletes stored contact messages cleanly', function (): void {
 it('locks the dashboard source to shared workspace metrics controls table pager and central theme ownership', function (): void {
     $view = file_get_contents(resource_path('views/filament/pages/dashboard.blade.php'));
     $page = file_get_contents(app_path('Filament/Pages/Dashboard.php'));
-    $overview = file_get_contents(app_path('Domain/Admin/DashboardOverview.php'));
+    $overview = file_get_contents(app_path('Filament/Support/DashboardOverview.php'));
     $dashboardCss = file_get_contents(resource_path('css/admin/dashboard.css'));
     $sharedCss = file_get_contents(resource_path('css/admin/data-workspace.css'));
     $mediaCss = file_get_contents(resource_path('css/admin/media.css'));

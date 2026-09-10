@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\Artworks\Pages\Concerns;
+namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;

@@ -1,6 +1,6 @@
 <?php
 
-use App\Domain\Admin\AdminActivityFeed;
+use App\Filament\Support\AdminActivityFeed;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
 use App\Models\PublicationCheckpointEvent;

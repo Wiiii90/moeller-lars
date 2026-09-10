@@ -3,7 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Admin\DashboardFeed;
-use App\Domain\Admin\DashboardOverview;
+use App\Filament\Support\DashboardOverview;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
