@@ -203,15 +203,13 @@ it('logically deletes unreferenced media and removes its files', function (): vo
     Storage::disk(config('media.disk'))->assertMissing($variant->storage_key);
 });
 
-it('refuses deletion while media is referenced by current content', function (string $type): void {
+it('removes current content references before logically deleting media', function (string $type): void {
     $asset = lifecycleAsset();
+    $reference = null;
 
     if ($type === 'artwork') {
         $category = ArtworkCategory::create([
             'slug' => 'works',
-            'name' => 'Works',
-            'state' => 'published',
-            'position' => 0,
         ]);
         $artwork = Artwork::create([
             'artwork_category_id' => $category->id,
@@ -220,7 +218,7 @@ it('refuses deletion while media is referenced by current content', function (st
             'state' => 'draft',
             'position' => 0,
         ]);
-        ArtworkMedia::create([
+        $reference = ArtworkMedia::create([
             'artwork_id' => $artwork->id,
             'media_asset_id' => $asset->id,
             'role' => 'primary',
@@ -235,7 +233,7 @@ it('refuses deletion while media is referenced by current content', function (st
             'state' => 'draft',
             'position' => 0,
         ]);
-        ExhibitionMedia::create([
+        $reference = ExhibitionMedia::create([
             'exhibition_id' => $exhibition->id,
             'media_asset_id' => $asset->id,
             'role' => 'additional',
@@ -243,7 +241,7 @@ it('refuses deletion while media is referenced by current content', function (st
         ]);
     } else {
         $journal = lifecycleJournal(JournalTemplate::Blog->value, 'media-blog');
-        BlogPost::create([
+        $reference = BlogPost::create([
             'site_section_id' => $journal->id,
             'slug' => 'post',
             'title' => 'Post',
@@ -253,9 +251,14 @@ it('refuses deletion while media is referenced by current content', function (st
         ]);
     }
 
-    expect(fn () => app(MediaAssetEditorialService::class)->delete($asset))
-        ->toThrow(ValidationException::class);
-    expect($asset->fresh()->state)->toBe('available');
+    expect(app(MediaAssetEditorialService::class)->delete($asset))->toBeTrue()
+        ->and($asset->fresh()->state)->toBe('deleted');
+
+    if ($type === 'blog') {
+        expect($reference->fresh()->cover_media_asset_id)->toBeNull();
+    } else {
+        expect($reference->fresh())->toBeNull();
+    }
 })->with(['artwork', 'exhibition', 'blog']);
 
 it('detects checksum corruption in authoritative and generated media', function (): void {

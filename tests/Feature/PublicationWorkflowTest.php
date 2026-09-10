@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Livewire\Livewire;
 
 function publicationWorkflowSetGradientBaseline(string $end = '#C9C3C3'): void
@@ -45,6 +46,16 @@ function publicationWorkflowUseRenderableHome(): void
             'template' => 'custom',
         ]);
     }
+}
+
+function publicationWorkflowAssertPrivateNoCache(TestResponse $response): void
+{
+    $directives = array_map('trim', explode(',', (string) $response->headers->get('Cache-Control')));
+    $expected = ['private', 'no-store', 'max-age=0', 'must-revalidate'];
+    sort($directives);
+    sort($expected);
+
+    expect($directives)->toBe($expected);
 }
 
 beforeEach(function (): void {
@@ -93,13 +104,14 @@ it('keeps the real public layout on committed appearance until one idempotent Co
         ->assertSee($oldCommitted, false)
         ->assertDontSee($newWorking, false);
 
-    $this->get('/preview')
+    $preview = $this->get('/preview');
+    $preview
         ->assertOk()
         ->assertSee($newWorking, false)
         ->assertDontSee($oldCommitted, false)
         ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
-        ->assertHeader('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
         ->assertHeader('Pragma', 'no-cache');
+    publicationWorkflowAssertPrivateNoCache($preview);
 
     $pendingActivity = collect(app(AdminActivityFeed::class)->recent(20))
         ->firstWhere('id', (int) $event->getKey());
@@ -221,12 +233,13 @@ it('keeps Preview authentication and private indexing protections unchanged', fu
 
     $this->get('/preview/__publication/probe/value')->assertNotFound();
 
-    $this->actingAs($this->actor, 'web')
-        ->get('/preview/__publication/probe/value')
+    $preview = $this->actingAs($this->actor, 'web')
+        ->get('/preview/__publication/probe/value');
+    $preview
         ->assertOk()
         ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
-        ->assertHeader('Cache-Control', 'private, no-store, max-age=0, must-revalidate')
         ->assertHeader('Pragma', 'no-cache');
+    publicationWorkflowAssertPrivateNoCache($preview);
 });
 
 it('defers deletion of files that still belong to the committed snapshot until Commit', function (): void {

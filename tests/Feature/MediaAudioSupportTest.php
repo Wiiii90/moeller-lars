@@ -1,7 +1,6 @@
 <?php
 
 use App\Domain\Media\MediaIngestService;
-use App\Domain\Media\MediaTypePolicy;
 use App\Models\MediaAsset;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -19,24 +18,13 @@ function audioFixture(string $kind): UploadedFile
     return UploadedFile::fake()->createWithContent('fixture.'.$kind, $bytes);
 }
 
-it('defines the canonical audio policy and browser-native labels', function (): void {
-    expect(MediaTypePolicy::AUDIO_MIME_TYPES)->toBe([
-        'audio/mpeg',
-        'audio/mp4',
-        'audio/ogg',
-        'audio/wav',
-    ])->and(MediaTypePolicy::extensionFor('audio/mpeg'))->toBe('mp3')
-        ->and(MediaTypePolicy::extensionFor('audio/mp4'))->toBe('m4a')
-        ->and(MediaTypePolicy::extensionFor('audio/ogg'))->toBe('ogg')
-        ->and(MediaTypePolicy::extensionFor('audio/wav'))->toBe('wav');
-});
-
 it('ingests supported audio from content-derived MIME and stores no generated thumbnail', function (string $kind, string $mime): void {
     Storage::fake(config('media.disk'));
 
     $asset = app(MediaIngestService::class)->ingest(audioFixture($kind));
 
     expect($asset->mime_type)->toBe($mime)
+        ->and(pathinfo($asset->storage_key, PATHINFO_EXTENSION))->toBe($kind)
         ->and($asset->state)->toBe('available')
         ->and($asset->variants()->count())->toBe(0)
         ->and($asset->copyright_notice_mode)->toBe(MediaAsset::COPYRIGHT_INHERIT)

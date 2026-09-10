@@ -116,6 +116,7 @@ it('reads Contact publication decisions in a short committed transaction and wri
     $page->save();
     PublicContentSetting::general()->update(['contact_recipient_email' => 'working@example.test']);
 
+    $baselineTransactionLevel = DB::transactionLevel();
     $contactWriteLevel = null;
     DB::listen(function (QueryExecuted $query) use (&$contactWriteLevel): void {
         if (str_contains(strtolower($query->sql), 'contact_messages') && str_starts_with(strtolower(ltrim($query->sql)), 'insert')) {
@@ -127,8 +128,8 @@ it('reads Contact publication decisions in a short committed transaction and wri
     $pendingMail->shouldReceive('send')
         ->once()
         ->with(Mockery::type(WebsiteContactMessage::class))
-        ->andReturnUsing(function (): void {
-            expect(DB::transactionLevel())->toBe(0);
+        ->andReturnUsing(function () use ($baselineTransactionLevel): void {
+            expect(DB::transactionLevel())->toBe($baselineTransactionLevel);
         });
 
     Mail::shouldReceive('to')
@@ -140,7 +141,7 @@ it('reads Contact publication decisions in a short committed transaction and wri
         ->assertRedirect()
         ->assertSessionHas('contact_success', 'Your message was received.');
 
-    expect($contactWriteLevel)->toBe(0)
+    expect($contactWriteLevel)->toBe($baselineTransactionLevel)
         ->and(ContactMessage::query()->sole()->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_DELIVERED);
 });
 

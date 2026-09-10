@@ -18,7 +18,6 @@ function editorialCategory(string $state = 'published'): ArtworkCategory
     $category = new ArtworkCategory;
     $category->fill([
         'slug' => 'test-category-'.fake()->unique()->uuid(),
-        'name' => 'Test category',
         'show_on_home' => false,
     ]);
     $category->save();

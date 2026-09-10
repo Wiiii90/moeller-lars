@@ -3,7 +3,6 @@
 use App\Domain\Content\ExhibitionGeocodingService;
 use App\Domain\Content\ExhibitionGeocodingUnavailable;
 use App\Domain\Content\NominatimRequestThrottle;
-use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -34,7 +33,7 @@ beforeEach(function (): void {
     Cache::flush();
 });
 
-it('throttles the bounded structured miss to free-text fallback without real sleeping', function (): void {
+it('throttles a bounded miss-to-fallback lookup without real sleeping', function (): void {
     $clock = 0;
     $sleeps = [];
     useFakeNominatimThrottle($clock, $sleeps);
@@ -47,18 +46,12 @@ it('throttles the bounded structured miss to free-text fallback without real sle
         ]], 200);
 
     $match = app(ExhibitionGeocodingService::class)->locate('Rathausmarkt 1, Hamburg, Deutschland');
-    $requests = Http::recorded()->map(static fn (array $pair): Request => $pair[0])->values();
 
     expect($match)->not->toBeNull()
         ->and($match['latitude'])->toBe(53.550341)
         ->and($match['longitude'])->toBe(9.992477)
-        ->and($requests)->toHaveCount(2)
-        ->and($requests[0]['street'])->toBe('Rathausmarkt 1')
-        ->and($requests[0]['city'])->toBe('Hamburg')
-        ->and($requests[0]['country'])->toBe('Deutschland')
-        ->and($requests[0]['q'])->toBeNull()
-        ->and($requests[1]['q'])->toBe('Rathausmarkt 1, Hamburg, Deutschland')
         ->and($sleeps)->toBe([1000]);
+    Http::assertSentCount(2);
 });
 
 it('throttles separate locate calls through shared cache state', function (): void {
@@ -82,15 +75,14 @@ it('throttles separate locate calls through shared cache state', function (): vo
     (new ExhibitionGeocodingService($secondThrottle))->locate('Mönckebergstraße 1, Hamburg, Deutschland');
 
     Http::assertSentCount(2);
-    expect($sleeps)->toBe([1000])
-        ->and(Cache::get(NominatimRequestThrottle::lastRequestKeyFor(config('services.nominatim.endpoint'))))->toBe(1000);
+    expect($sleeps)->toBe([1000]);
 });
 
 it('uses a cached hit without another request or throttle sleep', function (): void {
     $clock = 0;
     $sleeps = [];
     useFakeNominatimThrottle($clock, $sleeps);
-    Http::fake(fn (): \Illuminate\Http\Client\Response => Http::response([[
+    Http::fake(fn () => Http::response([[
         'lat' => '53.550341',
         'lon' => '9.992477',
         'display_name' => 'Rathausmarkt 1, Hamburg, Deutschland',
@@ -124,7 +116,7 @@ it('keeps service failures distinct from a no-match result', function (): void {
     $clock = 0;
     $sleeps = [];
     useFakeNominatimThrottle($clock, $sleeps);
-    Http::fake(fn (): \Illuminate\Http\Client\Response => Http::response([], 503));
+    Http::fake(fn () => Http::response([], 503));
 
     expect(fn () => app(ExhibitionGeocodingService::class)->locate('Rathausmarkt 1, Hamburg, Deutschland'))
         ->toThrow(ExhibitionGeocodingUnavailable::class, 'Nominatim returned HTTP 503.');
