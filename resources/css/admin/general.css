@@ -15,6 +15,46 @@
     box-sizing: border-box;
 }
 
+/* Keep all General Filament controls on the canonical line-based form grammar. */
+.admin-general .fi-input-wrp {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--admin-control-height);
+    border: 0 !important;
+    border-bottom: 1px solid var(--admin-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.admin-general .fi-input-wrp:focus-within {
+    border-bottom-color: var(--admin-accent) !important;
+}
+
+.admin-general .fi-fo-field-wrp {
+    gap: .28rem;
+}
+
+.admin-general .fi-fo-field-label,
+.admin-general .fi-fo-field-label-content {
+    color: var(--admin-muted) !important;
+    font-size: .68rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .09em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.admin-general .fi-input,
+.admin-general .fi-select-input {
+    min-height: calc(var(--admin-control-height) - 1px);
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--admin-text) !important;
+    font-size: .78rem !important;
+}
+
 /* Background mode + its visual parameters stay on one four-column row. */
 .general-background-row {
     min-width: 0;
@@ -31,12 +71,18 @@
     padding: 0;
 }
 
-/* Two equal geometry fields occupy the four metric columns on the left. */
+/* Mobile-preview mode keeps the two geometry controls side by side. */
 .general-layout-controls__fields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0;
     min-width: 0;
+}
+
+/* Desktop preview uses the spare vertical room and makes the geometry controls easier to scan. */
+.general-appearance-stage:has(.general-live-preview__mode[title="Desktop preview"].is-active) .general-layout-controls__fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .75rem;
 }
 
 .general-layout-field {
@@ -51,6 +97,11 @@
 
 .general-layout-field + .general-layout-field {
     padding-left: 1rem;
+}
+
+.general-appearance-stage:has(.general-live-preview__mode[title="Desktop preview"].is-active) .general-layout-field {
+    padding-right: 0;
+    padding-left: 0;
 }
 
 .general-layout-field > span:first-child {
@@ -104,7 +155,7 @@
     min-width: 0;
     min-height: 0;
     grid-template-rows: auto minmax(0, 1fr);
-    gap: .8rem;
+    gap: .55rem;
     overflow: hidden;
 }
 
@@ -116,12 +167,22 @@
     justify-content: space-between;
 }
 
-.general-live-preview__toolbar > span {
+.general-live-preview__title {
+    display: inline-flex;
+    min-width: 0;
+    gap: .42rem;
+    align-items: center;
     color: var(--admin-muted);
     font-size: .68rem;
     font-weight: 700;
     letter-spacing: .09em;
     text-transform: uppercase;
+}
+
+.general-live-preview__title svg {
+    width: .95rem;
+    height: .95rem;
+    flex: 0 0 auto;
 }
 
 .general-live-preview__modes {
@@ -172,13 +233,13 @@
     background: var(--admin-surface);
     box-shadow:
         0 1px 0 color-mix(in srgb, var(--admin-text) 8%, transparent),
-        0 .65rem 1.6rem color-mix(in srgb, #000 10%, transparent);
+        0 .5rem 1.25rem color-mix(in srgb, #000 9%, transparent);
     transition: width .18s ease, height .18s ease, border-radius .18s ease;
 }
 
 .general-live-preview__device.is-desktop {
     width: min(100%, 21rem);
-    height: 13.6rem;
+    height: 12.2rem;
     border-radius: .3rem;
 }
 
@@ -197,12 +258,12 @@
 }
 
 .general-live-preview__device.is-mobile {
-    width: 9.7rem;
-    height: min(100%, 20.9rem);
+    width: 10.8rem;
+    height: min(100%, 18.9rem);
     border-radius: 1.05rem;
     box-shadow:
         inset 0 0 0 2px color-mix(in srgb, var(--admin-line-strong) 55%, transparent),
-        0 .65rem 1.6rem color-mix(in srgb, #000 10%, transparent);
+        0 .5rem 1.25rem color-mix(in srgb, #000 9%, transparent);
 }
 
 .general-live-preview__device.is-mobile::before {
@@ -237,7 +298,7 @@
 .general-live-preview__device.is-mobile iframe {
     width: 390px;
     height: 844px;
-    transform: scale(.397);
+    transform: scale(.443);
 }
 
 @media (max-width: 900px) {
@@ -247,7 +308,8 @@
 }
 
 @media (max-width: 760px) {
-    .general-layout-controls__fields {
+    .general-layout-controls__fields,
+    .general-appearance-stage:has(.general-live-preview__mode[title="Desktop preview"].is-active) .general-layout-controls__fields {
         grid-template-columns: 1fr;
     }
 
