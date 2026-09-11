@@ -21,6 +21,9 @@
             $activitySourceExists = $paginator->total() > 0 || \App\Models\AuditEvent::query()
                 ->where('occurred_at', '>=', now()->subDays(\App\Filament\Support\AdminActivityFeed::ACTIVITY_WINDOW_DAYS))
                 ->exists();
+            $calendarWeeks = array_chunk($calendarDays, 7);
+            $calendarBandSize = max(1, (int) ceil(count($calendarWeeks) / 2));
+            $calendarBands = array_chunk($calendarWeeks, $calendarBandSize);
         @endphp
 
         <section
@@ -189,25 +192,32 @@
                             <strong>{{ number_format($calendarActiveDays) }} active days · peak {{ number_format($calendarMaximum) }}</strong>
                         </div>
 
-                        <div class="activity-calendar__plot">
-                            <div class="activity-calendar__weekdays" aria-hidden="true">
-                                @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $weekday)
-                                    <span>{{ $weekday }}</span>
-                                @endforeach
-                            </div>
-                            <div class="activity-calendar__cells" role="img" aria-label="Daily Activity density for {{ $calendarLabel }}">
-                                @foreach ($calendarDays as $day)
-                                    @if ($day === null)
-                                        <span class="activity-calendar__day is-outside" aria-hidden="true"></span>
-                                    @else
-                                        <span
-                                            class="activity-calendar__day is-level-{{ $day['level'] }}"
-                                            aria-label="{{ $day['label'] }}: {{ $day['count'] }} changes"
-                                            title="{{ $day['label'] }} · {{ $day['count'] }} changes"
-                                        ></span>
-                                    @endif
-                                @endforeach
-                            </div>
+                        <div class="activity-calendar__bands" role="img" aria-label="Daily Activity density for {{ $calendarLabel }}">
+                            @foreach ($calendarBands as $band)
+                                @php
+                                    $bandDays = array_merge([], ...$band);
+                                @endphp
+                                <div class="activity-calendar__band" style="--activity-calendar-weeks: {{ count($band) }};">
+                                    <div class="activity-calendar__weekdays" aria-hidden="true">
+                                        @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $weekday)
+                                            <span>{{ $weekday }}</span>
+                                        @endforeach
+                                    </div>
+                                    <div class="activity-calendar__cells">
+                                        @foreach ($bandDays as $day)
+                                            @if ($day === null)
+                                                <span class="activity-calendar__day is-outside" aria-hidden="true"></span>
+                                            @else
+                                                <span
+                                                    class="activity-calendar__day is-level-{{ $day['level'] }}"
+                                                    aria-label="{{ $day['label'] }}: {{ $day['count'] }} changes"
+                                                    title="{{ $day['label'] }} · {{ $day['count'] }} changes"
+                                                ></span>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
 
                         <div class="activity-calendar__legend" aria-hidden="true">
