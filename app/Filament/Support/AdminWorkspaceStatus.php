@@ -18,7 +18,7 @@ final class AdminWorkspaceStatus
         try {
             $path = $this->currentPath();
 
-            if ($path === '/admin' && $title === 'Dashboard') {
+            if ($title === 'Dashboard') {
                 return $this->homeStatus('Homepage healthy');
             }
 
