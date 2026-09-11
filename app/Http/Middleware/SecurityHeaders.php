@@ -14,6 +14,7 @@ final class SecurityHeaders
     public function handle(Request $request, Closure $next): Response
     {
         $isPublicRequest = $request->is('admin', 'admin/*') === false;
+        $isArtistPreviewRequest = $request->is('preview', 'preview/*');
         $styleNonce = null;
 
         if ($isPublicRequest) {
@@ -25,18 +26,18 @@ final class SecurityHeaders
         $response = $next($request);
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('X-Frame-Options', 'DENY');
+        $response->headers->set('X-Frame-Options', $isArtistPreviewRequest ? 'SAMEORIGIN' : 'DENY');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
         if ($isPublicRequest && is_string($styleNonce)) {
-            $response->headers->set('Content-Security-Policy', $this->publicContentSecurityPolicy($styleNonce));
+            $response->headers->set('Content-Security-Policy', $this->publicContentSecurityPolicy($styleNonce, $isArtistPreviewRequest));
         }
 
         return $response;
     }
 
-    private function publicContentSecurityPolicy(string $styleNonce): string
+    private function publicContentSecurityPolicy(string $styleNonce, bool $allowSameOriginFraming): string
     {
         $scriptSources = ["'self'"];
         $styleSources = ["'self'", "'nonce-{$styleNonce}'"];
@@ -77,7 +78,7 @@ final class SecurityHeaders
             'frame-src '.implode(' ', $frameSources),
             "object-src 'none'",
             "base-uri 'self'",
-            "frame-ancestors 'none'",
+            'frame-ancestors '.($allowSameOriginFraming ? "'self'" : "'none'"),
             "form-action 'self'",
         ]).';';
     }

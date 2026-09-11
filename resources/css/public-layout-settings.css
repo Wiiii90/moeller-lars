@@ -1,0 +1,9 @@
+/* Runtime-configurable public geometry from General settings. */
+
+:root {
+    --public-content-padding: 75px;
+}
+
+.site-content {
+    padding-inline: clamp(var(--public-mobile-inset), 4.4vw, var(--public-content-padding));
+}

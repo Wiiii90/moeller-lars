@@ -12,6 +12,12 @@ final class PublicAppearance
     public const MODE_GRADIENT = 'gradient';
     public const DEFAULT_PAGE_COLOR = '#777777';
     public const DEFAULT_GRADIENT_ANGLE = 180;
+    public const DEFAULT_PAGE_WIDTH = 800;
+    public const DEFAULT_CONTENT_PADDING = 75;
+    public const MIN_PAGE_WIDTH = 640;
+    public const MAX_PAGE_WIDTH = 1440;
+    public const MIN_CONTENT_PADDING = 24;
+    public const MAX_CONTENT_PADDING = 180;
 
     /** @return array<string, string> */
     public static function modeOptions(): array
@@ -82,6 +88,30 @@ final class PublicAppearance
         return $angle;
     }
 
+    public static function normalizePageWidth(mixed $value): int
+    {
+        return self::normalizeDimension(
+            $value,
+            self::DEFAULT_PAGE_WIDTH,
+            self::MIN_PAGE_WIDTH,
+            self::MAX_PAGE_WIDTH,
+            'public_page_width',
+            'Page width',
+        );
+    }
+
+    public static function normalizeContentPadding(mixed $value): int
+    {
+        return self::normalizeDimension(
+            $value,
+            self::DEFAULT_CONTENT_PADDING,
+            self::MIN_CONTENT_PADDING,
+            self::MAX_CONTENT_PADDING,
+            'public_content_padding',
+            'Content padding',
+        );
+    }
+
     public static function backgroundCss(PublicContentSetting $settings): ?string
     {
         $mode = self::normalizeMode($settings->getAttribute('background_mode'));
@@ -103,5 +133,43 @@ final class PublicAppearance
             ?? self::DEFAULT_GRADIENT_ANGLE;
 
         return sprintf('linear-gradient(%ddeg, %s, %s) fixed', $angle, $start, $end);
+    }
+
+    /** @return array{shell:string,art:string,padding:string} */
+    public static function layoutCss(PublicContentSetting $settings): array
+    {
+        $width = self::normalizePageWidth($settings->getAttribute('public_page_width'));
+        $padding = min(self::normalizeContentPadding($settings->getAttribute('public_content_padding')), (int) floor(($width - 320) / 2));
+        $artWidth = max(320, $width - (2 * $padding));
+
+        return [
+            'shell' => $width.'px',
+            'art' => $artWidth.'px',
+            'padding' => $padding.'px',
+        ];
+    }
+
+    private static function normalizeDimension(
+        mixed $value,
+        int $default,
+        int $min,
+        int $max,
+        string $field,
+        string $label,
+    ): int {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_INT) === false) {
+            throw ValidationException::withMessages([$field => $label.' must be a whole number.']);
+        }
+
+        $dimension = (int) $value;
+        if ($dimension < $min || $dimension > $max) {
+            throw ValidationException::withMessages([$field => sprintf('%s must be between %d and %d pixels.', $label, $min, $max)]);
+        }
+
+        return $dimension;
     }
 }

@@ -54,6 +54,12 @@ final class AdminSettingsService
         if (array_key_exists('background_gradient_angle', $data)) {
             $data['background_gradient_angle'] = PublicAppearance::normalizeAngle($data['background_gradient_angle']);
         }
+        if (array_key_exists('public_page_width', $data)) {
+            $data['public_page_width'] = PublicAppearance::normalizePageWidth($data['public_page_width']);
+        }
+        if (array_key_exists('public_content_padding', $data)) {
+            $data['public_content_padding'] = PublicAppearance::normalizeContentPadding($data['public_content_padding']);
+        }
 
         return $data;
     }

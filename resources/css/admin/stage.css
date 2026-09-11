@@ -1,0 +1,296 @@
+/* Canonical Visual Stage geometry.
+ * Six metric columns resolve into three stage thirds. Dividers sit exactly on
+ * the 2/6 and 4/6 metric axes, but remain inset from the stage edges.
+ */
+
+:root {
+    --admin-stage-divider-inset: var(--admin-section-gap);
+    --admin-stage-pane-space: var(--admin-section-space);
+}
+
+.admin-visual-stage,
+.admin-dashboard__overview,
+.general-appearance-stage {
+    position: relative;
+    box-sizing: border-box;
+    height: var(--admin-visual-stage-height);
+    min-height: 0;
+    margin-top: var(--admin-section-space);
+}
+
+:is(
+    .admin-visual-stage--rail,
+    .analytics-visual-stage,
+    .admin-storage__visual-stage,
+    .home-hero-surface,
+    .general-appearance-stage
+) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    overflow: hidden;
+}
+
+:is(
+    .admin-visual-stage--rail,
+    .analytics-visual-stage,
+    .admin-storage__visual-stage,
+    .home-hero-surface,
+    .general-appearance-stage
+)::after,
+.admin-visual-stage--triptych::before,
+.admin-visual-stage--triptych::after,
+.activity-atlas__grid::before,
+.activity-atlas__grid::after,
+.admin-dashboard__overview::before,
+.admin-dashboard__overview::after {
+    position: absolute;
+    z-index: 8;
+    top: var(--admin-stage-divider-inset);
+    bottom: var(--admin-stage-divider-inset);
+    width: 1px;
+    background: var(--admin-line);
+    content: "";
+    pointer-events: none;
+}
+
+:is(
+    .admin-visual-stage--rail,
+    .analytics-visual-stage,
+    .admin-storage__visual-stage,
+    .home-hero-surface,
+    .general-appearance-stage
+)::after,
+.admin-visual-stage--triptych::after,
+.activity-atlas__grid::after,
+.admin-dashboard__overview::after {
+    left: 66.666666%;
+}
+
+.admin-visual-stage--triptych::before,
+.activity-atlas__grid::before,
+.admin-dashboard__overview::before {
+    left: 33.333333%;
+}
+
+:is(
+    .admin-visual-stage--rail,
+    .analytics-visual-stage,
+    .admin-storage__visual-stage,
+    .home-hero-surface,
+    .general-appearance-stage
+) > :first-child {
+    grid-column: 1 / span 2;
+    min-width: 0;
+    padding-right: var(--admin-stage-pane-space) !important;
+}
+
+:is(
+    .admin-visual-stage--rail,
+    .analytics-visual-stage,
+    .admin-storage__visual-stage,
+    .home-hero-surface,
+    .general-appearance-stage
+) > :last-child {
+    grid-column: 3;
+    min-width: 0;
+    padding-left: var(--admin-stage-pane-space) !important;
+    border-left: 0 !important;
+}
+
+/* Analytics / Storage / Home own content, not divider geometry. */
+.analytics-stage-rail,
+.admin-storage__context,
+.home-hero-rail {
+    border-left: 0 !important;
+}
+
+.home-hero-surface__visual,
+.home-hero-rail {
+    border: 0 !important;
+}
+
+.home-hero-surface__visual img,
+.home-hero-candidate__visual img {
+    object-fit: contain;
+}
+
+/* Dashboard is the canonical three-pane special case. */
+.admin-dashboard__overview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    border-bottom: 0 !important;
+}
+
+.admin-dashboard__overview-column,
+.admin-dashboard__overview-column + .admin-dashboard__overview-column,
+.admin-dashboard__overview-column:last-child {
+    min-width: 0;
+    min-height: 0;
+    padding-top: var(--admin-stage-divider-inset) !important;
+    padding-bottom: var(--admin-stage-divider-inset) !important;
+    border: 0 !important;
+}
+
+.admin-dashboard__overview-column:first-child {
+    padding-right: var(--admin-stage-pane-space) !important;
+    padding-left: 0 !important;
+}
+
+.admin-dashboard__overview-column:nth-child(2) {
+    padding-right: var(--admin-stage-pane-space) !important;
+    padding-left: var(--admin-stage-pane-space) !important;
+}
+
+.admin-dashboard__overview-column:last-child {
+    padding-right: 0 !important;
+    padding-left: var(--admin-stage-pane-space) !important;
+}
+
+.admin-dashboard__overview + .admin-dashboard__feed-section {
+    margin-top: var(--admin-section-space);
+    padding-top: var(--admin-section-gap);
+    border-top: 1px solid var(--admin-line-strong);
+}
+
+/* Activity becomes Calendar | Clock | Publication without duplicative chrome. */
+.activity-atlas__grid {
+    position: relative;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    overflow: hidden;
+}
+
+.activity-atlas__visual {
+    display: contents !important;
+}
+
+.activity-atlas__visual-header,
+.activity-clock__meta {
+    display: none !important;
+}
+
+.activity-atlas__view.activity-calendar,
+.activity-atlas__view.activity-clock {
+    position: relative;
+    box-sizing: border-box;
+    display: grid !important;
+    width: auto !important;
+    height: 100% !important;
+    min-width: 0;
+    min-height: 0;
+    margin: 0 !important;
+    overflow: hidden;
+}
+
+.activity-atlas__view.activity-calendar {
+    grid-column: 1;
+    padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) var(--admin-stage-divider-inset) 0 !important;
+}
+
+.activity-atlas__view.activity-clock {
+    grid-column: 2;
+    padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
+    place-items: center;
+}
+
+.activity-publication {
+    grid-column: 3;
+    min-width: 0;
+    height: 100%;
+    padding: var(--admin-stage-divider-inset) 0 var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
+    border-left: 0 !important;
+    overflow: auto;
+}
+
+.activity-atlas__view.activity-calendar[style*="display: none"],
+.activity-atlas__view.activity-clock[style*="display: none"],
+.activity-atlas__view.activity-calendar[x-cloak],
+.activity-atlas__view.activity-clock[x-cloak] {
+    display: grid !important;
+}
+
+.activity-clock__dial,
+.activity-calendar__plot {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+@media (max-width: 760px) {
+    :is(
+        .admin-visual-stage--rail,
+        .admin-visual-stage--triptych,
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .general-appearance-stage,
+        .activity-atlas__grid,
+        .admin-dashboard__overview
+    ) {
+        height: auto;
+        grid-template-columns: 1fr !important;
+        overflow: visible;
+    }
+
+    :is(
+        .admin-visual-stage--rail,
+        .admin-visual-stage--triptych,
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .general-appearance-stage,
+        .activity-atlas__grid,
+        .admin-dashboard__overview
+    )::before,
+    :is(
+        .admin-visual-stage--rail,
+        .admin-visual-stage--triptych,
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .general-appearance-stage,
+        .activity-atlas__grid,
+        .admin-dashboard__overview
+    )::after {
+        display: none;
+    }
+
+    :is(
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .general-appearance-stage
+    ) > :first-child,
+    :is(
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .general-appearance-stage
+    ) > :last-child,
+    .activity-atlas__view.activity-calendar,
+    .activity-atlas__view.activity-clock,
+    .activity-publication {
+        grid-column: 1;
+        height: var(--admin-visual-stage-height) !important;
+        padding: var(--admin-section-gap) 0 !important;
+        border: 0 !important;
+    }
+
+    .activity-atlas__visual {
+        display: contents !important;
+    }
+
+    .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column:last-child {
+        min-height: var(--admin-visual-stage-height);
+        padding: var(--admin-section-gap) 0 !important;
+        border-bottom: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard__overview-column:last-child {
+        border-bottom: 0 !important;
+    }
+}

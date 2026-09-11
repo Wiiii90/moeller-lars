@@ -26,11 +26,12 @@
             'resources/css/app.css',
             'resources/css/public-content.css',
             'resources/css/public-presentation.css',
+            'resources/css/public-layout-settings.css',
             'resources/css/custom-pages.css',
             'resources/js/app.js',
         ])
-        @if ($publicBackgroundCss !== null && is_string($publicStyleNonce) && $publicStyleNonce !== '')
-            <style nonce="{{ $publicStyleNonce }}">:root { --public-page: {{ $publicBackgroundCss }}; }</style>
+        @if (is_string($publicStyleNonce) && $publicStyleNonce !== '')
+            <style nonce="{{ $publicStyleNonce }}">:root {@if ($publicBackgroundCss !== null) --public-page: {{ $publicBackgroundCss }};@endif --public-shell-max: {{ $publicLayoutCss['shell'] }}; --public-art-max: {{ $publicLayoutCss['art'] }}; --public-content-padding: {{ $publicLayoutCss['padding'] }}; }</style>
         @endif
     </head>
     <body class="public-site">

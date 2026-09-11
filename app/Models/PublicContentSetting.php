@@ -27,6 +27,8 @@ use LogicException;
     'background_gradient_start',
     'background_gradient_end',
     'background_gradient_angle',
+    'public_page_width',
+    'public_content_padding',
 ])]
 #[Guarded(['id', 'scope'])]
 class PublicContentSetting extends Model
@@ -44,6 +46,8 @@ class PublicContentSetting extends Model
             'show_instagram' => 'boolean',
             'social_links' => 'array',
             'background_gradient_angle' => 'integer',
+            'public_page_width' => 'integer',
+            'public_content_padding' => 'integer',
         ];
     }
 
@@ -92,6 +96,8 @@ class PublicContentSetting extends Model
         $setting->setAttribute('background_gradient_start', PublicAppearance::normalizeColor($setting->getAttribute('background_gradient_start'), 'background_gradient_start'));
         $setting->setAttribute('background_gradient_end', PublicAppearance::normalizeColor($setting->getAttribute('background_gradient_end'), 'background_gradient_end'));
         $setting->setAttribute('background_gradient_angle', PublicAppearance::normalizeAngle($setting->getAttribute('background_gradient_angle')));
+        $setting->setAttribute('public_page_width', PublicAppearance::normalizePageWidth($setting->getAttribute('public_page_width')));
+        $setting->setAttribute('public_content_padding', PublicAppearance::normalizeContentPadding($setting->getAttribute('public_content_padding')));
 
         $publicEmail = $setting->getAttribute('public_email');
         if ($publicEmail !== null && (! is_string($publicEmail) || filter_var($publicEmail, FILTER_VALIDATE_EMAIL) === false)) {
