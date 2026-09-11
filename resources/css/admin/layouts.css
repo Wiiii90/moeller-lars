@@ -29,19 +29,22 @@ html.fi,
 }
 
 /*
- * Shared theme-level light and native-control popup tokens. Keep these generic
- * so other admin surfaces can reuse the same lighting language later.
+ * Shared theme-level lighting and native-control popup tokens. These are generic
+ * admin tokens so later surfaces can reuse the same light language without
+ * copying sidebar-specific values.
  */
 html.fi {
-    --admin-light-key: rgba(214, 138, 47, .42);
-    --admin-light-depth: rgba(20, 20, 20, .30);
-    --admin-light-bloom: rgba(180, 83, 9, .22);
-    --admin-light-bloom-soft: rgba(180, 83, 9, .12);
+    --admin-light-key: rgba(240, 182, 95, .88);
+    --admin-light-rim: rgba(214, 138, 47, .60);
+    --admin-light-depth: rgba(124, 45, 18, .38);
+    --admin-light-bloom: rgba(214, 138, 47, .36);
+    --admin-light-bloom-soft: rgba(180, 83, 9, .18);
     --admin-icon-light-effect:
-        drop-shadow(-.45px -.55px .22px var(--admin-light-key))
-        drop-shadow(.55px .8px .5px var(--admin-light-depth))
-        drop-shadow(0 0 .12rem var(--admin-light-bloom))
-        drop-shadow(0 0 .32rem var(--admin-light-bloom-soft));
+        drop-shadow(-.8px -.8px .12px var(--admin-light-key))
+        drop-shadow(.8px 1px .35px var(--admin-light-depth))
+        drop-shadow(-.15px -.15px .10rem var(--admin-light-rim))
+        drop-shadow(0 0 .22rem var(--admin-light-bloom))
+        drop-shadow(0 0 .48rem var(--admin-light-bloom-soft));
     --admin-control-popup-surface: #fff;
     --admin-control-popup-ink: #181818;
     --admin-control-popup-muted: #9a9a9a;
@@ -50,6 +53,7 @@ html.fi {
 
 html.fi.dark {
     --admin-light-key: rgba(255, 255, 255, .28);
+    --admin-light-rim: transparent;
     --admin-light-depth: rgba(0, 0, 0, .68);
     --admin-light-bloom: rgba(240, 182, 95, .20);
     --admin-light-bloom-soft: transparent;
@@ -63,7 +67,7 @@ html.fi.dark {
     --admin-sidebar-selected-ink: #f4f4f2;
 }
 
-/* Native select popups must follow the active admin theme, not the OS fallback. */
+/* Native select controls inherit the active browser color scheme. */
 html.fi select {
     color-scheme: light;
 }
@@ -80,6 +84,93 @@ html.fi select optgroup {
 
 html.fi select option:disabled {
     color: var(--admin-control-popup-muted);
+}
+
+/*
+ * Chromium's Windows native popup can ignore option colors even with
+ * color-scheme. In browsers with customizable selects, opt only the shared
+ * admin controls into the themeable picker in dark mode. Light mode keeps its
+ * existing native appearance.
+ */
+@supports (appearance: base-select) {
+    html.fi.dark :is(
+        .admin-field,
+        .admin-data-field,
+        .admin-task-field,
+        .gallery-workspace__field,
+        .media-workspace__field,
+        .admin-pager__size,
+        .media-workspace__pager-size
+    ) select {
+        appearance: base-select;
+    }
+
+    html.fi.dark :is(
+        .admin-field,
+        .admin-data-field,
+        .admin-task-field,
+        .gallery-workspace__field,
+        .media-workspace__field,
+        .admin-pager__size,
+        .media-workspace__pager-size
+    ) select::picker(select) {
+        appearance: base-select;
+        margin-top: .2rem;
+        padding: .2rem 0;
+        border: 1px solid var(--admin-line-strong);
+        border-radius: .2rem;
+        background: var(--admin-control-popup-surface);
+        color: var(--admin-control-popup-ink);
+        box-shadow: none;
+    }
+
+    html.fi.dark :is(
+        .admin-field,
+        .admin-data-field,
+        .admin-task-field,
+        .gallery-workspace__field,
+        .media-workspace__field,
+        .admin-pager__size,
+        .media-workspace__pager-size
+    ) select option {
+        padding: .45rem .7rem;
+        background: var(--admin-control-popup-surface);
+        color: var(--admin-control-popup-ink);
+    }
+
+    html.fi.dark :is(
+        .admin-field,
+        .admin-data-field,
+        .admin-task-field,
+        .gallery-workspace__field,
+        .media-workspace__field,
+        .admin-pager__size,
+        .media-workspace__pager-size
+    ) select option:hover,
+    html.fi.dark :is(
+        .admin-field,
+        .admin-data-field,
+        .admin-task-field,
+        .gallery-workspace__field,
+        .media-workspace__field,
+        .admin-pager__size,
+        .media-workspace__pager-size
+    ) select option:checked {
+        background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-control-popup-surface));
+        color: var(--admin-control-popup-ink);
+    }
+
+    html.fi.dark :is(
+        .admin-field,
+        .admin-data-field,
+        .admin-task-field,
+        .gallery-workspace__field,
+        .media-workspace__field,
+        .admin-pager__size,
+        .media-workspace__pager-size
+    ) select::picker-icon {
+        color: var(--admin-muted);
+    }
 }
 
 .admin-sidebar-preview {
