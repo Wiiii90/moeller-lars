@@ -175,6 +175,7 @@
 .activity-atlas__visual {
     display: grid !important;
     grid-column: 1 / span 2;
+    grid-template-rows: minmax(0, 1fr) !important;
     min-width: 0;
     min-height: 0;
     height: 100%;
@@ -196,6 +197,7 @@
     height: 100% !important;
     min-width: 0;
     min-height: 0;
+    grid-template-rows: minmax(0, 1fr) !important;
     margin: 0 !important;
     overflow: visible;
     place-items: center;
