@@ -35,6 +35,7 @@
 }
 
 .admin-dashboard__storage-visual .admin-storage__capacity-orbit {
+    width: min(100%, 12.75rem) !important;
     max-width: 100%;
     max-height: 100%;
 }
@@ -48,11 +49,12 @@
 .admin-dashboard__activity-visual .activity-clock__figure {
     width: 100%;
     height: 100%;
-    padding: 0;
+    padding: .2rem 0 !important;
 }
 
 .admin-dashboard__activity-visual .activity-clock__dial {
-    width: min(100%, 19rem);
+    width: min(100%, 14.25rem) !important;
+    max-width: 100%;
     max-height: 100%;
 }
 
@@ -73,17 +75,19 @@
     background: none;
 }
 
+.admin-dashboard__analytics-map.analytics-visual-stage::before,
 .admin-dashboard__analytics-map.analytics-visual-stage::after {
     display: none !important;
 }
 
 .admin-dashboard__analytics-map.analytics-visual-stage > .analytics-world {
     display: block !important;
+    box-sizing: border-box;
     width: 100%;
     height: 100%;
     grid-column: auto !important;
     margin: 0;
-    padding: 0 !important;
+    padding: .45rem .15rem !important;
 }
 
 .admin-dashboard__analytics-map .analytics-world__canvas {
@@ -95,6 +99,8 @@
     display: block;
     width: 100%;
     height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
 }
 
