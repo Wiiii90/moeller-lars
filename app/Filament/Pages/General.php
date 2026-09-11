@@ -61,6 +61,8 @@ final class General extends Page
     /** @var array<string, mixed>|null */
     public ?array $data = [];
 
+    public string $previewDevice = 'desktop';
+
     public string $socialSearch = '';
 
     public string $socialVisibility = 'any';
@@ -85,6 +87,15 @@ final class General extends Page
     public function getBreadcrumbs(): array
     {
         return [];
+    }
+
+    public function setPreviewDevice(string $device): void
+    {
+        if (! in_array($device, ['desktop', 'mobile'], true)) {
+            return;
+        }
+
+        $this->previewDevice = $device;
     }
 
     public function form(Schema $schema): Schema
@@ -190,14 +201,16 @@ final class General extends Page
                     ])
                         ->columns(1)
                         ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
-                        ->columnSpan(2),
+                        ->columnSpan(fn ($livewire): int => $livewire instanceof self && $livewire->previewDevice === 'desktop' ? 1 : 2),
 
                     View::make('filament.schemas.components.general-live-preview')
-                        ->columnSpan(1),
+                        ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
+                        ->columnSpan(fn ($livewire): int => $livewire instanceof self && $livewire->previewDevice === 'desktop' ? 2 : 1),
                 ])
                     ->columns(3)
-                    ->extraAttributes([
+                    ->extraAttributes(fn ($livewire): array => [
                         'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--rail admin-visual-stage--stackable',
+                        'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
                         'aria-label' => 'General settings and live public preview',
                     ])
                     ->columnSpanFull(),
