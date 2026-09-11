@@ -40,6 +40,7 @@ html:not(.dark) .fi-sidebar-nav {
     margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
+    gap: 0 !important;
 }
 
 .admin-sidebar-tree__node-row,
