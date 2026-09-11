@@ -4,10 +4,10 @@
     x-data
     x-init="
         const scan = () => {
-            document.querySelectorAll('.fi-no-notification').forEach((notification) => {
+            document.querySelectorAll('.fi-no-notification, .fi-notification').forEach((notification) => {
                 if (notification.dataset.adminHistoryRecorded === '1') return
 
-                const title = notification.querySelector('.fi-no-notification-title, [class*=notification-title]')?.textContent?.trim() ?? ''
+                const title = notification.querySelector('.fi-no-notification-title, .fi-notification-title, [class*=notification-title]')?.textContent?.trim() ?? ''
                 if (! title) return
 
                 notification.dataset.adminHistoryRecorded = '1'
@@ -20,7 +20,7 @@
                     .toLowerCase()
                 const status = ['success', 'warning', 'danger', 'info']
                     .find((value) => classText.includes(value)) ?? 'info'
-                const body = notification.querySelector('.fi-no-notification-body, [class*=notification-body]')?.textContent?.trim() ?? ''
+                const body = notification.querySelector('.fi-no-notification-body, .fi-notification-body, [class*=notification-body]')?.textContent?.trim() ?? ''
 
                 $wire.record({ sourceId, title, body, status })
             })
