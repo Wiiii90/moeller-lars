@@ -29,6 +29,10 @@
     --admin-workspace-gutter: 2rem;
     --admin-sidebar-width: 18rem;
     --admin-sidebar-half-width: 9rem;
+    --admin-status-neutral: var(--admin-faint);
+    --admin-status-success: var(--admin-success);
+    --admin-status-warning: var(--admin-accent);
+    --admin-status-danger: var(--admin-danger);
     /*
      * Visual Stage: outer height of a large admin visualization surface on
      * desktop. Page-specific panes fill this stage; responsive stacking stays
@@ -92,13 +96,13 @@
     height: .46rem;
     flex: 0 0 auto;
     border-radius: 50%;
-    background: var(--admin-faint);
+    background: var(--admin-status-neutral);
     content: '';
 }
 
-.admin-workspace-status.is-success::before { background: var(--admin-success); }
-.admin-workspace-status.is-warning::before { background: var(--admin-accent); }
-.admin-workspace-status.is-danger::before { background: var(--admin-danger); }
+.admin-workspace-status.is-success::before { background: var(--admin-status-success); }
+.admin-workspace-status.is-warning::before { background: var(--admin-status-warning); }
+.admin-workspace-status.is-danger::before { background: var(--admin-status-danger); }
 
 .admin-section__kicker,
 .admin-empty-state__kicker,
@@ -244,6 +248,132 @@
 
 .dark .admin-action.is-primary {
     background: rgba(255, 255, 255, .045);
+}
+
+/* Canonical compact icon-action grammar shared by cards and data rows. */
+.admin-icon-action,
+.gallery-workspace__icon-action,
+.gallery-workspace__order-action {
+    box-sizing: border-box;
+    display: grid;
+    width: 1.78rem;
+    height: 1.78rem;
+    min-width: 1.78rem;
+    min-height: 1.78rem;
+    flex: 0 0 1.78rem;
+    padding: 0;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-muted);
+    font: inherit;
+    font-size: .78rem;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.admin-icon-action svg,
+.gallery-workspace__icon-action svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.admin-icon-action:hover,
+.admin-icon-action:focus-visible,
+.gallery-workspace__icon-action:hover,
+.gallery-workspace__icon-action:focus-visible,
+.gallery-workspace__order-action:hover,
+.gallery-workspace__order-action:focus-visible {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+    outline: none;
+}
+
+.admin-icon-action:focus-visible,
+.gallery-workspace__icon-action:focus-visible,
+.gallery-workspace__order-action:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.admin-icon-action:disabled,
+.gallery-workspace__icon-action:disabled,
+.gallery-workspace__order-action:disabled {
+    opacity: .38;
+    cursor: default;
+}
+
+.admin-icon-action.is-danger:hover,
+.admin-icon-action.is-danger:focus-visible {
+    border-color: color-mix(in srgb, var(--admin-status-danger) 42%, transparent);
+    background: color-mix(in srgb, var(--admin-status-danger) 8%, transparent);
+    color: var(--admin-status-danger);
+}
+
+/* Surface is contextual: useful over imagery, intentionally absent in tables. */
+.admin-icon-action--surface,
+.gallery-workspace__primary-action,
+.gallery-workspace__primary-actions > .admin-drag-handle {
+    border: 1px solid var(--admin-line-strong);
+    background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
+}
+
+.dark .admin-icon-action--surface,
+.dark .gallery-workspace__primary-action,
+.dark .gallery-workspace__primary-actions > .admin-drag-handle {
+    background: rgba(20, 20, 20, .78);
+}
+
+.gallery-workspace__primary-actions > .admin-drag-handle {
+    width: 1.78rem;
+    height: 1.78rem;
+    min-width: 1.78rem;
+    min-height: 1.78rem;
+    border-radius: .2rem;
+    color: var(--admin-muted);
+}
+
+.gallery-workspace__primary-actions > .admin-drag-handle:hover,
+.gallery-workspace__primary-actions > .admin-drag-handle:focus-visible {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+}
+
+/* Canonical semantic dot colors. Page-local status classes alias this grammar. */
+.admin-status,
+.admin-gallery-grid__state {
+    --admin-status-dot: var(--admin-status-neutral);
+}
+
+.admin-status::before,
+.admin-gallery-grid__state::before {
+    border-color: var(--admin-status-dot) !important;
+    background: var(--admin-status-dot) !important;
+}
+
+.admin-status.is-published,
+.admin-status.is-success,
+.admin-status.is-ready,
+.admin-gallery-grid__state.is-published {
+    --admin-status-dot: var(--admin-status-success);
+}
+
+.admin-status.is-warning,
+.admin-status.is-draft,
+.admin-status.is-scheduled {
+    --admin-status-dot: var(--admin-status-warning);
+}
+
+.admin-status.is-unpublished,
+.admin-status.is-danger,
+.admin-status.is-error,
+.admin-status.is-missing,
+.admin-gallery-grid__state:not(.is-published) {
+    --admin-status-dot: var(--admin-status-danger);
 }
 
 .admin-empty-state {
