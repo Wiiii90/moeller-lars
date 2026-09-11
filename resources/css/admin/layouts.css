@@ -29,24 +29,57 @@ html.fi,
 }
 
 /*
- * Selected navigation is lighted on the icon silhouette only. There is no
- * selected-row surface, border, radius, width, padding, or geometry change.
+ * Shared theme-level light and native-control popup tokens. Keep these generic
+ * so other admin surfaces can reuse the same lighting language later.
  */
 html.fi {
+    --admin-light-key: rgba(214, 138, 47, .42);
+    --admin-light-depth: rgba(20, 20, 20, .30);
+    --admin-light-bloom: rgba(180, 83, 9, .22);
+    --admin-light-bloom-soft: rgba(180, 83, 9, .12);
+    --admin-icon-light-effect:
+        drop-shadow(-.45px -.55px .22px var(--admin-light-key))
+        drop-shadow(.55px .8px .5px var(--admin-light-depth))
+        drop-shadow(0 0 .12rem var(--admin-light-bloom))
+        drop-shadow(0 0 .32rem var(--admin-light-bloom-soft));
+    --admin-control-popup-surface: #fff;
+    --admin-control-popup-ink: #181818;
+    --admin-control-popup-muted: #9a9a9a;
     --admin-sidebar-selected-ink: #141414;
-    --admin-sidebar-selected-icon-light:
-        drop-shadow(-.45px -.55px .22px rgba(214, 138, 47, .42))
-        drop-shadow(.55px .8px .5px rgba(20, 20, 20, .30))
-        drop-shadow(0 0 .12rem rgba(180, 83, 9, .22))
-        drop-shadow(0 0 .32rem rgba(180, 83, 9, .12));
 }
 
 html.fi.dark {
+    --admin-light-key: rgba(255, 255, 255, .28);
+    --admin-light-depth: rgba(0, 0, 0, .68);
+    --admin-light-bloom: rgba(240, 182, 95, .20);
+    --admin-light-bloom-soft: transparent;
+    --admin-icon-light-effect:
+        drop-shadow(-.4px -.5px .35px var(--admin-light-key))
+        drop-shadow(.5px .8px .7px var(--admin-light-depth))
+        drop-shadow(0 0 .25rem var(--admin-light-bloom));
+    --admin-control-popup-surface: #151515;
+    --admin-control-popup-ink: #f2f2f0;
+    --admin-control-popup-muted: #7d7c78;
     --admin-sidebar-selected-ink: #f4f4f2;
-    --admin-sidebar-selected-icon-light:
-        drop-shadow(-.4px -.5px .35px rgba(255, 255, 255, .28))
-        drop-shadow(.5px .8px .7px rgba(0, 0, 0, .68))
-        drop-shadow(0 0 .25rem rgba(240, 182, 95, .20));
+}
+
+/* Native select popups must follow the active admin theme, not the OS fallback. */
+html.fi select {
+    color-scheme: light;
+}
+
+html.fi.dark select {
+    color-scheme: dark;
+}
+
+html.fi select option,
+html.fi select optgroup {
+    background-color: var(--admin-control-popup-surface);
+    color: var(--admin-control-popup-ink);
+}
+
+html.fi select option:disabled {
+    color: var(--admin-control-popup-muted);
 }
 
 .admin-sidebar-preview {
@@ -130,7 +163,7 @@ html.fi.dark {
 .admin-sidebar-tree__root.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-icon,
 .admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-icon {
     color: var(--admin-sidebar-selected-ink) !important;
-    filter: var(--admin-sidebar-selected-icon-light);
+    filter: var(--admin-icon-light-effect);
     transition: color .16s ease, filter .2s ease;
 }
 
