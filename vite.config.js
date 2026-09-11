@@ -8,6 +8,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/admin.css',
                 'resources/css/admin/dashboard.css',
+                'resources/css/admin/dashboard-extras.css',
                 'resources/css/admin/gallery.css',
                 'resources/css/admin/journal.css',
                 'resources/css/admin/custom-page.css',
