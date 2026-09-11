@@ -25,14 +25,51 @@
         device: 'desktop',
         refreshTimer: null,
         init() {
-            this.syncStageMode()
+            this.$nextTick(() => this.syncStageMode())
         },
         setDevice(next) {
             this.device = next
-            this.syncStageMode()
+            this.$nextTick(() => this.syncStageMode())
         },
         syncStageMode() {
-            this.$el.closest('.general-appearance-stage')?.setAttribute('data-preview-device', this.device)
+            const stage = this.$el.closest('.general-appearance-stage')
+            if (! stage) return
+
+            stage.setAttribute('data-preview-device', this.device)
+
+            const controls = stage.querySelector('.general-appearance-stage__controls')
+            if (! controls) return
+
+            const grid = [...stage.querySelectorAll('.fi-sc-grid')].find((candidate) => {
+                const children = [...candidate.children]
+                const ownsControls = children.some((child) => child === controls || child.contains(controls))
+                const ownsPreview = children.some((child) => child === this.$el || child.contains(this.$el))
+
+                return ownsControls && ownsPreview
+            })
+
+            if (! grid) return
+
+            const controlsItem = [...grid.children].find((child) => child === controls || child.contains(controls))
+            const previewItem = [...grid.children].find((child) => child === this.$el || child.contains(this.$el))
+            if (! controlsItem || ! previewItem) return
+
+            grid.style.setProperty('grid-template-columns', 'repeat(3, minmax(0, 1fr))', 'important')
+            grid.style.setProperty('grid-template-rows', 'repeat(3, minmax(0, 1fr))', 'important')
+            grid.style.setProperty('gap', '0', 'important')
+            grid.style.height = '100%'
+
+            if (this.device === 'desktop') {
+                controlsItem.style.setProperty('grid-column', '1', 'important')
+                controlsItem.style.setProperty('grid-row', '1 / span 3', 'important')
+                previewItem.style.setProperty('grid-column', '2 / span 2', 'important')
+                previewItem.style.setProperty('grid-row', '1 / span 2', 'important')
+            } else {
+                controlsItem.style.setProperty('grid-column', '1 / span 2', 'important')
+                controlsItem.style.setProperty('grid-row', '1 / span 3', 'important')
+                previewItem.style.setProperty('grid-column', '3', 'important')
+                previewItem.style.setProperty('grid-row', '1 / span 3', 'important')
+            }
         },
         refreshPreview() {
             window.clearTimeout(this.refreshTimer)
