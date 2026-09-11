@@ -1,6 +1,6 @@
 <!doctype html>
 @php($publicStyleNonce = request()->attributes->get(\App\Http\Middleware\SecurityHeaders::STYLE_NONCE_ATTRIBUTE))
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html class="public-site-root" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">

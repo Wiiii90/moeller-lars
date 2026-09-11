@@ -135,6 +135,16 @@
     align-items: center;
 }
 
+/* Leaf rows reserve the same disclosure column as branch rows so labels do not shift. */
+.admin-sidebar-tree__node:not(.admin-sidebar-tree__node--branch) > .admin-sidebar-tree__node-row {
+    grid-template-columns: var(--admin-tree-icon-slot) var(--admin-tree-disclosure-slot) minmax(0, 1fr) !important;
+}
+
+.admin-sidebar-tree__node:not(.admin-sidebar-tree__node--branch) > .admin-sidebar-tree__node-row > .admin-sidebar-tree__node-label-link,
+.admin-sidebar-tree__node:not(.admin-sidebar-tree__node--branch) > .admin-sidebar-tree__node-row > .admin-sidebar-tree__node-label-static {
+    grid-column: 3;
+}
+
 .admin-sidebar-tree__icon-link,
 .admin-sidebar-tree__node-icon {
     width: var(--admin-tree-icon-slot);
