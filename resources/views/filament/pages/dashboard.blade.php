@@ -13,17 +13,33 @@
                     <a class="admin-action" href="{{ $storage['url'] }}">Open</a>
                 </header>
 
-                <div class="admin-dashboard__storage-visual">
+                <div class="admin-dashboard__storage-visual" aria-label="Storage capacity preview">
                     <div
-                        class="admin-dashboard__storage-ring {{ $storage['percent'] === null ? 'is-empty' : '' }}"
-                        @if ($storage['percent'] !== null) style="--dashboard-storage-used: {{ $storage['percent'] }}%" @endif
-                        aria-label="{{ $storage['percent'] === null ? $storage['label'] : $storage['percent'].' percent of configured storage allowance used' }}"
+                        @class([
+                            'admin-storage__capacity-orbit',
+                            'is-unconfigured' => ! ($storage['configured'] ?? false),
+                            'is-unavailable' => ! ($storage['measurement_available'] ?? false),
+                        ])
+                        style="--capacity-used: {{ $storage['percent'] ?? 0 }}%"
+                        role="img"
+                        aria-label="@if ($storage['percent'] !== null) {{ $storage['percent'] }} percent of the configured allowance is used @elseif ($storage['measurement_available'] ?? false) Authoritative usage is measured but no allowance is configured @else Authoritative storage measurement is unavailable @endif"
                     >
-                        <strong>{{ $storage['percent'] === null ? '—' : $storage['percent'].'%' }}</strong>
+                        <div class="admin-storage__capacity-core">
+                            @if ($storage['percent'] !== null)
+                                <strong>{{ $storage['percent'] }}%</strong>
+                                <span>Allowance used</span>
+                            @elseif ($storage['measurement_available'] ?? false)
+                                <strong>{{ $storage['authoritative'] ?? '—' }}</strong>
+                                <span>Authoritative used</span>
+                            @else
+                                <strong>—</strong>
+                                <span>Measurement unavailable</span>
+                            @endif
+                        </div>
                     </div>
                 </div>
                 <p class="admin-dashboard__facts">
-                    <span>Used <strong>{{ $storage['used'] }}</strong></span>
+                    <span>Used <strong>{{ $storage['authoritative'] }}</strong></span>
                     <span aria-hidden="true">·</span>
                     <span>Remaining <strong>{{ $storage['remaining'] }}</strong></span>
                     <span aria-hidden="true">·</span>
@@ -37,21 +53,118 @@
                     <a class="admin-action" href="{{ $activity['url'] }}">Open</a>
                 </header>
 
-                <div class="admin-dashboard__activity-visual" aria-label="Activity time preview">
-                    <div class="admin-dashboard__activity-clock" aria-label="24-hour activity clock for the last 30 days">
-                        <span class="admin-dashboard__activity-clock-label admin-dashboard__activity-clock-label--00">00</span>
-                        <span class="admin-dashboard__activity-clock-label admin-dashboard__activity-clock-label--06">06</span>
-                        <span class="admin-dashboard__activity-clock-label admin-dashboard__activity-clock-label--12">12</span>
-                        <span class="admin-dashboard__activity-clock-label admin-dashboard__activity-clock-label--18">18</span>
-                        @foreach ($activity['clock_points'] as $point)
-                            <span
-                                class="admin-dashboard__activity-marker"
-                                style="--dashboard-activity-x: {{ number_format($point['x'], 4, '.', '') }}%; --dashboard-activity-y: {{ number_format($point['y'], 4, '.', '') }}%"
-                                role="img"
-                                aria-label="Change at {{ $point['label'] }}"
-                                title="{{ $point['label'] }}"
-                            ></span>
-                        @endforeach
+                <div
+                    class="admin-dashboard__activity-visual activity-clock"
+                    aria-label="Activity clock for the last 30 days"
+                    x-data="{
+                        now: new Date(),
+                        timer: null,
+                        timeFormatter: new Intl.DateTimeFormat(undefined, {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                        }),
+                        init() {
+                            this.now = new Date()
+                            if (this.timer !== null) window.clearInterval(this.timer)
+                            this.timer = window.setInterval(() => { this.now = new Date() }, 1000)
+                        },
+                        destroy() {
+                            if (this.timer !== null) {
+                                window.clearInterval(this.timer)
+                                this.timer = null
+                            }
+                        },
+                        hourAngle() {
+                            return ((this.now.getHours() % 12) + (this.now.getMinutes() / 60) + (this.now.getSeconds() / 3600)) * 30
+                        },
+                        minuteAngle() {
+                            return (this.now.getMinutes() + (this.now.getSeconds() / 60)) * 6
+                        },
+                        secondAngle() {
+                            return this.now.getSeconds() * 6
+                        },
+                        timeLabel() {
+                            return this.timeFormatter.format(this.now)
+                        },
+                    }"
+                >
+                    <div class="activity-clock__figure">
+                        <svg
+                            class="activity-clock__dial"
+                            viewBox="0 0 320 320"
+                            role="img"
+                            x-bind:aria-label="`Current local time ${timeLabel()}`"
+                        >
+                            <circle class="activity-clock__activity-track" cx="160" cy="160" r="134" />
+                            @foreach ($activity['clock_activity'] as $bucket)
+                                @php
+                                    $activityRatio = $activity['clock_peak_count'] > 0 ? sqrt($bucket['count'] / $activity['clock_peak_count']) : 0;
+                                    $activityOpacity = $bucket['count'] > 0 ? 0.28 + (0.72 * $activityRatio) : 0.12;
+                                @endphp
+                                <line
+                                    class="activity-clock__activity-tick {{ $bucket['hour'] === $activity['clock_peak_hour'] ? 'is-peak' : '' }}"
+                                    x1="160"
+                                    y1="33"
+                                    x2="160"
+                                    y2="19"
+                                    transform="rotate({{ $bucket['hour'] * 15 }} 160 160)"
+                                    opacity="{{ number_format($activityOpacity, 3, '.', '') }}"
+                                >
+                                    <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 · {{ number_format($bucket['count']) }} changes</title>
+                                </line>
+                            @endforeach
+
+                            <circle class="activity-clock__face" cx="160" cy="160" r="112" />
+
+                            @for ($minute = 0; $minute < 60; $minute++)
+                                <line
+                                    class="activity-clock__tick {{ $minute % 5 === 0 ? 'is-hour' : '' }}"
+                                    x1="160"
+                                    y1="{{ $minute % 5 === 0 ? 59 : 54 }}"
+                                    x2="160"
+                                    y2="48"
+                                    transform="rotate({{ $minute * 6 }} 160 160)"
+                                />
+                            @endfor
+
+                            @foreach (range(1, 12) as $hour)
+                                <g transform="rotate({{ $hour * 30 }} 160 160)">
+                                    <text
+                                        class="activity-clock__number"
+                                        x="160"
+                                        y="74"
+                                        transform="rotate({{ $hour * -30 }} 160 74)"
+                                    >{{ $hour }}</text>
+                                </g>
+                            @endforeach
+
+                            <line
+                                class="activity-clock__hand activity-clock__hand--hour"
+                                x1="160"
+                                y1="170"
+                                x2="160"
+                                y2="98"
+                                x-bind:transform="`rotate(${hourAngle()} 160 160)`"
+                            />
+                            <line
+                                class="activity-clock__hand activity-clock__hand--minute"
+                                x1="160"
+                                y1="174"
+                                x2="160"
+                                y2="82"
+                                x-bind:transform="`rotate(${minuteAngle()} 160 160)`"
+                            />
+                            <line
+                                class="activity-clock__hand activity-clock__hand--second"
+                                x1="160"
+                                y1="178"
+                                x2="160"
+                                y2="74"
+                                x-bind:transform="`rotate(${secondAngle()} 160 160)`"
+                            />
+                            <circle class="activity-clock__pin" cx="160" cy="160" r="4.5" />
+                        </svg>
                     </div>
                 </div>
                 <p class="admin-dashboard__facts">{{ number_format($activity['recent_changes']) }} changes · last 30 days</p>
@@ -64,28 +177,52 @@
                 </header>
 
                 <figure class="admin-dashboard__analytics-visual">
-                    <div class="admin-dashboard__analytics-map">
-                        @if (view()->exists('filament.generated.analytics-world-map'))
-                            @include('filament.generated.analytics-world-map')
-                        @else
-                            <div class="analytics-map-build-warning">Map geometry is generated by the frontend build.</div>
-                        @endif
+                    <div
+                        class="admin-dashboard__analytics-map analytics-visual-stage"
+                        x-data="{
+                            selectedCountry: @js($analytics['map_points'][0]['label'] ?? null),
+                            activeCountry: @js($analytics['map_points'][0]['label'] ?? null),
+                            previewCountry(country) { this.activeCountry = country },
+                            restoreCountry() { this.activeCountry = this.selectedCountry },
+                            selectCountry(country) { this.selectedCountry = country; this.activeCountry = country },
+                        }"
+                    >
+                        <figure class="analytics-world" aria-label="World visitor map">
+                            <div class="analytics-world__canvas">
+                                @if (view()->exists('filament.generated.analytics-world-map'))
+                                    @include('filament.generated.analytics-world-map')
+                                @else
+                                    <div class="analytics-map-build-warning" role="status">
+                                        Map geometry unavailable in this build.
+                                    </div>
+                                @endif
 
-                        @foreach ($analytics['map_points'] as $point)
-                            <span
-                                class="admin-dashboard__analytics-marker"
-                                style="--dashboard-analytics-x: {{ number_format($point['x'], 3, '.', '') }}%; --dashboard-analytics-y: {{ number_format($point['y'], 3, '.', '') }}%; --dashboard-analytics-size: {{ number_format($point['size'], 2, '.', '') }}px;"
-                                tabindex="0"
-                                aria-label="{{ $point['label'] }}: {{ number_format($point['visits']) }} visits"
-                                title="{{ $point['label'] }} · {{ number_format($point['visits']) }} visits"
-                            ></span>
-                        @endforeach
+                                @foreach ($analytics['map_points'] as $point)
+                                    <button
+                                        class="analytics-world__marker"
+                                        type="button"
+                                        style="left: {{ number_format($point['x'], 3, '.', '') }}%; top: {{ number_format($point['y'], 3, '.', '') }}%; width: {{ number_format($point['size'], 2, '.', '') }}px; height: {{ number_format($point['size'], 2, '.', '') }}px;"
+                                        x-on:mouseenter="previewCountry(@js($point['label']))"
+                                        x-on:mouseleave="restoreCountry()"
+                                        x-on:focus="previewCountry(@js($point['label']))"
+                                        x-on:blur="restoreCountry()"
+                                        x-on:click="selectCountry(@js($point['label']))"
+                                        x-bind:class="selectedCountry === @js($point['label']) ? 'is-selected' : ''"
+                                        x-bind:aria-pressed="(selectedCountry === @js($point['label'])).toString()"
+                                        aria-label="{{ $point['label'] }}: {{ number_format($point['visits']) }} visits"
+                                        title="{{ $point['label'] }} · {{ number_format($point['visits']) }} visits"
+                                    ></button>
+                                @endforeach
+                            </div>
+                        </figure>
                     </div>
                     <figcaption class="admin-dashboard__analytics-caption">
                         @if ($analytics['status'] === 'disabled')
-                            Matomo reporting is disabled.
+                            No reporting data for this environment.
+                        @elseif ($analytics['status'] === 'unavailable')
+                            Reporting data is currently unavailable.
                         @elseif ($analytics['country_state'] === 'unavailable')
-                            Country-level visits unavailable.
+                            Country-level reporting is unavailable.
                         @elseif ($analytics['country_state'] === 'empty')
                             No country-level visits in this period.
                         @else
