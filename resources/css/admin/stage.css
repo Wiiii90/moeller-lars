@@ -95,6 +95,14 @@
     border-left: 0 !important;
 }
 
+/* Home and Analytics intentionally let their primary visual reach the 2/3
+ * axis. This keeps the hero edge and the map's zero-longitude line on the same
+ * metric grid instead of shifting them left by pane padding. */
+.home-hero-surface > .home-hero-surface__visual,
+.analytics-visual-stage > .analytics-world {
+    padding-right: 0 !important;
+}
+
 /* Storage uses the left two stage thirds as two exact internal thirds. The
  * orbit and distribution share the 1/3 axis without drawing an extra divider. */
 .admin-storage__visual-stage > .admin-storage__visual-main {
@@ -115,13 +123,35 @@
     padding-left: var(--admin-stage-pane-space);
 }
 
-/* General uses Filament's own three-column schema grid. */
-.general-appearance-stage__controls {
+/* General uses Filament's own three-column schema grid. The divider follows
+ * the active device mode: Desktop = controls 1/3 + preview 2/3; Mobile =
+ * controls 2/3 + preview 1/3. */
+.general-appearance-stage[data-preview-device="desktop"]::after {
+    left: 33.333333%;
+}
+
+.general-appearance-stage[data-preview-device="desktop"] > .general-appearance-stage__controls {
+    grid-column: 1 !important;
+    padding-right: var(--admin-stage-pane-space) !important;
+    padding-left: 0 !important;
+}
+
+.general-appearance-stage[data-preview-device="desktop"] > .general-appearance-stage__preview {
+    grid-column: 2 / span 2 !important;
+    padding-right: 0 !important;
+    padding-left: var(--admin-stage-pane-space) !important;
+}
+
+.general-appearance-stage:not([data-preview-device="desktop"]) > .general-appearance-stage__controls,
+.general-appearance-stage[data-preview-device="mobile"] > .general-appearance-stage__controls {
+    grid-column: 1 / span 2 !important;
     min-width: 0;
     padding-right: var(--admin-stage-pane-space) !important;
 }
 
-.general-appearance-stage__preview {
+.general-appearance-stage:not([data-preview-device="desktop"]) > .general-appearance-stage__preview,
+.general-appearance-stage[data-preview-device="mobile"] > .general-appearance-stage__preview {
+    grid-column: 3 !important;
     min-width: 0;
     padding-left: var(--admin-stage-pane-space) !important;
     border-left: 0 !important;
@@ -144,7 +174,8 @@
     object-fit: contain;
 }
 
-/* Dashboard is the canonical three-pane special case. */
+/* Dashboard is the canonical three-pane special case. Its content starts at
+ * the stage edge like Home; only the divider itself keeps the shared inset. */
 .admin-dashboard__overview {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -157,7 +188,7 @@
 .admin-dashboard__overview-column:last-child {
     min-width: 0;
     min-height: 0;
-    padding-top: var(--admin-stage-divider-inset) !important;
+    padding-top: 0 !important;
     padding-bottom: var(--admin-stage-divider-inset) !important;
     border: 0 !important;
 }
@@ -183,9 +214,9 @@
     border-top: 1px solid var(--admin-line-strong);
 }
 
-/* Activity is Calendar | Clock | Publication, one exact metric-third each. The
- * former mode wrapper becomes layout-transparent so the two canonical views can
- * occupy their own stage panes without duplicating their markup. */
+/* Activity is Calendar | Clock | Publication, one exact metric-third each.
+ * Keep Calendar and Clock in their existing shared wrapper; that wrapper owns
+ * the left two thirds and lays both canonical visualizations side-by-side. */
 .activity-atlas__grid {
     position: relative;
     display: grid !important;
@@ -195,7 +226,14 @@
 }
 
 .activity-atlas__visual {
-    display: contents !important;
+    display: grid !important;
+    grid-column: 1 / span 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr) !important;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    padding: 0 !important;
 }
 
 .activity-atlas__visual-header,
@@ -208,15 +246,17 @@
     box-sizing: border-box;
     display: grid !important;
     grid-column: 1;
+    grid-row: 1;
     width: 100% !important;
     height: 100% !important;
     min-width: 0;
     min-height: 0;
     grid-template-rows: auto minmax(0, 1fr) auto;
-    gap: .5rem;
+    gap: .45rem;
     margin: 0 !important;
     padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) var(--admin-stage-divider-inset) 0 !important;
     overflow: hidden;
+    align-content: stretch;
 }
 
 .activity-atlas__view.activity-clock,
@@ -225,6 +265,7 @@
     box-sizing: border-box;
     display: grid !important;
     grid-column: 2;
+    grid-row: 1;
     width: 100% !important;
     height: 100% !important;
     min-width: 0;
@@ -232,8 +273,18 @@
     grid-template-rows: minmax(0, 1fr) !important;
     margin: 0 !important;
     padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
-    overflow: visible;
+    overflow: hidden;
     place-items: center;
+}
+
+.activity-calendar__summary {
+    gap: .5rem;
+    align-items: baseline;
+}
+
+.activity-calendar__summary span,
+.activity-calendar__summary strong {
+    font-size: .64rem;
 }
 
 .activity-calendar__plot,
@@ -243,7 +294,39 @@
 }
 
 .activity-calendar__plot {
+    gap: .45rem;
     align-self: center;
+}
+
+.activity-calendar__weekdays {
+    grid-template-rows: repeat(7, .78rem);
+    gap: .12rem;
+}
+
+.activity-calendar__weekdays span {
+    height: .78rem;
+    font-size: .48rem;
+}
+
+.activity-calendar__cells {
+    grid-auto-columns: .78rem;
+    grid-template-rows: repeat(7, .78rem);
+    gap: .12rem;
+    padding-bottom: .18rem;
+}
+
+.activity-calendar__day {
+    width: .78rem;
+    height: .78rem;
+}
+
+.activity-calendar__legend {
+    font-size: .54rem;
+}
+
+.activity-calendar__legend .activity-calendar__day {
+    width: .6rem;
+    height: .6rem;
 }
 
 .activity-clock__figure {
@@ -256,7 +339,7 @@
 }
 
 .activity-clock__dial {
-    width: min(100%, 16rem) !important;
+    width: min(100%, 15.5rem) !important;
     max-width: 100%;
     max-height: 100%;
 }
@@ -338,7 +421,6 @@
     }
 
     .activity-atlas__visual {
-        display: grid !important;
         grid-column: 1;
         grid-template-columns: 1fr;
         height: auto !important;
@@ -356,6 +438,7 @@
 
     .general-appearance-stage__controls,
     .general-appearance-stage__preview {
+        grid-column: 1 !important;
         padding-right: 0 !important;
         padding-left: 0 !important;
         border: 0 !important;
