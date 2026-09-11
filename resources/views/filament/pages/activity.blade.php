@@ -18,20 +18,32 @@
 
                 return request()->url().($query === [] ? '' : '?'.http_build_query($query));
             };
+            $stageQuery = [
+                'period' => $period,
+                'search' => $search,
+                'area' => $area,
+                'family' => $family,
+            ];
+            $calendarYearUrl = static fn (int $year): string => $activityUrl([
+                ...$stageQuery,
+                'calendar_year' => $year,
+            ]);
+            $calendarDateUrl = static fn (string $date): string => $activityUrl([
+                ...$stageQuery,
+                'calendar_year' => $calendarYear,
+                'calendar_date' => $date,
+            ]);
             $activitySourceExists = $paginator->total() > 0 || \App\Models\AuditEvent::query()
                 ->where('occurred_at', '>=', now()->subDays(\App\Filament\Support\AdminActivityFeed::ACTIVITY_WINDOW_DAYS))
                 ->exists();
-            $calendarWeeks = array_chunk($calendarDays, 7);
-            $calendarBandSize = max(1, (int) ceil(count($calendarWeeks) / 2));
-            $calendarBands = array_chunk($calendarWeeks, $calendarBandSize);
         @endphp
 
         <section
             class="activity-atlas"
             aria-label="Activity visualization"
             x-data="{
-                mode: 'clock',
-                now: new Date(),
+                live: @js($clockIsLive),
+                now: new Date(@js($clockAtIso)),
                 timer: null,
                 timeFormatter: new Intl.DateTimeFormat(undefined, {
                     hour: '2-digit',
@@ -39,8 +51,8 @@
                     second: '2-digit',
                 }),
                 init() {
+                    if (! this.live) return
                     this.now = new Date()
-                    if (this.timer !== null) window.clearInterval(this.timer)
                     this.timer = window.setInterval(() => { this.now = new Date() }, 1000)
                 },
                 destroy() {
@@ -65,37 +77,92 @@
         >
             <div class="activity-atlas__grid admin-visual-stage admin-visual-stage--stackable" aria-label="Activity visualization">
                 <div class="activity-atlas__visual admin-visual-stage__pane">
-                    <header class="activity-atlas__visual-header">
-                        <div>
-                            <strong x-text="mode === 'clock' ? 'Clock' : 'Calendar'">Clock</strong>
-                            <span>{{ $selectedPeriodLabel }} · {{ number_format($activityMetrics['changes']) }} matching changes</span>
+                    <div class="activity-atlas__view activity-calendar">
+                        <div class="activity-calendar__header">
+                            <div class="activity-calendar__year-nav" aria-label="Calendar year">
+                                @if ($calendarPreviousYear !== null)
+                                    <a
+                                        class="admin-icon-action"
+                                        href="{{ $calendarYearUrl($calendarPreviousYear) }}"
+                                        wire:navigate
+                                        aria-label="Previous year"
+                                        title="Previous year"
+                                    ><x-filament::icon icon="heroicon-m-chevron-left" /></a>
+                                @else
+                                    <span class="admin-icon-action is-disabled" aria-hidden="true"><x-filament::icon icon="heroicon-m-chevron-left" /></span>
+                                @endif
+
+                                <strong>{{ $calendarYear }}</strong>
+
+                                @if ($calendarNextYear !== null)
+                                    <a
+                                        class="admin-icon-action"
+                                        href="{{ $calendarYearUrl($calendarNextYear) }}"
+                                        wire:navigate
+                                        aria-label="Next year"
+                                        title="Next year"
+                                    ><x-filament::icon icon="heroicon-m-chevron-right" /></a>
+                                @else
+                                    <span class="admin-icon-action is-disabled" aria-hidden="true"><x-filament::icon icon="heroicon-m-chevron-right" /></span>
+                                @endif
+                            </div>
+                            <time datetime="{{ $selectedCalendarDate }}">{{ $selectedCalendarLabel }}</time>
                         </div>
 
-                        <x-admin.toolbar class="activity-atlas__mode" aria-label="Activity visualization mode">
-                            <button
-                                class="admin-action"
-                                type="button"
-                                x-on:click="mode = 'clock'"
-                                x-bind:class="{ 'is-primary': mode === 'clock' }"
-                                x-bind:aria-pressed="(mode === 'clock').toString()"
-                            >Clock</button>
-                            <button
-                                class="admin-action"
-                                type="button"
-                                x-on:click="mode = 'calendar'"
-                                x-bind:class="{ 'is-primary': mode === 'calendar' }"
-                                x-bind:aria-pressed="(mode === 'calendar').toString()"
-                            >Calendar</button>
-                        </x-admin.toolbar>
-                    </header>
+                        <div class="activity-calendar__bands" role="grid" aria-label="Daily activity density for {{ $calendarYear }}">
+                            @foreach ($calendarBands as $band)
+                                @php
+                                    $bandDays = array_merge([], ...$band);
+                                @endphp
+                                <div class="activity-calendar__band" style="--activity-calendar-weeks: {{ count($band) }};">
+                                    <div class="activity-calendar__weekdays" aria-hidden="true">
+                                        @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $weekday)
+                                            <span>{{ $weekday }}</span>
+                                        @endforeach
+                                    </div>
+                                    <div class="activity-calendar__cells">
+                                        @foreach ($bandDays as $day)
+                                            @if ($day === null)
+                                                <span class="activity-calendar__day is-outside" aria-hidden="true"></span>
+                                            @elseif ($day['future'])
+                                                <span
+                                                    class="activity-calendar__day is-level-0 is-future"
+                                                    aria-label="{{ $day['label'] }}"
+                                                    title="{{ $day['label'] }}"
+                                                ></span>
+                                            @else
+                                                <a
+                                                    class="activity-calendar__day is-level-{{ $day['level'] }} {{ $day['selected'] ? 'is-selected' : '' }} {{ $day['today'] ? 'is-today' : '' }}"
+                                                    href="{{ $calendarDateUrl($day['date']) }}"
+                                                    wire:navigate
+                                                    role="gridcell"
+                                                    aria-current="{{ $day['selected'] ? 'date' : 'false' }}"
+                                                    aria-label="{{ $day['label'] }}: {{ $day['count'] }} changes"
+                                                    title="{{ $day['label'] }} · {{ $day['count'] }} changes"
+                                                ></a>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
 
-                    <div class="activity-atlas__view activity-clock" x-show="mode === 'clock'">
+                        <div class="activity-calendar__legend" aria-hidden="true">
+                            <span>Less</span>
+                            @foreach (range(0, 4) as $level)
+                                <i class="activity-calendar__day is-level-{{ $level }}"></i>
+                            @endforeach
+                            <span>More</span>
+                        </div>
+                    </div>
+
+                    <div class="activity-atlas__view activity-clock">
                         <div class="activity-clock__figure">
                             <svg
                                 class="activity-clock__dial"
                                 viewBox="0 0 320 320"
                                 role="img"
-                                x-bind:aria-label="`Current local time ${timeLabel()}`"
+                                x-bind:aria-label="`{{ $selectedCalendarLabel }} ${timeLabel()}`"
                             >
                                 <circle class="activity-clock__activity-track" cx="160" cy="160" r="134" />
                                 @foreach ($clockActivity as $bucket)
@@ -168,64 +235,14 @@
                             </svg>
                         </div>
 
-                        <div class="activity-clock__meta" aria-label="Clock context">
-                            <div>
-                                <span>Current time</span>
-                                <strong x-text="timeLabel()">—</strong>
-                            </div>
-                            <div>
-                                <span>Peak activity</span>
-                                <strong>
-                                    @if ($clockPeakHour !== null)
-                                        {{ str_pad((string) $clockPeakHour, 2, '0', STR_PAD_LEFT) }}:00 · {{ number_format($clockPeakCount) }}
-                                    @else
-                                        —
-                                    @endif
-                                </strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="activity-atlas__view activity-calendar" x-show="mode === 'calendar'" x-cloak>
-                        <div class="activity-calendar__summary">
-                            <span>{{ $calendarLabel }}</span>
-                            <strong>{{ number_format($calendarActiveDays) }} active days · peak {{ number_format($calendarMaximum) }}</strong>
-                        </div>
-
-                        <div class="activity-calendar__bands" role="img" aria-label="Daily Activity density for {{ $calendarLabel }}">
-                            @foreach ($calendarBands as $band)
-                                @php
-                                    $bandDays = array_merge([], ...$band);
-                                @endphp
-                                <div class="activity-calendar__band" style="--activity-calendar-weeks: {{ count($band) }};">
-                                    <div class="activity-calendar__weekdays" aria-hidden="true">
-                                        @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $weekday)
-                                            <span>{{ $weekday }}</span>
-                                        @endforeach
-                                    </div>
-                                    <div class="activity-calendar__cells">
-                                        @foreach ($bandDays as $day)
-                                            @if ($day === null)
-                                                <span class="activity-calendar__day is-outside" aria-hidden="true"></span>
-                                            @else
-                                                <span
-                                                    class="activity-calendar__day is-level-{{ $day['level'] }}"
-                                                    aria-label="{{ $day['label'] }}: {{ $day['count'] }} changes"
-                                                    title="{{ $day['label'] }} · {{ $day['count'] }} changes"
-                                                ></span>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        <div class="activity-calendar__legend" aria-hidden="true">
-                            <span>Less</span>
-                            @foreach (range(0, 4) as $level)
-                                <i class="activity-calendar__day is-level-{{ $level }}"></i>
-                            @endforeach
-                            <span>More</span>
+                        <div class="activity-clock__caption" aria-label="Selected day and time">
+                            <strong>{{ $selectedCalendarLabel }}</strong>
+                            <span>
+                                {{ $selectedClockLabel }}
+                                @if ($clockHasActivity)
+                                    · <time x-text="timeLabel()">—</time>
+                                @endif
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -274,6 +291,8 @@
 
             <form method="get" action="{{ request()->url() }}" class="admin-visual-stage-followup">
                 <input type="hidden" name="period" value="{{ $period }}">
+                <input type="hidden" name="calendar_year" value="{{ $calendarYear }}">
+                <input type="hidden" name="calendar_date" value="{{ $selectedCalendarDate }}">
                 <x-admin.controls class="activity-workspace__controls" aria-label="Activity controls">
                     <x-slot:search>
                         <label class="admin-data-field">
@@ -314,7 +333,7 @@
                     <x-slot:reset>
                         <div class="admin-data-control-group">
                             <span class="admin-data-control-label">Filter</span>
-                            <a class="admin-action" href="{{ $activityUrl(['period' => $period]) }}">Reset</a>
+                            <a class="admin-action" href="{{ $activityUrl(['period' => $period, 'calendar_year' => $calendarYear, 'calendar_date' => $selectedCalendarDate]) }}">Reset</a>
                         </div>
                     </x-slot:reset>
 
@@ -325,7 +344,7 @@
                                 @foreach ($periodOptions as $value => $label)
                                     <a
                                         class="admin-action {{ $period === $value ? 'is-primary' : '' }}"
-                                        href="{{ $activityUrl(['period' => $value, 'search' => $search, 'area' => $area, 'family' => $family]) }}"
+                                        href="{{ $activityUrl(['period' => $value, 'search' => $search, 'area' => $area, 'family' => $family, 'calendar_year' => $calendarYear, 'calendar_date' => $selectedCalendarDate]) }}"
                                     >{{ $label }}</a>
                                 @endforeach
                             </x-admin.toolbar>
