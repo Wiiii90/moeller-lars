@@ -37,6 +37,7 @@ html:not(.dark) .fi-sidebar-nav {
 .admin-sidebar-tree__root,
 .admin-sidebar-tree__root.fi-active,
 .admin-sidebar-tree__root.fi-sidebar-item-has-active-child-items {
+    display: block !important;
     margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
