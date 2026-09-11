@@ -78,15 +78,15 @@
 }
 
 .admin-dashboard .admin-data-status.is-success {
-    color: var(--admin-status-success);
+    color: var(--admin-success);
 }
 
 .admin-dashboard .admin-data-status.is-warning {
-    color: var(--admin-status-warning);
+    color: var(--admin-accent);
 }
 
 .admin-dashboard .admin-data-status.is-danger {
-    color: var(--admin-status-danger);
+    color: var(--admin-danger);
 }
 
 @media (max-width: 760px) {
