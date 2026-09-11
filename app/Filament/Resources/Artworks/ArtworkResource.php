@@ -7,7 +7,6 @@ use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Resources\Artworks\Pages\CreateArtwork;
 use App\Filament\Resources\Artworks\Pages\EditArtwork;
-use App\Filament\Resources\Artworks\Pages\ListArtworks;
 use App\Filament\Resources\Artworks\Pages\ManageGalleryArtworks;
 use App\Filament\Resources\Artworks\Pages\ViewArtwork;
 use App\Filament\Resources\Artworks\RelationManagers\GalleryImagesRelationManager;
@@ -19,9 +18,6 @@ use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -31,11 +27,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use UnitEnum;
@@ -148,56 +139,6 @@ class ArtworkResource extends Resource
         ]);
     }
 
-    public static function table(Table $table): Table
-    {
-        return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with([
-                'category',
-                'artworkMedia.mediaAsset.variants',
-            ]))
-            ->columns([
-                ImageColumn::make('thumbnail')
-                    ->label('')
-                    ->state(fn (Artwork $record): ?string => self::thumbnailUrl($record))
-                    ->imageHeight(56),
-                TextColumn::make('title')->searchable()->sortable(),
-                TextColumn::make('category.name')->label('Gallery')->placeholder('Unassigned')->sortable(),
-                TextColumn::make('state')->badge()->sortable(),
-                TextColumn::make('work_year')->label('Year')->sortable(),
-                TextColumn::make('position')
-                    ->label('Gallery order')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->defaultSort('position')
-            ->filters([
-                SelectFilter::make('state')->options([
-                    'draft' => 'Draft',
-                    'published' => 'Published',
-                    'archived' => 'Archived',
-                ]),
-                SelectFilter::make('category')->label('Gallery')->relationship('category', 'name'),
-            ])
-            ->recordActions([
-                Action::make('viewPublic')
-                    ->label('View on site')
-                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
-                    ->url(fn (Artwork $record): string => route('artworks.show', ['slug' => $record->getAttribute('slug')]))
-                    ->openUrlInNewTab()
-                    ->visible(fn (Artwork $record): bool => $record->getAttribute('state') === 'published'
-                        && $record->category()->whereHas('siteSection', static fn (Builder $query) => $query->where('state', 'published'))->exists()),
-                ViewAction::make(),
-                EditAction::make(),
-            ])
-            ->toolbarActions([])
-            ->emptyStateHeading('No artworks yet')
-            ->emptyStateDescription('Add an artwork, attach its primary media and publish it when it is ready.');
-    }
-
     public static function getRelations(): array
     {
         return [
@@ -208,7 +149,6 @@ class ArtworkResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListArtworks::route('/'),
             'create' => CreateArtwork::route('/create'),
             'gallery' => ManageGalleryArtworks::route('/gallery/{gallery}'),
             'view' => ViewArtwork::route('/{record}'),

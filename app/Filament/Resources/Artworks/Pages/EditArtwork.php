@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Artworks\Pages;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Filament\Concerns\UsesAdminEditor;
+use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -115,11 +116,16 @@ class EditArtwork extends EditRecord
     protected function getRedirectUrl(): string
     {
         $galleryId = $this->artworkRecord()->getAttribute('artwork_category_id');
-        if ($this->returnToGallery && $galleryId !== null) {
-            return ArtworkResource::getUrl('gallery', ['gallery' => (int) $galleryId]);
+        if ($galleryId !== null) {
+            $galleryUrl = ArtworkResource::getUrl('gallery', ['gallery' => (int) $galleryId]);
+            if ($this->returnToGallery) {
+                return $galleryUrl;
+            }
+
+            return $this->editorReturnUrl($galleryUrl);
         }
 
-        return $this->editorReturnUrl(ArtworkResource::getUrl('index'));
+        return $this->editorReturnUrl(SitePages::getUrl());
     }
 
     private function artworkRecord(): Artwork

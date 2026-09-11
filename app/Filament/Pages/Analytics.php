@@ -62,8 +62,6 @@ final class Analytics extends Page
     /** @var array<int, array<string, mixed>> */
     public array $artworkAttention = [];
 
-    public ?string $selectedArtworkAnalyticsKey = null;
-
     /** @var array<int, array{label:string,value:string,detail:string}> */
     public array $audienceHighlights = [];
 
@@ -209,19 +207,6 @@ final class Analytics extends Page
         ];
     }
 
-    public function selectArtwork(string $analyticsKey): void
-    {
-        $exists = collect($this->artworkAttention)
-            ->contains(static fn (array $row): bool => ($row['analytics_key'] ?? null) === $analyticsKey);
-
-        $this->selectedArtworkAnalyticsKey = $exists ? $analyticsKey : null;
-    }
-
-    public function clearArtworkSelection(): void
-    {
-        $this->selectedArtworkAnalyticsKey = null;
-    }
-
     private function loadRange(): void
     {
         $this->matomo = app(MatomoReportingClient::class)->report($this->range);
@@ -246,14 +231,6 @@ final class Analytics extends Page
             $artworkEventsAvailable,
         );
         $this->audienceHighlights = $this->buildAudienceHighlights($this->matomo);
-
-        if ($this->selectedArtworkAnalyticsKey !== null) {
-            $selectedStillExists = collect($this->artworkAttention)
-                ->contains(fn (array $row): bool => ($row['analytics_key'] ?? null) === $this->selectedArtworkAnalyticsKey);
-            if (! $selectedStillExists) {
-                $this->selectedArtworkAnalyticsKey = null;
-            }
-        }
 
         $days = match ($this->range) {
             'today' => 1,
