@@ -94,7 +94,7 @@ class AdminPanelProvider extends PanelProvider
         $storageItem = StorageCapacity::getNavigationItems()[0]->group(null);
         $previewItem = NavigationItem::make('Preview')
             ->group(null)
-            ->icon(Heroicon::OutlinedEye)
+            ->icon(Heroicon::OutlinedRectangleGroup)
             ->url(route('preview.home'))
             ->openUrlInNewTab();
         $hasPendingChanges = app(PublicationService::class)->hasPendingChanges();
