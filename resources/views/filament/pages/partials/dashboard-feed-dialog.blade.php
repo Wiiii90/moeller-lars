@@ -31,6 +31,15 @@
                     @endif
                 </dd>
             </div>
+        @elseif ($entry['type'] === 'notification')
+            <div>
+                <dt>Severity</dt>
+                <dd>{{ ucfirst($entry['notification_status']) }}</dd>
+            </div>
+            <div>
+                <dt>History</dt>
+                <dd>{{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }}</dd>
+            </div>
         @endif
     </dl>
 
