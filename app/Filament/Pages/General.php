@@ -92,55 +92,56 @@ final class General extends Page
         return $schema
             ->components([
                 Group::make([
-                    MediaAssetSelect::make(
-                        'favicon_media_asset_id',
-                        'faviconMediaAsset',
-                        'Site icon',
-                        imagesOnly: true,
-                        includeDimensions: false,
-                    )
-                        ->placeholder('Choose from Media Files')
-                        ->selectablePlaceholder(false)
-                        ->extraFieldWrapperAttributes(['class' => 'admin-favicon-control'])
-                        ->nullable()
-                        ->live()
-                        ->suffixAction(
-                            Action::make('removeFavicon')
-                                ->label('Remove site icon')
-                                ->icon('heroicon-m-x-mark')
-                                ->iconButton()
-                                ->color('gray')
-                                ->extraAttributes(['class' => 'general-site-icon-remove'])
-                                ->visible(fn (callable $get): bool => filled($get('favicon_media_asset_id')))
-                                ->action(function ($livewire): void {
-                                    if ($livewire instanceof self) {
-                                        $livewire->removeFavicon();
-                                    }
-                                }),
-                        )
-                        ->afterStateUpdated(self::persist('favicon_media_asset_id')),
-
                     Group::make([
-                        Select::make('background_mode')
-                            ->label('Background')
-                            ->options([
-                                PublicAppearance::MODE_SOLID => 'Solid',
-                                PublicAppearance::MODE_GRADIENT => 'Gradient',
-                            ])
-                            ->native()
-                            ->required()
+                        MediaAssetSelect::make(
+                            'favicon_media_asset_id',
+                            'faviconMediaAsset',
+                            'Site icon',
+                            imagesOnly: true,
+                            includeDimensions: false,
+                        )
+                            ->placeholder('Choose from Media Files')
+                            ->selectablePlaceholder(false)
+                            ->extraFieldWrapperAttributes(['class' => 'admin-favicon-control general-site-icon-control'])
+                            ->nullable()
                             ->live()
-                            ->afterStateUpdated(function ($livewire): void {
-                                if ($livewire instanceof self) {
-                                    $livewire->persistChangedField('background_mode');
-                                    if (($livewire->data['background_mode'] ?? null) === PublicAppearance::MODE_SOLID) {
-                                        $livewire->persistChangedField('background_color');
-                                    }
-                                    $livewire->syncAppearanceControlState();
-                                }
-                            }),
+                            ->suffixAction(
+                                Action::make('removeFavicon')
+                                    ->label('Remove site icon')
+                                    ->icon('heroicon-m-x-mark')
+                                    ->iconButton()
+                                    ->color('gray')
+                                    ->extraAttributes(['class' => 'general-site-icon-remove'])
+                                    ->visible(fn (callable $get): bool => filled($get('favicon_media_asset_id')))
+                                    ->action(function ($livewire): void {
+                                        if ($livewire instanceof self) {
+                                            $livewire->removeFavicon();
+                                        }
+                                    }),
+                            )
+                            ->afterStateUpdated(self::persist('favicon_media_asset_id')),
 
                         Group::make([
+                            Select::make('background_mode')
+                                ->label('Background')
+                                ->options([
+                                    PublicAppearance::MODE_SOLID => 'Solid',
+                                    PublicAppearance::MODE_GRADIENT => 'Gradient',
+                                ])
+                                ->native()
+                                ->required()
+                                ->live()
+                                ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
+                                ->afterStateUpdated(function ($livewire): void {
+                                    if ($livewire instanceof self) {
+                                        $livewire->persistChangedField('background_mode');
+                                        if (($livewire->data['background_mode'] ?? null) === PublicAppearance::MODE_SOLID) {
+                                            $livewire->persistChangedField('background_color');
+                                        }
+                                        $livewire->syncAppearanceControlState();
+                                    }
+                                }),
+
                             AdminColorControl::make('background_primary_color', 'Primary color')
                                 ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
                                 ->lazy()
@@ -171,11 +172,16 @@ final class General extends Page
                                 ->placeholder((string) PublicAppearance::DEFAULT_GRADIENT_ANGLE)
                                 ->nullable()
                                 ->lazy()
+                                ->extraFieldWrapperAttributes(['class' => 'general-gradient-angle-control'])
                                 ->extraInputAttributes(self::commitOnEnterAttributes())
                                 ->afterStateUpdated(self::persist('background_gradient_angle'))
                                 ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
                         ])
-                            ->columns(3)
+                            ->columns(4)
+                            ->extraAttributes(['class' => 'general-background-row'])
+                            ->columnSpanFull(),
+
+                        View::make('filament.schemas.components.general-layout-controls')
                             ->columnSpanFull(),
 
                         Hidden::make('background_color'),
@@ -183,64 +189,72 @@ final class General extends Page
                         Hidden::make('background_gradient_end'),
                     ])
                         ->columns(1)
-                        ->columnSpanFull(),
+                        ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
+                        ->columnSpan(2),
 
-                    View::make('filament.schemas.components.general-separator')
-                        ->columnSpanFull(),
-
-                    View::make('filament.schemas.components.general-social-links')
-                        ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
-                        ->columnSpanFull(),
-
-                    View::make('filament.schemas.components.general-separator')
-                        ->columnSpanFull(),
-
-                    Group::make([
-                        TextInput::make('public_email')
-                            ->label('Public email')
-                            ->email()
-                            ->maxLength(254)
-                            ->nullable()
-                            ->lazy()
-                            ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(self::persist('public_email')),
-                        AdminBooleanControl::make('show_public_email', 'Visibility', 'Visible', 'Hidden')
-                            ->live()
-                            ->afterStateUpdated(self::persist('show_public_email')),
-                        TextInput::make('contact_recipient_email')
-                            ->label(self::contactRecipientLabel())
-                            ->email()
-                            ->maxLength(254)
-                            ->nullable()
-                            ->lazy()
-                            ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(self::persist('contact_recipient_email')),
-                    ])
-                        ->columns(3)
-                        ->columnSpanFull(),
-
-                    View::make('filament.schemas.components.general-separator')
-                        ->columnSpanFull(),
-
-                    Group::make([
-                        TextInput::make('default_media_copyright_notice')
-                            ->label('Default copyright notice')
-                            ->maxLength(500)
-                            ->nullable()
-                            ->lazy()
-                            ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(self::persist('default_media_copyright_notice')),
-                        TextInput::make('legal_disclaimer')
-                            ->label('Legal disclaimer')
-                            ->nullable()
-                            ->lazy()
-                            ->extraInputAttributes(self::commitOnEnterAttributes())
-                            ->afterStateUpdated(self::persist('legal_disclaimer')),
-                    ])
-                        ->columns(2)
-                        ->columnSpanFull(),
+                    View::make('filament.schemas.components.general-live-preview')
+                        ->columnSpan(1),
                 ])
-                    ->extraAttributes(['class' => 'admin-form-controls general-form-controls'])
+                    ->columns(3)
+                    ->extraAttributes([
+                        'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--rail admin-visual-stage--stackable',
+                        'aria-label' => 'General settings and live public preview',
+                    ])
+                    ->columnSpanFull(),
+
+                View::make('filament.schemas.components.general-separator')
+                    ->columnSpanFull(),
+
+                View::make('filament.schemas.components.general-social-links')
+                    ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
+                    ->columnSpanFull(),
+
+                View::make('filament.schemas.components.general-separator')
+                    ->columnSpanFull(),
+
+                Group::make([
+                    TextInput::make('public_email')
+                        ->label('Public email')
+                        ->email()
+                        ->maxLength(254)
+                        ->nullable()
+                        ->lazy()
+                        ->extraInputAttributes(self::commitOnEnterAttributes())
+                        ->afterStateUpdated(self::persist('public_email')),
+                    AdminBooleanControl::make('show_public_email', 'Visibility', 'Visible', 'Hidden')
+                        ->live()
+                        ->afterStateUpdated(self::persist('show_public_email')),
+                    TextInput::make('contact_recipient_email')
+                        ->label(self::contactRecipientLabel())
+                        ->email()
+                        ->maxLength(254)
+                        ->nullable()
+                        ->lazy()
+                        ->extraInputAttributes(self::commitOnEnterAttributes())
+                        ->afterStateUpdated(self::persist('contact_recipient_email')),
+                ])
+                    ->columns(3)
+                    ->columnSpanFull(),
+
+                View::make('filament.schemas.components.general-separator')
+                    ->columnSpanFull(),
+
+                Group::make([
+                    TextInput::make('default_media_copyright_notice')
+                        ->label('Default copyright notice')
+                        ->maxLength(500)
+                        ->nullable()
+                        ->lazy()
+                        ->extraInputAttributes(self::commitOnEnterAttributes())
+                        ->afterStateUpdated(self::persist('default_media_copyright_notice')),
+                    TextInput::make('legal_disclaimer')
+                        ->label('Legal disclaimer')
+                        ->nullable()
+                        ->lazy()
+                        ->extraInputAttributes(self::commitOnEnterAttributes())
+                        ->afterStateUpdated(self::persist('legal_disclaimer')),
+                ])
+                    ->columns(2)
                     ->columnSpanFull(),
             ])
             ->record(PublicContentSetting::general())
@@ -458,6 +472,16 @@ final class General extends Page
             app(AdminSettingsService::class)->updatePublicContent($record, [$field => $candidate]);
             if (in_array($field, ['background_color', 'background_gradient_start', 'background_gradient_end'], true)) {
                 $this->data[$field] = $candidate;
+            }
+            if (in_array($field, [
+                'favicon_media_asset_id',
+                'background_mode',
+                'background_color',
+                'background_gradient_start',
+                'background_gradient_end',
+                'background_gradient_angle',
+            ], true)) {
+                $this->dispatch('general-appearance-updated');
             }
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $key => $messages) {
