@@ -1,20 +1,23 @@
 .analytics-visual-stage {
     display: grid;
-    grid-template-columns: minmax(0, 2.45fr) minmax(17rem, .9fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     overflow: hidden;
 }
 
 .analytics-world {
     min-width: 0;
     height: 100%;
+    grid-column: 1 / span 2;
     margin: 0;
-    padding-top: var(--admin-section-gap);
+    padding: 0;
 }
 
 .analytics-visual-stage .analytics-world__canvas {
     position: relative;
+    box-sizing: border-box;
     width: 100%;
     height: 100%;
+    margin: 0;
     overflow: hidden;
     background:
         linear-gradient(to right, transparent 24.9%, var(--admin-line) 25%, transparent 25.1%, transparent 49.9%, var(--admin-line) 50%, transparent 50.1%, transparent 74.9%, var(--admin-line) 75%, transparent 75.1%),
@@ -92,6 +95,7 @@
     display: grid;
     min-width: 0;
     height: 100%;
+    grid-column: 3;
     padding-left: var(--admin-section-space);
     align-content: start;
     border-left: 1px solid var(--admin-line);
@@ -319,10 +323,6 @@
 }
 
 @media (max-width: 1050px) {
-    .analytics-visual-stage {
-        grid-template-columns: minmax(0, 1.75fr) minmax(16rem, 1fr);
-    }
-
     .analytics-stage-rail {
         padding-left: 1.25rem;
     }
@@ -345,6 +345,11 @@
     .analytics-visual-stage {
         grid-template-columns: 1fr;
         overflow: visible;
+    }
+
+    .analytics-world,
+    .analytics-stage-rail {
+        grid-column: 1;
     }
 
     .analytics-stage-rail {
