@@ -193,7 +193,7 @@ Do not build custom HTML5 `draggable`/dragstart/drop state machines.
 Rules:
 
 - drag handles share one visual geometry on a given table hierarchy;
-- use `.custom-page-row__drag` as the current shared drag-handle authority for the Custom/Home component-table family;
+- use `.admin-drag-handle` as the current shared drag-handle authority for the Custom/Home component-table family;
 - ordering is persisted by the canonical domain ordering service;
 - drag is disabled when Search/filters/pagination make canonical order ambiguous;
 - ↑/↓ actions remain as a keyboard/explicit fallback where the workspace already uses them;
