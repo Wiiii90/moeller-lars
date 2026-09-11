@@ -2,26 +2,26 @@
 
 html.fi {
     /* One light rig, reused by icons, titles, brand and identity controls. */
-    --admin-light-key: rgba(198, 169, 121, .62);
-    --admin-light-depth: rgba(20, 20, 20, .20);
-    --admin-light-bloom: rgba(176, 142, 91, .13);
-    --admin-light-bloom-strong: rgba(176, 142, 91, .18);
+    --admin-light-key: rgba(244, 190, 91, .96);
+    --admin-light-depth: rgba(61, 42, 18, .42);
+    --admin-light-bloom: rgba(224, 155, 50, .30);
+    --admin-light-bloom-strong: rgba(224, 155, 50, .40);
     --admin-icon-light-effect:
-        drop-shadow(-.55px -.55px 0 var(--admin-light-key))
-        drop-shadow(.65px .75px 0 var(--admin-light-depth))
-        drop-shadow(0 0 1.15px var(--admin-light-bloom));
+        drop-shadow(-.95px -.75px 0 var(--admin-light-key))
+        drop-shadow(.9px 1px 0 var(--admin-light-depth))
+        drop-shadow(0 0 2.1px var(--admin-light-bloom));
     --admin-heading-light-effect:
-        -.45px -.45px 0 color-mix(in srgb, var(--admin-light-key) 72%, transparent),
-        .55px .65px 0 color-mix(in srgb, var(--admin-light-depth) 72%, transparent),
-        0 0 1.25px var(--admin-light-bloom);
+        -.72px -.62px 0 color-mix(in srgb, var(--admin-light-key) 84%, transparent),
+        .62px .78px 0 color-mix(in srgb, var(--admin-light-depth) 68%, transparent),
+        0 0 2.2px color-mix(in srgb, var(--admin-light-bloom) 76%, transparent);
     --admin-brand-light-effect:
-        -.5px -.55px 0 color-mix(in srgb, var(--admin-light-key) 82%, transparent),
-        .6px .7px 0 color-mix(in srgb, var(--admin-light-depth) 78%, transparent),
-        0 0 1.45px var(--admin-light-bloom-strong);
-    --admin-user-badge-edge: rgba(173, 141, 94, .42);
-    --admin-user-badge-inner: rgba(255, 255, 255, .18);
-    --admin-user-badge-depth: rgba(20, 20, 20, .22);
-    --admin-user-badge-glow: rgba(176, 142, 91, .12);
+        -.82px -.72px 0 color-mix(in srgb, var(--admin-light-key) 92%, transparent),
+        .72px .88px 0 color-mix(in srgb, var(--admin-light-depth) 74%, transparent),
+        0 0 2.8px color-mix(in srgb, var(--admin-light-bloom-strong) 82%, transparent);
+    --admin-user-badge-edge: rgba(215, 151, 49, .68);
+    --admin-user-badge-inner: rgba(255, 246, 222, .50);
+    --admin-user-badge-depth: rgba(61, 42, 18, .34);
+    --admin-user-badge-glow: rgba(224, 155, 50, .28);
     --admin-control-popup-surface: #fff;
     --admin-control-popup-ink: #181818;
     --admin-control-popup-muted: #9a9a9a;
@@ -57,8 +57,8 @@ html.fi.dark {
 
 /* Brand, page titles and selected navigation all use the same optical rig. */
 .fi-logo {
-    font-weight: 720;
-    letter-spacing: -.012em;
+    font-weight: 740;
+    letter-spacing: -.014em;
     text-shadow: var(--admin-brand-light-effect);
     transition: text-shadow .18s ease;
 }
@@ -83,7 +83,7 @@ html.fi.dark {
         0 0 0 1px var(--admin-user-badge-edge),
         inset 0 0 0 1px var(--admin-user-badge-inner),
         0 1px 0 var(--admin-user-badge-depth),
-        0 0 2px var(--admin-user-badge-glow);
+        0 0 3px var(--admin-user-badge-glow);
     transition: box-shadow .18s ease;
 }
 
@@ -93,7 +93,7 @@ html.fi.dark {
         0 0 0 1px color-mix(in srgb, var(--admin-user-badge-edge) 88%, var(--admin-text)),
         inset 0 0 0 1px var(--admin-user-badge-inner),
         0 1px 0 var(--admin-user-badge-depth),
-        0 0 3px var(--admin-user-badge-glow);
+        0 0 4px var(--admin-user-badge-glow);
 }
 
 /* Status indicators share one restrained signal language across every workspace. */
