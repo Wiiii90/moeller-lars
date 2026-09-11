@@ -2,7 +2,7 @@
 
 /*
  * General alone uses a local 3 x 3 matrix inside the canonical stage.
- * It is deliberately not part of the shared Visual Stage primitive.
+ * This is deliberately not part of the shared Visual Stage primitive.
  *
  * Desktop:
  *   appearance controls: x00 + x10
@@ -30,44 +30,48 @@
     gap: 0 !important;
 }
 
-.general-appearance-stage > .fi-sc-grid > * {
+.general-appearance-stage > .fi-sc-grid > :nth-child(-n + 3) {
+    box-sizing: border-box;
     min-width: 0;
     min-height: 0;
+    align-self: stretch;
 }
 
-.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > *:has(.general-appearance-stage__controls) {
+/* The outer General group contains exactly three stage components in order:
+ * appearance controls, live preview, page geometry. Position those schema
+ * items directly instead of inferring their wrappers from descendants. */
+.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > :nth-child(1) {
     grid-column: 1 !important;
     grid-row: 1 / span 2 !important;
 }
 
-.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > *:has(.general-appearance-stage__preview) {
+.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > :nth-child(2) {
     grid-column: 2 / span 2 !important;
     grid-row: 1 / span 2 !important;
 }
 
-.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > *:has(.general-appearance-stage__geometry) {
-    grid-column: 1 / span 3 !important;
+.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > :nth-child(3) {
+    grid-column: 2 / span 2 !important;
     grid-row: 3 !important;
 }
 
-.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > *:has(.general-appearance-stage__controls) {
+.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > :nth-child(1) {
     grid-column: 1 / span 2 !important;
     grid-row: 1 / span 2 !important;
 }
 
-.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > *:has(.general-appearance-stage__preview) {
+.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > :nth-child(2) {
     grid-column: 3 !important;
     grid-row: 1 / span 3 !important;
 }
 
-.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > *:has(.general-appearance-stage__geometry) {
+.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > :nth-child(3) {
     grid-column: 1 / span 2 !important;
     grid-row: 3 !important;
 }
 
-/* General has one intentional divider exception: in desktop mode the line only
- * belongs to the two preview rows and ends below the laptop. Mobile uses the
- * full right-column separation. Shared page dividers remain owned by stage.css. */
+/* General is the intentional divider exception. Desktop stops at the boundary
+ * below the two-row laptop preview; mobile separates the full phone column. */
 .general-appearance-stage::after {
     position: absolute;
     z-index: 8;
@@ -85,7 +89,7 @@
 
 .general-appearance-stage[data-preview-device="mobile"]::after {
     left: 66.666667%;
-    bottom: .75rem;
+    bottom: var(--admin-stage-divider-inset);
 }
 
 .general-appearance-stage__controls,
@@ -100,6 +104,14 @@
 
 .general-appearance-stage__controls {
     overflow: hidden;
+}
+
+.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__controls {
+    padding-right: var(--admin-stage-pane-space);
+}
+
+.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__controls {
+    padding-right: var(--admin-stage-pane-space);
 }
 
 .general-appearance-stage__controls > *,
@@ -117,7 +129,13 @@
 
 .general-appearance-stage__geometry {
     display: grid;
+    padding-left: var(--admin-stage-pane-space);
     align-content: center;
+}
+
+.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__geometry {
+    padding-right: var(--admin-stage-pane-space);
+    padding-left: 0;
 }
 
 .general-appearance-stage__geometry > .fi-sc-grid {
@@ -166,7 +184,7 @@
 }
 
 .general-site-icon-control {
-    width: min(100%, 21rem);
+    width: 100%;
 }
 
 .general-background-row,
@@ -195,41 +213,22 @@
 .general-layout-controls__fields {
     display: grid;
     min-width: 0;
-    gap: 0;
-}
-
-.general-appearance-stage[data-preview-device="desktop"] .general-layout-controls__fields {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.general-appearance-stage[data-preview-device="desktop"] .general-layout-field:first-child {
-    grid-column: 2;
-    padding-right: var(--admin-stage-pane-space);
-    padding-left: var(--admin-stage-pane-space);
-}
-
-.general-appearance-stage[data-preview-device="desktop"] .general-layout-field + .general-layout-field {
-    grid-column: 3;
-    padding-right: 0;
-    padding-left: var(--admin-stage-pane-space);
-}
-
-.general-appearance-stage[data-preview-device="mobile"] .general-layout-controls__fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.general-appearance-stage[data-preview-device="mobile"] .general-layout-field:first-child {
-    padding-right: var(--admin-stage-pane-space);
-}
-
-.general-appearance-stage[data-preview-device="mobile"] .general-layout-field + .general-layout-field {
-    padding-left: var(--admin-stage-pane-space);
+    gap: 0;
 }
 
 .general-layout-field {
     display: grid;
     min-width: 0;
     gap: .28rem;
+}
+
+.general-layout-field:first-child {
+    padding-right: var(--admin-stage-pane-space);
+}
+
+.general-layout-field + .general-layout-field {
+    padding-left: var(--admin-stage-pane-space);
 }
 
 .general-layout-field > span:first-child {
@@ -493,9 +492,7 @@
         grid-template-rows: auto !important;
     }
 
-    .general-appearance-stage[data-preview-device] > .fi-sc-grid > *:has(.general-appearance-stage__controls),
-    .general-appearance-stage[data-preview-device] > .fi-sc-grid > *:has(.general-appearance-stage__preview),
-    .general-appearance-stage[data-preview-device] > .fi-sc-grid > *:has(.general-appearance-stage__geometry) {
+    .general-appearance-stage[data-preview-device] > .fi-sc-grid > :nth-child(-n + 3) {
         grid-column: 1 !important;
         grid-row: auto !important;
     }
@@ -509,21 +506,14 @@
         padding-left: 0;
     }
 
-    .general-layout-controls__fields,
-    .general-appearance-stage[data-preview-device="desktop"] .general-layout-controls__fields,
-    .general-appearance-stage[data-preview-device="mobile"] .general-layout-controls__fields {
+    .general-layout-controls__fields {
         grid-template-columns: 1fr;
     }
 
-    .general-appearance-stage[data-preview-device] .general-layout-field:first-child,
-    .general-appearance-stage[data-preview-device] .general-layout-field + .general-layout-field {
-        grid-column: 1;
+    .general-layout-field:first-child,
+    .general-layout-field + .general-layout-field {
         padding-right: 0;
         padding-left: 0;
-    }
-
-    .general-site-icon-control {
-        width: 100%;
     }
 
     .general-live-preview__device.is-desktop,
