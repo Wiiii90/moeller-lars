@@ -35,7 +35,7 @@ The branch/review workflow is defined in [AGENTS.md](../AGENTS.md). Browser revi
 That loop is deliberately separate from release qualification:
 
 1. source-review and integrate worker diffs into dev under the AGENTS contract;
-2. run only the migrations required by that candidate against the isolated local preview database;
+2. run only the migrations required by that candidate against the persistent local preview database;
 3. build/recreate the local preview once per coherent browser cycle;
 4. collect browser/editorial acceptance;
 5. repeat only when the accepted fix set changes.
