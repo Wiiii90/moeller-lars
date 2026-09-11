@@ -1,11 +1,11 @@
 /* Canonical Visual Stage geometry.
  * Six metric columns resolve into three stage thirds. Dividers sit exactly on
- * the 2/6 and 4/6 metric axes, but remain inset from the stage edges.
+ * the 2/6 and 4/6 metric axes and use one shared, restrained edge inset.
  */
 
 :root {
     --admin-visual-stage-height: 23.5rem;
-    --admin-stage-divider-inset: var(--admin-section-gap);
+    --admin-stage-divider-inset: .75rem;
     --admin-stage-pane-space: var(--admin-section-gap);
 }
 
@@ -95,12 +95,33 @@
     border-left: 0 !important;
 }
 
-/* Home and Analytics intentionally let their primary visual reach the 2/3
- * axis. This keeps the hero edge and the map's zero-longitude line on the same
- * metric grid instead of shifting them left by pane padding. */
+/* Home and Analytics intentionally reach the exact 2/3 axis. Home may use its
+ * full visual pane, while Analytics' canvas midpoint then lands exactly on the
+ * 1/3 metric axis (half of its 2/3 pane). */
 .home-hero-surface > .home-hero-surface__visual,
 .analytics-visual-stage > .analytics-world {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 !important;
     padding-right: 0 !important;
+    padding-left: 0 !important;
+}
+
+.home-hero-surface__visual img {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.analytics-visual-stage > .analytics-world {
+    padding-top: var(--admin-stage-divider-inset) !important;
+    padding-bottom: var(--admin-stage-divider-inset) !important;
+}
+
+.analytics-visual-stage .analytics-world__canvas {
+    box-sizing: border-box;
+    width: 100% !important;
+    margin: 0 !important;
 }
 
 /* Storage uses the left two stage thirds as two exact internal thirds. The
@@ -123,36 +144,38 @@
     padding-left: var(--admin-stage-pane-space);
 }
 
-/* General uses Filament's own three-column schema grid. The divider follows
- * the active device mode: Desktop = controls 1/3 + preview 2/3; Mobile =
- * controls 2/3 + preview 1/3. */
+/* General keeps Filament's own three-column schema grid. Only the real schema
+ * children move: Desktop = controls 1/3 + preview 2/3; Mobile = controls 2/3 +
+ * preview 1/3. The outer Group never becomes a second grid. */
 .general-appearance-stage[data-preview-device="desktop"]::after {
     left: 33.333333%;
 }
 
-.general-appearance-stage[data-preview-device="desktop"] > .general-appearance-stage__controls {
+.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__controls {
     grid-column: 1 !important;
     padding-right: var(--admin-stage-pane-space) !important;
     padding-left: 0 !important;
 }
 
-.general-appearance-stage[data-preview-device="desktop"] > .general-appearance-stage__preview {
+.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__preview {
     grid-column: 2 / span 2 !important;
     padding-right: 0 !important;
     padding-left: var(--admin-stage-pane-space) !important;
 }
 
-.general-appearance-stage:not([data-preview-device="desktop"]) > .general-appearance-stage__controls,
-.general-appearance-stage[data-preview-device="mobile"] > .general-appearance-stage__controls {
+.general-appearance-stage:not([data-preview-device="desktop"]) .general-appearance-stage__controls,
+.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__controls {
     grid-column: 1 / span 2 !important;
     min-width: 0;
     padding-right: var(--admin-stage-pane-space) !important;
+    padding-left: 0 !important;
 }
 
-.general-appearance-stage:not([data-preview-device="desktop"]) > .general-appearance-stage__preview,
-.general-appearance-stage[data-preview-device="mobile"] > .general-appearance-stage__preview {
+.general-appearance-stage:not([data-preview-device="desktop"]) .general-appearance-stage__preview,
+.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__preview {
     grid-column: 3 !important;
     min-width: 0;
+    padding-right: 0 !important;
     padding-left: var(--admin-stage-pane-space) !important;
     border-left: 0 !important;
 }
@@ -174,8 +197,7 @@
     object-fit: contain;
 }
 
-/* Dashboard is the canonical three-pane special case. Its content starts at
- * the stage edge like Home; only the divider itself keeps the shared inset. */
+/* Dashboard is the canonical three-pane special case. */
 .admin-dashboard__overview {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -215,8 +237,8 @@
 }
 
 /* Activity is Calendar | Clock | Publication, one exact metric-third each.
- * Keep Calendar and Clock in their existing shared wrapper; that wrapper owns
- * the left two thirds and lays both canonical visualizations side-by-side. */
+ * Calendar and Clock remain the canonical detail-page visuals but their
+ * redundant summary chrome is removed in the stage so all three panes align. */
 .activity-atlas__grid {
     position: relative;
     display: grid !important;
@@ -228,6 +250,7 @@
 .activity-atlas__visual {
     display: grid !important;
     grid-column: 1 / span 2;
+    grid-row: 1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: minmax(0, 1fr) !important;
     min-width: 0;
@@ -237,7 +260,9 @@
 }
 
 .activity-atlas__visual-header,
-.activity-clock__meta {
+.activity-clock__meta,
+.activity-calendar__summary,
+.activity-calendar__legend {
     display: none !important;
 }
 
@@ -251,12 +276,11 @@
     height: 100% !important;
     min-width: 0;
     min-height: 0;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    gap: .45rem;
+    grid-template-rows: minmax(0, 1fr);
     margin: 0 !important;
     padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) var(--admin-stage-divider-inset) 0 !important;
     overflow: hidden;
-    align-content: stretch;
+    place-items: center;
 }
 
 .activity-atlas__view.activity-clock,
@@ -277,16 +301,6 @@
     place-items: center;
 }
 
-.activity-calendar__summary {
-    gap: .5rem;
-    align-items: baseline;
-}
-
-.activity-calendar__summary span,
-.activity-calendar__summary strong {
-    font-size: .64rem;
-}
-
 .activity-calendar__plot,
 .activity-calendar__cells {
     min-width: 0;
@@ -294,39 +308,32 @@
 }
 
 .activity-calendar__plot {
-    gap: .45rem;
+    gap: .4rem;
     align-self: center;
+    justify-self: center;
 }
 
 .activity-calendar__weekdays {
-    grid-template-rows: repeat(7, .78rem);
-    gap: .12rem;
+    grid-template-rows: repeat(7, .68rem);
+    gap: .1rem;
 }
 
 .activity-calendar__weekdays span {
-    height: .78rem;
-    font-size: .48rem;
+    height: .68rem;
+    font-size: .46rem;
 }
 
 .activity-calendar__cells {
-    grid-auto-columns: .78rem;
-    grid-template-rows: repeat(7, .78rem);
-    gap: .12rem;
-    padding-bottom: .18rem;
+    grid-auto-columns: .68rem;
+    grid-template-rows: repeat(7, .68rem);
+    gap: .1rem;
+    padding-bottom: 0;
+    overflow: hidden;
 }
 
 .activity-calendar__day {
-    width: .78rem;
-    height: .78rem;
-}
-
-.activity-calendar__legend {
-    font-size: .54rem;
-}
-
-.activity-calendar__legend .activity-calendar__day {
-    width: .6rem;
-    height: .6rem;
+    width: .68rem;
+    height: .68rem;
 }
 
 .activity-clock__figure {
@@ -346,10 +353,13 @@
 
 .activity-publication {
     grid-column: 3;
+    grid-row: 1 !important;
     min-width: 0;
     min-height: 0;
     height: 100%;
     padding: var(--admin-stage-divider-inset) 0 var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
+    align-self: stretch !important;
+    align-content: start !important;
     border-left: 0 !important;
     overflow-y: auto;
     overscroll-behavior: contain;
