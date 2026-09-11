@@ -1,7 +1,7 @@
 /* Shared optical lighting language for the admin shell. */
 
 html.fi {
-    /* One light rig, reused by icons, titles, brand and identity controls. */
+    /* One light rig, with role-specific renderers for icons, type and identity controls. */
     --admin-light-key: rgba(244, 190, 91, .96);
     --admin-light-depth: rgba(61, 42, 18, .42);
     --admin-light-bloom: rgba(224, 155, 50, .30);
@@ -10,18 +10,34 @@ html.fi {
         drop-shadow(-.95px -.75px 0 var(--admin-light-key))
         drop-shadow(.9px 1px 0 var(--admin-light-depth))
         drop-shadow(0 0 2.1px var(--admin-light-bloom));
-    --admin-heading-light-effect:
-        -.72px -.62px 0 color-mix(in srgb, var(--admin-light-key) 84%, transparent),
-        .62px .78px 0 color-mix(in srgb, var(--admin-light-depth) 68%, transparent),
-        0 0 2.2px color-mix(in srgb, var(--admin-light-bloom) 76%, transparent);
-    --admin-brand-light-effect:
-        -.82px -.72px 0 color-mix(in srgb, var(--admin-light-key) 92%, transparent),
-        .72px .88px 0 color-mix(in srgb, var(--admin-light-depth) 74%, transparent),
-        0 0 2.8px color-mix(in srgb, var(--admin-light-bloom-strong) 82%, transparent);
-    --admin-user-badge-edge: rgba(215, 151, 49, .68);
-    --admin-user-badge-inner: rgba(255, 246, 222, .50);
-    --admin-user-badge-depth: rgba(61, 42, 18, .34);
-    --admin-user-badge-glow: rgba(224, 155, 50, .28);
+
+    /* Light mode uses dark optical depth rather than a white halo. */
+    --admin-type-ink: #17130f;
+    --admin-type-glint: #5d3815;
+    --admin-type-glint-strong: #8a5418;
+    --admin-title-ink:
+        linear-gradient(
+            110deg,
+            var(--admin-type-ink) 0%,
+            var(--admin-type-ink) 46%,
+            var(--admin-type-glint) 54%,
+            var(--admin-type-ink) 62%,
+            var(--admin-type-ink) 100%
+        );
+    --admin-brand-ink:
+        linear-gradient(
+            110deg,
+            var(--admin-type-ink) 0%,
+            var(--admin-type-ink) 42%,
+            var(--admin-type-glint-strong) 52%,
+            var(--admin-type-ink) 62%,
+            var(--admin-type-ink) 100%
+        );
+
+    --admin-user-badge-edge: rgba(132, 84, 24, .48);
+    --admin-user-badge-inner: rgba(255, 246, 222, .66);
+    --admin-user-badge-depth: rgba(45, 30, 13, .34);
+    --admin-user-badge-aura: rgba(210, 145, 44, .14);
     --admin-control-popup-surface: #fff;
     --admin-control-popup-ink: #181818;
     --admin-control-popup-muted: #9a9a9a;
@@ -33,38 +49,83 @@ html.fi.dark {
     --admin-light-depth: rgba(0, 0, 0, .76);
     --admin-light-bloom: rgba(240, 182, 95, .14);
     --admin-light-bloom-strong: rgba(240, 182, 95, .18);
+
+    /* General in dark mode is the selected-icon reference: keep this contour rig stable. */
     --admin-icon-light-effect:
         drop-shadow(-.45px -.5px 0 var(--admin-light-key))
         drop-shadow(.55px .7px 0 var(--admin-light-depth))
         drop-shadow(0 0 1.55px var(--admin-light-bloom));
-    --admin-heading-light-effect:
-        -.35px -.4px 0 color-mix(in srgb, var(--admin-light-key) 72%, transparent),
-        .5px .65px 0 color-mix(in srgb, var(--admin-light-depth) 86%, transparent),
-        0 0 1.55px var(--admin-light-bloom);
-    --admin-brand-light-effect:
-        -.45px -.5px 0 color-mix(in srgb, var(--admin-light-key) 88%, transparent),
-        .55px .7px 0 color-mix(in srgb, var(--admin-light-depth) 90%, transparent),
-        0 0 1.8px var(--admin-light-bloom-strong);
-    --admin-user-badge-edge: rgba(255, 255, 255, .20);
-    --admin-user-badge-inner: rgba(255, 255, 255, .08);
-    --admin-user-badge-depth: rgba(0, 0, 0, .78);
-    --admin-user-badge-glow: rgba(240, 182, 95, .15);
+
+    --admin-type-ink: #f4f4f2;
+    --admin-type-glint: #d9943e;
+    --admin-type-glint-strong: #f0b65f;
+    --admin-title-ink:
+        linear-gradient(
+            110deg,
+            var(--admin-type-ink) 0%,
+            var(--admin-type-ink) 46%,
+            var(--admin-type-glint) 54%,
+            var(--admin-type-ink) 62%,
+            var(--admin-type-ink) 100%
+        );
+    --admin-brand-ink:
+        linear-gradient(
+            110deg,
+            var(--admin-type-ink) 0%,
+            var(--admin-type-ink) 42%,
+            var(--admin-type-glint-strong) 52%,
+            var(--admin-type-ink) 62%,
+            var(--admin-type-ink) 100%
+        );
+
+    --admin-user-badge-edge: rgba(240, 182, 95, .38);
+    --admin-user-badge-inner: rgba(255, 255, 255, .10);
+    --admin-user-badge-depth: rgba(0, 0, 0, .82);
+    --admin-user-badge-aura: rgba(240, 182, 95, .12);
     --admin-control-popup-surface: #151515;
     --admin-control-popup-ink: #f2f2f0;
     --admin-control-popup-muted: #7d7c78;
     --admin-sidebar-selected-ink: #f4f4f2;
 }
 
-/* Brand, page titles and selected navigation all use the same optical rig. */
+/*
+ * Typography does not use the SVG glow filter. Large glyphs stay crisp and get
+ * their light cue from a narrow specular band inside the ink itself.
+ */
 .fi-logo {
+    color: var(--admin-type-ink);
     font-weight: 740;
     letter-spacing: -.014em;
-    text-shadow: var(--admin-brand-light-effect);
-    transition: text-shadow .18s ease;
+    text-shadow: none;
 }
 
-.admin-workspace__title {
-    text-shadow: var(--admin-heading-light-effect);
+.admin-workspace__title,
+.fi-header-heading {
+    color: var(--admin-type-ink);
+    text-shadow: none;
+}
+
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+    .fi-logo {
+        background-image: var(--admin-brand-ink);
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+    }
+
+    .admin-workspace__title,
+    .fi-header-heading {
+        background-image: var(--admin-title-ink);
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+    }
 }
 
 /* Keep the header simple, but align title and status as one deliberate row. */
@@ -77,23 +138,23 @@ html.fi.dark {
     padding-bottom: .2rem;
 }
 
-/* User identity gets an optical edge, not a card or halo surface. */
+/* User identity gets crisp optical rings rather than a blurred halo. */
 .fi-topbar .fi-user-menu-trigger .fi-user-avatar {
     box-shadow:
         0 0 0 1px var(--admin-user-badge-edge),
-        inset 0 0 0 1px var(--admin-user-badge-inner),
-        0 1px 0 var(--admin-user-badge-depth),
-        0 0 3px var(--admin-user-badge-glow);
+        0 0 0 2px var(--admin-user-badge-aura),
+        inset 1px 1px 0 var(--admin-user-badge-inner),
+        inset -1px -1px 0 var(--admin-user-badge-depth);
     transition: box-shadow .18s ease;
 }
 
 .fi-topbar .fi-user-menu-trigger:hover .fi-user-avatar,
 .fi-topbar .fi-user-menu-trigger:focus-visible .fi-user-avatar {
     box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--admin-user-badge-edge) 88%, var(--admin-text)),
-        inset 0 0 0 1px var(--admin-user-badge-inner),
-        0 1px 0 var(--admin-user-badge-depth),
-        0 0 4px var(--admin-user-badge-glow);
+        0 0 0 1px color-mix(in srgb, var(--admin-user-badge-edge) 82%, var(--admin-text)),
+        0 0 0 2px color-mix(in srgb, var(--admin-user-badge-aura) 72%, var(--admin-user-badge-edge)),
+        inset 1px 1px 0 var(--admin-user-badge-inner),
+        inset -1px -1px 0 var(--admin-user-badge-depth);
 }
 
 /* Status indicators share one restrained signal language across every workspace. */
