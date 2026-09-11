@@ -496,6 +496,8 @@ Important current shared/admin modules include:
 - `base.css`;
 - `layouts.css`;
 - `forms.css`;
+- `data-workspace.css`;
+- `task-surfaces.css`;
 - `dialogs.css`;
 - `gallery.css`;
 - `media.css`;
