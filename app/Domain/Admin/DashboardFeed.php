@@ -2,11 +2,14 @@
 
 namespace App\Domain\Admin;
 
+use App\Models\AdminNotification;
 use App\Models\ContactMessage;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class DashboardFeed
@@ -19,6 +22,7 @@ final class DashboardFeed
             'announcement' => 'Announcements',
             'changelog' => 'Changelog',
             'contact' => 'Contact',
+            'notification' => 'Notifications',
         ];
     }
 
@@ -43,6 +47,10 @@ final class DashboardFeed
             return $this->paginateContacts($search, $page, $perPage);
         }
 
+        if ($type === 'notification') {
+            return $this->paginateNotifications($search, $page, $perPage);
+        }
+
         if (in_array($type, ['announcement', 'changelog'], true)) {
             return $this->paginateStatic($search, $type, $page, $perPage);
         }
@@ -54,14 +62,27 @@ final class DashboardFeed
     public function openEntry(string $key): ?array
     {
         $entry = $this->entry($key);
-        $contactId = $entry['contact_id'] ?? null;
+        if (! is_array($entry)) {
+            return null;
+        }
 
+        $contactId = $entry['contact_id'] ?? null;
         if (is_int($contactId)) {
             $message = ContactMessage::query()->find($contactId);
             if ($message instanceof ContactMessage) {
                 $message->markRead();
 
                 return $this->projectContact($message->refresh());
+            }
+        }
+
+        $notificationId = $entry['notification_id'] ?? null;
+        if (is_int($notificationId)) {
+            $notification = $this->notificationForUser($notificationId);
+            if ($notification instanceof AdminNotification) {
+                $notification->markRead();
+
+                return $this->projectNotification($notification->refresh());
             }
         }
 
@@ -78,6 +99,16 @@ final class DashboardFeed
         ContactMessage::query()->findOrFail($contactMessageId)->delete();
     }
 
+    public function markNotificationUnread(int $notificationId): void
+    {
+        $this->notificationForUser($notificationId, true)->markUnread();
+    }
+
+    public function deleteNotification(int $notificationId): void
+    {
+        $this->notificationForUser($notificationId, true)->delete();
+    }
+
     /** @return array<string, mixed>|null */
     public function entry(string $key): ?array
     {
@@ -92,6 +123,17 @@ final class DashboardFeed
             return $message instanceof ContactMessage ? $this->projectContact($message) : null;
         }
 
+        if (str_starts_with($key, 'notification:')) {
+            $id = substr($key, strlen('notification:'));
+            if (! ctype_digit($id)) {
+                return null;
+            }
+
+            $notification = $this->notificationForUser((int) $id);
+
+            return $notification instanceof AdminNotification ? $this->projectNotification($notification) : null;
+        }
+
         if (! str_starts_with($key, 'static:')) {
             return null;
         }
@@ -102,9 +144,7 @@ final class DashboardFeed
             ->first(static fn (array $item): bool => $item['id'] === $id);
     }
 
-    /**
-     * @return array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int}
-     */
+    /** @return array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int} */
     private function paginateContacts(string $search, int $page, int $perPage): array
     {
         $query = $this->contactQuery($search);
@@ -122,9 +162,25 @@ final class DashboardFeed
         return $this->paginationResult($items, $page, $perPage, $total, $pages, $offset);
     }
 
-    /**
-     * @return array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int}
-     */
+    /** @return array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int} */
+    private function paginateNotifications(string $search, int $page, int $perPage): array
+    {
+        $query = $this->notificationQuery($search);
+        $total = (clone $query)->count();
+        [$page, $pages, $offset] = $this->pageState($total, $page, $perPage);
+
+        $items = $this->orderedNotifications($query)
+            ->offset($offset)
+            ->limit($perPage)
+            ->get()
+            ->map(fn (AdminNotification $notification): array => $this->projectNotification($notification))
+            ->values()
+            ->all();
+
+        return $this->paginationResult($items, $page, $perPage, $total, $pages, $offset);
+    }
+
+    /** @return array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int} */
     private function paginateStatic(string $search, string $type, int $page, int $perPage): array
     {
         $items = $this->filteredStaticItems($search, $type);
@@ -136,12 +192,9 @@ final class DashboardFeed
     }
 
     /**
-     * Merge the tiny static source with a DB-paginated Contact source without hydrating the full inbox.
-     *
-     * At most $staticCount entries can displace Contacts before the requested global offset. Therefore
-     * the first max(0, $offset - $staticCount) Contacts are guaranteed to be before the requested page.
-     * Loading only the following $perPage + $staticCount Contacts is sufficient to reconstruct the
-     * requested global slice after merging the complete static source back in.
+     * Merge the tiny static source with a bounded SQL union of Contacts and
+     * persisted admin notifications. Only the dynamic rows required to
+     * reconstruct the requested global page are hydrated.
      *
      * @return array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int}
      */
@@ -149,21 +202,55 @@ final class DashboardFeed
     {
         $staticItems = $this->filteredStaticItems($search);
         $staticCount = $staticItems->count();
-        $contactQuery = $this->contactQuery($search);
-        $contactTotal = (clone $contactQuery)->count();
-        $total = $staticCount + $contactTotal;
+        $dynamicQuery = $this->dynamicIdentityQuery($search);
+        $dynamicTotal = (clone $dynamicQuery)->count();
+        $total = $staticCount + $dynamicTotal;
         [$page, $pages, $offset] = $this->pageState($total, $page, $perPage);
 
-        $contactOffset = max(0, $offset - $staticCount);
-        $contactLimit = $perPage + $staticCount;
-        $contacts = $this->orderedContacts($contactQuery)
-            ->offset($contactOffset)
-            ->limit($contactLimit)
-            ->get()
-            ->map(fn (ContactMessage $message): array => $this->projectContact($message));
+        $dynamicOffset = max(0, $offset - $staticCount);
+        $dynamicLimit = $perPage + $staticCount;
+        $identityRows = (clone $dynamicQuery)
+            ->orderByDesc('sort_at')
+            ->orderByDesc('source_id')
+            ->orderBy('source_type')
+            ->offset($dynamicOffset)
+            ->limit($dynamicLimit)
+            ->get();
 
-        $merged = $this->sortItems($staticItems->concat($contacts)->values()->all());
-        $visible = array_slice($merged, $offset - $contactOffset, $perPage);
+        $contactIds = $identityRows
+            ->where('source_type', 'contact')
+            ->pluck('source_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+        $notificationIds = $identityRows
+            ->where('source_type', 'notification')
+            ->pluck('source_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+
+        $contacts = ContactMessage::query()->whereIn('id', $contactIds)->get()->keyBy('id');
+        $notifications = AdminNotification::query()
+            ->where('user_id', $this->userId() ?? 0)
+            ->whereIn('id', $notificationIds)
+            ->get()
+            ->keyBy('id');
+
+        $dynamicItems = $identityRows->map(function (object $row) use ($contacts, $notifications): ?array {
+            $id = (int) $row->source_id;
+
+            if ($row->source_type === 'contact') {
+                $message = $contacts->get($id);
+
+                return $message instanceof ContactMessage ? $this->projectContact($message) : null;
+            }
+
+            $notification = $notifications->get($id);
+
+            return $notification instanceof AdminNotification ? $this->projectNotification($notification) : null;
+        })->filter()->values();
+
+        $merged = $this->sortItems($staticItems->concat($dynamicItems)->values()->all());
+        $visible = array_slice($merged, $offset - $dynamicOffset, $perPage);
 
         return $this->paginationResult($visible, $page, $perPage, $total, $pages, $offset);
     }
@@ -186,10 +273,74 @@ final class DashboardFeed
         });
     }
 
+    /** @return Builder<AdminNotification> */
+    private function notificationQuery(string $search): Builder
+    {
+        $query = AdminNotification::query()->where('user_id', $this->userId() ?? 0);
+        $filter = $this->notificationFilter();
+
+        if ($filter !== 'all') {
+            $query->where('status', $filter);
+        }
+
+        if ($search === '') {
+            return $query;
+        }
+
+        $pattern = '%'.$search.'%';
+
+        return $query->where(static function (Builder $match) use ($pattern): void {
+            $match->where('title', 'ilike', $pattern)
+                ->orWhere('body', 'ilike', $pattern)
+                ->orWhere('status', 'ilike', $pattern);
+        });
+    }
+
+    private function dynamicIdentityQuery(string $search): QueryBuilder
+    {
+        $pattern = '%'.$search.'%';
+        $contacts = DB::table('contact_messages')
+            ->selectRaw("'contact' as source_type, id as source_id, created_at as sort_at");
+        if ($search !== '') {
+            $contacts->where(static function (QueryBuilder $match) use ($pattern): void {
+                $match->where('sender_name', 'ilike', $pattern)
+                    ->orWhere('sender_email', 'ilike', $pattern)
+                    ->orWhere('message', 'ilike', $pattern);
+            });
+        }
+
+        $notifications = DB::table('admin_notifications')
+            ->selectRaw("'notification' as source_type, id as source_id, created_at as sort_at")
+            ->where('user_id', $this->userId() ?? 0);
+        $filter = $this->notificationFilter();
+        if ($filter !== 'all') {
+            $notifications->where('status', $filter);
+        }
+        if ($search !== '') {
+            $notifications->where(static function (QueryBuilder $match) use ($pattern): void {
+                $match->where('title', 'ilike', $pattern)
+                    ->orWhere('body', 'ilike', $pattern)
+                    ->orWhere('status', 'ilike', $pattern);
+            });
+        }
+
+        return DB::query()->fromSub($contacts->unionAll($notifications), 'dashboard_feed_dynamic');
+    }
+
     /** @param Builder<ContactMessage> $query
      * @return Builder<ContactMessage>
      */
     private function orderedContacts(Builder $query): Builder
+    {
+        return $query
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+
+    /** @param Builder<AdminNotification> $query
+     * @return Builder<AdminNotification>
+     */
+    private function orderedNotifications(Builder $query): Builder
     {
         return $query
             ->orderByDesc('created_at')
@@ -218,8 +369,7 @@ final class DashboardFeed
         return collect($this->sortItems($items->values()->all()));
     }
 
-    /**
-     * @param list<array<string, mixed>> $items
+    /** @param list<array<string, mixed>> $items
      * @return list<array<string, mixed>>
      */
     private function sortItems(array $items): array
@@ -233,17 +383,6 @@ final class DashboardFeed
             $microsecond = ((int) $right['sort_microsecond']) <=> ((int) $left['sort_microsecond']);
             if ($microsecond !== 0) {
                 return $microsecond;
-            }
-
-            $leftContactId = $left['contact_id'] ?? null;
-            $rightContactId = $right['contact_id'] ?? null;
-            $source = (is_int($rightContactId) ? 1 : 0) <=> (is_int($leftContactId) ? 1 : 0);
-            if ($source !== 0) {
-                return $source;
-            }
-
-            if (is_int($leftContactId) && is_int($rightContactId)) {
-                return $rightContactId <=> $leftContactId;
             }
 
             return strcmp((string) $right['key'], (string) $left['key']);
@@ -261,8 +400,7 @@ final class DashboardFeed
         return [$page, $pages, ($page - 1) * $perPage];
     }
 
-    /**
-     * @param list<array<string, mixed>> $items
+    /** @param list<array<string, mixed>> $items
      * @return array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int}
      */
     private function paginationResult(array $items, int $page, int $perPage, int $total, int $pages, int $offset): array
@@ -307,6 +445,8 @@ final class DashboardFeed
                     'key' => 'static:'.$id,
                     'id' => $id,
                     'contact_id' => null,
+                    'notification_id' => null,
+                    'notification_status' => null,
                     'type' => $type,
                     'type_label' => $type === 'announcement' ? 'Announcement' : 'Changelog',
                     'sort_at' => $parsedDate->toIso8601String(),
@@ -346,6 +486,8 @@ final class DashboardFeed
             'key' => 'contact:'.$message->getKey(),
             'id' => (string) $message->getKey(),
             'contact_id' => (int) $message->getKey(),
+            'notification_id' => null,
+            'notification_status' => null,
             'type' => 'contact',
             'type_label' => self::types()['contact'],
             'sort_at' => $receivedAt->toIso8601String(),
@@ -365,5 +507,77 @@ final class DashboardFeed
             'link' => null,
             'link_label' => null,
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private function projectNotification(AdminNotification $notification): array
+    {
+        $createdAt = $notification->getAttribute('created_at');
+        $receivedAt = $createdAt instanceof CarbonInterface ? $createdAt : now();
+        $body = trim((string) ($notification->getAttribute('body') ?? ''));
+        $status = (string) $notification->getAttribute('status');
+        $readAt = $notification->getAttribute('read_at');
+        $title = (string) $notification->getAttribute('title');
+
+        return [
+            'key' => 'notification:'.$notification->getKey(),
+            'id' => (string) $notification->getKey(),
+            'contact_id' => null,
+            'notification_id' => (int) $notification->getKey(),
+            'notification_status' => $status,
+            'type' => 'notification',
+            'type_label' => self::types()['notification'],
+            'sort_at' => $receivedAt->toIso8601String(),
+            'sort_timestamp' => $receivedAt->getTimestamp(),
+            'sort_microsecond' => (int) $receivedAt->format('u'),
+            'date' => $receivedAt->toIso8601String(),
+            'date_display' => $receivedAt->format('M j, Y · H:i'),
+            'title' => $title,
+            'sender' => 'Admin',
+            'sender_name' => 'Admin',
+            'sender_email' => '',
+            'message_excerpt' => Str::limit($body !== '' ? preg_replace('/\s+/u', ' ', $body) : $title, 120),
+            'body' => $body !== '' ? $body : $title,
+            'status' => ($readAt === null ? 'Unread' : 'Read').' · '.ucfirst($status),
+            'mail_delivery_status' => null,
+            'mail_delivered_at' => null,
+            'link' => null,
+            'link_label' => null,
+        ];
+    }
+
+    private function notificationForUser(int $notificationId, bool $fail = false): ?AdminNotification
+    {
+        $query = AdminNotification::query()
+            ->where('user_id', $this->userId() ?? 0)
+            ->whereKey($notificationId);
+
+        if ($fail) {
+            /** @var AdminNotification $notification */
+            $notification = $query->firstOrFail();
+
+            return $notification;
+        }
+
+        /** @var AdminNotification|null $notification */
+        $notification = $query->first();
+
+        return $notification;
+    }
+
+    private function userId(): ?int
+    {
+        $id = auth()->id();
+
+        return is_numeric($id) ? (int) $id : null;
+    }
+
+    private function notificationFilter(): string
+    {
+        $filter = auth()->user()?->getAttribute('dashboard_notification_filter');
+
+        return is_string($filter) && in_array($filter, ['all', 'success', 'warning', 'danger'], true)
+            ? $filter
+            : 'all';
     }
 }
