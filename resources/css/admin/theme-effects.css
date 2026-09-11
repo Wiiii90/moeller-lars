@@ -3,13 +3,18 @@
 html.fi {
     /*
      * Keep the lighting system central, but render each role appropriately.
-     * Small selected SVGs can carry contour depth; typography stays crisp.
+     * Small selected SVGs can carry contour depth; typography itself stays crisp.
      */
     --admin-optical-accent: rgba(176, 142, 91, .18);
     --admin-optical-depth: rgba(20, 20, 20, .34);
     --admin-icon-light-effect:
-        drop-shadow(0 1px 0 var(--admin-optical-depth))
-        drop-shadow(0 1px 1.4px rgba(20, 20, 20, .14));
+        drop-shadow(.55px .8px 0 rgba(20, 20, 20, .42))
+        drop-shadow(0 1.2px 1.4px rgba(70, 49, 26, .18));
+
+    /* Light mode uses a restrained bronze/smoke light rig around clean type. */
+    --admin-ambient-line: rgba(103, 70, 34, .30);
+    --admin-ambient-hot: rgba(158, 108, 45, .38);
+    --admin-ambient-haze: rgba(68, 48, 28, .11);
 
     --admin-user-badge-edge: rgba(24, 24, 24, .22);
     --admin-user-badge-aura: rgba(176, 142, 91, .10);
@@ -32,6 +37,10 @@ html.fi.dark {
         drop-shadow(.55px .7px 0 var(--admin-optical-depth))
         drop-shadow(0 0 1.55px var(--admin-optical-accent));
 
+    --admin-ambient-line: rgba(240, 182, 95, .42);
+    --admin-ambient-hot: rgba(255, 219, 153, .64);
+    --admin-ambient-haze: rgba(240, 182, 95, .16);
+
     --admin-user-badge-edge: rgba(240, 182, 95, .34);
     --admin-user-badge-aura: rgba(240, 182, 95, .10);
     --admin-user-badge-inner: rgba(255, 255, 255, .10);
@@ -44,10 +53,13 @@ html.fi.dark {
 }
 
 /*
- * Large glyphs must stay optically clean. Do not reuse SVG glow/filter effects
- * on text: the antialiased glyph edges become visibly soft or colour-banded.
+ * Large glyphs stay optically clean. The light source lives around the text,
+ * not inside its antialiased edges.
  */
-.fi-logo {
+html.fi .fi-logo {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
     color: var(--admin-text);
     background: none;
     -webkit-text-fill-color: currentColor;
@@ -57,8 +69,42 @@ html.fi.dark {
     filter: none;
 }
 
-.admin-workspace__title,
-.fi-header-heading {
+html.fi .fi-logo::before,
+html.fi .fi-logo::after,
+html.fi .admin-workspace__heading::before,
+html.fi .admin-workspace__heading::after {
+    position: absolute;
+    pointer-events: none;
+    content: '';
+}
+
+/* A narrow optical trace gives the brand presence without softening its type. */
+html.fi .fi-logo::after {
+    right: -.2rem;
+    bottom: -.18rem;
+    left: -.08rem;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--admin-ambient-line) 14%,
+        var(--admin-ambient-hot) 46%,
+        var(--admin-ambient-line) 72%,
+        transparent 100%
+    );
+}
+
+html.fi .fi-logo::before {
+    bottom: -.42rem;
+    left: 12%;
+    width: 76%;
+    height: .62rem;
+    background: radial-gradient(ellipse at center, var(--admin-ambient-haze) 0%, transparent 72%);
+    filter: blur(3px);
+}
+
+html.fi .admin-workspace__title,
+html.fi .fi-header-heading {
     color: var(--admin-text);
     background: none;
     -webkit-text-fill-color: currentColor;
@@ -66,18 +112,73 @@ html.fi.dark {
     filter: none;
 }
 
-/* Keep the header simple, but align title and status as one deliberate row. */
-.admin-workspace__header {
+/*
+ * Page titles use the same light rig as the brand, but the source sits beneath
+ * the heading rather than touching the glyphs.
+ */
+html.fi .admin-workspace__heading {
+    position: relative;
+    isolation: isolate;
+    min-width: 0;
+    grid-column: 1;
+    grid-row: 1;
+}
+
+html.fi .admin-workspace__heading::after {
+    bottom: -.46rem;
+    left: 0;
+    width: clamp(4rem, 9vw, 7.25rem);
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        var(--admin-ambient-hot) 0%,
+        var(--admin-ambient-line) 52%,
+        transparent 100%
+    );
+}
+
+html.fi .admin-workspace__heading::before {
+    bottom: -.69rem;
+    left: -.3rem;
+    width: clamp(5rem, 12vw, 9rem);
+    height: .8rem;
+    background: radial-gradient(ellipse at 34% 50%, var(--admin-ambient-haze) 0%, transparent 72%);
+    filter: blur(4px);
+}
+
+/*
+ * Keep status in the same header row. On desktop it occupies a deliberate
+ * right-hand rail so it reads as secondary state without hugging the far edge.
+ */
+html.fi .admin-workspace__header {
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+    column-gap: clamp(2.5rem, 6vw, 6rem);
+    row-gap: 1rem;
     align-items: end;
 }
 
-.admin-workspace__status {
+html.fi .admin-workspace__status {
+    grid-column: 2;
+    grid-row: 1;
     align-self: end;
-    padding-bottom: .2rem;
+    justify-self: start;
+    padding-bottom: .18rem;
+}
+
+html.fi .admin-workspace__summary {
+    grid-column: 1 / -1;
+    grid-row: 2;
+}
+
+html.fi .admin-workspace-status {
+    --admin-status-light: var(--admin-faint);
+    position: relative;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 /* User identity uses crisp rings and relief, never a blurred halo. */
-.fi-topbar .fi-user-menu-trigger .fi-user-avatar {
+html.fi .fi-topbar .fi-user-menu-trigger .fi-user-avatar {
     box-shadow:
         0 0 0 1px var(--admin-user-badge-edge),
         0 0 0 2px var(--admin-user-badge-aura),
@@ -86,8 +187,8 @@ html.fi.dark {
     transition: box-shadow .18s ease;
 }
 
-.fi-topbar .fi-user-menu-trigger:hover .fi-user-avatar,
-.fi-topbar .fi-user-menu-trigger:focus-visible .fi-user-avatar {
+html.fi .fi-topbar .fi-user-menu-trigger:hover .fi-user-avatar,
+html.fi .fi-topbar .fi-user-menu-trigger:focus-visible .fi-user-avatar {
     box-shadow:
         0 0 0 1px color-mix(in srgb, var(--admin-user-badge-edge) 82%, var(--admin-text)),
         0 0 0 2px color-mix(in srgb, var(--admin-user-badge-aura) 72%, var(--admin-user-badge-edge)),
@@ -96,17 +197,11 @@ html.fi.dark {
 }
 
 /* Status indicators share one restrained signal language across every workspace. */
-.admin-workspace-status {
-    --admin-status-light: var(--admin-faint);
-    position: relative;
-    line-height: 1;
-}
+html.fi .admin-workspace-status.is-success { --admin-status-light: var(--admin-success); }
+html.fi .admin-workspace-status.is-warning { --admin-status-light: var(--admin-accent); }
+html.fi .admin-workspace-status.is-danger { --admin-status-light: var(--admin-danger); }
 
-.admin-workspace-status.is-success { --admin-status-light: var(--admin-success); }
-.admin-workspace-status.is-warning { --admin-status-light: var(--admin-accent); }
-.admin-workspace-status.is-danger { --admin-status-light: var(--admin-danger); }
-
-.admin-workspace-status::before {
+html.fi .admin-workspace-status::before {
     background: var(--admin-status-light);
     box-shadow:
         0 0 0 1px color-mix(in srgb, var(--admin-status-light) 24%, transparent),
@@ -114,9 +209,9 @@ html.fi.dark {
     animation: admin-status-pulse 4.8s cubic-bezier(.22, .61, .36, 1) infinite;
 }
 
-.admin-workspace-status.is-warning::before { animation-duration: 3.9s; }
-.admin-workspace-status.is-danger::before { animation-duration: 3.2s; }
-.admin-workspace-status.is-neutral::before { animation: none; }
+html.fi .admin-workspace-status.is-warning::before { animation-duration: 3.9s; }
+html.fi .admin-workspace-status.is-danger::before { animation-duration: 3.2s; }
+html.fi .admin-workspace-status.is-neutral::before { animation: none; }
 
 @keyframes admin-status-pulse {
     0%, 62%, 100% {
@@ -136,8 +231,24 @@ html.fi.dark {
     }
 }
 
+/* Never collapse status under the title; compact the right rail instead. */
+@media (max-width: 900px) {
+    html.fi .admin-workspace__header {
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 1rem;
+        align-items: end;
+    }
+
+    html.fi .admin-workspace__status {
+        justify-self: end;
+        max-width: 42vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .admin-workspace-status::before {
+    html.fi .admin-workspace-status::before {
         animation: none;
     }
 }
