@@ -120,6 +120,11 @@ final class Activity extends Page
             ];
         }
 
+        $calendarWeeks = array_chunk($calendarDays, 7);
+        $calendarBandCount = count($calendarWeeks) > 14 ? 2 : 1;
+        $calendarWeeksPerBand = max(1, (int) ceil(count($calendarWeeks) / $calendarBandCount));
+        $calendarBands = array_chunk($calendarWeeks, $calendarWeeksPerBand);
+
         $latestAt = $overview['latest_at'] !== null
             ? CarbonImmutable::parse((string) $overview['latest_at'])
             : null;
@@ -148,6 +153,7 @@ final class Activity extends Page
             'clockPeakCount' => $peakHour !== null ? (int) $hourly[$peakHour] : 0,
             'calendarLabel' => $calendarStart->format('M j').' – '.$calendarEnd->format('M j, Y'),
             'calendarDays' => $calendarDays,
+            'calendarBands' => $calendarBands,
             'calendarActiveDays' => $overview['active_days'],
             'calendarMaximum' => $calendarMaximum,
             'publicationContext' => $publicationContext,
