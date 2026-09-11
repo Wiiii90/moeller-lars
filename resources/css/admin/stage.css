@@ -1,12 +1,14 @@
 /* Canonical Visual Stage geometry.
  * Six metric columns resolve into three stage thirds. Divider axes match the
- * 2/6 and 4/6 metric boundaries. A very small edge inset keeps the dividers
- * visibly detached from the metric/footer rules without making them look short.
+ * 2/6 and 4/6 metric boundaries. The divider continues through most of the
+ * intentional stage-to-followup breathing room, stopping shortly before the
+ * full-width rule below the stage.
  */
 
 :root {
     --admin-visual-stage-height: 23.5rem;
     --admin-stage-divider-inset: .25rem;
+    --admin-stage-divider-bottom-extension: calc(var(--admin-section-space) - .5rem);
     --admin-stage-pane-space: var(--admin-section-gap);
 }
 
@@ -28,7 +30,7 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 0 !important;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* Shared divider drawing. General owns only its axis choice locally; it no
@@ -48,7 +50,7 @@
     position: absolute;
     z-index: 8;
     top: var(--admin-stage-divider-inset);
-    bottom: var(--admin-stage-divider-inset);
+    bottom: calc(0rem - var(--admin-stage-divider-bottom-extension));
     width: 1px;
     background: var(--admin-line);
     content: "";
@@ -72,8 +74,8 @@
     left: 33.333333%;
 }
 
-/* General's local 3x3 matrix lives in general.css. Only the visible divider
- * follows the active device layout here: desktop after col 1, mobile after col 2. */
+/* General's local matrix is expressed by server-side column spans. Only the
+ * visible divider follows the active device layout here. */
 .general-appearance-stage[data-preview-device="desktop"]::after {
     left: 33.333333%;
 }
@@ -121,6 +123,10 @@
     margin: 0 !important;
     padding-right: 0 !important;
     padding-left: 0 !important;
+}
+
+.home-hero-surface__visual {
+    overflow: hidden;
 }
 
 .home-hero-surface__visual img {
@@ -183,6 +189,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: stretch;
     border-bottom: 0 !important;
+    overflow: visible;
 }
 
 .admin-dashboard__overview-column,
@@ -223,7 +230,7 @@
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 0 !important;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .activity-atlas__visual {
@@ -286,11 +293,6 @@
     max-width: 100%;
 }
 
-.activity-calendar__plot {
-    align-self: center;
-    justify-self: stretch;
-}
-
 .activity-calendar__legend {
     display: flex !important;
     align-self: end;
@@ -332,6 +334,10 @@
 }
 
 @media (max-width: 760px) {
+    :root {
+        --admin-stage-divider-bottom-extension: 0rem;
+    }
+
     :is(
         .admin-visual-stage--rail,
         .admin-visual-stage--triptych,
