@@ -239,7 +239,6 @@ html.fi select option:disabled {
         width: min(100%, calc(var(--admin-workspace-max-width) + var(--admin-workspace-gutter) + var(--admin-workspace-gutter)));
         max-width: calc(var(--admin-workspace-max-width) + var(--admin-workspace-gutter) + var(--admin-workspace-gutter)) !important;
         padding-top: var(--admin-shell-content-inset) !important;
-        transform: translateX(calc(0rem - var(--admin-workspace-visual-shift)));
     }
 
     .fi-sidebar-nav {
