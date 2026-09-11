@@ -1,7 +1,9 @@
-/* General Visual Stage: appearance controls on the left, live public preview on the right. */
+/* General Visual Stage: appearance controls and a device-aware live public preview. */
 
 .general-appearance-stage {
+    display: grid !important;
     min-width: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
 }
 
 .general-appearance-stage__controls {
@@ -55,13 +57,27 @@
     font-size: .78rem !important;
 }
 
-/* Background mode + its visual parameters stay on one four-column row. */
+/* Site identity does not need to consume the full 2/3 controls rail. */
+.general-site-icon-control {
+    width: 100%;
+    max-width: 24rem;
+}
+
+/* Background mode + its visual parameters use the available settings width. */
 .general-background-row {
     min-width: 0;
 }
 
 .general-background-row > * {
     min-width: 0;
+}
+
+.general-appearance-stage[data-preview-device="desktop"] .general-background-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.general-appearance-stage[data-preview-device="mobile"] .general-background-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
 }
 
 .general-layout-controls {
@@ -78,9 +94,8 @@
     min-width: 0;
 }
 
-/* Desktop uses the spare vertical space; mobile keeps both geometry controls
- * across the two settings columns. The preview component sets this attribute
- * directly so the layout does not depend on :has() or visual button state. */
+/* Desktop gives two thirds to the preview and uses the first third vertically.
+ * Mobile keeps the controls across the first two thirds and uses two columns. */
 .general-appearance-stage[data-preview-device="desktop"] .general-layout-controls__fields {
     grid-template-columns: minmax(0, 1fr);
     gap: .75rem;
@@ -156,16 +171,16 @@
     min-width: 0;
     min-height: 0;
     grid-template-rows: auto minmax(0, 1fr);
-    gap: .55rem;
+    gap: .35rem;
     overflow: hidden;
 }
 
 .general-live-preview__toolbar {
-    display: flex;
-    min-height: var(--admin-control-height);
-    gap: .35rem;
-    align-items: center;
-    justify-content: space-between;
+    display: grid;
+    min-height: 0;
+    gap: .24rem;
+    align-content: start;
+    justify-items: start;
 }
 
 .general-live-preview__title {
@@ -189,12 +204,13 @@
 .general-live-preview__modes {
     display: flex;
     gap: .2rem;
+    justify-content: flex-start;
 }
 
 .general-live-preview__mode {
     display: grid;
     width: 2rem;
-    height: 2rem;
+    height: 1.75rem;
     padding: 0;
     place-items: center;
     border: 1px solid transparent;
@@ -230,8 +246,10 @@
 .general-live-preview__device {
     position: relative;
     box-sizing: border-box;
+    display: grid;
+    grid-template-rows: 1.7rem minmax(0, 1fr);
     overflow: hidden;
-    border: 1px solid var(--admin-line-strong);
+    border: 1px solid color-mix(in srgb, var(--admin-text) 28%, var(--admin-line-strong));
     background: var(--admin-surface);
     box-shadow:
         0 1px 0 color-mix(in srgb, var(--admin-text) 8%, transparent),
@@ -239,57 +257,98 @@
     transition: width .18s ease, height .18s ease, border-radius .18s ease;
 }
 
-.general-live-preview__device.is-desktop {
-    width: min(100%, 21rem);
-    height: 12.2rem;
-    border-radius: .3rem;
+.general-live-preview__browser {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: .55rem;
+    padding: .28rem .45rem;
+    align-items: center;
+    border-bottom: 1px solid var(--admin-line);
+    background: color-mix(in srgb, var(--admin-subtle) 82%, var(--admin-surface));
 }
 
-.general-live-preview__device.is-desktop::before {
-    position: absolute;
-    top: .32rem;
-    left: .42rem;
-    z-index: 3;
+.general-live-preview__browser-dots {
+    display: inline-flex;
+    gap: .2rem;
+    align-items: center;
+}
+
+.general-live-preview__browser-dots i {
+    display: block;
     width: .28rem;
     height: .28rem;
     border-radius: 50%;
     background: var(--admin-line-strong);
-    box-shadow: .48rem 0 0 var(--admin-line-strong), .96rem 0 0 var(--admin-line-strong);
-    content: "";
-    pointer-events: none;
+}
+
+.general-live-preview__address {
+    display: flex;
+    min-width: 0;
+    height: 1rem;
+    gap: .3rem;
+    padding: 0 .35rem;
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid var(--admin-line);
+    border-radius: .18rem;
+    background: var(--admin-surface);
+    color: var(--admin-muted);
+    font-size: .5rem;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.general-live-preview__address img {
+    width: .62rem;
+    height: .62rem;
+    flex: 0 0 auto;
+    object-fit: cover;
+}
+
+.general-live-preview__address span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.general-live-preview__page {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: #fff;
+}
+
+.general-live-preview__device.is-desktop {
+    width: min(100%, 42rem);
+    height: 17rem;
+    border-radius: .35rem;
 }
 
 .general-live-preview__device.is-mobile {
-    width: 12rem;
-    height: 19rem;
+    width: 12.75rem;
+    height: 19.15rem;
     max-width: 100%;
-    max-height: 100%;
-    border-color: color-mix(in srgb, var(--admin-text) 34%, var(--admin-line-strong));
-    border-radius: 1.05rem;
+    border-radius: .85rem;
     box-shadow:
-        inset 0 0 0 2px color-mix(in srgb, var(--admin-line-strong) 55%, transparent),
+        inset 0 0 0 1px color-mix(in srgb, var(--admin-line-strong) 55%, transparent),
         0 .5rem 1.25rem color-mix(in srgb, #000 9%, transparent);
 }
 
-.general-live-preview__device.is-mobile::before {
-    position: absolute;
-    top: .38rem;
-    left: 50%;
-    z-index: 3;
-    width: 2.2rem;
-    height: .22rem;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--admin-text) 34%, transparent);
-    content: "";
-    transform: translateX(-50%);
-    pointer-events: none;
+.general-live-preview__device.is-mobile .general-live-preview__browser {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: .35rem;
+}
+
+.general-live-preview__device.is-mobile .general-live-preview__browser-dots {
+    display: none;
 }
 
 .general-live-preview__device iframe {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 1;
     display: block;
     border: 0;
     background: #fff;
@@ -299,18 +358,20 @@
 .general-live-preview__device.is-desktop iframe {
     width: 1180px;
     height: 760px;
-    transform: scale(.285);
+    transform: scale(.555);
 }
 
 .general-live-preview__device.is-mobile iframe {
     width: 390px;
     height: 844px;
-    transform: scale(.4923);
+    transform: scale(.512);
 }
 
 @media (max-width: 900px) {
-    .general-background-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .general-background-row,
+    .general-appearance-stage[data-preview-device="desktop"] .general-background-row,
+    .general-appearance-stage[data-preview-device="mobile"] .general-background-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 }
 
@@ -329,5 +390,9 @@
     .general-appearance-stage__controls,
     .general-appearance-stage__preview {
         overflow: visible;
+    }
+
+    .general-site-icon-control {
+        max-width: none;
     }
 }
