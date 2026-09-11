@@ -16,7 +16,10 @@
     x-on:general-appearance-updated.window="refreshPreview()"
 >
     <div class="general-live-preview__toolbar">
-        <span>Live preview</span>
+        <span class="general-live-preview__title">
+            <x-filament::icon icon="heroicon-m-rectangle-group" />
+            <span>Live preview</span>
+        </span>
         <div class="general-live-preview__modes" role="group" aria-label="Preview device">
             <button
                 class="general-live-preview__mode"
