@@ -9,8 +9,7 @@
 }
 
 .admin-visual-stage,
-.admin-dashboard__overview,
-.general-appearance-stage {
+.admin-dashboard__overview {
     position: relative;
     box-sizing: border-box;
     height: var(--admin-visual-stage-height);
@@ -19,11 +18,10 @@
 }
 
 :is(
-    .admin-visual-stage--rail,
+    .admin-visual-stage--rail:not(.general-appearance-stage),
     .analytics-visual-stage,
     .admin-storage__visual-stage,
-    .home-hero-surface,
-    .general-appearance-stage
+    .home-hero-surface
 ) {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
@@ -32,12 +30,12 @@
 }
 
 :is(
-    .admin-visual-stage--rail,
+    .admin-visual-stage--rail:not(.general-appearance-stage),
     .analytics-visual-stage,
     .admin-storage__visual-stage,
-    .home-hero-surface,
-    .general-appearance-stage
+    .home-hero-surface
 )::after,
+.general-appearance-stage::after,
 .admin-visual-stage--triptych::before,
 .admin-visual-stage--triptych::after,
 .activity-atlas__grid::before,
@@ -55,12 +53,12 @@
 }
 
 :is(
-    .admin-visual-stage--rail,
+    .admin-visual-stage--rail:not(.general-appearance-stage),
     .analytics-visual-stage,
     .admin-storage__visual-stage,
-    .home-hero-surface,
-    .general-appearance-stage
+    .home-hero-surface
 )::after,
+.general-appearance-stage::after,
 .admin-visual-stage--triptych::after,
 .activity-atlas__grid::after,
 .admin-dashboard__overview::after {
@@ -74,11 +72,10 @@
 }
 
 :is(
-    .admin-visual-stage--rail,
+    .admin-visual-stage--rail:not(.general-appearance-stage),
     .analytics-visual-stage,
     .admin-storage__visual-stage,
-    .home-hero-surface,
-    .general-appearance-stage
+    .home-hero-surface
 ) > :first-child {
     grid-column: 1 / span 2;
     min-width: 0;
@@ -86,13 +83,26 @@
 }
 
 :is(
-    .admin-visual-stage--rail,
+    .admin-visual-stage--rail:not(.general-appearance-stage),
     .analytics-visual-stage,
     .admin-storage__visual-stage,
-    .home-hero-surface,
-    .general-appearance-stage
+    .home-hero-surface
 ) > :last-child {
     grid-column: 3;
+    min-width: 0;
+    padding-left: var(--admin-stage-pane-space) !important;
+    border-left: 0 !important;
+}
+
+/* General uses Filament's own three-column schema grid. Only the pane spacing
+ * and shared 2/3 divider are owned here, so later form content cannot leak into
+ * the visual stage. */
+.general-appearance-stage__controls {
+    min-width: 0;
+    padding-right: var(--admin-stage-pane-space) !important;
+}
+
+.general-appearance-stage__preview {
     min-width: 0;
     padding-left: var(--admin-stage-pane-space) !important;
     border-left: 0 !important;
@@ -230,7 +240,6 @@
         .admin-dashboard__overview
     ) {
         height: auto;
-        grid-template-columns: 1fr !important;
         overflow: visible;
     }
 
@@ -260,14 +269,12 @@
     :is(
         .analytics-visual-stage,
         .admin-storage__visual-stage,
-        .home-hero-surface,
-        .general-appearance-stage
+        .home-hero-surface
     ) > :first-child,
     :is(
         .analytics-visual-stage,
         .admin-storage__visual-stage,
-        .home-hero-surface,
-        .general-appearance-stage
+        .home-hero-surface
     ) > :last-child,
     .activity-atlas__view.activity-calendar,
     .activity-atlas__view.activity-clock,
@@ -278,8 +285,19 @@
         border: 0 !important;
     }
 
+    .general-appearance-stage__controls,
+    .general-appearance-stage__preview {
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+        border: 0 !important;
+    }
+
     .activity-atlas__visual {
         display: contents !important;
+    }
+
+    .admin-dashboard__overview {
+        grid-template-columns: 1fr !important;
     }
 
     .admin-dashboard__overview-column,
