@@ -4,6 +4,16 @@
     x-data="{
         device: 'desktop',
         refreshTimer: null,
+        init() {
+            this.syncStageMode()
+        },
+        setDevice(next) {
+            this.device = next
+            this.syncStageMode()
+        },
+        syncStageMode() {
+            this.$el.closest('.general-appearance-stage')?.setAttribute('data-preview-device', this.device)
+        },
         refreshPreview() {
             window.clearTimeout(this.refreshTimer)
             this.refreshTimer = window.setTimeout(() => {
@@ -25,7 +35,7 @@
                 class="general-live-preview__mode"
                 type="button"
                 x-bind:class="device === 'desktop' ? 'is-active' : ''"
-                x-on:click="device = 'desktop'"
+                x-on:click="setDevice('desktop')"
                 x-bind:aria-pressed="(device === 'desktop').toString()"
                 title="Desktop preview"
             >
@@ -35,7 +45,7 @@
                 class="general-live-preview__mode"
                 type="button"
                 x-bind:class="device === 'mobile' ? 'is-active' : ''"
-                x-on:click="device = 'mobile'"
+                x-on:click="setDevice('mobile')"
                 x-bind:aria-pressed="(device === 'mobile').toString()"
                 title="Mobile preview"
             >
