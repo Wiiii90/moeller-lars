@@ -142,6 +142,10 @@
     font-variant-numeric: tabular-nums;
 }
 
+.admin-metric__value {
+    line-height: 1.12;
+}
+
 .admin-workspace__summary span,
 .admin-metric__label {
     display: block;
