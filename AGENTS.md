@@ -73,6 +73,30 @@ Do not use the orchestrator as the default implementation worker for large sourc
 
 This is scope/context discipline, not a ban on direct changes. The orchestrator may implement when the user explicitly asks it to, or when the change is very small, clearly bounded and cheaper to perform directly than to hand off.
 
+## Routine source-inspection and remote I/O discipline
+
+Routine browser fixes and other small bounded changes must be investigated from the concrete symptom inward, not by re-auditing the repository.
+
+Treat `AGENTS.md`, `ui-skills.md` and the current orchestration/handoff context as already-established working context. Do not repeatedly re-read them in full during the same task unless they changed or a concrete conflict requires it.
+
+When the canonical local checkout is available, use `P:\moeller-lars` for normal source inspection, grep/search, diffs, status and history. Remote GitHub reads are for facts that are genuinely remote — for example branch heads, worker branches, PRs, CI state or final push verification — or when the required source is not available locally. Do not substitute repeated remote reads for cheap local inspection.
+
+For a routine UI/browser defect, the normal diagnostic budget is intentionally small:
+
+- start from the browser finding and the directly responsible Blade/CSS/JS/PHP owner;
+- inspect only the few files needed to prove the current cause;
+- use at most one narrow search when ownership is unknown;
+- once the direct source supports a repair, implement it instead of continuing to search for absolute certainty;
+- broaden the investigation only when the narrow path produces a concrete contradiction or blocker.
+
+Do not perform repo-wide scans, full directory-tree reads, broad history archaeology or unrelated issue/PR review for a routine fix. Git history is not a default debugging tool; use it only when current source is ambiguous and history is materially needed to avoid a wrong change.
+
+Never fetch whole compiled, generated, minified, vendor or lockfile-sized artifacts merely to find one selector, symbol or rule. Prefer the authored source, a narrow local search, or a line/range-specific read. If one large remote read stalls, truncates or is clearly disproportionate, do not repeat the same fetch. Change strategy immediately.
+
+Do not repeatedly fetch the same file/blob/commit in one workflow when the result is already in context and still current. Reuse the fetched result. After a small direct change, verification should normally be limited to the resulting diff plus the exact remote head when a push occurred; do not re-download every touched file merely to prove that the write happened.
+
+If a routine fix unexpectedly appears to require a broad repository audit, large vendor/generated reads, repeated remote retries or many unrelated source files, stop and report that scope expansion before spending the time. The default is fast, local, targeted inspection — not exhaustive remote archaeology.
+
 ### Audit worker
 
 An **audit worker** is read-only.
