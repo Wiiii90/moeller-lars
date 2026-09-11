@@ -71,7 +71,6 @@
     padding: 0;
 }
 
-/* Mobile-preview mode keeps the two geometry controls side by side. */
 .general-layout-controls__fields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -79,8 +78,10 @@
     min-width: 0;
 }
 
-/* Desktop preview uses the spare vertical room and makes the geometry controls easier to scan. */
-.general-appearance-stage:has(.general-live-preview__mode[title="Desktop preview"].is-active) .general-layout-controls__fields {
+/* Desktop uses the spare vertical space; mobile keeps both geometry controls
+ * across the two settings columns. The preview component sets this attribute
+ * directly so the layout does not depend on :has() or visual button state. */
+.general-appearance-stage[data-preview-device="desktop"] .general-layout-controls__fields {
     grid-template-columns: minmax(0, 1fr);
     gap: .75rem;
 }
@@ -99,7 +100,7 @@
     padding-left: 1rem;
 }
 
-.general-appearance-stage:has(.general-live-preview__mode[title="Desktop preview"].is-active) .general-layout-field {
+.general-appearance-stage[data-preview-device="desktop"] .general-layout-field {
     padding-right: 0;
     padding-left: 0;
 }
@@ -228,6 +229,7 @@
 
 .general-live-preview__device {
     position: relative;
+    box-sizing: border-box;
     overflow: hidden;
     border: 1px solid var(--admin-line-strong);
     background: var(--admin-surface);
@@ -247,7 +249,7 @@
     position: absolute;
     top: .32rem;
     left: .42rem;
-    z-index: 2;
+    z-index: 3;
     width: .28rem;
     height: .28rem;
     border-radius: 50%;
@@ -258,8 +260,11 @@
 }
 
 .general-live-preview__device.is-mobile {
-    width: 10.8rem;
-    height: min(100%, 18.9rem);
+    width: 12rem;
+    height: 19rem;
+    max-width: 100%;
+    max-height: 100%;
+    border-color: color-mix(in srgb, var(--admin-text) 34%, var(--admin-line-strong));
     border-radius: 1.05rem;
     box-shadow:
         inset 0 0 0 2px color-mix(in srgb, var(--admin-line-strong) 55%, transparent),
@@ -274,7 +279,7 @@
     width: 2.2rem;
     height: .22rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--admin-text) 24%, transparent);
+    background: color-mix(in srgb, var(--admin-text) 34%, transparent);
     content: "";
     transform: translateX(-50%);
     pointer-events: none;
@@ -284,6 +289,8 @@
     position: absolute;
     top: 0;
     left: 0;
+    z-index: 1;
+    display: block;
     border: 0;
     background: #fff;
     transform-origin: top left;
@@ -298,7 +305,7 @@
 .general-live-preview__device.is-mobile iframe {
     width: 390px;
     height: 844px;
-    transform: scale(.443);
+    transform: scale(.4923);
 }
 
 @media (max-width: 900px) {
@@ -309,7 +316,7 @@
 
 @media (max-width: 760px) {
     .general-layout-controls__fields,
-    .general-appearance-stage:has(.general-live-preview__mode[title="Desktop preview"].is-active) .general-layout-controls__fields {
+    .general-appearance-stage[data-preview-device="desktop"] .general-layout-controls__fields {
         grid-template-columns: 1fr;
     }
 
