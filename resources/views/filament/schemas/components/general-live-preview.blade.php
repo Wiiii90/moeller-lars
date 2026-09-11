@@ -1,3 +1,23 @@
+@php
+    $settings = \App\Models\PublicContentSetting::general();
+    $assetId = $settings->getAttribute('favicon_media_asset_id');
+    $faviconAsset = is_numeric($assetId)
+        ? \App\Models\MediaAsset::query()
+            ->where('state', 'available')
+            ->whereIn('mime_type', \App\Domain\Media\MediaTypePolicy::IMAGE_MIME_TYPES)
+            ->with('variants')
+            ->find((int) $assetId)
+        : null;
+    $faviconThumbnail = $faviconAsset?->getRelationValue('variants')->first(static function (\App\Models\MediaVariant $variant): bool {
+        return $variant->getAttribute('variant_kind') === \App\Domain\Media\MediaIngestService::THUMBNAIL_KIND
+            && $variant->getAttribute('transform_profile') === \App\Domain\Media\MediaIngestService::TRANSFORM_PROFILE
+            && $variant->getAttribute('state') === 'available';
+    });
+    $previewUrl = route('preview.home', ['appearance' => now()->timestamp]);
+    $previewHost = parse_url($previewUrl, PHP_URL_HOST) ?: 'preview';
+    $previewPath = parse_url($previewUrl, PHP_URL_PATH) ?: '/preview';
+@endphp
+
 <aside
     class="general-appearance-stage__preview admin-visual-stage__pane"
     aria-label="Live public preview"
@@ -59,12 +79,25 @@
             class="general-live-preview__device"
             x-bind:class="device === 'desktop' ? 'is-desktop' : 'is-mobile'"
         >
-            <iframe
-                x-ref="frame"
-                src="{{ route('preview.home', ['appearance' => now()->timestamp]) }}"
-                title="Live preview of the public homepage"
-                loading="eager"
-            ></iframe>
+            <div class="general-live-preview__browser" aria-hidden="true">
+                <span class="general-live-preview__browser-dots">
+                    <i></i><i></i><i></i>
+                </span>
+                <span class="general-live-preview__address">
+                    @if ($faviconThumbnail instanceof \App\Models\MediaVariant)
+                        <img src="{{ route('admin.media.variant', $faviconThumbnail) }}" alt="">
+                    @endif
+                    <span>{{ $previewHost }}{{ $previewPath }}</span>
+                </span>
+            </div>
+            <div class="general-live-preview__page">
+                <iframe
+                    x-ref="frame"
+                    src="{{ $previewUrl }}"
+                    title="Live preview of the public homepage"
+                    loading="eager"
+                ></iframe>
+            </div>
         </div>
     </div>
 </aside>
