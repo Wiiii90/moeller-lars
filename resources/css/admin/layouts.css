@@ -1,3 +1,5 @@
+@import './theme-effects.css';
+
 /* Shared admin shell and sidebar layout refinements. */
 
 /*
@@ -26,45 +28,6 @@ html:not(.dark) .fi-sidebar-nav {
 html.fi,
 .fi-sidebar-nav {
     scrollbar-gutter: auto !important;
-}
-
-/*
- * Shared theme-level lighting and native-control popup tokens. These are generic
- * admin tokens so later surfaces can reuse the same light language without
- * copying sidebar-specific values.
- */
-html.fi {
-    --admin-light-key: rgba(240, 182, 95, .88);
-    --admin-light-rim: rgba(214, 138, 47, .60);
-    --admin-light-depth: rgba(124, 45, 18, .38);
-    --admin-light-bloom: rgba(214, 138, 47, .36);
-    --admin-light-bloom-soft: rgba(180, 83, 9, .18);
-    --admin-icon-light-effect:
-        drop-shadow(-.8px -.8px .12px var(--admin-light-key))
-        drop-shadow(.8px 1px .35px var(--admin-light-depth))
-        drop-shadow(-.15px -.15px .10rem var(--admin-light-rim))
-        drop-shadow(0 0 .22rem var(--admin-light-bloom))
-        drop-shadow(0 0 .48rem var(--admin-light-bloom-soft));
-    --admin-control-popup-surface: #fff;
-    --admin-control-popup-ink: #181818;
-    --admin-control-popup-muted: #9a9a9a;
-    --admin-sidebar-selected-ink: #141414;
-}
-
-html.fi.dark {
-    --admin-light-key: rgba(255, 255, 255, .28);
-    --admin-light-rim: transparent;
-    --admin-light-depth: rgba(0, 0, 0, .68);
-    --admin-light-bloom: rgba(240, 182, 95, .20);
-    --admin-light-bloom-soft: transparent;
-    --admin-icon-light-effect:
-        drop-shadow(-.4px -.5px .35px var(--admin-light-key))
-        drop-shadow(.5px .8px .7px var(--admin-light-depth))
-        drop-shadow(0 0 .25rem var(--admin-light-bloom));
-    --admin-control-popup-surface: #151515;
-    --admin-control-popup-ink: #f2f2f0;
-    --admin-control-popup-muted: #7d7c78;
-    --admin-sidebar-selected-ink: #f4f4f2;
 }
 
 /* Native select controls inherit the active browser color scheme. */
@@ -244,7 +207,9 @@ html.fi select option:disabled {
 .fi-sidebar-item.fi-active > .fi-sidebar-item-btn,
 .fi-sidebar-item.fi-active > div > .fi-sidebar-item-btn,
 .admin-sidebar-tree__root.fi-active > .admin-sidebar-tree__node-row,
-.admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row {
+.admin-sidebar-tree__root.fi-sidebar-item-has-active-child-items > .admin-sidebar-tree__node-row,
+.admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row,
+.admin-sidebar-tree__node.fi-sidebar-item-has-active-child-items > .admin-sidebar-tree__node-row {
     background: transparent !important;
     box-shadow: none !important;
 }
@@ -252,7 +217,9 @@ html.fi select option:disabled {
 .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-icon,
 .fi-sidebar-item.fi-active > div > .fi-sidebar-item-btn > .fi-sidebar-item-icon,
 .admin-sidebar-tree__root.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-icon,
-.admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-icon {
+.admin-sidebar-tree__root.fi-sidebar-item-has-active-child-items > .admin-sidebar-tree__node-row .fi-sidebar-item-icon,
+.admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-icon,
+.admin-sidebar-tree__node.fi-sidebar-item-has-active-child-items > .admin-sidebar-tree__node-row .fi-sidebar-item-icon {
     color: var(--admin-sidebar-selected-ink) !important;
     filter: var(--admin-icon-light-effect);
     transition: color .16s ease, filter .2s ease;
@@ -261,7 +228,9 @@ html.fi select option:disabled {
 .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-sidebar-item-label,
 .fi-sidebar-item.fi-active > div > .fi-sidebar-item-btn > .fi-sidebar-item-label,
 .admin-sidebar-tree__root.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-label,
-.admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-label {
+.admin-sidebar-tree__root.fi-sidebar-item-has-active-child-items > .admin-sidebar-tree__node-row .fi-sidebar-item-label,
+.admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-label,
+.admin-sidebar-tree__node.fi-sidebar-item-has-active-child-items > .admin-sidebar-tree__node-row .fi-sidebar-item-label {
     color: var(--admin-sidebar-selected-ink) !important;
 }
 

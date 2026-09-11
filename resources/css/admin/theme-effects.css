@@ -1,0 +1,90 @@
+/* Shared optical lighting language for the admin shell. */
+
+html.fi {
+    --admin-light-key: rgba(255, 255, 255, .96);
+    --admin-light-rim: rgba(198, 169, 126, .28);
+    --admin-light-depth: rgba(24, 24, 24, .22);
+    --admin-light-bloom: rgba(178, 139, 84, .10);
+    --admin-icon-light-effect:
+        drop-shadow(-.45px -.55px .18px var(--admin-light-key))
+        drop-shadow(.5px .75px .42px var(--admin-light-depth))
+        drop-shadow(-.1px -.15px .06rem var(--admin-light-rim))
+        drop-shadow(0 0 .14rem var(--admin-light-bloom));
+    --admin-heading-light-effect:
+        0 1px 0 rgba(255, 255, 255, .92),
+        0 1px 1.5px rgba(24, 24, 24, .11),
+        0 0 .4rem rgba(178, 139, 84, .06);
+    --admin-brand-light-effect:
+        0 1px 0 rgba(255, 255, 255, .94),
+        0 1px 1.5px rgba(24, 24, 24, .12),
+        0 0 .5rem rgba(178, 139, 84, .08);
+    --admin-user-badge-edge: rgba(24, 24, 24, .16);
+    --admin-user-badge-depth: rgba(24, 24, 24, .16);
+    --admin-user-badge-glow: rgba(178, 139, 84, .10);
+    --admin-control-popup-surface: #fff;
+    --admin-control-popup-ink: #181818;
+    --admin-control-popup-muted: #9a9a9a;
+    --admin-sidebar-selected-ink: #141414;
+}
+
+html.fi.dark {
+    --admin-light-key: rgba(255, 255, 255, .28);
+    --admin-light-rim: transparent;
+    --admin-light-depth: rgba(0, 0, 0, .68);
+    --admin-light-bloom: rgba(240, 182, 95, .20);
+    --admin-icon-light-effect:
+        drop-shadow(-.4px -.5px .35px var(--admin-light-key))
+        drop-shadow(.5px .8px .7px var(--admin-light-depth))
+        drop-shadow(0 0 .25rem var(--admin-light-bloom));
+    --admin-heading-light-effect:
+        0 1px 1.5px rgba(0, 0, 0, .62),
+        0 0 .42rem rgba(240, 182, 95, .11);
+    --admin-brand-light-effect:
+        0 1px 1.5px rgba(0, 0, 0, .68),
+        0 0 .52rem rgba(240, 182, 95, .15);
+    --admin-user-badge-edge: rgba(255, 255, 255, .16);
+    --admin-user-badge-depth: rgba(0, 0, 0, .72);
+    --admin-user-badge-glow: rgba(240, 182, 95, .16);
+    --admin-control-popup-surface: #151515;
+    --admin-control-popup-ink: #f2f2f0;
+    --admin-control-popup-muted: #7d7c78;
+    --admin-sidebar-selected-ink: #f4f4f2;
+}
+
+.fi-logo {
+    text-shadow: var(--admin-brand-light-effect);
+    transition: text-shadow .2s ease;
+}
+
+.admin-workspace__title {
+    text-shadow: var(--admin-heading-light-effect);
+}
+
+.fi-topbar .fi-user-menu-trigger .fi-user-avatar {
+    box-shadow:
+        0 0 0 1px var(--admin-user-badge-edge),
+        0 1px 2px var(--admin-user-badge-depth),
+        0 0 .48rem var(--admin-user-badge-glow);
+    transition: box-shadow .18s ease, filter .18s ease;
+}
+
+.fi-topbar .fi-user-menu-trigger:hover .fi-user-avatar,
+.fi-topbar .fi-user-menu-trigger:focus-visible .fi-user-avatar {
+    box-shadow:
+        0 0 0 1px var(--admin-user-badge-edge),
+        0 1px 2px var(--admin-user-badge-depth),
+        0 0 .7rem var(--admin-user-badge-glow);
+    filter: saturate(1.04);
+}
+
+.admin-workspace-status {
+    --admin-status-light: var(--admin-faint);
+}
+
+.admin-workspace-status.is-success { --admin-status-light: var(--admin-success); }
+.admin-workspace-status.is-warning { --admin-status-light: var(--admin-accent); }
+.admin-workspace-status.is-danger { --admin-status-light: var(--admin-danger); }
+
+.admin-workspace-status::before {
+    box-shadow: 0 0 .34rem color-mix(in srgb, var(--admin-status-light) 42%, transparent);
+}
