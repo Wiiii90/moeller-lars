@@ -73,6 +73,10 @@
     background: none;
 }
 
+.admin-dashboard__analytics-map.analytics-visual-stage::after {
+    display: none !important;
+}
+
 .admin-dashboard__analytics-map.analytics-visual-stage > .analytics-world {
     display: block !important;
     width: 100%;
