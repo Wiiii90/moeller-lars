@@ -1,14 +1,14 @@
 /* Canonical Visual Stage geometry.
  * Six metric columns resolve into three stage thirds. Divider axes match the
- * 2/6 and 4/6 metric boundaries. The divider continues through most of the
- * intentional stage-to-followup breathing room, stopping shortly before the
- * full-width rule below the stage.
+ * 2/6 and 4/6 metric boundaries. Shared dividers extend only part-way into the
+ * intentional stage-to-followup breathing room so every stage keeps the same
+ * visible lower gap before the full-width rule.
  */
 
 :root {
     --admin-visual-stage-height: 23.5rem;
     --admin-stage-divider-inset: .25rem;
-    --admin-stage-divider-bottom-extension: calc(var(--admin-section-space) - .5rem);
+    --admin-stage-divider-bottom-extension: .75rem;
     --admin-stage-pane-space: var(--admin-section-gap);
 }
 
@@ -33,15 +33,14 @@
     overflow: visible;
 }
 
-/* Shared divider drawing. General owns only its axis choice locally; it no
- * longer receives any grid-item placement from this shared file. */
+/* Shared divider drawing. General intentionally owns its custom matrix divider
+ * in general.css and is therefore excluded from this shared rule. */
 :is(
     .admin-visual-stage--rail:not(.general-appearance-stage),
     .analytics-visual-stage,
     .admin-storage__visual-stage,
     .home-hero-surface
 )::after,
-.general-appearance-stage::after,
 .admin-visual-stage--triptych::before,
 .admin-visual-stage--triptych::after,
 .activity-atlas__grid::after,
@@ -72,17 +71,6 @@
 .admin-visual-stage--triptych::before,
 .admin-dashboard__overview::before {
     left: 33.333333%;
-}
-
-/* General's local matrix is expressed by server-side column spans. Only the
- * visible divider follows the active device layout here. */
-.general-appearance-stage[data-preview-device="desktop"]::after {
-    left: 33.333333%;
-}
-
-.general-appearance-stage:not([data-preview-device="desktop"])::after,
-.general-appearance-stage[data-preview-device="mobile"]::after {
-    left: 66.666666%;
 }
 
 /* Activity keeps the Calendar/Clock boundary as an invisible alignment axis. */
@@ -246,7 +234,6 @@
 }
 
 .activity-atlas__visual-header,
-.activity-clock__meta,
 .activity-calendar__summary {
     display: none !important;
 }
@@ -261,7 +248,7 @@
     height: 100% !important;
     min-width: 0;
     min-height: 0;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     gap: .55rem;
     margin: 0 !important;
     padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) var(--admin-stage-divider-inset) 0 !important;
@@ -279,7 +266,8 @@
     height: 100% !important;
     min-width: 0;
     min-height: 0;
-    grid-template-rows: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) auto !important;
+    gap: .35rem;
     margin: 0 !important;
     padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
     overflow: hidden;
@@ -308,7 +296,7 @@
 }
 
 .activity-clock__dial {
-    width: min(100%, 15.5rem) !important;
+    width: min(100%, 17.5rem) !important;
     max-width: 100%;
     max-height: 100%;
 }
@@ -358,7 +346,6 @@
         .analytics-visual-stage,
         .admin-storage__visual-stage,
         .home-hero-surface,
-        .general-appearance-stage,
         .activity-atlas__grid,
         .admin-dashboard__overview
     )::before,
@@ -368,7 +355,6 @@
         .analytics-visual-stage,
         .admin-storage__visual-stage,
         .home-hero-surface,
-        .general-appearance-stage,
         .activity-atlas__grid,
         .admin-dashboard__overview
     )::after {
@@ -419,8 +405,8 @@
     }
 
     .general-appearance-stage__controls,
-    .general-appearance-stage__preview {
-        grid-column: 1 !important;
+    .general-appearance-stage__preview,
+    .general-appearance-stage__geometry {
         padding-right: 0 !important;
         padding-left: 0 !important;
         border: 0 !important;
