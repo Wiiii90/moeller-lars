@@ -16,61 +16,16 @@
     $previewUrl = route('preview.home', ['appearance' => now()->timestamp]);
     $previewHost = parse_url($previewUrl, PHP_URL_HOST) ?: 'preview';
     $previewPath = parse_url($previewUrl, PHP_URL_PATH) ?: '/preview';
+    $device = isset($generalPage) && $generalPage instanceof \App\Filament\Pages\General
+        ? $generalPage->previewDevice
+        : 'desktop';
 @endphp
 
 <aside
     class="general-appearance-stage__preview admin-visual-stage__pane"
     aria-label="Live public preview"
     x-data="{
-        device: 'desktop',
         refreshTimer: null,
-        init() {
-            this.$nextTick(() => this.syncStageMode())
-        },
-        setDevice(next) {
-            this.device = next
-            this.$nextTick(() => this.syncStageMode())
-        },
-        syncStageMode() {
-            const stage = this.$el.closest('.general-appearance-stage')
-            if (! stage) return
-
-            stage.setAttribute('data-preview-device', this.device)
-
-            const controls = stage.querySelector('.general-appearance-stage__controls')
-            if (! controls) return
-
-            const grid = [...stage.querySelectorAll('.fi-sc-grid')].find((candidate) => {
-                const children = [...candidate.children]
-                const ownsControls = children.some((child) => child === controls || child.contains(controls))
-                const ownsPreview = children.some((child) => child === this.$el || child.contains(this.$el))
-
-                return ownsControls && ownsPreview
-            })
-
-            if (! grid) return
-
-            const controlsItem = [...grid.children].find((child) => child === controls || child.contains(controls))
-            const previewItem = [...grid.children].find((child) => child === this.$el || child.contains(this.$el))
-            if (! controlsItem || ! previewItem) return
-
-            grid.style.setProperty('grid-template-columns', 'repeat(3, minmax(0, 1fr))', 'important')
-            grid.style.setProperty('grid-template-rows', 'repeat(3, minmax(0, 1fr))', 'important')
-            grid.style.setProperty('gap', '0', 'important')
-            grid.style.height = '100%'
-
-            if (this.device === 'desktop') {
-                controlsItem.style.setProperty('grid-column', '1', 'important')
-                controlsItem.style.setProperty('grid-row', '1 / span 3', 'important')
-                previewItem.style.setProperty('grid-column', '2 / span 2', 'important')
-                previewItem.style.setProperty('grid-row', '1 / span 2', 'important')
-            } else {
-                controlsItem.style.setProperty('grid-column', '1 / span 2', 'important')
-                controlsItem.style.setProperty('grid-row', '1 / span 3', 'important')
-                previewItem.style.setProperty('grid-column', '3', 'important')
-                previewItem.style.setProperty('grid-row', '1 / span 3', 'important')
-            }
-        },
         refreshPreview() {
             window.clearTimeout(this.refreshTimer)
             this.refreshTimer = window.setTimeout(() => {
@@ -89,21 +44,19 @@
         </span>
         <div class="general-live-preview__modes" role="group" aria-label="Preview device">
             <button
-                class="general-live-preview__mode"
+                class="general-live-preview__mode {{ $device === 'desktop' ? 'is-active' : '' }}"
                 type="button"
-                x-bind:class="device === 'desktop' ? 'is-active' : ''"
-                x-on:click="setDevice('desktop')"
-                x-bind:aria-pressed="(device === 'desktop').toString()"
+                wire:click="setPreviewDevice('desktop')"
+                aria-pressed="{{ $device === 'desktop' ? 'true' : 'false' }}"
                 title="Desktop preview"
             >
                 <x-filament::icon icon="heroicon-m-computer-desktop" />
             </button>
             <button
-                class="general-live-preview__mode"
+                class="general-live-preview__mode {{ $device === 'mobile' ? 'is-active' : '' }}"
                 type="button"
-                x-bind:class="device === 'mobile' ? 'is-active' : ''"
-                x-on:click="setDevice('mobile')"
-                x-bind:aria-pressed="(device === 'mobile').toString()"
+                wire:click="setPreviewDevice('mobile')"
+                aria-pressed="{{ $device === 'mobile' ? 'true' : 'false' }}"
                 title="Mobile preview"
             >
                 <x-filament::icon icon="heroicon-m-device-phone-mobile" />
@@ -112,10 +65,7 @@
     </div>
 
     <div class="general-live-preview__viewport">
-        <div
-            class="general-live-preview__device"
-            x-bind:class="device === 'desktop' ? 'is-desktop' : 'is-mobile'"
-        >
+        <div class="general-live-preview__device is-{{ $device }}">
             <div class="general-live-preview__browser" aria-hidden="true">
                 <span class="general-live-preview__browser-dots">
                     <i></i><i></i><i></i>
