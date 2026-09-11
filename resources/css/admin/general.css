@@ -2,7 +2,7 @@
 
 /*
  * General alone uses a local 3 x 3 mental matrix inside the canonical stage.
- * This is deliberately not part of the shared Visual Stage primitive.
+ * The matrix is conceptual rather than a second CSS grid layered on Filament:
  *
  * Desktop:
  *   controls: x00 + x10 + x20
@@ -12,61 +12,46 @@
  * Mobile preview mode:
  *   controls: first two columns across all three rows
  *   preview:  third column across all three rows.
+ *
+ * Column ownership comes from General.php via Filament column spans. This file
+ * only owns the content layout inside those columns.
  */
 .general-appearance-stage {
     min-width: 0;
 }
 
-.general-appearance-stage > .fi-sc-grid {
-    display: grid !important;
-    width: 100%;
-    height: 100%;
+.general-appearance-stage__controls,
+.general-appearance-stage__preview {
+    box-sizing: border-box;
     min-width: 0;
     min-height: 0;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
-    gap: 0 !important;
-}
-
-.general-appearance-stage > .fi-sc-grid > * {
-    min-width: 0;
-    min-height: 0;
-}
-
-.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > .general-appearance-stage__controls,
-.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > *:has(> .general-appearance-stage__controls) {
-    grid-column: 1 !important;
-    grid-row: 1 / span 3 !important;
-}
-
-.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > .general-appearance-stage__preview,
-.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > *:has(> .general-appearance-stage__preview) {
-    grid-column: 2 / span 2 !important;
-    grid-row: 1 / span 2 !important;
-}
-
-.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > .general-appearance-stage__controls,
-.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > *:has(> .general-appearance-stage__controls) {
-    grid-column: 1 / span 2 !important;
-    grid-row: 1 / span 3 !important;
-}
-
-.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > .general-appearance-stage__preview,
-.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > *:has(> .general-appearance-stage__preview) {
-    grid-column: 3 !important;
-    grid-row: 1 / span 3 !important;
 }
 
 .general-appearance-stage__controls {
-    min-width: 0;
-    min-height: 0;
     height: 100%;
     overflow: hidden;
 }
 
-.general-appearance-stage__controls,
 .general-appearance-stage__controls > * {
     box-sizing: border-box;
+}
+
+.general-appearance-stage__preview {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: .4rem;
+    overflow: hidden;
+}
+
+.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__preview {
+    height: 66.666667%;
+    align-self: start;
+}
+
+.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__preview {
+    height: 100%;
 }
 
 /* Keep all General Filament controls on the canonical line-based form grammar. */
@@ -109,17 +94,11 @@
     font-size: .78rem !important;
 }
 
-/* Site identity is intentionally compact instead of pretending to be a full
- * visual row. */
 .general-site-icon-control {
     width: min(100%, 21rem);
 }
 
-/* Desktop has one settings column; mobile preview mode gives settings two. */
-.general-background-row {
-    min-width: 0;
-}
-
+.general-background-row,
 .general-background-row > * {
     min-width: 0;
 }
@@ -214,17 +193,6 @@
     font-size: .62rem;
     font-style: normal;
     line-height: 1.35;
-}
-
-.general-appearance-stage__preview {
-    display: grid;
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: .4rem;
-    overflow: hidden;
 }
 
 .general-live-preview__toolbar {
@@ -372,16 +340,14 @@
     background: #fff;
 }
 
-/* Desktop preview occupies the upper-right 2 x 2 matrix cells. */
 .general-live-preview__device.is-desktop {
     width: min(100%, 48rem);
     height: min(100%, 12.75rem);
     border-radius: .35rem;
 }
 
-/* Mobile preview owns the full right column and can use the stage height. */
 .general-live-preview__device.is-mobile {
-    width: 14.25rem;
+    width: 15.25rem;
     height: min(100%, 20rem);
     max-width: 100%;
     border-radius: .9rem;
@@ -418,7 +384,7 @@
 .general-live-preview__device.is-mobile iframe {
     width: 390px;
     height: 844px;
-    transform: scale(.565);
+    transform: scale(.6);
 }
 
 @media (max-width: 900px) {
@@ -430,20 +396,6 @@
 }
 
 @media (max-width: 760px) {
-    .general-appearance-stage > .fi-sc-grid {
-        height: auto;
-        grid-template-columns: 1fr !important;
-        grid-template-rows: auto !important;
-    }
-
-    .general-appearance-stage[data-preview-device] > .fi-sc-grid > .general-appearance-stage__controls,
-    .general-appearance-stage[data-preview-device] > .fi-sc-grid > .general-appearance-stage__preview,
-    .general-appearance-stage[data-preview-device] > .fi-sc-grid > *:has(> .general-appearance-stage__controls),
-    .general-appearance-stage[data-preview-device] > .fi-sc-grid > *:has(> .general-appearance-stage__preview) {
-        grid-column: 1 !important;
-        grid-row: auto !important;
-    }
-
     .general-layout-controls__fields,
     .general-appearance-stage[data-preview-device="desktop"] .general-layout-controls__fields {
         grid-template-columns: 1fr;
@@ -456,7 +408,8 @@
     }
 
     .general-appearance-stage__controls,
-    .general-appearance-stage__preview {
+    .general-appearance-stage__preview,
+    .general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__preview {
         height: auto;
         overflow: visible;
     }
