@@ -1,5 +1,40 @@
 /* Shared admin sidebar structure and small global settings hooks. */
 
+/*
+ * The admin deliberately does not reserve a viewport scrollbar gutter. Pages
+ * without document overflow should use the full viewport width; Filament's
+ * modal scroll-lock already compensates when it temporarily hides scrolling.
+ */
+html {
+    scrollbar-gutter: auto;
+}
+
+:root {
+    --admin-sidebar-selected-ink: #141414;
+    --admin-sidebar-selected-surface:
+        linear-gradient(120deg, rgba(255, 255, 255, .94) 0%, rgba(255, 255, 255, .32) 38%, rgba(255, 255, 255, 0) 68%),
+        linear-gradient(180deg, rgba(24, 24, 24, .045), rgba(24, 24, 24, .065));
+    --admin-sidebar-selected-edge: rgba(24, 24, 24, .085);
+    --admin-sidebar-selected-highlight: rgba(255, 255, 255, .92);
+    --admin-sidebar-selected-shadow: rgba(24, 24, 24, .08);
+    --admin-sidebar-selected-icon-filter:
+        drop-shadow(0 1px 0 rgba(255, 255, 255, .9))
+        drop-shadow(0 1px 1px rgba(24, 24, 24, .12));
+}
+
+.dark {
+    --admin-sidebar-selected-ink: #f4f4f2;
+    --admin-sidebar-selected-surface:
+        linear-gradient(120deg, rgba(255, 255, 255, .11) 0%, rgba(255, 255, 255, .035) 38%, rgba(255, 255, 255, 0) 68%),
+        linear-gradient(180deg, rgba(255, 255, 255, .065), rgba(255, 255, 255, .035));
+    --admin-sidebar-selected-edge: rgba(255, 255, 255, .11);
+    --admin-sidebar-selected-highlight: rgba(255, 255, 255, .14);
+    --admin-sidebar-selected-shadow: rgba(0, 0, 0, .35);
+    --admin-sidebar-selected-icon-filter:
+        drop-shadow(0 1px 1px rgba(0, 0, 0, .5))
+        drop-shadow(0 0 .24rem rgba(255, 255, 255, .11));
+}
+
 /* Sidebar navigation tree */
 .admin-sidebar-tree__row {
     display: flex;
@@ -58,6 +93,20 @@
     --admin-tree-top-trunk-x: 1.25rem;
     --admin-tree-nested-indent: 3.25rem;
     --admin-tree-nested-trunk-x: 2.75rem;
+}
+
+/*
+ * Filament 5 turns active sidebar <li> elements into flex columns with a
+ * quarter-rem row gap. Our Pages tree already owns its row/children geometry,
+ * so keep the active and inactive tree wrappers structurally identical.
+ */
+.admin-sidebar-tree__root.fi-active,
+.admin-sidebar-tree__root.fi-sidebar-item-has-active-child-items,
+.admin-sidebar-tree__node.fi-active,
+.admin-sidebar-tree__node.fi-sidebar-item-has-active-child-items {
+    display: list-item !important;
+    gap: 0 !important;
+    list-style: none !important;
 }
 
 .admin-sidebar-tree__root > .admin-sidebar-tree__children,
@@ -262,6 +311,42 @@
 .admin-sidebar-tree__node.fi-sidebar-item-has-active-child-items > .admin-sidebar-tree__node-row .admin-sidebar-tree__node-label-link {
     background: transparent !important;
     color: var(--admin-text);
+}
+
+/*
+ * One selected-state treatment for native Filament items and the custom Pages
+ * tree. The light is rendered entirely with background/box-shadow/filter, so
+ * selection never changes padding, borders, row height, or connector geometry.
+ */
+.fi-sidebar-item.fi-active:not(.admin-sidebar-tree__root):not(.admin-sidebar-tree__node) > .fi-sidebar-item-btn,
+.fi-sidebar-item.fi-active:not(.admin-sidebar-tree__root):not(.admin-sidebar-tree__node) > div > .fi-sidebar-item-btn,
+.admin-sidebar-tree__root.fi-active > .admin-sidebar-tree__node-row,
+.admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row {
+    border-radius: .5rem;
+    background: var(--admin-sidebar-selected-surface) !important;
+    box-shadow:
+        inset 0 1px 0 var(--admin-sidebar-selected-highlight),
+        inset 0 0 0 1px var(--admin-sidebar-selected-edge),
+        0 1px 2px var(--admin-sidebar-selected-shadow) !important;
+    color: var(--admin-sidebar-selected-ink) !important;
+    transition: background .14s ease, box-shadow .14s ease, color .14s ease;
+}
+
+.fi-sidebar-item.fi-active:not(.admin-sidebar-tree__root):not(.admin-sidebar-tree__node) > .fi-sidebar-item-btn > .fi-sidebar-item-icon,
+.fi-sidebar-item.fi-active:not(.admin-sidebar-tree__root):not(.admin-sidebar-tree__node) > div > .fi-sidebar-item-btn > .fi-sidebar-item-icon,
+.admin-sidebar-tree__root.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-icon,
+.admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-icon {
+    color: var(--admin-sidebar-selected-ink) !important;
+    filter: var(--admin-sidebar-selected-icon-filter);
+    transition: color .14s ease, filter .14s ease;
+}
+
+.fi-sidebar-item.fi-active:not(.admin-sidebar-tree__root):not(.admin-sidebar-tree__node) > .fi-sidebar-item-btn > .fi-sidebar-item-label,
+.fi-sidebar-item.fi-active:not(.admin-sidebar-tree__root):not(.admin-sidebar-tree__node) > div > .fi-sidebar-item-btn > .fi-sidebar-item-label,
+.admin-sidebar-tree__root.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-label,
+.admin-sidebar-tree__node.fi-active > .admin-sidebar-tree__node-row .fi-sidebar-item-label {
+    color: var(--admin-sidebar-selected-ink) !important;
+    font-weight: 600;
 }
 
 .admin-sidebar-tree__root .fi-sidebar-item-grouped-border,
