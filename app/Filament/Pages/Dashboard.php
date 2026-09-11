@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Domain\Admin\DashboardFeed;
 use App\Filament\Support\DashboardOverview;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -15,6 +16,13 @@ final class Dashboard extends Page
     private const PAGE_SIZES = [25, 50, 100];
 
     private const DEFAULT_PAGE_SIZE = 50;
+
+    private const NOTIFICATION_FILTERS = [
+        'all' => 'All notifications',
+        'success' => 'Successful',
+        'warning' => 'Warnings',
+        'danger' => 'Errors',
+    ];
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-home';
 
@@ -38,6 +46,16 @@ final class Dashboard extends Page
 
     public int $feedPageSize = self::DEFAULT_PAGE_SIZE;
 
+    public string $notificationFilter = 'all';
+
+    public function mount(): void
+    {
+        $filter = auth()->user()?->getAttribute('dashboard_notification_filter');
+        $this->notificationFilter = is_string($filter) && array_key_exists($filter, self::NOTIFICATION_FILTERS)
+            ? $filter
+            : 'all';
+    }
+
     public function updatedFeedSearch(): void
     {
         $this->refreshFeedFromFirstPage();
@@ -56,6 +74,20 @@ final class Dashboard extends Page
     {
         $size = is_numeric($value) ? (int) $value : self::DEFAULT_PAGE_SIZE;
         $this->feedPageSize = in_array($size, self::PAGE_SIZES, true) ? $size : self::DEFAULT_PAGE_SIZE;
+        $this->refreshFeedFromFirstPage();
+    }
+
+    public function updatedNotificationFilter(): void
+    {
+        if (! array_key_exists($this->notificationFilter, self::NOTIFICATION_FILTERS)) {
+            $this->notificationFilter = 'all';
+        }
+
+        $user = auth()->user();
+        if ($user instanceof User) {
+            $user->forceFill(['dashboard_notification_filter' => $this->notificationFilter])->save();
+        }
+
         $this->refreshFeedFromFirstPage();
     }
 
@@ -111,6 +143,17 @@ final class Dashboard extends Page
         $this->feedPage = $this->feedPagination()['page'];
     }
 
+    public function markNotificationUnread(int $notificationId): void
+    {
+        app(DashboardFeed::class)->markNotificationUnread($notificationId);
+    }
+
+    public function deleteNotification(int $notificationId): void
+    {
+        app(DashboardFeed::class)->deleteNotification($notificationId);
+        $this->feedPage = $this->feedPagination()['page'];
+    }
+
     public function feedEntryAction(): Action
     {
         return Action::make('feedEntry')
@@ -143,6 +186,7 @@ final class Dashboard extends Page
             'feed' => $feedPagination['items'],
             'feedTypes' => DashboardFeed::types(),
             'feedPagination' => $feedPagination,
+            'notificationFilters' => self::NOTIFICATION_FILTERS,
         ];
     }
 
@@ -181,28 +225,50 @@ final class Dashboard extends Page
     {
         $entry = $this->feedEntry($arguments);
         $contactId = $entry['contact_id'] ?? null;
+        if (is_int($contactId)) {
+            return [
+                Action::make('markContactUnread')
+                    ->label('Mark unread')
+                    ->color('gray')
+                    ->action(function () use ($contactId): void {
+                        $this->markContactUnread($contactId);
+                    }),
+                Action::make('deleteContactMessage')
+                    ->label('Delete')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete contact message?')
+                    ->modalDescription('This removes the locally stored inbox message. This cannot be undone.')
+                    ->modalSubmitActionLabel('Delete')
+                    ->cancelParentActions('feedEntry')
+                    ->action(function () use ($contactId): void {
+                        $this->deleteContactMessage($contactId);
+                    }),
+            ];
+        }
 
-        if (! is_int($contactId)) {
+        $notificationId = $entry['notification_id'] ?? null;
+        if (! is_int($notificationId)) {
             return [];
         }
 
         return [
-            Action::make('markContactUnread')
+            Action::make('markNotificationUnread')
                 ->label('Mark unread')
                 ->color('gray')
-                ->action(function () use ($contactId): void {
-                    $this->markContactUnread($contactId);
+                ->action(function () use ($notificationId): void {
+                    $this->markNotificationUnread($notificationId);
                 }),
-            Action::make('deleteContactMessage')
+            Action::make('deleteNotification')
                 ->label('Delete')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->modalHeading('Delete contact message?')
-                ->modalDescription('This removes the locally stored inbox message. This cannot be undone.')
+                ->modalHeading('Delete notification?')
+                ->modalDescription('This removes the stored dashboard notification history entry.')
                 ->modalSubmitActionLabel('Delete')
                 ->cancelParentActions('feedEntry')
-                ->action(function () use ($contactId): void {
-                    $this->deleteContactMessage($contactId);
+                ->action(function () use ($notificationId): void {
+                    $this->deleteNotification($notificationId);
                 }),
         ];
     }
