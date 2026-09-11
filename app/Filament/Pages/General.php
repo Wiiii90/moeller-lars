@@ -192,24 +192,29 @@ final class General extends Page
                             ->extraAttributes(['class' => 'general-background-row'])
                             ->columnSpanFull(),
 
-                        View::make('filament.schemas.components.general-layout-controls')
-                            ->columnSpanFull(),
-
                         Hidden::make('background_color'),
                         Hidden::make('background_gradient_start'),
                         Hidden::make('background_gradient_end'),
                     ])
                         ->columns(1)
                         ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
-                        ->columnSpan(fn ($livewire): int => $livewire instanceof self && $livewire->previewDevice === 'desktop' ? 1 : 2),
+                        ->columnSpanFull(),
 
                     View::make('filament.schemas.components.general-live-preview')
                         ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
-                        ->columnSpan(fn ($livewire): int => $livewire instanceof self && $livewire->previewDevice === 'desktop' ? 2 : 1),
+                        ->columnSpanFull(),
+
+                    Group::make([
+                        View::make('filament.schemas.components.general-layout-controls')
+                            ->columnSpanFull(),
+                    ])
+                        ->columns(1)
+                        ->extraAttributes(['class' => 'general-appearance-stage__geometry'])
+                        ->columnSpanFull(),
                 ])
                     ->columns(3)
                     ->extraAttributes(fn ($livewire): array => [
-                        'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--rail admin-visual-stage--stackable',
+                        'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--stackable',
                         'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
                         'aria-label' => 'General settings and live public preview',
                     ])
