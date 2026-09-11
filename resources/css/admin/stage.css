@@ -4,8 +4,9 @@
  */
 
 :root {
+    --admin-visual-stage-height: 23.5rem;
     --admin-stage-divider-inset: var(--admin-section-gap);
-    --admin-stage-pane-space: var(--admin-section-space);
+    --admin-stage-pane-space: var(--admin-section-gap);
 }
 
 .admin-visual-stage,
@@ -38,7 +39,6 @@
 .general-appearance-stage::after,
 .admin-visual-stage--triptych::before,
 .admin-visual-stage--triptych::after,
-.activity-atlas__grid::before,
 .activity-atlas__grid::after,
 .admin-dashboard__overview::before,
 .admin-dashboard__overview::after {
@@ -66,7 +66,6 @@
 }
 
 .admin-visual-stage--triptych::before,
-.activity-atlas__grid::before,
 .admin-dashboard__overview::before {
     left: 33.333333%;
 }
@@ -94,9 +93,7 @@
     border-left: 0 !important;
 }
 
-/* General uses Filament's own three-column schema grid. Only the pane spacing
- * and shared 2/3 divider are owned here, so later form content cannot leak into
- * the visual stage. */
+/* General uses Filament's own three-column schema grid. */
 .general-appearance-stage__controls {
     min-width: 0;
     padding-right: var(--admin-stage-pane-space) !important;
@@ -164,7 +161,9 @@
     border-top: 1px solid var(--admin-line-strong);
 }
 
-/* Activity becomes Calendar | Clock | Publication without duplicative chrome. */
+/* Activity is intentionally Clock | Publication. The clock owns the left two
+ * metric thirds; Publication owns the right third. Calendar remains available
+ * in the data source but is not part of this stage. */
 .activity-atlas__grid {
     position: relative;
     display: grid !important;
@@ -174,58 +173,58 @@
 }
 
 .activity-atlas__visual {
-    display: contents !important;
+    display: grid !important;
+    grid-column: 1 / span 2;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) var(--admin-stage-divider-inset) 0 !important;
 }
 
 .activity-atlas__visual-header,
-.activity-clock__meta {
+.activity-clock__meta,
+.activity-atlas__view.activity-calendar {
     display: none !important;
 }
 
-.activity-atlas__view.activity-calendar,
-.activity-atlas__view.activity-clock {
+.activity-atlas__view.activity-clock,
+.activity-atlas__view.activity-clock[style*="display: none"] {
     position: relative;
     box-sizing: border-box;
     display: grid !important;
-    width: auto !important;
+    width: 100% !important;
     height: 100% !important;
     min-width: 0;
     min-height: 0;
     margin: 0 !important;
-    overflow: hidden;
-}
-
-.activity-atlas__view.activity-calendar {
-    grid-column: 1;
-    padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) var(--admin-stage-divider-inset) 0 !important;
-}
-
-.activity-atlas__view.activity-clock {
-    grid-column: 2;
-    padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
+    overflow: visible;
     place-items: center;
+}
+
+.activity-clock__figure {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 !important;
+    place-items: center;
+}
+
+.activity-clock__dial {
+    width: min(100%, 19rem) !important;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 .activity-publication {
     grid-column: 3;
     min-width: 0;
+    min-height: 0;
     height: 100%;
     padding: var(--admin-stage-divider-inset) 0 var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
     border-left: 0 !important;
-    overflow: auto;
-}
-
-.activity-atlas__view.activity-calendar[style*="display: none"],
-.activity-atlas__view.activity-clock[style*="display: none"],
-.activity-atlas__view.activity-calendar[x-cloak],
-.activity-atlas__view.activity-clock[x-cloak] {
-    display: grid !important;
-}
-
-.activity-clock__dial,
-.activity-calendar__plot {
-    max-width: 100%;
-    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 @media (max-width: 760px) {
@@ -276,8 +275,7 @@
         .admin-storage__visual-stage,
         .home-hero-surface
     ) > :last-child,
-    .activity-atlas__view.activity-calendar,
-    .activity-atlas__view.activity-clock,
+    .activity-atlas__visual,
     .activity-publication {
         grid-column: 1;
         height: var(--admin-visual-stage-height) !important;
@@ -290,10 +288,6 @@
         padding-right: 0 !important;
         padding-left: 0 !important;
         border: 0 !important;
-    }
-
-    .activity-atlas__visual {
-        display: contents !important;
     }
 
     .admin-dashboard__overview {
