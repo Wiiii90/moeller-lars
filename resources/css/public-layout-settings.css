@@ -5,5 +5,5 @@
 }
 
 .site-content {
-    padding-inline: clamp(var(--public-mobile-inset), 4.4vw, var(--public-content-padding));
+    padding-inline: clamp(var(--public-mobile-inset), var(--public-content-padding), 20vw);
 }
