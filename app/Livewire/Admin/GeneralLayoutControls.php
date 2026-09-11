@@ -10,9 +10,9 @@ use Livewire\Component;
 
 final class GeneralLayoutControls extends Component
 {
-    public int|string $pageWidth = PublicAppearance::DEFAULT_PAGE_WIDTH;
+    public $pageWidth = PublicAppearance::DEFAULT_PAGE_WIDTH;
 
-    public int|string $contentPadding = PublicAppearance::DEFAULT_CONTENT_PADDING;
+    public $contentPadding = PublicAppearance::DEFAULT_CONTENT_PADDING;
 
     public function mount(): void
     {
