@@ -11,10 +11,7 @@ use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
 use App\Filament\Pages\StorageCapacity;
 use App\Models\Artwork;
-use App\Models\AuditEvent;
 use App\Models\SiteSection;
-use Carbon\CarbonInterface;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 final class DashboardOverview
 {
@@ -55,51 +52,44 @@ final class DashboardOverview
     private function analyticsOverview(array $report): array
     {
         $status = is_string($report['status'] ?? null) ? $report['status'] : 'unavailable';
+        $reportingAvailable = in_array($status, ['available', 'stale'], true);
         $message = is_string($report['message'] ?? null) ? $report['message'] : null;
-        $url = Analytics::getUrl();
-
-        if (! in_array($status, ['available', 'stale'], true)) {
-            return [
-                'status' => $status,
-                'status_label' => match ($status) {
-                    'disabled' => 'Disabled',
-                    'loading' => 'Loading',
-                    default => 'Unavailable',
-                },
-                'message' => $message ?? 'Analytics data is currently unavailable.',
-                'range' => 'Last 30 days',
-                'visits_display' => '—',
-                'visitors_display' => '—',
-                'visits_delta' => null,
-                'country_state' => 'unavailable',
-                'map_points' => [],
-                'url' => $url,
-            ];
-        }
-
-        $metrics = is_array($report['metrics'] ?? null) ? $report['metrics'] : [];
-        $comparison = is_array($report['comparison'] ?? null) ? $report['comparison'] : [];
+        $metrics = $reportingAvailable && is_array($report['metrics'] ?? null) ? $report['metrics'] : [];
+        $comparison = $reportingAvailable && is_array($report['comparison'] ?? null) ? $report['comparison'] : [];
         $visits = is_numeric($metrics['nb_visits'] ?? null) ? (float) $metrics['nb_visits'] : null;
         $visitors = is_numeric($metrics['nb_uniq_visitors'] ?? null) ? (float) $metrics['nb_uniq_visitors'] : null;
         $visitsDelta = is_numeric($comparison['nb_visits'] ?? null) ? (float) $comparison['nb_visits'] : null;
         $availability = AnalyticsReportAvailability::fromReport($report);
-        $countrySource = is_array($report['countries'] ?? null) ? $report['countries'] : [];
-        $countryRows = array_values(array_filter($countrySource, 'is_array'));
-        $countryState = ! $availability->isAvailable('countries')
+        $countriesAvailable = $reportingAvailable && $availability->isAvailable('countries');
+        $countryRows = $countriesAvailable
+            ? array_values(array_filter(
+                $report['countries'] ?? [],
+                static fn (mixed $row): bool => is_array($row)
+                    && is_string($row['label'] ?? null)
+                    && trim($row['label']) !== '',
+            ))
+            : [];
+        $countryState = ! $countriesAvailable
             ? 'unavailable'
             : ($countryRows === [] ? 'empty' : 'available');
 
         return [
             'status' => $status,
-            'status_label' => $status === 'stale' ? 'Cached' : 'Live',
-            'message' => $message,
+            'status_label' => match ($status) {
+                'available' => 'Live',
+                'stale' => 'Cached',
+                'disabled' => 'Disabled',
+                'loading' => 'Loading',
+                default => 'Unavailable',
+            },
+            'message' => $message ?? ($reportingAvailable ? null : 'Analytics data is currently unavailable.'),
             'range' => 'Last 30 days',
             'visits_display' => $visits === null ? '—' : number_format((int) round($visits)),
             'visitors_display' => $visitors === null ? '—' : number_format((int) round($visitors)),
             'visits_delta' => $visitsDelta === null ? null : sprintf('%+.1f%%', $visitsDelta),
             'country_state' => $countryState,
             'map_points' => $countryState === 'available' ? $this->countryMapPoints($countryRows) : [],
-            'url' => $url,
+            'url' => Analytics::getUrl(),
         ];
     }
 
@@ -113,21 +103,22 @@ final class DashboardOverview
             return [];
         }
 
-        $maxVisits = 0;
-        foreach ($countryRows as $row) {
-            $visits = $row['nb_visits'] ?? null;
-            if (is_numeric($visits)) {
-                $maxVisits = max($maxVisits, (int) round((float) $visits));
-            }
-        }
-        $maxVisits = max(1, $maxVisits);
+        $positiveVisits = array_values(array_filter(
+            array_map(
+                static fn (array $row): ?float => is_numeric($row['nb_visits'] ?? null) ? (float) $row['nb_visits'] : null,
+                $countryRows,
+            ),
+            static fn (?float $value): bool => $value !== null && $value > 0,
+        ));
+        $countryMax = $positiveVisits === [] ? 1.0 : max($positiveVisits);
         $points = [];
 
         foreach ($countryRows as $row) {
-            $label = is_string($row['label'] ?? null) ? trim($row['label']) : '';
-            $visits = is_numeric($row['nb_visits'] ?? null) ? (int) round((float) $row['nb_visits']) : 0;
+            $label = trim((string) ($row['label'] ?? ''));
+            $visits = is_numeric($row['nb_visits'] ?? null) ? (float) $row['nb_visits'] : null;
             $coords = $centroids[$label] ?? null;
-            if ($label === '' || $visits <= 0 || ! is_array($coords) || count($coords) < 2 || ! is_numeric($coords[0]) || ! is_numeric($coords[1])) {
+
+            if ($label === '' || $visits === null || $visits <= 0 || ! is_array($coords) || count($coords) < 2) {
                 continue;
             }
 
@@ -135,10 +126,10 @@ final class DashboardOverview
             $longitude = (float) $coords[1];
             $points[] = [
                 'label' => $label,
-                'visits' => $visits,
+                'visits' => (int) round($visits),
                 'x' => min(99.0, max(1.0, (($longitude + 180.0) / 360.0) * 100.0)),
                 'y' => min(98.0, max(2.0, ((90.0 - $latitude) / 180.0) * 100.0)),
-                'size' => 7.0 + (15.0 * sqrt($visits / $maxVisits)),
+                'size' => 9.0 + (22.0 * sqrt($visits / $countryMax)),
             ];
         }
 
@@ -148,76 +139,41 @@ final class DashboardOverview
     /** @return array<string, mixed> */
     private function storageOverview(?array $snapshot): array
     {
-        $url = StorageCapacity::getUrl();
-
         if ($snapshot === null) {
             return [
                 'status' => 'not_measured',
                 'label' => 'No recent measurement',
                 'detail' => 'Open Storage for a current measurement.',
                 'metric_detail' => 'No cached measurement',
+                'configured' => false,
+                'configuration_valid' => false,
+                'measurement_available' => false,
                 'percent' => null,
+                'authoritative' => '—',
+                'generated' => '—',
                 'used' => '—',
                 'remaining' => '—',
                 'allowance' => '—',
-                'url' => $url,
+                'url' => StorageCapacity::getUrl(),
             ];
         }
 
-        $used = is_int($snapshot['authoritative_bytes'] ?? null)
-            ? MediaStorageUnits::formatBytes($snapshot['authoritative_bytes'])
-            : '—';
-        $remaining = is_int($snapshot['remaining_bytes'] ?? null)
-            ? MediaStorageUnits::formatBytes($snapshot['remaining_bytes'])
-            : '—';
-        $allowance = is_int($snapshot['quota_bytes'] ?? null)
-            ? MediaStorageUnits::formatBytes($snapshot['quota_bytes'])
-            : '—';
-
-        if (! ($snapshot['configuration_valid'] ?? true)) {
-            return [
-                'status' => 'unavailable',
-                'label' => 'Allowance unavailable',
-                'detail' => 'The runtime allowance configuration needs operator attention.',
-                'metric_detail' => 'Allowance unavailable',
-                'percent' => null,
-                'used' => $used,
-                'remaining' => $remaining,
-                'allowance' => $allowance,
-                'url' => $url,
-            ];
-        }
-
-        if (! ($snapshot['configured'] ?? false)) {
-            return [
-                'status' => 'unconfigured',
-                'label' => 'Allowance not configured',
-                'detail' => 'Storage usage is measurable, but no artist allowance is configured.',
-                'metric_detail' => 'Allowance not configured',
-                'percent' => null,
-                'used' => $used,
-                'remaining' => $remaining,
-                'allowance' => $allowance,
-                'url' => $url,
-            ];
-        }
-
-        if (! ($snapshot['measurement_available'] ?? false)) {
-            return [
-                'status' => 'unavailable',
-                'label' => 'Measurement unavailable',
-                'detail' => 'Existing files remain readable; Storage can retry the authoritative measurement.',
-                'metric_detail' => 'Measurement unavailable',
-                'percent' => null,
-                'used' => $used,
-                'remaining' => $remaining,
-                'allowance' => $allowance,
-                'url' => $url,
-            ];
-        }
-
+        $configurationValid = (bool) ($snapshot['configuration_valid'] ?? false);
+        $configured = (bool) ($snapshot['configured'] ?? false);
+        $measurementAvailable = (bool) ($snapshot['measurement_available'] ?? false);
         $ratio = is_numeric($snapshot['authoritative_ratio'] ?? null) ? (float) $snapshot['authoritative_ratio'] : null;
         $status = is_string($snapshot['status'] ?? null) ? $snapshot['status'] : 'unavailable';
+        $authoritative = MediaStorageUnits::formatBytes($snapshot['authoritative_bytes'] ?? null);
+        $generated = MediaStorageUnits::formatBytes($snapshot['generated_bytes'] ?? null);
+        $remaining = $configured && $measurementAvailable
+            ? MediaStorageUnits::formatBytes($snapshot['remaining_bytes'] ?? null)
+            : '—';
+        $allowance = $configured && $configurationValid
+            ? MediaStorageUnits::formatBytes($snapshot['quota_bytes'] ?? null)
+            : '—';
+        $percent = $configured && $measurementAvailable && $ratio !== null
+            ? (int) round(min(1, max(0, $ratio)) * 100)
+            : null;
 
         return [
             'status' => $status,
@@ -225,97 +181,54 @@ final class DashboardOverview
                 'full' => 'Allowance full',
                 'near_capacity' => 'Near capacity',
                 'healthy' => 'Healthy',
-                default => 'Measurement unavailable',
+                'unavailable' => $configurationValid ? 'Measurement unavailable' : 'Allowance unavailable',
+                default => 'Allowance not configured',
             },
             'detail' => null,
-            'metric_detail' => 'Cached authoritative originals',
-            'percent' => $ratio === null ? null : (int) round(min(1.0, max(0.0, $ratio)) * 100),
-            'used' => $used,
+            'metric_detail' => match (true) {
+                ! $configurationValid => 'Allowance unavailable',
+                ! $configured => 'Allowance not configured',
+                ! $measurementAvailable => 'Measurement unavailable',
+                default => 'Cached authoritative originals',
+            },
+            'configured' => $configured,
+            'configuration_valid' => $configurationValid,
+            'measurement_available' => $measurementAvailable,
+            'percent' => $percent,
+            'authoritative' => $authoritative,
+            'generated' => $generated,
+            'used' => $authoritative,
             'remaining' => $remaining,
             'allowance' => $allowance,
-            'url' => $url,
+            'url' => StorageCapacity::getUrl(),
         ];
     }
 
-    /**
-     * @return array{
-     *   recent_changes:int,
-     *   clock_points:list<array{label:string,x:float,y:float}>,
-     *   calendar_label:string,
-     *   calendar_days:list<array{day:int,date:string,count:int}|null>,
-     *   url:string
-     * }
-     */
+    /** @return array<string, mixed> */
     private function activityOverview(): array
     {
-        $today = now()->startOfDay();
-        $tomorrow = $today->copy()->addDay();
-        $metricStart = $today->copy()->subDays(29);
-        $monthStart = $today->copy()->startOfMonth();
-        $queryStart = $metricStart->lessThan($monthStart) ? $metricStart : $monthStart;
+        $overview = app(AdminActivityFeed::class)->overview(null, null, days: 30, search: '');
+        $hourly = is_array($overview['hourly'] ?? null) ? $overview['hourly'] : [];
+        $clockActivity = [];
 
-        /** @var EloquentCollection<int, AuditEvent> $events */
-        $events = AuditEvent::query()
-            ->where('occurred_at', '>=', $queryStart)
-            ->where('occurred_at', '<', $tomorrow)
-            ->orderBy('occurred_at')
-            ->get(['occurred_at']);
-
-        $calendarCounts = [];
-        for ($day = 1; $day <= $monthStart->daysInMonth; $day++) {
-            $date = $monthStart->copy()->addDays($day - 1);
-            $calendarCounts[$date->toDateString()] = 0;
-        }
-
-        $recentChanges = 0;
-        $clockPoints = [];
-
-        foreach ($events as $event) {
-            $occurredAt = $event->getAttribute('occurred_at');
-            if (! $occurredAt instanceof CarbonInterface) {
-                continue;
-            }
-
-            if ($occurredAt->greaterThanOrEqualTo($metricStart)) {
-                $recentChanges++;
-                $minutes = ((int) $occurredAt->format('G') * 60) + (int) $occurredAt->format('i');
-                $angle = $minutes / (24 * 60) * 2 * pi();
-
-                $clockPoints[] = [
-                    'label' => $occurredAt->format('M j · H:i'),
-                    'x' => 50 + (42 * sin($angle)),
-                    'y' => 50 - (42 * cos($angle)),
-                ];
-            }
-
-            $date = $occurredAt->toDateString();
-            if (array_key_exists($date, $calendarCounts)) {
-                $calendarCounts[$date]++;
-            }
-        }
-
-        $calendarDays = [];
-        for ($offset = 1; $offset < $monthStart->dayOfWeekIso; $offset++) {
-            $calendarDays[] = null;
-        }
-
-        foreach ($calendarCounts as $date => $count) {
-            $calendarDays[] = [
-                'day' => (int) date('j', strtotime($date)),
-                'date' => $date,
-                'count' => $count,
+        foreach ($hourly as $hour => $count) {
+            $clockActivity[] = [
+                'hour' => (int) $hour,
+                'count' => (int) $count,
             ];
         }
 
-        while (count($calendarDays) % 7 !== 0) {
-            $calendarDays[] = null;
+        $peakHour = null;
+        if (array_sum($hourly) > 0) {
+            $peakCount = max($hourly);
+            $peakHour = (int) array_search($peakCount, $hourly, true);
         }
 
         return [
-            'recent_changes' => $recentChanges,
-            'clock_points' => $clockPoints,
-            'calendar_label' => $monthStart->format('F Y'),
-            'calendar_days' => $calendarDays,
+            'recent_changes' => (int) ($overview['total'] ?? 0),
+            'clock_activity' => $clockActivity,
+            'clock_peak_hour' => $peakHour,
+            'clock_peak_count' => $peakHour !== null ? (int) ($hourly[$peakHour] ?? 0) : 0,
             'url' => Activity::getUrl(),
         ];
     }
