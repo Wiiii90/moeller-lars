@@ -4,7 +4,7 @@ namespace App\Filament\Support;
 
 enum AdminIcon: string
 {
-    case Dashboard = 'heroicon-o-squares-2x2';
+    case Dashboard = 'heroicon-o-home';
     case General = 'heroicon-o-globe-alt';
     case MediaFiles = 'heroicon-o-folder-open';
     case Pages = 'heroicon-o-rectangle-stack';
@@ -18,8 +18,8 @@ enum AdminIcon: string
     case Storage = 'heroicon-o-circle-stack';
     case Preview = 'heroicon-o-viewfinder-circle';
     case Commit = 'heroicon-o-check-circle';
-    case Artwork = 'heroicon-o-rectangle-stack';
-    case BlogPost = 'heroicon-o-pencil-square';
+    case Artwork = 'heroicon-o-paint-brush';
+    case BlogPost = 'heroicon-o-document';
     case CvEntry = 'heroicon-o-document-text';
     case Exhibition = 'heroicon-o-calendar';
 
@@ -32,7 +32,7 @@ enum AdminIcon: string
     case Detach = 'heroicon-o-link-slash';
     case Inspect = 'heroicon-o-magnifying-glass-plus';
     case Upload = 'heroicon-o-arrow-up-tray';
-    case AddFromLibrary = 'heroicon-o-photo';
+    case AddFromLibrary = 'heroicon-o-plus-circle';
     case MoveBetween = 'heroicon-o-arrows-right-left';
     case MoveUp = 'heroicon-o-arrow-up';
     case MoveDown = 'heroicon-o-arrow-down';
