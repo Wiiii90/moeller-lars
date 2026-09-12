@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Media\MediaCapacityService;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 beforeEach(function (): void {
     Storage::fake('media-download-test');
     config(['media.disk' => 'media-download-test']);
+    app(MediaCapacityService::class)->forgetCachedSnapshot();
     $this->actingAs(User::factory()->admin()->create(), 'web');
 });
 
@@ -34,12 +36,16 @@ function storageRouteDownloadAsset(
     ]);
 }
 
-it('uses storage as the artist-facing media workspace route', function (): void {
+it('uses storage as the artist-facing media workspace without measuring on normal navigation', function (): void {
+    Storage::disk(config('media.disk'))->put('originals/not-measured.jpg', 'not-measured');
+
     expect(parse_url(MediaAssetResource::getUrl('index'), PHP_URL_PATH))->toBe('/admin/storage');
 
     $this->get('/admin/storage')
         ->assertOk()
-        ->assertSee('Storage');
+        ->assertSee('Storage')
+        ->assertSee('Measurement needed')
+        ->assertSee('Refresh measurement');
 });
 
 it('redirects legacy media workspace URLs to storage', function (): void {
