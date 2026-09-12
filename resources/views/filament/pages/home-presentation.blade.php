@@ -183,7 +183,14 @@
                 <table>
                     <thead>
                         <tr>
-                            <th scope="col" class="admin-table__selection">
+                            <th scope="col">Gallery</th>
+                            <th scope="col">Candidates</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Source</th>
+                            <th scope="col">Artworks</th>
+                            <th scope="col">Newest Year</th>
+                            <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
                                     x-data="{}"
@@ -199,13 +206,6 @@
                                     aria-label="Toggle selection for visible Galleries"
                                 >
                             </th>
-                            <th scope="col">Gallery</th>
-                            <th scope="col">Candidates</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Source</th>
-                            <th scope="col">Artworks</th>
-                            <th scope="col">Newest Year</th>
-                            <th scope="col" class="admin-table__actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -214,9 +214,6 @@
                                 $selected = in_array($gallery['id'], array_map('intval', $selectedSourceIds), true);
                             @endphp
                             <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="home-source-gallery-{{ $gallery['id'] }}">
-                                <td class="admin-table__selection">
-                                    <input type="checkbox" value="{{ $gallery['id'] }}" wire:model.live="selectedSourceIds" aria-label="Select {{ $gallery['name'] }}">
-                                </td>
                                 <td class="admin-table__identity"><strong>{{ $gallery['name'] }}</strong></td>
                                 <td>
                                     <div class="home-source-candidates" aria-label="Candidates from {{ $gallery['name'] }}">
@@ -238,10 +235,13 @@
                                 <td>{{ number_format($gallery['published_artworks']) }}</td>
                                 <td>{{ $gallery['newest_year'] ?: '—' }}</td>
                                 <td class="admin-table__actions">
-                                    <div class="admin-row-actions admin-toolbar">
+                                    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
                                         <button class="admin-action admin-action--state" type="button" wire:click="toggleGalleryEligibility({{ $gallery['id'] }})">{{ $gallery['preference_enabled'] ? 'Disable preference' : 'Enable preference' }}</button>
                                         <a class="admin-action" href="{{ $gallery['workspace_url'] }}">Open Gallery</a>
                                     </div>
+                                </td>
+                                <td class="admin-table__selection admin-table__selection--trailing">
+                                    <input type="checkbox" value="{{ $gallery['id'] }}" wire:model.live="selectedSourceIds" aria-label="Select {{ $gallery['name'] }}">
                                 </td>
                             </tr>
                         @empty
@@ -335,11 +335,15 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            <x-admin.table class="admin-data-table">
+            <x-admin.table class="admin-data-table admin-table--ranked">
                 <table>
                     <thead>
                         <tr>
-                            <th scope="col" class="admin-table__selection">
+                            <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
+                            <th scope="col">Component</th>
+                            <th scope="col">Content</th>
+                            <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
                                     x-data="{}"
@@ -355,39 +359,34 @@
                                     aria-label="Toggle selection for visible Home components"
                                 >
                             </th>
-                            <th scope="col">Drag</th>
-                            <th scope="col">Position</th>
-                            <th scope="col">Component</th>
-                            <th scope="col">Content</th>
-                            <th scope="col" class="admin-table__actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody @if ($reorderEnabled) wire:sort="sortComponent" @endif>
                         @forelse ($components as $component)
                             <tr wire:key="home-component-{{ $template }}-{{ $component['target'] }}" @if ($reorderEnabled) wire:sort:item="{{ $component['target'] }}" @endif>
-                                <td class="admin-table__selection">
-                                    <input type="checkbox" value="{{ $component['target'] }}" wire:model.live="selectedComponentTargets" aria-label="Select {{ $component['type_label'] }}">
-                                </td>
+                                <td class="admin-table__position"><span class="admin-position">{{ str_pad((string) $component['position'], 2, '0', STR_PAD_LEFT) }}</span></td>
                                 <td class="admin-table__drag">
                                     <button class="admin-drag-handle" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $component['type_label'] }}">⋮⋮</button>
                                 </td>
-                                <td class="admin-table__position"><span class="admin-position">{{ str_pad((string) $component['position'], 2, '0', STR_PAD_LEFT) }}</span></td>
                                 <td>{{ $component['type_label'] }}</td>
                                 <td class="admin-table__identity">
                                     <strong>{{ $component['content']['primary'] }}</strong>
                                     @if ($component['content']['secondary'] !== '')<small>{{ $component['content']['secondary'] }}</small>@endif
                                 </td>
                                 <td class="admin-table__actions">
-                                    <div class="admin-row-actions admin-toolbar">
+                                    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
+                                        <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')" @disabled(! $reorderEnabled || ! $component['can_move_up']) aria-label="Move {{ $component['type_label'] }} up">↑</button>
+                                        <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')" @disabled(! $reorderEnabled || ! $component['can_move_down']) aria-label="Move {{ $component['type_label'] }} down">↓</button>
                                         @if ($component['editable'])
                                             <button class="admin-action" type="button" wire:click="mountAction('editComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })">Edit</button>
                                         @else
                                             <button class="admin-action" type="button" disabled>Edit</button>
                                         @endif
-                                        <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')" @disabled(! $reorderEnabled || ! $component['can_move_up']) aria-label="Move {{ $component['type_label'] }} up">↑</button>
-                                        <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')" @disabled(! $reorderEnabled || ! $component['can_move_down']) aria-label="Move {{ $component['type_label'] }} down">↓</button>
                                         <button class="admin-action is-danger" type="button" wire:click="mountAction('removeComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })">Delete</button>
                                     </div>
+                                </td>
+                                <td class="admin-table__selection admin-table__selection--trailing">
+                                    <input type="checkbox" value="{{ $component['target'] }}" wire:model.live="selectedComponentTargets" aria-label="Select {{ $component['type_label'] }}">
                                 </td>
                             </tr>
                         @empty
