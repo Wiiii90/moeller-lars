@@ -76,6 +76,10 @@
     box-shadow: 0 .12rem .3rem color-mix(in srgb, #000 10%, transparent);
 }
 
+.dark .general-live-preview__zoom-hud {
+    background: #181818;
+}
+
 .general-social-table__edit-action,
 .general-social-table__delete-action {
     gap: .3rem;
