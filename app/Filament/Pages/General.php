@@ -4,7 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
-use App\Filament\Support\AdminBooleanControl;
 use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
@@ -37,7 +36,6 @@ final class General extends Page
         'background_gradient_end',
         'background_gradient_angle',
         'public_email',
-        'show_public_email',
         'contact_recipient_email',
         'social_links',
         'default_media_copyright_notice',
@@ -62,13 +60,6 @@ final class General extends Page
     public ?array $data = [];
 
     public string $previewDevice = 'desktop';
-
-    public string $socialSearch = '';
-
-    public string $socialVisibility = 'any';
-
-    /** @var list<int> */
-    public array $selectedSocialLinkIndexes = [];
 
     public function mount(): void
     {
@@ -105,6 +96,13 @@ final class General extends Page
                 Group::make([
                     Group::make([
                         Group::make([
+                            View::make('filament.schemas.components.admin-section-heading')
+                                ->viewData([
+                                    'label' => 'Appearance',
+                                    'class' => 'general-stage-kicker',
+                                ])
+                                ->columnSpanFull(),
+
                             MediaAssetSelect::make(
                                 'favicon_media_asset_id',
                                 'faviconMediaAsset',
@@ -138,7 +136,7 @@ final class General extends Page
                                     ->label('Background')
                                     ->options([
                                         PublicAppearance::MODE_SOLID => 'Solid',
-                                        PublicAppearance::MODE_GRADIENT => 'Gradient',
+                                        PublicAppearance::MODE_GRADIENT => 'Linear gradient',
                                     ])
                                     ->native()
                                     ->required()
@@ -237,18 +235,22 @@ final class General extends Page
                 View::make('filament.schemas.components.general-separator')
                     ->columnSpanFull(),
 
+                View::make('filament.schemas.components.admin-section-heading')
+                    ->viewData([
+                        'label' => 'Contact',
+                        'class' => 'general-form-section-heading',
+                    ])
+                    ->columnSpanFull(),
+
                 Group::make([
                     TextInput::make('public_email')
-                        ->label('Public email')
+                        ->label(self::publicEmailLabel())
                         ->email()
                         ->maxLength(254)
                         ->nullable()
                         ->lazy()
                         ->extraInputAttributes(self::commitOnEnterAttributes())
                         ->afterStateUpdated(self::persist('public_email')),
-                    AdminBooleanControl::make('show_public_email', 'Visibility', 'Visible', 'Hidden')
-                        ->live()
-                        ->afterStateUpdated(self::persist('show_public_email')),
                     TextInput::make('contact_recipient_email')
                         ->label(self::contactRecipientLabel())
                         ->email()
@@ -258,28 +260,37 @@ final class General extends Page
                         ->extraInputAttributes(self::commitOnEnterAttributes())
                         ->afterStateUpdated(self::persist('contact_recipient_email')),
                 ])
-                    ->columns(3)
+                    ->columns(2)
+                    ->extraAttributes(['class' => 'general-two-column-settings general-contact-settings'])
                     ->columnSpanFull(),
 
                 View::make('filament.schemas.components.general-separator')
                     ->columnSpanFull(),
 
+                View::make('filament.schemas.components.admin-section-heading')
+                    ->viewData([
+                        'label' => 'Legal',
+                        'class' => 'general-form-section-heading',
+                    ])
+                    ->columnSpanFull(),
+
                 Group::make([
                     TextInput::make('default_media_copyright_notice')
-                        ->label('Default copyright notice')
+                        ->label(self::defaultCopyrightLabel())
                         ->maxLength(500)
                         ->nullable()
                         ->lazy()
                         ->extraInputAttributes(self::commitOnEnterAttributes())
                         ->afterStateUpdated(self::persist('default_media_copyright_notice')),
                     TextInput::make('legal_disclaimer')
-                        ->label('Legal disclaimer')
+                        ->label(self::legalDisclaimerLabel())
                         ->nullable()
                         ->lazy()
                         ->extraInputAttributes(self::commitOnEnterAttributes())
                         ->afterStateUpdated(self::persist('legal_disclaimer')),
                 ])
                     ->columns(2)
+                    ->extraAttributes(['class' => 'general-two-column-settings general-legal-settings'])
                     ->columnSpanFull(),
             ])
             ->record(PublicContentSetting::general())
@@ -349,17 +360,17 @@ final class General extends Page
         }
 
         $links = is_array($this->data['social_links'] ?? null) ? array_values($this->data['social_links']) : [];
-        $links[] = ['platform' => '', 'url' => '', 'visible' => true];
+        $links[] = ['platform' => '', 'url' => ''];
         $this->data['social_links'] = $links;
     }
 
     public function updateSocialLink(int $index, string $field, mixed $value): void
     {
-        if (! in_array($field, ['platform', 'url', 'visible'], true) || ! isset($this->data['social_links'][$index]) || ! is_array($this->data['social_links'][$index])) {
+        if (! in_array($field, ['platform', 'url'], true) || ! isset($this->data['social_links'][$index]) || ! is_array($this->data['social_links'][$index])) {
             return;
         }
 
-        $this->data['social_links'][$index][$field] = $field === 'visible' ? ((string) $value === '1') : $value;
+        $this->data['social_links'][$index][$field] = $value;
         $this->persistChangedField('social_links');
     }
 
@@ -374,16 +385,11 @@ final class General extends Page
 
         [$links[$index], $links[$target]] = [$links[$target], $links[$index]];
         $this->data['social_links'] = array_values($links);
-        $this->clearSocialSelection();
         $this->persistChangedField('social_links');
     }
 
     public function sortSocialLink(int|string $index, int $position): void
     {
-        if (! $this->canDragSortSocialLinks()) {
-            return;
-        }
-
         $links = is_array($this->data['social_links'] ?? null) ? array_values($this->data['social_links']) : [];
         $from = filter_var($index, FILTER_VALIDATE_INT);
         if ($from === false || ! isset($links[$from])) {
@@ -398,7 +404,6 @@ final class General extends Page
         $moved = array_splice($links, $from, 1);
         array_splice($links, $position, 0, $moved);
         $this->data['social_links'] = array_values($links);
-        $this->clearSocialSelection();
         $this->persistChangedField('social_links');
     }
 
@@ -411,71 +416,7 @@ final class General extends Page
 
         array_splice($links, $index, 1);
         $this->data['social_links'] = $links;
-        $this->clearSocialSelection();
         $this->persistChangedField('social_links');
-    }
-
-    public function toggleSocialSelection(int $index): void
-    {
-        if (! isset($this->data['social_links'][$index])) {
-            return;
-        }
-
-        $selected = $this->socialSelectedIndexes();
-        $this->selectedSocialLinkIndexes = in_array($index, $selected, true)
-            ? array_values(array_filter($selected, static fn (int $selectedIndex): bool => $selectedIndex !== $index))
-            : [...$selected, $index];
-    }
-
-    public function toggleVisibleSocialSelection(): void
-    {
-        $visible = array_column($this->socialVisibleRows(), 'index');
-        $selected = $this->socialSelectedIndexes();
-        $selectedVisible = array_values(array_intersect($visible, $selected));
-
-        $this->selectedSocialLinkIndexes = count($selectedVisible) === count($visible) && $visible !== []
-            ? array_values(array_diff($selected, $visible))
-            : array_values(array_unique([...$selected, ...$visible]));
-    }
-
-    public function deleteSelectedSocialLinks(): void
-    {
-        $links = is_array($this->data['social_links'] ?? null) ? array_values($this->data['social_links']) : [];
-        $selected = $this->socialSelectedIndexes();
-        rsort($selected);
-
-        foreach ($selected as $index) {
-            if (isset($links[$index])) {
-                array_splice($links, $index, 1);
-            }
-        }
-
-        if ($links === array_values($this->data['social_links'] ?? [])) {
-            return;
-        }
-
-        $this->data['social_links'] = array_values($links);
-        $this->clearSocialSelection();
-        $this->persistChangedField('social_links');
-    }
-
-    public function updatedSocialVisibility(): void
-    {
-        if (! in_array($this->socialVisibility, ['any', 'visible', 'hidden'], true)) {
-            $this->socialVisibility = 'any';
-        }
-    }
-
-    public function resetSocialFilters(): void
-    {
-        $this->socialSearch = '';
-        $this->socialVisibility = 'any';
-    }
-
-    public function canDragSortSocialLinks(): bool
-    {
-        return trim($this->socialSearch) === ''
-            && $this->socialVisibility === 'any';
     }
 
     public function persistChangedField(string $field): void
@@ -522,27 +463,11 @@ final class General extends Page
     }
 
     /** @return array<int, array{index: int, link: array<string, mixed>}> */
-    public function socialVisibleRows(): array
+    public function socialRows(): array
     {
-        $search = mb_strtolower(trim($this->socialSearch));
-        $visibility = $this->socialVisibility;
-        if (! in_array($visibility, ['any', 'visible', 'hidden'], true)) {
-            $visibility = 'any';
-        }
-
         $rows = [];
         foreach ($this->socialLinks() as $index => $link) {
-            $matchesSearch = $search === ''
-                || str_contains(mb_strtolower((string) ($link['platform'] ?? '')), $search)
-                || str_contains(mb_strtolower((string) ($link['url'] ?? '')), $search);
-            $isVisible = (bool) ($link['visible'] ?? true);
-            $matchesVisibility = $visibility === 'any'
-                || ($visibility === 'visible' && $isVisible)
-                || ($visibility === 'hidden' && ! $isVisible);
-
-            if ($matchesSearch && $matchesVisibility) {
-                $rows[] = ['index' => $index, 'link' => $link];
-            }
+            $rows[] = ['index' => $index, 'link' => $link];
         }
 
         return $rows;
@@ -557,14 +482,47 @@ final class General extends Page
         };
     }
 
+    private static function publicEmailLabel(): HtmlString
+    {
+        return self::helpLabel(
+            'Public email',
+            'About public email',
+            'Used by published Public email contact components. Leave this empty if no public email address should be shown.',
+        );
+    }
+
     private static function contactRecipientLabel(): HtmlString
     {
+        return self::helpLabel(
+            'Contact form recipient',
+            'About contact form delivery',
+            'Contact-form messages are delivered privately to this address. It can be different from the public email.',
+        );
+    }
+
+    private static function defaultCopyrightLabel(): HtmlString
+    {
+        return self::helpLabel(
+            'Default copyright notice',
+            'About the default copyright notice',
+            'Used as the inherited copyright notice for media assets. Individual media can override this default or explicitly use no notice.',
+        );
+    }
+
+    private static function legalDisclaimerLabel(): HtmlString
+    {
+        return self::helpLabel(
+            'Legal disclaimer',
+            'About the legal disclaimer',
+            'Reusable legal text rendered wherever a Custom Page includes the Legal disclaimer component.',
+        );
+    }
+
+    private static function helpLabel(string $label, string $title, string $body): HtmlString
+    {
         return new HtmlString(
-            '<span class="admin-form-label-with-help">Contact form recipient'.
-            AdminHelp::make(
-                'About contact form delivery',
-                'Contact-form messages are delivered privately to this address. It can be different from the public email.',
-            )->toHtml().
+            '<span class="admin-form-label-with-help">'.$label.
+            AdminHelp::make($title, $body)->toHtml().
             '</span>',
         );
     }
@@ -583,7 +541,6 @@ final class General extends Page
     {
         return match ($field) {
             'favicon_media_asset_id' => is_numeric($value) ? (int) $value : null,
-            'show_public_email' => (bool) $value,
             'background_mode' => $value === PublicAppearance::MODE_DEFAULT || $value === '' ? null : $value,
             'background_color', 'background_gradient_start', 'background_gradient_end' => $this->normalizeColorCandidate($value),
             'background_gradient_angle' => is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : ($value === '' ? null : $value),
@@ -625,7 +582,6 @@ final class General extends Page
             return [
                 'platform' => $link['platform'] ?? null,
                 'url' => $link['url'] ?? null,
-                'visible' => (bool) ($link['visible'] ?? true),
             ];
         }, $value));
     }
@@ -636,19 +592,6 @@ final class General extends Page
         return is_array($this->data['social_links'] ?? null)
             ? array_values(array_filter($this->data['social_links'], 'is_array'))
             : [];
-    }
-
-    /** @return array<int, int> */
-    private function socialSelectedIndexes(): array
-    {
-        $selected = $this->selectedSocialLinkIndexes;
-
-        return array_values(array_unique(array_map('intval', $selected)));
-    }
-
-    private function clearSocialSelection(): void
-    {
-        $this->selectedSocialLinkIndexes = [];
     }
 
     /** @return array<string, string> */

@@ -5,8 +5,9 @@
  * - desktop preview: settings 1/2 | preview 1/2
  * - phone preview:   settings 2/3 | preview 1/3
  *
- * Appearance and page geometry flow naturally down the settings side. The
- * preview owns the full stage height, so there is no artificial row matrix.
+ * Appearance controls use the available upper-left stage area and scroll
+ * internally when more settings are added. Page geometry stays anchored below
+ * them while the preview owns the full right-hand stage height.
  */
 .general-appearance-stage {
     position: relative;
@@ -14,7 +15,7 @@
     width: 100%;
     min-width: 0;
     min-height: 0;
-    grid-template-rows: auto auto minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) auto !important;
     gap: 0 !important;
     overflow: visible;
 }
@@ -59,9 +60,12 @@
 .general-appearance-stage__controls {
     grid-column: 1;
     grid-row: 1;
-    height: auto;
+    height: 100%;
     padding-right: var(--admin-stage-pane-space);
-    overflow: visible;
+    padding-bottom: .2rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
 .general-appearance-stage__geometry {
@@ -115,6 +119,12 @@
 
 .general-appearance-stage__geometry > * {
     min-width: 0;
+}
+
+.general-stage-kicker,
+.general-form-section-heading,
+.general-social-section__heading {
+    margin: 0;
 }
 
 /* Canonical line-based General controls. */
@@ -305,44 +315,50 @@
     line-height: 1.35;
 }
 
+/* Contact and Legal share the metric-aligned half-width split. */
+.general-two-column-settings > .fi-sc {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+}
+
+.general-two-column-settings > .fi-sc > * {
+    min-width: 0;
+}
+
+.general-two-column-settings > .fi-sc > :first-child {
+    padding-right: var(--admin-stage-pane-space);
+}
+
+.general-two-column-settings > .fi-sc > :last-child {
+    padding-left: var(--admin-stage-pane-space);
+}
+
 /* Preview toolbar */
 .general-live-preview__toolbar {
     display: flex;
     min-width: 0;
-    min-height: 1.55rem;
+    min-height: 1.75rem;
     gap: .65rem;
     align-items: center;
     justify-content: space-between;
 }
 
 .general-live-preview__title {
-    display: inline-flex;
-    min-width: 0;
-    gap: .42rem;
-    align-items: center;
-    color: var(--admin-muted);
-    font-size: .68rem;
-    font-weight: 700;
-    letter-spacing: .09em;
-    text-transform: uppercase;
-}
-
-.general-live-preview__title svg {
-    width: .95rem;
-    height: .95rem;
     flex: 0 0 auto;
 }
 
 .general-live-preview__toolbar-meta {
     display: flex;
     min-width: 0;
-    gap: .5rem;
+    gap: .2rem;
     align-items: center;
     margin-left: auto;
 }
 
 .general-live-preview__preset {
     min-width: 0;
+    margin-right: .3rem;
     overflow: hidden;
     color: var(--admin-faint);
     font-size: .62rem;
@@ -358,6 +374,14 @@
     align-items: center;
 }
 
+.general-live-preview__tool-divider {
+    width: 1px;
+    height: 1.15rem;
+    margin: 0 .2rem;
+    flex: 0 0 1px;
+    background: var(--admin-line-strong);
+}
+
 .general-live-preview__mode {
     display: grid;
     width: 2rem;
@@ -369,6 +393,7 @@
     background: transparent;
     color: var(--admin-muted);
     line-height: 1;
+    text-decoration: none;
     cursor: pointer;
 }
 
@@ -388,10 +413,11 @@
 
 /* Preview frame */
 .general-live-preview__viewport {
+    box-sizing: border-box;
     display: grid;
     min-width: 0;
     min-height: 0;
-    padding: .2rem 0 .35rem;
+    padding: .35rem 0;
     place-items: center;
     overflow: hidden;
     background: transparent;
@@ -420,6 +446,7 @@
 }
 
 .general-live-preview__device.is-mobile {
+    grid-template-rows: minmax(0, 1fr) auto;
     border-radius: 1rem;
     box-shadow:
         inset 0 0 0 1px color-mix(in srgb, var(--admin-text) 18%, transparent),
@@ -492,13 +519,28 @@
     pointer-events: auto;
 }
 
+.general-live-preview__page.is-magnifying {
+    cursor: zoom-in;
+}
+
+.general-live-preview__page.is-magnifying iframe {
+    pointer-events: none !important;
+}
+
 .general-live-preview__device.is-mobile .general-live-preview__browser {
+    grid-row: 2;
     grid-template-columns: minmax(0, 1fr);
     padding-inline: .3rem;
+    border-top: 1px solid var(--admin-line-strong);
+    border-bottom: 0;
 }
 
 .general-live-preview__device.is-mobile .general-live-preview__browser-dots {
     display: none;
+}
+
+.general-live-preview__device.is-mobile .general-live-preview__page {
+    grid-row: 1;
 }
 
 .general-live-preview__device iframe {
@@ -513,6 +555,102 @@
     touch-action: auto;
     transform-origin: top left;
     backface-visibility: hidden;
+}
+
+/* Social Media is deliberately small: no search/filter/selection layer. */
+.general-social-section {
+    display: grid;
+    gap: var(--admin-section-gap);
+}
+
+.general-social-table > table {
+    width: 100%;
+    min-width: 0 !important;
+    table-layout: fixed;
+}
+
+.general-social-table__col-order,
+.general-social-table__col-platform {
+    width: 16.666667%;
+}
+
+.general-social-table__col-url,
+.general-social-table__col-actions {
+    width: 33.333333%;
+}
+
+.general-social-table__order-cell {
+    display: flex;
+    gap: .65rem;
+    align-items: center;
+}
+
+.general-social-table__editable {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: .4rem .25rem;
+    overflow: hidden;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: .76rem;
+    line-height: 1.2;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: text;
+}
+
+.general-social-table__editable:hover,
+.general-social-table__editable:focus-visible {
+    border-color: var(--admin-line);
+    background: var(--admin-subtle);
+    outline: none;
+}
+
+.general-social-table__editable--url {
+    color: var(--admin-muted);
+}
+
+.general-social-table__editor {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: var(--admin-control-height);
+    padding: .45rem .25rem;
+    border: 0;
+    border-bottom: 1px solid var(--admin-line);
+    border-radius: 0;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: .76rem;
+    outline: none;
+}
+
+.general-social-table__editor:focus {
+    border-bottom-color: var(--admin-accent);
+}
+
+.admin-general .general-social-table select option[value=""] {
+    display: block;
+}
+
+.general-social-table__actions .admin-toolbar {
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+}
+
+.general-social-table__edit-action {
+    gap: .3rem;
+}
+
+.general-social-table__edit-action svg {
+    width: .9rem;
+    height: .9rem;
 }
 
 @media (max-width: 900px) {
@@ -562,12 +700,15 @@
     }
 
     .general-layout-controls__fields,
-    .general-background-row > .fi-sc {
+    .general-background-row > .fi-sc,
+    .general-two-column-settings > .fi-sc {
         grid-template-columns: 1fr !important;
     }
 
     .general-layout-field:first-child,
-    .general-layout-field + .general-layout-field {
+    .general-layout-field + .general-layout-field,
+    .general-two-column-settings > .fi-sc > :first-child,
+    .general-two-column-settings > .fi-sc > :last-child {
         padding-right: 0;
         padding-left: 0;
     }
@@ -578,5 +719,9 @@
 
     .general-live-preview__toolbar {
         margin-bottom: .3rem;
+    }
+
+    .general-social-table > table {
+        min-width: 44rem !important;
     }
 }

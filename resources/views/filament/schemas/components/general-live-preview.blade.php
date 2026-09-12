@@ -31,6 +31,11 @@
     x-data="{
         refreshTimer: null,
         resizeObserver: null,
+        fitScale: 1,
+        magnifier: false,
+        magnifierX: null,
+        magnifierY: null,
+        zoomFactor: 1.8,
         init() {
             this.$nextTick(() => {
                 this.fitPreview()
@@ -52,26 +57,66 @@
 
             const targetWidth = Number(device.dataset.previewWidth)
             const targetHeight = Number(device.dataset.previewHeight)
-            const availableWidth = viewport.clientWidth
-            const availableHeight = viewport.clientHeight
-            const browserHeight = browser.offsetHeight
-            if (! targetWidth || ! targetHeight || ! availableWidth || ! availableHeight) return
+            if (! targetWidth || ! targetHeight) return
 
-            const contentHeight = Math.max(1, availableHeight - browserHeight)
-            const scale = Math.min(availableWidth / targetWidth, contentHeight / targetHeight)
+            const viewportStyle = window.getComputedStyle(viewport)
+            const deviceStyle = window.getComputedStyle(device)
+            const horizontalPadding = parseFloat(viewportStyle.paddingLeft) + parseFloat(viewportStyle.paddingRight)
+            const verticalPadding = parseFloat(viewportStyle.paddingTop) + parseFloat(viewportStyle.paddingBottom)
+            const horizontalBorder = parseFloat(deviceStyle.borderLeftWidth) + parseFloat(deviceStyle.borderRightWidth)
+            const verticalBorder = parseFloat(deviceStyle.borderTopWidth) + parseFloat(deviceStyle.borderBottomWidth)
+            const availableWidth = Math.max(1, viewport.clientWidth - horizontalPadding)
+            const availableHeight = Math.max(1, viewport.clientHeight - verticalPadding)
+            const browserHeight = browser.offsetHeight
+            if (! availableWidth || ! availableHeight || ! browserHeight) return
+
+            const scale = Math.min(
+                Math.max(1, availableWidth - horizontalBorder) / targetWidth,
+                Math.max(1, availableHeight - browserHeight - verticalBorder) / targetHeight,
+            )
             const renderedWidth = Math.max(1, Math.floor(targetWidth * scale))
             const renderedHeight = Math.max(1, Math.floor(targetHeight * scale))
 
-            device.style.width = `${renderedWidth}px`
-            device.style.height = `${renderedHeight + browserHeight}px`
+            this.fitScale = scale
+            device.style.width = `${renderedWidth + horizontalBorder}px`
+            device.style.height = `${renderedHeight + browserHeight + verticalBorder}px`
             page.style.width = `${renderedWidth}px`
             page.style.height = `${renderedHeight}px`
 
             frame.style.width = `${targetWidth}px`
             frame.style.height = `${targetHeight}px`
-            frame.style.left = '0px'
-            frame.style.top = '0px'
-            frame.style.transform = `scale(${scale})`
+            this.applyPreviewTransform()
+        },
+        applyPreviewTransform() {
+            const frame = this.$refs.frame
+            const page = this.$refs.page
+            if (! frame || ! page) return
+
+            const zoom = this.magnifier ? this.zoomFactor : 1
+            const x = this.magnifierX ?? (page.clientWidth / 2)
+            const y = this.magnifierY ?? (page.clientHeight / 2)
+            frame.style.transformOrigin = 'top left'
+            frame.style.left = this.magnifier ? `${x * (1 - zoom)}px` : '0px'
+            frame.style.top = this.magnifier ? `${y * (1 - zoom)}px` : '0px'
+            frame.style.transform = `scale(${this.fitScale * zoom})`
+        },
+        toggleMagnifier() {
+            this.magnifier = ! this.magnifier
+            if (! this.magnifier) {
+                this.magnifierX = null
+                this.magnifierY = null
+            }
+            this.applyPreviewTransform()
+        },
+        moveMagnifier(event) {
+            if (! this.magnifier) return
+
+            const page = this.$refs.page
+            if (! page) return
+            const rect = page.getBoundingClientRect()
+            this.magnifierX = Math.max(0, Math.min(rect.width, event.clientX - rect.left))
+            this.magnifierY = Math.max(0, Math.min(rect.height, event.clientY - rect.top))
+            this.applyPreviewTransform()
         },
         refreshPreview() {
             window.clearTimeout(this.refreshTimer)
@@ -85,10 +130,7 @@
     x-on:general-appearance-updated.window="refreshPreview()"
 >
     <div class="general-live-preview__toolbar">
-        <span class="general-live-preview__title">
-            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" />
-            <span>Live preview</span>
-        </span>
+        <h2 class="admin-section__kicker general-live-preview__title">Live preview</h2>
 
         <div class="general-live-preview__toolbar-meta">
             <span class="general-live-preview__preset">{{ $previewLabel }}</span>
@@ -112,6 +154,27 @@
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()" />
                 </button>
             </div>
+            <span class="general-live-preview__tool-divider" aria-hidden="true"></span>
+            <button
+                class="general-live-preview__mode general-live-preview__tool"
+                type="button"
+                x-on:click="toggleMagnifier()"
+                x-bind:class="{ 'is-active': magnifier }"
+                x-bind:aria-pressed="magnifier.toString()"
+                title="Magnify preview"
+            >
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::PreviewZoom->mini()" />
+            </button>
+            <a
+                class="general-live-preview__mode general-live-preview__tool"
+                href="{{ $directPreviewUrl }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open preview"
+                aria-label="Open preview"
+            >
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" />
+            </a>
         </div>
     </div>
 
@@ -133,7 +196,12 @@
                     <span>{{ $previewHost }}{{ $previewPath }}</span>
                 </span>
             </div>
-            <div x-ref="page" class="general-live-preview__page">
+            <div
+                x-ref="page"
+                class="general-live-preview__page"
+                x-bind:class="{ 'is-magnifying': magnifier }"
+                x-on:mousemove="moveMagnifier($event)"
+            >
                 <iframe
                     x-ref="frame"
                     src="{{ $previewUrl }}"

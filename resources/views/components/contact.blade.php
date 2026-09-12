@@ -20,7 +20,7 @@
         @continue(! $isPreview && ! $published)
 
         @if ($childType === 'public_email')
-            @if ((bool) $generalSettings->show_public_email && filled($generalSettings->public_email))
+            @if (filled($generalSettings->public_email))
                 <div class="contact-details custom-page__contact-child" aria-label="Public email">
                     <div class="contact-details__row">
                         <span class="contact-details__label">E-Mail</span>
@@ -36,7 +36,7 @@
         @elseif ($childType === 'social_links')
             @php
                 $allowedPlatforms = is_array($child['social_platforms'] ?? null) ? $child['social_platforms'] : [];
-                $socialLinks = collect(\App\Domain\Content\SocialLinks::visible($generalSettings->social_links))
+                $socialLinks = collect(\App\Domain\Content\SocialLinks::configured($generalSettings->social_links))
                     ->filter(fn (array $link): bool => in_array($link['platform'], $allowedPlatforms, true))
                     ->values()
                     ->all();

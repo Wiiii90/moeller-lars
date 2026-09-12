@@ -30,18 +30,43 @@ final class SocialLinks
     }
 
     /** @param array<int, mixed>|null $links */
-    public static function visible(?array $links): array
+    public static function configured(?array $links): array
     {
-        $visible = [];
+        $configured = [];
 
         foreach ($links ?? [] as $link) {
-            if (is_array($link) === false) {
+            if (! is_array($link)) {
                 continue;
             }
 
             $platform = $link['platform'] ?? null;
             $url = $link['url'] ?? null;
-            if (is_string($platform) === false || self::supports($platform) === false || is_string($url) === false || ($link['visible'] ?? true) !== true) {
+            if (! is_string($platform) || ! self::supports($platform) || ! is_string($url) || trim($url) === '') {
+                continue;
+            }
+
+            $configured[] = [
+                'platform' => $platform,
+                'url' => $url,
+            ];
+        }
+
+        return $configured;
+    }
+
+    /** @param array<int, mixed>|null $links */
+    public static function visible(?array $links): array
+    {
+        $visible = [];
+
+        foreach ($links ?? [] as $link) {
+            if (! is_array($link)) {
+                continue;
+            }
+
+            $platform = $link['platform'] ?? null;
+            $url = $link['url'] ?? null;
+            if (! is_string($platform) || ! self::supports($platform) || ! is_string($url) || ($link['visible'] ?? true) !== true) {
                 continue;
             }
 

@@ -90,10 +90,10 @@ it('uses General as the canonical singleton route with no global save action', f
 it('renders the exact six General metrics from persisted settings and audit events', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'public_email' => 'public@example.invalid',
-        'show_public_email' => true,
+        'show_public_email' => false,
         'contact_recipient_email' => 'delivery@example.invalid',
         'social_links' => [
-            ['platform' => 'instagram', 'url' => 'https://example.invalid/instagram', 'visible' => true],
+            ['platform' => 'instagram', 'url' => 'https://example.invalid/instagram', 'visible' => false],
         ],
         'default_media_copyright_notice' => 'Default copyright',
         'legal_disclaimer' => 'Global legal text.',
@@ -114,10 +114,12 @@ it('renders the exact six General metrics from persisted settings and audit even
         ->assertSee('Changes · 30d')
         ->assertSee((string) $changes)
         ->assertSee('Public email')
+        ->assertSee('Configured')
         ->assertSee('Contact delivery')
         ->assertSee('Social profiles')
+        ->assertSee('Appearance')
+        ->assertSee('Social Media')
         ->assertSee('Legal')
-        ->assertDontSee('Appearance')
         ->assertDontSee('Save changes');
 });
 
@@ -291,7 +293,7 @@ it('renders default solid and gradient appearance through a request-local CSP no
     );
 });
 
-it('persists social link add update visibility order and delete without a repeater', function (): void {
+it('persists configured social link add update order and delete without a repeater', function (): void {
     $auditBefore = generalSettingsAuditCount();
     $component = Livewire::test(General::class)
         ->call('addSocialLink')
@@ -299,51 +301,32 @@ it('persists social link add update visibility order and delete without a repeat
         ->call('updateSocialLink', 0, 'platform', 'instagram');
 
     $fresh = PublicContentSetting::general();
-    expect($fresh->getAttribute('social_links')[0]['platform'])->toBe('instagram')
-        ->and($fresh->getAttribute('social_links')[0]['visible'])->toBeTrue();
-
-    $component->call('updateSocialLink', 0, 'visible', '0');
-    expect(PublicContentSetting::general()->getAttribute('social_links')[0]['visible'])->toBeFalse();
+    expect($fresh->getAttribute('social_links')[0])->toMatchArray([
+        'platform' => 'instagram',
+        'url' => 'https://example.invalid/profile',
+    ])
+        ->and($fresh->getAttribute('social_links')[0])->not->toHaveKey('visible');
 
     $component->call('deleteSocialLink', 0);
     expect(PublicContentSetting::general()->getAttribute('social_links'))->toBe([])
         ->and(generalSettingsAuditCount())->toBeGreaterThan($auditBefore);
 });
 
-it('filters selects and drag-reorders social links by array position', function (): void {
+it('drag-reorders configured social links by array position without filter state', function (): void {
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'social_links' => [
-            ['platform' => 'instagram', 'url' => 'https://example.invalid/alpha', 'visible' => true],
-            ['platform' => 'facebook', 'url' => 'https://example.invalid/beta', 'visible' => false],
+            ['platform' => 'instagram', 'url' => 'https://example.invalid/alpha'],
+            ['platform' => 'facebook', 'url' => 'https://example.invalid/beta'],
         ],
     ]);
 
     $component = Livewire::test(General::class)
-        ->assertSet('socialVisibility', 'any')
-        ->assertSet('socialSearch', '')
         ->call('sortSocialLink', 1, 0);
 
     $fresh = PublicContentSetting::general();
-    expect($fresh->getAttribute('social_links')[0]['platform'])->toBe('facebook');
-
-    $component->set('socialSearch', 'alpha');
-
-    expect($component->instance()->socialVisibleRows())->toHaveCount(1)
-        ->and($component->instance()->canDragSortSocialLinks())->toBeFalse();
-
-    $component->call('resetSocialFilters');
-    expect($component->instance()->canDragSortSocialLinks())->toBeTrue();
-
-    $component
-        ->set('socialVisibility', 'hidden');
-    expect($component->instance()->canDragSortSocialLinks())->toBeFalse();
-
-    $component
-        ->call('resetSocialFilters')
-        ->call('toggleSocialSelection', 0)
-        ->call('deleteSelectedSocialLinks');
-
-    expect(PublicContentSetting::general()->getAttribute('social_links'))->toHaveCount(1);
+    expect($fresh->getAttribute('social_links')[0]['platform'])->toBe('facebook')
+        ->and($fresh->getAttribute('social_links')[1]['platform'])->toBe('instagram')
+        ->and($component->instance()->socialRows())->toHaveCount(2);
 });
 
 it('loads a persisted legal disclaimer unchanged without writing on mount', function (): void {
@@ -360,19 +343,17 @@ it('loads a persisted legal disclaimer unchanged without writing on mount', func
         ->and(generalSettingsAuditCount())->toBe($auditBefore);
 });
 
-it('persists boolean media copyright and legal settings through event-driven controls', function (): void {
+it('persists media copyright and legal settings through event-driven controls', function (): void {
     $favicon = generalStatusFavicon();
     $auditBefore = generalSettingsAuditCount();
 
     Livewire::test(General::class)
-        ->set('data.show_public_email', false)
         ->set('data.favicon_media_asset_id', $favicon->id)
         ->set('data.default_media_copyright_notice', '  Copyright notice  ')
         ->set('data.legal_disclaimer', 'Legal text.');
 
     $fresh = PublicContentSetting::general();
-    expect($fresh->getAttribute('show_public_email'))->toBeFalse()
-        ->and((int) $fresh->getAttribute('favicon_media_asset_id'))->toBe((int) $favicon->id)
+    expect((int) $fresh->getAttribute('favicon_media_asset_id'))->toBe((int) $favicon->id)
         ->and($fresh->getAttribute('default_media_copyright_notice'))->toBe('Copyright notice')
         ->and($fresh->getAttribute('legal_disclaimer'))->toBe('Legal text.')
         ->and(generalSettingsAuditCount())->toBeGreaterThan($auditBefore);
@@ -389,6 +370,8 @@ it('keeps text persistence event-driven without debounce or timer autosave', fun
         ->and($viewSource)->not->toContain('wire:model.debounce')
         ->and($socialSource)->toContain('wire:blur="updateSocialLink')
         ->and($socialSource)->not->toContain('wire:model.debounce.300ms="data.social_links')
+        ->and($socialSource)->not->toContain('socialSearch')
+        ->and($socialSource)->not->toContain('socialVisibility')
         ->and($pageSource)->toContain("'x-on:keydown.enter.prevent' => '\$event.target.blur()'");
 });
 

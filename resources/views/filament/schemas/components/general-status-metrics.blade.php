@@ -10,17 +10,8 @@
         ->where('entity_id', (int) $settings->getKey())
         ->where('occurred_at', '>=', now()->subDays(30))
         ->count();
-    $socialProfiles = collect($settings->getAttribute('social_links'))
-        ->filter(static fn (mixed $link): bool => is_array($link)
-            && filled($link['platform'] ?? null)
-            && filled($link['url'] ?? null));
-    $visibleSocialProfiles = $socialProfiles
-        ->filter(static fn (array $link): bool => (bool) ($link['visible'] ?? true))
-        ->count();
-    $socialProfilesValue = $visibleSocialProfiles.' / '.$socialProfiles->count();
-    $publicEmailStatus = blank($settings->getAttribute('public_email'))
-        ? 'Not set'
-        : ((bool) $settings->getAttribute('show_public_email') ? 'Visible' : 'Hidden');
+    $socialProfilesCount = count(\App\Domain\Content\SocialLinks::configured($settings->getAttribute('social_links')));
+    $publicEmailStatus = filled($settings->getAttribute('public_email')) ? 'Configured' : 'Not set';
     $contactDeliveryStatus = filled($settings->getAttribute('contact_recipient_email')) ? 'Configured' : 'Not configured';
     $copyrightSet = filled($settings->getAttribute('default_media_copyright_notice'));
     $disclaimerSet = filled($settings->getAttribute('legal_disclaimer'));
@@ -32,6 +23,6 @@
     <x-admin.metric label="Changes · 30d" :value="(string) $changesLast30Days" description="General updates" />
     <x-admin.metric label="Public email" :value="$publicEmailStatus" description="Public contact" />
     <x-admin.metric label="Contact delivery" :value="$contactDeliveryStatus" description="Private recipient" />
-    <x-admin.metric label="Social profiles" :value="$socialProfilesValue" description="Visible / configured" />
+    <x-admin.metric label="Social profiles" :value="(string) $socialProfilesCount" description="Configured" />
     <x-admin.metric label="Legal" :value="$legalStatus" description="Copyright + disclaimer" />
 </x-admin.metrics>
