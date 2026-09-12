@@ -147,7 +147,9 @@
 }
 
 .admin-metric__value {
-    line-height: 1.12;
+    line-height: 1.2;
+    padding-bottom: .08em;
+    margin-bottom: -.08em;
 }
 
 .admin-workspace__summary span,
