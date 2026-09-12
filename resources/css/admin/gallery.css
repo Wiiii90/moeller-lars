@@ -230,6 +230,10 @@
     flex-wrap: nowrap;
 }
 
+.gallery-workspace__result-surface > .admin-empty-state {
+    border-top: 0;
+}
+
 .gallery-workspace__visual {
     width: 100%;
     padding: 0;
