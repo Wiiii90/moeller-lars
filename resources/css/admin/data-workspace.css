@@ -75,22 +75,14 @@
     flex: 0 0 auto;
 }
 
-.media-workspace__controls {
-    display: grid;
-    gap: .85rem;
-    align-items: end;
-}
-
 .admin-task-controls,
 .custom-page-workspace__controls,
-.gallery-workspace__controls,
-.media-workspace__controls {
+.gallery-workspace__controls {
     padding: .85rem 0;
 }
 
 .admin-task-controls,
-.custom-page-workspace__controls,
-.media-workspace__controls {
+.custom-page-workspace__controls {
     border-bottom: 1px solid var(--admin-line-strong);
 }
 
@@ -101,9 +93,7 @@
 .admin-task-field,
 .admin-task-control-group,
 .gallery-workspace__field,
-.gallery-workspace__control-group,
-.media-workspace__field,
-.media-workspace__control-group {
+.gallery-workspace__control-group {
     display: grid;
     min-width: 0;
     gap: .28rem;
@@ -121,9 +111,7 @@
 .admin-task-field > span,
 .admin-task-control-label,
 .gallery-workspace__field > span,
-.gallery-workspace__control-label,
-.media-workspace__field > span,
-.media-workspace__control-label {
+.gallery-workspace__control-label {
     color: var(--admin-muted);
     font-size: .68rem;
     font-weight: 700;
@@ -139,9 +127,7 @@
 .admin-task-field input,
 .admin-task-field select,
 .gallery-workspace__field input,
-.gallery-workspace__field select,
-.media-workspace__field input,
-.media-workspace__field select {
+.gallery-workspace__field select {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
@@ -165,17 +151,14 @@
 .admin-task-field input:focus,
 .admin-task-field select:focus,
 .gallery-workspace__field input:focus,
-.gallery-workspace__field select:focus,
-.media-workspace__field input:focus,
-.media-workspace__field select:focus {
+.gallery-workspace__field select:focus {
     border-color: var(--admin-accent);
 }
 
 .admin-field input::placeholder,
 .admin-data-field input::placeholder,
 .admin-task-field input::placeholder,
-.gallery-workspace__field input::placeholder,
-.media-workspace__field input::placeholder {
+.gallery-workspace__field input::placeholder {
     color: var(--admin-faint);
     opacity: 1;
 }
@@ -190,14 +173,12 @@
 
 .admin-control-bar .admin-action,
 .admin-data-controls .admin-action,
-.gallery-workspace__controls .admin-action,
-.media-workspace__controls .admin-action {
+.gallery-workspace__controls .admin-action {
     min-height: var(--admin-control-height);
 }
 
 .admin-data-control-group > .admin-action,
-.gallery-workspace__control-group > .admin-action,
-.media-workspace__control-group > .admin-action {
+.gallery-workspace__control-group > .admin-action {
     justify-self: start;
 }
 
@@ -431,17 +412,12 @@
 
     .admin-field,
     .admin-control-group,
-    .admin-data-control-group,
-    .media-workspace__control-group {
+    .admin-data-control-group {
         width: 100%;
     }
 
     .admin-control-group__actions {
         flex-wrap: wrap;
-    }
-
-    .media-workspace__controls {
-        grid-template-columns: 1fr;
     }
 
     .admin-pager,
