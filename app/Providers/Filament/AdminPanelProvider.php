@@ -29,6 +29,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -44,7 +45,7 @@ class AdminPanelProvider extends PanelProvider
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
             ->brandName('Admin Area')
-            ->brandLogo(fn () => view('filament.partials.admin-brand'))
+            ->brandLogo(fn (): HtmlString => $this->adminGreeting())
             ->favicon(asset('admin-favicon.svg').'?v=aperture-1')
             ->homeUrl(fn (): string => route('home'))
             ->breadcrumbs(false)
@@ -86,6 +87,14 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
                 DeferMatomoReporting::class,
             ], isPersistent: true);
+    }
+
+    private function adminGreeting(): HtmlString
+    {
+        $name = trim((string) (auth()->user()?->name ?? ''));
+        $greeting = $name !== '' ? "Moin, {$name}!" : 'Admin Area';
+
+        return new HtmlString(e($greeting));
     }
 
     private function navigation(NavigationBuilder $builder): NavigationBuilder
