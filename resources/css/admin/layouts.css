@@ -235,6 +235,23 @@ html.fi select option:disabled {
 }
 
 @media (min-width: 1024px) {
+    /*
+     * Keep the desktop shell on one horizontal coordinate system regardless of
+     * whether a classic document scrollbar is currently present. Filament
+     * centers .fi-main inside .fi-layout; 100% shrinks with the document
+     * scrollport, while 100vw remains tied to the layout viewport. The deliberate
+     * scrollbar-width overhang is clipped horizontally instead of reserving an
+     * empty gutter or compensating individual pages with transforms/offsets.
+     */
+    html.fi,
+    body.fi-body {
+        overflow-x: clip;
+    }
+
+    .fi-layout {
+        width: 100vw;
+    }
+
     .fi-main {
         width: min(100%, calc(var(--admin-workspace-max-width) + var(--admin-workspace-gutter) + var(--admin-workspace-gutter)));
         max-width: calc(var(--admin-workspace-max-width) + var(--admin-workspace-gutter) + var(--admin-workspace-gutter)) !important;
