@@ -32,10 +32,17 @@
         refreshTimer: null,
         resizeObserver: null,
         fitScale: 1,
-        magnifier: false,
-        magnifierX: null,
-        magnifierY: null,
-        zoomFactor: 1.8,
+        zoom: 1,
+        minZoom: 1,
+        maxZoom: 3,
+        panX: 0,
+        panY: 0,
+        dragging: false,
+        pointerId: null,
+        dragStartX: 0,
+        dragStartY: 0,
+        dragStartPanX: 0,
+        dragStartPanY: 0,
         init() {
             this.$nextTick(() => {
                 this.fitPreview()
@@ -85,38 +92,88 @@
 
             frame.style.width = `${targetWidth}px`
             frame.style.height = `${targetHeight}px`
+            this.clampPan()
             this.applyPreviewTransform()
         },
         applyPreviewTransform() {
             const frame = this.$refs.frame
-            const page = this.$refs.page
-            if (! frame || ! page) return
+            if (! frame) return
 
-            const zoom = this.magnifier ? this.zoomFactor : 1
-            const x = this.magnifierX ?? (page.clientWidth / 2)
-            const y = this.magnifierY ?? (page.clientHeight / 2)
             frame.style.transformOrigin = 'top left'
-            frame.style.left = this.magnifier ? `${x * (1 - zoom)}px` : '0px'
-            frame.style.top = this.magnifier ? `${y * (1 - zoom)}px` : '0px'
-            frame.style.transform = `scale(${this.fitScale * zoom})`
+            frame.style.left = `${this.panX}px`
+            frame.style.top = `${this.panY}px`
+            frame.style.transform = `scale(${this.fitScale * this.zoom})`
         },
-        toggleMagnifier() {
-            this.magnifier = ! this.magnifier
-            if (! this.magnifier) {
-                this.magnifierX = null
-                this.magnifierY = null
+        clampPan() {
+            const page = this.$refs.page
+            if (! page) return
+
+            if (this.zoom <= this.minZoom) {
+                this.zoom = this.minZoom
+                this.panX = 0
+                this.panY = 0
+                return
             }
+
+            const minX = Math.min(0, page.clientWidth * (1 - this.zoom))
+            const minY = Math.min(0, page.clientHeight * (1 - this.zoom))
+            this.panX = Math.max(minX, Math.min(0, this.panX))
+            this.panY = Math.max(minY, Math.min(0, this.panY))
+        },
+        changeZoom(step) {
+            const page = this.$refs.page
+            if (! page) return
+
+            const previousZoom = this.zoom
+            const nextZoom = Math.max(this.minZoom, Math.min(this.maxZoom, Math.round((previousZoom + step) * 100) / 100))
+            if (nextZoom === previousZoom) return
+
+            if (nextZoom === this.minZoom) {
+                this.zoom = this.minZoom
+                this.panX = 0
+                this.panY = 0
+                this.applyPreviewTransform()
+                return
+            }
+
+            const ratio = nextZoom / previousZoom
+            const centerX = page.clientWidth / 2
+            const centerY = page.clientHeight / 2
+            this.panX = centerX - ((centerX - this.panX) * ratio)
+            this.panY = centerY - ((centerY - this.panY) * ratio)
+            this.zoom = nextZoom
+            this.clampPan()
             this.applyPreviewTransform()
         },
-        moveMagnifier(event) {
-            if (! this.magnifier) return
+        startPan(event) {
+            if (this.zoom <= this.minZoom || (event.button !== undefined && event.button !== 0)) return
 
             const page = this.$refs.page
             if (! page) return
-            const rect = page.getBoundingClientRect()
-            this.magnifierX = Math.max(0, Math.min(rect.width, event.clientX - rect.left))
-            this.magnifierY = Math.max(0, Math.min(rect.height, event.clientY - rect.top))
+
+            event.preventDefault()
+            this.dragging = true
+            this.pointerId = event.pointerId
+            this.dragStartX = event.clientX
+            this.dragStartY = event.clientY
+            this.dragStartPanX = this.panX
+            this.dragStartPanY = this.panY
+            page.setPointerCapture?.(event.pointerId)
+        },
+        movePan(event) {
+            if (! this.dragging || event.pointerId !== this.pointerId) return
+
+            this.panX = this.dragStartPanX + (event.clientX - this.dragStartX)
+            this.panY = this.dragStartPanY + (event.clientY - this.dragStartY)
+            this.clampPan()
             this.applyPreviewTransform()
+        },
+        endPan(event) {
+            if (! this.dragging || event.pointerId !== this.pointerId) return
+
+            this.$refs.page?.releasePointerCapture?.(event.pointerId)
+            this.dragging = false
+            this.pointerId = null
         },
         refreshPreview() {
             window.clearTimeout(this.refreshTimer)
@@ -158,12 +215,22 @@
             <button
                 class="general-live-preview__mode general-live-preview__tool"
                 type="button"
-                x-on:click="toggleMagnifier()"
-                x-bind:class="{ 'is-active': magnifier }"
-                x-bind:aria-pressed="magnifier.toString()"
-                title="Magnify preview"
+                x-on:click="changeZoom(-0.25)"
+                x-bind:disabled="zoom <= minZoom"
+                title="Zoom out"
+                aria-label="Zoom out preview"
             >
-                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::PreviewZoom->mini()" />
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::PreviewZoomOut->mini()" />
+            </button>
+            <button
+                class="general-live-preview__mode general-live-preview__tool"
+                type="button"
+                x-on:click="changeZoom(0.25)"
+                x-bind:disabled="zoom >= maxZoom"
+                title="Zoom in"
+                aria-label="Zoom in preview"
+            >
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::PreviewZoomIn->mini()" />
             </button>
             <a
                 class="general-live-preview__mode general-live-preview__tool"
@@ -199,8 +266,11 @@
             <div
                 x-ref="page"
                 class="general-live-preview__page"
-                x-bind:class="{ 'is-magnifying': magnifier }"
-                x-on:mousemove="moveMagnifier($event)"
+                x-bind:class="{ 'is-zoomed': zoom > minZoom, 'is-dragging': dragging }"
+                x-on:pointerdown="startPan($event)"
+                x-on:pointermove="movePan($event)"
+                x-on:pointerup="endPan($event)"
+                x-on:pointercancel="endPan($event)"
             >
                 <iframe
                     x-ref="frame"

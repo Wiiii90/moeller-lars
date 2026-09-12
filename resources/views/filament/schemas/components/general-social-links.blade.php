@@ -41,11 +41,6 @@
                         x-data="{
                             editPlatform: @js($platform === ''),
                             editUrl: @js($url === ''),
-                            editAll() {
-                                this.editPlatform = true
-                                this.editUrl = true
-                                this.$nextTick(() => this.$refs.platform?.focus())
-                            },
                         }"
                     >
                         <td class="general-social-table__order">
@@ -112,12 +107,13 @@
                         </td>
                         <td class="admin-table__actions general-social-table__actions">
                             <x-admin.toolbar>
-                                <button class="admin-action general-social-table__edit-action" type="button" x-on:click="editAll()">
-                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" />
-                                    <span>Edit</span>
-                                </button>
                                 <button class="admin-action admin-order-action" type="button" wire:click="moveSocialLink({{ $index }}, 'up')" @disabled($index === 0) aria-label="Move social link {{ $index + 1 }} up">↑</button>
                                 <button class="admin-action admin-order-action" type="button" wire:click="moveSocialLink({{ $index }}, 'down')" @disabled($index === count($links) - 1) aria-label="Move social link {{ $index + 1 }} down">↓</button>
+                                <button
+                                    class="admin-action general-social-table__edit-action"
+                                    type="button"
+                                    wire:click="mountAction('editSocialLink', { index: {{ $index }} })"
+                                >Edit</button>
                                 <button class="admin-action is-danger" type="button" wire:click="deleteSocialLink({{ $index }})">Delete</button>
                             </x-admin.toolbar>
                         </td>

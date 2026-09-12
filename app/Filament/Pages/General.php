@@ -353,6 +353,85 @@ final class General extends Page
         $this->data['background_secondary_color'] = $this->data['background_gradient_end'] ?? null;
     }
 
+    public function editSocialLinkAction(): Action
+    {
+        return Action::make('editSocialLink')
+            ->label('Edit')
+            ->modalHeading('Edit social media profile')
+            ->fillForm(function (array $arguments): array {
+                $link = $this->socialLinkForAction($arguments);
+
+                return [
+                    'platform' => (string) ($link['platform'] ?? ''),
+                    'url' => (string) ($link['url'] ?? ''),
+                ];
+            })
+            ->schema([
+                Select::make('platform')
+                    ->label('Platform')
+                    ->options(\App\Domain\Content\SocialLinks::options())
+                    ->native()
+                    ->required(),
+                TextInput::make('url')
+                    ->label('Profile URL')
+                    ->url()
+                    ->maxLength(2048)
+                    ->required(),
+            ])
+            ->modalSubmitActionLabel('Save')
+            ->action(function (array $data, array $arguments): void {
+                $index = $this->socialLinkIndexForAction($arguments);
+                if ($index === null) {
+                    return;
+                }
+
+                $links = $this->socialLinks();
+                $platform = (string) ($data['platform'] ?? '');
+                $url = (string) ($data['url'] ?? '');
+
+                foreach ($links as $otherIndex => $link) {
+                    if ($otherIndex !== $index && ($link['platform'] ?? null) === $platform) {
+                        throw ValidationException::withMessages([
+                            'platform' => 'Each social platform can only be configured once.',
+                        ]);
+                    }
+                }
+
+                $links[$index] = [
+                    'platform' => $platform,
+                    'url' => $url,
+                ];
+                $links = array_values($links);
+
+                try {
+                    app(AdminSettingsService::class)->updatePublicContent(
+                        PublicContentSetting::general(),
+                        ['social_links' => $links],
+                    );
+                } catch (ValidationException $exception) {
+                    $mapped = [];
+                    foreach ($exception->errors() as $key => $messages) {
+                        if (str_ends_with($key, '.platform')) {
+                            $mapped['platform'] = $messages;
+                        } elseif (str_ends_with($key, '.url')) {
+                            $mapped['url'] = $messages;
+                        }
+                    }
+
+                    throw ValidationException::withMessages(
+                        $mapped !== [] ? $mapped : ['url' => 'This social profile could not be saved.'],
+                    );
+                } catch (Throwable $exception) {
+                    report($exception);
+                    throw ValidationException::withMessages([
+                        'url' => 'This social profile could not be saved. Please try again.',
+                    ]);
+                }
+
+                $this->data['social_links'] = $links;
+            });
+    }
+
     public function addSocialLink(): void
     {
         if (! is_array($this->data)) {
@@ -592,6 +671,30 @@ final class General extends Page
         return is_array($this->data['social_links'] ?? null)
             ? array_values(array_filter($this->data['social_links'], 'is_array'))
             : [];
+    }
+
+    /** @return array<string, mixed> */
+    private function socialLinkForAction(array $arguments): array
+    {
+        $index = $this->socialLinkIndexForAction($arguments);
+        if ($index === null) {
+            return [];
+        }
+
+        $links = $this->socialLinks();
+
+        return $links[$index] ?? [];
+    }
+
+    private function socialLinkIndexForAction(array $arguments): ?int
+    {
+        $candidate = $arguments['index'] ?? null;
+        $index = filter_var($candidate, FILTER_VALIDATE_INT);
+        if ($index === false || ! isset($this->data['social_links'][$index]) || ! is_array($this->data['social_links'][$index])) {
+            return null;
+        }
+
+        return (int) $index;
     }
 
     /** @return array<string, string> */

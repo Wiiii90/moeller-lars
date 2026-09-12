@@ -189,21 +189,32 @@
 
 .admin-general .admin-form-label-with-help {
     gap: .2rem;
-    align-items: center;
+    align-items: baseline;
     line-height: 1.25;
 }
 
-.admin-general .admin-form-label-with-help .admin-help,
-.admin-general .admin-form-label-with-help .admin-help__trigger {
+.admin-general .admin-form-label-with-help .admin-help {
     width: 1rem;
     height: 1rem;
     margin-inline-start: 0;
-    align-self: center;
+    align-self: baseline;
+}
+
+.admin-general .admin-form-label-with-help .admin-help__trigger {
+    position: relative;
+    top: .12em;
+    width: 1rem;
+    height: 1rem;
+    margin-inline-start: 0;
 }
 
 .admin-general .admin-form-label-with-help .admin-help__trigger svg {
     width: .78rem;
     height: .78rem;
+}
+
+.dark .admin-general .admin-help__popover {
+    background: #181818;
 }
 
 .admin-general .general-separator {
@@ -411,6 +422,11 @@
     outline: none;
 }
 
+.general-live-preview__mode:disabled {
+    opacity: .34;
+    cursor: default;
+}
+
 /* Preview frame */
 .general-live-preview__viewport {
     box-sizing: border-box;
@@ -519,12 +535,19 @@
     pointer-events: auto;
 }
 
-.general-live-preview__page.is-magnifying {
-    cursor: zoom-in;
+.general-live-preview__page.is-zoomed {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
 }
 
-.general-live-preview__page.is-magnifying iframe {
+.general-live-preview__page.is-zoomed.is-dragging {
+    cursor: grabbing;
+}
+
+.general-live-preview__page.is-zoomed iframe {
     pointer-events: none !important;
+    user-select: none;
 }
 
 .general-live-preview__device.is-mobile .general-live-preview__browser {
@@ -560,7 +583,11 @@
 /* Social Media is deliberately small: no search/filter/selection layer. */
 .general-social-section {
     display: grid;
-    gap: var(--admin-section-gap);
+    gap: 0;
+}
+
+.general-social-section__heading {
+    margin-bottom: var(--admin-section-gap);
 }
 
 .general-social-table > table {
@@ -640,17 +667,27 @@
 }
 
 .general-social-table__actions .admin-toolbar {
-    justify-content: flex-end;
-    flex-wrap: nowrap;
+    display: grid;
+    width: 100%;
+    max-width: 22rem;
+    grid-template-columns: 2rem 2rem minmax(3.5rem, 1fr) minmax(4rem, 1fr);
+    gap: .25rem;
+    align-items: center;
+    justify-content: start;
 }
 
-.general-social-table__edit-action {
-    gap: .3rem;
+.general-social-table__actions .admin-action {
+    min-width: 0;
+    justify-content: center;
 }
 
-.general-social-table__edit-action svg {
-    width: .9rem;
-    height: .9rem;
+.general-social-table__actions .admin-order-action {
+    width: 2rem;
+    padding-inline: 0;
+}
+
+.general-social-table + .admin-add-row {
+    margin-top: 0;
 }
 
 @media (max-width: 900px) {

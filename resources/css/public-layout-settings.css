@@ -7,3 +7,9 @@
 .site-content {
     padding-inline: clamp(var(--public-mobile-inset), var(--public-content-padding), 20vw);
 }
+
+/* Keep the preview marker clear of the persistent right-hand scroll track. */
+.public-preview-badge {
+    right: auto;
+    left: .75rem;
+}
