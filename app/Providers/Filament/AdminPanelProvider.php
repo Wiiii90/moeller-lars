@@ -8,7 +8,6 @@ use App\Filament\Pages\Analytics;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\General;
 use App\Filament\Pages\SitePages;
-use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\SiteNavigation;
@@ -106,7 +105,7 @@ class AdminPanelProvider extends PanelProvider
             ->extraAttributes(['data-admin-tree-root' => 'true']);
         $analyticsItem = Analytics::getNavigationItems()[0]->group(null);
         $activityItem = Activity::getNavigationItems()[0]->group(null);
-        $storageItem = StorageCapacity::getNavigationItems()[0]->group(null);
+        $storageItem = MediaAssetResource::getNavigationItems()[0]->group(null);
         $previewItem = NavigationItem::make('Preview')
             ->group(null)
             ->icon(AdminIcon::Preview)
@@ -133,7 +132,6 @@ class AdminPanelProvider extends PanelProvider
             ->items([
                 ...Dashboard::getNavigationItems(),
                 $generalItem,
-                ...MediaAssetResource::getNavigationItems(),
                 $pagesItem,
                 $analyticsItem,
                 $activityItem,
