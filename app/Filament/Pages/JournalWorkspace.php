@@ -206,7 +206,7 @@ final class JournalWorkspace extends Page
         if ($this->journalTemplate() === JournalTemplate::Blog) {
             $records = $this->selectedPosts();
             if ($direction === 'down') { $records = $records->reverse(); }
-            [$ok, $failed] = $this->bestEffort($records, fn (BlogPost $post): bool => app(JournalEntryOrderService::class)->moveToPosition($post, $direction));
+            [$ok, $failed] = $this->bestEffort($records, fn (BlogPost $post): bool => app(BlogEditorialService::class)->move($post, $direction));
             $this->notifyBatch('posts reordered', $ok, $failed);
             $this->loadPosts(false);
             return;
