@@ -1,14 +1,13 @@
 /* Canonical Visual Stage geometry.
  * Six metric columns resolve into three stage thirds. Divider axes match the
- * 2/6 and 4/6 metric boundaries. Shared dividers extend only part-way into the
- * intentional stage-to-followup breathing room so every stage keeps the same
- * visible lower gap before the full-width rule.
+ * 2/6 and 4/6 metric boundaries. Shared dividers stay inside the stage and
+ * leave a consistent lower breathing room before the follow-up rule.
  */
 
 :root {
     --admin-visual-stage-height: 23.5rem;
     --admin-stage-divider-inset: .25rem;
-    --admin-stage-divider-bottom-extension: .75rem;
+    --admin-stage-divider-bottom-extension: var(--admin-stage-pane-space);
     --admin-stage-pane-space: var(--admin-section-gap);
 }
 
@@ -49,7 +48,7 @@
     position: absolute;
     z-index: 8;
     top: var(--admin-stage-divider-inset);
-    bottom: calc(0rem - var(--admin-stage-divider-bottom-extension));
+    bottom: var(--admin-stage-divider-bottom-extension);
     width: 1px;
     background: var(--admin-line);
     content: "";
@@ -102,8 +101,7 @@
     border-left: 0 !important;
 }
 
-/* Home and Analytics intentionally reach the exact 2/3 axis. The Analytics
- * canvas midpoint therefore lands on the 1/3 metric boundary. */
+/* Home and Analytics intentionally reach the exact 2/3 axis. */
 .home-hero-surface > .home-hero-surface__visual,
 .analytics-visual-stage > .analytics-world {
     box-sizing: border-box;
@@ -111,6 +109,13 @@
     margin: 0 !important;
     padding-right: 0 !important;
     padding-left: 0 !important;
+}
+
+/* Analytics may have a schema wrapper as the first stage child. Remove the
+ * generic pane padding there too, otherwise the map becomes one pane-space
+ * narrower and its 50% meridian shifts half that amount to the left. */
+.analytics-visual-stage > :first-child {
+    padding-right: 0 !important;
 }
 
 .home-hero-surface__visual {
