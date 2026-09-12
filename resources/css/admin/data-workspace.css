@@ -15,8 +15,15 @@
     min-height: 0;
 }
 
+/* Schema-backed pages can keep the stage and its follow-up in one block so
+ * framework grid gaps do not alter the shared stage rhythm. */
+.admin-visual-stage-block > .fi-sc-grid {
+    gap: 0 !important;
+}
+
 .admin-visual-stage + .admin-data-controls,
-.admin-visual-stage + .admin-visual-stage-followup {
+.admin-visual-stage + .admin-visual-stage-followup,
+.admin-visual-stage-block .admin-visual-stage-followup {
     margin-top: var(--admin-section-space);
     padding-top: var(--admin-section-gap);
     border-top: 1px solid var(--admin-line-strong);
@@ -26,7 +33,7 @@
     padding-bottom: var(--admin-section-gap);
 }
 
-.admin-visual-stage-followup > .admin-data-controls {
+.admin-visual-stage-followup .admin-data-controls {
     padding-top: 0;
     padding-bottom: var(--admin-section-gap);
 }
