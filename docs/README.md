@@ -13,6 +13,7 @@ These describe the durable application architecture/behavior that current accept
 - [MEDIA.md](MEDIA.md) — image/video/audio ingest, Rich Text references, public/preview policy and guarded deletion
 - [ANALYTICS.md](ANALYTICS.md) — Matomo/reporting and operational-metrics boundary
 - [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md) — admin performance budget and investigation rules
+- [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — direct/worker browser-reconciliation modes, shared Visual Stage ownership, icon semantics and local preview loop
 - [RELEASE.md](RELEASE.md) — immutable image, preview, runtime, persistence and release contract
 - [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md) — application/platform ownership boundary; mutable operational implementation lives in `server-platform`
 
@@ -25,12 +26,15 @@ Repository-root workflow documents are intentionally kept close to `AGENTS.md` b
 - [AGENTS.md](../AGENTS.md) — branch/orchestration/worker/reconciliation contract and central technology rules
 - [ui-skills.md](../ui-skills.md) — admin-only UI grammar for heading/action rows, metrics, filters, selection, tables, grids, DnD, dialogs and browser acceptance
 - [followup-skill.md](../followup-skill.md) — lossless continuation-prompt contract for handing a long orchestration chat to a new chat
+- [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — use when the user is doing live browser acceptance and may intentionally choose direct work on `dev` rather than worker-only orchestration
+
+The active collaboration mode is part of the handoff state. A continuation chat should not silently replace a successful direct browser-repair loop with worker delegation, or vice versa.
 
 ## Live work and acceptance status
 
 GitHub Issues and the current browser/orchestration review are the source of truth for **unfinished work, browser acceptance and current blockers**.
 
-A source-reviewed or technically running reconciliation candidate is not automatically product accepted. A durable contract may be implemented on a temporary browser branch before it reaches `main`; documentation should describe the intended/current contract without pretending that transient browser acceptance is complete.
+A source-reviewed or technically running reconciliation candidate is not automatically product accepted. A durable contract may be implemented on a temporary browser branch or directly on explicitly authorized `dev` before it reaches `main`; documentation should describe the intended/current contract without pretending that transient browser acceptance is complete.
 
 Browser feedback from the exact current candidate overrides stale acceptance wording. Temporary worker branches, candidate SHAs and local container state belong in the current continuation handoff, not in timeless architecture docs.
 
@@ -68,4 +72,5 @@ Accepted ADRs are historical decisions and are intentionally not rewritten to mi
 - database/model names may retain historical persistence terminology where renaming adds migration risk; document that boundary explicitly rather than exposing the old name as product language;
 - distinguish `MediaAsset` being referenced from it being publicly deliverable;
 - keep the central Rich Text/media stack singular rather than documenting editor-specific parallel implementations;
+- shared admin geometry belongs to shared tokens/primitives; do not document page-local compensations as architecture;
 - never include secret values, production dumps, private media or access tokens.
