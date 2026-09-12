@@ -89,6 +89,13 @@ final class GalleryWorkspace extends Page
         $this->refreshGalleryMetrics();
     }
 
+    public function getTitle(): string
+    {
+        $name = $this->galleryContext['name'] ?? null;
+
+        return is_string($name) && trim($name) !== '' ? trim($name) : 'Gallery artworks';
+    }
+
     public function updatedSearch(): void
     {
         $this->projectArtworks();
