@@ -13,6 +13,8 @@ class ListCvEntries extends Page
 {
     protected static string $resource = CvEntryResource::class;
 
+    protected static ?string $title = 'Vita / CV';
+
     protected string $view = 'filament.resources.cv-entries.pages.list-cv-entries';
 
     /** @var list<array<string, mixed>> */
