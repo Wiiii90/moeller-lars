@@ -10,6 +10,8 @@ final class ListBlogPosts extends Page
 {
     protected static string $resource = BlogPostResource::class;
 
+    protected static ?string $title = 'Journal';
+
     protected string $view = 'filament.resources.blog-posts.pages.list-blog-posts';
 
     public function mount(): void
