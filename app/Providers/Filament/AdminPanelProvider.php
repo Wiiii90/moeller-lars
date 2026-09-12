@@ -44,6 +44,7 @@ class AdminPanelProvider extends PanelProvider
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
             ->brandName('Lars Möller')
+            ->favicon(asset('admin-favicon.svg'))
             ->homeUrl(fn (): string => route('home'))
             ->breadcrumbs(false)
             ->globalSearch(false)
