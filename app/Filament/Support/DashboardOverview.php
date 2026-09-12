@@ -9,7 +9,7 @@ use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaStorageUnits;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
-use App\Filament\Pages\StorageCapacity;
+use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Models\Artwork;
 use App\Models\SiteSection;
 
@@ -154,7 +154,7 @@ final class DashboardOverview
                 'used' => '—',
                 'remaining' => '—',
                 'allowance' => '—',
-                'url' => StorageCapacity::getUrl(),
+                'url' => MediaAssetResource::getUrl('index'),
             ];
         }
 
@@ -200,7 +200,7 @@ final class DashboardOverview
             'used' => $authoritative,
             'remaining' => $remaining,
             'allowance' => $allowance,
-            'url' => StorageCapacity::getUrl(),
+            'url' => MediaAssetResource::getUrl('index'),
         ];
     }
 
