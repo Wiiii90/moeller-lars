@@ -44,6 +44,7 @@ class AdminPanelProvider extends PanelProvider
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
             ->brandName('Admin Area')
+            ->brandLogo(fn () => view('filament.partials.admin-brand'))
             ->favicon(asset('admin-favicon.svg').'?v=aperture-1')
             ->homeUrl(fn (): string => route('home'))
             ->breadcrumbs(false)
