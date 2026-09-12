@@ -29,7 +29,7 @@
                         <span>Authoritative used</span>
                     @else
                         <strong>—</strong>
-                        <span>Measurement unavailable</span>
+                        <span>{{ ($capacity['status'] ?? null) === 'not_measured' ? 'Measurement needed' : 'Measurement unavailable' }}</span>
                     @endif
                 </div>
             </div>
@@ -38,13 +38,18 @@
                 <p class="admin-storage__eyebrow">Capacity</p>
                 <strong>{{ $capacity['authoritative'] ?? '—' }} authoritative</strong>
                 <span>
-                    @if ($capacity['configured'] ?? false)
+                    @if (($capacity['status'] ?? null) === 'not_measured')
+                        Refresh when you need a current authoritative measurement
+                    @elseif ($capacity['configured'] ?? false)
                         {{ $capacity['remaining'] ?? '—' }} remaining of {{ $capacity['allowance'] ?? '—' }}
                     @else
                         No operator allowance configured
                     @endif
                 </span>
                 <small>{{ $capacity['generated'] ?? '—' }} generated · rebuildable and excluded from allowance</small>
+                <div class="admin-storage__capacity-actions">
+                    <button class="admin-action" type="button" wire:click="refreshStorageMeasurement">Refresh measurement</button>
+                </div>
             </div>
         </div>
 
@@ -69,7 +74,9 @@
                         <span class="admin-storage__segment-value">{{ $row['display_bytes'] }} · {{ number_format($row['percent'], 1) }}%</span>
                     </div>
                 @empty
-                    <p class="admin-storage__empty">No authoritative originals are currently measurable.</p>
+                    <p class="admin-storage__empty">
+                        {{ ($capacity['status'] ?? null) === 'not_measured' ? 'Refresh the storage measurement to load the authoritative distribution.' : 'No authoritative originals are currently measurable.' }}
+                    </p>
                 @endforelse
             </div>
 
