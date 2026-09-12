@@ -5,6 +5,7 @@
  */
 
 :root {
+    --admin-visual-stage-height: 23.5rem;
     --admin-stage-divider-inset: .25rem;
     --admin-stage-pane-space: var(--admin-section-gap);
 }
@@ -16,6 +17,14 @@
     height: var(--admin-visual-stage-height);
     min-height: 0;
     margin-top: var(--admin-section-space);
+}
+
+/* General is followed by a plain schema separator rather than a data-control
+ * follow-up. Filament supplies 1.5rem between schema components; the extra
+ * .5rem restores the shared 2rem stage-to-follow-up rhythm without changing
+ * the stage itself. */
+.general-appearance-stage {
+    margin-bottom: .5rem;
 }
 
 :is(
