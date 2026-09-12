@@ -137,8 +137,8 @@
     margin: 0 !important;
 }
 
-/* Storage's left 2/3 are two exact internal thirds. The 1/3 boundary remains
- * intentionally invisible between Capacity and Distribution. */
+/* Storage uses an outer 2/3 + 1/3 rail and two exact internal thirds. The
+ * triptych modifier exposes both metric-aligned divider axes. */
 .admin-storage__visual-stage > .admin-storage__visual-main {
     padding-right: 0 !important;
 }
@@ -157,9 +157,8 @@
     padding-left: var(--admin-stage-pane-space);
 }
 
-/* Analytics / Storage / Home own content, not divider geometry. */
+/* Analytics and Home own content, not divider geometry. */
 .analytics-stage-rail,
-.admin-storage__context,
 .home-hero-rail {
     border-left: 0 !important;
 }
