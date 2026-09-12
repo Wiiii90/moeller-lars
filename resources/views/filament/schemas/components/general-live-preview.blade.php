@@ -19,6 +19,8 @@
     $device = isset($generalPage) && $generalPage instanceof \App\Filament\Pages\General
         ? $generalPage->previewDevice
         : 'desktop';
+    $previewWidth = $device === 'mobile' ? 390 : 1366;
+    $previewHeight = $device === 'mobile' ? 844 : 768;
 @endphp
 
 <aside
@@ -26,12 +28,44 @@
     aria-label="Live public preview"
     x-data="{
         refreshTimer: null,
+        resizeObserver: null,
+        init() {
+            this.$nextTick(() => {
+                this.fitPreview()
+                this.resizeObserver = new ResizeObserver(() => this.fitPreview())
+                this.resizeObserver.observe(this.$refs.page)
+            })
+        },
+        destroy() {
+            window.clearTimeout(this.refreshTimer)
+            this.resizeObserver?.disconnect()
+        },
+        fitPreview() {
+            const page = this.$refs.page
+            const frame = this.$refs.frame
+            const device = this.$refs.device
+            if (! page || ! frame || ! device) return
+
+            const targetWidth = Number(device.dataset.previewWidth)
+            const targetHeight = Number(device.dataset.previewHeight)
+            const availableWidth = page.clientWidth
+            const availableHeight = page.clientHeight
+            if (! targetWidth || ! targetHeight || ! availableWidth || ! availableHeight) return
+
+            const scale = Math.min(availableWidth / targetWidth, availableHeight / targetHeight)
+            frame.style.width = `${targetWidth}px`
+            frame.style.height = `${targetHeight}px`
+            frame.style.left = `${Math.max(0, (availableWidth - (targetWidth * scale)) / 2)}px`
+            frame.style.top = '0px'
+            frame.style.transform = `scale(${scale})`
+        },
         refreshPreview() {
             window.clearTimeout(this.refreshTimer)
             this.refreshTimer = window.setTimeout(() => {
                 const url = new URL(this.$refs.frame.src, window.location.origin)
                 url.searchParams.set('_appearance', Date.now().toString())
                 this.$refs.frame.src = url.toString()
+                this.$nextTick(() => this.fitPreview())
             }, 700)
         },
     }"
@@ -65,7 +99,12 @@
     </div>
 
     <div class="general-live-preview__viewport">
-        <div class="general-live-preview__device is-{{ $device }}">
+        <div
+            x-ref="device"
+            class="general-live-preview__device is-{{ $device }}"
+            data-preview-width="{{ $previewWidth }}"
+            data-preview-height="{{ $previewHeight }}"
+        >
             <div class="general-live-preview__browser" aria-hidden="true">
                 <span class="general-live-preview__browser-dots">
                     <i></i><i></i><i></i>
@@ -77,7 +116,7 @@
                     <span>{{ $previewHost }}{{ $previewPath }}</span>
                 </span>
             </div>
-            <div class="general-live-preview__page">
+            <div x-ref="page" class="general-live-preview__page">
                 <iframe
                     x-ref="frame"
                     src="{{ $previewUrl }}"
