@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\MediaAssets\Pages;
 
 use App\Domain\Media\MediaAssetEditorialService;
+use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\MediaReferenceCatalog;
+use App\Filament\Support\StorageWorkspaceOverview;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use DateTimeInterface;
@@ -39,13 +41,13 @@ final class ListMediaAssets extends Page
 
     private const DEFAULT_PAGE_SIZE = 50;
 
-    private const VIEW_COOKIE = 'admin_media_files_view';
+    private const VIEW_COOKIE = 'admin_storage_view';
 
     private const VIEW_COOKIE_MINUTES = 60 * 24 * 365;
 
     protected static string $resource = MediaAssetResource::class;
 
-    protected static ?string $title = 'Media Files';
+    protected static ?string $title = 'Storage';
 
     protected string $view = 'filament.resources.media-assets.pages.list-media-assets';
 
@@ -57,6 +59,15 @@ final class ListMediaAssets extends Page
 
     /** @var list<int> */
     public array $selectedAssets = [];
+
+    /** @var array<string, mixed> */
+    public array $capacity = [];
+
+    /** @var list<array<string, mixed>> */
+    public array $storageBreakdown = [];
+
+    /** @var array<string, mixed> */
+    public array $storageAttention = [];
 
     public string $type = 'all';
 
@@ -83,13 +94,7 @@ final class ListMediaAssets extends Page
 
     public int $libraryImages = 0;
 
-    public int $libraryVideos = 0;
-
-    public int $libraryAudio = 0;
-
     public int $libraryUnreferenced = 0;
-
-    public string $librarySize = '0 B';
 
     public function mount(): void
     {
@@ -97,6 +102,7 @@ final class ListMediaAssets extends Page
         $this->viewMode = is_string($storedView) && in_array($storedView, self::VIEW_MODES, true)
             ? $storedView
             : 'list';
+        $this->loadStorageOverview();
         $this->loadLibrary();
     }
 
@@ -183,6 +189,9 @@ final class ListMediaAssets extends Page
         }
 
         $this->loadLibrary();
+        if ($added > 0) {
+            $this->refreshStorageOverviewAfterMutation();
+        }
 
         if ($failures !== []) {
             $details = array_map(
@@ -212,8 +221,8 @@ final class ListMediaAssets extends Page
                 ->send();
         } elseif ($duplicates > 0) {
             Notification::make()
-                ->title('Already in Media Files')
-                ->body($total === 1 ? null : $duplicates.' files already exist in Media Files')
+                ->title('Already in Storage')
+                ->body($total === 1 ? null : $duplicates.' files already exist in Storage')
                 ->info()
                 ->send();
         }
@@ -454,6 +463,9 @@ final class ListMediaAssets extends Page
 
                 $this->selectedAssets = $this->normalizeSelectedAssets($remaining);
                 $this->loadLibrary();
+                if ($deleted > 0) {
+                    $this->refreshStorageOverviewAfterMutation();
+                }
 
                 if ($failed !== []) {
                     $details = array_slice(array_values(array_unique($failed)), 0, 4);
@@ -483,6 +495,20 @@ final class ListMediaAssets extends Page
     {
         $this->page = 1;
         $this->loadLibrary();
+    }
+
+    private function loadStorageOverview(): void
+    {
+        $overview = app(StorageWorkspaceOverview::class)->snapshot();
+        $this->capacity = $overview['capacity'];
+        $this->storageBreakdown = $overview['breakdown'];
+        $this->storageAttention = $overview['attention'];
+    }
+
+    private function refreshStorageOverviewAfterMutation(): void
+    {
+        app(MediaCapacityService::class)->forgetCachedSnapshot();
+        $this->loadStorageOverview();
     }
 
     private function loadLibrary(): void
@@ -554,10 +580,7 @@ final class ListMediaAssets extends Page
 
         $this->libraryFiles = $metrics['files'];
         $this->libraryImages = $metrics['images'];
-        $this->libraryVideos = $metrics['videos'];
-        $this->libraryAudio = $metrics['audio'];
         $this->libraryUnreferenced = $metrics['unreferenced'];
-        $this->librarySize = self::formatBytes($metrics['bytes']);
     }
 
     /** @return Builder<MediaAsset> */
@@ -702,11 +725,11 @@ final class ListMediaAssets extends Page
     {
         if ($total === 1) {
             if ($added === 1) {
-                return '1 file added to Media Files';
+                return '1 file added to Storage';
             }
 
             if ($duplicates === 1) {
-                return 'Already in Media Files';
+                return 'Already in Storage';
             }
 
             return '1 failed';
@@ -714,10 +737,10 @@ final class ListMediaAssets extends Page
 
         $parts = [];
         if ($added > 0) {
-            $parts[] = $added.' '.($added === 1 ? 'file' : 'files').' added'.($duplicates === 0 && $failed === 0 ? ' to Media Files' : '');
+            $parts[] = $added.' '.($added === 1 ? 'file' : 'files').' added'.($duplicates === 0 && $failed === 0 ? ' to Storage' : '');
         }
         if ($duplicates > 0) {
-            $parts[] = $duplicates.' already in Media Files';
+            $parts[] = $duplicates.' already in Storage';
         }
         if ($failed > 0) {
             $parts[] = $failed.' failed';
@@ -893,9 +916,10 @@ final class ListMediaAssets extends Page
             if ($fresh instanceof MediaAsset && $fresh->getAttribute('state') === 'deleted') {
                 $this->removeSelection($assetId);
                 $this->loadLibrary();
+                $this->refreshStorageOverviewAfterMutation();
                 Notification::make()
                     ->title('File cleanup failed')
-                    ->body('The file was removed from Media Files, but stored file cleanup could not be completed.')
+                    ->body('The file was removed from Storage, but stored file cleanup could not be completed.')
                     ->danger()
                     ->send();
 
@@ -915,6 +939,7 @@ final class ListMediaAssets extends Page
 
         $this->removeSelection($assetId);
         $this->loadLibrary();
+        $this->refreshStorageOverviewAfterMutation();
         Notification::make()->title('File deleted')->success()->send();
 
         return true;
