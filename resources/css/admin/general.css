@@ -1,77 +1,94 @@
-/* General Visual Stage: appearance controls and a device-aware live public preview. */
+/* General Visual Stage: appearance controls and device-aware public preview. */
 
 /*
  * General alone uses a local 3 x 3 matrix inside the canonical stage.
- * This is deliberately not part of the shared Visual Stage primitive.
- *
  * Desktop:
- *   appearance controls: x00 + x10
- *   preview:             x01 + x02 + x11 + x12
- *   page geometry:       x21 + x22
- *
- * Mobile preview mode:
- *   appearance controls: x00 + x01 + x10 + x11
- *   page geometry:       x20 + x21
- *   preview:             x02 + x12 + x22
+ *   appearance: x00 + x10
+ *   preview:    x01 + x02 + x11 + x12
+ *   geometry:   x21 + x22
+ * Mobile:
+ *   appearance: x00 + x01 + x10 + x11
+ *   geometry:   x20 + x21
+ *   preview:    x02 + x12 + x22
  */
 .general-appearance-stage {
-    min-width: 0;
-    overflow: visible;
-}
-
-.general-appearance-stage > .fi-sc-grid {
+    position: relative;
     display: grid !important;
     width: 100%;
-    height: 100%;
     min-width: 0;
     min-height: 0;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
     gap: 0 !important;
+    overflow: visible;
 }
 
-.general-appearance-stage > .fi-sc-grid > :nth-child(-n + 3) {
+/* Filament may insert schema/grid wrappers around the three stage blocks.
+ * Flatten only wrapper ancestors of those blocks so the named blocks become
+ * the actual grid items of General's matrix. Internal field grids stay intact. */
+.general-appearance-stage :not(
+    .general-appearance-stage__controls,
+    .general-appearance-stage__preview,
+    .general-appearance-stage__geometry
+):has(.general-appearance-stage__controls),
+.general-appearance-stage :not(
+    .general-appearance-stage__controls,
+    .general-appearance-stage__preview,
+    .general-appearance-stage__geometry
+):has(.general-appearance-stage__preview),
+.general-appearance-stage :not(
+    .general-appearance-stage__controls,
+    .general-appearance-stage__preview,
+    .general-appearance-stage__geometry
+):has(.general-appearance-stage__geometry) {
+    display: contents !important;
+}
+
+.general-appearance-stage__controls,
+.general-appearance-stage__preview,
+.general-appearance-stage__geometry {
     box-sizing: border-box;
+    width: 100%;
+    height: 100%;
     min-width: 0;
     min-height: 0;
-    align-self: stretch;
 }
 
-/* The outer General group contains exactly three stage components in order:
- * appearance controls, live preview, page geometry. Position those schema
- * items directly instead of inferring their wrappers from descendants. */
-.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > :nth-child(1) {
-    grid-column: 1 !important;
-    grid-row: 1 / span 2 !important;
+.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__controls {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    padding-right: var(--admin-stage-pane-space);
 }
 
-.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > :nth-child(2) {
-    grid-column: 2 / span 2 !important;
-    grid-row: 1 / span 2 !important;
+.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__preview {
+    grid-column: 2 / span 2;
+    grid-row: 1 / span 2;
 }
 
-.general-appearance-stage[data-preview-device="desktop"] > .fi-sc-grid > :nth-child(3) {
-    grid-column: 2 / span 2 !important;
-    grid-row: 3 !important;
+.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__geometry {
+    grid-column: 2 / span 2;
+    grid-row: 3;
 }
 
-.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > :nth-child(1) {
-    grid-column: 1 / span 2 !important;
-    grid-row: 1 / span 2 !important;
+.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__controls {
+    grid-column: 1 / span 2;
+    grid-row: 1 / span 2;
+    padding-right: var(--admin-stage-pane-space);
 }
 
-.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > :nth-child(2) {
-    grid-column: 3 !important;
-    grid-row: 1 / span 3 !important;
+.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__preview {
+    grid-column: 3;
+    grid-row: 1 / span 3;
 }
 
-.general-appearance-stage[data-preview-device="mobile"] > .fi-sc-grid > :nth-child(3) {
-    grid-column: 1 / span 2 !important;
-    grid-row: 3 !important;
+.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__geometry {
+    grid-column: 1 / span 2;
+    grid-row: 3;
+    padding-right: var(--admin-stage-pane-space);
 }
 
-/* General is the intentional divider exception. Desktop stops at the boundary
- * below the two-row laptop preview; mobile separates the full phone column. */
+/* General is the sole divider exception because its local matrix has a shorter
+ * desktop divider. Shared stage dividers remain centralized in stage.css. */
 .general-appearance-stage::after {
     position: absolute;
     z-index: 8;
@@ -89,42 +106,19 @@
 
 .general-appearance-stage[data-preview-device="mobile"]::after {
     left: 66.666667%;
-    bottom: var(--admin-stage-divider-inset);
-}
-
-.general-appearance-stage__controls,
-.general-appearance-stage__preview,
-.general-appearance-stage__geometry {
-    box-sizing: border-box;
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
+    bottom: var(--admin-stage-pane-space);
 }
 
 .general-appearance-stage__controls {
     overflow: hidden;
 }
 
-.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__controls {
-    padding-right: var(--admin-stage-pane-space);
-}
-
-.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__controls {
-    padding-right: var(--admin-stage-pane-space);
-}
-
-.general-appearance-stage__controls > *,
-.general-appearance-stage__geometry > * {
-    box-sizing: border-box;
-}
-
 .general-appearance-stage__preview {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    gap: .4rem;
-    overflow: hidden;
+    gap: .45rem;
     padding-left: var(--admin-stage-pane-space);
+    overflow: hidden;
 }
 
 .general-appearance-stage__geometry {
@@ -134,16 +128,14 @@
 }
 
 .general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__geometry {
-    padding-right: var(--admin-stage-pane-space);
     padding-left: 0;
 }
 
-.general-appearance-stage__geometry > .fi-sc-grid {
-    height: 100%;
-    align-items: center;
+.general-appearance-stage__geometry > * {
+    min-width: 0;
 }
 
-/* Keep all General Filament controls on the canonical line-based form grammar. */
+/* Canonical line-based General controls. */
 .admin-general .fi-input-wrp {
     box-sizing: border-box;
     width: 100%;
@@ -185,6 +177,7 @@
 
 .general-site-icon-control {
     width: 100%;
+    max-width: 100%;
 }
 
 .general-background-row,
@@ -192,10 +185,12 @@
     min-width: 0;
 }
 
+/* Narrow desktop appearance column: use two columns and two rows. */
 .general-appearance-stage[data-preview-device="desktop"] .general-background-row {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 
+/* Mobile gives appearance two stage columns, so all four controls fit in one row. */
 .general-appearance-stage[data-preview-device="mobile"] .general-background-row {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
 }
@@ -342,7 +337,6 @@
     min-height: 0;
     place-items: stretch center;
     overflow: hidden;
-    background: transparent;
 }
 
 .general-live-preview__device {
@@ -351,11 +345,11 @@
     display: grid;
     grid-template-rows: 1.7rem minmax(0, 1fr);
     overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--admin-text) 28%, var(--admin-line-strong));
+    border: 1px solid color-mix(in srgb, var(--admin-text) 30%, var(--admin-line-strong));
     background: var(--admin-surface);
     box-shadow:
         0 1px 0 color-mix(in srgb, var(--admin-text) 8%, transparent),
-        0 .5rem 1.25rem color-mix(in srgb, #000 9%, transparent);
+        0 .45rem 1.15rem color-mix(in srgb, #000 10%, transparent);
     transition: width .18s ease, height .18s ease, border-radius .18s ease;
 }
 
@@ -423,19 +417,19 @@
 }
 
 .general-live-preview__device.is-desktop {
-    width: min(100%, 48rem);
+    width: min(100%, 52rem);
     height: 100%;
-    border-radius: .35rem;
+    border-radius: .42rem;
 }
 
 .general-live-preview__device.is-mobile {
-    width: min(100%, 14rem);
+    width: min(100%, 14.5rem);
     height: 100%;
     max-width: 100%;
-    border-radius: .9rem;
+    border-radius: 1rem;
     box-shadow:
         inset 0 0 0 1px color-mix(in srgb, var(--admin-line-strong) 55%, transparent),
-        0 .5rem 1.25rem color-mix(in srgb, #000 9%, transparent);
+        0 .45rem 1.15rem color-mix(in srgb, #000 10%, transparent);
 }
 
 .general-live-preview__device.is-mobile .general-live-preview__browser {
@@ -460,13 +454,13 @@
 .general-live-preview__device.is-desktop iframe {
     width: 1180px;
     height: 760px;
-    transform: scale(.61);
+    transform: scale(.66);
 }
 
 .general-live-preview__device.is-mobile iframe {
     width: 390px;
     height: 844px;
-    transform: scale(.56);
+    transform: scale(.58);
 }
 
 @media (max-width: 900px) {
@@ -479,6 +473,7 @@
 
 @media (max-width: 760px) {
     .general-appearance-stage {
+        display: block !important;
         height: auto;
     }
 
@@ -486,24 +481,34 @@
         display: none;
     }
 
-    .general-appearance-stage > .fi-sc-grid {
-        height: auto;
-        grid-template-columns: 1fr !important;
-        grid-template-rows: auto !important;
-    }
-
-    .general-appearance-stage[data-preview-device] > .fi-sc-grid > :nth-child(-n + 3) {
-        grid-column: 1 !important;
-        grid-row: auto !important;
+    .general-appearance-stage :not(
+        .general-appearance-stage__controls,
+        .general-appearance-stage__preview,
+        .general-appearance-stage__geometry
+    ):has(.general-appearance-stage__controls),
+    .general-appearance-stage :not(
+        .general-appearance-stage__controls,
+        .general-appearance-stage__preview,
+        .general-appearance-stage__geometry
+    ):has(.general-appearance-stage__preview),
+    .general-appearance-stage :not(
+        .general-appearance-stage__controls,
+        .general-appearance-stage__preview,
+        .general-appearance-stage__geometry
+    ):has(.general-appearance-stage__geometry) {
+        display: revert !important;
     }
 
     .general-appearance-stage__controls,
     .general-appearance-stage__preview,
     .general-appearance-stage__geometry {
+        display: block;
+        width: 100%;
         height: auto;
+        margin-bottom: var(--admin-section-space);
+        padding-right: 0 !important;
+        padding-left: 0 !important;
         overflow: visible;
-        padding-right: 0;
-        padding-left: 0;
     }
 
     .general-layout-controls__fields {
