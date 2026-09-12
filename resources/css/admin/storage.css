@@ -109,6 +109,12 @@
     font-weight: 600;
 }
 
+.admin-storage__capacity-actions {
+    display: flex;
+    margin-top: .25rem;
+    justify-content: center;
+}
+
 .admin-storage__eyebrow {
     margin: 0;
     color: var(--admin-accent);
@@ -255,9 +261,14 @@
     justify-items: center;
 }
 
+.admin-storage .media-workspace__library {
+    --media-task-surface-header-height: 2.25rem;
+}
+
 /* Only the task-specific column distribution is local. Field/action geometry
  * comes from x-admin.controls and the shared admin-data-* primitives. */
 .admin-storage .media-workspace__controls {
+    display: grid;
     grid-template-columns:
         minmax(14rem, 2fr)
         minmax(7rem, .7fr)
@@ -266,8 +277,10 @@
         auto
         auto
         auto;
+    gap: .85rem;
     padding-top: 0;
     padding-bottom: var(--admin-section-gap);
+    align-items: end;
     border-bottom: 0;
 }
 
