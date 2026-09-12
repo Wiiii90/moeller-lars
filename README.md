@@ -51,7 +51,7 @@ Stop the local stack without discarding its database container:
 docker compose stop
 ```
 
-Browser-polish/reconciliation uses the canonical local preview image recipe at [`docker/Dockerfile.local-preview`](docker/Dockerfile.local-preview). Branch/review rules are owned by [AGENTS.md](AGENTS.md); CI, release-image and Validation contracts are owned by [docs/RELEASE.md](docs/RELEASE.md).
+Browser-polish/reconciliation uses the canonical local preview image recipe at [`docker/Dockerfile.local-preview`](docker/Dockerfile.local-preview). That image contains the built frontend assets, so a source pull alone does not update the running CSS/JavaScript; rebuild the preview image before judging frontend changes in the browser. Branch/review rules are owned by [AGENTS.md](AGENTS.md); the browser-reconciliation loop is summarized in [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md); CI, release-image and Validation contracts are owned by [docs/RELEASE.md](docs/RELEASE.md).
 
 ## Site structure
 
@@ -73,7 +73,10 @@ Start with:
 
 - [AGENTS.md](AGENTS.md) — branch/reconciliation/worker workflow and central technology rules
 - [ui-skills.md](ui-skills.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
+- [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md) — direct-vs-worker browser workflow, shared Visual Stage ownership and local preview loop
 - [followup-skill.md](followup-skill.md) — how to hand a long orchestration session to a new chat without losing exact Git/runtime/review state
+
+Small browser defects may be fixed directly on `dev` when the user explicitly chooses that mode. Larger independent source passes may use workers. The active collaboration mode is part of the review state; do not silently switch modes during a continuation handoff.
 
 ## Releases
 
