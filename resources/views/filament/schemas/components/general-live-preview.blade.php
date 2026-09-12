@@ -19,8 +19,9 @@
     $device = isset($generalPage) && $generalPage instanceof \App\Filament\Pages\General
         ? $generalPage->previewDevice
         : 'desktop';
-    $previewWidth = $device === 'mobile' ? 390 : 1366;
-    $previewHeight = $device === 'mobile' ? 844 : 768;
+    $previewWidth = $device === 'mobile' ? 393 : 1280;
+    $previewHeight = $device === 'mobile' ? 852 : 720;
+    $previewLabel = $device === 'mobile' ? 'Phone · 393 × 852' : 'Desktop · 1280 × 720';
 @endphp
 
 <aside
@@ -33,7 +34,7 @@
             this.$nextTick(() => {
                 this.fitPreview()
                 this.resizeObserver = new ResizeObserver(() => this.fitPreview())
-                this.resizeObserver.observe(this.$refs.page)
+                this.resizeObserver.observe(this.$refs.viewport)
             })
         },
         destroy() {
@@ -41,21 +42,33 @@
             this.resizeObserver?.disconnect()
         },
         fitPreview() {
+            const viewport = this.$refs.viewport
             const page = this.$refs.page
             const frame = this.$refs.frame
             const device = this.$refs.device
-            if (! page || ! frame || ! device) return
+            const browser = this.$refs.browser
+            if (! viewport || ! page || ! frame || ! device || ! browser) return
 
             const targetWidth = Number(device.dataset.previewWidth)
             const targetHeight = Number(device.dataset.previewHeight)
-            const availableWidth = page.clientWidth
-            const availableHeight = page.clientHeight
+            const availableWidth = viewport.clientWidth
+            const availableHeight = viewport.clientHeight
+            const browserHeight = browser.offsetHeight
             if (! targetWidth || ! targetHeight || ! availableWidth || ! availableHeight) return
 
-            const scale = Math.min(availableWidth / targetWidth, availableHeight / targetHeight)
+            const contentHeight = Math.max(1, availableHeight - browserHeight)
+            const scale = Math.min(availableWidth / targetWidth, contentHeight / targetHeight)
+            const renderedWidth = Math.max(1, Math.floor(targetWidth * scale))
+            const renderedHeight = Math.max(1, Math.floor(targetHeight * scale))
+
+            device.style.width = `${renderedWidth}px`
+            device.style.height = `${renderedHeight + browserHeight}px`
+            page.style.width = `${renderedWidth}px`
+            page.style.height = `${renderedHeight}px`
+
             frame.style.width = `${targetWidth}px`
             frame.style.height = `${targetHeight}px`
-            frame.style.left = `${Math.max(0, (availableWidth - (targetWidth * scale)) / 2)}px`
+            frame.style.left = '0px'
             frame.style.top = '0px'
             frame.style.transform = `scale(${scale})`
         },
@@ -65,7 +78,6 @@
                 const url = new URL(this.$refs.frame.src, window.location.origin)
                 url.searchParams.set('_appearance', Date.now().toString())
                 this.$refs.frame.src = url.toString()
-                this.$nextTick(() => this.fitPreview())
             }, 700)
         },
     }"
@@ -76,36 +88,40 @@
             <x-filament::icon icon="heroicon-m-rectangle-group" />
             <span>Live preview</span>
         </span>
-        <div class="general-live-preview__modes" role="group" aria-label="Preview device">
-            <button
-                class="general-live-preview__mode {{ $device === 'desktop' ? 'is-active' : '' }}"
-                type="button"
-                wire:click="setPreviewDevice('desktop')"
-                aria-pressed="{{ $device === 'desktop' ? 'true' : 'false' }}"
-                title="Desktop preview"
-            >
-                <x-filament::icon icon="heroicon-m-computer-desktop" />
-            </button>
-            <button
-                class="general-live-preview__mode {{ $device === 'mobile' ? 'is-active' : '' }}"
-                type="button"
-                wire:click="setPreviewDevice('mobile')"
-                aria-pressed="{{ $device === 'mobile' ? 'true' : 'false' }}"
-                title="Mobile preview"
-            >
-                <x-filament::icon icon="heroicon-m-device-phone-mobile" />
-            </button>
+
+        <div class="general-live-preview__toolbar-meta">
+            <span class="general-live-preview__preset">{{ $previewLabel }}</span>
+            <div class="general-live-preview__modes" role="group" aria-label="Preview device">
+                <button
+                    class="general-live-preview__mode {{ $device === 'desktop' ? 'is-active' : '' }}"
+                    type="button"
+                    wire:click="setPreviewDevice('desktop')"
+                    aria-pressed="{{ $device === 'desktop' ? 'true' : 'false' }}"
+                    title="Desktop preview"
+                >
+                    <x-filament::icon icon="heroicon-m-computer-desktop" />
+                </button>
+                <button
+                    class="general-live-preview__mode {{ $device === 'mobile' ? 'is-active' : '' }}"
+                    type="button"
+                    wire:click="setPreviewDevice('mobile')"
+                    aria-pressed="{{ $device === 'mobile' ? 'true' : 'false' }}"
+                    title="Phone preview"
+                >
+                    <x-filament::icon icon="heroicon-m-device-phone-mobile" />
+                </button>
+            </div>
         </div>
     </div>
 
-    <div class="general-live-preview__viewport">
+    <div x-ref="viewport" class="general-live-preview__viewport">
         <div
             x-ref="device"
             class="general-live-preview__device is-{{ $device }}"
             data-preview-width="{{ $previewWidth }}"
             data-preview-height="{{ $previewHeight }}"
         >
-            <div class="general-live-preview__browser" aria-hidden="true">
+            <div x-ref="browser" class="general-live-preview__browser" aria-hidden="true">
                 <span class="general-live-preview__browser-dots">
                     <i></i><i></i><i></i>
                 </span>
@@ -120,8 +136,11 @@
                 <iframe
                     x-ref="frame"
                     src="{{ $previewUrl }}"
-                    title="Live preview of the public homepage"
+                    title="Interactive live preview of the public homepage"
                     loading="eager"
+                    tabindex="0"
+                    allowfullscreen
+                    x-on:load="$nextTick(() => fitPreview())"
                 ></iframe>
             </div>
         </div>
