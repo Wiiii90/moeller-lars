@@ -23,9 +23,20 @@ final class StorageWorkspaceOverview
      *   attention:array<string,mixed>
      * }
      */
-    public function snapshot(): array
+    public function snapshot(bool $measure = false): array
     {
-        $snapshot = $this->capacityService->cachedSnapshot();
+        $snapshot = $measure
+            ? $this->capacityService->cachedSnapshot()
+            : $this->capacityService->cachedSnapshotIfAvailable();
+
+        if (! is_array($snapshot)) {
+            return [
+                'capacity' => $this->unmeasuredCapacity(),
+                'breakdown' => [],
+                'attention' => [],
+            ];
+        }
+
         $analysis = $this->analyze($this->authoritativeFiles($snapshot));
         $breakdown = array_map(function (array $row): array {
             $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
@@ -106,6 +117,26 @@ final class StorageWorkspaceOverview
                 ! $measurementAvailable => 'Measurement unavailable',
                 default => 'of '.$allowance.' allowance',
             },
+            'warning_threshold' => $this->capacityService->warningThresholdPercent().'%',
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function unmeasuredCapacity(): array
+    {
+        return [
+            'configured' => false,
+            'configuration_valid' => true,
+            'measurement_available' => false,
+            'status' => 'not_measured',
+            'status_tone' => 'neutral',
+            'status_label' => 'Measurement needed',
+            'percent' => null,
+            'authoritative' => '—',
+            'generated' => '—',
+            'remaining' => '—',
+            'allowance' => '—',
+            'remaining_detail' => 'Refresh storage measurement',
             'warning_threshold' => $this->capacityService->warningThresholdPercent().'%',
         ];
     }
