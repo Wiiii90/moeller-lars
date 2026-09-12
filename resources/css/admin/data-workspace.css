@@ -16,8 +16,8 @@
 }
 
 /* Schema-backed pages can keep the stage and its follow-up in one block so
- * framework grid gaps do not alter the shared stage rhythm. */
-.admin-visual-stage-block > .fi-sc-grid {
+ * Filament's embedded child-schema gap does not alter the shared stage rhythm. */
+.admin-visual-stage-block > .fi-sc {
     gap: 0 !important;
 }
 
