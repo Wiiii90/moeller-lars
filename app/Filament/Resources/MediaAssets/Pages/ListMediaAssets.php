@@ -133,6 +133,17 @@ final class ListMediaAssets extends Page
         $this->loadLibrary();
     }
 
+    public function refreshStorageMeasurement(): void
+    {
+        app(MediaCapacityService::class)->forgetCachedSnapshot();
+        $this->loadStorageOverview(measure: true);
+
+        Notification::make()
+            ->title('Storage measurement refreshed')
+            ->success()
+            ->send();
+    }
+
     /** @return array{summary:string,added:int,duplicates:int,failed:int} */
     public function processDirectMedia(): array
     {
@@ -497,9 +508,9 @@ final class ListMediaAssets extends Page
         $this->loadLibrary();
     }
 
-    private function loadStorageOverview(): void
+    private function loadStorageOverview(bool $measure = false): void
     {
-        $overview = app(StorageWorkspaceOverview::class)->snapshot();
+        $overview = app(StorageWorkspaceOverview::class)->snapshot($measure);
         $this->capacity = $overview['capacity'];
         $this->storageBreakdown = $overview['breakdown'];
         $this->storageAttention = $overview['attention'];
@@ -508,7 +519,7 @@ final class ListMediaAssets extends Page
     private function refreshStorageOverviewAfterMutation(): void
     {
         app(MediaCapacityService::class)->forgetCachedSnapshot();
-        $this->loadStorageOverview();
+        $this->loadStorageOverview(measure: true);
     }
 
     private function loadLibrary(): void
