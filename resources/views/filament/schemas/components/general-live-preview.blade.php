@@ -13,15 +13,16 @@
             && $variant->getAttribute('transform_profile') === \App\Domain\Media\MediaIngestService::TRANSFORM_PROFILE
             && $variant->getAttribute('state') === 'available';
     });
+    $directPreviewUrl = route('preview.home');
     $previewUrl = route('preview.home', ['appearance' => now()->timestamp]);
-    $previewHost = parse_url($previewUrl, PHP_URL_HOST) ?: 'preview';
-    $previewPath = parse_url($previewUrl, PHP_URL_PATH) ?: '/preview';
+    $previewHost = parse_url($directPreviewUrl, PHP_URL_HOST) ?: 'preview';
+    $previewPath = parse_url($directPreviewUrl, PHP_URL_PATH) ?: '/preview';
     $device = isset($generalPage) && $generalPage instanceof \App\Filament\Pages\General
         ? $generalPage->previewDevice
         : 'desktop';
-    $previewWidth = $device === 'mobile' ? 393 : 1280;
-    $previewHeight = $device === 'mobile' ? 852 : 720;
-    $previewLabel = $device === 'mobile' ? 'Phone · 393 × 852' : 'Desktop · 1280 × 720';
+    $previewWidth = $device === 'mobile' ? 390 : 1280;
+    $previewHeight = $device === 'mobile' ? 844 : 720;
+    $previewLabel = $device === 'mobile' ? 'iPhone · 390 × 844' : 'Desktop · 1280 × 720';
 @endphp
 
 <aside
@@ -110,6 +111,16 @@
                 >
                     <x-filament::icon icon="heroicon-m-device-phone-mobile" />
                 </button>
+                <a
+                    class="general-live-preview__open"
+                    href="{{ $directPreviewUrl }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open public preview"
+                    aria-label="Open public preview"
+                >
+                    <x-filament::icon icon="heroicon-o-rectangle-group" />
+                </a>
             </div>
         </div>
     </div>
