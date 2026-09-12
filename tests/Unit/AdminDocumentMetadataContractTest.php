@@ -77,14 +77,14 @@ it('keeps admin document identity separate from the public site', function (): v
 
     expect($provider)
         ->toContain("->brandName('Admin Area')")
-        ->toContain("->favicon(asset('admin-favicon.svg').'?v=controls-1')")
+        ->toContain("->favicon(asset('admin-favicon.svg').'?v=aperture-1')")
         ->not->toContain("->brandName('Lars Möller')");
 
     expect($adminFavicon)
         ->toBeString()
         ->toContain('viewBox="0 0 64 64"')
-        ->toContain('class="line"')
-        ->toContain('class="knob"')
+        ->toContain('aria-label="Admin Area"')
+        ->toContain('class="mark"')
         ->not->toBe('');
 
     expect($publicLayout)
