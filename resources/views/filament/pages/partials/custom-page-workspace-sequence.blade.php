@@ -179,7 +179,7 @@
                                     <strong>Add CV entry</strong>
                                 </button>
                             @elseif ($component['is_contact'] && $component['contact_child_count'] < 3)
-                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addContactChild', { componentIndex: {{ $component['index'] }}, componentType: 'contact', childType: '{{ $child['child_type'] }}' })">
+                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addContactChild', { componentIndex: {{ $component['index'] }}, componentType: 'contact' })">
                                     <span aria-hidden="true">+</span>
                                     <strong>Add contact item</strong>
                                 </button>
