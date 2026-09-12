@@ -69,17 +69,20 @@ it('never lets an application admin page fall back to its PHP class name for the
     }
 });
 
-it('keeps admin and public favicon identity separate', function (): void {
+it('keeps admin document identity separate from the public site', function (): void {
     $root = dirname(__DIR__, 2);
     $provider = file_get_contents($root.'/app/Providers/Filament/AdminPanelProvider.php');
     $publicLayout = file_get_contents($root.'/resources/views/layouts/app.blade.php');
     $adminFavicon = file_get_contents($root.'/public/admin-favicon.svg');
 
     expect($provider)
-        ->toContain("->favicon(asset('admin-favicon.svg'))");
+        ->toContain("->brandName('Admin')")
+        ->toContain("->favicon(asset('admin-favicon.svg'))")
+        ->not->toContain("->brandName('Lars Möller')");
 
     expect($adminFavicon)
         ->toBeString()
+        ->toContain('viewBox="0 0 64 64"')
         ->not->toBe('');
 
     expect($publicLayout)
