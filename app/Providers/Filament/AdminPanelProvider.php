@@ -127,17 +127,23 @@ class AdminPanelProvider extends PanelProvider
                 'x-bind:style' => "publicationPending ? '' : 'opacity: .5;'",
                 'x-on:click.prevent' => "if (publicationPending) { \$dispatch('publication-commit') }",
             ]);
+        $publicItem = NavigationItem::make('View Site')
+            ->group(null)
+            ->icon(AdminIcon::OpenPublic)
+            ->url(route('home'))
+            ->openUrlInNewTab();
 
         return $builder
             ->items([
                 ...Dashboard::getNavigationItems(),
                 $generalItem,
                 $pagesItem,
-                $analyticsItem,
-                $activityItem,
                 $storageItem,
+                $activityItem,
+                $analyticsItem,
                 $previewItem,
                 $commitItem,
+                $publicItem,
             ]);
     }
 }
