@@ -79,6 +79,11 @@
 .gallery-workspace__controls,
 .media-workspace__controls {
     padding: .85rem 0;
+}
+
+.admin-task-controls,
+.custom-page-workspace__controls,
+.media-workspace__controls {
     border-bottom: 1px solid var(--admin-line-strong);
 }
 
