@@ -68,8 +68,6 @@
 .general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__geometry {
     grid-column: 2 / span 2;
     grid-row: 3;
-    padding-top: .45rem;
-    border-top: 1px solid var(--admin-line);
 }
 
 .general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__controls {
@@ -122,7 +120,7 @@
 .general-appearance-stage__preview {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    gap: .45rem;
+    gap: .25rem;
     padding-left: var(--admin-stage-pane-space);
     overflow: hidden;
 }
@@ -246,13 +244,10 @@
     min-width: 0;
 }
 
-/* Background controls are deliberately a 2 x 2 matrix in both preview modes.
- * Cover Filament's shallow schema wrapper variants without reaching into field
- * internals. */
+/* Background controls are a strict 2 x 2 matrix. Filament may wrap the Group
+ * grid, so target the schema grid at any depth inside this one scoped group. */
 .general-background-row.fi-sc-grid,
-.general-background-row > .fi-sc-grid,
-.general-background-row > .fi-sc > .fi-sc-grid,
-.general-background-row > div > .fi-sc-grid {
+.general-background-row .fi-sc-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     grid-auto-flow: row !important;
@@ -260,9 +255,7 @@
 }
 
 .general-background-row.fi-sc-grid > *,
-.general-background-row > .fi-sc-grid > *,
-.general-background-row > .fi-sc > .fi-sc-grid > *,
-.general-background-row > div > .fi-sc-grid > * {
+.general-background-row .fi-sc-grid > * {
     grid-column: span 1 !important;
     min-width: 0;
 }
@@ -347,8 +340,8 @@
 .general-live-preview__toolbar {
     display: flex;
     min-width: 0;
-    min-height: 1.8rem;
-    gap: 1rem;
+    min-height: 1.55rem;
+    gap: .65rem;
     align-items: center;
     justify-content: space-between;
 }
@@ -374,7 +367,7 @@
 .general-live-preview__toolbar-meta {
     display: flex;
     min-width: 0;
-    gap: .65rem;
+    gap: .5rem;
     align-items: center;
     margin-left: auto;
 }
@@ -396,7 +389,8 @@
     align-items: center;
 }
 
-.general-live-preview__mode {
+.general-live-preview__mode,
+.general-live-preview__open {
     display: grid;
     width: 2rem;
     height: 1.75rem;
@@ -406,17 +400,22 @@
     border-radius: .2rem;
     background: transparent;
     color: var(--admin-muted);
+    line-height: 1;
+    text-decoration: none;
     cursor: pointer;
 }
 
-.general-live-preview__mode svg {
+.general-live-preview__mode svg,
+.general-live-preview__open svg {
     width: 1rem;
     height: 1rem;
 }
 
 .general-live-preview__mode:hover,
 .general-live-preview__mode:focus-visible,
-.general-live-preview__mode.is-active {
+.general-live-preview__mode.is-active,
+.general-live-preview__open:hover,
+.general-live-preview__open:focus-visible {
     border-color: var(--admin-line-strong);
     background: var(--admin-subtle);
     color: var(--admin-text);
@@ -465,8 +464,8 @@
     display: grid;
     min-width: 0;
     grid-template-columns: auto minmax(0, 1fr);
-    gap: .55rem;
-    padding: .28rem .45rem;
+    gap: .45rem;
+    padding: .2rem .35rem;
     align-items: center;
     border-bottom: 1px solid var(--admin-line);
     background: color-mix(in srgb, var(--admin-subtle) 82%, var(--admin-surface));
@@ -490,9 +489,9 @@
 .general-live-preview__address {
     display: flex;
     min-width: 0;
-    height: 1rem;
+    height: .9rem;
     gap: .3rem;
-    padding: 0 .35rem;
+    padding: 0 .3rem;
     align-items: center;
     overflow: hidden;
     border: 1px solid var(--admin-line);
@@ -529,7 +528,7 @@
 
 .general-live-preview__device.is-mobile .general-live-preview__browser {
     grid-template-columns: minmax(0, 1fr);
-    padding-inline: .35rem;
+    padding-inline: .3rem;
 }
 
 .general-live-preview__device.is-mobile .general-live-preview__browser-dots {
@@ -551,9 +550,7 @@
 
 @media (max-width: 900px) {
     .general-background-row.fi-sc-grid,
-    .general-background-row > .fi-sc-grid,
-    .general-background-row > .fi-sc > .fi-sc-grid,
-    .general-background-row > div > .fi-sc-grid {
+    .general-background-row .fi-sc-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
@@ -602,16 +599,9 @@
         overflow: visible;
     }
 
-    .general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__geometry {
-        padding-top: 0;
-        border-top: 0;
-    }
-
     .general-layout-controls__fields,
     .general-background-row.fi-sc-grid,
-    .general-background-row > .fi-sc-grid,
-    .general-background-row > .fi-sc > .fi-sc-grid,
-    .general-background-row > div > .fi-sc-grid {
+    .general-background-row .fi-sc-grid {
         grid-template-columns: 1fr !important;
     }
 
@@ -626,6 +616,6 @@
     }
 
     .general-live-preview__toolbar {
-        margin-bottom: .45rem;
+        margin-bottom: .3rem;
     }
 }
