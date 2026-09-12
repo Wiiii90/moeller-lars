@@ -31,12 +31,16 @@
     x-data="{
         refreshTimer: null,
         resizeObserver: null,
+        zoomHudTimer: null,
+        zoomHudVisible: false,
         fitScale: 1,
         zoom: 1,
         minZoom: 1,
         maxZoom: 3,
         panX: 0,
         panY: 0,
+        panMode: false,
+        spacePan: false,
         dragging: false,
         pointerId: null,
         dragStartX: 0,
@@ -52,7 +56,18 @@
         },
         destroy() {
             window.clearTimeout(this.refreshTimer)
+            window.clearTimeout(this.zoomHudTimer)
             this.resizeObserver?.disconnect()
+        },
+        zoomPercent() {
+            return `${Math.round(this.zoom * 100)}%`
+        },
+        showZoomHud() {
+            window.clearTimeout(this.zoomHudTimer)
+            this.zoomHudVisible = true
+            this.zoomHudTimer = window.setTimeout(() => {
+                this.zoomHudVisible = false
+            }, 900)
         },
         fitPreview() {
             const viewport = this.$refs.viewport
@@ -120,6 +135,16 @@
             this.panX = Math.max(minX, Math.min(0, this.panX))
             this.panY = Math.max(minY, Math.min(0, this.panY))
         },
+        resetZoom() {
+            this.cancelPanGesture()
+            this.zoom = this.minZoom
+            this.panX = 0
+            this.panY = 0
+            this.panMode = false
+            this.spacePan = false
+            this.applyPreviewTransform()
+            this.showZoomHud()
+        },
         changeZoom(step) {
             const page = this.$refs.page
             if (! page) return
@@ -129,10 +154,7 @@
             if (nextZoom === previousZoom) return
 
             if (nextZoom === this.minZoom) {
-                this.zoom = this.minZoom
-                this.panX = 0
-                this.panY = 0
-                this.applyPreviewTransform()
+                this.resetZoom()
                 return
             }
 
@@ -144,12 +166,63 @@
             this.zoom = nextZoom
             this.clampPan()
             this.applyPreviewTransform()
+            this.showZoomHud()
+        },
+        togglePanMode() {
+            if (this.zoom <= this.minZoom) return
+
+            this.panMode = ! this.panMode
+            if (! this.panMode && ! this.spacePan) {
+                this.cancelPanGesture()
+            }
+        },
+        shortcutTargetIsInteractive(target) {
+            return target && typeof target.closest === 'function'
+                && target.closest('a, button, input, textarea, select, [contenteditable="true"], [role="button"]') !== null
+        },
+        handleSpaceDown(event) {
+            if (event.code !== 'Space' || this.zoom <= this.minZoom || event.repeat || this.shortcutTargetIsInteractive(event.target)) return
+
+            event.preventDefault()
+            this.spacePan = true
+        },
+        handleSpaceUp(event) {
+            if (event.code !== 'Space' || ! this.spacePan) return
+
+            event.preventDefault()
+            this.spacePan = false
+            if (! this.panMode) {
+                this.cancelPanGesture()
+            }
+        },
+        cancelSpacePan() {
+            if (! this.spacePan) return
+
+            this.spacePan = false
+            if (! this.panMode) {
+                this.cancelPanGesture()
+            }
+        },
+        bindFrameShortcuts() {
+            const frame = this.$refs.frame
+            if (! frame) return
+
+            let documentRef = null
+            let windowRef = null
+            try {
+                documentRef = frame.contentDocument
+                windowRef = frame.contentWindow
+            } catch (_) {
+                return
+            }
+            if (! documentRef || ! windowRef) return
+
+            documentRef.addEventListener('keydown', (event) => this.handleSpaceDown(event))
+            documentRef.addEventListener('keyup', (event) => this.handleSpaceUp(event))
+            windowRef.addEventListener('blur', () => this.cancelSpacePan())
         },
         startPan(event) {
-            if (this.zoom <= this.minZoom || (event.button !== undefined && event.button !== 0)) return
-
-            const page = this.$refs.page
-            if (! page) return
+            if (this.zoom <= this.minZoom || (! this.panMode && ! this.spacePan) || (event.button !== undefined && event.button !== 0)) return
 
             event.preventDefault()
             this.dragging = true
@@ -158,7 +231,7 @@
             this.dragStartY = event.clientY
             this.dragStartPanX = this.panX
             this.dragStartPanY = this.panY
-            page.setPointerCapture?.(event.pointerId)
+            this.$refs.panLayer?.setPointerCapture?.(event.pointerId)
         },
         movePan(event) {
             if (! this.dragging || event.pointerId !== this.pointerId) return
@@ -169,11 +242,17 @@
             this.applyPreviewTransform()
         },
         endPan(event) {
-            if (! this.dragging || event.pointerId !== this.pointerId) return
+            if (! this.dragging || (event && event.pointerId !== this.pointerId)) return
 
-            this.$refs.page?.releasePointerCapture?.(event.pointerId)
+            const pointerId = this.pointerId
+            if (pointerId !== null && this.$refs.panLayer?.hasPointerCapture?.(pointerId)) {
+                this.$refs.panLayer.releasePointerCapture(pointerId)
+            }
             this.dragging = false
             this.pointerId = null
+        },
+        cancelPanGesture() {
+            this.endPan(null)
         },
         refreshPreview() {
             window.clearTimeout(this.refreshTimer)
@@ -185,6 +264,9 @@
         },
     }"
     x-on:general-appearance-updated.window="refreshPreview()"
+    x-on:keydown.window="handleSpaceDown($event)"
+    x-on:keyup.window="handleSpaceUp($event)"
+    x-on:blur.window="cancelSpacePan()"
 >
     <div class="general-live-preview__toolbar">
         <h2 class="admin-section__kicker general-live-preview__title">Live preview</h2>
@@ -223,6 +305,16 @@
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::PreviewZoomOut->mini()" />
             </button>
             <button
+                class="general-live-preview__zoom-value"
+                type="button"
+                x-on:click="resetZoom()"
+                x-bind:class="{ 'is-active': zoom > minZoom }"
+                x-bind:disabled="zoom <= minZoom"
+                title="Reset preview zoom to 100%"
+                aria-label="Reset preview zoom to 100%"
+                x-text="zoomPercent()"
+            ></button>
+            <button
                 class="general-live-preview__mode general-live-preview__tool"
                 type="button"
                 x-on:click="changeZoom(0.25)"
@@ -231,6 +323,18 @@
                 aria-label="Zoom in preview"
             >
                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Inspect->mini()" />
+            </button>
+            <button
+                class="general-live-preview__mode general-live-preview__tool"
+                type="button"
+                x-on:click="togglePanMode()"
+                x-bind:class="{ 'is-active': panMode }"
+                x-bind:disabled="zoom <= minZoom"
+                x-bind:aria-pressed="panMode.toString()"
+                title="Pan preview (or hold Space and drag)"
+                aria-label="Toggle preview pan mode"
+            >
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::PreviewPan->mini()" />
             </button>
             <a
                 class="general-live-preview__mode general-live-preview__tool"
@@ -266,11 +370,7 @@
             <div
                 x-ref="page"
                 class="general-live-preview__page"
-                x-bind:class="{ 'is-zoomed': zoom > minZoom, 'is-dragging': dragging }"
-                x-on:pointerdown="startPan($event)"
-                x-on:pointermove="movePan($event)"
-                x-on:pointerup="endPan($event)"
-                x-on:pointercancel="endPan($event)"
+                x-bind:class="{ 'is-zoomed': zoom > minZoom, 'is-pan-enabled': zoom > minZoom && (panMode || spacePan), 'is-dragging': dragging }"
             >
                 <iframe
                     x-ref="frame"
@@ -279,8 +379,30 @@
                     loading="eager"
                     tabindex="0"
                     allowfullscreen
-                    x-on:load="$nextTick(() => fitPreview())"
+                    x-on:load="$nextTick(() => { fitPreview(); bindFrameShortcuts(); })"
                 ></iframe>
+
+                <div
+                    x-ref="panLayer"
+                    class="general-live-preview__pan-layer"
+                    x-show="zoom > minZoom && (panMode || spacePan)"
+                    x-cloak
+                    aria-hidden="true"
+                    x-on:pointerdown="startPan($event)"
+                    x-on:pointermove="movePan($event)"
+                    x-on:pointerup="endPan($event)"
+                    x-on:pointercancel="endPan($event)"
+                    x-on:wheel.prevent.stop
+                ></div>
+
+                <div
+                    class="general-live-preview__zoom-hud"
+                    x-show="zoomHudVisible"
+                    x-transition.opacity.duration.120ms
+                    x-cloak
+                    aria-hidden="true"
+                    x-text="zoomPercent()"
+                ></div>
             </div>
         </div>
     </div>

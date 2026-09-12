@@ -1,4 +1,5 @@
 const SUBMENU_TRANSITION_MS = 180;
+const DRAG_THRESHOLD_PX = 4;
 
 function submenuControls(item) {
     const parentLink = item.querySelector('[data-navigation-parent-link]');
@@ -206,8 +207,10 @@ export function initializePublicNavigation() {
         }
 
         const closeSubmenus = initializeSubmenus(container);
+        let dragCandidate = false;
         let dragging = false;
         let dragged = false;
+        let dragPointerId = null;
         let dragStartX = 0;
         let dragStartScroll = 0;
 
@@ -241,36 +244,58 @@ export function initializePublicNavigation() {
         scroller.addEventListener('scroll', update, { passive: true });
         scroller.addEventListener('pointerdown', (event) => {
             if (event.pointerType !== 'mouse'
+                || event.button !== 0
                 || !container.classList.contains('is-overflowing')) {
                 return;
             }
 
-            dragging = true;
+            dragCandidate = true;
+            dragging = false;
             dragged = false;
+            dragPointerId = event.pointerId;
             dragStartX = event.clientX;
             dragStartScroll = scroller.scrollLeft;
-            container.classList.add('is-dragging');
-            closeSubmenus();
-            scroller.setPointerCapture(event.pointerId);
         });
 
         scroller.addEventListener('pointermove', (event) => {
-            if (!dragging) return;
+            if (!dragCandidate || event.pointerId !== dragPointerId) return;
+
             const delta = event.clientX - dragStartX;
-            if (Math.abs(delta) > 4) dragged = true;
+            if (!dragging) {
+                if (Math.abs(delta) <= DRAG_THRESHOLD_PX) return;
+
+                dragging = true;
+                dragged = true;
+                container.classList.add('is-dragging');
+                closeSubmenus();
+                scroller.setPointerCapture?.(event.pointerId);
+            }
+
             scroller.scrollLeft = dragStartScroll - delta;
         });
 
         const finishDrag = (event) => {
-            if (!dragging) return;
+            if ((!dragCandidate && !dragging) || event.pointerId !== dragPointerId) return;
+
+            dragCandidate = false;
+            const wasDragging = dragging;
             dragging = false;
+            dragPointerId = null;
             container.classList.remove('is-dragging');
-            if (scroller.hasPointerCapture(event.pointerId)) scroller.releasePointerCapture(event.pointerId);
+            if (wasDragging && scroller.hasPointerCapture?.(event.pointerId)) {
+                scroller.releasePointerCapture(event.pointerId);
+            }
             update();
         };
 
         scroller.addEventListener('pointerup', finishDrag);
         scroller.addEventListener('pointercancel', finishDrag);
+        scroller.addEventListener('pointerleave', (event) => {
+            if (dragCandidate && !dragging && event.pointerId === dragPointerId) {
+                dragCandidate = false;
+                dragPointerId = null;
+            }
+        });
         scroller.addEventListener('click', (event) => {
             if (!dragged) return;
             event.preventDefault();

@@ -113,8 +113,14 @@
                                     class="admin-action general-social-table__edit-action"
                                     type="button"
                                     wire:click="mountAction('editSocialLink', { index: {{ $index }} })"
-                                >Edit</button>
-                                <button class="admin-action is-danger" type="button" wire:click="deleteSocialLink({{ $index }})">Delete</button>
+                                >
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" />
+                                    <span>Edit</span>
+                                </button>
+                                <button class="admin-action is-danger general-social-table__delete-action" type="button" wire:click="deleteSocialLink({{ $index }})">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
+                                    <span>Delete</span>
+                                </button>
                             </x-admin.toolbar>
                         </td>
                     </tr>

@@ -1,0 +1,89 @@
+/* General preview interaction controls layered after general.css. */
+.general-live-preview__zoom-value {
+    display: grid;
+    width: 3rem;
+    height: 1.75rem;
+    padding: 0;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-muted);
+    font: inherit;
+    font-size: .6rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.general-live-preview__zoom-value:hover:not(:disabled),
+.general-live-preview__zoom-value:focus-visible,
+.general-live-preview__zoom-value.is-active {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+    outline: none;
+}
+
+.general-live-preview__zoom-value:disabled {
+    opacity: 1;
+    cursor: default;
+}
+
+/* Zoom must not disable the embedded site. Pan captures input only while its
+ * explicit overlay is active. */
+.general-live-preview__page.is-zoomed {
+    cursor: default;
+    touch-action: auto;
+    user-select: auto;
+}
+
+.general-live-preview__page.is-zoomed iframe {
+    pointer-events: auto !important;
+    user-select: auto;
+}
+
+.general-live-preview__pan-layer {
+    position: absolute;
+    z-index: 3;
+    inset: 0;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+.general-live-preview__page.is-dragging .general-live-preview__pan-layer {
+    cursor: grabbing;
+}
+
+.general-live-preview__zoom-hud {
+    position: absolute;
+    z-index: 4;
+    top: .4rem;
+    right: .4rem;
+    min-width: 2.75rem;
+    padding: .28rem .38rem;
+    border: 1px solid color-mix(in srgb, var(--admin-text) 28%, var(--admin-line));
+    border-radius: .2rem;
+    background: color-mix(in srgb, var(--admin-surface) 94%, var(--admin-subtle));
+    color: var(--admin-text);
+    font-size: .58rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    text-align: center;
+    pointer-events: none;
+    box-shadow: 0 .12rem .3rem color-mix(in srgb, #000 10%, transparent);
+}
+
+.general-social-table__edit-action,
+.general-social-table__delete-action {
+    gap: .3rem;
+}
+
+.general-social-table__edit-action svg,
+.general-social-table__delete-action svg {
+    width: .9rem;
+    height: .9rem;
+    flex: 0 0 auto;
+}

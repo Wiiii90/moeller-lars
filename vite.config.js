@@ -14,6 +14,7 @@ export default defineConfig({
                 'resources/css/admin/custom-page.css',
                 'resources/css/admin/home.css',
                 'resources/css/admin/general.css',
+                'resources/css/admin/general-interactions.css',
                 'resources/css/admin/stage.css',
                 'resources/css/admin/typography.css',
                 'resources/css/public-content.css',
