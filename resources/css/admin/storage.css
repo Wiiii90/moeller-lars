@@ -255,8 +255,9 @@
     justify-items: center;
 }
 
-.admin-storage__library-controls {
-    display: grid;
+/* Only the task-specific column distribution is local. Field/action geometry
+ * comes from x-admin.controls and the shared admin-data-* primitives. */
+.admin-storage .media-workspace__controls {
     grid-template-columns:
         minmax(14rem, 2fr)
         minmax(7rem, .7fr)
@@ -265,26 +266,28 @@
         auto
         auto
         auto;
+    padding-top: 0;
     padding-bottom: var(--admin-section-gap);
+    border-bottom: 0;
 }
 
 @media (max-width: 1180px) {
-    .admin-storage__library-controls {
+    .admin-storage .media-workspace__controls {
         grid-template-columns: minmax(14rem, 2fr) repeat(3, minmax(8rem, 1fr));
     }
 }
 
 @media (max-width: 760px) {
+    .admin-storage__visual-stage > .admin-storage__visual-main {
+        height: auto !important;
+    }
+
     .admin-storage__capacity-group,
     .admin-storage__distribution,
     .admin-storage__upload {
         height: var(--admin-visual-stage-height);
         padding-top: var(--admin-section-gap);
         padding-bottom: var(--admin-section-gap);
-    }
-
-    .admin-storage__visual-main {
-        height: auto;
     }
 
     .admin-storage__capacity-group,
@@ -297,7 +300,7 @@
         min-height: 12rem;
     }
 
-    .admin-storage__library-controls {
+    .admin-storage .media-workspace__controls {
         grid-template-columns: 1fr;
     }
 }
