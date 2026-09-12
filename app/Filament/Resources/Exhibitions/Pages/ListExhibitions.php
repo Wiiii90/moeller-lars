@@ -10,6 +10,8 @@ class ListExhibitions extends Page
 {
     protected static string $resource = ExhibitionResource::class;
 
+    protected static ?string $title = 'Journal';
+
     protected string $view = 'filament.resources.exhibitions.pages.list-exhibitions';
 
     public function mount(): void
