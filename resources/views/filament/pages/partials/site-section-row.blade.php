@@ -5,15 +5,9 @@
 @endphp
 
 <div class="admin-hierarchy__row {{ $isChild ? 'is-child' : '' }}" role="row" data-depth="{{ $section['depth'] }}">
-    <label class="admin-hierarchy__selection" role="cell" data-cell="selection">
-        <input
-            type="checkbox"
-            aria-label="Select {{ $label }}"
-            value="{{ $section['id'] }}"
-            wire:model.live="selectedSectionIds"
-            @checked($selected)
-        >
-    </label>
+    <div class="admin-hierarchy__position-cell" role="cell" data-cell="position">
+        <span class="admin-position">{{ $section['position_label'] }}</span>
+    </div>
 
     <div role="cell" data-cell="drag">
         <button
@@ -22,10 +16,6 @@
             @if ($reorderEnabled) wire:sort:handle @else disabled @endif
             aria-label="Drag {{ $label }} to a new position"
         >⋮⋮</button>
-    </div>
-
-    <div role="cell" data-cell="position">
-        <span class="admin-position">{{ $section['position_label'] }}</span>
     </div>
 
     <div role="cell" data-cell="page-type">
@@ -78,20 +68,7 @@
         </span>
     </div>
 
-    <div class="admin-row-actions admin-toolbar" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
-        @if ($section['workspace_url'])
-            <a class="admin-action" href="{{ $section['workspace_url'] }}">Edit</a>
-        @else
-            <button class="admin-action" type="button" disabled>Edit</button>
-        @endif
-
-        <button
-            class="admin-action admin-action--state"
-            type="button"
-            wire:click="toggleSectionState({{ $section['id'] }})"
-            @disabled(! $section['can_change_publication'])
-        >{{ $section['state'] === 'published' ? 'Unpublish' : 'Publish' }}</button>
-
+    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
         <button
             class="admin-action admin-order-action"
             type="button"
@@ -108,6 +85,19 @@
             @disabled(! $reorderEnabled || ! $section['can_move_down'])
         >↓</button>
 
+        @if ($section['workspace_url'])
+            <a class="admin-action" href="{{ $section['workspace_url'] }}">Edit</a>
+        @else
+            <button class="admin-action" type="button" disabled>Edit</button>
+        @endif
+
+        <button
+            class="admin-action admin-action--state"
+            type="button"
+            wire:click="toggleSectionState({{ $section['id'] }})"
+            @disabled(! $section['can_change_publication'])
+        >{{ $section['state'] === 'published' ? 'Unpublish' : 'Publish' }}</button>
+
         <button
             class="admin-action is-danger"
             type="button"
@@ -116,4 +106,14 @@
             @disabled(! $section['can_delete'])
         >Delete</button>
     </div>
+
+    <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="cell" data-cell="selection">
+        <input
+            type="checkbox"
+            aria-label="Select {{ $label }}"
+            value="{{ $section['id'] }}"
+            wire:model.live="selectedSectionIds"
+            @checked($selected)
+        >
+    </label>
 </div>
