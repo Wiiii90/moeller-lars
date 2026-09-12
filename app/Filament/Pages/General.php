@@ -154,7 +154,7 @@ final class General extends Page
                                 }),
 
                             AdminColorControl::make('background_primary_color', 'Primary color')
-                                ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
+                                ->extraFieldWrapperAttributes(['class' => 'general-color-control general-primary-color-control'])
                                 ->lazy()
                                 ->extraInputAttributes(self::commitOnEnterAttributes())
                                 ->afterStateUpdated(function ($livewire, mixed $state): void {
@@ -162,16 +162,6 @@ final class General extends Page
                                         $livewire->persistAppearanceColor('primary', $state);
                                     }
                                 }),
-                            AdminColorControl::make('background_secondary_color', 'Secondary color')
-                                ->extraFieldWrapperAttributes(['class' => 'general-color-control'])
-                                ->lazy()
-                                ->extraInputAttributes(self::commitOnEnterAttributes())
-                                ->afterStateUpdated(function ($livewire, mixed $state): void {
-                                    if ($livewire instanceof self) {
-                                        $livewire->persistAppearanceColor('secondary', $state);
-                                    }
-                                })
-                                ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
                             TextInput::make('background_gradient_angle')
                                 ->label('Angle')
                                 ->numeric()
@@ -186,6 +176,16 @@ final class General extends Page
                                 ->extraFieldWrapperAttributes(['class' => 'general-gradient-angle-control'])
                                 ->extraInputAttributes(self::commitOnEnterAttributes())
                                 ->afterStateUpdated(self::persist('background_gradient_angle'))
+                                ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
+                            AdminColorControl::make('background_secondary_color', 'Secondary color')
+                                ->extraFieldWrapperAttributes(['class' => 'general-color-control general-secondary-color-control'])
+                                ->lazy()
+                                ->extraInputAttributes(self::commitOnEnterAttributes())
+                                ->afterStateUpdated(function ($livewire, mixed $state): void {
+                                    if ($livewire instanceof self) {
+                                        $livewire->persistAppearanceColor('secondary', $state);
+                                    }
+                                })
                                 ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
                         ])
                             ->columns(2)
