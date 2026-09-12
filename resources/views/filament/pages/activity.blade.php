@@ -42,8 +42,7 @@
             class="activity-atlas"
             aria-label="Activity visualization"
             x-data="{
-                live: @js($clockIsLive),
-                now: new Date(@js($clockAtIso)),
+                now: new Date(),
                 timer: null,
                 timeFormatter: new Intl.DateTimeFormat(undefined, {
                     hour: '2-digit',
@@ -51,7 +50,6 @@
                     second: '2-digit',
                 }),
                 init() {
-                    if (! this.live) return
                     this.now = new Date()
                     this.timer = window.setInterval(() => { this.now = new Date() }, 1000)
                 },
@@ -106,15 +104,32 @@
                                     <span class="admin-icon-action is-disabled" aria-hidden="true"><x-filament::icon icon="heroicon-m-chevron-right" /></span>
                                 @endif
                             </div>
-                            <time datetime="{{ $selectedCalendarDate }}">{{ $selectedCalendarLabel }}</time>
                         </div>
 
                         <div class="activity-calendar__bands" role="grid" aria-label="Daily activity density for {{ $calendarYear }}">
                             @foreach ($calendarBands as $band)
                                 @php
                                     $bandDays = array_merge([], ...$band);
+                                    $monthMarkers = [];
+                                    foreach ($band as $weekIndex => $week) {
+                                        foreach ($week as $day) {
+                                            if ($day === null || substr($day['date'], -2) !== '01') {
+                                                continue;
+                                            }
+                                            $monthMarkers[] = [
+                                                'week' => $weekIndex + 1,
+                                                'label' => \Carbon\CarbonImmutable::parse($day['date'])->format('M'),
+                                            ];
+                                        }
+                                    }
                                 @endphp
                                 <div class="activity-calendar__band" style="--activity-calendar-weeks: {{ count($band) }};">
+                                    <span class="activity-calendar__month-spacer" aria-hidden="true"></span>
+                                    <div class="activity-calendar__months" aria-hidden="true">
+                                        @foreach ($monthMarkers as $month)
+                                            <span style="grid-column: {{ $month['week'] }};">{{ $month['label'] }}</span>
+                                        @endforeach
+                                    </div>
                                     <div class="activity-calendar__weekdays" aria-hidden="true">
                                         @foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $weekday)
                                             <span>{{ $weekday }}</span>
@@ -162,7 +177,7 @@
                                 class="activity-clock__dial"
                                 viewBox="0 0 320 320"
                                 role="img"
-                                x-bind:aria-label="`{{ $selectedCalendarLabel }} ${timeLabel()}`"
+                                x-bind:aria-label="`Live local time ${timeLabel()}; activity distribution for {{ $selectedCalendarLabel }}`"
                             >
                                 <circle class="activity-clock__activity-track" cx="160" cy="160" r="134" />
                                 @foreach ($clockActivity as $bucket)
@@ -235,14 +250,9 @@
                             </svg>
                         </div>
 
-                        <div class="activity-clock__caption" aria-label="Selected day and time">
+                        <div class="activity-clock__caption" aria-label="Selected day and live local time">
                             <strong>{{ $selectedCalendarLabel }}</strong>
-                            <span>
-                                {{ $selectedClockLabel }}
-                                @if ($clockHasActivity)
-                                    · <time x-text="timeLabel()">—</time>
-                                @endif
-                            </span>
+                            <span>Live local time · <time x-text="timeLabel()">—</time></span>
                         </div>
                     </div>
                 </div>
