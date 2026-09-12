@@ -118,4 +118,11 @@ final class CustomPageWorkspace extends Page
     public int $total = 0;
 
     public int $pages = 1;
+
+    public function getTitle(): string
+    {
+        $title = trim($this->pageTitle);
+
+        return $title !== '' ? $title : 'Custom Page';
+    }
 }
