@@ -230,7 +230,7 @@
                 title="Zoom in"
                 aria-label="Zoom in preview"
             >
-                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::PreviewZoomIn->mini()" />
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Inspect->mini()" />
             </button>
             <a
                 class="general-live-preview__mode general-live-preview__tool"
