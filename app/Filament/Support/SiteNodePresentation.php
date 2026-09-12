@@ -8,19 +8,18 @@ use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Pages\HomePresentation;
 use App\Filament\Pages\JournalWorkspace;
 use App\Models\SiteSection;
-use Filament\Support\Icons\Heroicon;
 use LogicException;
 
 final class SiteNodePresentation
 {
-    public function icon(SiteNodeType $type): Heroicon
+    public function icon(SiteNodeType $type): AdminIcon
     {
         return match ($type) {
-            SiteNodeType::Home => Heroicon::OutlinedHome,
-            SiteNodeType::Gallery => Heroicon::OutlinedPhoto,
-            SiteNodeType::Journal => Heroicon::OutlinedNewspaper,
-            SiteNodeType::CustomPage => Heroicon::OutlinedWindow,
-            SiteNodeType::NavigationNode => Heroicon::OutlinedFolder,
+            SiteNodeType::Home => AdminIcon::Home,
+            SiteNodeType::Gallery => AdminIcon::Gallery,
+            SiteNodeType::Journal => AdminIcon::Journal,
+            SiteNodeType::CustomPage => AdminIcon::CustomPage,
+            SiteNodeType::NavigationNode => AdminIcon::NavigationNode,
         };
     }
 

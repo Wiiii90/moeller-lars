@@ -6,20 +6,20 @@ use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminUndoService;
 use App\Filament\Support\AdminActivityFeed;
+use App\Filament\Support\AdminIcon;
 use App\Models\AuditEvent;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 use UnitEnum;
 
 final class Activity extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::Activity;
 
     protected static string|UnitEnum|null $navigationGroup = 'Insights';
 

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Admin\DashboardFeed;
+use App\Filament\Support\AdminIcon;
 use App\Filament\Support\DashboardOverview;
 use App\Models\User;
 use Filament\Actions\Action;
@@ -24,7 +25,7 @@ final class Dashboard extends Page
         'danger' => 'Errors',
     ];
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-home';
+    protected static string|\BackedEnum|null $navigationIcon = AdminIcon::Dashboard;
 
     protected static ?string $navigationLabel = 'Dashboard';
 

@@ -10,6 +10,7 @@ use App\Filament\Pages\General;
 use App\Filament\Pages\SitePages;
 use App\Filament\Pages\StorageCapacity;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
+use App\Filament\Support\AdminIcon;
 use App\Filament\Support\SiteNavigation;
 use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
@@ -22,7 +23,6 @@ use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Support\Icons\Heroicon;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -89,7 +89,9 @@ class AdminPanelProvider extends PanelProvider
 
     private function navigation(NavigationBuilder $builder): NavigationBuilder
     {
-        $generalItem = General::getNavigationItems()[0]->group(null);
+        $generalItem = General::getNavigationItems()[0]
+            ->group(null)
+            ->icon(AdminIcon::General);
         $pagesItem = SitePages::getNavigationItems()[0]
             ->group(null)
             ->childItems(app(SiteNavigation::class)->items())
@@ -99,13 +101,13 @@ class AdminPanelProvider extends PanelProvider
         $storageItem = StorageCapacity::getNavigationItems()[0]->group(null);
         $previewItem = NavigationItem::make('Preview')
             ->group(null)
-            ->icon(Heroicon::OutlinedRectangleGroup)
+            ->icon(AdminIcon::Preview)
             ->url(route('preview.home'))
             ->openUrlInNewTab();
         $hasPendingChanges = app(PublicationService::class)->hasPendingChanges();
         $commitItem = NavigationItem::make('Commit')
             ->group(null)
-            ->icon(Heroicon::OutlinedCheckCircle)
+            ->icon(AdminIcon::Commit)
             ->url('#')
             ->extraAttributes([
                 'aria-disabled' => $hasPendingChanges ? 'false' : 'true',

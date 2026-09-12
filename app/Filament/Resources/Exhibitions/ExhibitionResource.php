@@ -6,13 +6,13 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Filament\Resources\Exhibitions\Pages\EditExhibition;
 use App\Filament\Resources\Exhibitions\Pages\ListExhibitions;
+use App\Filament\Support\AdminIcon;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Models\Exhibition;
 use App\Models\SiteSection;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 use UnitEnum;
@@ -21,7 +21,7 @@ class ExhibitionResource extends Resource
 {
     protected static ?string $model = Exhibition::class;
     protected static bool $shouldRegisterNavigation = false;
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendar;
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::Exhibition;
     protected static string|UnitEnum|null $navigationGroup = 'Website';
     protected static ?string $navigationLabel = 'Journal';
 

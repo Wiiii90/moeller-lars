@@ -5,10 +5,10 @@ namespace App\Filament\Pages;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaStorageBreakdown;
 use App\Domain\Media\MediaStorageUnits;
+use App\Filament\Support\AdminIcon;
 use App\Filament\Support\MediaStorageAnalysisStore;
 use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Str;
 use UnitEnum;
 
@@ -19,7 +19,7 @@ final class StorageCapacity extends Page
 
     private const DEFAULT_PAGE_SIZE = 25;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCircleStack;
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::Storage;
 
     protected static string|UnitEnum|null $navigationGroup = 'Insights';
 

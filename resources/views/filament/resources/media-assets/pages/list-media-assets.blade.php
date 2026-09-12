@@ -170,7 +170,7 @@
                             title="List"
                             aria-pressed="{{ $viewMode === 'list' ? 'true' : 'false' }}"
                         >
-                            <x-filament::icon icon="heroicon-m-list-bullet" class="media-workspace__view-icon" />
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewList->mini()" class="media-workspace__view-icon" />
                         </button>
                         <button
                             class="media-workspace__view-option {{ $viewMode === 'grid' ? 'is-active' : '' }}"
@@ -180,7 +180,7 @@
                             title="Grid"
                             aria-pressed="{{ $viewMode === 'grid' ? 'true' : 'false' }}"
                         >
-                            <x-filament::icon icon="heroicon-m-squares-2x2" class="media-workspace__view-icon" />
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewGrid->mini()" class="media-workspace__view-icon" />
                         </button>
                         <button
                             class="media-workspace__view-option {{ $viewMode === 'dense' ? 'is-active' : '' }}"
@@ -190,7 +190,7 @@
                             title="Dense"
                             aria-pressed="{{ $viewMode === 'dense' ? 'true' : 'false' }}"
                         >
-                            <x-filament::icon icon="heroicon-m-bars-3" class="media-workspace__view-icon" />
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::ViewDense->mini()" class="media-workspace__view-icon" />
                         </button>
                     </div>
                 </div>
@@ -299,7 +299,7 @@
                                                 aria-label="Download"
                                                 title="Download"
                                             >
-                                                <x-filament::icon icon="heroicon-m-arrow-down-tray" class="media-workspace__action-icon" />
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Download->mini()" class="media-workspace__action-icon" />
                                             </a>
                                         @else
                                             <button
@@ -309,7 +309,7 @@
                                                 title="Download"
                                                 disabled
                                             >
-                                                <x-filament::icon icon="heroicon-m-arrow-down-tray" class="media-workspace__action-icon" />
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Download->mini()" class="media-workspace__action-icon" />
                                             </button>
                                         @endif
                                     </div>

@@ -12,6 +12,7 @@ use App\Filament\Resources\Artworks\Pages\ViewArtwork;
 use App\Filament\Resources\Artworks\RelationManagers\GalleryImagesRelationManager;
 use App\Filament\Resources\Artworks\Support\ArtworkMaterialSelect;
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\AdminIcon;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
@@ -26,7 +27,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use UnitEnum;
@@ -37,7 +37,7 @@ class ArtworkResource extends Resource
 
     protected static bool $shouldRegisterNavigation = false;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::Artwork;
 
     protected static string|UnitEnum|null $navigationGroup = 'Artwork';
 

@@ -6,13 +6,13 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\ListBlogPosts;
+use App\Filament\Support\AdminIcon;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 use UnitEnum;
@@ -21,7 +21,7 @@ final class BlogPostResource extends Resource
 {
     protected static ?string $model = BlogPost::class;
     protected static bool $shouldRegisterNavigation = false;
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPencilSquare;
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::BlogPost;
     protected static string|UnitEnum|null $navigationGroup = 'Website';
     protected static ?string $navigationLabel = 'Journal';
     protected static ?string $modelLabel = 'blog post';

@@ -86,7 +86,7 @@
 >
     <div class="general-live-preview__toolbar">
         <span class="general-live-preview__title">
-            <x-filament::icon icon="heroicon-m-rectangle-group" />
+            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" />
             <span>Live preview</span>
         </span>
 
@@ -100,7 +100,7 @@
                     aria-pressed="{{ $device === 'desktop' ? 'true' : 'false' }}"
                     title="Desktop preview"
                 >
-                    <x-filament::icon icon="heroicon-m-computer-desktop" />
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceDesktop->mini()" />
                 </button>
                 <button
                     class="general-live-preview__mode {{ $device === 'mobile' ? 'is-active' : '' }}"
@@ -109,7 +109,7 @@
                     aria-pressed="{{ $device === 'mobile' ? 'true' : 'false' }}"
                     title="Phone preview"
                 >
-                    <x-filament::icon icon="heroicon-m-device-phone-mobile" />
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::DeviceMobile->mini()" />
                 </button>
             </div>
         </div>

@@ -6,6 +6,7 @@ use App\Filament\Resources\MediaAssets\Pages\EditMediaAsset;
 use App\Filament\Resources\MediaAssets\Pages\ListMediaAssets;
 use App\Filament\Resources\MediaAssets\Pages\ViewMediaAsset;
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\AdminIcon;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use BackedEnum;
@@ -15,7 +16,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -29,7 +29,7 @@ class MediaAssetResource extends Resource
 
     protected static ?string $slug = 'media-files';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolderOpen;
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::MediaFiles;
 
     protected static string|UnitEnum|null $navigationGroup = null;
 
@@ -130,7 +130,7 @@ class MediaAssetResource extends Resource
             ->recordActions([
                 Action::make('preview')
                     ->label('Inspect file')
-                    ->icon(Heroicon::OutlinedMagnifyingGlassPlus)
+                    ->icon(AdminIcon::Inspect)
                     ->url(fn (MediaAsset $record): string => self::getUrl('view', ['record' => $record])),
                 EditAction::make(),
             ])

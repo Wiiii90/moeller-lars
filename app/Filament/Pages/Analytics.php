@@ -6,15 +6,15 @@ use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\ArtworkAttentionReport;
 use App\Domain\Analytics\MatomoReportingClient;
 use App\Domain\Analytics\OperationalMetricsQuery;
+use App\Filament\Support\AdminIcon;
 use App\Models\DailyMetric;
 use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 use UnitEnum;
 
 final class Analytics extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::Analytics;
 
     protected static string|UnitEnum|null $navigationGroup = 'Insights';
 

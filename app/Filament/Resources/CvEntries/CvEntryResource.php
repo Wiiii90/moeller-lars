@@ -6,6 +6,7 @@ use App\Filament\Resources\CvEntries\Pages\CreateCvEntry;
 use App\Filament\Resources\CvEntries\Pages\EditCvEntry;
 use App\Filament\Resources\CvEntries\Pages\ListCvEntries;
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\CvEntry;
@@ -15,7 +16,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
@@ -25,7 +25,7 @@ class CvEntryResource extends Resource
 
     protected static bool $shouldRegisterNavigation = false;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::CvEntry;
 
     protected static string|UnitEnum|null $navigationGroup = 'Content';
 

@@ -200,7 +200,7 @@
                                         title="View public artwork"
                                         aria-label="View {{ $artwork['title'] }} on the public site"
                                     >
-                                        <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" />
+                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::OpenPublic->mini()" />
                                     </a>
                                 @endif
                                 @if ($artwork['state'] === 'published')
@@ -211,7 +211,7 @@
                                         title="Unpublish artwork"
                                         aria-label="Unpublish {{ $artwork['title'] }}"
                                     >
-                                        <x-filament::icon icon="heroicon-m-eye-slash" />
+                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" />
                                     </button>
                                 @else
                                     <button
@@ -221,7 +221,7 @@
                                         title="Publish artwork"
                                         aria-label="Publish {{ $artwork['title'] }}"
                                     >
-                                        <x-filament::icon icon="heroicon-m-eye" />
+                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Publish->mini()" />
                                     </button>
                                 @endif
                                 <button
@@ -257,7 +257,6 @@
                                             },
                                             commit() {
                                                 if (! this.editing || this.saving) return
-
                                                 const next = this.normalize(this.value)
                                                 if (next === this.normalize(this.original)) {
                                                     this.value = this.original
@@ -341,7 +340,7 @@
                                         title="Edit artwork"
                                         aria-label="Edit {{ $artwork['title'] }}"
                                     >
-                                        <x-filament::icon icon="heroicon-m-pencil-square" />
+                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" />
                                     </button>
                                     <button
                                         class="admin-action gallery-workspace__order-action"
@@ -361,11 +360,11 @@
                                     >↓</button>
                                     @if ($moveTargets !== [])
                                         <button class="gallery-workspace__icon-action" type="button" wire:click="mountAction('moveArtworkToGallery', { artwork: {{ $artwork['id'] }} })" title="Move to Gallery" aria-label="Move {{ $artwork['title'] }} to another Gallery">
-                                            <x-filament::icon icon="heroicon-m-arrows-right-left" />
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveBetween->mini()" />
                                         </button>
                                     @endif
                                     <button class="gallery-workspace__icon-action" type="button" wire:click="mountAction('removeArtwork', { artwork: {{ $artwork['id'] }} })" title="Remove from Gallery" aria-label="Remove {{ $artwork['title'] }} from Gallery">
-                                        <x-filament::icon icon="heroicon-m-link-slash" />
+                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Detach->mini()" />
                                     </button>
                                     <button
                                         class="gallery-workspace__icon-action"
@@ -375,7 +374,7 @@
                                         title="{{ $artwork['primary_original_url'] ? 'Delete media file' : 'No primary media file to delete' }}"
                                         aria-label="{{ $artwork['primary_original_url'] ? 'Delete primary Media File for '.$artwork['title'] : 'No primary Media File to delete for '.$artwork['title'] }}"
                                     >
-                                        <x-filament::icon icon="heroicon-m-trash" />
+                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" />
                                     </button>
                                 </div>
                             </div>
