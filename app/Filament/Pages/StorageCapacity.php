@@ -25,6 +25,8 @@ final class StorageCapacity extends Page
 
     protected static ?string $navigationLabel = 'Storage';
 
+    protected static ?string $title = 'Storage';
+
     protected static ?int $navigationSort = 13;
 
     protected string $view = 'filament.pages.storage-capacity';
