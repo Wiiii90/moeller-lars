@@ -33,26 +33,39 @@ final class StorageWorkspaceOverview
             return [
                 'capacity' => $this->unmeasuredCapacity(),
                 'breakdown' => [],
-                'attention' => [],
+                'attention' => [
+                    'targets' => [],
+                ],
             ];
         }
 
         $analysis = $this->analyze($this->authoritativeFiles($snapshot));
         $breakdown = array_map(function (array $row): array {
             $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
+            $row['usage_filter'] = $this->usageFilterForArea((string) ($row['key'] ?? ''));
 
             return $row;
         }, $this->analysisRows($analysis, 'breakdown'));
 
+        $targets = array_map(function (array $row): array {
+            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
+
+            return $row;
+        }, $this->analysisRows($analysis, 'target_breakdown'));
+
         $attention = is_array($analysis['attention'] ?? null) ? $analysis['attention'] : [];
-        if (is_array($attention['largest_file'] ?? null)) {
-            $attention['largest_file']['display_bytes'] = MediaStorageUnits::formatBytes(
-                (int) ($attention['largest_file']['bytes'] ?? 0),
-            );
+        foreach (['largest_file', 'largest_area', 'largest_gallery', 'largest_unreferenced'] as $key) {
+            if (is_array($attention[$key] ?? null)) {
+                $attention[$key]['display_bytes'] = MediaStorageUnits::formatBytes(
+                    (int) ($attention[$key]['bytes'] ?? 0),
+                );
+            }
         }
+
         $attention['unreferenced_display_bytes'] = MediaStorageUnits::formatBytes(
             (int) ($attention['unreferenced_bytes'] ?? 0),
         );
+        $attention['targets'] = $targets;
 
         $uncatalogued = collect($breakdown)->first(
             static fn (array $row): bool => ($row['key'] ?? null) === 'uncatalogued',
@@ -136,7 +149,7 @@ final class StorageWorkspaceOverview
             'generated' => '—',
             'remaining' => '—',
             'allowance' => '—',
-            'remaining_detail' => 'Refresh storage measurement',
+            'remaining_detail' => 'Awaiting measurement',
             'warning_threshold' => $this->capacityService->warningThresholdPercent().'%',
         ];
     }
@@ -192,5 +205,19 @@ final class StorageWorkspaceOverview
         }
 
         return array_values(array_filter($value, 'is_array'));
+    }
+
+    private function usageFilterForArea(string $area): ?string
+    {
+        return match ($area) {
+            'galleries' => 'kind:gallery',
+            'journal' => 'kind:journal',
+            'custom-pages' => 'kind:custom-page',
+            'home' => 'home',
+            'cv' => 'cv',
+            'site-identity' => 'site-identity',
+            'unassigned' => 'unreferenced',
+            default => null,
+        };
     }
 }
