@@ -498,10 +498,13 @@ Important current shared/admin modules include:
 - `forms.css`;
 - `data-workspace.css`;
 - `task-surfaces.css`;
+- `stage.css`;
+- `typography.css`;
 - `dialogs.css`;
 - `gallery.css`;
 - `media.css`;
 - `home.css`;
+- `general.css`;
 - `custom-page.css`;
 - `journal.css`.
 
@@ -557,3 +560,30 @@ Browser/product acceptance does not by itself complete UI work. After the accept
 Remove only safely-proven obsolete UI source: superseded page/view paths, dead Blade views/partials, unused CSS/selectors, obsolete presentation aliases/compatibility paths, duplicate presentation paths, stale implementation-specific UI tests, and imports/classes made unused. Reference-search every candidate before deletion and preserve still-required compatibility/domain behavior.
 
 Run final UI/source verification against the cleaned tree. Presentation acceptance and presentation-source cleanup are separate gates; passing one does not imply the other.
+
+## 26. Shared Visual Stage and semantic icon contract
+
+Large admin visualization/editorial surfaces use one shared outer geometry.
+
+Authorities:
+
+- `resources/css/admin.css` owns `--admin-visual-stage-height`;
+- `resources/css/admin/stage.css` consumes that height and owns shared divider geometry;
+- `resources/css/admin/data-workspace.css` owns the stage-to-follow-up rhythm;
+- feature modules own only their internal composition.
+
+Rules:
+
+- there is one desktop stage-height authority; do not redeclare the token later in another module;
+- do not make individual stages shorter or taller with page-local height overrides;
+- if the accepted global stage should change height, change the shared token once;
+- vertical divider top/bottom breathing uses the shared divider inset instead of page-local pixel tuning;
+- a page may use a different internal column layout while keeping the same outer height and follow-up rhythm;
+- schema-backed Filament pages use the shared `admin-visual-stage-block` / `admin-visual-stage-followup` mechanism so framework grid gaps do not shift their post-stage separator;
+- General may own its internal desktop/mobile matrix divider, but it does not own a separate outer stage height or a compensating post-stage margin.
+
+If a browser pass shows one stage or separator at a different vertical position, first determine whether the shared token/primitive is being bypassed. Do not immediately add a local correction.
+
+Shared admin navigation/action semantics use `App\Filament\Support\AdminIcon`. Prefer semantic catalog entries over scattered Heroicon literals for meanings already represented by the catalog, and keep distinct meanings visually distinguishable rather than reusing one glyph for unrelated concepts.
+
+See `docs/ADMIN-BROWSER-WORKFLOW.md` for the direct/worker browser-reconciliation loop around these contracts.
