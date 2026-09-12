@@ -45,6 +45,8 @@ final class ListMediaAssets extends Page
 
     protected static string $resource = MediaAssetResource::class;
 
+    protected static ?string $title = 'Media Files';
+
     protected string $view = 'filament.resources.media-assets.pages.list-media-assets';
 
     /** @var list<array<string, mixed>> */
