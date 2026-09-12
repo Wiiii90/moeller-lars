@@ -76,13 +76,15 @@ it('keeps admin document identity separate from the public site', function (): v
     $adminFavicon = file_get_contents($root.'/public/admin-favicon.svg');
 
     expect($provider)
-        ->toContain("->brandName('Admin')")
-        ->toContain("->favicon(asset('admin-favicon.svg'))")
+        ->toContain("->brandName('Admin Area')")
+        ->toContain("->favicon(asset('admin-favicon.svg').'?v=controls-1')")
         ->not->toContain("->brandName('Lars Möller')");
 
     expect($adminFavicon)
         ->toBeString()
         ->toContain('viewBox="0 0 64 64"')
+        ->toContain('class="line"')
+        ->toContain('class="knob"')
         ->not->toBe('');
 
     expect($publicLayout)
