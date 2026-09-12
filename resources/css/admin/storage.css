@@ -265,6 +265,16 @@
     --media-task-surface-header-height: 2.25rem;
 }
 
+/* The shared add-row already owns one thin separator on each edge. Storage's
+ * legacy table/pager borders must yield where they meet that primitive. */
+.admin-storage .media-workspace__table-wrap + .admin-add-row {
+    border-top: 0;
+}
+
+.admin-storage .admin-add-row + .media-workspace__pager {
+    border-top: 0;
+}
+
 /* Only the task-specific column distribution is local. Field/action geometry
  * comes from x-admin.controls and the shared admin-data-* primitives. */
 .admin-storage .media-workspace__controls {
