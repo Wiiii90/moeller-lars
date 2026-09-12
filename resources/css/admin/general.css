@@ -3,7 +3,7 @@
 /*
  * General alone uses a local 3 x 3 matrix inside the canonical stage.
  * Desktop:
- *   appearance: x00 + x10
+ *   appearance: x00 + x10 + x20
  *   preview:    x01 + x02 + x11 + x12
  *   geometry:   x21 + x22
  * Mobile:
@@ -56,7 +56,7 @@
 
 .general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__controls {
     grid-column: 1;
-    grid-row: 1 / span 2;
+    grid-row: 1 / span 3;
     padding-right: var(--admin-stage-pane-space);
 }
 
@@ -110,7 +110,7 @@
 }
 
 .general-appearance-stage__controls {
-    overflow: hidden;
+    overflow: visible;
 }
 
 .general-appearance-stage__controls > .fi-sc-grid {
@@ -244,14 +244,14 @@
     min-width: 0;
 }
 
-/* Background controls are a strict 2 x 2 matrix. Filament may wrap the Group
- * grid, so target the schema grid at any depth inside this one scoped group. */
+/* Background controls are a strict 2 x 2 matrix in semantic column order:
+ * Background -> Angle on the left, Primary -> Secondary on the right. */
 .general-background-row.fi-sc-grid,
 .general-background-row .fi-sc-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     grid-auto-flow: row !important;
-    gap: .65rem var(--admin-stage-pane-space) !important;
+    gap: .8rem var(--admin-stage-pane-space) !important;
 }
 
 .general-background-row.fi-sc-grid > *,
@@ -389,8 +389,7 @@
     align-items: center;
 }
 
-.general-live-preview__mode,
-.general-live-preview__open {
+.general-live-preview__mode {
     display: grid;
     width: 2rem;
     height: 1.75rem;
@@ -401,21 +400,17 @@
     background: transparent;
     color: var(--admin-muted);
     line-height: 1;
-    text-decoration: none;
     cursor: pointer;
 }
 
-.general-live-preview__mode svg,
-.general-live-preview__open svg {
+.general-live-preview__mode svg {
     width: 1rem;
     height: 1rem;
 }
 
 .general-live-preview__mode:hover,
 .general-live-preview__mode:focus-visible,
-.general-live-preview__mode.is-active,
-.general-live-preview__open:hover,
-.general-live-preview__open:focus-visible {
+.general-live-preview__mode.is-active {
     border-color: var(--admin-line-strong);
     background: var(--admin-subtle);
     color: var(--admin-text);
