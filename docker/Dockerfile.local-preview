@@ -11,7 +11,8 @@ FROM moeller-lars-local-runtime
 WORKDIR /var/www/html
 
 ENV APP_ENV=local \
-    MOELLER_LARS_PERSISTENT_PREVIEW=1
+    MOELLER_LARS_PERSISTENT_PREVIEW=1 \
+    MEDIA_STORAGE_QUOTA_BYTES=5000000000
 
 # Candidate-owned runtime source must come from the candidate checkout.
 # Remove directories first so deleted/stale files from the base image
