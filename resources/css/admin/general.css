@@ -19,8 +19,8 @@
     overflow: visible;
 }
 
-/* Filament inserts schema/grid wrappers around the three stage blocks. Flatten
- * only wrapper ancestors of those blocks; internal field grids stay intact. */
+/* Filament wraps schema components in grid/component containers. Flatten only
+ * wrapper ancestors of the three stage blocks; internal field schemas stay intact. */
 .general-appearance-stage :not(
     .general-appearance-stage__controls,
     .general-appearance-stage__preview,
@@ -85,13 +85,13 @@
     overflow: hidden;
 }
 
-/* General is the one stage whose divider axis changes with preview mode. Its
- * vertical breathing room is otherwise identical above and below. */
+/* General changes only the divider axis with preview mode. Its vertical inset
+ * is the same shared inset used by every other Visual Stage. */
 .general-appearance-stage::after {
     position: absolute;
     z-index: 8;
-    top: var(--admin-stage-pane-space);
-    bottom: var(--admin-stage-pane-space);
+    top: var(--admin-stage-divider-inset);
+    bottom: var(--admin-stage-divider-inset);
     width: 1px;
     background: var(--admin-line);
     content: "";
@@ -106,7 +106,9 @@
     left: 66.666667%;
 }
 
-.general-appearance-stage__controls > .fi-sc-grid {
+/* Group::extraAttributes() lives on the Group wrapper; the embedded child
+ * schema itself is the direct `.fi-sc` element in Filament 4. */
+.general-appearance-stage__controls > .fi-sc {
     align-content: start;
     gap: 1rem !important;
 }
@@ -204,8 +206,8 @@
 }
 
 .general-background-row,
-.general-background-row > *,
-.general-background-row .fi-sc-grid > * {
+.general-background-row > .fi-sc,
+.general-background-row > .fi-sc > * {
     min-width: 0;
 }
 
@@ -213,16 +215,14 @@
  * Background | Primary color
  * Angle      | Secondary color
  */
-.general-background-row.fi-sc-grid,
-.general-background-row .fi-sc-grid {
+.general-background-row > .fi-sc {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     grid-auto-flow: row !important;
     gap: .65rem var(--admin-stage-pane-space) !important;
 }
 
-.general-background-row.fi-sc-grid > *,
-.general-background-row .fi-sc-grid > * {
+.general-background-row > .fi-sc > * {
     grid-column: span 1 !important;
     min-width: 0;
 }
@@ -562,8 +562,7 @@
     }
 
     .general-layout-controls__fields,
-    .general-background-row.fi-sc-grid,
-    .general-background-row .fi-sc-grid {
+    .general-background-row > .fi-sc {
         grid-template-columns: 1fr !important;
     }
 
