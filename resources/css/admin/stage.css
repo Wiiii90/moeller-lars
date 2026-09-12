@@ -5,7 +5,6 @@
  */
 
 :root {
-    --admin-visual-stage-height: 23.5rem;
     --admin-stage-divider-inset: .25rem;
     --admin-stage-pane-space: var(--admin-section-gap);
 }
