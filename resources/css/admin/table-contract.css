@@ -42,6 +42,10 @@
     table-layout: fixed;
 }
 
+.admin-table--six-grid .admin-table__actions {
+    width: auto;
+}
+
 .admin-table__col-quarter-unit { width: calc(var(--admin-table-alignment-unit) / 4); }
 .admin-table__col-half-unit { width: calc(var(--admin-table-alignment-unit) / 2); }
 .admin-table__col-one-unit { width: var(--admin-table-alignment-unit); }
@@ -69,6 +73,18 @@
 
 .admin-row-actions--canonical {
     justify-content: flex-start !important;
+}
+
+.admin-row-actions--four {
+    display: grid !important;
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .25rem;
+}
+
+.admin-row-actions--four .admin-action {
+    min-width: 0;
+    justify-content: center;
 }
 
 /* Selection is deliberately a trailing utility gutter when present. */
