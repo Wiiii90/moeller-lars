@@ -378,11 +378,14 @@
     @else
         <x-admin.empty-state title="No media files yet">
             <p>Upload a supported file to start the library.</p>
-            <x-slot:actions>
-                <label class="admin-action" for="storage-upload">Add files</label>
-            </x-slot:actions>
         </x-admin.empty-state>
     @endif
+
+    <x-admin.add-row
+        type="button"
+        x-on:click="document.getElementById('storage-upload')?.click()"
+        aria-controls="storage-upload"
+    >Add Media File</x-admin.add-row>
 
     <footer class="media-workspace__pager">
         <label class="media-workspace__pager-size">
