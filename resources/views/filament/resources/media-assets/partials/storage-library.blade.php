@@ -250,7 +250,16 @@
                 <table class="media-workspace__table">
                     <thead>
                         <tr>
-                            <th scope="col" class="media-workspace__selection-head">
+                            @if ($viewMode === 'list')
+                                <th scope="col" class="media-workspace__thumb-head">Preview</th>
+                            @endif
+                            <th scope="col">Media</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Used in</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Size</th>
+                            <th scope="col">Actions</th>
+                            <th scope="col" class="media-workspace__selection-head media-workspace__selection-head--trailing">
                                 <input
                                     type="checkbox"
                                     x-data="{}"
@@ -267,15 +276,6 @@
                                     aria-label="Toggle selection for visible files"
                                 >
                             </th>
-                            @if ($viewMode === 'list')
-                                <th scope="col" class="media-workspace__thumb-head">Preview</th>
-                            @endif
-                            <th scope="col">Media</th>
-                            <th scope="col">Type</th>
-                            <th scope="col">Used in</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Size</th>
-                            <th scope="col">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -283,15 +283,6 @@
                             @php($selected = in_array($asset['id'], $selectedAssets, true))
                             @php($displayFilename = pathinfo($asset['filename'], PATHINFO_FILENAME))
                             <tr class="{{ $selected ? 'is-selected' : '' }}" wire:key="media-row-{{ $asset['id'] }}">
-                                <td class="media-workspace__selection-cell">
-                                    <input
-                                        type="checkbox"
-                                        wire:click="toggleAssetSelection({{ $asset['id'] }})"
-                                        x-bind:checked="$wire.selectedAssets.map(Number).includes({{ $asset['id'] }})"
-                                        @disabled(! $asset['selectable'])
-                                        aria-label="Toggle selection for {{ $asset['filename'] }}"
-                                    >
-                                </td>
                                 @if ($viewMode === 'list')
                                     <td class="media-workspace__thumb">
                                         <button
@@ -349,18 +340,27 @@
                                 </td>
                                 <td class="media-workspace__size">{{ $asset['size'] }}</td>
                                 <td class="media-workspace__actions">
-                                    <div class="admin-toolbar">
+                                    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
                                         @if ($viewMode === 'dense')
                                             <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">Preview</button>
                                         @endif
+                                        <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>Edit</button>
                                         @if ($asset['state'] === 'available')
                                             <a class="admin-action" href="{{ route('admin.media.download', ['mediaAsset' => $asset['id']]) }}">Download</a>
                                         @else
                                             <button class="admin-action" type="button" disabled>Download</button>
                                         @endif
-                                        <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>Edit</button>
                                         <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>Delete</button>
                                     </div>
+                                </td>
+                                <td class="media-workspace__selection-cell media-workspace__selection-cell--trailing">
+                                    <input
+                                        type="checkbox"
+                                        wire:click="toggleAssetSelection({{ $asset['id'] }})"
+                                        x-bind:checked="$wire.selectedAssets.map(Number).includes({{ $asset['id'] }})"
+                                        @disabled(! $asset['selectable'])
+                                        aria-label="Toggle selection for {{ $asset['filename'] }}"
+                                    >
                                 </td>
                             </tr>
                         @endforeach
