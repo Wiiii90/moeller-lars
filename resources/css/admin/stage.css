@@ -1,13 +1,12 @@
 /* Canonical Visual Stage geometry.
  * Six metric columns resolve into three stage thirds. Divider axes match the
- * 2/6 and 4/6 metric boundaries. Shared dividers stay inside the stage and
- * leave a consistent lower breathing room before the follow-up rule.
+ * 2/6 and 4/6 metric boundaries. Shared dividers use the same inset at both
+ * ends as the stage content: no extension and no page-local compensation.
  */
 
 :root {
     --admin-visual-stage-height: 23.5rem;
     --admin-stage-divider-inset: .25rem;
-    --admin-stage-divider-bottom-extension: var(--admin-stage-pane-space);
     --admin-stage-pane-space: var(--admin-section-gap);
 }
 
@@ -48,7 +47,7 @@
     position: absolute;
     z-index: 8;
     top: var(--admin-stage-divider-inset);
-    bottom: var(--admin-stage-divider-bottom-extension);
+    bottom: var(--admin-stage-divider-inset);
     width: 1px;
     background: var(--admin-line);
     content: "";
@@ -78,11 +77,12 @@
     content: none !important;
 }
 
+/* Rail-style pages own pane breathing room. Analytics and Home deliberately do
+ * not use this first-pane inset because their visuals must reach the exact 2/3
+ * axis. */
 :is(
-    .admin-visual-stage--rail:not(.general-appearance-stage),
-    .analytics-visual-stage,
-    .admin-storage__visual-stage,
-    .home-hero-surface
+    .admin-visual-stage--rail:not(.general-appearance-stage):not(.analytics-visual-stage):not(.home-hero-surface),
+    .admin-storage__visual-stage
 ) > :first-child {
     grid-column: 1 / span 2;
     min-width: 0;
@@ -90,10 +90,8 @@
 }
 
 :is(
-    .admin-visual-stage--rail:not(.general-appearance-stage),
-    .analytics-visual-stage,
-    .admin-storage__visual-stage,
-    .home-hero-surface
+    .admin-visual-stage--rail:not(.general-appearance-stage):not(.analytics-visual-stage):not(.home-hero-surface),
+    .admin-storage__visual-stage
 ) > :last-child {
     grid-column: 3;
     min-width: 0;
@@ -101,21 +99,22 @@
     border-left: 0 !important;
 }
 
-/* Home and Analytics intentionally reach the exact 2/3 axis. */
+/* Home and Analytics intentionally reach the exact 2/3 axis. The Analytics
+ * canvas midpoint then lands exactly on the metric boundary after column two. */
 .home-hero-surface > .home-hero-surface__visual,
 .analytics-visual-stage > .analytics-world {
     box-sizing: border-box;
+    grid-column: 1 / span 2;
     width: 100%;
     margin: 0 !important;
     padding-right: 0 !important;
     padding-left: 0 !important;
 }
 
-/* Analytics may have a schema wrapper as the first stage child. Remove the
- * generic pane padding there too, otherwise the map becomes one pane-space
- * narrower and its 50% meridian shifts half that amount to the left. */
-.analytics-visual-stage > :first-child {
-    padding-right: 0 !important;
+.analytics-visual-stage > .analytics-stage-rail,
+.home-hero-surface > .home-hero-rail {
+    grid-column: 3;
+    min-width: 0;
 }
 
 .home-hero-surface__visual {
@@ -327,10 +326,6 @@
 }
 
 @media (max-width: 760px) {
-    :root {
-        --admin-stage-divider-bottom-extension: 0rem;
-    }
-
     :is(
         .admin-visual-stage--rail,
         .admin-visual-stage--triptych,
