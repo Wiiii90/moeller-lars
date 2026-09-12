@@ -1,0 +1,22 @@
+/* Canonical admin typography safety.
+ * Values must never clip descenders such as g, p, q or y merely because the
+ * surrounding row uses a compact fixed rhythm. Horizontal truncation remains
+ * the responsibility of the containing metric cell.
+ */
+.admin-metric__value {
+    overflow: visible !important;
+    padding-block: .04em .12em;
+    margin-block: -.04em -.12em;
+    line-height: 1.2;
+    text-overflow: clip !important;
+}
+
+/* Form labels and compact value lines need enough vertical ink room as well. */
+.admin-general :is(
+    .fi-fo-field-label,
+    .fi-fo-field-label-content,
+    .general-layout-field > span:first-child
+) {
+    overflow: visible;
+    padding-bottom: .06em;
+}
