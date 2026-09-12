@@ -1,15 +1,12 @@
-/* General Visual Stage: appearance controls and device-aware public preview. */
+/* General appearance controls and device-aware public preview. */
 
 /*
- * General alone uses a local 3 x 3 matrix inside the canonical stage.
- * Desktop:
- *   appearance: x00 + x10 + x20
- *   preview:    x01 + x02 + x11 + x12
- *   geometry:   x21 + x22
- * Mobile:
- *   appearance: x00 + x01 + x10 + x11
- *   geometry:   x20 + x21
- *   preview:    x02 + x12 + x22
+ * General intentionally uses only one device-dependent split:
+ * - desktop preview: settings 1/2 | preview 1/2
+ * - phone preview:   settings 2/3 | preview 1/3
+ *
+ * Appearance and page geometry flow naturally down the settings side. The
+ * preview owns the full stage height, so there is no artificial row matrix.
  */
 .general-appearance-stage {
     position: relative;
@@ -17,15 +14,13 @@
     width: 100%;
     min-width: 0;
     min-height: 0;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: auto auto minmax(0, 1fr) !important;
     gap: 0 !important;
     overflow: visible;
 }
 
-/* Filament may insert schema/grid wrappers around the three stage blocks.
- * Flatten only wrapper ancestors of those blocks so the named blocks become
- * the actual grid items of General's matrix. Internal field grids stay intact. */
+/* Filament inserts schema/grid wrappers around the three stage blocks. Flatten
+ * only wrapper ancestors of those blocks; internal field grids stay intact. */
 .general-appearance-stage :not(
     .general-appearance-stage__controls,
     .general-appearance-stage__preview,
@@ -49,50 +44,54 @@
 .general-appearance-stage__geometry {
     box-sizing: border-box;
     width: 100%;
-    height: 100%;
     min-width: 0;
     min-height: 0;
 }
 
-.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__controls {
+.general-appearance-stage[data-preview-device="desktop"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.general-appearance-stage[data-preview-device="mobile"] {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) !important;
+}
+
+.general-appearance-stage__controls {
     grid-column: 1;
-    grid-row: 1 / span 3;
+    grid-row: 1;
+    height: auto;
     padding-right: var(--admin-stage-pane-space);
+    overflow: visible;
 }
 
-.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__preview {
-    grid-column: 2 / span 2;
-    grid-row: 1 / span 2;
-}
-
-.general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__geometry {
-    grid-column: 2 / span 2;
-    grid-row: 3;
-}
-
-.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__controls {
-    grid-column: 1 / span 2;
-    grid-row: 1 / span 2;
+.general-appearance-stage__geometry {
+    display: grid;
+    grid-column: 1;
+    grid-row: 2;
+    height: auto;
+    margin-top: 1rem;
     padding-right: var(--admin-stage-pane-space);
+    align-content: start;
 }
 
-.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__preview {
-    grid-column: 3;
-    grid-row: 1 / span 3;
+.general-appearance-stage__preview {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1 / -1;
+    height: 100%;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: .25rem;
+    padding-left: var(--admin-stage-pane-space);
+    overflow: hidden;
 }
 
-.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__geometry {
-    grid-column: 1 / span 2;
-    grid-row: 3;
-    padding-right: var(--admin-stage-pane-space);
-}
-
-/* General is the sole divider exception because its local matrix has a shorter
- * desktop divider. Shared stage dividers remain centralized in stage.css. */
+/* General is the one stage whose divider axis changes with preview mode. Its
+ * vertical breathing room is otherwise identical above and below. */
 .general-appearance-stage::after {
     position: absolute;
     z-index: 8;
-    top: var(--admin-stage-divider-inset);
+    top: var(--admin-stage-pane-space);
+    bottom: var(--admin-stage-pane-space);
     width: 1px;
     background: var(--admin-line);
     content: "";
@@ -100,39 +99,16 @@
 }
 
 .general-appearance-stage[data-preview-device="desktop"]::after {
-    left: 33.333333%;
-    bottom: calc(33.333333% + var(--admin-stage-divider-inset));
+    left: 50%;
 }
 
 .general-appearance-stage[data-preview-device="mobile"]::after {
     left: 66.666667%;
-    bottom: var(--admin-stage-divider-inset);
-}
-
-.general-appearance-stage__controls {
-    overflow: visible;
 }
 
 .general-appearance-stage__controls > .fi-sc-grid {
     align-content: start;
-}
-
-.general-appearance-stage__preview {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: .25rem;
-    padding-left: var(--admin-stage-pane-space);
-    overflow: hidden;
-}
-
-.general-appearance-stage__geometry {
-    display: grid;
-    padding-left: var(--admin-stage-pane-space);
-    align-content: center;
-}
-
-.general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__geometry {
-    padding-left: 0;
+    gap: 1rem !important;
 }
 
 .general-appearance-stage__geometry > * {
@@ -157,7 +133,7 @@
 }
 
 .admin-general .fi-fo-field-wrp {
-    gap: .28rem;
+    gap: .24rem;
 }
 
 .admin-general .fi-fo-field-label,
@@ -166,11 +142,11 @@
     font-size: .68rem !important;
     font-weight: 700 !important;
     letter-spacing: .09em;
-    line-height: 1.2;
+    line-height: 1.25;
     text-transform: uppercase;
 }
 
-/* Required state stays in validation, but General does not need red asterisks. */
+/* Required state remains validation state; General does not need red marks. */
 .admin-general :is(.fi-fo-field-label, .fi-fo-field-label-content, .fi-fo-field-wrp-label) > :is(
     sup,
     .fi-fo-field-label-required-mark,
@@ -179,8 +155,6 @@
     display: none !important;
 }
 
-/* General's selects always have an explicit state; suppress Filament's empty
- * placeholder option instead of inviting an invalid third state. */
 .admin-general select option[value=""] {
     display: none;
 }
@@ -194,7 +168,6 @@
     font-size: .78rem !important;
 }
 
-/* Native boolean selects already sit inside a lined Filament wrapper. */
 .admin-general .fi-input-wrp .admin-form-control {
     border: 0 !important;
     border-radius: 0 !important;
@@ -202,24 +175,18 @@
     box-shadow: none !important;
 }
 
-/* Keep help affordances inside the same label line instead of increasing the
- * field wrapper height and shifting Contact form recipient downward. */
 .admin-general .admin-form-label-with-help {
     gap: .2rem;
     align-items: center;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
-.admin-general .admin-form-label-with-help .admin-help {
+.admin-general .admin-form-label-with-help .admin-help,
+.admin-general .admin-form-label-with-help .admin-help__trigger {
     width: 1rem;
     height: 1rem;
     margin-inline-start: 0;
     align-self: center;
-}
-
-.admin-general .admin-form-label-with-help .admin-help__trigger {
-    width: 1rem;
-    height: 1rem;
 }
 
 .admin-general .admin-form-label-with-help .admin-help__trigger svg {
@@ -227,8 +194,6 @@
     height: .78rem;
 }
 
-/* General uses the same strong section rule as metrics and Visual Stage
- * follow-ups on the other workspaces. */
 .admin-general .general-separator {
     border-top-color: var(--admin-line-strong);
 }
@@ -244,14 +209,16 @@
     min-width: 0;
 }
 
-/* Background controls are a strict 2 x 2 matrix in semantic column order:
- * Background -> Angle on the left, Primary -> Secondary on the right. */
+/* Semantic 2 x 2 order is supplied by the schema:
+ * Background | Primary color
+ * Angle      | Secondary color
+ */
 .general-background-row.fi-sc-grid,
 .general-background-row .fi-sc-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     grid-auto-flow: row !important;
-    gap: .8rem var(--admin-stage-pane-space) !important;
+    gap: .65rem var(--admin-stage-pane-space) !important;
 }
 
 .general-background-row.fi-sc-grid > *,
@@ -260,14 +227,14 @@
     min-width: 0;
 }
 
+/* Page geometry now belongs to the settings side in both preview modes. */
 .general-layout-controls {
     display: grid;
     width: 100%;
-    height: 100%;
     min-width: 0;
     margin: 0;
     padding: 0;
-    align-content: center;
+    align-content: start;
 }
 
 .general-layout-controls__fields {
@@ -280,7 +247,7 @@
 .general-layout-field {
     display: grid;
     min-width: 0;
-    gap: .28rem;
+    gap: .24rem;
 }
 
 .general-layout-field:first-child {
@@ -296,6 +263,7 @@
     font-size: .68rem;
     font-weight: 700;
     letter-spacing: .09em;
+    line-height: 1.25;
     text-transform: uppercase;
 }
 
@@ -337,6 +305,7 @@
     line-height: 1.35;
 }
 
+/* Preview toolbar */
 .general-live-preview__toolbar {
     display: flex;
     min-width: 0;
@@ -417,10 +386,12 @@
     outline: none;
 }
 
+/* Preview frame */
 .general-live-preview__viewport {
     display: grid;
     min-width: 0;
     min-height: 0;
+    padding: .2rem 0 .35rem;
     place-items: center;
     overflow: hidden;
     background: transparent;
@@ -436,47 +407,47 @@
     max-width: 100%;
     max-height: 100%;
     overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--admin-text) 30%, var(--admin-line-strong));
+    border: 1px solid color-mix(in srgb, var(--admin-text) 42%, var(--admin-line-strong));
+    outline: 1px solid color-mix(in srgb, var(--admin-line-strong) 55%, transparent);
+    outline-offset: -2px;
     background: var(--admin-surface);
-    box-shadow:
-        0 1px 0 color-mix(in srgb, var(--admin-text) 8%, transparent),
-        0 .45rem 1.15rem color-mix(in srgb, #000 10%, transparent);
+    box-shadow: 0 .18rem .5rem color-mix(in srgb, #000 9%, transparent);
     transition: width .18s ease, height .18s ease, border-radius .18s ease;
 }
 
 .general-live-preview__device.is-desktop {
-    border-radius: .4rem;
+    border-radius: .32rem;
 }
 
 .general-live-preview__device.is-mobile {
-    border-radius: .85rem;
+    border-radius: 1rem;
     box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--admin-line-strong) 55%, transparent),
-        0 .45rem 1.15rem color-mix(in srgb, #000 10%, transparent);
+        inset 0 0 0 1px color-mix(in srgb, var(--admin-text) 18%, transparent),
+        0 .18rem .5rem color-mix(in srgb, #000 9%, transparent);
 }
 
 .general-live-preview__browser {
     display: grid;
     min-width: 0;
     grid-template-columns: auto minmax(0, 1fr);
-    gap: .45rem;
+    gap: .4rem;
     padding: .2rem .35rem;
     align-items: center;
-    border-bottom: 1px solid var(--admin-line);
-    background: color-mix(in srgb, var(--admin-subtle) 82%, var(--admin-surface));
+    border-bottom: 1px solid var(--admin-line-strong);
+    background: color-mix(in srgb, var(--admin-subtle) 84%, var(--admin-surface));
     user-select: none;
 }
 
 .general-live-preview__browser-dots {
     display: inline-flex;
-    gap: .2rem;
+    gap: .18rem;
     align-items: center;
 }
 
 .general-live-preview__browser-dots i {
     display: block;
-    width: .28rem;
-    height: .28rem;
+    width: .26rem;
+    height: .26rem;
     border-radius: 50%;
     background: var(--admin-line-strong);
 }
@@ -490,7 +461,7 @@
     align-items: center;
     overflow: hidden;
     border: 1px solid var(--admin-line);
-    border-radius: .18rem;
+    border-radius: .16rem;
     background: var(--admin-surface);
     color: var(--admin-muted);
     font-size: .5rem;
@@ -541,14 +512,10 @@
     pointer-events: auto !important;
     touch-action: auto;
     transform-origin: top left;
+    backface-visibility: hidden;
 }
 
 @media (max-width: 900px) {
-    .general-background-row.fi-sc-grid,
-    .general-background-row .fi-sc-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
     .general-live-preview__preset {
         display: none;
     }
