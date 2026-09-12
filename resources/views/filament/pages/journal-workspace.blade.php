@@ -120,11 +120,24 @@
                 </x-slot:selection>
             </x-admin.controls>
 
-            <x-admin.table class="admin-table--data">
+            <x-admin.table class="admin-table--data admin-table--ranked">
                 <table>
                     <thead>
                         <tr>
-                            <th scope="col" class="admin-table__selection">
+                            <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
+                            @if ($isBlog)
+                                <th scope="col" class="journal-visual">Image</th>
+                            @endif
+                            <th scope="col">{{ $isBlog ? 'Post' : 'Exhibition' }}</th>
+                            <th scope="col">Status</th>
+                            @if ($isBlog)
+                                <th scope="col">Publication</th>
+                            @else
+                                <th scope="col">Timing</th>
+                                <th scope="col">Schedule</th>
+                            @endif
+                            <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
                                     type="checkbox"
                                     x-data="{}"
@@ -138,20 +151,6 @@
                                     aria-label="Toggle selection for visible {{ $entryLabel }}"
                                 >
                             </th>
-                            <th scope="col" class="admin-table__drag">Drag</th>
-                            <th scope="col" class="admin-table__position">Position</th>
-                            @if ($isBlog)
-                                <th scope="col" class="journal-visual">Image</th>
-                            @endif
-                            <th scope="col">{{ $isBlog ? 'Post' : 'Exhibition' }}</th>
-                            <th scope="col">Status</th>
-                            @if ($isBlog)
-                                <th scope="col">Publication</th>
-                            @else
-                                <th scope="col">Timing</th>
-                                <th scope="col">Schedule</th>
-                            @endif
-                            <th scope="col" class="admin-table__actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody @if ($dragEnabled) wire:sort="{{ $isBlog ? 'sortPost' : 'sortExhibition' }}" @endif>
@@ -161,13 +160,7 @@
                                 wire:key="journal-{{ $template }}-{{ $entry['id'] }}"
                                 @if ($dragEnabled) wire:sort:item="{{ $entry['id'] }}" @endif
                             >
-                                <td class="admin-table__selection">
-                                    @if ($isBlog)
-                                        <input type="checkbox" wire:click="togglePostSelection({{ $entry['id'] }})" @checked(in_array($entry['id'], $selectedIds, true)) aria-label="Toggle selection for {{ $entry['title'] }}">
-                                    @else
-                                        <input type="checkbox" wire:click="toggleExhibitionSelection({{ $entry['id'] }})" @checked(in_array($entry['id'], $selectedIds, true)) aria-label="Toggle selection for {{ $entry['title'] }}">
-                                    @endif
-                                </td>
+                                <td class="admin-table__position"><span class="admin-position">{{ $entry['rank'] }}</span></td>
                                 <td class="admin-table__drag">
                                     <button
                                         class="admin-drag-handle"
@@ -176,7 +169,6 @@
                                         aria-label="Drag {{ $entry['title'] }} to reorder"
                                     >⋮⋮</button>
                                 </td>
-                                <td class="admin-table__position"><span class="admin-position">{{ $entry['rank'] }}</span></td>
                                 @if ($isBlog)
                                     <td class="journal-visual">
                                         <div class="journal-visual__thumbnail">
@@ -207,8 +199,10 @@
                                     </td>
                                 @endif
                                 <td class="admin-table__actions">
-                                    <x-admin.toolbar>
+                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical">
                                         @if ($isBlog)
+                                            <button class="admin-action admin-order-action" type="button" wire:click="movePost({{ $entry['id'] }}, 'up')" @disabled(! $entry['can_move_up']) aria-label="Move {{ $entry['title'] }} up">↑</button>
+                                            <button class="admin-action admin-order-action" type="button" wire:click="movePost({{ $entry['id'] }}, 'down')" @disabled(! $entry['can_move_down']) aria-label="Move {{ $entry['title'] }} down">↓</button>
                                             <button class="admin-action" type="button" wire:click="mountAction('editPost', { post: {{ $entry['id'] }} })">Edit</button>
 
                                             @if ($entry['state'] === 'published')
@@ -233,21 +227,26 @@
                                                 <button class="admin-action" type="button" disabled>Archive</button>
                                             @endif
 
-                                            <button class="admin-action admin-order-action" type="button" wire:click="movePost({{ $entry['id'] }}, 'up')" @disabled(! $entry['can_move_up']) aria-label="Move {{ $entry['title'] }} up">↑</button>
-                                            <button class="admin-action admin-order-action" type="button" wire:click="movePost({{ $entry['id'] }}, 'down')" @disabled(! $entry['can_move_down']) aria-label="Move {{ $entry['title'] }} down">↓</button>
                                             <button class="admin-action is-danger" type="button" wire:click="mountAction('deletePost', { post: {{ $entry['id'] }} })" @disabled(! $entry['can_delete']) title="{{ $entry['delete_help'] ?? 'Delete post' }}">Delete</button>
                                         @else
+                                            <button class="admin-action admin-order-action" type="button" wire:click="moveExhibition({{ $entry['id'] }}, 'up')" @disabled(! $entry['can_move_up']) aria-label="Move {{ $entry['title'] }} up">↑</button>
+                                            <button class="admin-action admin-order-action" type="button" wire:click="moveExhibition({{ $entry['id'] }}, 'down')" @disabled(! $entry['can_move_down']) aria-label="Move {{ $entry['title'] }} down">↓</button>
                                             <button class="admin-action" type="button" wire:click="mountAction('editExhibition', { exhibition: {{ $entry['id'] }} })">Edit</button>
                                             @if ($entry['state'] === 'published')
                                                 <button class="admin-action admin-action--state" type="button" wire:click="unpublishExhibition({{ $entry['id'] }})">Unpublish</button>
                                             @else
                                                 <button class="admin-action admin-action--state" type="button" wire:click="publishExhibition({{ $entry['id'] }})">Publish</button>
                                             @endif
-                                            <button class="admin-action admin-order-action" type="button" wire:click="moveExhibition({{ $entry['id'] }}, 'up')" @disabled(! $entry['can_move_up']) aria-label="Move {{ $entry['title'] }} up">↑</button>
-                                            <button class="admin-action admin-order-action" type="button" wire:click="moveExhibition({{ $entry['id'] }}, 'down')" @disabled(! $entry['can_move_down']) aria-label="Move {{ $entry['title'] }} down">↓</button>
                                             <button class="admin-action is-danger" type="button" wire:click="mountAction('deleteExhibition', { exhibition: {{ $entry['id'] }} })" @disabled(! $entry['can_delete']) title="{{ $entry['delete_help'] ?? 'Delete exhibition' }}">Delete</button>
                                         @endif
                                     </x-admin.toolbar>
+                                </td>
+                                <td class="admin-table__selection admin-table__selection--trailing">
+                                    @if ($isBlog)
+                                        <input type="checkbox" wire:click="togglePostSelection({{ $entry['id'] }})" @checked(in_array($entry['id'], $selectedIds, true)) aria-label="Toggle selection for {{ $entry['title'] }}">
+                                    @else
+                                        <input type="checkbox" wire:click="toggleExhibitionSelection({{ $entry['id'] }})" @checked(in_array($entry['id'], $selectedIds, true)) aria-label="Toggle selection for {{ $entry['title'] }}">
+                                    @endif
                                 </td>
                             </tr>
                         @empty
