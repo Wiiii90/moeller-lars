@@ -43,7 +43,7 @@ class AdminPanelProvider extends PanelProvider
             ->authGuard('web')
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
-            ->brandName('Admin')
+            ->brandName('Admin Area')
             ->favicon(asset('admin-favicon.svg'))
             ->homeUrl(fn (): string => route('home'))
             ->breadcrumbs(false)
