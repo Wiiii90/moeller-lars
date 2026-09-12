@@ -107,7 +107,13 @@
             <x-admin.table>
                 <div class="admin-hierarchy admin-hierarchy--pages" role="table" aria-label="Pages">
                     <div class="admin-hierarchy__header" role="row">
-                        <label class="admin-hierarchy__selection" role="columnheader" data-column="selection">
+                        <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">Position</span>
+                        <span role="columnheader" data-column="page-type">Page type</span>
+                        <span role="columnheader" data-column="page">Page</span>
+                        <span role="columnheader" data-column="template">Template</span>
+                        <span role="columnheader" data-column="status">Status</span>
+                        <span role="columnheader" data-column="actions">Actions</span>
+                        <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="columnheader" data-column="selection">
                             <input
                                 type="checkbox"
                                 aria-label="Select all visible pages"
@@ -119,13 +125,6 @@
                             >
                             <span class="sr-only">Selection</span>
                         </label>
-                        <span role="columnheader" data-column="drag"><span class="sr-only">Drag</span></span>
-                        <span role="columnheader" data-column="position">Position</span>
-                        <span role="columnheader" data-column="page-type">Page type</span>
-                        <span role="columnheader" data-column="page">Page</span>
-                        <span role="columnheader" data-column="template">Template</span>
-                        <span role="columnheader" data-column="status">Status</span>
-                        <span role="columnheader" data-column="actions">Actions</span>
                     </div>
 
                     @if ($sections !== [])
