@@ -89,9 +89,7 @@ class AdminPanelProvider extends PanelProvider
 
     private function navigation(NavigationBuilder $builder): NavigationBuilder
     {
-        $generalItem = General::getNavigationItems()[0]
-            ->group(null)
-            ->icon(AdminIcon::General);
+        $generalItem = General::getNavigationItems()[0]->group(null);
         $pagesItem = SitePages::getNavigationItems()[0]
             ->group(null)
             ->childItems(app(SiteNavigation::class)->items())

@@ -7,6 +7,7 @@ use App\Domain\Content\PublicAppearance;
 use App\Filament\Support\AdminBooleanControl;
 use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
+use App\Filament\Support\AdminIcon;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
@@ -18,7 +19,6 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -44,7 +44,7 @@ final class General extends Page
         'legal_disclaimer',
     ];
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGlobeAlt;
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::General;
 
     protected static string|UnitEnum|null $navigationGroup = null;
 
@@ -120,7 +120,7 @@ final class General extends Page
                                 ->suffixAction(
                                     Action::make('removeFavicon')
                                         ->label('Remove site icon')
-                                        ->icon('heroicon-m-x-mark')
+                                        ->icon(AdminIcon::Remove->mini())
                                         ->iconButton()
                                         ->color('gray')
                                         ->extraAttributes(['class' => 'general-site-icon-remove'])
