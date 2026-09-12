@@ -101,16 +101,20 @@
 
 .general-appearance-stage[data-preview-device="desktop"]::after {
     left: 33.333333%;
-    bottom: 33.333333%;
+    bottom: calc(33.333333% + var(--admin-stage-divider-inset));
 }
 
 .general-appearance-stage[data-preview-device="mobile"]::after {
     left: 66.666667%;
-    bottom: var(--admin-stage-pane-space);
+    bottom: var(--admin-stage-divider-inset);
 }
 
 .general-appearance-stage__controls {
     overflow: hidden;
+}
+
+.general-appearance-stage__controls > .fi-sc-grid {
+    align-content: start;
 }
 
 .general-appearance-stage__preview {
@@ -181,18 +185,17 @@
 }
 
 .general-background-row,
-.general-background-row > * {
+.general-background-row > *,
+.general-background-row > .fi-sc-grid > * {
     min-width: 0;
 }
 
-/* Narrow desktop appearance column: use two columns and two rows. */
-.general-appearance-stage[data-preview-device="desktop"] .general-background-row {
+/* Background controls always use a calm 2 x 2 matrix. This is deliberately
+ * independent of Filament's Group::columns(4) declaration. */
+.general-background-row > .fi-sc-grid {
+    display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-}
-
-/* Mobile gives appearance two stage columns, so all four controls fit in one row. */
-.general-appearance-stage[data-preview-device="mobile"] .general-background-row {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: .65rem var(--admin-stage-pane-space) !important;
 }
 
 .general-layout-controls {
@@ -273,11 +276,12 @@
 }
 
 .general-live-preview__toolbar {
-    display: grid;
-    min-height: 0;
-    gap: .28rem;
-    align-content: start;
-    justify-items: start;
+    display: flex;
+    min-width: 0;
+    min-height: 1.8rem;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .general-live-preview__title {
@@ -300,8 +304,9 @@
 
 .general-live-preview__modes {
     display: flex;
+    flex: 0 0 auto;
     gap: .2rem;
-    justify-content: flex-start;
+    align-items: center;
 }
 
 .general-live-preview__mode {
@@ -335,8 +340,9 @@
     display: grid;
     min-width: 0;
     min-height: 0;
-    place-items: stretch center;
+    place-items: center;
     overflow: hidden;
+    background: transparent;
 }
 
 .general-live-preview__device {
@@ -344,6 +350,8 @@
     box-sizing: border-box;
     display: grid;
     grid-template-rows: 1.7rem minmax(0, 1fr);
+    max-width: 100%;
+    max-height: 100%;
     overflow: hidden;
     border: 1px solid color-mix(in srgb, var(--admin-text) 30%, var(--admin-line-strong));
     background: var(--admin-surface);
@@ -351,6 +359,23 @@
         0 1px 0 color-mix(in srgb, var(--admin-text) 8%, transparent),
         0 .45rem 1.15rem color-mix(in srgb, #000 10%, transparent);
     transition: width .18s ease, height .18s ease, border-radius .18s ease;
+}
+
+.general-live-preview__device.is-desktop {
+    height: 100%;
+    width: auto;
+    aspect-ratio: 16 / 9;
+    border-radius: .45rem;
+}
+
+.general-live-preview__device.is-mobile {
+    height: 100%;
+    width: auto;
+    aspect-ratio: 390 / 844;
+    border-radius: 1rem;
+    box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--admin-line-strong) 55%, transparent),
+        0 .45rem 1.15rem color-mix(in srgb, #000 10%, transparent);
 }
 
 .general-live-preview__browser {
@@ -416,22 +441,6 @@
     background: #fff;
 }
 
-.general-live-preview__device.is-desktop {
-    width: min(100%, 52rem);
-    height: 100%;
-    border-radius: .42rem;
-}
-
-.general-live-preview__device.is-mobile {
-    width: min(100%, 14.5rem);
-    height: 100%;
-    max-width: 100%;
-    border-radius: 1rem;
-    box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--admin-line-strong) 55%, transparent),
-        0 .45rem 1.15rem color-mix(in srgb, #000 10%, transparent);
-}
-
 .general-live-preview__device.is-mobile .general-live-preview__browser {
     grid-template-columns: minmax(0, 1fr);
     padding-inline: .35rem;
@@ -451,22 +460,8 @@
     transform-origin: top left;
 }
 
-.general-live-preview__device.is-desktop iframe {
-    width: 1180px;
-    height: 760px;
-    transform: scale(.66);
-}
-
-.general-live-preview__device.is-mobile iframe {
-    width: 390px;
-    height: 844px;
-    transform: scale(.58);
-}
-
 @media (max-width: 900px) {
-    .general-background-row,
-    .general-appearance-stage[data-preview-device="desktop"] .general-background-row,
-    .general-appearance-stage[data-preview-device="mobile"] .general-background-row {
+    .general-background-row > .fi-sc-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 }
@@ -511,8 +506,9 @@
         overflow: visible;
     }
 
-    .general-layout-controls__fields {
-        grid-template-columns: 1fr;
+    .general-layout-controls__fields,
+    .general-background-row > .fi-sc-grid {
+        grid-template-columns: 1fr !important;
     }
 
     .general-layout-field:first-child,
@@ -523,6 +519,8 @@
 
     .general-live-preview__device.is-desktop,
     .general-live-preview__device.is-mobile {
+        width: min(100%, 20rem);
         height: 18rem;
+        aspect-ratio: auto;
     }
 }
