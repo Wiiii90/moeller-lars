@@ -188,7 +188,7 @@ final class General extends Page
                                 ->afterStateUpdated(self::persist('background_gradient_angle'))
                                 ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
                         ])
-                            ->columns(4)
+                            ->columns(2)
                             ->extraAttributes(['class' => 'general-background-row'])
                             ->columnSpanFull(),
 
