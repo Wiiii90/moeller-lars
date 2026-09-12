@@ -68,6 +68,8 @@
 .general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__geometry {
     grid-column: 2 / span 2;
     grid-row: 3;
+    padding-top: .45rem;
+    border-top: 1px solid var(--admin-line);
 }
 
 .general-appearance-stage[data-preview-device="mobile"] .general-appearance-stage__controls {
@@ -170,6 +172,21 @@
     text-transform: uppercase;
 }
 
+/* Required state stays in validation, but General does not need red asterisks. */
+.admin-general :is(.fi-fo-field-label, .fi-fo-field-label-content, .fi-fo-field-wrp-label) > :is(
+    sup,
+    .fi-fo-field-label-required-mark,
+    .fi-fo-field-wrp-label-required-mark
+) {
+    display: none !important;
+}
+
+/* General's selects always have an explicit state; suppress Filament's empty
+ * placeholder option instead of inviting an invalid third state. */
+.admin-general select option[value=""] {
+    display: none;
+}
+
 .admin-general .fi-input,
 .admin-general .fi-select-input {
     min-height: calc(var(--admin-control-height) - 1px);
@@ -179,6 +196,45 @@
     font-size: .78rem !important;
 }
 
+/* Native boolean selects already sit inside a lined Filament wrapper. */
+.admin-general .fi-input-wrp .admin-form-control {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Keep help affordances inside the same label line instead of increasing the
+ * field wrapper height and shifting Contact form recipient downward. */
+.admin-general .admin-form-label-with-help {
+    gap: .2rem;
+    align-items: center;
+    line-height: 1.2;
+}
+
+.admin-general .admin-form-label-with-help .admin-help {
+    width: 1rem;
+    height: 1rem;
+    margin-inline-start: 0;
+    align-self: center;
+}
+
+.admin-general .admin-form-label-with-help .admin-help__trigger {
+    width: 1rem;
+    height: 1rem;
+}
+
+.admin-general .admin-form-label-with-help .admin-help__trigger svg {
+    width: .78rem;
+    height: .78rem;
+}
+
+/* General uses the same strong section rule as metrics and Visual Stage
+ * follow-ups on the other workspaces. */
+.admin-general .general-separator {
+    border-top-color: var(--admin-line-strong);
+}
+
 .general-site-icon-control {
     width: 100%;
     max-width: 100%;
@@ -186,16 +242,29 @@
 
 .general-background-row,
 .general-background-row > *,
-.general-background-row > .fi-sc-grid > * {
+.general-background-row .fi-sc-grid > * {
     min-width: 0;
 }
 
-/* Background controls always use a calm 2 x 2 matrix. This is deliberately
- * independent of Filament's Group::columns(4) declaration. */
-.general-background-row > .fi-sc-grid {
+/* Background controls are deliberately a 2 x 2 matrix in both preview modes.
+ * Cover Filament's shallow schema wrapper variants without reaching into field
+ * internals. */
+.general-background-row.fi-sc-grid,
+.general-background-row > .fi-sc-grid,
+.general-background-row > .fi-sc > .fi-sc-grid,
+.general-background-row > div > .fi-sc-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-flow: row !important;
     gap: .65rem var(--admin-stage-pane-space) !important;
+}
+
+.general-background-row.fi-sc-grid > *,
+.general-background-row > .fi-sc-grid > *,
+.general-background-row > .fi-sc > .fi-sc-grid > *,
+.general-background-row > div > .fi-sc-grid > * {
+    grid-column: span 1 !important;
+    min-width: 0;
 }
 
 .general-layout-controls {
@@ -302,6 +371,24 @@
     flex: 0 0 auto;
 }
 
+.general-live-preview__toolbar-meta {
+    display: flex;
+    min-width: 0;
+    gap: .65rem;
+    align-items: center;
+    margin-left: auto;
+}
+
+.general-live-preview__preset {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--admin-faint);
+    font-size: .62rem;
+    font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .general-live-preview__modes {
     display: flex;
     flex: 0 0 auto;
@@ -349,7 +436,9 @@
     position: relative;
     box-sizing: border-box;
     display: grid;
-    grid-template-rows: 1.7rem minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    width: 1px;
+    height: 1px;
     max-width: 100%;
     max-height: 100%;
     overflow: hidden;
@@ -362,17 +451,11 @@
 }
 
 .general-live-preview__device.is-desktop {
-    height: 100%;
-    width: auto;
-    aspect-ratio: 16 / 9;
-    border-radius: .45rem;
+    border-radius: .4rem;
 }
 
 .general-live-preview__device.is-mobile {
-    height: 100%;
-    width: auto;
-    aspect-ratio: 390 / 844;
-    border-radius: 1rem;
+    border-radius: .85rem;
     box-shadow:
         inset 0 0 0 1px color-mix(in srgb, var(--admin-line-strong) 55%, transparent),
         0 .45rem 1.15rem color-mix(in srgb, #000 10%, transparent);
@@ -387,6 +470,7 @@
     align-items: center;
     border-bottom: 1px solid var(--admin-line);
     background: color-mix(in srgb, var(--admin-subtle) 82%, var(--admin-surface));
+    user-select: none;
 }
 
 .general-live-preview__browser-dots {
@@ -439,6 +523,8 @@
     min-height: 0;
     overflow: hidden;
     background: #fff;
+    isolation: isolate;
+    pointer-events: auto;
 }
 
 .general-live-preview__device.is-mobile .general-live-preview__browser {
@@ -452,17 +538,27 @@
 
 .general-live-preview__device iframe {
     position: absolute;
+    z-index: 1;
     top: 0;
     left: 0;
     display: block;
     border: 0;
     background: #fff;
+    pointer-events: auto !important;
+    touch-action: auto;
     transform-origin: top left;
 }
 
 @media (max-width: 900px) {
-    .general-background-row > .fi-sc-grid {
+    .general-background-row.fi-sc-grid,
+    .general-background-row > .fi-sc-grid,
+    .general-background-row > .fi-sc > .fi-sc-grid,
+    .general-background-row > div > .fi-sc-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .general-live-preview__preset {
+        display: none;
     }
 }
 
@@ -506,8 +602,16 @@
         overflow: visible;
     }
 
+    .general-appearance-stage[data-preview-device="desktop"] .general-appearance-stage__geometry {
+        padding-top: 0;
+        border-top: 0;
+    }
+
     .general-layout-controls__fields,
-    .general-background-row > .fi-sc-grid {
+    .general-background-row.fi-sc-grid,
+    .general-background-row > .fi-sc-grid,
+    .general-background-row > .fi-sc > .fi-sc-grid,
+    .general-background-row > div > .fi-sc-grid {
         grid-template-columns: 1fr !important;
     }
 
@@ -517,10 +621,11 @@
         padding-left: 0;
     }
 
-    .general-live-preview__device.is-desktop,
-    .general-live-preview__device.is-mobile {
-        width: min(100%, 20rem);
-        height: 18rem;
-        aspect-ratio: auto;
+    .general-live-preview__viewport {
+        min-height: 18rem;
+    }
+
+    .general-live-preview__toolbar {
+        margin-bottom: .45rem;
     }
 }
