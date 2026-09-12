@@ -37,11 +37,13 @@ Route::middleware(ProtectArtistPreview::class)
     });
 
 Route::get('/admin/home', fn () => redirect()->to(HomePresentation::getUrl(), 301));
-Route::get('/admin/media-assets', fn () => redirect()->to(MediaAssetResource::getUrl('index'), 301));
-Route::get('/admin/media-assets/{record}/edit', fn (string $record) => redirect()->to(MediaAssetResource::getUrl('edit', ['record' => $record]), 301))
-    ->whereNumber('record');
-Route::get('/admin/media-assets/{record}', fn (string $record) => redirect()->to(MediaAssetResource::getUrl('view', ['record' => $record]), 301))
-    ->whereNumber('record');
+foreach (['media-assets', 'media-files'] as $legacyMediaPath) {
+    Route::get('/admin/'.$legacyMediaPath, fn () => redirect()->to(MediaAssetResource::getUrl('index'), 301));
+    Route::get('/admin/'.$legacyMediaPath.'/{record}/edit', fn (string $record) => redirect()->to(MediaAssetResource::getUrl('edit', ['record' => $record]), 301))
+        ->whereNumber('record');
+    Route::get('/admin/'.$legacyMediaPath.'/{record}', fn (string $record) => redirect()->to(MediaAssetResource::getUrl('view', ['record' => $record]), 301))
+        ->whereNumber('record');
+}
 
 Route::get('/admin/media-preview/original/{mediaAsset}', [AdminMediaController::class, 'original'])
     ->name('admin.media.original');
