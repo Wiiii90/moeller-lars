@@ -3,7 +3,7 @@
 use Filament\Pages\BasePage;
 
 /** @return list<class-string<BasePage>> */
-function adminPageClasses(): array
+function adminDocumentMetadataPageClasses(): array
 {
     $root = dirname(__DIR__, 2).'/app/Filament';
     $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));
@@ -46,7 +46,7 @@ function adminPageClasses(): array
 }
 
 it('never lets an application admin page fall back to its PHP class name for the document title', function (): void {
-    $pages = adminPageClasses();
+    $pages = adminDocumentMetadataPageClasses();
 
     expect($pages)->not->toBeEmpty();
 
@@ -63,7 +63,7 @@ it('never lets an application admin page fall back to its PHP class name for the
 
         $title = $reflection->getProperty('title')->getValue();
 
-        expect($title, $page.' must declare a canonical document title instead of using Filament\'s class-name fallback.')
+        expect($title)
             ->toBeString()
             ->not->toBe('');
     }
