@@ -27,15 +27,15 @@ class MediaAssetResource extends Resource
 {
     protected static ?string $model = MediaAsset::class;
 
-    protected static ?string $slug = 'media-files';
+    protected static ?string $slug = 'storage';
 
-    protected static string|BackedEnum|null $navigationIcon = AdminIcon::MediaFiles;
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::Storage;
 
     protected static string|UnitEnum|null $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Media Files';
+    protected static ?string $navigationLabel = 'Storage';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 13;
 
     public static function getRecordTitleAttribute(): ?string
     {
