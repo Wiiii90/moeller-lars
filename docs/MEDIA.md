@@ -35,6 +35,8 @@ Format/safety ceilings are configured in bytes:
 
 `MEDIA_STORAGE_QUOTA_BYTES` is the operator/platform-injected admission ceiling. Cached display values are not authoritative for upload admission.
 
+The artist-facing Storage workspace deliberately separates normal navigation from authoritative filesystem measurement. Normal navigation consumes an existing bounded display snapshot only. An explicit Storage measurement refresh, and file mutations that need fresh capacity state, may perform the authoritative filesystem walk. Upload admission remains independently authoritative.
+
 ## Canonical original and variants
 
 For every `MediaAsset`, authoritative technical identity includes generated storage key, content-derived MIME, byte size and SHA-256.
@@ -79,7 +81,7 @@ Two questions are deliberately separate:
 
 Answers whether an asset is referenced anywhere in canonical editorial data.
 
-This protects deletion and powers Files reference/destination inspection. A reference may belong to draft, inactive or presentation-disabled content.
+This protects deletion and powers Storage reference/destination inspection. A reference may belong to draft, inactive or presentation-disabled content.
 
 For a Journal SiteSection, reference discovery includes **both retained Blog and Exhibition entry worlds** even when only one Journal template is currently active. Template switching does not make inactive retained content “unreferenced”.
 
@@ -124,9 +126,9 @@ Credit/copyright fields are editorial metadata and do not alter immutable techni
 
 ## Editor selection
 
-Media Files is the authoritative reusable library. Editor media selection should use the central lazy `MediaAssetSelect` pattern rather than eager full-library preloading/plucking.
+Storage is the authoritative reusable media library. Editor media selection should use the central lazy `MediaAssetSelect` pattern rather than eager full-library preloading/plucking.
 
-Consumer-specific type restrictions remain explicit. Files supporting audio does not make audio valid in every image/video consumer.
+Consumer-specific type restrictions remain explicit. Storage supporting audio does not make audio valid in every image/video consumer.
 
 ## Deletion and cleanup
 
@@ -141,29 +143,34 @@ Normal media deletion is conservative and reference-aware.
 
 Presentation toggles such as Exhibition Gallery/Map do not silently detach unrelated media.
 
-## Files workspace
+## Storage workspace
 
-The artist-facing reusable workspace is **Files**. It is optimized for finding/reusing/managing assets rather than imitating a Gallery contact sheet.
+The artist-facing reusable media and capacity workspace is **Storage** at `/admin/storage`. It combines the reusable media library with storage-capacity context rather than maintaining separate Files and Storage workspaces.
 
 Canonical behavior:
 
-- compact high-density presentation with supported view modes;
-- shared search/filter state;
-- direct upload through canonical ingest/quota policy;
-- appropriate authenticated image/video/audio preview/player behavior;
-- metadata editing and actual reference-location inspection;
-- bounded thumbnail/variant use;
-- expensive original access only on demand;
+- the Storage status reflects authoritative capacity state, not merely library readiness;
+- six top metrics combine library counts with capacity state;
+- the shared Visual Stage uses three metric-aligned thirds for capacity, authoritative-use distribution/attention, and direct upload;
+- authoritative storage analysis starts from measured originals, not only `MediaAsset` rows, so uncatalogued originals remain detectable;
+- the media library remains the operational surface for search, type/usage/status filtering, list/grid/dense views, selection, preview, download, metadata editing and deletion;
+- direct upload uses the canonical ingest/quota policy;
+- authenticated image/video/audio preview/player behavior remains available;
+- thumbnails/variants remain bounded and expensive original access stays on demand;
 - technical hashes/storage paths are not primary artist-facing UI;
 - reference filters include structured and Rich Text consumers through central reference rules.
 
-Do not resurrect stale Journal role constants or consumer-specific ad-hoc parsers inside the Files catalog.
+Legacy `/admin/media-files` and `/admin/media-assets` URLs are compatibility redirects only; they are not separate workspaces.
+
+Do not resurrect stale Journal role constants, consumer-specific ad-hoc parsers, or a second storage/media table beside the canonical Storage library.
 
 ## Performance
 
-Files list/reference rendering must remain bounded.
+Storage list/reference rendering must remain bounded.
 
-`MediaReferenceCatalog` may aggregate references across structured/Rich Text consumers, but expensive global content scans should be treated as a real performance concern if browser measurements show they slow normal Files navigation. Request-local caching can reduce repetition but is not evidence that a broad scan is cheap.
+`MediaReferenceCatalog` may aggregate references across structured/Rich Text consumers, but expensive global content scans should be treated as a real performance concern if browser measurements show they slow normal Storage navigation. Request-local caching can reduce repetition but is not evidence that a broad scan is cheap.
+
+Normal Storage navigation must not trigger an authoritative recursive filesystem walk. The capacity stage uses an already-cached display snapshot; explicit measurement refresh and file-mutating operations are the allowed expensive boundaries.
 
 Do not dismiss source-side media-reference/preload latency merely because local Docker amplifies it. See [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md).
 
@@ -171,7 +178,7 @@ Do not dismiss source-side media-reference/preload latency merely because local 
 
 Public routes expose media only through an allowed public content context. Raw storage paths are never public route parameters.
 
-A MediaAsset being accepted into Files does not mean every public consumer supports it. Each public surface explicitly defines supported media kinds and publication conditions.
+A MediaAsset being accepted into Storage does not mean every public consumer supports it. Each public surface explicitly defines supported media kinds and publication conditions.
 
 ## Verification
 
@@ -185,6 +192,7 @@ Durable verification covers:
 - canonical reference detection;
 - public/preview policy separation;
 - reference-aware deletion;
-- cleanup failure semantics.
+- cleanup failure semantics;
+- uncatalogued authoritative-original detection.
 
 `php artisan media:verify` is the release/recovery integrity check. See [RELEASE.md](RELEASE.md).
