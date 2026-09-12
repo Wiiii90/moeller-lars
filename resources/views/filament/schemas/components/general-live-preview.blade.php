@@ -178,7 +178,7 @@
         },
         shortcutTargetIsInteractive(target) {
             return target && typeof target.closest === 'function'
-                && target.closest('a, button, input, textarea, select, [contenteditable="true"], [role="button"]') !== null
+                && target.closest('a, button, input, textarea, select, [contenteditable], [role=button]') !== null
         },
         handleSpaceDown(event) {
             if (event.code !== 'Space' || this.zoom <= this.minZoom || event.repeat || this.shortcutTargetIsInteractive(event.target)) return
