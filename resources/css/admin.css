@@ -38,7 +38,7 @@
      * desktop. Page-specific panes fill this stage; responsive stacking stays
      * in the shared Visual Stage primitive rather than page-local height rules.
      */
-    --admin-visual-stage-height: 29.81rem;
+    --admin-visual-stage-height: 23.5rem;
     --admin-workspace-visual-shift: clamp(
         0rem,
         calc(50vw - var(--admin-sidebar-half-width) - var(--admin-workspace-half-width) - var(--admin-workspace-gutter)),
@@ -561,7 +561,7 @@
 
 @media (max-width: 1050px) {
     :root {
-        --admin-visual-stage-height: 50vw;
+        --admin-visual-stage-height: min(23.5rem, 50vw);
     }
 }
 
@@ -594,6 +594,6 @@
 
 @media (max-width: 720px) {
     :root {
-        --admin-visual-stage-height: 58.8235vw;
+        --admin-visual-stage-height: min(23.5rem, 58.8235vw);
     }
 }
