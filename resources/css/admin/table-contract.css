@@ -7,7 +7,11 @@
 
 :root {
     --admin-table-alignment-columns: 6;
-    --admin-table-alignment-unit: calc(100% / var(--admin-table-alignment-columns));
+    --admin-table-quarter-unit: 4.166667%;
+    --admin-table-half-unit: 8.333333%;
+    --admin-table-one-unit: 16.666667%;
+    --admin-table-one-half-units: 25%;
+    --admin-table-two-units: 33.333333%;
     --admin-table-edge-inset: .5rem;
     --admin-table-leading-square: 1.65rem;
 }
@@ -36,8 +40,8 @@
 }
 
 /* Six-unit alignment helpers remain valid even when the metric strip is hidden.
- * Responsive work may later change the alignment-column count together with
- * deliberate content reduction; metric visibility itself is not the owner. */
+ * Responsive work may later replace these tokens together with deliberate
+ * content reduction; metric visibility itself is not the owner. */
 .admin-table--six-grid {
     table-layout: fixed;
 }
@@ -46,11 +50,11 @@
     width: auto;
 }
 
-.admin-table__col-quarter-unit { width: calc(var(--admin-table-alignment-unit) / 4); }
-.admin-table__col-half-unit { width: calc(var(--admin-table-alignment-unit) / 2); }
-.admin-table__col-one-unit { width: var(--admin-table-alignment-unit); }
-.admin-table__col-one-half-units { width: calc(var(--admin-table-alignment-unit) * 1.5); }
-.admin-table__col-two-units { width: calc(var(--admin-table-alignment-unit) * 2); }
+.admin-table__col-quarter-unit { width: var(--admin-table-quarter-unit); }
+.admin-table__col-half-unit { width: var(--admin-table-half-unit); }
+.admin-table__col-one-unit { width: var(--admin-table-one-unit); }
+.admin-table__col-one-half-units { width: var(--admin-table-one-half-units); }
+.admin-table__col-two-units { width: var(--admin-table-two-units); }
 
 /* Icon + label is the desktop action form. Keeping label/icon as separate
  * elements lets a future compact breakpoint hide labels without changing DOM
@@ -134,10 +138,19 @@
         var(--admin-hierarchy-select-column);
 }
 
-/* Child add rows start at the first semantic content column after ordering;
+/* Child add/empty rows start at the semantic content axis after ordering;
  * Selection moved to the trailing gutter and therefore does not contribute. */
 .custom-page-component-add-row {
     --admin-add-row-inset: calc(
+        var(--admin-hierarchy-position-column)
+        + var(--admin-hierarchy-drag-column)
+        + var(--admin-hierarchy-row-gap)
+        + var(--admin-hierarchy-row-gap)
+    );
+}
+
+.custom-page-component__children-empty {
+    padding-left: calc(
         var(--admin-hierarchy-position-column)
         + var(--admin-hierarchy-drag-column)
         + var(--admin-hierarchy-row-gap)
