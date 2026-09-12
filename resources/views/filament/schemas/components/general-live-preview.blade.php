@@ -111,16 +111,6 @@
                 >
                     <x-filament::icon icon="heroicon-m-device-phone-mobile" />
                 </button>
-                <a
-                    class="general-live-preview__open"
-                    href="{{ $directPreviewUrl }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Open public preview"
-                    aria-label="Open public preview"
-                >
-                    <x-filament::icon icon="heroicon-o-rectangle-group" />
-                </a>
             </div>
         </div>
     </div>
