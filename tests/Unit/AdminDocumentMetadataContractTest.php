@@ -73,12 +73,20 @@ it('keeps admin document identity separate from the public site', function (): v
     $root = dirname(__DIR__, 2);
     $provider = file_get_contents($root.'/app/Providers/Filament/AdminPanelProvider.php');
     $publicLayout = file_get_contents($root.'/resources/views/layouts/app.blade.php');
+    $adminBrand = file_get_contents($root.'/resources/views/filament/partials/admin-brand.blade.php');
     $adminFavicon = file_get_contents($root.'/public/admin-favicon.svg');
 
     expect($provider)
         ->toContain("->brandName('Admin Area')")
+        ->toContain("->brandLogo(fn () => view('filament.partials.admin-brand'))")
         ->toContain("->favicon(asset('admin-favicon.svg').'?v=aperture-1')")
         ->not->toContain("->brandName('Lars Möller')");
+
+    expect($adminBrand)
+        ->toBeString()
+        ->toContain("auth()->user()?->name")
+        ->toContain('Moin, {$name}!')
+        ->not->toBe('');
 
     expect($adminFavicon)
         ->toBeString()
