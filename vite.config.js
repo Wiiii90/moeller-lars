@@ -15,6 +15,7 @@ export default defineConfig({
                 'resources/css/admin/home.css',
                 'resources/css/admin/general.css',
                 'resources/css/admin/general-interactions.css',
+                'resources/css/admin/table-contract.css',
                 'resources/css/admin/stage.css',
                 'resources/css/admin/typography.css',
                 'resources/css/public-content.css',
