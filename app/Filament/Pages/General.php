@@ -104,127 +104,134 @@ final class General extends Page
             ->components([
                 Group::make([
                     Group::make([
-                        MediaAssetSelect::make(
-                            'favicon_media_asset_id',
-                            'faviconMediaAsset',
-                            'Site icon',
-                            imagesOnly: true,
-                            includeDimensions: false,
-                        )
-                            ->placeholder('Choose from Media Files')
-                            ->selectablePlaceholder(false)
-                            ->extraFieldWrapperAttributes(['class' => 'admin-favicon-control general-site-icon-control'])
-                            ->nullable()
-                            ->live()
-                            ->suffixAction(
-                                Action::make('removeFavicon')
-                                    ->label('Remove site icon')
-                                    ->icon('heroicon-m-x-mark')
-                                    ->iconButton()
-                                    ->color('gray')
-                                    ->extraAttributes(['class' => 'general-site-icon-remove'])
-                                    ->visible(fn (callable $get): bool => filled($get('favicon_media_asset_id')))
-                                    ->action(function ($livewire): void {
+                        Group::make([
+                            MediaAssetSelect::make(
+                                'favicon_media_asset_id',
+                                'faviconMediaAsset',
+                                'Site icon',
+                                imagesOnly: true,
+                                includeDimensions: false,
+                            )
+                                ->placeholder('Choose from Media Files')
+                                ->selectablePlaceholder(false)
+                                ->extraFieldWrapperAttributes(['class' => 'admin-favicon-control general-site-icon-control'])
+                                ->nullable()
+                                ->live()
+                                ->suffixAction(
+                                    Action::make('removeFavicon')
+                                        ->label('Remove site icon')
+                                        ->icon('heroicon-m-x-mark')
+                                        ->iconButton()
+                                        ->color('gray')
+                                        ->extraAttributes(['class' => 'general-site-icon-remove'])
+                                        ->visible(fn (callable $get): bool => filled($get('favicon_media_asset_id')))
+                                        ->action(function ($livewire): void {
+                                            if ($livewire instanceof self) {
+                                                $livewire->removeFavicon();
+                                            }
+                                        }),
+                                )
+                                ->afterStateUpdated(self::persist('favicon_media_asset_id')),
+
+                            Group::make([
+                                Select::make('background_mode')
+                                    ->label('Background')
+                                    ->options([
+                                        PublicAppearance::MODE_SOLID => 'Solid',
+                                        PublicAppearance::MODE_GRADIENT => 'Gradient',
+                                    ])
+                                    ->native()
+                                    ->required()
+                                    ->live()
+                                    ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
+                                    ->afterStateUpdated(function ($livewire): void {
                                         if ($livewire instanceof self) {
-                                            $livewire->removeFavicon();
+                                            $livewire->persistChangedField('background_mode');
+                                            if (($livewire->data['background_mode'] ?? null) === PublicAppearance::MODE_SOLID) {
+                                                $livewire->persistChangedField('background_color');
+                                            }
+                                            $livewire->syncAppearanceControlState();
                                         }
                                     }),
-                            )
-                            ->afterStateUpdated(self::persist('favicon_media_asset_id')),
 
-                        Group::make([
-                            Select::make('background_mode')
-                                ->label('Background')
-                                ->options([
-                                    PublicAppearance::MODE_SOLID => 'Solid',
-                                    PublicAppearance::MODE_GRADIENT => 'Gradient',
-                                ])
-                                ->native()
-                                ->required()
-                                ->live()
-                                ->extraFieldWrapperAttributes(['class' => 'general-background-mode-control'])
-                                ->afterStateUpdated(function ($livewire): void {
-                                    if ($livewire instanceof self) {
-                                        $livewire->persistChangedField('background_mode');
-                                        if (($livewire->data['background_mode'] ?? null) === PublicAppearance::MODE_SOLID) {
-                                            $livewire->persistChangedField('background_color');
+                                AdminColorControl::make('background_primary_color', 'Primary color')
+                                    ->extraFieldWrapperAttributes(['class' => 'general-color-control general-primary-color-control'])
+                                    ->lazy()
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(function ($livewire, mixed $state): void {
+                                        if ($livewire instanceof self) {
+                                            $livewire->persistAppearanceColor('primary', $state);
                                         }
-                                        $livewire->syncAppearanceControlState();
-                                    }
-                                }),
+                                    }),
+                                TextInput::make('background_gradient_angle')
+                                    ->label('Angle')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(0)
+                                    ->maxValue(360)
+                                    ->step(1)
+                                    ->suffix('°')
+                                    ->placeholder((string) PublicAppearance::DEFAULT_GRADIENT_ANGLE)
+                                    ->nullable()
+                                    ->lazy()
+                                    ->extraFieldWrapperAttributes(['class' => 'general-gradient-angle-control'])
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(self::persist('background_gradient_angle'))
+                                    ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
+                                AdminColorControl::make('background_secondary_color', 'Secondary color')
+                                    ->extraFieldWrapperAttributes(['class' => 'general-color-control general-secondary-color-control'])
+                                    ->lazy()
+                                    ->extraInputAttributes(self::commitOnEnterAttributes())
+                                    ->afterStateUpdated(function ($livewire, mixed $state): void {
+                                        if ($livewire instanceof self) {
+                                            $livewire->persistAppearanceColor('secondary', $state);
+                                        }
+                                    })
+                                    ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
+                            ])
+                                ->columns(2)
+                                ->extraAttributes(['class' => 'general-background-row'])
+                                ->columnSpanFull(),
 
-                            AdminColorControl::make('background_primary_color', 'Primary color')
-                                ->extraFieldWrapperAttributes(['class' => 'general-color-control general-primary-color-control'])
-                                ->lazy()
-                                ->extraInputAttributes(self::commitOnEnterAttributes())
-                                ->afterStateUpdated(function ($livewire, mixed $state): void {
-                                    if ($livewire instanceof self) {
-                                        $livewire->persistAppearanceColor('primary', $state);
-                                    }
-                                }),
-                            TextInput::make('background_gradient_angle')
-                                ->label('Angle')
-                                ->numeric()
-                                ->integer()
-                                ->minValue(0)
-                                ->maxValue(360)
-                                ->step(1)
-                                ->suffix('°')
-                                ->placeholder((string) PublicAppearance::DEFAULT_GRADIENT_ANGLE)
-                                ->nullable()
-                                ->lazy()
-                                ->extraFieldWrapperAttributes(['class' => 'general-gradient-angle-control'])
-                                ->extraInputAttributes(self::commitOnEnterAttributes())
-                                ->afterStateUpdated(self::persist('background_gradient_angle'))
-                                ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
-                            AdminColorControl::make('background_secondary_color', 'Secondary color')
-                                ->extraFieldWrapperAttributes(['class' => 'general-color-control general-secondary-color-control'])
-                                ->lazy()
-                                ->extraInputAttributes(self::commitOnEnterAttributes())
-                                ->afterStateUpdated(function ($livewire, mixed $state): void {
-                                    if ($livewire instanceof self) {
-                                        $livewire->persistAppearanceColor('secondary', $state);
-                                    }
-                                })
-                                ->visible(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_GRADIENT),
+                            Hidden::make('background_color'),
+                            Hidden::make('background_gradient_start'),
+                            Hidden::make('background_gradient_end'),
                         ])
-                            ->columns(2)
-                            ->extraAttributes(['class' => 'general-background-row'])
+                            ->columns(1)
+                            ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
                             ->columnSpanFull(),
 
-                        Hidden::make('background_color'),
-                        Hidden::make('background_gradient_start'),
-                        Hidden::make('background_gradient_end'),
-                    ])
-                        ->columns(1)
-                        ->extraAttributes(['class' => 'general-appearance-stage__controls admin-form-controls'])
-                        ->columnSpanFull(),
+                        View::make('filament.schemas.components.general-live-preview')
+                            ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
+                            ->columnSpanFull(),
 
-                    View::make('filament.schemas.components.general-live-preview')
-                        ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
+                        Group::make([
+                            View::make('filament.schemas.components.general-layout-controls')
+                                ->columnSpanFull(),
+                        ])
+                            ->columns(1)
+                            ->extraAttributes(['class' => 'general-appearance-stage__geometry'])
+                            ->columnSpanFull(),
+                    ])
+                        ->columns(3)
+                        ->extraAttributes(fn ($livewire): array => [
+                            'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--stackable',
+                            'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
+                            'aria-label' => 'General settings and live public preview',
+                        ])
                         ->columnSpanFull(),
 
                     Group::make([
-                        View::make('filament.schemas.components.general-layout-controls')
+                        View::make('filament.schemas.components.general-social-links')
+                            ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
                             ->columnSpanFull(),
                     ])
                         ->columns(1)
-                        ->extraAttributes(['class' => 'general-appearance-stage__geometry'])
+                        ->extraAttributes(['class' => 'admin-visual-stage-followup'])
                         ->columnSpanFull(),
                 ])
-                    ->columns(3)
-                    ->extraAttributes(fn ($livewire): array => [
-                        'class' => 'general-appearance-stage admin-visual-stage admin-visual-stage--stackable',
-                        'data-preview-device' => $livewire instanceof self ? $livewire->previewDevice : 'desktop',
-                        'aria-label' => 'General settings and live public preview',
-                    ])
-                    ->columnSpanFull(),
-
-                View::make('filament.schemas.components.general-separator')
-                    ->columnSpanFull(),
-
-                View::make('filament.schemas.components.general-social-links')
-                    ->viewData(fn ($livewire): array => ['generalPage' => $livewire])
+                    ->columns(1)
+                    ->extraAttributes(['class' => 'admin-visual-stage-block'])
                     ->columnSpanFull(),
 
                 View::make('filament.schemas.components.general-separator')
