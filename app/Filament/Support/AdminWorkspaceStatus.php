@@ -5,7 +5,6 @@ namespace App\Filament\Support;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Publication\PublicationService;
 use App\Models\ArtworkCategory;
-use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Throwable;
@@ -28,16 +27,6 @@ final class AdminWorkspaceStatus
                 return filled($faviconId)
                     ? $this->status('Site identity ready', 'success')
                     : $this->status('Site icon missing', 'danger');
-            }
-
-            if ($path === '/admin/media-files' && $title === 'Media Files') {
-                if (MediaAsset::query()->where('state', 'quarantined')->exists()) {
-                    return $this->status('Quarantine pending', 'warning');
-                }
-
-                return MediaAsset::query()->where('state', 'available')->exists()
-                    ? $this->status('Library ready', 'success')
-                    : $this->status('Library empty', 'neutral');
             }
 
             if ($path === '/admin/pages' && $title === 'Pages') {
