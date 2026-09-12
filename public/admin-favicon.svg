@@ -1,18 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Admin Area">
     <style>
-        .line { fill: none; stroke: #24292f; stroke-width: 6; stroke-linecap: round; }
-        .knob { fill: #24292f; }
+        .mark { fill: #24292f; }
         @media (prefers-color-scheme: dark) {
-            .line { stroke: #f0f3f6; }
-            .knob { fill: #f0f3f6; }
+            .mark { fill: #f0f3f6; }
         }
     </style>
 
-    <path class="line" d="M8 16H56" />
-    <path class="line" d="M8 32H56" />
-    <path class="line" d="M8 48H56" />
-
-    <circle class="knob" cx="22" cy="16" r="7" />
-    <circle class="knob" cx="42" cy="32" r="7" />
-    <circle class="knob" cx="30" cy="48" r="7" />
+    <path class="mark" d="M14 10h36L39 21H25L14 10Z" />
+    <path class="mark" d="M54 14v36L43 39V25L54 14Z" />
+    <path class="mark" d="M50 54H14l11-11h14l11 11Z" />
+    <path class="mark" d="M10 50V14l11 11v14L10 50Z" />
 </svg>
