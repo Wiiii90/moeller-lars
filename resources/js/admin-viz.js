@@ -457,7 +457,7 @@ function activityOption(element, config) {
                     fontSize: 10,
                     fontWeight: 620,
                     formatter(value) {
-                        if (value === 0 || value === 12) return '12';
+                        if (value === 0) return '12';
                         if (value === 3 || value === 6 || value === 9) return String(value);
                         return '';
                     },
@@ -583,7 +583,12 @@ new MutationObserver(scheduleRefresh).observe(document.body, {
 });
 
 new MutationObserver(() => {
-    instances.forEach((entry, element) => {
+    const elements = Array.from(instances.keys());
+
+    elements.forEach((element) => {
+        const entry = instances.get(element);
+        if (! entry) return;
+
         entry.theme = '';
         mountElement(element);
     });
