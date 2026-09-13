@@ -2,6 +2,16 @@
 
 /* Shared flat data/control/table/pager grammar for admin workspaces. */
 
+/* Wide table content must scroll inside its own surface rather than changing
+ * the page/shell width. Grid items default to min-width:auto, so explicitly
+ * release their min-content contribution at the shared workspace boundary. */
+.admin-workspace,
+.admin-workspace__body,
+.admin-visual-stage-followup {
+    min-width: 0;
+    max-width: 100%;
+}
+
 .admin-visual-stage {
     box-sizing: border-box;
     height: var(--admin-visual-stage-height);
@@ -183,13 +193,21 @@
 }
 
 .admin-data-table,
-.admin-table--data {
+.admin-table--data,
+.media-workspace__table-wrap {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     overflow: auto;
+}
+
+.admin-data-table,
+.admin-table--data {
     border-block: 0 !important;
 }
 
 .media-workspace__table-wrap {
-    overflow: auto;
     border-top: 0 !important;
     border-bottom: 1px solid var(--admin-line) !important;
 }
@@ -293,6 +311,29 @@
     color: var(--admin-muted);
     font-size: .66rem;
     line-height: 1.4;
+}
+
+/* Data-table add rows use the shared add-row primitive at table density and
+ * align its leading affordance with the .6rem data-cell inset. */
+.admin-add-row--data {
+    --admin-add-row-inset: .6rem;
+    min-height: 2.25rem;
+    padding: .18rem .6rem;
+}
+
+.admin-add-row--data .admin-add-row__mark {
+    width: 1.4rem;
+    height: 1.4rem;
+    flex-basis: 1.4rem;
+    font-size: .86rem;
+}
+
+.media-workspace__table-wrap + .admin-add-row {
+    border-top: 0;
+}
+
+.admin-add-row + :is(.admin-pager, .media-workspace__pager) {
+    border-top: 0;
 }
 
 .admin-pager,
