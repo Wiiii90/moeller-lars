@@ -187,6 +187,67 @@
     white-space: nowrap;
 }
 
+/* Pinned entries are the feed's separate priority list. Their position box and
+ * filled canonical pin carry the state; the background stays deliberately
+ * restrained so selection and destructive states remain visually stronger. */
+.admin-dashboard__feed-row.is-pinned {
+    background: color-mix(in srgb, var(--admin-accent) 5%, var(--admin-surface));
+}
+
+.admin-dashboard__priority-position {
+    border-color: color-mix(in srgb, var(--admin-accent) 52%, var(--admin-line-strong));
+    background: color-mix(in srgb, var(--admin-accent) 9%, var(--admin-surface));
+    color: var(--admin-accent-strong);
+    font-weight: 700;
+}
+
+.admin-dashboard__pin-action.is-active {
+    color: var(--admin-accent-strong);
+}
+
+.admin-dashboard__pin-action.is-active:hover,
+.admin-dashboard__pin-action.is-active:focus-visible {
+    background: color-mix(in srgb, var(--admin-accent) 8%, transparent);
+    color: var(--admin-accent-strong);
+}
+
+/* The action rail is a fixed semantic four-slot grid:
+ * Open | Pin | Read state | Delete.
+ * Stable slots keep all canonical icons on the same vertical axes even when
+ * Read/Unread labels differ or immutable rows omit the last two actions. */
+.admin-dashboard__feed-actions {
+    display: grid !important;
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .18rem;
+    align-items: center;
+}
+
+.admin-dashboard__feed-actions .admin-action {
+    width: 100%;
+    min-width: 0;
+    padding-inline: .3rem;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
+.admin-dashboard__feed-actions .admin-action__icon {
+    flex: 0 0 .9rem;
+}
+
+.admin-dashboard__feed-actions .admin-action__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-dashboard__action-placeholder {
+    display: block;
+    min-width: 0;
+    min-height: 1px;
+}
+
 /* Dashboard detail dialogs consume the shared default 3/6 width and start with
  * one metric-like metadata row. Variant-specific content may use fewer cells;
  * the grid never invents placeholder facts. */
@@ -290,6 +351,11 @@
 @media (max-width: 980px) {
     .admin-dashboard__feed-table .admin-action__label {
         display: none;
+    }
+
+    .admin-dashboard__feed-actions .admin-action {
+        justify-content: center;
+        padding-inline: .2rem;
     }
 }
 
