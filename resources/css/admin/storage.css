@@ -296,126 +296,25 @@
     color: var(--admin-accent-strong);
 }
 
-/* Shared Storage/Dashboard capacity lens. The upper slab keeps exact quota
- * proportions; the lower rail is a linked magnification of used composition. */
-.admin-storage-capacity {
-    display: grid;
-    width: min(100%, 19rem);
+/* Shared Storage/Dashboard visualization container. ECharts owns the internal
+ * SVG; the existing Admin Stage continues to own pane size and alignment. */
+.admin-storage-capacity[data-admin-viz="storage-capacity"] {
+    position: relative;
+    display: block;
+    width: min(100%, 17.5rem);
     min-width: 0;
     min-height: 0;
     height: 100%;
-    place-self: center;
-    place-items: center;
-}
-
-.admin-storage-capacity__lens {
-    display: block;
-    width: 100%;
-    max-height: 100%;
-    aspect-ratio: 320 / 184;
+    margin: 0 auto;
     overflow: visible;
 }
 
-.admin-storage-capacity__overview-depth {
-    fill: color-mix(in srgb, var(--admin-line-strong) 58%, transparent);
+.admin-storage-capacity[data-admin-viz="storage-capacity"] > script {
+    display: none;
 }
 
-.admin-storage-capacity__overview-free,
-.admin-storage-capacity__detail-base {
-    fill: var(--storage-color-remaining);
-}
-
-.admin-storage-capacity__overview-outline,
-.admin-storage-capacity__detail-outline {
-    fill: none;
-    stroke: var(--admin-line-strong);
-    stroke-width: .85;
-    vector-effect: non-scaling-stroke;
-}
-
-.admin-storage-capacity__zoom-line {
-    stroke: var(--admin-faint);
-    stroke-width: .8;
-    stroke-dasharray: 2.2 3.2;
-    vector-effect: non-scaling-stroke;
-}
-
-.admin-storage-capacity__segment {
-    vector-effect: non-scaling-stroke;
-    shape-rendering: geometricPrecision;
-}
-
-.admin-storage-capacity__segment--detail {
-    stroke: color-mix(in srgb, var(--admin-surface) 78%, transparent);
-    stroke-width: .8;
-}
-
-.admin-storage-capacity__segment.is-dimmed {
-    opacity: .22;
-}
-
-.admin-storage-capacity__segment.is-highlighted {
-    filter: brightness(1.12);
-    stroke: var(--admin-text);
-    stroke-width: 1.25;
-}
-
-.admin-storage-capacity__segment--used { fill: var(--admin-accent); }
-.admin-storage-capacity__segment--galleries { fill: var(--storage-color-galleries); }
-.admin-storage-capacity__segment--journal { fill: var(--storage-color-journal); }
-.admin-storage-capacity__segment--cv { fill: var(--storage-color-cv); }
-.admin-storage-capacity__segment--home { fill: var(--storage-color-home); }
-.admin-storage-capacity__segment--custom-pages { fill: var(--storage-color-custom-pages); }
-.admin-storage-capacity__segment--site-identity { fill: var(--storage-color-site-identity); }
-.admin-storage-capacity__segment--referenced { fill: var(--storage-color-referenced); }
-.admin-storage-capacity__segment--shared { fill: var(--storage-color-shared); }
-.admin-storage-capacity__segment--unassigned { fill: var(--storage-color-unassigned); }
-.admin-storage-capacity__segment--uncatalogued { fill: var(--storage-color-uncatalogued); }
-
-.admin-storage-capacity__label,
-.admin-storage-capacity__detail-label,
-.admin-storage-capacity__free-label {
-    font-family: inherit;
-    font-variant-numeric: tabular-nums;
-}
-
-.admin-storage-capacity__label {
-    fill: var(--admin-text);
-    font-size: 10px;
-    font-weight: 650;
-}
-
-.admin-storage-capacity__label--total {
-    fill: var(--admin-muted);
-    font-size: 9px;
-    font-weight: 580;
-}
-
-.admin-storage-capacity__free-label {
-    fill: var(--admin-muted);
-    font-size: 9px;
-    font-weight: 580;
-}
-
-.admin-storage-capacity__detail-label {
-    fill: var(--admin-accent);
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: .7px;
-    text-transform: uppercase;
-}
-
-.admin-storage-capacity.is-compact {
-    width: min(100%, 10.5rem);
-}
-
-.admin-storage-capacity.is-compact .admin-storage-capacity__label {
-    font-size: 9px;
-}
-
-.admin-storage-capacity.is-compact .admin-storage-capacity__label--total,
-.admin-storage-capacity.is-compact .admin-storage-capacity__free-label {
-    font-size: 8px;
+.admin-storage-capacity.is-compact[data-admin-viz="storage-capacity"] {
+    width: min(100%, 9.5rem);
 }
 
 .admin-storage .media-workspace__library {
@@ -476,8 +375,8 @@
         padding-left: 0;
     }
 
-    .admin-storage-capacity {
-        width: min(100%, 19rem);
+    .admin-storage-capacity[data-admin-viz="storage-capacity"] {
+        width: min(100%, 17.5rem);
     }
 
     .admin-storage__dropzone.media-workspace__dropzone {
