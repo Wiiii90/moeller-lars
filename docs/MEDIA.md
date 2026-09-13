@@ -155,8 +155,9 @@ Canonical behavior:
 - six top metrics combine library counts with capacity state;
 - the shared Visual Stage remains three metric-aligned thirds in the artist workflow order **Upload → Destinations → Capacity**;
 - each Visual Stage third uses one concise kicker heading (`Upload`, `Destinations`, `Capacity`) rather than stacked decorative headings;
-- the Capacity third uses a separate outer allowance ring and an inner, genuinely segmented donut of measured authoritative originals by exclusive actual-use area;
-- donut segments are mouse- and keyboard-selectable; selection moves the chosen segment outward, changes the center readout and synchronizes the Destinations plot without causing a filesystem measurement;
+- the Capacity third uses one allowance donut whose full circumference represents the configured quota: the neutral portion is remaining capacity and the measured authoritative originals occupy their exact quota-relative share;
+- occupied capacity is split into distinct-color, mutually exclusive usage segments (for example Galleries, Journal, CV, Home, Shared or Unassigned); generated variants remain outside the allowance donut because they do not count against quota;
+- only occupied usage segments are mouse- and keyboard-selectable; remaining capacity is passive. Selection moves the chosen used segment outward, changes the center readout and synchronizes the Destinations plot without causing a filesystem measurement;
 - Destination rows can select the same area in the donut, while the middle plot uses the already-computed non-exclusive target breakdown;
 - a shared original may therefore contribute to more than one concrete destination in the middle plot while still contributing exactly once to the donut;
 - exact area-to-library mappings may expose `Filter library`; `shared` and `uncatalogued` deliberately do not pretend to be normal MediaAsset filters;
