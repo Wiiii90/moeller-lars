@@ -9,7 +9,7 @@
         <section class="admin-dashboard__overview" aria-label="Storage, Activity and Analytics overview">
             <article class="admin-dashboard__overview-column">
                 <header class="admin-dashboard__overview-head">
-                    <span>Storage</span>
+                    <span class="admin-section__kicker">Storage</span>
                     <a class="admin-action" href="{{ $storage['url'] }}">Open</a>
                 </header>
 
@@ -49,7 +49,7 @@
 
             <article class="admin-dashboard__overview-column">
                 <header class="admin-dashboard__overview-head">
-                    <span>Activity</span>
+                    <span class="admin-section__kicker">Activity</span>
                     <a class="admin-action" href="{{ $activity['url'] }}">Open</a>
                 </header>
 
@@ -172,7 +172,7 @@
 
             <article class="admin-dashboard__overview-column">
                 <header class="admin-dashboard__overview-head">
-                    <span>Analytics</span>
+                    <span class="admin-section__kicker">Analytics</span>
                     <a class="admin-action" href="{{ $analytics['url'] }}">Open</a>
                 </header>
 
@@ -241,6 +241,20 @@
         </section>
 
         <x-admin.section class="admin-dashboard__feed-section" aria-label="Dashboard feed">
+            @php
+                $selectedCount = count($selectedFeedKeys);
+                $selectableFeedKeys = collect($feed)
+                    ->filter(fn (array $item): bool => is_int($item['contact_id'] ?? null) || is_int($item['notification_id'] ?? null))
+                    ->pluck('key')
+                    ->values()
+                    ->all();
+                $selectedVisibleKeys = array_values(array_intersect($selectableFeedKeys, $selectedFeedKeys));
+                $allVisibleSelected = $selectableFeedKeys !== [] && count($selectedVisibleKeys) === count($selectableFeedKeys);
+                $selectionIndeterminate = count($selectedVisibleKeys) > 0 && ! $allVisibleSelected;
+                $feedHasRecords = $feedPagination['total'] > 0 || (trim($feedSearch) !== '' || $feedType !== 'all' || $notificationFilter !== 'all')
+                    && app(\App\Domain\Admin\DashboardFeed::class)->paginate('', 'all', 1, 25)['total'] > 0;
+            @endphp
+
             <x-admin.controls class="admin-dashboard__feed-controls" aria-label="Dashboard feed filters">
                 <x-slot:search>
                     <label class="admin-data-field">
@@ -292,35 +306,88 @@
                         </div>
                     </div>
                 </x-slot:actions>
+
+                <x-slot:selection>
+                    <div class="admin-data-control-group admin-selection" x-data="{ open: false }">
+                        <span class="admin-data-control-label">Selection</span>
+                        <div class="admin-selection__anchor">
+                            <button
+                                class="admin-action admin-selection__trigger"
+                                type="button"
+                                x-on:click="open = ! open"
+                                x-bind:aria-expanded="open"
+                                aria-haspopup="menu"
+                                @disabled($selectedCount === 0)
+                            >
+                                <span>Selected</span>
+                                <span class="admin-selection__count">{{ $selectedCount }}</span>
+                            </button>
+                            <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
+                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkRead" @disabled($selectedCount === 0)>Mark read</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkMarkUnread" @disabled($selectedCount === 0)>Mark unread</button>
+                                <button
+                                    class="admin-action is-danger"
+                                    type="button"
+                                    role="menuitem"
+                                    wire:click="bulkDelete"
+                                    wire:confirm="Delete the selected contact messages and notifications?"
+                                    @disabled($selectedCount === 0)
+                                >Delete selected</button>
+                            </div>
+                        </div>
+                    </div>
+                </x-slot:selection>
             </x-admin.controls>
 
-            @php
-                $feedHasRecords = $feedPagination['total'] > 0 || (trim($feedSearch) !== '' || $feedType !== 'all' || $notificationFilter !== 'all')
-                    && app(\App\Domain\Admin\DashboardFeed::class)->paginate('', 'all', 1, 25)['total'] > 0;
-            @endphp
-
-            <x-admin.table class="admin-data-table">
-                <table>
+            <x-admin.table class="admin-data-table admin-table--ranked admin-dashboard__feed-table">
+                <table class="admin-table--six-grid">
+                    <colgroup>
+                        <col class="admin-table__col-quarter-unit">
+                        <col class="admin-table__col-three-quarter-unit">
+                        <col class="admin-table__col-three-quarter-unit">
+                        <col class="admin-table__col-one-half-units">
+                        <col class="admin-table__col-three-quarter-unit">
+                        <col class="admin-table__col-three-quarter-unit">
+                        <col class="admin-table__col-one-unit">
+                        <col class="admin-table__col-quarter-unit">
+                    </colgroup>
                     <thead>
                         <tr>
+                            <th scope="col" class="admin-table__ordering-heading">Position</th>
                             <th scope="col">Type</th>
                             <th scope="col">Date</th>
                             <th scope="col">Title</th>
                             <th scope="col">Sender</th>
-                            <th scope="col">Message</th>
                             <th scope="col">Status</th>
+                            <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__selection--trailing">
+                                <label class="admin-dashboard__selection-cell">
+                                    <input
+                                        type="checkbox"
+                                        aria-label="Select all visible contact messages and notifications"
+                                        aria-checked="{{ $selectionIndeterminate ? 'mixed' : ($allVisibleSelected ? 'true' : 'false') }}"
+                                        wire:click="toggleSelectAll"
+                                        @checked($allVisibleSelected)
+                                        @disabled($selectableFeedKeys === [])
+                                        x-data
+                                        x-effect="$el.indeterminate = {{ $selectionIndeterminate ? 'true' : 'false' }}"
+                                    >
+                                    <span class="sr-only">Selection</span>
+                                </label>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($feed as $item)
-                            <tr
-                                class="admin-data-row"
-                                wire:key="dashboard-feed-{{ $item['key'] }}"
-                                wire:click="openFeedEntry('{{ $item['key'] }}')"
-                                wire:keydown.enter="openFeedEntry('{{ $item['key'] }}')"
-                                tabindex="0"
-                                aria-label="Open {{ $item['type_label'] }} entry {{ $item['title'] }}"
-                            >
+                            @php
+                                $position = $feedPagination['start'] + $loop->index;
+                                $mutable = is_int($item['contact_id'] ?? null) || is_int($item['notification_id'] ?? null);
+                                $read = $mutable ? str_starts_with((string) $item['status'], 'Read') : null;
+                            @endphp
+                            <tr class="admin-data-row" wire:key="dashboard-feed-{{ $item['key'] }}">
+                                <td class="admin-table__position">
+                                    <span class="admin-position">{{ $position }}</span>
+                                </td>
                                 <td class="admin-data-nowrap">{{ $item['type_label'] }}</td>
                                 <td class="admin-data-nowrap"><time datetime="{{ $item['date'] }}">{{ $item['date_display'] }}</time></td>
                                 <td class="admin-data-title">{{ $item['title'] }}</td>
@@ -334,15 +401,67 @@
                                         <span>—</span>
                                     @endif
                                 </td>
-                                <td class="admin-data-message">{{ $item['message_excerpt'] }}</td>
-                                <td
-                                    @class([
-                                        'admin-data-status',
-                                        'is-success' => ($item['notification_status'] ?? null) === 'success',
-                                        'is-warning' => ($item['notification_status'] ?? null) === 'warning',
-                                        'is-danger' => ($item['notification_status'] ?? null) === 'danger',
-                                    ])
-                                ><span>{{ $item['status'] }}</span></td>
+                                <td class="admin-data-status">
+                                    @if ($read !== null)
+                                        <span @class(['admin-dashboard__read-state', 'is-read' => $read, 'is-unread' => ! $read])>
+                                            <span class="admin-dashboard__read-dot" aria-hidden="true"></span>
+                                            {{ $read ? 'Read' : 'Unread' }}
+                                        </span>
+                                    @else
+                                        <span>—</span>
+                                    @endif
+                                </td>
+                                <td class="admin-table__actions">
+                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--three admin-dashboard__feed-actions">
+                                        <button
+                                            class="admin-action admin-action--with-icon"
+                                            type="button"
+                                            wire:click="openFeedEntry('{{ $item['key'] }}')"
+                                            aria-label="Open {{ $item['type_label'] }} entry {{ $item['title'] }}"
+                                        >
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Inspect->mini()" class="admin-action__icon" />
+                                            <span class="admin-action__label">Open</span>
+                                        </button>
+
+                                        @if ($mutable)
+                                            <button
+                                                class="admin-action admin-action--with-icon"
+                                                type="button"
+                                                wire:click="{{ $read ? 'markFeedUnread' : 'markFeedRead' }}('{{ $item['key'] }}')"
+                                            >
+                                                <x-filament::icon
+                                                    :icon="$read ? \App\Filament\Support\AdminIcon::MarkUnread->mini() : \App\Filament\Support\AdminIcon::MarkRead->mini()"
+                                                    class="admin-action__icon"
+                                                />
+                                                <span class="admin-action__label">{{ $read ? 'Unread' : 'Read' }}</span>
+                                            </button>
+                                            <button
+                                                class="admin-action admin-action--with-icon is-danger"
+                                                type="button"
+                                                wire:click="deleteFeedEntry('{{ $item['key'] }}')"
+                                                wire:confirm="Delete this dashboard feed entry?"
+                                            >
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Delete</span>
+                                            </button>
+                                        @endif
+                                    </x-admin.toolbar>
+                                </td>
+                                <td class="admin-table__selection--trailing">
+                                    @if ($mutable)
+                                        <label class="admin-dashboard__selection-cell">
+                                            <input
+                                                type="checkbox"
+                                                wire:model.live="selectedFeedKeys"
+                                                value="{{ $item['key'] }}"
+                                                aria-label="Select {{ $item['type_label'] }} entry {{ $item['title'] }}"
+                                            >
+                                            <span class="sr-only">Select row</span>
+                                        </label>
+                                    @else
+                                        <span class="admin-dashboard__selection-empty" aria-hidden="true">—</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
