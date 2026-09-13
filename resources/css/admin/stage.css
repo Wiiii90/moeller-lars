@@ -137,8 +137,9 @@
     margin: 0 !important;
 }
 
-/* Storage uses an outer 2/3 + 1/3 rail and two exact internal thirds. The
- * triptych modifier exposes both metric-aligned divider axes. */
+/* Storage uses an outer 2/3 + 1/3 rail with Upload | Destinations in the
+ * internal pair and Capacity in the final third. The triptych modifier exposes
+ * both metric-aligned divider axes. */
 .admin-storage__visual-stage > .admin-storage__visual-main {
     padding-right: 0 !important;
 }
@@ -148,13 +149,18 @@
     gap: 0 !important;
 }
 
-.admin-storage__capacity-group {
+.admin-storage__upload {
     padding-right: var(--admin-stage-pane-space);
 }
 
 .admin-storage__distribution {
     padding-right: var(--admin-stage-pane-space);
     padding-left: var(--admin-stage-pane-space);
+}
+
+.admin-storage__visual-stage > .admin-storage__capacity-group {
+    padding-right: 0 !important;
+    padding-left: var(--admin-stage-pane-space) !important;
 }
 
 /* Analytics and Home own content, not divider geometry. */
@@ -381,7 +387,8 @@
     }
 
     .admin-storage__capacity-group,
-    .admin-storage__distribution {
+    .admin-storage__distribution,
+    .admin-storage__upload {
         padding-right: 0;
         padding-left: 0;
     }
