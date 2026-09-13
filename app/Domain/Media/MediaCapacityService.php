@@ -64,6 +64,14 @@ final class MediaCapacityService
         return Cache::rememberForever($this->displayCacheKey(), fn (): array => $this->snapshot());
     }
 
+    /** @return array{configured:bool,configuration_valid:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null} */
+    public function refreshCachedSnapshot(): array
+    {
+        $this->forgetCachedSnapshot();
+
+        return $this->cachedSnapshot();
+    }
+
     /**
      * Return the presentation snapshot only when another boundary has already
      * measured it. Normal admin navigation must never trigger a filesystem walk
