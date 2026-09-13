@@ -1,7 +1,7 @@
 @props([
     'capacity',
     'breakdown' => [],
-    'interactive' => false,
+    'linked' => false,
     'compact' => false,
 ])
 
@@ -22,133 +22,217 @@
         static fn (array $row): int => (int) ($row['bytes'] ?? 0),
         $rows,
     ));
-    $usedAngle = $capacityPercent !== null ? ($capacityPercent / 100) * 360 : 0.0;
-    $sliceAngleCursor = 0.0;
 
-    $polarPoint = static function (float $angle, float $radius): array {
-        $radians = deg2rad($angle - 90);
+    $overviewX = 18.0;
+    $overviewY = 40.0;
+    $overviewWidth = 284.0;
+    $overviewHeight = 42.0;
+    $detailX = 18.0;
+    $detailY = 132.0;
+    $detailWidth = 284.0;
+    $detailHeight = 24.0;
+    $usedWidth = $capacityPercent !== null ? ($overviewWidth * ($capacityPercent / 100)) : 0.0;
+    $usedEndX = $overviewX + $usedWidth;
+    $overviewCursor = $overviewX;
+    $detailCursor = $detailX;
+    $clipSuffix = $compact ? 'compact' : 'full';
 
-        return [
-            60 + (cos($radians) * $radius),
-            60 + (sin($radians) * $radius),
-        ];
-    };
+    $formatPercent = static function (?float $value): string {
+        if ($value === null) {
+            return '—';
+        }
 
-    $piePath = static function (float $startAngle, float $endAngle) use ($polarPoint): string {
-        $radius = 44.0;
-        $endAngle = min($endAngle, $startAngle + 359.999);
-        [$startX, $startY] = $polarPoint($startAngle, $radius);
-        [$endX, $endY] = $polarPoint($endAngle, $radius);
-        $largeArc = ($endAngle - $startAngle) > 180 ? 1 : 0;
-
-        return sprintf(
-            'M 60 60 L %.3f %.3f A %.1f %.1f 0 %d 1 %.3f %.3f Z',
-            $startX,
-            $startY,
-            $radius,
-            $radius,
-            $largeArc,
-            $endX,
-            $endY,
-        );
-    };
-
-    $ariaLabel = match (true) {
-        $configured && $measurementAvailable && $capacityPercent !== null => number_format($capacityPercent, 1).' percent used of '.$allowance.' storage allowance',
-        $measurementAvailable => $authoritative.' authoritative storage measured; no allowance configured',
-        default => 'Storage measurement unavailable',
+        return number_format($value, $value < 0.1 ? 2 : ($value < 10 ? 1 : 0));
     };
 @endphp
 
 <div {{ $attributes->class(['admin-storage-capacity', 'is-compact' => $compact]) }}>
     <svg
-        class="admin-storage-capacity__pie"
-        viewBox="0 0 120 120"
+        class="admin-storage-capacity__lens"
+        viewBox="0 0 320 184"
         role="img"
-        aria-label="{{ $ariaLabel }}"
+        aria-label="@if ($configured && $measurementAvailable && $capacityPercent !== null) {{ $formatPercent($capacityPercent) }} percent used, {{ $remaining }} free, {{ $allowance }} total storage allowance @elseif ($measurementAvailable) {{ $authoritative }} authoritative storage measured with no configured allowance @else Storage measurement unavailable @endif"
         data-storage-capacity-percent="{{ $capacityPercent ?? '' }}"
     >
-        <circle class="admin-storage-capacity__remaining" cx="60" cy="60" r="44" />
+        <defs>
+            <clipPath id="storage-capacity-overview-{{ $clipSuffix }}">
+                <rect x="{{ $overviewX }}" y="{{ $overviewY }}" width="{{ $overviewWidth }}" height="{{ $overviewHeight }}" rx="8" />
+            </clipPath>
+            <clipPath id="storage-capacity-detail-{{ $clipSuffix }}">
+                <rect x="{{ $detailX }}" y="{{ $detailY }}" width="{{ $detailWidth }}" height="{{ $detailHeight }}" rx="5" />
+            </clipPath>
+        </defs>
 
-        @if ($configured && $measurementAvailable && $capacityPercent !== null && $usedAngle > 0)
-            @if ($rows !== [] && $totalBreakdownBytes > 0)
-                @foreach ($rows as $row)
-                    @php
-                        $sliceBytes = max(0, (int) ($row['bytes'] ?? 0));
-                        $sliceAngle = ($sliceBytes / $totalBreakdownBytes) * $usedAngle;
-                        $sliceStart = $sliceAngleCursor;
-                        $sliceEnd = $sliceAngleCursor + $sliceAngle;
-                        $sliceMidpoint = $sliceStart + ($sliceAngle / 2);
-                        $sliceRadians = deg2rad($sliceMidpoint - 90);
-                        $sliceX = round(cos($sliceRadians) * 5.5, 2);
-                        $sliceY = round(sin($sliceRadians) * 5.5, 2);
-                        $sliceKey = (string) ($row['key'] ?? 'referenced');
-                        $sliceClass = preg_replace('/[^a-z0-9-]+/', '-', strtolower($sliceKey)) ?: 'referenced';
-                        $sliceCapacityPercent = $capacityPercent * ($sliceBytes / $totalBreakdownBytes);
-                        $slicePath = $piePath($sliceStart, $sliceEnd);
-                    @endphp
-                    <path
-                        class="admin-storage-capacity__segment admin-storage-capacity__segment--{{ $sliceClass }}"
-                        d="{{ $slicePath }}"
-                        style="--storage-slice-x: {{ $sliceX }}px; --storage-slice-y: {{ $sliceY }}px"
-                        @if ($interactive)
-                            role="button"
-                            tabindex="0"
-                            x-bind:aria-pressed="(selected === @js($sliceKey)).toString()"
-                            x-bind:class="{
-                                'is-selected': selected === @js($sliceKey),
-                                'is-muted': selected !== null && selected !== @js($sliceKey),
-                            }"
-                            x-on:click="select(@js($sliceKey))"
-                            x-on:keydown.enter.prevent="select(@js($sliceKey))"
-                            x-on:keydown.space.prevent="select(@js($sliceKey))"
-                        @endif
-                        aria-label="{{ $row['label'] ?? ucfirst($sliceKey) }}: {{ $row['display_bytes'] ?? '' }}, {{ number_format($sliceCapacityPercent, $sliceCapacityPercent < 0.1 ? 2 : 1) }} percent of storage allowance"
-                    >
-                        <title>{{ $row['label'] ?? ucfirst($sliceKey) }} — {{ $row['display_bytes'] ?? '' }} · {{ number_format($sliceCapacityPercent, $sliceCapacityPercent < 0.1 ? 2 : 1) }}% of allowance</title>
-                    </path>
-                    @php $sliceAngleCursor += $sliceAngle; @endphp
-                @endforeach
-            @else
-                <path
-                    class="admin-storage-capacity__segment admin-storage-capacity__segment--used"
-                    d="{{ $piePath(0, $usedAngle) }}"
-                >
-                    <title>{{ $authoritative }} used · {{ number_format($capacityPercent, 1) }}% of allowance</title>
-                </path>
-            @endif
-        @endif
-
-        <circle class="admin-storage-capacity__outline" cx="60" cy="60" r="44" />
-
-        @foreach ([0, 90, 180, 270] as $tickAngle)
-            @php
-                [$tickInnerX, $tickInnerY] = $polarPoint($tickAngle, 47.5);
-                [$tickOuterX, $tickOuterY] = $polarPoint($tickAngle, 51.5);
-            @endphp
-            <line
-                class="admin-storage-capacity__tick"
-                x1="{{ number_format($tickInnerX, 3, '.', '') }}"
-                y1="{{ number_format($tickInnerY, 3, '.', '') }}"
-                x2="{{ number_format($tickOuterX, 3, '.', '') }}"
-                y2="{{ number_format($tickOuterY, 3, '.', '') }}"
-                aria-hidden="true"
-            />
-        @endforeach
-    </svg>
-
-    <div class="admin-storage-capacity__readout">
         @if ($configured && $measurementAvailable && $capacityPercent !== null)
-            <strong>{{ $authoritative }}</strong>
-            <span>of {{ $allowance }} used</span>
-            <small>{{ $remaining }} free</small>
+            <text class="admin-storage-capacity__label admin-storage-capacity__label--used" x="{{ $overviewX }}" y="25">
+                {{ $authoritative }} · {{ $formatPercent($capacityPercent) }}% used
+            </text>
+            <text class="admin-storage-capacity__label admin-storage-capacity__label--total" x="{{ $overviewX + $overviewWidth }}" y="25" text-anchor="end">
+                {{ $allowance }} total
+            </text>
+
+            <rect
+                class="admin-storage-capacity__overview-depth"
+                x="{{ $overviewX + 4 }}"
+                y="{{ $overviewY + 5 }}"
+                width="{{ $overviewWidth }}"
+                height="{{ $overviewHeight }}"
+                rx="8"
+            />
+            <rect
+                class="admin-storage-capacity__overview-free"
+                x="{{ $overviewX }}"
+                y="{{ $overviewY }}"
+                width="{{ $overviewWidth }}"
+                height="{{ $overviewHeight }}"
+                rx="8"
+            />
+
+            <g clip-path="url(#storage-capacity-overview-{{ $clipSuffix }})">
+                @if ($usedWidth > 0)
+                    @if ($rows !== [] && $totalBreakdownBytes > 0)
+                        @foreach ($rows as $row)
+                            @php
+                                $sliceBytes = max(0, (int) ($row['bytes'] ?? 0));
+                                $shareOfUsed = $sliceBytes / $totalBreakdownBytes;
+                                $sliceOverviewWidth = $usedWidth * $shareOfUsed;
+                                $sliceDetailWidth = $detailWidth * $shareOfUsed;
+                                $sliceKey = (string) ($row['key'] ?? 'referenced');
+                                $sliceClass = preg_replace('/[^a-z0-9-]+/', '-', strtolower($sliceKey)) ?: 'referenced';
+                                $capacityShare = $capacityPercent * $shareOfUsed;
+                            @endphp
+                            <rect
+                                class="admin-storage-capacity__segment admin-storage-capacity__segment--{{ $sliceClass }}"
+                                x="{{ number_format($overviewCursor, 4, '.', '') }}"
+                                y="{{ $overviewY }}"
+                                width="{{ number_format($sliceOverviewWidth, 4, '.', '') }}"
+                                height="{{ $overviewHeight }}"
+                                @if ($linked)
+                                    x-bind:class="{
+                                        'is-highlighted': selected === @js($sliceKey),
+                                        'is-dimmed': selected !== null && selected !== @js($sliceKey),
+                                    }"
+                                @endif
+                            >
+                                <title>{{ $row['label'] ?? ucfirst($sliceKey) }} — {{ $row['display_bytes'] ?? '' }} · {{ $formatPercent($capacityShare) }}% of allowance</title>
+                            </rect>
+                            @php $overviewCursor += $sliceOverviewWidth; @endphp
+                        @endforeach
+                    @else
+                        <rect
+                            class="admin-storage-capacity__segment admin-storage-capacity__segment--used"
+                            x="{{ $overviewX }}"
+                            y="{{ $overviewY }}"
+                            width="{{ number_format($usedWidth, 4, '.', '') }}"
+                            height="{{ $overviewHeight }}"
+                        />
+                    @endif
+                @endif
+            </g>
+
+            <rect
+                class="admin-storage-capacity__overview-outline"
+                x="{{ $overviewX }}"
+                y="{{ $overviewY }}"
+                width="{{ $overviewWidth }}"
+                height="{{ $overviewHeight }}"
+                rx="8"
+            />
+
+            @if ($remaining !== '—')
+                <text
+                    class="admin-storage-capacity__free-label"
+                    x="{{ $overviewX + $overviewWidth - 10 }}"
+                    y="{{ $overviewY + ($overviewHeight / 2) + 3 }}"
+                    text-anchor="end"
+                >{{ $remaining }} free</text>
+            @endif
+
+            @if ($usedWidth > 0)
+                <line
+                    class="admin-storage-capacity__zoom-line"
+                    x1="{{ $overviewX }}"
+                    y1="{{ $overviewY + $overviewHeight + 7 }}"
+                    x2="{{ $detailX }}"
+                    y2="{{ $detailY - 8 }}"
+                />
+                <line
+                    class="admin-storage-capacity__zoom-line"
+                    x1="{{ number_format($usedEndX, 4, '.', '') }}"
+                    y1="{{ $overviewY + $overviewHeight + 7 }}"
+                    x2="{{ $detailX + $detailWidth }}"
+                    y2="{{ $detailY - 8 }}"
+                />
+
+                <text class="admin-storage-capacity__detail-label" x="{{ $detailX }}" y="{{ $detailY - 13 }}">
+                    Used composition
+                </text>
+
+                <rect
+                    class="admin-storage-capacity__detail-base"
+                    x="{{ $detailX }}"
+                    y="{{ $detailY }}"
+                    width="{{ $detailWidth }}"
+                    height="{{ $detailHeight }}"
+                    rx="5"
+                />
+
+                <g clip-path="url(#storage-capacity-detail-{{ $clipSuffix }})">
+                    @if ($rows !== [] && $totalBreakdownBytes > 0)
+                        @foreach ($rows as $row)
+                            @php
+                                $sliceBytes = max(0, (int) ($row['bytes'] ?? 0));
+                                $shareOfUsed = $sliceBytes / $totalBreakdownBytes;
+                                $sliceDetailWidth = $detailWidth * $shareOfUsed;
+                                $sliceKey = (string) ($row['key'] ?? 'referenced');
+                                $sliceClass = preg_replace('/[^a-z0-9-]+/', '-', strtolower($sliceKey)) ?: 'referenced';
+                            @endphp
+                            <rect
+                                class="admin-storage-capacity__segment admin-storage-capacity__segment--detail admin-storage-capacity__segment--{{ $sliceClass }}"
+                                x="{{ number_format($detailCursor, 4, '.', '') }}"
+                                y="{{ $detailY }}"
+                                width="{{ number_format($sliceDetailWidth, 4, '.', '') }}"
+                                height="{{ $detailHeight }}"
+                                @if ($linked)
+                                    x-bind:class="{
+                                        'is-highlighted': selected === @js($sliceKey),
+                                        'is-dimmed': selected !== null && selected !== @js($sliceKey),
+                                    }"
+                                @endif
+                            >
+                                <title>{{ $row['label'] ?? ucfirst($sliceKey) }} — {{ $row['display_bytes'] ?? '' }} · {{ $formatPercent($shareOfUsed * 100) }}% of used storage</title>
+                            </rect>
+                            @php $detailCursor += $sliceDetailWidth; @endphp
+                        @endforeach
+                    @else
+                        <rect
+                            class="admin-storage-capacity__segment admin-storage-capacity__segment--detail admin-storage-capacity__segment--used"
+                            x="{{ $detailX }}"
+                            y="{{ $detailY }}"
+                            width="{{ $detailWidth }}"
+                            height="{{ $detailHeight }}"
+                        />
+                    @endif
+                </g>
+
+                <rect
+                    class="admin-storage-capacity__detail-outline"
+                    x="{{ $detailX }}"
+                    y="{{ $detailY }}"
+                    width="{{ $detailWidth }}"
+                    height="{{ $detailHeight }}"
+                    rx="5"
+                />
+            @endif
         @elseif ($measurementAvailable)
-            <strong>{{ $authoritative }}</strong>
-            <span>authoritative</span>
-            <small>No allowance configured</small>
+            <rect class="admin-storage-capacity__overview-free" x="18" y="61" width="284" height="42" rx="8" />
+            <rect class="admin-storage-capacity__overview-outline" x="18" y="61" width="284" height="42" rx="8" />
+            <text class="admin-storage-capacity__label admin-storage-capacity__label--used" x="18" y="45">{{ $authoritative }} measured</text>
+            <text class="admin-storage-capacity__free-label" x="160" y="86" text-anchor="middle">No allowance configured</text>
         @else
-            <strong>—</strong>
-            <span>Measurement unavailable</span>
+            <rect class="admin-storage-capacity__overview-free" x="18" y="61" width="284" height="42" rx="8" />
+            <rect class="admin-storage-capacity__overview-outline" x="18" y="61" width="284" height="42" rx="8" />
+            <text class="admin-storage-capacity__free-label" x="160" y="86" text-anchor="middle">No storage measurement</text>
         @endif
-    </div>
+    </svg>
 </div>
