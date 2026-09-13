@@ -35,7 +35,7 @@ Format/safety ceilings are configured in bytes:
 
 `MEDIA_STORAGE_QUOTA_BYTES` is the operator/platform-injected admission ceiling. Cached display values are not authoritative for upload admission.
 
-The artist-facing Storage workspace deliberately separates normal navigation from authoritative filesystem measurement. Normal navigation consumes an existing bounded display snapshot only. An explicit Storage measurement refresh, and file mutations that need fresh capacity state, may perform the authoritative filesystem walk. Upload admission remains independently authoritative.
+The artist-facing Storage workspace deliberately separates normal navigation from authoritative filesystem measurement. Production and the dedicated local-preview container warm a durable display snapshot at container startup through `php artisan media:measure-capacity`. Normal navigation consumes that already-measured snapshot only and never turns a cache miss into a recursive filesystem walk. Successful ingest and physical cleanup refresh the snapshot at their existing file-mutation boundaries; the explicit Storage `Refresh` action remains a manual rescan/recovery boundary. Upload admission remains independently authoritative.
 
 The dedicated local-preview image supplies a 5,000,000,000-byte allowance so capacity behavior can be evaluated locally without creating a production/application default. Production remains operator-controlled.
 
@@ -153,10 +153,12 @@ Canonical behavior:
 
 - the Storage status reflects authoritative capacity state, not merely library readiness;
 - six top metrics combine library counts with capacity state;
-- the shared Visual Stage remains three metric-aligned thirds: interactive capacity/use visualization, destination drilldown/attention, and direct upload;
-- the outer capacity ring shows authoritative originals against the configured allowance while the inner donut partitions the measured originals by their exclusive actual-use area;
-- donut segments are mouse- and keyboard-selectable; selection changes the center readout and the middle destination plot without causing a filesystem measurement;
-- the middle plot uses the already-computed non-exclusive target breakdown, so a shared original may contribute to more than one concrete destination there while still contributing exactly once to the donut;
+- the shared Visual Stage remains three metric-aligned thirds in the artist workflow order **Upload → Destinations → Capacity**;
+- each Visual Stage third uses one concise kicker heading (`Upload`, `Destinations`, `Capacity`) rather than stacked decorative headings;
+- the Capacity third uses a separate outer allowance ring and an inner, genuinely segmented donut of measured authoritative originals by exclusive actual-use area;
+- donut segments are mouse- and keyboard-selectable; selection moves the chosen segment outward, changes the center readout and synchronizes the Destinations plot without causing a filesystem measurement;
+- Destination rows can select the same area in the donut, while the middle plot uses the already-computed non-exclusive target breakdown;
+- a shared original may therefore contribute to more than one concrete destination in the middle plot while still contributing exactly once to the donut;
 - exact area-to-library mappings may expose `Filter library`; `shared` and `uncatalogued` deliberately do not pretend to be normal MediaAsset filters;
 - attention retains integrity/context signals such as unused originals, uncatalogued originals, largest gallery and largest original when available;
 - authoritative storage analysis starts from measured originals, not only `MediaAsset` rows, so uncatalogued originals remain detectable;
@@ -179,7 +181,7 @@ Storage list/reference rendering must remain bounded.
 
 `MediaReferenceCatalog` may aggregate references across structured/Rich Text consumers, but expensive global content scans should be treated as a real performance concern if browser measurements show they slow normal Storage navigation. Request-local caching can reduce repetition but is not evidence that a broad scan is cheap.
 
-Normal Storage navigation, library filtering, donut selection and destination drilldown must not trigger an authoritative recursive filesystem walk. The capacity stage uses an already-cached display snapshot; explicit measurement refresh and file-mutating operations are the allowed expensive boundaries.
+Normal Storage navigation, library filtering, donut selection and destination drilldown must not trigger an authoritative recursive filesystem walk. Production/local-preview startup warms the durable display snapshot; successful file ingest and physical cleanup refresh it at their mutation boundaries; the explicit `Refresh` action is the manual authoritative rescan/recovery path. A display-refresh failure must not roll back an otherwise successful file mutation; the stale display snapshot is discarded instead.
 
 Do not dismiss source-side media-reference/preload latency merely because local Docker amplifies it. See [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md).
 
