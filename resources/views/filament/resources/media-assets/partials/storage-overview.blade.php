@@ -17,6 +17,7 @@
 <section
     class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych admin-visual-stage--stackable"
     aria-label="Storage upload, capacity and destinations"
+    x-on:admin-viz:select="select($event.detail.key)"
     x-data="{
         selected: null,
         usageFilter: $wire.entangle('usage', true),
