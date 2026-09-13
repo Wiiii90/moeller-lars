@@ -1,51 +1,8 @@
 @php
     $storageTargets = is_array($storageAttention['targets'] ?? null) ? $storageAttention['targets'] : [];
-    $storageSliceAngle = 0.0;
-    $storageTotalBytes = array_sum(array_map(
-        static fn (array $row): int => (int) ($row['bytes'] ?? 0),
-        $storageBreakdown,
-    ));
     $capacityPercent = ($capacity['percent'] ?? null) !== null
         ? min(100, max(0, (float) $capacity['percent']))
         : null;
-    $storageUsedAngle = $capacityPercent !== null ? ($capacityPercent / 100) * 360 : 0.0;
-
-    $storagePolarPoint = static function (float $angle, float $radius): array {
-        $radians = deg2rad($angle - 90);
-
-        return [
-            60 + (cos($radians) * $radius),
-            60 + (sin($radians) * $radius),
-        ];
-    };
-
-    $storageDonutPath = static function (float $startAngle, float $endAngle) use ($storagePolarPoint): string {
-        $outerRadius = 43.0;
-        $innerRadius = 29.5;
-        [$outerStartX, $outerStartY] = $storagePolarPoint($startAngle, $outerRadius);
-        [$outerEndX, $outerEndY] = $storagePolarPoint($endAngle, $outerRadius);
-        [$innerEndX, $innerEndY] = $storagePolarPoint($endAngle, $innerRadius);
-        [$innerStartX, $innerStartY] = $storagePolarPoint($startAngle, $innerRadius);
-        $largeArc = ($endAngle - $startAngle) > 180 ? 1 : 0;
-
-        return sprintf(
-            'M %.3f %.3f A %.1f %.1f 0 %d 1 %.3f %.3f L %.3f %.3f A %.1f %.1f 0 %d 0 %.3f %.3f Z',
-            $outerStartX,
-            $outerStartY,
-            $outerRadius,
-            $outerRadius,
-            $largeArc,
-            $outerEndX,
-            $outerEndY,
-            $innerEndX,
-            $innerEndY,
-            $innerRadius,
-            $innerRadius,
-            $largeArc,
-            $innerStartX,
-            $innerStartY,
-        );
-    };
 @endphp
 
 <x-admin.metrics :columns="6" aria-label="Storage statistics">
@@ -65,7 +22,6 @@
         breakdown: @js($storageBreakdown),
         targets: @js($storageTargets),
         capacityPercent: @js($capacityPercent),
-        allowance: @js($capacity['allowance'] ?? '—'),
         select(key) {
             if (! this.breakdown.some((row) => row.key === key)) return
             this.selected = this.selected === key ? null : key
@@ -202,86 +158,11 @@
                 <p class="admin-storage__eyebrow">Capacity</p>
             </div>
 
-            <div class="admin-storage__capacity-plot">
-                <svg class="admin-storage__donut" viewBox="0 0 120 120" role="img" aria-label="Storage allowance split into used categories and remaining capacity">
-                    <circle class="admin-storage__capacity-base" cx="60" cy="60" r="36.25" />
-
-                    @if (($capacity['configured'] ?? false) && ($capacity['measurement_available'] ?? false) && $capacityPercent !== null)
-                        @foreach ($storageBreakdown as $row)
-                            @php
-                                $sliceBytes = max(0, (int) ($row['bytes'] ?? 0));
-                                $sliceAngle = $storageTotalBytes > 0
-                                    ? ($sliceBytes / $storageTotalBytes) * $storageUsedAngle
-                                    : 0.0;
-                                $sliceGap = $sliceAngle >= 3
-                                    ? min(0.9, $sliceAngle * 0.08)
-                                    : min(0.18, $sliceAngle * 0.08);
-                                $sliceStart = $storageSliceAngle + ($sliceGap / 2);
-                                $sliceEnd = $storageSliceAngle + $sliceAngle - ($sliceGap / 2);
-                                $sliceMidpoint = $storageSliceAngle + ($sliceAngle / 2);
-                                $sliceRadians = deg2rad($sliceMidpoint - 90);
-                                $sliceX = round(cos($sliceRadians) * 4.5, 2);
-                                $sliceY = round(sin($sliceRadians) * 4.5, 2);
-                                $sliceKey = (string) ($row['key'] ?? '');
-                                $sliceClass = preg_replace('/[^a-z0-9-]+/', '-', strtolower($sliceKey)) ?: 'referenced';
-                                $slicePath = $sliceEnd > $sliceStart
-                                    ? $storageDonutPath($sliceStart, $sliceEnd)
-                                    : '';
-                                $sliceCapacityPercent = $storageTotalBytes > 0
-                                    ? $capacityPercent * ($sliceBytes / $storageTotalBytes)
-                                    : 0.0;
-                            @endphp
-                            @if ($slicePath !== '')
-                                <path
-                                    class="admin-storage__usage-segment admin-storage__usage-segment--{{ $sliceClass }}"
-                                    d="{{ $slicePath }}"
-                                    style="--storage-slice-x: {{ $sliceX }}px; --storage-slice-y: {{ $sliceY }}px"
-                                    role="button"
-                                    tabindex="0"
-                                    aria-label="{{ $row['label'] }}: {{ $row['display_bytes'] }}, {{ number_format($sliceCapacityPercent, $sliceCapacityPercent < 0.1 ? 2 : 1) }} percent of storage allowance"
-                                    x-bind:aria-pressed="(selected === @js($sliceKey)).toString()"
-                                    x-bind:class="{
-                                        'is-selected': selected === @js($sliceKey),
-                                        'is-muted': selected !== null && selected !== @js($sliceKey),
-                                    }"
-                                    x-on:click="select(@js($sliceKey))"
-                                    x-on:keydown.enter.prevent="select(@js($sliceKey))"
-                                    x-on:keydown.space.prevent="select(@js($sliceKey))"
-                                >
-                                    <title>{{ $row['label'] }} — {{ $row['display_bytes'] }} · {{ number_format($sliceCapacityPercent, $sliceCapacityPercent < 0.1 ? 2 : 1) }}% of allowance</title>
-                                </path>
-                            @endif
-                            @php $storageSliceAngle += $sliceAngle; @endphp
-                        @endforeach
-                    @endif
-                </svg>
-
-                <div class="admin-storage__capacity-core" aria-live="polite">
-                    <template x-if="selectedRow()">
-                        <div>
-                            <strong x-text="selectedRow().display_bytes"></strong>
-                            <span x-text="selectedRow().label"></span>
-                            <small x-text="capacityShare(selectedRow()) === null ? '' : `${capacityShare(selectedRow()).toFixed(capacityShare(selectedRow()) < 0.1 ? 2 : 1)}% of ${allowance}`"></small>
-                        </div>
-                    </template>
-                    <template x-if="! selectedRow()">
-                        <div>
-                            @if (($capacity['measurement_available'] ?? false) && ($capacity['configured'] ?? false))
-                                <strong>{{ $capacity['allowance'] ?? '—' }}</strong>
-                                <span>Total capacity</span>
-                                <small>{{ $capacity['authoritative'] ?? '—' }} used · {{ $capacity['remaining'] ?? '—' }} free</small>
-                            @elseif ($capacity['measurement_available'] ?? false)
-                                <strong>—</strong>
-                                <span>No allowance configured</span>
-                                <small>{{ $capacity['authoritative'] ?? '—' }} authoritative</small>
-                            @else
-                                <strong>—</strong>
-                                <span>{{ ($capacity['status'] ?? null) === 'not_measured' ? 'Awaiting measurement' : 'Unavailable' }}</span>
-                            @endif
-                        </div>
-                    </template>
-                </div>
-            </div>
+            <x-admin.storage-capacity-visual
+                :capacity="$capacity"
+                :breakdown="$storageBreakdown"
+                interactive
+            />
 
             <div class="admin-storage__capacity-copy">
                 @if (($capacity['configured'] ?? false) && ($capacity['measurement_available'] ?? false))
@@ -301,16 +182,6 @@
     <div class="admin-storage__distribution admin-visual-stage__pane">
         <div class="admin-storage__visual-heading">
             <p class="admin-storage__eyebrow">Destinations</p>
-            <div class="admin-storage__visual-actions" x-show="selectedRow()" x-cloak>
-                <button class="admin-action" type="button" x-on:click="selected = null">All</button>
-                <template x-if="selectedRow()?.usage_filter">
-                    <button
-                        class="admin-action"
-                        type="button"
-                        x-on:click="$wire.set('usage', selectedRow().usage_filter)"
-                    >Filter library</button>
-                </template>
-            </div>
         </div>
 
         <div class="admin-storage__target-plot" aria-live="polite">
