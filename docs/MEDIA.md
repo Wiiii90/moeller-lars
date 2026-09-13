@@ -153,13 +153,13 @@ Canonical behavior:
 
 - the Storage status reflects authoritative capacity state, not merely library readiness;
 - six top metrics combine library counts with capacity state;
-- the shared Visual Stage remains three metric-aligned thirds in the artist workflow order **Upload → Destinations → Capacity**;
-- each Visual Stage third uses one concise kicker heading (`Upload`, `Destinations`, `Capacity`) rather than stacked decorative headings;
+- the shared Visual Stage remains three metric-aligned thirds in the artist workflow order **Upload Media Files → Capacity → Destinations**;
+- each Visual Stage third uses one concise kicker heading (`Upload Media Files`, `Capacity`, `Destinations`) rather than stacked decorative headings;
 - the Capacity third uses one allowance donut whose full circumference represents the configured quota: the neutral portion is remaining capacity and the measured authoritative originals occupy their exact quota-relative share;
 - occupied capacity is split into distinct-color, mutually exclusive usage segments (for example Galleries, Journal, CV, Home, Shared or Unassigned); generated variants remain outside the allowance donut because they do not count against quota;
 - only occupied usage segments are mouse- and keyboard-selectable; remaining capacity is passive. Selection moves the chosen used segment outward, changes the center readout and synchronizes the Destinations plot without causing a filesystem measurement;
-- Destination rows can select the same area in the donut, while the middle plot uses the already-computed non-exclusive target breakdown;
-- a shared original may therefore contribute to more than one concrete destination in the middle plot while still contributing exactly once to the donut;
+- Destination rows can select the same area in the donut, while the right-hand Destinations plot uses the already-computed non-exclusive target breakdown;
+- a shared original may therefore contribute to more than one concrete destination in the Destinations plot while still contributing exactly once to the donut;
 - exact area-to-library mappings may expose `Filter library`; `shared` and `uncatalogued` deliberately do not pretend to be normal MediaAsset filters;
 - attention retains integrity/context signals such as unused originals, uncatalogued originals, largest gallery and largest original when available;
 - authoritative storage analysis starts from measured originals, not only `MediaAsset` rows, so uncatalogued originals remain detectable;
