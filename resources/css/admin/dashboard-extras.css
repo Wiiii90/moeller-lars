@@ -8,6 +8,13 @@
     margin-bottom: .45rem;
 }
 
+.admin-dashboard__overview-head > .admin-section__kicker {
+    color: var(--admin-accent);
+    font-size: .66rem;
+    font-weight: 750;
+    letter-spacing: .12em;
+}
+
 .admin-dashboard__overview-column:first-child .admin-dashboard__overview-head {
     margin-right: -.4rem;
 }
@@ -104,6 +111,147 @@
     object-fit: contain;
 }
 
+/* The visual row owns the flexible height. Facts therefore occupy only their
+ * actual text height and settle against the lower stage rhythm instead of
+ * reserving an extra empty line below themselves. */
+.admin-dashboard__facts {
+    min-height: 0;
+    align-content: end;
+}
+
+/* Dashboard feed: use the six-unit table geometry without the generic 60rem
+ * floor. Message content belongs to the detail dialog, so the desktop table can
+ * remain inside the workspace without a default horizontal scrollbar. */
+.admin-dashboard .admin-data-row {
+    cursor: default;
+}
+
+.admin-dashboard__feed-table {
+    overflow-x: hidden;
+}
+
+.admin-dashboard__feed-table > table {
+    min-width: 0;
+    table-layout: fixed;
+}
+
+.admin-dashboard__feed-table .admin-data-title,
+.admin-dashboard__feed-table .admin-data-sender,
+.admin-dashboard__feed-table .admin-data-status {
+    min-width: 0;
+    max-width: none;
+    width: auto;
+}
+
+.admin-dashboard__feed-table .admin-data-title,
+.admin-dashboard__feed-table .admin-data-nowrap,
+.admin-dashboard__feed-table .admin-data-sender strong,
+.admin-dashboard__feed-table .admin-data-sender small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-dashboard__feed-table .admin-data-status > span {
+    width: auto;
+}
+
+.admin-dashboard__feed-actions .admin-action {
+    padding-inline: .32rem;
+}
+
+.admin-dashboard__read-state {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 0;
+    gap: .38rem;
+    align-items: center;
+    color: var(--admin-muted);
+}
+
+.admin-dashboard__read-dot {
+    width: .48rem;
+    height: .48rem;
+    flex: 0 0 .48rem;
+    border: 1px solid var(--admin-muted);
+    border-radius: 50%;
+    background: transparent;
+}
+
+.admin-dashboard__read-state.is-unread {
+    color: var(--admin-text);
+    font-weight: 620;
+}
+
+.admin-dashboard__read-state.is-unread .admin-dashboard__read-dot {
+    border-color: var(--admin-accent);
+    background: var(--admin-accent);
+}
+
+.admin-dashboard__selection-cell {
+    display: grid;
+    min-width: 1.65rem;
+    min-height: 1.65rem;
+    place-items: center;
+}
+
+.admin-dashboard__selection-empty {
+    display: block;
+    color: var(--admin-faint);
+    text-align: center;
+}
+
+/* Dashboard detail dialogs consume the shared default 3/6 width and start with
+ * one metric-like metadata row. Variant-specific content may use fewer cells;
+ * the grid never invents placeholder facts. */
+.admin-detail-dialog__meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-detail-dialog__meta > div,
+.admin-detail-dialog__meta > div:nth-child(even),
+.admin-detail-dialog__meta > div:nth-last-child(-n + 2) {
+    padding: .75rem .85rem;
+    border-bottom: 0;
+    border-left: 0;
+    border-right: 1px solid var(--admin-line);
+}
+
+.admin-detail-dialog__meta > div:first-child {
+    padding-left: 0;
+}
+
+.admin-detail-dialog__meta > div:last-child {
+    padding-right: 0;
+    border-right: 0;
+}
+
+.admin-detail-dialog__sender {
+    display: grid;
+    gap: .08rem;
+}
+
+.admin-detail-dialog__sender strong {
+    font-weight: 620;
+}
+
+.admin-detail-dialog__context {
+    display: flex;
+    gap: .3rem;
+    margin: -.2rem 0 0;
+    align-items: baseline;
+    flex-wrap: wrap;
+    color: var(--admin-muted);
+    font-size: .7rem;
+    line-height: 1.45;
+}
+
+.admin-detail-dialog__link {
+    justify-self: start;
+    color: var(--admin-muted) !important;
+    font-size: .74rem;
+}
+
 .admin-dashboard__settings {
     position: relative;
 }
@@ -128,16 +276,14 @@
     width: 100%;
 }
 
-.admin-dashboard .admin-data-status.is-success {
-    color: var(--admin-status-success);
-}
+@media (max-width: 980px) {
+    .admin-dashboard__feed-table .admin-action__label {
+        display: none;
+    }
 
-.admin-dashboard .admin-data-status.is-warning {
-    color: var(--admin-status-warning);
-}
-
-.admin-dashboard .admin-data-status.is-danger {
-    color: var(--admin-status-danger);
+    .admin-dashboard__feed-actions .admin-action {
+        padding-inline: .22rem;
+    }
 }
 
 @media (max-width: 760px) {
@@ -148,5 +294,23 @@
     .admin-dashboard__settings-popover {
         right: auto;
         left: 0;
+    }
+}
+
+@media (max-width: 520px) {
+    .admin-detail-dialog__meta {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-detail-dialog__meta > div,
+    .admin-detail-dialog__meta > div:nth-child(even),
+    .admin-detail-dialog__meta > div:nth-last-child(-n + 2) {
+        padding: .65rem 0;
+        border-right: 0;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-detail-dialog__meta > div:last-child {
+        border-bottom: 0;
     }
 }
