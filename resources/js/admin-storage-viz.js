@@ -52,7 +52,6 @@ function palette(element) {
     return {
         text: token('--admin-text', '#181818'),
         muted: token('--admin-muted', '#707070'),
-        line: token('--admin-line', '#dedede'),
         surface: token('--admin-surface', '#ffffff'),
         accent: token('--admin-accent', '#b45309'),
         storage: {
@@ -77,20 +76,16 @@ function clamp(value, min, max) {
 
 function storageSlices(config, colors, selected) {
     const usedPercent = clamp(config.percent, 0, 100);
-    const rows = Array.isArray(config.breakdown) ? config.breakdown : [];
-    const slices = [];
-    let allocated = 0;
-
-    rows.forEach((row) => {
-        const shareOfUsed = clamp(row.percent, 0, 100) / 100;
-        const shareOfCapacity = usedPercent * shareOfUsed;
-        if (shareOfCapacity <= 0) return;
-
-        allocated += shareOfCapacity;
+    const rows = (Array.isArray(config.breakdown) ? config.breakdown : [])
+        .filter((row) => Number(row.bytes) > 0);
+    const totalUsedBytes = rows.reduce((sum, row) => sum + (Number(row.bytes) || 0), 0);
+    const slices = rows.map((row) => {
+        const byteShare = totalUsedBytes > 0 ? (Number(row.bytes) || 0) / totalUsedBytes : 0;
+        const shareOfCapacity = usedPercent * byteShare;
         const base = colors.storage[row.key] || colors.accent;
         const faded = selected && row.key !== selected;
 
-        slices.push({
+        return {
             key: row.key,
             name: row.label,
             value: shareOfCapacity,
@@ -104,26 +99,8 @@ function storageSlices(config, colors, selected) {
                 borderWidth: 2,
                 borderRadius: 4,
             },
-        });
+        };
     });
-
-    const unresolvedUsed = Math.max(0, usedPercent - allocated);
-    if (unresolvedUsed > 0.01) {
-        slices.push({
-            key: 'referenced',
-            name: 'Used',
-            value: unresolvedUsed,
-            displayBytes: config.authoritative || '—',
-            files: 0,
-            capacityShare: unresolvedUsed,
-            itemStyle: {
-                color: selected ? withAlpha(colors.accent, 0.28) : colors.accent,
-                borderColor: colors.surface,
-                borderWidth: 2,
-                borderRadius: 4,
-            },
-        });
-    }
 
     slices.push({
         key: 'remaining',
@@ -138,7 +115,6 @@ function storageSlices(config, colors, selected) {
             borderWidth: 2,
             borderRadius: 4,
         },
-        tooltip: { show: false },
     });
 
     return slices;
@@ -218,7 +194,7 @@ function storageOption(element, config, state) {
             {
                 type: 'text',
                 left: 'center',
-                top: compact ? '39%' : '39%',
+                top: '39%',
                 style: {
                     text: mainValue,
                     fill: colors.text,
@@ -247,7 +223,7 @@ function storageOption(element, config, state) {
                 id: 'storage-capacity-context',
                 type: 'pie',
                 silent: true,
-                radius: compact ? ['88%', '93%'] : ['88%', '93%'],
+                radius: ['88%', '93%'],
                 center: ['50%', '50%'],
                 startAngle: 90,
                 clockwise: true,
@@ -276,7 +252,6 @@ function storageOption(element, config, state) {
                 startAngle: 90,
                 clockwise: true,
                 avoidLabelOverlap: true,
-                minAngle: 0.4,
                 label: { show: false },
                 labelLine: { show: false },
                 emphasis: compact ? { disabled: true } : {
