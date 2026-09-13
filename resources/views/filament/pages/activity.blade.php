@@ -181,6 +181,7 @@
                                 role="img"
                                 aria-label="Live local clock and activity distribution for {{ $selectedCalendarLabel }}"
                             >
+                                <div class="activity-clock__surface" data-admin-viz-surface wire:ignore></div>
                                 <script type="application/json" data-admin-viz-config>@json($clockVizConfig)</script>
                             </div>
                         </div>
