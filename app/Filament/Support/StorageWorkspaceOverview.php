@@ -212,7 +212,7 @@ final class StorageWorkspaceOverview
         return match ($area) {
             'galleries' => 'kind:gallery',
             'journal' => 'kind:journal',
-            'custom-pages' => 'kind:custom-page',
+            'custom-pages' => 'kind:custom',
             'home' => 'home',
             'cv' => 'cv',
             'site-identity' => 'site-identity',
