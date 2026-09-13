@@ -27,88 +27,19 @@
     place-items: center;
 }
 
-.activity-clock__dial {
+.activity-clock__chart[data-admin-viz="activity-clock"] {
+    position: relative;
     display: block;
     width: min(100%, 19rem);
-    max-height: 100%;
+    height: min(100%, 19rem);
+    min-width: 0;
+    min-height: 0;
     aspect-ratio: 1;
     overflow: visible;
 }
 
-.activity-clock__activity-track,
-.activity-clock__face {
-    fill: none;
-    stroke: var(--admin-line);
-}
-
-.activity-clock__activity-track {
-    stroke-width: 1;
-}
-
-.activity-clock__face {
-    stroke: var(--admin-line-strong);
-    stroke-width: 1.15;
-}
-
-.activity-clock__activity-tick {
-    stroke: var(--admin-accent);
-    stroke-width: 3;
-    stroke-linecap: round;
-}
-
-.activity-clock__activity-tick.is-peak {
-    stroke: var(--admin-accent-strong);
-    stroke-width: 4.5;
-    opacity: 1;
-}
-
-.activity-clock__tick {
-    stroke: var(--admin-line-strong);
-    stroke-width: 1;
-}
-
-.activity-clock__tick.is-hour {
-    stroke: var(--admin-text);
-    stroke-width: 1.8;
-}
-
-.activity-clock__number {
-    fill: var(--admin-text);
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 580;
-    text-anchor: middle;
-    dominant-baseline: middle;
-    font-variant-numeric: tabular-nums;
-}
-
-.activity-clock__hand {
-    stroke-linecap: round;
-}
-
-.activity-clock__hand--hour {
-    stroke: var(--admin-text);
-    stroke-width: 5;
-}
-
-.activity-clock__hand--minute {
-    stroke: var(--admin-text);
-    stroke-width: 3;
-}
-
-.activity-clock__hand--second {
-    stroke: var(--admin-accent);
-    stroke-width: 1.4;
-}
-
-.activity-clock__pin {
-    fill: var(--admin-surface);
-    stroke: var(--admin-text);
-    stroke-width: 2;
-}
-
-.dark .activity-clock__pin {
-    fill: rgb(24, 24, 27);
+.activity-clock__chart[data-admin-viz="activity-clock"] > script {
+    display: none;
 }
 
 .activity-clock__caption {
@@ -471,8 +402,9 @@ a.activity-calendar__day:focus-visible {
 }
 
 @media (max-width: 600px) {
-    .activity-clock__dial {
+    .activity-clock__chart[data-admin-viz="activity-clock"] {
         width: min(100%, 18rem);
+        height: min(100%, 18rem);
     }
 
     .activity-calendar {
