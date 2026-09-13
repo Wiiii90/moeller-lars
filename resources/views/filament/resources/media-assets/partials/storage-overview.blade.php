@@ -17,7 +17,6 @@
 <section
     class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych admin-visual-stage--stackable"
     aria-label="Storage upload, capacity and destinations"
-    x-on:admin-viz:select="select($event.detail.key)"
     x-data="{
         selected: null,
         usageFilter: $wire.entangle('usage', true),
@@ -52,13 +51,7 @@
             })[key] ?? null
         },
         setSelection(key) {
-            const next = key && this.breakdown.some((row) => row.key === key) ? key : null
-            this.selected = next
-            this.$nextTick(() => {
-                this.$refs.capacityViz?.dispatchEvent(new CustomEvent('admin-viz:state', {
-                    detail: { selected: this.selected },
-                }))
-            })
+            this.selected = key && this.breakdown.some((row) => row.key === key) ? key : null
         },
         select(key) {
             if (! this.breakdown.some((row) => row.key === key)) return
@@ -218,8 +211,6 @@
             <x-admin.storage-capacity-visual
                 :capacity="$capacity"
                 :breakdown="$storageBreakdown"
-                linked
-                x-ref="capacityViz"
             />
         </div>
     </div>
