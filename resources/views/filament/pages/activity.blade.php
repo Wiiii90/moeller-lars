@@ -36,17 +36,6 @@
             $activitySourceExists = $paginator->total() > 0 || \App\Models\AuditEvent::query()
                 ->where('occurred_at', '>=', now()->subDays(\App\Filament\Support\AdminActivityFeed::ACTIVITY_WINDOW_DAYS))
                 ->exists();
-            $clockVizConfig = [
-                'kind' => 'activity-clock',
-                'selected_label' => $selectedCalendarLabel,
-                'buckets' => array_map(
-                    static fn (array $bucket): array => [
-                        'hour' => (int) ($bucket['hour'] ?? 0),
-                        'count' => (int) ($bucket['count'] ?? 0),
-                    ],
-                    $clockActivity,
-                ),
-            ];
         @endphp
 
         <section
@@ -69,6 +58,15 @@
                         window.clearInterval(this.timer)
                         this.timer = null
                     }
+                },
+                hourAngle() {
+                    return ((this.now.getHours() % 12) + (this.now.getMinutes() / 60) + (this.now.getSeconds() / 3600)) * 30
+                },
+                minuteAngle() {
+                    return (this.now.getMinutes() + (this.now.getSeconds() / 60)) * 6
+                },
+                secondAngle() {
+                    return this.now.getSeconds() * 6
                 },
                 timeLabel() {
                     return this.timeFormatter.format(this.now)
@@ -175,15 +173,81 @@
 
                     <div class="activity-atlas__view activity-clock">
                         <div class="activity-clock__figure">
-                            <div
-                                class="activity-clock__chart"
-                                data-admin-viz="activity-clock"
+                            <svg
+                                class="activity-clock__dial"
+                                viewBox="0 0 320 320"
                                 role="img"
-                                aria-label="Live local clock and activity distribution for {{ $selectedCalendarLabel }}"
+                                x-bind:aria-label="`Live local time ${timeLabel()}; activity distribution for {{ $selectedCalendarLabel }}`"
                             >
-                                <div class="activity-clock__surface" data-admin-viz-surface wire:ignore></div>
-                                <script type="application/json" data-admin-viz-config>@json($clockVizConfig)</script>
-                            </div>
+                                <circle class="activity-clock__activity-track" cx="160" cy="160" r="134" />
+                                @foreach ($clockActivity as $bucket)
+                                    @php
+                                        $activityRatio = $clockPeakCount > 0 ? sqrt($bucket['count'] / $clockPeakCount) : 0;
+                                        $activityOpacity = $bucket['count'] > 0 ? 0.28 + (0.72 * $activityRatio) : 0.12;
+                                    @endphp
+                                    <line
+                                        class="activity-clock__activity-tick {{ $bucket['hour'] === $clockPeakHour ? 'is-peak' : '' }}"
+                                        x1="160"
+                                        y1="33"
+                                        x2="160"
+                                        y2="19"
+                                        transform="rotate({{ $bucket['hour'] * 15 }} 160 160)"
+                                        opacity="{{ number_format($activityOpacity, 3, '.', '') }}"
+                                    >
+                                        <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 · {{ number_format($bucket['count']) }} changes</title>
+                                    </line>
+                                @endforeach
+
+                                <circle class="activity-clock__face" cx="160" cy="160" r="112" />
+
+                                @for ($minute = 0; $minute < 60; $minute++)
+                                    <line
+                                        class="activity-clock__tick {{ $minute % 5 === 0 ? 'is-hour' : '' }}"
+                                        x1="160"
+                                        y1="{{ $minute % 5 === 0 ? 59 : 54 }}"
+                                        x2="160"
+                                        y2="48"
+                                        transform="rotate({{ $minute * 6 }} 160 160)"
+                                    />
+                                @endfor
+
+                                @foreach (range(1, 12) as $hour)
+                                    <g transform="rotate({{ $hour * 30 }} 160 160)">
+                                        <text
+                                            class="activity-clock__number"
+                                            x="160"
+                                            y="74"
+                                            transform="rotate({{ $hour * -30 }} 160 74)"
+                                        >{{ $hour }}</text>
+                                    </g>
+                                @endforeach
+
+                                <line
+                                    class="activity-clock__hand activity-clock__hand--hour"
+                                    x1="160"
+                                    y1="170"
+                                    x2="160"
+                                    y2="98"
+                                    x-bind:transform="`rotate(${hourAngle()} 160 160)`"
+                                />
+                                <line
+                                    class="activity-clock__hand activity-clock__hand--minute"
+                                    x1="160"
+                                    y1="174"
+                                    x2="160"
+                                    y2="82"
+                                    x-bind:transform="`rotate(${minuteAngle()} 160 160)`"
+                                />
+                                <line
+                                    class="activity-clock__hand activity-clock__hand--second"
+                                    x1="160"
+                                    y1="178"
+                                    x2="160"
+                                    y2="74"
+                                    x-bind:transform="`rotate(${secondAngle()} 160 160)`"
+                                />
+                                <circle class="activity-clock__pin" cx="160" cy="160" r="4.5" />
+                            </svg>
                         </div>
 
                         <div class="activity-clock__caption" aria-label="Selected day and live local time">
