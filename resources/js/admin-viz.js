@@ -21,11 +21,16 @@ function scheduleRefresh() {
     refreshFrame = window.requestAnimationFrame(refreshVisualizations);
 }
 
+function scheduleStorageRefresh() {
+    if (storageRuntimePromise === null && ! hasStorageVisualization()) return;
+    scheduleRefresh();
+}
+
 function registerLivewireHook() {
     if (livewireHookRegistered || ! window.Livewire?.hook) return;
 
     livewireHookRegistered = true;
-    window.Livewire.hook('morph.updated', scheduleRefresh);
+    window.Livewire.hook('morph.updated', scheduleStorageRefresh);
 }
 
 if (document.readyState === 'loading') {
@@ -38,9 +43,7 @@ registerLivewireHook();
 document.addEventListener('livewire:init', registerLivewireHook, { once: true });
 document.addEventListener('livewire:navigated', scheduleRefresh);
 
-new MutationObserver(() => {
-    if (hasStorageVisualization()) scheduleRefresh();
-}).observe(document.documentElement, {
+new MutationObserver(scheduleStorageRefresh).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['class'],
 });
