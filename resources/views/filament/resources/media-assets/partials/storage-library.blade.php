@@ -341,16 +341,29 @@
                                 <td class="media-workspace__size">{{ $asset['size'] }}</td>
                                 <td class="media-workspace__actions">
                                     <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
-                                        @if ($viewMode === 'dense')
-                                            <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">Preview</button>
-                                        @endif
-                                        <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>Edit</button>
+                                        <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="media-workspace__action-icon" />
+                                            Details
+                                        </button>
+                                        <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="media-workspace__action-icon" />
+                                            Edit
+                                        </button>
                                         @if ($asset['state'] === 'available')
-                                            <a class="admin-action" href="{{ route('admin.media.download', ['mediaAsset' => $asset['id']]) }}">Download</a>
+                                            <a class="admin-action" href="{{ route('admin.media.download', ['mediaAsset' => $asset['id']]) }}">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Download->mini()" class="media-workspace__action-icon" />
+                                                Download
+                                            </a>
                                         @else
-                                            <button class="admin-action" type="button" disabled>Download</button>
+                                            <button class="admin-action" type="button" disabled>
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Download->mini()" class="media-workspace__action-icon" />
+                                                Download
+                                            </button>
                                         @endif
-                                        <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>Delete</button>
+                                        <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="media-workspace__action-icon" />
+                                            Delete
+                                        </button>
                                     </div>
                                 </td>
                                 <td class="media-workspace__selection-cell media-workspace__selection-cell--trailing">
@@ -382,6 +395,7 @@
     @endif
 
     <x-admin.add-row
+        class="admin-add-row--compact"
         type="button"
         x-on:click="document.getElementById('storage-upload')?.click()"
         aria-controls="storage-upload"
