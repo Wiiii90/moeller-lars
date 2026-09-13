@@ -139,7 +139,7 @@
                 rx="8"
             />
 
-            @if ($remaining !== '—')
+            @if ($remaining !== '—' && $capacityPercent < 80)
                 <text
                     class="admin-storage-capacity__free-label"
                     x="{{ $overviewX + $overviewWidth - 10 }}"
