@@ -17,6 +17,7 @@ enum AdminIcon: string
     case Activity = 'heroicon-o-clock';
     case Storage = 'heroicon-o-circle-stack';
     case Preview = 'heroicon-o-viewfinder-circle';
+    case Details = 'heroicon-o-information-circle';
     case PreviewZoom = 'heroicon-o-magnifying-glass';
     case PreviewZoomOut = 'heroicon-o-magnifying-glass-minus';
     case PreviewPan = 'heroicon-o-hand-raised';
