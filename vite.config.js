@@ -24,6 +24,7 @@ export default defineConfig({
                 'resources/css/public-layout-settings.css',
                 'resources/css/custom-pages.css',
                 'resources/js/app.js',
+                'resources/js/admin-viz.js',
             ],
             refresh: true,
         }),
