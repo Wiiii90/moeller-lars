@@ -2,6 +2,7 @@
 
 namespace App\Domain\Publication;
 
+use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaReferenceQuery;
 use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,10 @@ use Throwable;
 
 final class PublicationMediaCleanupService
 {
-    public function __construct(private readonly MediaReferenceQuery $referenceQuery) {}
+    public function __construct(
+        private readonly MediaReferenceQuery $referenceQuery,
+        private readonly MediaCapacityService $capacity,
+    ) {}
 
     /** @param list<string> $storageKeys */
     public function queue(int $mediaAssetId, array $storageKeys): void
@@ -43,6 +47,7 @@ final class PublicationMediaCleanupService
         }
 
         $failed = [];
+        $changed = false;
 
         foreach (array_values(array_unique($storageKeys)) as $key) {
             if (! is_string($key) || $key === '') {
@@ -51,7 +56,15 @@ final class PublicationMediaCleanupService
 
             if (! $this->deleteKey($key)) {
                 $failed[] = $key;
+
+                continue;
             }
+
+            $changed = true;
+        }
+
+        if ($changed) {
+            $this->refreshCapacitySnapshot();
         }
 
         if ($failed !== []) {
@@ -64,6 +77,7 @@ final class PublicationMediaCleanupService
         $rows = DB::table('publication_media_cleanups')
             ->orderBy('id')
             ->get(['id', 'media_asset_id', 'storage_key']);
+        $changed = false;
 
         foreach ($rows as $row) {
             $mediaAssetId = (int) $row->media_asset_id;
@@ -77,6 +91,11 @@ final class PublicationMediaCleanupService
             }
 
             DB::table('publication_media_cleanups')->where('id', $row->id)->delete();
+            $changed = true;
+        }
+
+        if ($changed) {
+            $this->refreshCapacitySnapshot();
         }
     }
 
@@ -136,6 +155,16 @@ final class PublicationMediaCleanupService
             return ! $disk->exists($key);
         } catch (Throwable) {
             return false;
+        }
+    }
+
+    private function refreshCapacitySnapshot(): void
+    {
+        try {
+            $this->capacity->refreshCachedSnapshot();
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->capacity->forgetCachedSnapshot();
         }
     }
 }
