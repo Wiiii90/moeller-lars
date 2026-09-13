@@ -155,22 +155,23 @@ Canonical behavior:
 - six top metrics combine library counts with capacity state;
 - the shared Visual Stage remains three metric-aligned thirds in the artist workflow order **Upload Media Files → Capacity → Destinations**;
 - each Visual Stage third uses one concise kicker heading (`Upload Media Files`, `Capacity`, `Destinations`) rather than stacked decorative headings;
-- the Capacity third uses one allowance donut whose full circumference represents the configured quota: the neutral portion is remaining capacity and the measured authoritative originals occupy their exact quota-relative share;
-- occupied capacity is split into distinct-color, mutually exclusive usage segments (for example Galleries, Journal, CV, Home, Shared or Unassigned); generated variants remain outside the allowance donut because they do not count against quota;
-- only occupied usage segments are mouse- and keyboard-selectable; remaining capacity is passive. Selection moves the chosen used segment outward, changes the center readout and synchronizes the Destinations plot without causing a filesystem measurement;
-- Destination rows can select the same area in the donut, while the right-hand Destinations plot uses the already-computed non-exclusive target breakdown;
-- a shared original may therefore contribute to more than one concrete destination in the Destinations plot while still contributing exactly once to the donut;
-- exact area-to-library mappings may expose `Filter library`; `shared` and `uncatalogued` deliberately do not pretend to be normal MediaAsset filters;
+- the Capacity third uses one filled capacity pie/dial whose complete disk represents the configured quota: neutral area is remaining capacity and measured authoritative originals occupy their exact quota-relative area;
+- occupied capacity is split into distinct-color, mutually exclusive usage wedges (for example Galleries, Journal, CV, Home, Shared or Unassigned); generated variants remain outside the capacity pie because they do not count against quota;
+- only occupied usage wedges are mouse- and keyboard-selectable; remaining capacity is passive. Selection offsets the chosen used wedge and synchronizes the Destinations plot without causing a filesystem measurement;
+- Destination rows can select the same usage area, while the right-hand Destinations plot uses the already-computed non-exclusive target breakdown;
+- a shared original may therefore contribute to more than one concrete destination in the Destinations plot while still contributing exactly once to the capacity pie;
 - attention retains integrity/context signals such as unused originals, uncatalogued originals, largest gallery and largest original when available;
 - authoritative storage analysis starts from measured originals, not only `MediaAsset` rows, so uncatalogued originals remain detectable;
-- the media library remains the operational surface for search, type/usage/status filtering, list/grid/dense views, selection, preview, download, metadata editing and deletion;
+- the media library remains the operational surface for search, type/usage/status filtering, list/grid/dense views, selection, details, download, metadata editing and deletion;
 - the persistent `Add Media File` row and the Stage dropzone both invoke the same native file input and canonical direct-ingest path;
+- the shared data-table surface contains wide list tables inside their own horizontal overflow boundary rather than allowing table min-content to widen the admin shell;
 - a newly accepted upload reloads the library on page one under newest-first ordering; active filters may intentionally keep a new file out of view;
 - direct upload uses the canonical ingest/quota policy;
 - authenticated image/video/audio preview/player behavior remains available;
 - thumbnails/variants remain bounded and expensive original access stays on demand;
 - technical hashes/storage paths are not primary artist-facing UI;
-- reference filters include structured and Rich Text consumers through central reference rules.
+- reference filters include structured and Rich Text consumers through central reference rules;
+- Dashboard reuses the same shared capacity-pie component in compact form, fed only by the cached capacity snapshot so the dashboard does not add Storage reference-analysis work to normal navigation.
 
 Legacy `/admin/media-files` and `/admin/media-assets` URLs are compatibility redirects only; they are not separate workspaces.
 
@@ -182,7 +183,7 @@ Storage list/reference rendering must remain bounded.
 
 `MediaReferenceCatalog` may aggregate references across structured/Rich Text consumers, but expensive global content scans should be treated as a real performance concern if browser measurements show they slow normal Storage navigation. Request-local caching can reduce repetition but is not evidence that a broad scan is cheap.
 
-Normal Storage navigation, library filtering, donut selection and destination drilldown must not trigger an authoritative recursive filesystem walk. Production/local-preview startup warms the durable display snapshot; successful file ingest and physical cleanup refresh it at their mutation boundaries; the explicit `Refresh` action is the manual authoritative rescan/recovery path. A display-refresh failure must not roll back an otherwise successful file mutation; the stale display snapshot is discarded instead.
+Normal Storage navigation, library filtering, capacity-pie selection and destination drilldown must not trigger an authoritative recursive filesystem walk. Production/local-preview startup warms the durable display snapshot; successful file ingest and physical cleanup refresh it at their mutation boundaries; the explicit `Refresh` action is the manual authoritative rescan/recovery path. A display-refresh failure must not roll back an otherwise successful file mutation; the stale display snapshot is discarded instead.
 
 Do not dismiss source-side media-reference/preload latency merely because local Docker amplifies it. See [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md).
 
