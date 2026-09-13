@@ -118,7 +118,7 @@ final class StorageWorkspaceOverview
                 default => 'Allowance not configured',
             },
             'percent' => $configured && $measurementAvailable && $ratio !== null
-                ? (int) round(min(1, max(0, $ratio)) * 100)
+                ? round(min(1, max(0, $ratio)) * 100, 1)
                 : null,
             'authoritative' => MediaStorageUnits::formatBytes($snapshot['authoritative_bytes'] ?? null),
             'generated' => MediaStorageUnits::formatBytes($snapshot['generated_bytes'] ?? null),
