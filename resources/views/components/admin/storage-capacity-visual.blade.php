@@ -1,7 +1,6 @@
 @props([
     'capacity',
     'breakdown' => [],
-    'linked' => false,
     'compact' => false,
 ])
 
@@ -40,7 +39,6 @@
 <div
     {{ $attributes->class(['admin-storage-capacity', 'is-compact' => $compact]) }}
     data-admin-viz="storage-capacity"
-    data-admin-viz-linked="{{ $linked ? 'true' : 'false' }}"
     role="img"
     aria-label="@if ($configured && $measurementAvailable && $capacityPercent !== null) {{ number_format($capacityPercent, 1) }} percent of {{ $capacity['allowance'] ?? 'the storage allowance' }} is used @elseif ($measurementAvailable) Authoritative storage measured without a configured allowance @else Storage measurement unavailable @endif"
 >
