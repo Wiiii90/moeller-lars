@@ -31,7 +31,10 @@ class MediaIngestService
         $lock = $this->acquireIngestLock();
 
         try {
-            return $this->ingestLocked($upload);
+            $asset = $this->ingestLocked($upload);
+            $this->refreshCapacitySnapshot();
+
+            return $asset;
         } finally {
             $lock->release();
         }
@@ -54,8 +57,11 @@ class MediaIngestService
                 return ['asset' => $duplicate, 'duplicate' => true];
             }
 
+            $asset = $this->storePreparedLocked($upload, $prepared);
+            $this->refreshCapacitySnapshot();
+
             return [
-                'asset' => $this->storePreparedLocked($upload, $prepared),
+                'asset' => $asset,
                 'duplicate' => false,
             ];
         } finally {
@@ -71,6 +77,18 @@ class MediaIngestService
         }
 
         return $lock;
+    }
+
+    private function refreshCapacitySnapshot(): void
+    {
+        $capacity = app(MediaCapacityService::class);
+
+        try {
+            $capacity->refreshCachedSnapshot();
+        } catch (Throwable $exception) {
+            report($exception);
+            $capacity->forgetCachedSnapshot();
+        }
     }
 
     private function ingestLocked(UploadedFile $upload): MediaAsset
