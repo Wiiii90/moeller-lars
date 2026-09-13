@@ -14,27 +14,43 @@
                 </header>
 
                 <div class="admin-dashboard__storage-visual" aria-label="Storage capacity preview">
-                    <div
-                        @class([
-                            'admin-storage__capacity-orbit',
-                            'is-unconfigured' => ! ($storage['configured'] ?? false),
-                            'is-unavailable' => ! ($storage['measurement_available'] ?? false),
-                        ])
-                        style="--capacity-used: {{ $storage['percent'] ?? 0 }}%"
-                        role="img"
-                        aria-label="@if ($storage['percent'] !== null) {{ $storage['percent'] }} percent of the configured allowance is used @elseif ($storage['measurement_available'] ?? false) Authoritative usage is measured but no allowance is configured @else Authoritative storage measurement is unavailable @endif"
-                    >
-                        <div class="admin-storage__capacity-core">
-                            @if ($storage['percent'] !== null)
-                                <strong>{{ $storage['percent'] }}%</strong>
-                                <span>Allowance used</span>
-                            @elseif ($storage['measurement_available'] ?? false)
-                                <strong>{{ $storage['authoritative'] ?? '—' }}</strong>
-                                <span>Authoritative used</span>
-                            @else
-                                <strong>—</strong>
-                                <span>Measurement unavailable</span>
+                    <div class="admin-storage__capacity-plot">
+                        <svg
+                            class="admin-storage__donut"
+                            viewBox="0 0 120 120"
+                            role="img"
+                            aria-label="@if (($storage['percent'] ?? null) !== null) {{ $storage['percent'] }} percent of the configured allowance is used @elseif ($storage['measurement_available'] ?? false) Authoritative usage is measured but no allowance is configured @else Authoritative storage measurement is unavailable @endif"
+                        >
+                            <circle class="admin-storage__capacity-track" cx="60" cy="60" r="53" pathLength="100" />
+                            @if (($storage['percent'] ?? null) !== null)
+                                <circle
+                                    class="admin-storage__capacity-used"
+                                    cx="60"
+                                    cy="60"
+                                    r="53"
+                                    pathLength="100"
+                                    stroke-dasharray="{{ min(100, max(0, $storage['percent'])) }} {{ max(0, 100 - min(100, max(0, $storage['percent']))) }}"
+                                    transform="rotate(-90 60 60)"
+                                />
                             @endif
+                        </svg>
+
+                        <div class="admin-storage__capacity-core">
+                            <div>
+                                @if (($storage['percent'] ?? null) !== null)
+                                    <strong>{{ $storage['percent'] }}%</strong>
+                                    <span>Allowance used</span>
+                                    <small>{{ $storage['authoritative'] ?? '—' }} of {{ $storage['allowance'] ?? '—' }}</small>
+                                @elseif ($storage['measurement_available'] ?? false)
+                                    <strong>{{ $storage['authoritative'] ?? '—' }}</strong>
+                                    <span>Authoritative used</span>
+                                    <small>No operator allowance configured</small>
+                                @else
+                                    <strong>—</strong>
+                                    <span>Measurement unavailable</span>
+                                    <small>No cached measurement</small>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -343,37 +359,35 @@
                 <table class="admin-table--six-grid">
                     <colgroup>
                         <col class="admin-table__col-quarter-unit">
-                        <col class="admin-table__col-three-quarter-unit">
-                        <col class="admin-table__col-three-quarter-unit">
-                        <col class="admin-table__col-one-half-units">
-                        <col class="admin-table__col-three-quarter-unit">
+                        <col class="admin-table__col-quarter-unit">
+                        <col class="admin-table__col-half-unit">
                         <col class="admin-table__col-three-quarter-unit">
                         <col class="admin-table__col-one-unit">
+                        <col class="admin-table__col-three-quarter-unit">
+                        <col class="admin-table__col-one-unit">
+                        <col class="admin-table__col-five-quarter-units">
                         <col class="admin-table__col-quarter-unit">
                     </colgroup>
                     <thead>
                         <tr>
-                            <th scope="col" class="admin-table__ordering-heading">Position</th>
+                            <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
                             <th scope="col">Type</th>
                             <th scope="col">Date</th>
                             <th scope="col">Title</th>
                             <th scope="col">Sender</th>
-                            <th scope="col">Status</th>
+                            <th scope="col">Message</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
-                            <th scope="col" class="admin-table__selection--trailing">
-                                <label class="admin-dashboard__selection-cell">
-                                    <input
-                                        type="checkbox"
-                                        aria-label="Select all visible contact messages and notifications"
-                                        aria-checked="{{ $selectionIndeterminate ? 'mixed' : ($allVisibleSelected ? 'true' : 'false') }}"
-                                        wire:click="toggleSelectAll"
-                                        @checked($allVisibleSelected)
-                                        @disabled($selectableFeedKeys === [])
-                                        x-data
-                                        x-effect="$el.indeterminate = {{ $selectionIndeterminate ? 'true' : 'false' }}"
-                                    >
-                                    <span class="sr-only">Selection</span>
-                                </label>
+                            <th scope="col" class="admin-table__selection admin-table__selection--trailing">
+                                <input
+                                    type="checkbox"
+                                    aria-label="Select all visible contact messages and notifications"
+                                    aria-checked="{{ $selectionIndeterminate ? 'mixed' : ($allVisibleSelected ? 'true' : 'false') }}"
+                                    wire:click="toggleSelectAll"
+                                    @checked($allVisibleSelected)
+                                    @disabled($selectableFeedKeys === [])
+                                    x-data
+                                    x-effect="$el.indeterminate = {{ $selectionIndeterminate ? 'true' : 'false' }}"
+                                >
                             </th>
                         </tr>
                     </thead>
@@ -383,10 +397,20 @@
                                 $position = $feedPagination['start'] + $loop->index;
                                 $mutable = is_int($item['contact_id'] ?? null) || is_int($item['notification_id'] ?? null);
                                 $read = $mutable ? str_starts_with((string) $item['status'], 'Read') : null;
+                                $selected = in_array((string) $item['key'], $selectedFeedKeys, true);
                             @endphp
-                            <tr class="admin-data-row" wire:key="dashboard-feed-{{ $item['key'] }}">
+                            <tr @class(['admin-data-row', 'is-selected' => $selected]) wire:key="dashboard-feed-{{ $item['key'] }}">
                                 <td class="admin-table__position">
                                     <span class="admin-position">{{ $position }}</span>
+                                </td>
+                                <td class="admin-table__drag">
+                                    <button
+                                        class="admin-drag-handle"
+                                        type="button"
+                                        disabled
+                                        title="Chronological feed"
+                                        aria-label="Dashboard feed order follows newest first"
+                                    >⋮⋮</button>
                                 </td>
                                 <td class="admin-data-nowrap">{{ $item['type_label'] }}</td>
                                 <td class="admin-data-nowrap"><time datetime="{{ $item['date'] }}">{{ $item['date_display'] }}</time></td>
@@ -401,18 +425,9 @@
                                         <span>—</span>
                                     @endif
                                 </td>
-                                <td class="admin-data-status">
-                                    @if ($read !== null)
-                                        <span @class(['admin-dashboard__read-state', 'is-read' => $read, 'is-unread' => ! $read])>
-                                            <span class="admin-dashboard__read-dot" aria-hidden="true"></span>
-                                            {{ $read ? 'Read' : 'Unread' }}
-                                        </span>
-                                    @else
-                                        <span>—</span>
-                                    @endif
-                                </td>
+                                <td class="admin-data-message">{{ $item['message_excerpt'] }}</td>
                                 <td class="admin-table__actions">
-                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--three admin-dashboard__feed-actions">
+                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-dashboard__feed-actions">
                                         <button
                                             class="admin-action admin-action--with-icon"
                                             type="button"
@@ -428,12 +443,14 @@
                                                 class="admin-action admin-action--with-icon"
                                                 type="button"
                                                 wire:click="{{ $read ? 'markFeedUnread' : 'markFeedRead' }}('{{ $item['key'] }}')"
+                                                aria-label="{{ $read ? 'Mark unread' : 'Mark read' }}"
+                                                title="{{ $read ? 'Mark unread' : 'Mark read' }}"
                                             >
                                                 <x-filament::icon
                                                     :icon="$read ? \App\Filament\Support\AdminIcon::MarkUnread->mini() : \App\Filament\Support\AdminIcon::MarkRead->mini()"
                                                     class="admin-action__icon"
                                                 />
-                                                <span class="admin-action__label">{{ $read ? 'Unread' : 'Read' }}</span>
+                                                <span class="admin-action__label">{{ $read ? 'Mark unread' : 'Mark read' }}</span>
                                             </button>
                                             <button
                                                 class="admin-action admin-action--with-icon is-danger"
@@ -447,19 +464,17 @@
                                         @endif
                                     </x-admin.toolbar>
                                 </td>
-                                <td class="admin-table__selection--trailing">
+                                <td class="admin-table__selection admin-table__selection--trailing">
                                     @if ($mutable)
-                                        <label class="admin-dashboard__selection-cell">
-                                            <input
-                                                type="checkbox"
-                                                wire:model.live="selectedFeedKeys"
-                                                value="{{ $item['key'] }}"
-                                                aria-label="Select {{ $item['type_label'] }} entry {{ $item['title'] }}"
-                                            >
-                                            <span class="sr-only">Select row</span>
-                                        </label>
+                                        <input
+                                            type="checkbox"
+                                            wire:model.live="selectedFeedKeys"
+                                            value="{{ $item['key'] }}"
+                                            aria-label="Select {{ $item['type_label'] }} entry {{ $item['title'] }}"
+                                            @checked($selected)
+                                        >
                                     @else
-                                        <span class="admin-dashboard__selection-empty" aria-hidden="true">—</span>
+                                        <span aria-hidden="true">—</span>
                                     @endif
                                 </td>
                             </tr>
