@@ -9,6 +9,7 @@
     --admin-table-alignment-columns: 6;
     --admin-table-quarter-unit: 4.166667%;
     --admin-table-half-unit: 8.333333%;
+    --admin-table-three-quarter-unit: 12.5%;
     --admin-table-one-unit: 16.666667%;
     --admin-table-one-half-units: 25%;
     --admin-table-two-units: 33.333333%;
@@ -52,6 +53,7 @@
 
 .admin-table__col-quarter-unit { width: var(--admin-table-quarter-unit); }
 .admin-table__col-half-unit { width: var(--admin-table-half-unit); }
+.admin-table__col-three-quarter-unit { width: var(--admin-table-three-quarter-unit); }
 .admin-table__col-one-unit { width: var(--admin-table-one-unit); }
 .admin-table__col-one-half-units { width: var(--admin-table-one-half-units); }
 .admin-table__col-two-units { width: var(--admin-table-two-units); }
@@ -79,13 +81,22 @@
     justify-content: flex-start !important;
 }
 
+.admin-row-actions--three,
 .admin-row-actions--four {
     display: grid !important;
     width: 100%;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: .25rem;
 }
 
+.admin-row-actions--three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-row-actions--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-row-actions--three .admin-action,
 .admin-row-actions--four .admin-action {
     min-width: 0;
     justify-content: center;
