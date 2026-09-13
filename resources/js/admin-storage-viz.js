@@ -223,21 +223,18 @@ function storageOption(element, config) {
                 itemStyle: {
                     borderColor: colors.surface,
                     borderWidth: compact ? 1 : 2,
+                    borderRadius: compact ? 1 : 3,
                 },
                 emphasis: compact ? {
                     disabled: true,
                 } : {
-                    focus: 'self',
-                    blurScope: 'series',
+                    focus: 'none',
                     scale: false,
                     itemStyle: {
+                        borderColor: colors.text,
+                        borderWidth: 3,
                         opacity: 1,
                     },
-                },
-                blur: compact ? {
-                    itemStyle: { opacity: 1 },
-                } : {
-                    itemStyle: { opacity: 0.24 },
                 },
                 data: slices,
             },
