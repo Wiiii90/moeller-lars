@@ -1,10 +1,10 @@
 import * as echarts from 'echarts/core';
-import { SankeyChart } from 'echarts/charts';
+import { PieChart } from 'echarts/charts';
 import { GraphicComponent } from 'echarts/components';
 import { SVGRenderer } from 'echarts/renderers';
 
 echarts.use([
-    SankeyChart,
+    PieChart,
     GraphicComponent,
     SVGRenderer,
 ]);
@@ -43,7 +43,7 @@ function palette(element) {
     return {
         text: token('--admin-text', '#181818'),
         muted: token('--admin-muted', '#707070'),
-        lineStrong: token('--admin-line-strong', '#bdbdbd'),
+        surface: token('--admin-surface', '#ffffff'),
         accent: token('--admin-accent', '#b45309'),
         storage: {
             galleries: token('--storage-color-galleries', '#b45309'),
@@ -70,9 +70,11 @@ function unavailableOption(element, config, compact) {
 
     return {
         animation: false,
+        stateAnimation: { duration: 0 },
         graphic: [
             {
                 type: 'text',
+                silent: true,
                 left: 'center',
                 top: compact ? '43%' : '45%',
                 style: {
@@ -86,6 +88,7 @@ function unavailableOption(element, config, compact) {
             },
             {
                 type: 'text',
+                silent: true,
                 left: 'center',
                 top: compact ? '57%' : '56%',
                 style: {
@@ -102,76 +105,61 @@ function unavailableOption(element, config, compact) {
     };
 }
 
-function storageFlow(config, colors, compact) {
+function storageSlices(config, colors) {
     const usedPercent = clamp(config.percent, 0, 100);
-    const freePercent = Math.max(0, 100 - usedPercent);
     const rows = (Array.isArray(config.breakdown) ? config.breakdown : [])
         .filter((row) => Number(row.bytes) > 0);
     const totalUsedBytes = rows.reduce((sum, row) => sum + (Number(row.bytes) || 0), 0);
 
-    const nodes = [
-        {
-            name: 'capacity',
-            depth: 0,
-            displayLabel: `${config.allowance || '—'} capacity`,
-            itemStyle: { color: colors.lineStrong },
-        },
-    ];
-    const links = [];
-
-    if (usedPercent > 0) {
-        nodes.push({
-            name: 'used',
-            depth: 1,
-            displayLabel: `${config.authoritative || '—'} used`,
-            itemStyle: { color: colors.accent },
-        });
-        links.push({
-            source: 'capacity',
-            target: 'used',
-            value: usedPercent,
-        });
-    }
-
-    if (freePercent > 0) {
-        nodes.push({
-            name: 'free',
-            depth: 1,
-            displayLabel: `${config.remaining || '—'} free`,
-            itemStyle: { color: colors.storage.remaining },
-        });
-        links.push({
-            source: 'capacity',
-            target: 'free',
-            value: freePercent,
-        });
-    }
-
-    if (! compact && usedPercent > 0 && totalUsedBytes > 0) {
-        rows.forEach((row) => {
+    const slices = totalUsedBytes > 0
+        ? rows.map((row) => {
             const bytes = Number(row.bytes) || 0;
-            const shareOfUsed = bytes / totalUsedBytes;
-            const capacityShare = usedPercent * shareOfUsed;
-            if (capacityShare <= 0) return;
+            const capacityShare = usedPercent * (bytes / totalUsedBytes);
 
-            const nodeName = `area:${row.key}`;
-            nodes.push({
-                name: nodeName,
-                depth: 2,
-                displayLabel: row.label || row.key,
+            return {
+                key: row.key,
+                name: row.label || row.key,
+                value: capacityShare,
+                displayBytes: row.display_bytes || '—',
+                files: Number(row.files) || 0,
                 itemStyle: {
                     color: colors.storage[row.key] || colors.accent,
                 },
-            });
-            links.push({
-                source: 'used',
-                target: nodeName,
-                value: capacityShare,
-            });
+            };
+        }).filter((slice) => slice.value > 0)
+        : [];
+
+    if (slices.length === 0 && usedPercent > 0) {
+        slices.push({
+            key: 'used',
+            name: 'Used',
+            value: usedPercent,
+            displayBytes: config.authoritative || '—',
+            files: 0,
+            itemStyle: {
+                color: colors.accent,
+            },
         });
     }
 
-    return { nodes, links };
+    const remainingPercent = Math.max(0, 100 - usedPercent);
+    if (remainingPercent > 0 || slices.length === 0) {
+        slices.push({
+            key: 'remaining',
+            name: 'Remaining',
+            value: remainingPercent > 0 ? remainingPercent : 100,
+            displayBytes: config.remaining || '—',
+            files: 0,
+            itemStyle: {
+                color: colors.storage.remaining,
+            },
+            emphasis: {
+                disabled: true,
+            },
+        });
+    }
+
+    return slices;
 }
 
 function storageOption(element, config) {
@@ -181,61 +169,77 @@ function storageOption(element, config) {
     }
 
     const colors = palette(element);
-    const flow = storageFlow(config, colors, compact);
+    const usedPercent = clamp(config.percent, 0, 100);
+    const slices = storageSlices(config, colors);
+    const usedCopy = `${usedPercent.toFixed(usedPercent < 10 ? 1 : 0)}% of ${config.allowance || 'allowance'}`;
 
     return {
         animation: false,
-        tooltip: { show: false },
+        stateAnimation: { duration: 0 },
+        graphic: [
+            {
+                type: 'text',
+                silent: true,
+                left: 'center',
+                top: compact ? '39%' : '39%',
+                style: {
+                    text: config.authoritative || '—',
+                    fill: colors.text,
+                    fontSize: compact ? 15 : 23,
+                    fontWeight: 620,
+                    fontFamily: 'inherit',
+                    textAlign: 'center',
+                },
+            },
+            {
+                type: 'text',
+                silent: true,
+                left: 'center',
+                top: compact ? '54%' : '53%',
+                style: {
+                    text: compact ? `${usedPercent.toFixed(1)}% used` : usedCopy,
+                    fill: colors.muted,
+                    fontSize: compact ? 8 : 10,
+                    fontWeight: 600,
+                    fontFamily: 'inherit',
+                    textAlign: 'center',
+                },
+            },
+        ],
         series: [
             {
-                id: 'storage-capacity-flow',
-                type: 'sankey',
-                data: flow.nodes,
-                links: flow.links,
-                left: compact ? '7%' : '4%',
-                right: compact ? '7%' : '5%',
-                top: compact ? '10%' : '7%',
-                bottom: compact ? '10%' : '7%',
-                orient: 'horizontal',
-                nodeAlign: 'justify',
-                nodeWidth: compact ? 5 : 8,
-                nodeGap: compact ? 4 : 9,
-                layoutIterations: 48,
-                draggable: false,
-                silent: true,
-                emphasis: { disabled: true },
-                label: {
-                    show: ! compact,
-                    color: colors.text,
-                    fontSize: 9,
-                    fontWeight: 600,
-                    distance: 5,
-                    formatter(params) {
-                        return params.data?.displayLabel || '';
+                id: 'storage-capacity-donut',
+                type: 'pie',
+                radius: compact ? ['61%', '82%'] : ['59%', '82%'],
+                center: ['50%', '50%'],
+                startAngle: 90,
+                clockwise: true,
+                cursor: 'default',
+                selectedMode: false,
+                stillShowZeroSum: false,
+                avoidLabelOverlap: true,
+                label: { show: false },
+                labelLine: { show: false },
+                itemStyle: {
+                    borderColor: colors.surface,
+                    borderWidth: compact ? 1 : 2,
+                },
+                emphasis: compact ? {
+                    disabled: true,
+                } : {
+                    focus: 'self',
+                    blurScope: 'series',
+                    scale: false,
+                    itemStyle: {
+                        opacity: 1,
                     },
                 },
-                lineStyle: {
-                    color: 'gradient',
-                    opacity: 0.34,
-                    curveness: 0.52,
+                blur: compact ? {
+                    itemStyle: { opacity: 1 },
+                } : {
+                    itemStyle: { opacity: 0.24 },
                 },
-                levels: [
-                    {
-                        depth: 0,
-                        itemStyle: { borderWidth: 0 },
-                        lineStyle: { opacity: 0.26 },
-                    },
-                    {
-                        depth: 1,
-                        itemStyle: { borderWidth: 0 },
-                        lineStyle: { opacity: 0.3 },
-                    },
-                    {
-                        depth: 2,
-                        itemStyle: { borderWidth: 0 },
-                        lineStyle: { opacity: 0.38 },
-                    },
-                ],
+                data: slices,
             },
         ],
     };
