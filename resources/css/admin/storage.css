@@ -61,10 +61,6 @@
     gap: .55rem;
 }
 
-.admin-storage__capacity-group {
-    grid-template-rows: auto minmax(0, 1fr) auto;
-}
-
 /* Storage is Upload | Capacity | Destinations. The first two panes live in the
  * shared 2/3 rail and the final pane occupies the third metric-aligned column. */
 .admin-storage__visual-main > .admin-storage__capacity-group {
@@ -300,77 +296,68 @@
     color: var(--admin-accent-strong);
 }
 
-/* Shared Storage/Dashboard capacity visual. The whole disk is the configured
- * allowance; neutral area is free capacity and colored wedges are actual use. */
+/* Shared Storage/Dashboard capacity lens. The upper slab keeps exact quota
+ * proportions; the lower rail is a linked magnification of used composition. */
 .admin-storage-capacity {
     display: grid;
-    width: min(100%, 14rem);
+    width: min(100%, 19rem);
     min-width: 0;
     min-height: 0;
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: .35rem;
+    height: 100%;
     place-self: center;
-    align-items: center;
-    justify-items: center;
+    place-items: center;
 }
 
-.admin-storage-capacity__pie {
+.admin-storage-capacity__lens {
     display: block;
-    width: min(100%, 12.75rem);
+    width: 100%;
     max-height: 100%;
-    aspect-ratio: 1;
+    aspect-ratio: 320 / 184;
     overflow: visible;
 }
 
-.admin-storage-capacity__remaining {
+.admin-storage-capacity__overview-depth {
+    fill: color-mix(in srgb, var(--admin-line-strong) 58%, transparent);
+}
+
+.admin-storage-capacity__overview-free,
+.admin-storage-capacity__detail-base {
     fill: var(--storage-color-remaining);
 }
 
-.admin-storage-capacity__outline {
+.admin-storage-capacity__overview-outline,
+.admin-storage-capacity__detail-outline {
     fill: none;
     stroke: var(--admin-line-strong);
-    stroke-width: .8;
+    stroke-width: .85;
     vector-effect: non-scaling-stroke;
 }
 
-.admin-storage-capacity__tick {
+.admin-storage-capacity__zoom-line {
     stroke: var(--admin-faint);
-    stroke-width: 1;
+    stroke-width: .8;
+    stroke-dasharray: 2.2 3.2;
     vector-effect: non-scaling-stroke;
 }
 
 .admin-storage-capacity__segment {
-    stroke: var(--admin-surface);
-    stroke-width: 1.2;
     vector-effect: non-scaling-stroke;
-    transform: translate(0, 0);
-    transform-box: fill-box;
-    transform-origin: center;
-    transition: opacity .16s ease, transform .18s ease, filter .16s ease;
+    shape-rendering: geometricPrecision;
 }
 
-.admin-storage-capacity__segment[role="button"] {
-    cursor: pointer;
+.admin-storage-capacity__segment--detail {
+    stroke: color-mix(in srgb, var(--admin-surface) 78%, transparent);
+    stroke-width: .8;
 }
 
-.admin-storage-capacity__segment[role="button"]:hover,
-.admin-storage-capacity__segment[role="button"]:focus-visible {
-    filter: brightness(.93);
-    outline: none;
-}
-
-.dark .admin-storage-capacity__segment[role="button"]:hover,
-.dark .admin-storage-capacity__segment[role="button"]:focus-visible {
-    filter: brightness(1.12);
-}
-
-.admin-storage-capacity__segment.is-selected {
-    filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--admin-text) 18%, transparent));
-    transform: translate(var(--storage-slice-x), var(--storage-slice-y));
-}
-
-.admin-storage-capacity__segment.is-muted {
+.admin-storage-capacity__segment.is-dimmed {
     opacity: .22;
+}
+
+.admin-storage-capacity__segment.is-highlighted {
+    filter: brightness(1.12);
+    stroke: var(--admin-text);
+    stroke-width: 1.25;
 }
 
 .admin-storage-capacity__segment--used { fill: var(--admin-accent); }
@@ -385,70 +372,50 @@
 .admin-storage-capacity__segment--unassigned { fill: var(--storage-color-unassigned); }
 .admin-storage-capacity__segment--uncatalogued { fill: var(--storage-color-uncatalogued); }
 
-.admin-storage-capacity__readout {
-    display: grid;
-    min-width: 0;
-    gap: .08rem;
-    justify-items: center;
-    color: var(--admin-muted);
-    font-size: .6rem;
-    line-height: 1.3;
-    text-align: center;
-}
-
-.admin-storage-capacity__readout strong {
-    color: var(--admin-text);
-    font-size: .78rem;
-    font-weight: 600;
+.admin-storage-capacity__label,
+.admin-storage-capacity__detail-label,
+.admin-storage-capacity__free-label {
+    font-family: inherit;
     font-variant-numeric: tabular-nums;
 }
 
-.admin-storage-capacity__readout span,
-.admin-storage-capacity__readout small {
-    white-space: nowrap;
+.admin-storage-capacity__label {
+    fill: var(--admin-text);
+    font-size: 10px;
+    font-weight: 650;
+}
+
+.admin-storage-capacity__label--total {
+    fill: var(--admin-muted);
+    font-size: 9px;
+    font-weight: 580;
+}
+
+.admin-storage-capacity__free-label {
+    fill: var(--admin-muted);
+    font-size: 9px;
+    font-weight: 580;
+}
+
+.admin-storage-capacity__detail-label {
+    fill: var(--admin-accent);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .7px;
+    text-transform: uppercase;
 }
 
 .admin-storage-capacity.is-compact {
-    width: min(100%, 10rem);
-    gap: .2rem;
+    width: min(100%, 10.5rem);
 }
 
-.admin-storage-capacity.is-compact .admin-storage-capacity__pie {
-    width: min(100%, 8.25rem);
+.admin-storage-capacity.is-compact .admin-storage-capacity__label {
+    font-size: 9px;
 }
 
-.admin-storage-capacity.is-compact .admin-storage-capacity__readout strong {
-    font-size: .72rem;
-}
-
-.admin-storage-capacity.is-compact .admin-storage-capacity__readout {
-    font-size: .56rem;
-}
-
-.admin-storage__capacity-copy {
-    display: grid;
-    min-width: 0;
-    gap: .14rem;
-    justify-items: center;
-    text-align: center;
-}
-
-.admin-storage__capacity-copy strong {
-    color: var(--admin-text);
-    font-size: .76rem;
-    font-weight: 600;
-}
-
-.admin-storage__capacity-copy span,
-.admin-storage__capacity-copy small,
-.admin-storage__empty {
-    color: var(--admin-muted);
-    font-size: .62rem;
-    line-height: 1.35;
-}
-
-.admin-storage__refresh {
-    margin-top: .14rem;
+.admin-storage-capacity.is-compact .admin-storage-capacity__label--total,
+.admin-storage-capacity.is-compact .admin-storage-capacity__free-label {
+    font-size: 8px;
 }
 
 .admin-storage .media-workspace__library {
@@ -510,7 +477,7 @@
     }
 
     .admin-storage-capacity {
-        width: min(100%, 13.25rem);
+        width: min(100%, 19rem);
     }
 
     .admin-storage__dropzone.media-workspace__dropzone {
@@ -523,7 +490,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .admin-storage-capacity__segment,
     .admin-storage__target-track i {
         transition: none;
     }
