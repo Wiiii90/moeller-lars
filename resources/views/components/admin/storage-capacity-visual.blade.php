@@ -44,5 +44,6 @@
     role="img"
     aria-label="@if ($configured && $measurementAvailable && $capacityPercent !== null) {{ number_format($capacityPercent, 1) }} percent of {{ $capacity['allowance'] ?? 'the storage allowance' }} is used @elseif ($measurementAvailable) Authoritative storage measured without a configured allowance @else Storage measurement unavailable @endif"
 >
+    <div class="admin-storage-capacity__surface" data-admin-viz-surface wire:ignore></div>
     <script type="application/json" data-admin-viz-config>@json($vizConfig)</script>
 </div>
