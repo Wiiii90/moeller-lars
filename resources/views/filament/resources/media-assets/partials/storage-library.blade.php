@@ -395,7 +395,7 @@
     @endif
 
     <x-admin.add-row
-        class="admin-add-row--compact"
+        class="admin-add-row--data"
         type="button"
         x-on:click="document.getElementById('storage-upload')?.click()"
         aria-controls="storage-upload"
