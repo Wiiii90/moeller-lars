@@ -59,7 +59,7 @@
 
 <section
     class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych admin-visual-stage--stackable"
-    aria-label="Storage upload, destinations and capacity"
+    aria-label="Storage upload, capacity and destinations"
     x-data="{
         selected: null,
         breakdown: @js($storageBreakdown),
@@ -120,7 +120,7 @@
     <div class="admin-storage__visual-main admin-visual-stage__pane">
         <div class="admin-storage__upload">
             <div class="admin-storage__visual-heading">
-                <p class="admin-storage__eyebrow">Upload</p>
+                <p class="admin-storage__eyebrow">Upload Media Files</p>
             </div>
 
             <div
@@ -197,184 +197,184 @@
             </div>
         </div>
 
-        <div class="admin-storage__distribution">
+        <div class="admin-storage__capacity-group">
             <div class="admin-storage__visual-heading">
-                <p class="admin-storage__eyebrow">Destinations</p>
-                <div class="admin-storage__visual-actions" x-show="selectedRow()" x-cloak>
-                    <button class="admin-action" type="button" x-on:click="selected = null">All</button>
-                    <template x-if="selectedRow()?.usage_filter">
-                        <button
-                            class="admin-action"
-                            type="button"
-                            x-on:click="$wire.set('usage', selectedRow().usage_filter)"
-                        >Filter library</button>
-                    </template>
-                </div>
+                <p class="admin-storage__eyebrow">Capacity</p>
             </div>
 
-            <div class="admin-storage__target-plot" aria-live="polite">
-                <div class="admin-storage__selection-summary" x-show="selectedRow()" x-cloak>
-                    <strong x-text="selectedRow()?.label"></strong>
-                    <span x-text="selectedMeta()"></span>
-                </div>
+            <div class="admin-storage__capacity-plot">
+                <svg class="admin-storage__donut" viewBox="0 0 120 120" role="img" aria-label="Storage allowance split into used categories and remaining capacity">
+                    <circle class="admin-storage__capacity-base" cx="60" cy="60" r="36.25" />
 
-                <template x-for="target in visibleTargets()" x-bind:key="target.key">
-                    <button
-                        class="admin-storage__target-row"
-                        type="button"
-                        x-bind:data-area="target.area"
-                        x-on:click="select(target.area)"
-                        x-bind:aria-pressed="(selected === target.area).toString()"
-                        x-bind:class="{ 'is-active': selected === target.area }"
-                    >
-                        <span class="admin-storage__target-label">
-                            <strong x-text="target.label"></strong>
-                            <small x-text="`${Number(target.files) || 0} ${(Number(target.files) || 0) === 1 ? 'original' : 'originals'}`"></small>
-                        </span>
-                        <span class="admin-storage__target-track" aria-hidden="true">
-                            <i x-bind:style="`width: ${targetWidth(target.bytes)}%`"></i>
-                        </span>
-                        <strong class="admin-storage__target-value" x-text="target.display_bytes"></strong>
-                    </button>
-                </template>
+                    @if (($capacity['configured'] ?? false) && ($capacity['measurement_available'] ?? false) && $capacityPercent !== null)
+                        @foreach ($storageBreakdown as $row)
+                            @php
+                                $sliceBytes = max(0, (int) ($row['bytes'] ?? 0));
+                                $sliceAngle = $storageTotalBytes > 0
+                                    ? ($sliceBytes / $storageTotalBytes) * $storageUsedAngle
+                                    : 0.0;
+                                $sliceGap = $sliceAngle >= 3
+                                    ? min(0.9, $sliceAngle * 0.08)
+                                    : min(0.18, $sliceAngle * 0.08);
+                                $sliceStart = $storageSliceAngle + ($sliceGap / 2);
+                                $sliceEnd = $storageSliceAngle + $sliceAngle - ($sliceGap / 2);
+                                $sliceMidpoint = $storageSliceAngle + ($sliceAngle / 2);
+                                $sliceRadians = deg2rad($sliceMidpoint - 90);
+                                $sliceX = round(cos($sliceRadians) * 4.5, 2);
+                                $sliceY = round(sin($sliceRadians) * 4.5, 2);
+                                $sliceKey = (string) ($row['key'] ?? '');
+                                $sliceClass = preg_replace('/[^a-z0-9-]+/', '-', strtolower($sliceKey)) ?: 'referenced';
+                                $slicePath = $sliceEnd > $sliceStart
+                                    ? $storageDonutPath($sliceStart, $sliceEnd)
+                                    : '';
+                                $sliceCapacityPercent = $storageTotalBytes > 0
+                                    ? $capacityPercent * ($sliceBytes / $storageTotalBytes)
+                                    : 0.0;
+                            @endphp
+                            @if ($slicePath !== '')
+                                <path
+                                    class="admin-storage__usage-segment admin-storage__usage-segment--{{ $sliceClass }}"
+                                    d="{{ $slicePath }}"
+                                    style="--storage-slice-x: {{ $sliceX }}px; --storage-slice-y: {{ $sliceY }}px"
+                                    role="button"
+                                    tabindex="0"
+                                    aria-label="{{ $row['label'] }}: {{ $row['display_bytes'] }}, {{ number_format($sliceCapacityPercent, $sliceCapacityPercent < 0.1 ? 2 : 1) }} percent of storage allowance"
+                                    x-bind:aria-pressed="(selected === @js($sliceKey)).toString()"
+                                    x-bind:class="{
+                                        'is-selected': selected === @js($sliceKey),
+                                        'is-muted': selected !== null && selected !== @js($sliceKey),
+                                    }"
+                                    x-on:click="select(@js($sliceKey))"
+                                    x-on:keydown.enter.prevent="select(@js($sliceKey))"
+                                    x-on:keydown.space.prevent="select(@js($sliceKey))"
+                                >
+                                    <title>{{ $row['label'] }} — {{ $row['display_bytes'] }} · {{ number_format($sliceCapacityPercent, $sliceCapacityPercent < 0.1 ? 2 : 1) }}% of allowance</title>
+                                </path>
+                            @endif
+                            @php $storageSliceAngle += $sliceAngle; @endphp
+                        @endforeach
+                    @endif
+                </svg>
 
-                <div class="admin-storage__target-empty" x-show="visibleTargets().length === 0" x-cloak>
-                    <p x-text="emptyDetail()"></p>
+                <div class="admin-storage__capacity-core" aria-live="polite">
                     <template x-if="selectedRow()">
-                        <strong x-text="`${selectedRow().display_bytes} · ${Number(selectedRow().files) || 0} ${(Number(selectedRow().files) || 0) === 1 ? 'original' : 'originals'}`"></strong>
+                        <div>
+                            <strong x-text="selectedRow().display_bytes"></strong>
+                            <span x-text="selectedRow().label"></span>
+                            <small x-text="capacityShare(selectedRow()) === null ? '' : `${capacityShare(selectedRow()).toFixed(capacityShare(selectedRow()) < 0.1 ? 2 : 1)}% of ${allowance}`"></small>
+                        </div>
+                    </template>
+                    <template x-if="! selectedRow()">
+                        <div>
+                            @if (($capacity['measurement_available'] ?? false) && ($capacity['configured'] ?? false))
+                                <strong>{{ $capacity['allowance'] ?? '—' }}</strong>
+                                <span>Total capacity</span>
+                                <small>{{ $capacity['authoritative'] ?? '—' }} used · {{ $capacity['remaining'] ?? '—' }} free</small>
+                            @elseif ($capacity['measurement_available'] ?? false)
+                                <strong>—</strong>
+                                <span>No allowance configured</span>
+                                <small>{{ $capacity['authoritative'] ?? '—' }} authoritative</small>
+                            @else
+                                <strong>—</strong>
+                                <span>{{ ($capacity['status'] ?? null) === 'not_measured' ? 'Awaiting measurement' : 'Unavailable' }}</span>
+                            @endif
+                        </div>
                     </template>
                 </div>
             </div>
 
-            <div class="admin-storage__attention" aria-label="Storage attention">
-                @if (($storageAttention['unreferenced_files'] ?? 0) > 0)
-                    <div class="admin-storage__attention-row">
-                        <span>Unused originals</span>
-                        <strong>{{ number_format($storageAttention['unreferenced_files']) }} · {{ $storageAttention['unreferenced_display_bytes'] }}</strong>
-                    </div>
+            <div class="admin-storage__capacity-copy">
+                @if (($capacity['configured'] ?? false) && ($capacity['measurement_available'] ?? false))
+                    <strong>{{ $capacity['percent'] ?? '—' }}% used</strong>
+                    <span>{{ $capacity['remaining'] ?? '—' }} remaining</span>
+                @elseif ($capacity['measurement_available'] ?? false)
+                    <strong>{{ $capacity['authoritative'] ?? '—' }} authoritative</strong>
+                @else
+                    <span>Measure once to load the current storage snapshot.</span>
                 @endif
-
-                @if (($storageAttention['uncatalogued_files'] ?? 0) > 0)
-                    <div class="admin-storage__attention-row is-warning">
-                        <span>Uncatalogued originals</span>
-                        <strong>{{ number_format($storageAttention['uncatalogued_files']) }} · {{ $storageAttention['uncatalogued_display_bytes'] }}</strong>
-                    </div>
-                @endif
-
-                @if (is_array($storageAttention['largest_gallery'] ?? null))
-                    <div class="admin-storage__attention-row">
-                        <span>Largest gallery</span>
-                        <strong title="{{ $storageAttention['largest_gallery']['label'] }}">{{ $storageAttention['largest_gallery']['label'] }} · {{ $storageAttention['largest_gallery']['display_bytes'] }}</strong>
-                    </div>
-                @endif
-
-                @if (is_array($storageAttention['largest_file'] ?? null))
-                    <div class="admin-storage__attention-row">
-                        <span>Largest original</span>
-                        <strong title="{{ $storageAttention['largest_file']['filename'] }}">{{ $storageAttention['largest_file']['filename'] }} · {{ $storageAttention['largest_file']['display_bytes'] }}</strong>
-                    </div>
-                @endif
+                <small>{{ $capacity['generated'] ?? '—' }} generated · excluded from allowance</small>
+                <button class="admin-action admin-storage__refresh" type="button" wire:click="refreshStorageMeasurement">Refresh</button>
             </div>
         </div>
     </div>
 
-    <div class="admin-storage__capacity-group admin-visual-stage__pane">
+    <div class="admin-storage__distribution admin-visual-stage__pane">
         <div class="admin-storage__visual-heading">
-            <p class="admin-storage__eyebrow">Capacity</p>
-        </div>
-
-        <div class="admin-storage__capacity-plot">
-            <svg class="admin-storage__donut" viewBox="0 0 120 120" role="img" aria-label="Storage allowance split into used categories and remaining capacity">
-                <circle class="admin-storage__capacity-base" cx="60" cy="60" r="36.25" />
-
-                @if (($capacity['configured'] ?? false) && ($capacity['measurement_available'] ?? false) && $capacityPercent !== null)
-                    @foreach ($storageBreakdown as $row)
-                        @php
-                            $sliceBytes = max(0, (int) ($row['bytes'] ?? 0));
-                            $sliceAngle = $storageTotalBytes > 0
-                                ? ($sliceBytes / $storageTotalBytes) * $storageUsedAngle
-                                : 0.0;
-                            $sliceGap = $sliceAngle >= 3
-                                ? min(0.9, $sliceAngle * 0.08)
-                                : min(0.18, $sliceAngle * 0.08);
-                            $sliceStart = $storageSliceAngle + ($sliceGap / 2);
-                            $sliceEnd = $storageSliceAngle + $sliceAngle - ($sliceGap / 2);
-                            $sliceMidpoint = $storageSliceAngle + ($sliceAngle / 2);
-                            $sliceRadians = deg2rad($sliceMidpoint - 90);
-                            $sliceX = round(cos($sliceRadians) * 4.5, 2);
-                            $sliceY = round(sin($sliceRadians) * 4.5, 2);
-                            $sliceKey = (string) ($row['key'] ?? '');
-                            $sliceClass = preg_replace('/[^a-z0-9-]+/', '-', strtolower($sliceKey)) ?: 'referenced';
-                            $slicePath = $sliceEnd > $sliceStart
-                                ? $storageDonutPath($sliceStart, $sliceEnd)
-                                : '';
-                            $sliceCapacityPercent = $storageTotalBytes > 0
-                                ? $capacityPercent * ($sliceBytes / $storageTotalBytes)
-                                : 0.0;
-                        @endphp
-                        @if ($slicePath !== '')
-                            <path
-                                class="admin-storage__usage-segment admin-storage__usage-segment--{{ $sliceClass }}"
-                                d="{{ $slicePath }}"
-                                style="--storage-slice-x: {{ $sliceX }}px; --storage-slice-y: {{ $sliceY }}px"
-                                role="button"
-                                tabindex="0"
-                                aria-label="{{ $row['label'] }}: {{ $row['display_bytes'] }}, {{ number_format($sliceCapacityPercent, $sliceCapacityPercent < 0.1 ? 2 : 1) }} percent of storage allowance"
-                                x-bind:aria-pressed="(selected === @js($sliceKey)).toString()"
-                                x-bind:class="{
-                                    'is-selected': selected === @js($sliceKey),
-                                    'is-muted': selected !== null && selected !== @js($sliceKey),
-                                }"
-                                x-on:click="select(@js($sliceKey))"
-                                x-on:keydown.enter.prevent="select(@js($sliceKey))"
-                                x-on:keydown.space.prevent="select(@js($sliceKey))"
-                            >
-                                <title>{{ $row['label'] }} — {{ $row['display_bytes'] }} · {{ number_format($sliceCapacityPercent, $sliceCapacityPercent < 0.1 ? 2 : 1) }}% of allowance</title>
-                            </path>
-                        @endif
-                        @php $storageSliceAngle += $sliceAngle; @endphp
-                    @endforeach
-                @endif
-            </svg>
-
-            <div class="admin-storage__capacity-core" aria-live="polite">
-                <template x-if="selectedRow()">
-                    <div>
-                        <strong x-text="selectedRow().display_bytes"></strong>
-                        <span x-text="selectedRow().label"></span>
-                        <small x-text="capacityShare(selectedRow()) === null ? '' : `${capacityShare(selectedRow()).toFixed(capacityShare(selectedRow()) < 0.1 ? 2 : 1)}% of ${allowance}`"></small>
-                    </div>
-                </template>
-                <template x-if="! selectedRow()">
-                    <div>
-                        @if (($capacity['measurement_available'] ?? false) && ($capacity['configured'] ?? false))
-                            <strong>{{ $capacity['allowance'] ?? '—' }}</strong>
-                            <span>Total capacity</span>
-                            <small>{{ $capacity['authoritative'] ?? '—' }} used · {{ $capacity['remaining'] ?? '—' }} free</small>
-                        @elseif ($capacity['measurement_available'] ?? false)
-                            <strong>—</strong>
-                            <span>No allowance configured</span>
-                            <small>{{ $capacity['authoritative'] ?? '—' }} authoritative</small>
-                        @else
-                            <strong>—</strong>
-                            <span>{{ ($capacity['status'] ?? null) === 'not_measured' ? 'Awaiting measurement' : 'Unavailable' }}</span>
-                        @endif
-                    </div>
+            <p class="admin-storage__eyebrow">Destinations</p>
+            <div class="admin-storage__visual-actions" x-show="selectedRow()" x-cloak>
+                <button class="admin-action" type="button" x-on:click="selected = null">All</button>
+                <template x-if="selectedRow()?.usage_filter">
+                    <button
+                        class="admin-action"
+                        type="button"
+                        x-on:click="$wire.set('usage', selectedRow().usage_filter)"
+                    >Filter library</button>
                 </template>
             </div>
         </div>
 
-        <div class="admin-storage__capacity-copy">
-            @if (($capacity['configured'] ?? false) && ($capacity['measurement_available'] ?? false))
-                <strong>{{ $capacity['percent'] ?? '—' }}% used</strong>
-                <span>{{ $capacity['remaining'] ?? '—' }} remaining</span>
-            @elseif ($capacity['measurement_available'] ?? false)
-                <strong>{{ $capacity['authoritative'] ?? '—' }} authoritative</strong>
-            @else
-                <span>Measure once to load the current storage snapshot.</span>
+        <div class="admin-storage__target-plot" aria-live="polite">
+            <div class="admin-storage__selection-summary" x-show="selectedRow()" x-cloak>
+                <strong x-text="selectedRow()?.label"></strong>
+                <span x-text="selectedMeta()"></span>
+            </div>
+
+            <template x-for="target in visibleTargets()" x-bind:key="target.key">
+                <button
+                    class="admin-storage__target-row"
+                    type="button"
+                    x-bind:data-area="target.area"
+                    x-on:click="select(target.area)"
+                    x-bind:aria-pressed="(selected === target.area).toString()"
+                    x-bind:class="{ 'is-active': selected === target.area }"
+                >
+                    <span class="admin-storage__target-label">
+                        <strong x-text="target.label"></strong>
+                        <small x-text="`${Number(target.files) || 0} ${(Number(target.files) || 0) === 1 ? 'original' : 'originals'}`"></small>
+                    </span>
+                    <span class="admin-storage__target-track" aria-hidden="true">
+                        <i x-bind:style="`width: ${targetWidth(target.bytes)}%`"></i>
+                    </span>
+                    <strong class="admin-storage__target-value" x-text="target.display_bytes"></strong>
+                </button>
+            </template>
+
+            <div class="admin-storage__target-empty" x-show="visibleTargets().length === 0" x-cloak>
+                <p x-text="emptyDetail()"></p>
+                <template x-if="selectedRow()">
+                    <strong x-text="`${selectedRow().display_bytes} · ${Number(selectedRow().files) || 0} ${(Number(selectedRow().files) || 0) === 1 ? 'original' : 'originals'}`"></strong>
+                </template>
+            </div>
+        </div>
+
+        <div class="admin-storage__attention" aria-label="Storage attention">
+            @if (($storageAttention['unreferenced_files'] ?? 0) > 0)
+                <div class="admin-storage__attention-row">
+                    <span>Unused originals</span>
+                    <strong>{{ number_format($storageAttention['unreferenced_files']) }} · {{ $storageAttention['unreferenced_display_bytes'] }}</strong>
+                </div>
             @endif
-            <small>{{ $capacity['generated'] ?? '—' }} generated · excluded from allowance</small>
-            <button class="admin-action admin-storage__refresh" type="button" wire:click="refreshStorageMeasurement">Refresh</button>
+
+            @if (($storageAttention['uncatalogued_files'] ?? 0) > 0)
+                <div class="admin-storage__attention-row is-warning">
+                    <span>Uncatalogued originals</span>
+                    <strong>{{ number_format($storageAttention['uncatalogued_files']) }} · {{ $storageAttention['uncatalogued_display_bytes'] }}</strong>
+                </div>
+            @endif
+
+            @if (is_array($storageAttention['largest_gallery'] ?? null))
+                <div class="admin-storage__attention-row">
+                    <span>Largest gallery</span>
+                    <strong title="{{ $storageAttention['largest_gallery']['label'] }}">{{ $storageAttention['largest_gallery']['label'] }} · {{ $storageAttention['largest_gallery']['display_bytes'] }}</strong>
+                </div>
+            @endif
+
+            @if (is_array($storageAttention['largest_file'] ?? null))
+                <div class="admin-storage__attention-row">
+                    <span>Largest original</span>
+                    <strong title="{{ $storageAttention['largest_file']['filename'] }}">{{ $storageAttention['largest_file']['filename'] }} · {{ $storageAttention['largest_file']['display_bytes'] }}</strong>
+                </div>
+            @endif
         </div>
     </div>
 </section>
