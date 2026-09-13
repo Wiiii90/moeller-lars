@@ -63,6 +63,18 @@
     grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
+/* Storage is Upload | Capacity | Destinations. The first two panes live in the
+ * shared 2/3 rail and the final pane occupies the third metric-aligned column. */
+.admin-storage__visual-main > .admin-storage__capacity-group {
+    padding-right: var(--admin-stage-pane-space);
+    padding-left: var(--admin-stage-pane-space);
+}
+
+.admin-storage__visual-stage > .admin-storage__distribution {
+    padding-right: 0;
+    padding-left: var(--admin-stage-pane-space);
+}
+
 .admin-storage__distribution {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
@@ -444,6 +456,24 @@
 
 .admin-storage .admin-add-row + .media-workspace__pager {
     border-top: 0;
+}
+
+/* Storage keeps the shared add-row primitive but uses the compact table density
+ * so the insert affordance does not become a second oversized task surface. */
+.admin-storage .admin-add-row--compact {
+    min-height: 2.35rem;
+    padding-block: .22rem;
+}
+
+.admin-storage .admin-add-row--compact .admin-add-row__mark {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-basis: 1.5rem;
+    font-size: .9rem;
+}
+
+.admin-storage .media-workspace__table .admin-action {
+    gap: .28rem;
 }
 
 /* Only the task-specific column distribution is local. Field/action geometry
