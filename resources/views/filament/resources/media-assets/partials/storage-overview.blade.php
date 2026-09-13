@@ -31,13 +31,24 @@
             const normalized = String(value ?? '').toLowerCase()
             if (normalized === '' || normalized === 'all' || normalized === 'in-use') return null
             if (normalized === 'unreferenced') return 'unassigned'
-            if (normalized.includes('gallery')) return 'galleries'
-            if (normalized.includes('journal')) return 'journal'
-            if (normalized.includes('custom')) return 'custom-pages'
-            if (normalized.includes('site') || normalized.includes('identity')) return 'site-identity'
-            if (normalized.includes('home')) return 'home'
-            if (normalized.includes('cv')) return 'cv'
+            if (normalized === 'kind:gallery') return 'galleries'
+            if (normalized === 'kind:journal') return 'journal'
+            if (normalized === 'kind:custom') return 'custom-pages'
+            if (normalized === 'site-identity') return 'site-identity'
+            if (normalized === 'home') return 'home'
+            if (normalized === 'cv') return 'cv'
             return null
+        },
+        usageFromArea(key) {
+            return ({
+                galleries: 'kind:gallery',
+                journal: 'kind:journal',
+                'custom-pages': 'kind:custom',
+                home: 'home',
+                cv: 'cv',
+                'site-identity': 'site-identity',
+                unassigned: 'unreferenced',
+            })[key] ?? null
         },
         setSelection(key) {
             const next = key && this.breakdown.some((row) => row.key === key) ? key : null
@@ -50,7 +61,12 @@
         },
         select(key) {
             if (! this.breakdown.some((row) => row.key === key)) return
-            this.setSelection(this.selected === key ? null : key)
+
+            const next = this.selected === key ? null : key
+            this.setSelection(next)
+
+            const usage = next === null ? 'all' : this.usageFromArea(next)
+            if (usage !== null) this.usageFilter = usage
         },
         syncUsage(value) {
             this.setSelection(this.areaFromUsage(value))
