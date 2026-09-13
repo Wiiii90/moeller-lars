@@ -27,6 +27,7 @@ enum AdminIcon: string
     case Exhibition = 'heroicon-o-calendar';
 
     case OpenPublic = 'heroicon-o-arrow-top-right-on-square';
+    case OpenEntry = 'heroicon-o-inbox-arrow-down';
     case Publish = 'heroicon-o-eye';
     case Unpublish = 'heroicon-o-eye-slash';
     case Edit = 'heroicon-o-pencil-square';
@@ -42,6 +43,8 @@ enum AdminIcon: string
     case Download = 'heroicon-o-arrow-down-tray';
     case MarkRead = 'heroicon-o-envelope-open';
     case MarkUnread = 'heroicon-o-envelope';
+    case Pin = 'heroicon-o-bookmark';
+    case Pinned = 'heroicon-s-bookmark';
     case DeviceDesktop = 'heroicon-o-computer-desktop';
     case DeviceMobile = 'heroicon-o-device-phone-mobile';
     case ViewList = 'heroicon-o-list-bullet';
