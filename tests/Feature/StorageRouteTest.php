@@ -45,7 +45,25 @@ it('uses storage as the artist-facing media workspace without measuring on norma
         ->assertOk()
         ->assertSee('Storage')
         ->assertSee('Measurement needed')
-        ->assertSee('Refresh measurement');
+        ->assertSee('Refresh');
+});
+
+it('uses a warmed capacity snapshot without measuring during storage navigation', function (): void {
+    config(['media.quota_bytes' => 5_000_000_000]);
+    Storage::disk(config('media.disk'))->put('originals/warmed.jpg', 'warmed-storage');
+
+    $this->artisan('media:measure-capacity')->assertExitCode(0);
+
+    $snapshot = app(MediaCapacityService::class)->cachedSnapshotIfAvailable();
+    expect($snapshot)->toBeArray()
+        ->and($snapshot['measurement_available'])->toBeTrue()
+        ->and($snapshot['authoritative_bytes'])->toBe(strlen('warmed-storage'));
+
+    $this->get('/admin/storage')
+        ->assertOk()
+        ->assertSee('Storage healthy')
+        ->assertSee('5 GB')
+        ->assertDontSee('Measurement needed');
 });
 
 it('redirects legacy media workspace URLs to storage', function (): void {
