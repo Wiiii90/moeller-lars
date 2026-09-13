@@ -14,45 +14,7 @@
                 </header>
 
                 <div class="admin-dashboard__storage-visual" aria-label="Storage capacity preview">
-                    <div class="admin-storage__capacity-plot">
-                        <svg
-                            class="admin-storage__donut"
-                            viewBox="0 0 120 120"
-                            role="img"
-                            aria-label="@if (($storage['percent'] ?? null) !== null) {{ $storage['percent'] }} percent of the configured allowance is used @elseif ($storage['measurement_available'] ?? false) Authoritative usage is measured but no allowance is configured @else Authoritative storage measurement is unavailable @endif"
-                        >
-                            <circle class="admin-storage__capacity-track" cx="60" cy="60" r="53" pathLength="100" />
-                            @if (($storage['percent'] ?? null) !== null)
-                                <circle
-                                    class="admin-storage__capacity-used"
-                                    cx="60"
-                                    cy="60"
-                                    r="53"
-                                    pathLength="100"
-                                    stroke-dasharray="{{ min(100, max(0, $storage['percent'])) }} {{ max(0, 100 - min(100, max(0, $storage['percent']))) }}"
-                                    transform="rotate(-90 60 60)"
-                                />
-                            @endif
-                        </svg>
-
-                        <div class="admin-storage__capacity-core">
-                            <div>
-                                @if (($storage['percent'] ?? null) !== null)
-                                    <strong>{{ $storage['percent'] }}%</strong>
-                                    <span>Allowance used</span>
-                                    <small>{{ $storage['authoritative'] ?? '—' }} of {{ $storage['allowance'] ?? '—' }}</small>
-                                @elseif ($storage['measurement_available'] ?? false)
-                                    <strong>{{ $storage['authoritative'] ?? '—' }}</strong>
-                                    <span>Authoritative used</span>
-                                    <small>No operator allowance configured</small>
-                                @else
-                                    <strong>—</strong>
-                                    <span>Measurement unavailable</span>
-                                    <small>No cached measurement</small>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
+                    <x-admin.storage-capacity-visual :capacity="$storage" compact />
                 </div>
                 <p class="admin-dashboard__facts">
                     <span>Used <strong>{{ $storage['authoritative'] }}</strong></span>
