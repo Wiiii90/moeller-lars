@@ -1,6 +1,10 @@
 @php
     $storageTargets = is_array($storageAttention['targets'] ?? null) ? $storageAttention['targets'] : [];
     $storageSliceOffset = 0.0;
+    $storageTotalBytes = array_sum(array_map(
+        static fn (array $row): int => (int) ($row['bytes'] ?? 0),
+        $storageBreakdown,
+    ));
 @endphp
 
 <x-admin.metrics :columns="6" aria-label="Storage statistics">
@@ -86,7 +90,9 @@
                     <g transform="rotate(-90 60 60)">
                         @foreach ($storageBreakdown as $row)
                             @php
-                                $slicePercent = min(100, max(0, (float) ($row['percent'] ?? 0)));
+                                $slicePercent = $storageTotalBytes > 0
+                                    ? min(100, max(0, ((int) ($row['bytes'] ?? 0) / $storageTotalBytes) * 100))
+                                    : 0.0;
                                 $sliceMidpoint = $storageSliceOffset + ($slicePercent / 2);
                                 $sliceAngle = deg2rad($sliceMidpoint * 3.6);
                                 $sliceX = round(cos($sliceAngle) * 4, 2);
