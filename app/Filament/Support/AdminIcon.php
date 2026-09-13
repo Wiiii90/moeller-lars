@@ -40,6 +40,8 @@ enum AdminIcon: string
     case MoveUp = 'heroicon-o-arrow-up';
     case MoveDown = 'heroicon-o-arrow-down';
     case Download = 'heroicon-o-arrow-down-tray';
+    case MarkRead = 'heroicon-o-envelope-open';
+    case MarkUnread = 'heroicon-o-envelope';
     case DeviceDesktop = 'heroicon-o-computer-desktop';
     case DeviceMobile = 'heroicon-o-device-phone-mobile';
     case ViewList = 'heroicon-o-list-bullet';
