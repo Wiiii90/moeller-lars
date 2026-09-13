@@ -30,11 +30,17 @@ it('keeps authoritative originals without a MediaAsset visible as uncatalogued s
 
     $overview = app(StorageWorkspaceOverview::class)->snapshot(measure: true);
     $uncatalogued = collect($overview['breakdown'])->firstWhere('key', 'uncatalogued');
+    $unassigned = collect($overview['breakdown'])->firstWhere('key', 'unassigned');
 
     expect($overview['capacity']['measurement_available'])->toBeTrue()
         ->and($uncatalogued)->toBeArray()
         ->and($uncatalogued['files'])->toBe(1)
         ->and($uncatalogued['bytes'])->toBe(strlen('orphan-bytes'))
+        ->and($uncatalogued['usage_filter'])->toBeNull()
+        ->and($unassigned)->toBeArray()
+        ->and($unassigned['usage_filter'])->toBe('unreferenced')
+        ->and($overview['attention']['targets'])->toBe([])
         ->and($overview['attention']['uncatalogued_files'])->toBe(1)
-        ->and($overview['attention']['uncatalogued_display_bytes'])->not->toBe('0 B');
+        ->and($overview['attention']['uncatalogued_display_bytes'])->not->toBe('0 B')
+        ->and($overview['attention']['largest_unreferenced']['display_bytes'] ?? null)->not->toBeNull();
 });
