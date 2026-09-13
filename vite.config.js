@@ -7,7 +7,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/css/admin.css',
-                'resources/css/admin/dialogs.css',
+                'resources/css/admin/dialog-contract.css',
                 'resources/css/admin/dashboard.css',
                 'resources/css/admin/dashboard-extras.css',
                 'resources/css/admin/gallery.css',
