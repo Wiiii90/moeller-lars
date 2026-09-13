@@ -11,8 +11,6 @@ final class MediaCapacityService
 {
     private const WARNING_RATIO = 0.85;
 
-    private const DISPLAY_CACHE_SECONDS = 300;
-
     /**
      * @return array{configured:bool,configuration_valid:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null}
      */
@@ -63,12 +61,13 @@ final class MediaCapacityService
     /** @return array{configured:bool,configuration_valid:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null} */
     public function cachedSnapshot(): array
     {
-        return Cache::remember($this->displayCacheKey(), self::DISPLAY_CACHE_SECONDS, fn (): array => $this->snapshot());
+        return Cache::rememberForever($this->displayCacheKey(), fn (): array => $this->snapshot());
     }
 
     /**
-     * Return the presentation snapshot only when another surface has already measured it.
-     * Dashboard callers must never trigger a filesystem walk on a cache miss.
+     * Return the presentation snapshot only when another boundary has already
+     * measured it. Normal admin navigation must never trigger a filesystem walk
+     * on a cache miss.
      *
      * @return array{configured:bool,configuration_valid:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null}|null
      */
