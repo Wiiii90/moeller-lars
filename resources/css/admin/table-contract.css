@@ -11,6 +11,7 @@
     --admin-table-half-unit: 8.333333%;
     --admin-table-three-quarter-unit: 12.5%;
     --admin-table-one-unit: 16.666667%;
+    --admin-table-five-quarter-units: 20.833333%;
     --admin-table-one-half-units: 25%;
     --admin-table-two-units: 33.333333%;
     --admin-table-edge-inset: .5rem;
@@ -55,6 +56,7 @@
 .admin-table__col-half-unit { width: var(--admin-table-half-unit); }
 .admin-table__col-three-quarter-unit { width: var(--admin-table-three-quarter-unit); }
 .admin-table__col-one-unit { width: var(--admin-table-one-unit); }
+.admin-table__col-five-quarter-units { width: var(--admin-table-five-quarter-units); }
 .admin-table__col-one-half-units { width: var(--admin-table-one-half-units); }
 .admin-table__col-two-units { width: var(--admin-table-two-units); }
 
