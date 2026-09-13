@@ -1,12 +1,11 @@
 import * as echarts from 'echarts/core';
-import { PieChart } from 'echarts/charts';
-import { GraphicComponent, TooltipComponent } from 'echarts/components';
+import { SankeyChart } from 'echarts/charts';
+import { GraphicComponent } from 'echarts/components';
 import { SVGRenderer } from 'echarts/renderers';
 
 echarts.use([
-    PieChart,
+    SankeyChart,
     GraphicComponent,
-    TooltipComponent,
     SVGRenderer,
 ]);
 
@@ -38,21 +37,13 @@ function resolveCssColor(element, variable, fallback) {
     return color;
 }
 
-function withAlpha(color, alpha) {
-    const match = color.match(/rgba?\(([^)]+)\)/i);
-    if (! match) return color;
-
-    const channels = match[1].split(',').slice(0, 3).map((value) => value.trim());
-    return `rgba(${channels.join(', ')}, ${alpha})`;
-}
-
 function palette(element) {
     const token = (name, fallback) => resolveCssColor(element, name, fallback);
 
     return {
         text: token('--admin-text', '#181818'),
         muted: token('--admin-muted', '#707070'),
-        surface: token('--admin-surface', '#ffffff'),
+        lineStrong: token('--admin-line-strong', '#bdbdbd'),
         accent: token('--admin-accent', '#b45309'),
         storage: {
             galleries: token('--storage-color-galleries', '#b45309'),
@@ -74,132 +65,21 @@ function clamp(value, min, max) {
     return Math.min(max, Math.max(min, Number(value) || 0));
 }
 
-function storageSlices(config, colors, selected) {
-    const usedPercent = clamp(config.percent, 0, 100);
-    const rows = (Array.isArray(config.breakdown) ? config.breakdown : [])
-        .filter((row) => Number(row.bytes) > 0);
-    const totalUsedBytes = rows.reduce((sum, row) => sum + (Number(row.bytes) || 0), 0);
-    const slices = rows.map((row) => {
-        const byteShare = totalUsedBytes > 0 ? (Number(row.bytes) || 0) / totalUsedBytes : 0;
-        const shareOfCapacity = usedPercent * byteShare;
-        const base = colors.storage[row.key] || colors.accent;
-        const faded = selected && row.key !== selected;
-
-        return {
-            key: row.key,
-            name: row.label,
-            value: shareOfCapacity,
-            displayBytes: row.display_bytes || '—',
-            files: Number(row.files) || 0,
-            capacityShare: shareOfCapacity,
-            selected: row.key === selected,
-            itemStyle: {
-                color: faded ? withAlpha(base, 0.28) : base,
-                borderColor: colors.surface,
-                borderWidth: 2,
-                borderRadius: 4,
-            },
-        };
-    });
-
-    slices.push({
-        key: 'remaining',
-        name: 'Remaining',
-        value: Math.max(0, 100 - usedPercent),
-        displayBytes: config.remaining || '—',
-        files: 0,
-        capacityShare: Math.max(0, 100 - usedPercent),
-        itemStyle: {
-            color: colors.storage.remaining,
-            borderColor: colors.surface,
-            borderWidth: 2,
-            borderRadius: 4,
-        },
-    });
-
-    return slices;
-}
-
-function storageOption(element, config, state) {
+function unavailableOption(element, config, compact) {
     const colors = palette(element);
-    const compact = element.classList.contains('is-compact');
-    const selectedRow = (Array.isArray(config.breakdown) ? config.breakdown : [])
-        .find((row) => row.key === state.selected) || null;
-
-    if (! config.configured || ! config.measurement_available || config.percent === null) {
-        return {
-            animation: false,
-            graphic: [
-                {
-                    type: 'text',
-                    left: 'center',
-                    top: compact ? '43%' : '45%',
-                    style: {
-                        text: config.measurement_available ? (config.authoritative || '—') : '—',
-                        fill: colors.text,
-                        fontSize: compact ? 15 : 22,
-                        fontWeight: 600,
-                        fontFamily: 'inherit',
-                        textAlign: 'center',
-                    },
-                },
-                {
-                    type: 'text',
-                    left: 'center',
-                    top: compact ? '57%' : '56%',
-                    style: {
-                        text: config.measurement_available ? 'No allowance' : 'No measurement',
-                        fill: colors.muted,
-                        fontSize: compact ? 8 : 10,
-                        fontWeight: 600,
-                        fontFamily: 'inherit',
-                        textAlign: 'center',
-                    },
-                },
-            ],
-            series: [],
-        };
-    }
-
-    const mainValue = selectedRow?.display_bytes || config.allowance || '—';
-    const mainLabel = selectedRow?.label || `${config.authoritative || '—'} used`;
-    const usedPercent = clamp(config.percent, 0, 100);
-    const slices = storageSlices(config, colors, state.selected);
 
     return {
-        animationDuration: compact ? 0 : 520,
-        animationDurationUpdate: compact ? 0 : 320,
-        animationEasing: 'cubicOut',
-        animationEasingUpdate: 'cubicOut',
-        tooltip: compact ? { show: false } : {
-            trigger: 'item',
-            backgroundColor: colors.text,
-            borderWidth: 0,
-            padding: [6, 8],
-            textStyle: {
-                color: document.documentElement.classList.contains('dark') ? '#181818' : '#ffffff',
-                fontSize: 11,
-            },
-            formatter(params) {
-                const datum = params.data || {};
-                if (! datum.key || datum.key === 'remaining') return '';
-
-                const fileCopy = datum.files > 0
-                    ? ` · ${datum.files.toLocaleString()} ${datum.files === 1 ? 'original' : 'originals'}`
-                    : '';
-                return `${datum.name} · ${datum.displayBytes}${fileCopy}<br>${Number(datum.capacityShare || 0).toFixed(1)}% of allowance`;
-            },
-        },
+        animation: false,
         graphic: [
             {
                 type: 'text',
                 left: 'center',
-                top: '39%',
+                top: compact ? '43%' : '45%',
                 style: {
-                    text: mainValue,
+                    text: config.measurement_available ? (config.authoritative || '—') : '—',
                     fill: colors.text,
-                    fontSize: compact ? 15 : 23,
-                    fontWeight: 620,
+                    fontSize: compact ? 15 : 22,
+                    fontWeight: 600,
                     fontFamily: 'inherit',
                     textAlign: 'center',
                 },
@@ -207,59 +87,155 @@ function storageOption(element, config, state) {
             {
                 type: 'text',
                 left: 'center',
-                top: compact ? '53%' : '52%',
+                top: compact ? '57%' : '56%',
                 style: {
-                    text: mainLabel,
-                    fill: selectedRow ? (colors.storage[selectedRow.key] || colors.accent) : colors.muted,
+                    text: config.measurement_available ? 'No allowance' : 'No measurement',
+                    fill: colors.muted,
                     fontSize: compact ? 8 : 10,
-                    fontWeight: 650,
+                    fontWeight: 600,
                     fontFamily: 'inherit',
                     textAlign: 'center',
                 },
             },
         ],
+        series: [],
+    };
+}
+
+function storageFlow(config, colors, compact) {
+    const usedPercent = clamp(config.percent, 0, 100);
+    const freePercent = Math.max(0, 100 - usedPercent);
+    const rows = (Array.isArray(config.breakdown) ? config.breakdown : [])
+        .filter((row) => Number(row.bytes) > 0);
+    const totalUsedBytes = rows.reduce((sum, row) => sum + (Number(row.bytes) || 0), 0);
+
+    const nodes = [
+        {
+            name: 'capacity',
+            depth: 0,
+            displayLabel: `${config.allowance || '—'} capacity`,
+            itemStyle: { color: colors.lineStrong },
+        },
+    ];
+    const links = [];
+
+    if (usedPercent > 0) {
+        nodes.push({
+            name: 'used',
+            depth: 1,
+            displayLabel: `${config.authoritative || '—'} used`,
+            itemStyle: { color: colors.accent },
+        });
+        links.push({
+            source: 'capacity',
+            target: 'used',
+            value: usedPercent,
+        });
+    }
+
+    if (freePercent > 0) {
+        nodes.push({
+            name: 'free',
+            depth: 1,
+            displayLabel: `${config.remaining || '—'} free`,
+            itemStyle: { color: colors.storage.remaining },
+        });
+        links.push({
+            source: 'capacity',
+            target: 'free',
+            value: freePercent,
+        });
+    }
+
+    if (! compact && usedPercent > 0 && totalUsedBytes > 0) {
+        rows.forEach((row) => {
+            const bytes = Number(row.bytes) || 0;
+            const shareOfUsed = bytes / totalUsedBytes;
+            const capacityShare = usedPercent * shareOfUsed;
+            if (capacityShare <= 0) return;
+
+            const nodeName = `area:${row.key}`;
+            nodes.push({
+                name: nodeName,
+                depth: 2,
+                displayLabel: row.label || row.key,
+                itemStyle: {
+                    color: colors.storage[row.key] || colors.accent,
+                },
+            });
+            links.push({
+                source: 'used',
+                target: nodeName,
+                value: capacityShare,
+            });
+        });
+    }
+
+    return { nodes, links };
+}
+
+function storageOption(element, config) {
+    const compact = element.classList.contains('is-compact');
+    if (! config.configured || ! config.measurement_available || config.percent === null) {
+        return unavailableOption(element, config, compact);
+    }
+
+    const colors = palette(element);
+    const flow = storageFlow(config, colors, compact);
+
+    return {
+        animation: false,
+        tooltip: { show: false },
         series: [
             {
-                id: 'storage-capacity-context',
-                type: 'pie',
+                id: 'storage-capacity-flow',
+                type: 'sankey',
+                data: flow.nodes,
+                links: flow.links,
+                left: compact ? '7%' : '4%',
+                right: compact ? '7%' : '5%',
+                top: compact ? '10%' : '7%',
+                bottom: compact ? '10%' : '7%',
+                orient: 'horizontal',
+                nodeAlign: 'justify',
+                nodeWidth: compact ? 5 : 8,
+                nodeGap: compact ? 4 : 9,
+                layoutIterations: 48,
+                draggable: false,
                 silent: true,
-                radius: ['88%', '93%'],
-                center: ['50%', '50%'],
-                startAngle: 90,
-                clockwise: true,
-                avoidLabelOverlap: true,
-                label: { show: false },
-                labelLine: { show: false },
-                data: [
+                emphasis: { disabled: true },
+                label: {
+                    show: ! compact,
+                    color: colors.text,
+                    fontSize: 9,
+                    fontWeight: 600,
+                    distance: 5,
+                    formatter(params) {
+                        return params.data?.displayLabel || '';
+                    },
+                },
+                lineStyle: {
+                    color: 'gradient',
+                    opacity: 0.34,
+                    curveness: 0.52,
+                },
+                levels: [
                     {
-                        value: usedPercent,
-                        itemStyle: { color: colors.accent },
+                        depth: 0,
+                        itemStyle: { borderWidth: 0 },
+                        lineStyle: { opacity: 0.26 },
                     },
                     {
-                        value: Math.max(0, 100 - usedPercent),
-                        itemStyle: { color: colors.storage.remaining },
+                        depth: 1,
+                        itemStyle: { borderWidth: 0 },
+                        lineStyle: { opacity: 0.3 },
+                    },
+                    {
+                        depth: 2,
+                        itemStyle: { borderWidth: 0 },
+                        lineStyle: { opacity: 0.38 },
                     },
                 ],
-                z: 1,
-            },
-            {
-                id: 'storage-capacity-composition',
-                type: 'pie',
-                selectedMode: compact ? false : 'single',
-                selectedOffset: compact ? 0 : 8,
-                radius: compact ? ['56%', '82%'] : ['55%', '82%'],
-                center: ['50%', '50%'],
-                startAngle: 90,
-                clockwise: true,
-                avoidLabelOverlap: true,
-                label: { show: false },
-                labelLine: { show: false },
-                emphasis: compact ? { disabled: true } : {
-                    scale: true,
-                    scaleSize: 5,
-                },
-                data: slices,
-                z: 3,
             },
         ],
     };
@@ -270,8 +246,6 @@ function disposeElement(element) {
     if (! entry) return;
 
     if (entry.resizeObserver) entry.resizeObserver.disconnect();
-    if (entry.stateHandler) element.removeEventListener('admin-viz:state', entry.stateHandler);
-    if (entry.clickHandler) entry.chart.off('click', entry.clickHandler);
     if (! entry.chart.isDisposed()) entry.chart.dispose();
     instances.delete(element);
 }
@@ -295,38 +269,15 @@ function mountElement(element) {
     if (existing) disposeElement(element);
 
     const chart = echarts.init(surface, null, { renderer: 'svg' });
-    const state = { selected: config.selected || null };
     const entry = {
         chart,
         surface,
-        config,
         signature,
         theme,
         resizeObserver: null,
-        stateHandler: null,
-        clickHandler: null,
     };
 
-    chart.setOption(storageOption(element, config, state));
-
-    entry.stateHandler = (event) => {
-        state.selected = event.detail?.selected || null;
-        chart.setOption(storageOption(element, config, state), { notMerge: true });
-    };
-    element.addEventListener('admin-viz:state', entry.stateHandler);
-
-    if (element.dataset.adminVizLinked === 'true') {
-        entry.clickHandler = (params) => {
-            const key = params.data?.key || null;
-            if (! key || key === 'remaining') return;
-
-            element.dispatchEvent(new CustomEvent('admin-viz:select', {
-                bubbles: true,
-                detail: { key },
-            }));
-        };
-        chart.on('click', entry.clickHandler);
-    }
+    chart.setOption(storageOption(element, config), { notMerge: true });
 
     entry.resizeObserver = new ResizeObserver(() => chart.resize());
     entry.resizeObserver.observe(surface);
