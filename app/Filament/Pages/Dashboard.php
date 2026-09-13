@@ -49,6 +49,9 @@ final class Dashboard extends Page
 
     public string $notificationFilter = 'all';
 
+    /** @var list<string> */
+    public array $selectedFeedKeys = [];
+
     public function mount(): void
     {
         $filter = auth()->user()?->getAttribute('dashboard_notification_filter');
@@ -103,6 +106,7 @@ final class Dashboard extends Page
     {
         if ($this->feedPage > 1) {
             $this->feedPage--;
+            $this->selectedFeedKeys = [];
         }
     }
 
@@ -111,6 +115,7 @@ final class Dashboard extends Page
         $pages = $this->feedPagination()['pages'];
         if ($this->feedPage < $pages) {
             $this->feedPage++;
+            $this->selectedFeedKeys = [];
         }
     }
 
@@ -120,6 +125,101 @@ final class Dashboard extends Page
         abort_unless(is_array($entry), 404);
 
         $this->mountAction('feedEntry', ['key' => $key]);
+    }
+
+    public function markFeedRead(string $key): void
+    {
+        if ($this->mutableFeedEntry($key) === null) {
+            return;
+        }
+
+        app(DashboardFeed::class)->openEntry($key);
+    }
+
+    public function markFeedUnread(string $key): void
+    {
+        $entry = $this->mutableFeedEntry($key);
+        if ($entry === null) {
+            return;
+        }
+
+        $feed = app(DashboardFeed::class);
+        $contactId = $entry['contact_id'] ?? null;
+        if (is_int($contactId)) {
+            $feed->markContactUnread($contactId);
+
+            return;
+        }
+
+        $notificationId = $entry['notification_id'] ?? null;
+        if (is_int($notificationId)) {
+            $feed->markNotificationUnread($notificationId);
+        }
+    }
+
+    public function deleteFeedEntry(string $key): void
+    {
+        $entry = $this->mutableFeedEntry($key);
+        if ($entry === null) {
+            return;
+        }
+
+        $this->deleteProjectedFeedEntry($entry);
+        $this->selectedFeedKeys = array_values(array_diff($this->selectedFeedKeys, [$key]));
+        $this->feedPage = $this->feedPagination()['page'];
+    }
+
+    public function toggleSelectAll(): void
+    {
+        $visibleKeys = $this->currentSelectableFeedKeys();
+        if ($visibleKeys === []) {
+            $this->selectedFeedKeys = [];
+
+            return;
+        }
+
+        $selectedVisible = array_values(array_intersect($visibleKeys, $this->selectedFeedKeys));
+        if (count($selectedVisible) === count($visibleKeys)) {
+            $this->selectedFeedKeys = array_values(array_diff($this->selectedFeedKeys, $visibleKeys));
+
+            return;
+        }
+
+        $this->selectedFeedKeys = array_values(array_unique([...$this->selectedFeedKeys, ...$visibleKeys]));
+    }
+
+    public function bulkMarkRead(): void
+    {
+        $feed = app(DashboardFeed::class);
+        foreach ($this->selectedFeedKeys as $key) {
+            if ($this->mutableFeedEntry($key) !== null) {
+                $feed->openEntry($key);
+            }
+        }
+
+        $this->selectedFeedKeys = [];
+    }
+
+    public function bulkMarkUnread(): void
+    {
+        foreach ($this->selectedFeedKeys as $key) {
+            $this->markFeedUnread($key);
+        }
+
+        $this->selectedFeedKeys = [];
+    }
+
+    public function bulkDelete(): void
+    {
+        foreach ($this->selectedFeedKeys as $key) {
+            $entry = $this->mutableFeedEntry($key);
+            if ($entry !== null) {
+                $this->deleteProjectedFeedEntry($entry);
+            }
+        }
+
+        $this->selectedFeedKeys = [];
+        $this->feedPage = $this->feedPagination()['page'];
     }
 
     public function markContactUnread(int $contactMessageId): void
@@ -165,12 +265,12 @@ final class Dashboard extends Page
                 ['entry' => $this->feedEntry($arguments)],
             ))
             ->modalSubmitAction(false)
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Close')
-                ->extraAttributes(['class' => 'admin-dialog-footer__cancel']))
-            ->extraModalFooterActions(fn (array $arguments): array => $this->feedEntryFooterActions($arguments))
+            ->modalCancelAction(false)
+            ->extraModalFooterActions(fn (array $arguments): array => $this->feedEntryHeaderActions($arguments))
             ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'admin-task-dialog']);
+            ->extraModalWindowAttributes([
+                'class' => 'admin-task-dialog admin-dialog--default admin-dialog--header-actions',
+            ]);
     }
 
     /** @return array<string, mixed> */
@@ -194,6 +294,7 @@ final class Dashboard extends Page
     private function refreshFeedFromFirstPage(): void
     {
         $this->feedPage = 1;
+        $this->selectedFeedKeys = [];
     }
 
     /** @return array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int} */
@@ -205,6 +306,48 @@ final class Dashboard extends Page
             $this->feedPage,
             $this->feedPageSize,
         );
+    }
+
+    /** @return list<string> */
+    private function currentSelectableFeedKeys(): array
+    {
+        return collect($this->feedPagination()['items'])
+            ->filter(fn (array $item): bool => $this->isMutableFeedEntry($item))
+            ->pluck('key')
+            ->filter(fn (mixed $key): bool => is_string($key) && $key !== '')
+            ->values()
+            ->all();
+    }
+
+    /** @return array<string, mixed>|null */
+    private function mutableFeedEntry(string $key): ?array
+    {
+        $entry = app(DashboardFeed::class)->entry($key);
+
+        return is_array($entry) && $this->isMutableFeedEntry($entry) ? $entry : null;
+    }
+
+    /** @param array<string, mixed> $entry */
+    private function isMutableFeedEntry(array $entry): bool
+    {
+        return is_int($entry['contact_id'] ?? null) || is_int($entry['notification_id'] ?? null);
+    }
+
+    /** @param array<string, mixed> $entry */
+    private function deleteProjectedFeedEntry(array $entry): void
+    {
+        $feed = app(DashboardFeed::class);
+        $contactId = $entry['contact_id'] ?? null;
+        if (is_int($contactId)) {
+            $feed->deleteContact($contactId);
+
+            return;
+        }
+
+        $notificationId = $entry['notification_id'] ?? null;
+        if (is_int($notificationId)) {
+            $feed->deleteNotification($notificationId);
+        }
     }
 
     /** @param array<string, mixed> $arguments
@@ -222,7 +365,7 @@ final class Dashboard extends Page
     /** @param array<string, mixed> $arguments
      * @return list<Action>
      */
-    private function feedEntryFooterActions(array $arguments): array
+    private function feedEntryHeaderActions(array $arguments): array
     {
         $entry = $this->feedEntry($arguments);
         $contactId = $entry['contact_id'] ?? null;
@@ -230,12 +373,18 @@ final class Dashboard extends Page
             return [
                 Action::make('markContactUnread')
                     ->label('Mark unread')
+                    ->icon(AdminIcon::MarkUnread->value)
+                    ->iconButton()
+                    ->tooltip('Mark unread')
                     ->color('gray')
                     ->action(function () use ($contactId): void {
                         $this->markContactUnread($contactId);
                     }),
                 Action::make('deleteContactMessage')
                     ->label('Delete')
+                    ->icon(AdminIcon::Delete->value)
+                    ->iconButton()
+                    ->tooltip('Delete')
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalHeading('Delete contact message?')
@@ -256,12 +405,18 @@ final class Dashboard extends Page
         return [
             Action::make('markNotificationUnread')
                 ->label('Mark unread')
+                ->icon(AdminIcon::MarkUnread->value)
+                ->iconButton()
+                ->tooltip('Mark unread')
                 ->color('gray')
                 ->action(function () use ($notificationId): void {
                     $this->markNotificationUnread($notificationId);
                 }),
             Action::make('deleteNotification')
                 ->label('Delete')
+                ->icon(AdminIcon::Delete->value)
+                ->iconButton()
+                ->tooltip('Delete')
                 ->color('danger')
                 ->requiresConfirmation()
                 ->modalHeading('Delete notification?')
