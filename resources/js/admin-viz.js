@@ -1,11 +1,11 @@
 import * as echarts from 'echarts/core';
-import { BarChart, GaugeChart } from 'echarts/charts';
+import { GaugeChart, LineChart } from 'echarts/charts';
 import { GraphicComponent, PolarComponent, TooltipComponent } from 'echarts/components';
 import { SVGRenderer } from 'echarts/renderers';
 
 echarts.use([
-    BarChart,
     GaugeChart,
+    LineChart,
     GraphicComponent,
     PolarComponent,
     TooltipComponent,
@@ -108,12 +108,12 @@ function storageAxisColors(config, colors, selected) {
 
         cursor = Math.min(usedRatio, cursor + shareOfCapacity);
         const base = colors.storage[row.key] || colors.accent;
-        const color = selected && row.key !== selected ? withAlpha(base, 0.24) : base;
+        const color = selected && row.key !== selected ? withAlpha(base, 0.22) : base;
         thresholds.push([cursor, color]);
     });
 
     if (cursor < usedRatio - 0.00001) {
-        thresholds.push([usedRatio, selected ? withAlpha(colors.accent, 0.24) : colors.accent]);
+        thresholds.push([usedRatio, selected ? withAlpha(colors.accent, 0.22) : colors.accent]);
     }
 
     thresholds.push([1, colors.storage.remaining]);
@@ -126,10 +126,9 @@ function storageOption(element, config, state) {
     const percent = clamp(config.percent, 0, 100);
     const rows = Array.isArray(config.breakdown) ? config.breakdown : [];
     const selectedRow = rows.find((row) => row.key === state.selected) || null;
-    const mainValue = selectedRow?.display_bytes || config.authoritative || '—';
-    const mainLabel = selectedRow?.label || config.allowance || 'Capacity';
-    const trackShadow = withAlpha(colors.text, document.documentElement.classList.contains('dark') ? 0.18 : 0.08);
-    const pointerShadow = withAlpha(colors.text, 0.12);
+    const mainValue = selectedRow?.display_bytes || config.allowance || '—';
+    const mainLabel = selectedRow?.label || `${config.authoritative || '—'} used`;
+    const trackShadow = withAlpha(colors.text, document.documentElement.classList.contains('dark') ? 0.18 : 0.07);
 
     if (! config.configured || ! config.measurement_available || config.percent === null) {
         return {
@@ -138,7 +137,7 @@ function storageOption(element, config, state) {
                 {
                     type: 'text',
                     left: 'center',
-                    top: '46%',
+                    top: '45%',
                     style: {
                         text: config.measurement_available ? (config.authoritative || '—') : '—',
                         fill: colors.text,
@@ -151,7 +150,7 @@ function storageOption(element, config, state) {
                 {
                     type: 'text',
                     left: 'center',
-                    top: '57%',
+                    top: '56%',
                     style: {
                         text: config.measurement_available ? 'No allowance' : 'No measurement',
                         fill: colors.muted,
@@ -167,8 +166,8 @@ function storageOption(element, config, state) {
     }
 
     return {
-        animationDuration: 650,
-        animationDurationUpdate: 420,
+        animationDuration: 620,
+        animationDurationUpdate: 360,
         animationEasing: 'cubicOut',
         animationEasingUpdate: 'cubicOut',
         tooltip: { show: false },
@@ -213,10 +212,10 @@ function storageOption(element, config, state) {
                 radius: '86%',
                 axisLine: {
                     lineStyle: {
-                        width: 24,
+                        width: 25,
                         color: [[1, trackShadow]],
-                        shadowBlur: 8,
-                        shadowColor: pointerShadow,
+                        shadowBlur: 7,
+                        shadowColor: trackShadow,
                         shadowOffsetY: 3,
                     },
                 },
@@ -243,6 +242,7 @@ function storageOption(element, config, state) {
                 center: ['50%', '53%'],
                 radius: '86%',
                 axisLine: {
+                    roundCap: true,
                     lineStyle: {
                         width: 20,
                         color: storageAxisColors(config, colors, state.selected),
@@ -256,7 +256,7 @@ function storageOption(element, config, state) {
                     distance: -29,
                     length: 3,
                     lineStyle: {
-                        color: withAlpha(colors.faint, 0.55),
+                        color: withAlpha(colors.faint, 0.5),
                         width: 1,
                     },
                 },
@@ -269,57 +269,12 @@ function storageOption(element, config, state) {
                         width: 1,
                     },
                 },
-                axisLabel: {
-                    show: true,
-                    distance: 18,
-                    color: colors.muted,
-                    fontSize: 9,
-                    fontWeight: 600,
-                    formatter(value) {
-                        if (value === 0) return '0';
-                        if (value === 100) return config.allowance || '';
-                        return '';
-                    },
-                },
-                anchor: { show: false },
-                detail: { show: false },
-                title: { show: false },
-                data: [{ value: percent }],
-                z: 3,
-            },
-            {
-                id: 'storage-used-edge',
-                type: 'gauge',
-                silent: true,
-                startAngle: 220,
-                endAngle: -40,
-                min: 0,
-                max: 100,
-                center: ['50%', '53%'],
-                radius: '86%',
-                axisLine: {
-                    lineStyle: {
-                        width: 2,
-                        color: [[1, 'transparent']],
-                    },
-                },
-                progress: {
-                    show: true,
-                    roundCap: true,
-                    width: 2,
-                    itemStyle: {
-                        color: colors.text,
-                    },
-                },
-                pointer: { show: false },
-                axisTick: { show: false },
-                splitLine: { show: false },
                 axisLabel: { show: false },
                 anchor: { show: false },
                 detail: { show: false },
                 title: { show: false },
                 data: [{ value: percent }],
-                z: 5,
+                z: 3,
             },
         ],
     };
@@ -340,9 +295,6 @@ function activityOption(element, config) {
             value: normalized,
             count,
             hour: Number(bucket.hour) || 0,
-            itemStyle: {
-                color: withAlpha(colors.accent, count > 0 ? 0.22 + (0.68 * normalized) : 0.06),
-            },
         };
     });
     const now = new Date();
@@ -359,7 +311,7 @@ function activityOption(element, config) {
         min: 0,
         max,
         center: ['50%', '50%'],
-        radius: '70%',
+        radius: '68%',
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { show: false },
@@ -378,7 +330,7 @@ function activityOption(element, config) {
             showAbove: true,
             size: showAnchor ? 9 : 0,
             itemStyle: {
-                color: colors.surface === 'rgba(0, 0, 0, 0)' ? colors.text : colors.surface,
+                color: document.documentElement.classList.contains('dark') ? '#18181b' : '#ffffff',
                 borderColor: colors.text,
                 borderWidth: 2,
             },
@@ -390,8 +342,8 @@ function activityOption(element, config) {
     });
 
     return {
-        animationDuration: 700,
-        animationDurationUpdate: 260,
+        animationDuration: 720,
+        animationDurationUpdate: 280,
         animationEasing: 'cubicOut',
         animationEasingUpdate: 'cubicOut',
         tooltip: {
@@ -411,14 +363,14 @@ function activityOption(element, config) {
         },
         polar: {
             center: ['50%', '50%'],
-            radius: ['76%', '97%'],
+            radius: ['74%', '96%'],
         },
         angleAxis: {
             type: 'category',
             data: hours,
             startAngle: 90,
             clockwise: true,
-            boundaryGap: true,
+            boundaryGap: false,
             show: false,
         },
         radiusAxis: {
@@ -430,14 +382,31 @@ function activityOption(element, config) {
             {
                 id: 'activity-halo',
                 name: 'Activity',
-                type: 'bar',
+                type: 'line',
                 coordinateSystem: 'polar',
                 data: activity,
-                barWidth: '78%',
-                roundCap: true,
+                smooth: 0.38,
+                symbol: 'circle',
+                symbolSize: 5,
+                showSymbol: false,
+                connectNulls: true,
                 silent: false,
+                lineStyle: {
+                    color: colors.accentStrong,
+                    width: 1.45,
+                    opacity: 0.9,
+                },
+                areaStyle: {
+                    color: withAlpha(colors.accent, document.documentElement.classList.contains('dark') ? 0.2 : 0.12),
+                },
+                itemStyle: {
+                    color: colors.accentStrong,
+                },
                 emphasis: {
-                    focus: 'self',
+                    scale: true,
+                    lineStyle: {
+                        width: 2.2,
+                    },
                     itemStyle: {
                         color: colors.accentStrong,
                     },
@@ -455,7 +424,7 @@ function activityOption(element, config) {
                 max: 12,
                 splitNumber: 12,
                 center: ['50%', '50%'],
-                radius: '69%',
+                radius: '68%',
                 axisLine: {
                     lineStyle: {
                         width: 1,
@@ -486,10 +455,11 @@ function activityOption(element, config) {
                     distance: 14,
                     color: colors.text,
                     fontSize: 10,
-                    fontWeight: 600,
+                    fontWeight: 620,
                     formatter(value) {
-                        if (! Number.isInteger(value)) return '';
-                        return value === 0 ? '12' : String(value);
+                        if (value === 0 || value === 12) return '12';
+                        if (value === 3 || value === 6 || value === 9) return String(value);
+                        return '';
                     },
                 },
                 pointer: { show: false },
@@ -500,9 +470,9 @@ function activityOption(element, config) {
                 data: [{ value: hour }],
                 z: 3,
             },
-            handSeries({ id: 'clock-hour', max: 12, value: hour, length: '45%', width: 5, color: colors.text, z: 7 }),
-            handSeries({ id: 'clock-minute', max: 60, value: minute, length: '61%', width: 3, color: colors.text, z: 8 }),
-            handSeries({ id: 'clock-second', max: 60, value: second, length: '66%', width: 1.35, color: colors.accent, z: 9, showAnchor: true }),
+            handSeries({ id: 'clock-hour', max: 12, value: hour, length: '44%', width: 5.5, color: colors.text, z: 7 }),
+            handSeries({ id: 'clock-minute', max: 60, value: minute, length: '60%', width: 3.1, color: colors.text, z: 8 }),
+            handSeries({ id: 'clock-second', max: 60, value: second, length: '64%', width: 1.25, color: colors.accent, z: 9, showAnchor: true }),
         ],
     };
 }
