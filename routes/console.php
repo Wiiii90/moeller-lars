@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Migration\LegacyArtworkManifestImporter;
 use App\Domain\Migration\LegacyMigrationValidator;
@@ -16,6 +17,22 @@ use Illuminate\Support\Facades\DB;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('media:measure-capacity', function (MediaCapacityService $capacity) {
+    $capacity->forgetCachedSnapshot();
+    $snapshot = $capacity->cachedSnapshot();
+
+    $this->line(json_encode([
+        'status' => $snapshot['status'] ?? 'unavailable',
+        'measurement_available' => (bool) ($snapshot['measurement_available'] ?? false),
+        'authoritative_bytes' => $snapshot['authoritative_bytes'] ?? null,
+        'generated_bytes' => $snapshot['generated_bytes'] ?? null,
+        'remaining_bytes' => $snapshot['remaining_bytes'] ?? null,
+        'quota_bytes' => $snapshot['quota_bytes'] ?? null,
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+
+    return 0;
+})->purpose('Refresh the cached authoritative Storage capacity snapshot');
 
 Artisan::command('admin:provision {--name=} {--email=}', function () {
     $name = trim((string) ($this->option('name') ?: $this->ask('Name')));
