@@ -41,7 +41,7 @@
     overflow: hidden;
 }
 
-.admin-dashboard__storage-visual .admin-storage__capacity-orbit {
+.admin-dashboard__storage-visual .admin-storage__capacity-plot {
     width: min(100%, 12.75rem) !important;
     max-width: 100%;
     max-height: 100%;
@@ -119,9 +119,43 @@
     align-content: end;
 }
 
+/* Four of the six metric cells belong to Search. The four compact task groups
+ * share the remaining two metric cells as half-cell units. */
+.admin-dashboard__feed-controls {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: .85rem;
+    align-items: end;
+}
+
+.admin-dashboard__feed-controls > * {
+    min-width: 0 !important;
+    width: 100%;
+}
+
+.admin-dashboard__feed-controls > :first-child {
+    grid-column: span 8;
+}
+
+.admin-dashboard__feed-controls > :not(:first-child) {
+    grid-column: span 1;
+}
+
+.admin-dashboard__feed-controls .admin-data-control-group,
+.admin-dashboard__feed-controls .admin-selection__anchor {
+    width: 100%;
+}
+
+.admin-dashboard__feed-controls .admin-data-control-group > .admin-action,
+.admin-dashboard__feed-controls .admin-selection__trigger {
+    width: 100%;
+    min-width: 0;
+    padding-inline: .35rem;
+}
+
 /* Dashboard feed: use the six-unit table geometry without the generic 60rem
- * floor. Message content belongs to the detail dialog, so the desktop table can
- * remain inside the workspace without a default horizontal scrollbar. */
+ * floor. Position/drag, row actions and selection are the shared table roles;
+ * only this feed's content distribution is local. */
 .admin-dashboard .admin-data-row {
     cursor: default;
 }
@@ -137,7 +171,7 @@
 
 .admin-dashboard__feed-table .admin-data-title,
 .admin-dashboard__feed-table .admin-data-sender,
-.admin-dashboard__feed-table .admin-data-status {
+.admin-dashboard__feed-table .admin-data-message {
     min-width: 0;
     max-width: none;
     width: auto;
@@ -146,59 +180,11 @@
 .admin-dashboard__feed-table .admin-data-title,
 .admin-dashboard__feed-table .admin-data-nowrap,
 .admin-dashboard__feed-table .admin-data-sender strong,
-.admin-dashboard__feed-table .admin-data-sender small {
+.admin-dashboard__feed-table .admin-data-sender small,
+.admin-dashboard__feed-table .admin-data-message {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.admin-dashboard__feed-table .admin-data-status > span {
-    width: auto;
-}
-
-.admin-dashboard__feed-actions .admin-action {
-    padding-inline: .32rem;
-}
-
-.admin-dashboard__read-state {
-    display: inline-flex !important;
-    width: auto !important;
-    min-width: 0;
-    gap: .38rem;
-    align-items: center;
-    color: var(--admin-muted);
-}
-
-.admin-dashboard__read-dot {
-    width: .48rem;
-    height: .48rem;
-    flex: 0 0 .48rem;
-    border: 1px solid var(--admin-muted);
-    border-radius: 50%;
-    background: transparent;
-}
-
-.admin-dashboard__read-state.is-unread {
-    color: var(--admin-text);
-    font-weight: 620;
-}
-
-.admin-dashboard__read-state.is-unread .admin-dashboard__read-dot {
-    border-color: var(--admin-accent);
-    background: var(--admin-accent);
-}
-
-.admin-dashboard__selection-cell {
-    display: grid;
-    min-width: 1.65rem;
-    min-height: 1.65rem;
-    place-items: center;
-}
-
-.admin-dashboard__selection-empty {
-    display: block;
-    color: var(--admin-faint);
-    text-align: center;
 }
 
 /* Dashboard detail dialogs consume the shared default 3/6 width and start with
@@ -276,13 +262,34 @@
     width: 100%;
 }
 
+@media (max-width: 1180px) {
+    .admin-dashboard__feed-controls {
+        display: flex;
+    }
+
+    .admin-dashboard__feed-controls > * {
+        width: auto;
+    }
+
+    .admin-dashboard__feed-controls > :first-child {
+        min-width: 12rem !important;
+        flex: 1 1 16rem;
+    }
+
+    .admin-dashboard__feed-controls .admin-data-control-group,
+    .admin-dashboard__feed-controls .admin-selection__anchor {
+        width: auto;
+    }
+
+    .admin-dashboard__feed-controls .admin-data-control-group > .admin-action,
+    .admin-dashboard__feed-controls .admin-selection__trigger {
+        width: auto;
+    }
+}
+
 @media (max-width: 980px) {
     .admin-dashboard__feed-table .admin-action__label {
         display: none;
-    }
-
-    .admin-dashboard__feed-actions .admin-action {
-        padding-inline: .22rem;
     }
 }
 
