@@ -19,12 +19,41 @@
     aria-label="Storage upload, capacity and destinations"
     x-data="{
         selected: null,
+        usageFilter: $wire.entangle('usage', true),
         breakdown: @js($storageBreakdown),
         targets: @js($storageTargets),
         capacityPercent: @js($capacityPercent),
+        init() {
+            this.$watch('usageFilter', (value) => this.syncUsage(value))
+            this.$nextTick(() => this.syncUsage(this.usageFilter))
+        },
+        areaFromUsage(value) {
+            const normalized = String(value ?? '').toLowerCase()
+            if (normalized === '' || normalized === 'all' || normalized === 'in-use') return null
+            if (normalized === 'unreferenced') return 'unassigned'
+            if (normalized.includes('gallery')) return 'galleries'
+            if (normalized.includes('journal')) return 'journal'
+            if (normalized.includes('custom')) return 'custom-pages'
+            if (normalized.includes('site') || normalized.includes('identity')) return 'site-identity'
+            if (normalized.includes('home')) return 'home'
+            if (normalized.includes('cv')) return 'cv'
+            return null
+        },
+        setSelection(key) {
+            const next = key && this.breakdown.some((row) => row.key === key) ? key : null
+            this.selected = next
+            this.$nextTick(() => {
+                this.$refs.capacityViz?.dispatchEvent(new CustomEvent('admin-viz:state', {
+                    detail: { selected: this.selected },
+                }))
+            })
+        },
         select(key) {
             if (! this.breakdown.some((row) => row.key === key)) return
-            this.selected = this.selected === key ? null : key
+            this.setSelection(this.selected === key ? null : key)
+        },
+        syncUsage(value) {
+            this.setSelection(this.areaFromUsage(value))
         },
         selectedRow() {
             return this.breakdown.find((row) => row.key === this.selected) ?? null
@@ -173,6 +202,7 @@
                 :capacity="$capacity"
                 :breakdown="$storageBreakdown"
                 linked
+                x-ref="capacityViz"
             />
         </div>
     </div>
