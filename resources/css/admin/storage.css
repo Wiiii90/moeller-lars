@@ -61,8 +61,12 @@
     gap: .55rem;
 }
 
-/* Storage is Upload | Capacity | Destinations. The first two panes live in the
- * shared 2/3 rail and the final pane occupies the third metric-aligned column. */
+/* Storage is Upload | Capacity | Destinations. Internal pane breathing belongs
+ * here; the shared Stage owns only the outer thirds and divider axes. */
+.admin-storage__upload {
+    padding-right: var(--admin-stage-pane-space);
+}
+
 .admin-storage__visual-main > .admin-storage__capacity-group {
     padding-right: var(--admin-stage-pane-space);
     padding-left: var(--admin-stage-pane-space);
