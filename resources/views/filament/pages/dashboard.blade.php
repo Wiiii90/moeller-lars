@@ -298,28 +298,9 @@
                 </x-slot:reset>
 
                 <x-slot:actions>
-                    <div
-                        class="admin-data-control-group admin-dashboard__settings"
-                        x-data="{ open: false }"
-                        x-on:click.outside="open = false"
-                    >
+                    <div class="admin-data-control-group admin-dashboard__settings">
                         <span class="admin-data-control-label">Dashboard</span>
-                        <button
-                            class="admin-action"
-                            type="button"
-                            x-on:click="open = ! open"
-                            x-bind:aria-expanded="open.toString()"
-                        >Settings</button>
-                        <div class="admin-dashboard__settings-popover" x-show="open" x-cloak>
-                            <label class="admin-data-field">
-                                <span>Notification history</span>
-                                <select wire:model.live="notificationFilter">
-                                    @foreach ($notificationFilters as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                            </label>
-                        </div>
+                        <button class="admin-action" type="button" wire:click="mountAction('dashboardSettings')">Settings</button>
                     </div>
                 </x-slot:actions>
 
@@ -360,13 +341,12 @@
                     <colgroup>
                         <col class="admin-table__col-quarter-unit">
                         <col class="admin-table__col-quarter-unit">
-                        <col class="admin-table__col-half-unit">
+                        <col class="admin-table__col-three-quarter-unit">
                         <col class="admin-table__col-three-quarter-unit">
                         <col class="admin-table__col-one-unit">
-                        <col class="admin-table__col-three-quarter-unit">
                         <col class="admin-table__col-one-unit">
-                        <col class="admin-table__col-five-quarter-units">
-                        <col class="admin-table__col-quarter-unit">
+                        <col class="admin-dashboard__feed-actions-col">
+                        <col class="admin-dashboard__feed-selection-col">
                     </colgroup>
                     <thead>
                         <tr>
@@ -375,7 +355,6 @@
                             <th scope="col">Date</th>
                             <th scope="col">Title</th>
                             <th scope="col">Sender</th>
-                            <th scope="col">Message</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
@@ -391,142 +370,146 @@
                             </th>
                         </tr>
                     </thead>
-                    <tbody wire:sort="reorderPinnedFeed">
-                        @foreach ($feed as $item)
-                            @php
-                                $pinned = ($item['pinned'] ?? false) === true;
-                                $position = $pinned ? ($item['pin_position'] ?? null) : ($item['feed_position'] ?? null);
-                                $mutable = is_int($item['contact_id'] ?? null) || is_int($item['notification_id'] ?? null);
-                                $read = $mutable ? str_starts_with((string) $item['status'], 'Read') : null;
-                                $selected = in_array((string) $item['key'], $selectedFeedKeys, true);
-                            @endphp
-                            <tr
-                                @class([
-                                    'admin-data-row',
-                                    'admin-dashboard__feed-row',
-                                    'is-selected' => $selected,
-                                    'is-pinned' => $pinned,
-                                ])
-                                wire:key="dashboard-feed-{{ $item['key'] }}"
-                                @if ($pinned) wire:sort:item="{{ $item['key'] }}" @endif
-                            >
-                                <td class="admin-table__position">
-                                    <span
-                                        @class(['admin-position', 'admin-dashboard__priority-position' => $pinned])
-                                        @if ($pinned) title="Pinned priority {{ $position }}" @endif
-                                    >{{ $pinned ? 'P'.$position : $position }}</span>
-                                </td>
-                                <td class="admin-table__drag">
-                                    @if ($pinned)
-                                        <button
-                                            class="admin-drag-handle"
-                                            type="button"
-                                            wire:sort:handle
-                                            aria-label="Drag pinned entry to a new priority"
-                                            title="Reorder pinned priority"
-                                        >⋮⋮</button>
-                                    @else
-                                        <button
-                                            class="admin-drag-handle"
-                                            type="button"
-                                            disabled
-                                            aria-label="Pin this entry before assigning priority"
-                                            title="Pin to reorder priority"
-                                        >⋮⋮</button>
-                                    @endif
-                                </td>
-                                <td class="admin-data-nowrap">{{ $item['type_label'] }}</td>
-                                <td class="admin-data-nowrap"><time datetime="{{ $item['date'] }}">{{ $item['date_display'] }}</time></td>
-                                <td class="admin-data-title">{{ $item['title'] }}</td>
-                                <td class="admin-data-sender">
-                                    @if ($item['type'] === 'contact')
-                                        <strong>{{ $item['sender_name'] }}</strong>
-                                        <small>{{ $item['sender_email'] }}</small>
-                                    @elseif ($item['type'] === 'notification')
-                                        <strong>Admin</strong>
-                                    @else
-                                        <span>—</span>
-                                    @endif
-                                </td>
-                                <td class="admin-data-message">{{ $item['message_excerpt'] }}</td>
-                                <td class="admin-table__actions">
-                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-dashboard__feed-actions">
-                                        <button
-                                            class="admin-action admin-action--with-icon"
-                                            type="button"
-                                            wire:click="openFeedEntry('{{ $item['key'] }}')"
-                                            aria-label="Open {{ $item['type_label'] }} entry {{ $item['title'] }}"
-                                            title="Open"
-                                        >
-                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::OpenEntry->mini()" class="admin-action__icon" />
-                                            <span class="admin-action__label">Open</span>
-                                        </button>
-
-                                        <button
-                                            @class([
-                                                'admin-action',
-                                                'admin-action--with-icon',
-                                                'admin-dashboard__pin-action',
-                                                'is-active' => $pinned,
-                                            ])
-                                            type="button"
-                                            wire:click="toggleFeedPin('{{ $item['key'] }}')"
-                                            aria-label="{{ $pinned ? 'Unpin' : 'Pin' }} {{ $item['type_label'] }} entry {{ $item['title'] }}"
-                                            title="{{ $pinned ? 'Unpin' : 'Pin' }}"
-                                        >
-                                            <x-filament::icon
-                                                :icon="($pinned ? \App\Filament\Support\AdminIcon::Pinned : \App\Filament\Support\AdminIcon::Pin)->mini()"
-                                                class="admin-action__icon"
-                                            />
-                                            <span class="admin-action__label">{{ $pinned ? 'Unpin' : 'Pin' }}</span>
-                                        </button>
-
-                                        @if ($mutable)
+                    @foreach ([true, false] as $pinnedGroup)
+                        <tbody @if ($pinnedGroup) wire:sort="reorderPinnedFeed" @endif>
+                            @foreach ($feed as $item)
+                                @php
+                                    $pinned = ($item['pinned'] ?? false) === true;
+                                    $position = $pinned ? ($item['pin_position'] ?? null) : ($item['feed_position'] ?? null);
+                                    $mutable = is_int($item['contact_id'] ?? null) || is_int($item['notification_id'] ?? null);
+                                    $read = $mutable ? str_starts_with((string) $item['status'], 'Read') : null;
+                                    $selected = in_array((string) $item['key'], $selectedFeedKeys, true);
+                                @endphp
+                                @continue($pinned !== $pinnedGroup)
+                                <tr
+                                    @class([
+                                        'admin-data-row',
+                                        'admin-dashboard__feed-row',
+                                        'is-selected' => $selected,
+                                        'is-pinned' => $pinned,
+                                        'is-read' => $read === true,
+                                        'is-unread' => $read === false,
+                                    ])
+                                    wire:key="dashboard-feed-{{ $item['key'] }}"
+                                    @if ($pinnedGroup) wire:sort:item="{{ $item['key'] }}" @endif
+                                >
+                                    <td class="admin-table__position">
+                                        <span
+                                            @class(['admin-position', 'admin-dashboard__priority-position' => $pinned])
+                                            @if ($pinned) title="Pinned priority {{ $position }}" @endif
+                                        >{{ $pinned ? 'P'.$position : $position }}</span>
+                                    </td>
+                                    <td class="admin-table__drag">
+                                        @if ($pinned)
+                                            <button
+                                                class="admin-drag-handle"
+                                                type="button"
+                                                wire:sort:handle
+                                                aria-label="Drag pinned entry to a new priority"
+                                                title="Reorder pinned priority"
+                                            >⋮⋮</button>
+                                        @else
+                                            <button
+                                                class="admin-drag-handle"
+                                                type="button"
+                                                disabled
+                                                aria-label="Pin this entry before assigning priority"
+                                                title="Pin to reorder priority"
+                                            >⋮⋮</button>
+                                        @endif
+                                    </td>
+                                    <td class="admin-data-nowrap">{{ $item['type_label'] }}</td>
+                                    <td class="admin-data-nowrap"><time datetime="{{ $item['date'] }}">{{ $item['date_display'] }}</time></td>
+                                    <td class="admin-data-title">{{ $item['title'] }}</td>
+                                    <td class="admin-data-sender">
+                                        @if ($item['type'] === 'contact')
+                                            <strong>{{ $item['sender_name'] }}</strong>
+                                            <small>{{ $item['sender_email'] }}</small>
+                                        @elseif ($item['type'] === 'notification')
+                                            <strong>Admin</strong>
+                                        @else
+                                            <span>—</span>
+                                        @endif
+                                    </td>
+                                    <td class="admin-table__actions">
+                                        <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-dashboard__feed-actions">
                                             <button
                                                 class="admin-action admin-action--with-icon"
                                                 type="button"
-                                                wire:click="{{ $read ? 'markFeedUnread' : 'markFeedRead' }}('{{ $item['key'] }}')"
-                                                aria-label="{{ $read ? 'Mark unread' : 'Mark read' }}"
-                                                title="{{ $read ? 'Mark unread' : 'Mark read' }}"
+                                                wire:click="openFeedEntry('{{ $item['key'] }}')"
+                                                aria-label="Open {{ $item['type_label'] }} entry {{ $item['title'] }}"
+                                                title="Open"
+                                            >
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::OpenEntry->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Open</span>
+                                            </button>
+
+                                            <button
+                                                @class([
+                                                    'admin-action',
+                                                    'admin-action--with-icon',
+                                                    'admin-dashboard__pin-action',
+                                                    'is-active' => $pinned,
+                                                ])
+                                                type="button"
+                                                wire:click="toggleFeedPin('{{ $item['key'] }}')"
+                                                aria-label="{{ $pinned ? 'Unpin' : 'Pin' }} {{ $item['type_label'] }} entry {{ $item['title'] }}"
+                                                title="{{ $pinned ? 'Unpin' : 'Pin' }}"
                                             >
                                                 <x-filament::icon
-                                                    :icon="$read ? \App\Filament\Support\AdminIcon::MarkUnread->mini() : \App\Filament\Support\AdminIcon::MarkRead->mini()"
+                                                    :icon="($pinned ? \App\Filament\Support\AdminIcon::Pinned : \App\Filament\Support\AdminIcon::Pin)->mini()"
                                                     class="admin-action__icon"
                                                 />
-                                                <span class="admin-action__label">{{ $read ? 'Unread' : 'Read' }}</span>
+                                                <span class="admin-action__label">{{ $pinned ? 'Unpin' : 'Pin' }}</span>
                                             </button>
-                                            <button
-                                                class="admin-action admin-action--with-icon is-danger"
-                                                type="button"
-                                                wire:click="deleteFeedEntry('{{ $item['key'] }}')"
-                                                wire:confirm="Delete this dashboard feed entry?"
-                                                title="Delete"
+
+                                            @if ($mutable)
+                                                <button
+                                                    class="admin-action admin-action--with-icon"
+                                                    type="button"
+                                                    wire:click="{{ $read ? 'markFeedUnread' : 'markFeedRead' }}('{{ $item['key'] }}')"
+                                                    aria-label="{{ $read ? 'Mark unread' : 'Mark read' }}"
+                                                    title="{{ $read ? 'Mark unread' : 'Mark read' }}"
+                                                >
+                                                    <x-filament::icon
+                                                        :icon="$read ? \App\Filament\Support\AdminIcon::MarkUnread->mini() : \App\Filament\Support\AdminIcon::MarkRead->mini()"
+                                                        class="admin-action__icon"
+                                                    />
+                                                    <span class="admin-action__label">{{ $read ? 'Unread' : 'Read' }}</span>
+                                                </button>
+                                                <button
+                                                    class="admin-action admin-action--with-icon is-danger"
+                                                    type="button"
+                                                    wire:click="deleteFeedEntry('{{ $item['key'] }}')"
+                                                    wire:confirm="Delete this dashboard feed entry?"
+                                                    title="Delete"
+                                                >
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Delete</span>
+                                                </button>
+                                            @else
+                                                <span class="admin-dashboard__action-placeholder" aria-hidden="true"></span>
+                                                <span class="admin-dashboard__action-placeholder" aria-hidden="true"></span>
+                                            @endif
+                                        </x-admin.toolbar>
+                                    </td>
+                                    <td class="admin-table__selection admin-table__selection--trailing">
+                                        @if ($mutable)
+                                            <input
+                                                type="checkbox"
+                                                wire:model.live="selectedFeedKeys"
+                                                value="{{ $item['key'] }}"
+                                                aria-label="Select {{ $item['type_label'] }} entry {{ $item['title'] }}"
+                                                @checked($selected)
                                             >
-                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
-                                                <span class="admin-action__label">Delete</span>
-                                            </button>
                                         @else
-                                            <span class="admin-dashboard__action-placeholder" aria-hidden="true"></span>
-                                            <span class="admin-dashboard__action-placeholder" aria-hidden="true"></span>
+                                            <span aria-hidden="true">—</span>
                                         @endif
-                                    </x-admin.toolbar>
-                                </td>
-                                <td class="admin-table__selection admin-table__selection--trailing">
-                                    @if ($mutable)
-                                        <input
-                                            type="checkbox"
-                                            wire:model.live="selectedFeedKeys"
-                                            value="{{ $item['key'] }}"
-                                            aria-label="Select {{ $item['type_label'] }} entry {{ $item['title'] }}"
-                                            @checked($selected)
-                                        >
-                                    @else
-                                        <span aria-hidden="true">—</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    @endforeach
                 </table>
 
                 @if ($feed === [])

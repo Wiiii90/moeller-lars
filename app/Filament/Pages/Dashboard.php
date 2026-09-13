@@ -8,6 +8,7 @@ use App\Filament\Support\AdminIcon;
 use App\Filament\Support\DashboardOverview;
 use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
@@ -133,8 +134,12 @@ final class Dashboard extends Page
         app(DashboardFeedPins::class)->toggle($key);
     }
 
-    public function reorderPinnedFeed(string $key, int $position): void
+    public function reorderPinnedFeed(mixed $key, int $position): void
     {
+        if (! is_string($key) || $key === '') {
+            return;
+        }
+
         app(DashboardFeedPins::class)->move($key, $position);
     }
 
@@ -266,6 +271,41 @@ final class Dashboard extends Page
         app(DashboardFeedPins::class)->forget('notification:'.$notificationId);
         app(DashboardFeed::class)->deleteNotification($notificationId);
         $this->feedPage = $this->feedPagination()['page'];
+    }
+
+    public function dashboardSettingsAction(): Action
+    {
+        return Action::make('dashboardSettings')
+            ->label('Settings')
+            ->modalHeading('Dashboard settings')
+            ->fillForm(fn (): array => [
+                'notification_filter' => $this->notificationFilter,
+            ])
+            ->schema([
+                Select::make('notification_filter')
+                    ->label('Notification history')
+                    ->options(self::NOTIFICATION_FILTERS)
+                    ->required(),
+            ])
+            ->action(function (array $data): void {
+                $filter = $data['notification_filter'] ?? 'all';
+                $this->notificationFilter = is_string($filter) && array_key_exists($filter, self::NOTIFICATION_FILTERS)
+                    ? $filter
+                    : 'all';
+
+                $user = auth()->user();
+                if ($user instanceof User) {
+                    $user->forceFill(['dashboard_notification_filter' => $this->notificationFilter])->save();
+                }
+
+                $this->refreshFeedFromFirstPage();
+            })
+            ->modalSubmitAction(fn (Action $action): Action => $action->label('Apply'))
+            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel'))
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes([
+                'class' => 'admin-task-dialog admin-dialog--small',
+            ]);
     }
 
     public function feedEntryAction(): Action

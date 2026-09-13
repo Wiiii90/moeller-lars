@@ -303,7 +303,7 @@
     margin-top: 0;
     padding-top: var(--admin-section-gap);
     align-items: center;
-    border-top: 1px solid var(--admin-line-strong);
+    border-top: 1px solid var(--admin-line);
     color: var(--admin-muted);
     font-size: .72rem;
 }
