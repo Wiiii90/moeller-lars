@@ -1,3 +1,8 @@
+@php
+    $storageTargets = is_array($storageAttention['targets'] ?? null) ? $storageAttention['targets'] : [];
+    $storageSliceOffset = 0.0;
+@endphp
+
 <x-admin.metrics :columns="6" aria-label="Storage statistics">
     <x-admin.metric label="Files" :value="number_format($libraryFiles)">Available</x-admin.metric>
     <x-admin.metric label="Images" :value="number_format($libraryImages)">Available images</x-admin.metric>
@@ -8,44 +13,153 @@
 </x-admin.metrics>
 
 <section class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych admin-visual-stage--stackable" aria-label="Storage capacity, distribution and upload">
-    <div class="admin-storage__visual-main admin-visual-stage__pane">
+    <div
+        class="admin-storage__visual-main admin-visual-stage__pane"
+        x-data="{
+            selected: null,
+            breakdown: @js($storageBreakdown),
+            targets: @js($storageTargets),
+            select(key) {
+                this.selected = this.selected === key ? null : key
+            },
+            selectedRow() {
+                return this.breakdown.find((row) => row.key === this.selected) ?? null
+            },
+            visibleTargets() {
+                const rows = this.selected
+                    ? this.targets.filter((target) => target.area === this.selected)
+                    : this.targets
+
+                return rows.slice(0, 5)
+            },
+            targetWidth(bytes) {
+                const rows = this.visibleTargets()
+                const max = Math.max(1, ...rows.map((row) => Number(row.bytes) || 0))
+
+                return Math.max(4, Math.round(((Number(bytes) || 0) / max) * 100))
+            },
+            selectedMeta() {
+                const row = this.selectedRow()
+                if (! row) return 'Largest measured destinations'
+
+                const files = Number(row.files) || 0
+                const share = Number(row.percent) || 0
+
+                return `${row.display_bytes} · ${files} ${files === 1 ? 'original' : 'originals'} · ${share.toFixed(1)}% of originals`
+            },
+            emptyDetail() {
+                const row = this.selectedRow()
+                if (! row) return 'No measured destination usage is available.'
+
+                if (row.key === 'unassigned') return 'These originals are not referenced by a canonical consumer.'
+                if (row.key === 'uncatalogued') return 'These originals exist on disk without a matching MediaAsset record.'
+                if (row.key === 'shared') return 'These originals span more than one area, so destination totals overlap by design.'
+
+                return 'No destination breakdown is available for this area.'
+            },
+        }"
+    >
         <div class="admin-storage__capacity-group">
-            <div
-                @class([
-                    'admin-storage__capacity-orbit',
-                    'is-unconfigured' => ! ($capacity['configured'] ?? false),
-                    'is-unavailable' => ! ($capacity['measurement_available'] ?? false),
-                ])
-                style="--capacity-used: {{ $capacity['percent'] ?? 0 }}%"
-                role="img"
-                aria-label="@if (($capacity['percent'] ?? null) !== null) {{ $capacity['percent'] }} percent of the configured allowance is used @elseif ($capacity['measurement_available'] ?? false) Authoritative usage is measured but no allowance is configured @else Authoritative storage measurement is unavailable @endif"
-            >
-                <div class="admin-storage__capacity-core">
+            <div class="admin-storage__visual-heading admin-storage__capacity-heading">
+                <div>
+                    <p class="admin-storage__eyebrow">Capacity + use</p>
+                    <strong>Authoritative originals</strong>
+                </div>
+            </div>
+
+            <div class="admin-storage__capacity-plot">
+                <svg class="admin-storage__donut" viewBox="0 0 120 120" role="img" aria-label="Storage allowance and measured original distribution">
+                    <circle class="admin-storage__capacity-track" cx="60" cy="60" r="53" pathLength="100" />
                     @if (($capacity['percent'] ?? null) !== null)
-                        <strong>{{ $capacity['percent'] }}%</strong>
-                        <span>Allowance used</span>
-                    @elseif ($capacity['measurement_available'] ?? false)
-                        <strong>{{ $capacity['authoritative'] ?? '—' }}</strong>
-                        <span>Authoritative used</span>
-                    @else
-                        <strong>—</strong>
-                        <span>{{ ($capacity['status'] ?? null) === 'not_measured' ? 'Measurement needed' : 'Measurement unavailable' }}</span>
+                        <circle
+                            class="admin-storage__capacity-used"
+                            cx="60"
+                            cy="60"
+                            r="53"
+                            pathLength="100"
+                            stroke-dasharray="{{ min(100, max(0, $capacity['percent'])) }} {{ max(0, 100 - min(100, max(0, $capacity['percent']))) }}"
+                            transform="rotate(-90 60 60)"
+                        />
                     @endif
+
+                    <circle class="admin-storage__usage-track" cx="60" cy="60" r="40" pathLength="100" />
+                    <g transform="rotate(-90 60 60)">
+                        @foreach ($storageBreakdown as $row)
+                            @php
+                                $slicePercent = min(100, max(0, (float) ($row['percent'] ?? 0)));
+                                $sliceMidpoint = $storageSliceOffset + ($slicePercent / 2);
+                                $sliceAngle = deg2rad($sliceMidpoint * 3.6);
+                                $sliceX = round(cos($sliceAngle) * 4, 2);
+                                $sliceY = round(sin($sliceAngle) * 4, 2);
+                                $sliceKey = (string) ($row['key'] ?? '');
+                                $sliceIndex = ($loop->index % 8) + 1;
+                            @endphp
+                            <circle
+                                class="admin-storage__usage-arc admin-storage__usage-arc--{{ $sliceIndex }}"
+                                cx="60"
+                                cy="60"
+                                r="40"
+                                pathLength="100"
+                                stroke-dasharray="{{ $slicePercent }} {{ max(0, 100 - $slicePercent) }}"
+                                stroke-dashoffset="{{ -$storageSliceOffset }}"
+                                style="--storage-slice-x: {{ $sliceX }}px; --storage-slice-y: {{ $sliceY }}px"
+                                role="button"
+                                tabindex="0"
+                                aria-label="{{ $row['label'] }}: {{ $row['display_bytes'] }}, {{ number_format((float) $row['percent'], 1) }} percent of authoritative originals"
+                                x-bind:aria-pressed="(selected === @js($sliceKey)).toString()"
+                                x-bind:class="{
+                                    'is-selected': selected === @js($sliceKey),
+                                    'is-muted': selected !== null && selected !== @js($sliceKey),
+                                }"
+                                x-on:click="select(@js($sliceKey))"
+                                x-on:keydown.enter.prevent="select(@js($sliceKey))"
+                                x-on:keydown.space.prevent="select(@js($sliceKey))"
+                            >
+                                <title>{{ $row['label'] }} — {{ $row['display_bytes'] }} · {{ number_format((float) $row['percent'], 1) }}%</title>
+                            </circle>
+                            @php $storageSliceOffset += $slicePercent; @endphp
+                        @endforeach
+                    </g>
+                </svg>
+
+                <div class="admin-storage__capacity-core" aria-live="polite">
+                    <template x-if="selectedRow()">
+                        <div>
+                            <strong x-text="selectedRow().display_bytes"></strong>
+                            <span x-text="selectedRow().label"></span>
+                            <small x-text="`${Number(selectedRow().percent || 0).toFixed(1)}% of originals`"></small>
+                        </div>
+                    </template>
+                    <template x-if="! selectedRow()">
+                        <div>
+                            @if (($capacity['percent'] ?? null) !== null)
+                                <strong>{{ $capacity['percent'] }}%</strong>
+                                <span>Allowance used</span>
+                                <small>{{ $capacity['authoritative'] ?? '—' }} of {{ $capacity['allowance'] ?? '—' }}</small>
+                            @elseif ($capacity['measurement_available'] ?? false)
+                                <strong>{{ $capacity['authoritative'] ?? '—' }}</strong>
+                                <span>Authoritative used</span>
+                                <small>No operator allowance configured</small>
+                            @else
+                                <strong>—</strong>
+                                <span>{{ ($capacity['status'] ?? null) === 'not_measured' ? 'Measure storage' : 'Measurement unavailable' }}</span>
+                                <small>Refresh once to load current storage data</small>
+                            @endif
+                        </div>
+                    </template>
                 </div>
             </div>
 
             <div class="admin-storage__capacity-copy">
-                <p class="admin-storage__eyebrow">Capacity</p>
-                <strong>{{ $capacity['authoritative'] ?? '—' }} authoritative</strong>
-                <span>
-                    @if (($capacity['status'] ?? null) === 'not_measured')
-                        Refresh when you need a current authoritative measurement
-                    @elseif ($capacity['configured'] ?? false)
-                        {{ $capacity['remaining'] ?? '—' }} remaining of {{ $capacity['allowance'] ?? '—' }}
-                    @else
-                        No operator allowance configured
-                    @endif
-                </span>
+                @if (($capacity['status'] ?? null) === 'not_measured')
+                    <span>Refresh explicitly when you need an authoritative filesystem measurement.</span>
+                @elseif ($capacity['configured'] ?? false)
+                    <strong>{{ $capacity['remaining'] ?? '—' }} remaining</strong>
+                    <span>{{ $capacity['authoritative'] ?? '—' }} used of {{ $capacity['allowance'] ?? '—' }}</span>
+                @else
+                    <strong>{{ $capacity['authoritative'] ?? '—' }} authoritative</strong>
+                    <span>No operator allowance configured</span>
+                @endif
                 <small>{{ $capacity['generated'] ?? '—' }} generated · rebuildable and excluded from allowance</small>
                 <div class="admin-storage__capacity-actions">
                     <button class="admin-action" type="button" wire:click="refreshStorageMeasurement">Refresh measurement</button>
@@ -56,28 +170,42 @@
         <div class="admin-storage__distribution">
             <div class="admin-storage__visual-heading">
                 <div>
-                    <p class="admin-storage__eyebrow">Distribution</p>
-                    <strong>Originals by actual use</strong>
+                    <p class="admin-storage__eyebrow">Destinations</p>
+                    <strong x-text="selectedRow()?.label ?? 'Largest destinations'">Largest destinations</strong>
+                    <small x-text="selectedMeta()">Largest measured destinations</small>
+                </div>
+                <div class="admin-storage__visual-actions" x-show="selectedRow()" x-cloak>
+                    <button class="admin-action" type="button" x-on:click="selected = null">All</button>
+                    <template x-if="selectedRow()?.usage_filter">
+                        <button
+                            class="admin-action"
+                            type="button"
+                            x-on:click="$wire.set('usage', selectedRow().usage_filter)"
+                        >Filter library</button>
+                    </template>
                 </div>
             </div>
 
-            <div class="admin-storage__segments" aria-label="Authoritative storage distribution">
-                @forelse ($storageBreakdown as $row)
-                    <div class="admin-storage__segment">
-                        <span class="admin-storage__segment-label">
-                            <strong>{{ $row['label'] }}</strong>
-                            <small>{{ number_format($row['files']) }} {{ $row['files'] === 1 ? 'original' : 'originals' }}</small>
+            <div class="admin-storage__target-plot" aria-live="polite">
+                <template x-for="target in visibleTargets()" x-bind:key="target.key">
+                    <div class="admin-storage__target-row">
+                        <span class="admin-storage__target-label">
+                            <strong x-text="target.label"></strong>
+                            <small x-text="`${Number(target.files) || 0} ${(Number(target.files) || 0) === 1 ? 'original' : 'originals'}`"></small>
                         </span>
-                        <span class="admin-storage__segment-track" aria-hidden="true">
-                            <i style="width: {{ min(100, max(0, $row['percent'])) }}%"></i>
+                        <span class="admin-storage__target-track" aria-hidden="true">
+                            <i x-bind:style="`width: ${targetWidth(target.bytes)}%`"></i>
                         </span>
-                        <span class="admin-storage__segment-value">{{ $row['display_bytes'] }} · {{ number_format($row['percent'], 1) }}%</span>
+                        <strong class="admin-storage__target-value" x-text="target.display_bytes"></strong>
                     </div>
-                @empty
-                    <p class="admin-storage__empty">
-                        {{ ($capacity['status'] ?? null) === 'not_measured' ? 'Refresh the storage measurement to load the authoritative distribution.' : 'No authoritative originals are currently measurable.' }}
-                    </p>
-                @endforelse
+                </template>
+
+                <div class="admin-storage__target-empty" x-show="visibleTargets().length === 0" x-cloak>
+                    <p x-text="emptyDetail()"></p>
+                    <template x-if="selectedRow()">
+                        <strong x-text="`${selectedRow().display_bytes} · ${Number(selectedRow().files) || 0} ${(Number(selectedRow().files) || 0) === 1 ? 'original' : 'originals'}`"></strong>
+                    </template>
+                </div>
             </div>
 
             <div class="admin-storage__attention" aria-label="Storage attention">
@@ -92,6 +220,13 @@
                     <div class="admin-storage__attention-row is-warning">
                         <span>Uncatalogued originals</span>
                         <strong>{{ number_format($storageAttention['uncatalogued_files']) }} · {{ $storageAttention['uncatalogued_display_bytes'] }}</strong>
+                    </div>
+                @endif
+
+                @if (is_array($storageAttention['largest_gallery'] ?? null))
+                    <div class="admin-storage__attention-row">
+                        <span>Largest gallery</span>
+                        <strong title="{{ $storageAttention['largest_gallery']['label'] }}">{{ $storageAttention['largest_gallery']['label'] }} · {{ $storageAttention['largest_gallery']['display_bytes'] }}</strong>
                     </div>
                 @endif
 
