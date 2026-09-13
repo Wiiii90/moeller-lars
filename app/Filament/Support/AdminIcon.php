@@ -37,6 +37,7 @@ enum AdminIcon: string
     case Detach = 'heroicon-o-link-slash';
     case Inspect = 'heroicon-o-magnifying-glass-plus';
     case Upload = 'heroicon-o-arrow-up-tray';
+    case Refresh = 'heroicon-o-arrow-path';
     case AddFromLibrary = 'heroicon-o-plus-circle';
     case MoveBetween = 'heroicon-o-arrows-right-left';
     case MoveUp = 'heroicon-o-arrow-up';
