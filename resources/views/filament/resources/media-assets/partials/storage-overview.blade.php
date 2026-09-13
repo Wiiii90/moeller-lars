@@ -156,26 +156,24 @@
         <div class="admin-storage__capacity-group">
             <div class="admin-storage__visual-heading">
                 <p class="admin-storage__eyebrow">Capacity</p>
+                <button
+                    class="admin-icon-action"
+                    type="button"
+                    wire:click="refreshStorageMeasurement"
+                    wire:loading.attr="disabled"
+                    wire:target="refreshStorageMeasurement"
+                    aria-label="Refresh storage measurement"
+                    title="Refresh storage measurement"
+                >
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" />
+                </button>
             </div>
 
             <x-admin.storage-capacity-visual
                 :capacity="$capacity"
                 :breakdown="$storageBreakdown"
-                interactive
+                linked
             />
-
-            <div class="admin-storage__capacity-copy">
-                @if (($capacity['configured'] ?? false) && ($capacity['measurement_available'] ?? false))
-                    <strong>{{ $capacity['percent'] ?? '—' }}% used</strong>
-                    <span>{{ $capacity['remaining'] ?? '—' }} remaining</span>
-                @elseif ($capacity['measurement_available'] ?? false)
-                    <strong>{{ $capacity['authoritative'] ?? '—' }} authoritative</strong>
-                @else
-                    <span>Measure once to load the current storage snapshot.</span>
-                @endif
-                <small>{{ $capacity['generated'] ?? '—' }} generated · excluded from allowance</small>
-                <button class="admin-action admin-storage__refresh" type="button" wire:click="refreshStorageMeasurement">Refresh</button>
-            </div>
         </div>
     </div>
 
