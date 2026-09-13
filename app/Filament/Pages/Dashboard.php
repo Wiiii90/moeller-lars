@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Admin\DashboardFeed;
+use App\Domain\Admin\DashboardFeedPins;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\DashboardOverview;
 use App\Models\User;
@@ -127,6 +128,16 @@ final class Dashboard extends Page
         $this->mountAction('feedEntry', ['key' => $key]);
     }
 
+    public function toggleFeedPin(string $key): void
+    {
+        app(DashboardFeedPins::class)->toggle($key);
+    }
+
+    public function reorderPinnedFeed(string $key, int $position): void
+    {
+        app(DashboardFeedPins::class)->move($key, $position);
+    }
+
     public function markFeedRead(string $key): void
     {
         if ($this->mutableFeedEntry($key) === null) {
@@ -234,6 +245,7 @@ final class Dashboard extends Page
 
     public function deleteContactMessage(int $contactMessageId): void
     {
+        app(DashboardFeedPins::class)->forget('contact:'.$contactMessageId);
         app(DashboardFeed::class)->deleteContact($contactMessageId);
 
         Notification::make()
@@ -251,6 +263,7 @@ final class Dashboard extends Page
 
     public function deleteNotification(int $notificationId): void
     {
+        app(DashboardFeedPins::class)->forget('notification:'.$notificationId);
         app(DashboardFeed::class)->deleteNotification($notificationId);
         $this->feedPage = $this->feedPagination()['page'];
     }
@@ -284,7 +297,7 @@ final class Dashboard extends Page
 
         return [
             ...$overview,
-            'feed' => $feedPagination['items'],
+            'feed' => $this->feedViewItems($feedPagination),
             'feedTypes' => DashboardFeed::types(),
             'feedPagination' => $feedPagination,
             'notificationFilters' => self::NOTIFICATION_FILTERS,
@@ -308,10 +321,50 @@ final class Dashboard extends Page
         );
     }
 
+    /**
+     * Pinned entries are a user-owned priority list shown before the current
+     * chronological page. A pinned entry is removed from its duplicate position
+     * when it also falls inside the current page window.
+     *
+     * @param array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int} $pagination
+     * @return list<array<string,mixed>>
+     */
+    private function feedViewItems(array $pagination): array
+    {
+        $pinned = app(DashboardFeedPins::class)->entries(
+            $this->feedSearch,
+            $this->feedType,
+            $this->notificationFilter,
+        );
+        $pinnedKeys = collect($pinned)->pluck('key')->map(static fn (mixed $key): string => (string) $key)->all();
+
+        $priorityItems = array_map(static function (array $item): array {
+            $item['feed_position'] = null;
+
+            return $item;
+        }, $pinned);
+
+        $chronologicalItems = [];
+        foreach ($pagination['items'] as $index => $item) {
+            if (in_array((string) $item['key'], $pinnedKeys, true)) {
+                continue;
+            }
+
+            $item['pinned'] = false;
+            $item['pin_position'] = null;
+            $item['feed_position'] = $pagination['start'] + $index;
+            $chronologicalItems[] = $item;
+        }
+
+        return [...$priorityItems, ...$chronologicalItems];
+    }
+
     /** @return list<string> */
     private function currentSelectableFeedKeys(): array
     {
-        return collect($this->feedPagination()['items'])
+        $pagination = $this->feedPagination();
+
+        return collect($this->feedViewItems($pagination))
             ->filter(fn (array $item): bool => $this->isMutableFeedEntry($item))
             ->pluck('key')
             ->filter(fn (mixed $key): bool => is_string($key) && $key !== '')
@@ -337,6 +390,11 @@ final class Dashboard extends Page
     private function deleteProjectedFeedEntry(array $entry): void
     {
         $feed = app(DashboardFeed::class);
+        $key = is_string($entry['key'] ?? null) ? $entry['key'] : '';
+        if ($key !== '') {
+            app(DashboardFeedPins::class)->forget($key);
+        }
+
         $contactId = $entry['contact_id'] ?? null;
         if (is_int($contactId)) {
             $feed->deleteContact($contactId);
