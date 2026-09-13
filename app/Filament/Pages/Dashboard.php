@@ -368,18 +368,32 @@ final class Dashboard extends Page
     private function feedEntryHeaderActions(array $arguments): array
     {
         $entry = $this->feedEntry($arguments);
+        if (! $this->isMutableFeedEntry($entry)) {
+            return [];
+        }
+
+        $key = (string) $entry['key'];
+        $isRead = str_starts_with((string) $entry['status'], 'Read');
+        $readAction = Action::make($isRead ? 'markFeedUnread' : 'markFeedRead')
+            ->label($isRead ? 'Mark unread' : 'Mark read')
+            ->icon(($isRead ? AdminIcon::MarkUnread : AdminIcon::MarkRead)->value)
+            ->iconButton()
+            ->tooltip($isRead ? 'Mark unread' : 'Mark read')
+            ->color('gray')
+            ->action(function () use ($key, $isRead): void {
+                if ($isRead) {
+                    $this->markFeedUnread($key);
+
+                    return;
+                }
+
+                $this->markFeedRead($key);
+            });
+
         $contactId = $entry['contact_id'] ?? null;
         if (is_int($contactId)) {
             return [
-                Action::make('markContactUnread')
-                    ->label('Mark unread')
-                    ->icon(AdminIcon::MarkUnread->value)
-                    ->iconButton()
-                    ->tooltip('Mark unread')
-                    ->color('gray')
-                    ->action(function () use ($contactId): void {
-                        $this->markContactUnread($contactId);
-                    }),
+                $readAction,
                 Action::make('deleteContactMessage')
                     ->label('Delete')
                     ->icon(AdminIcon::Delete->value)
@@ -399,19 +413,11 @@ final class Dashboard extends Page
 
         $notificationId = $entry['notification_id'] ?? null;
         if (! is_int($notificationId)) {
-            return [];
+            return [$readAction];
         }
 
         return [
-            Action::make('markNotificationUnread')
-                ->label('Mark unread')
-                ->icon(AdminIcon::MarkUnread->value)
-                ->iconButton()
-                ->tooltip('Mark unread')
-                ->color('gray')
-                ->action(function () use ($notificationId): void {
-                    $this->markNotificationUnread($notificationId);
-                }),
+            $readAction,
             Action::make('deleteNotification')
                 ->label('Delete')
                 ->icon(AdminIcon::Delete->value)
