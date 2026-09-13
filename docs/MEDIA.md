@@ -37,6 +37,8 @@ Format/safety ceilings are configured in bytes:
 
 The artist-facing Storage workspace deliberately separates normal navigation from authoritative filesystem measurement. Normal navigation consumes an existing bounded display snapshot only. An explicit Storage measurement refresh, and file mutations that need fresh capacity state, may perform the authoritative filesystem walk. Upload admission remains independently authoritative.
 
+The dedicated local-preview image supplies a 5,000,000,000-byte allowance so capacity behavior can be evaluated locally without creating a production/application default. Production remains operator-controlled.
+
 ## Canonical original and variants
 
 For every `MediaAsset`, authoritative technical identity includes generated storage key, content-derived MIME, byte size and SHA-256.
@@ -151,9 +153,16 @@ Canonical behavior:
 
 - the Storage status reflects authoritative capacity state, not merely library readiness;
 - six top metrics combine library counts with capacity state;
-- the shared Visual Stage uses three metric-aligned thirds for capacity, authoritative-use distribution/attention, and direct upload;
+- the shared Visual Stage remains three metric-aligned thirds: interactive capacity/use visualization, destination drilldown/attention, and direct upload;
+- the outer capacity ring shows authoritative originals against the configured allowance while the inner donut partitions the measured originals by their exclusive actual-use area;
+- donut segments are mouse- and keyboard-selectable; selection changes the center readout and the middle destination plot without causing a filesystem measurement;
+- the middle plot uses the already-computed non-exclusive target breakdown, so a shared original may contribute to more than one concrete destination there while still contributing exactly once to the donut;
+- exact area-to-library mappings may expose `Filter library`; `shared` and `uncatalogued` deliberately do not pretend to be normal MediaAsset filters;
+- attention retains integrity/context signals such as unused originals, uncatalogued originals, largest gallery and largest original when available;
 - authoritative storage analysis starts from measured originals, not only `MediaAsset` rows, so uncatalogued originals remain detectable;
 - the media library remains the operational surface for search, type/usage/status filtering, list/grid/dense views, selection, preview, download, metadata editing and deletion;
+- the persistent `Add Media File` row and the Stage dropzone both invoke the same native file input and canonical direct-ingest path;
+- a newly accepted upload reloads the library on page one under newest-first ordering; active filters may intentionally keep a new file out of view;
 - direct upload uses the canonical ingest/quota policy;
 - authenticated image/video/audio preview/player behavior remains available;
 - thumbnails/variants remain bounded and expensive original access stays on demand;
@@ -162,7 +171,7 @@ Canonical behavior:
 
 Legacy `/admin/media-files` and `/admin/media-assets` URLs are compatibility redirects only; they are not separate workspaces.
 
-Do not resurrect stale Journal role constants, consumer-specific ad-hoc parsers, or a second storage/media table beside the canonical Storage library.
+Do not resurrect the removed `StorageCapacity` Filament page, its duplicate table/filter model, stale Journal role constants, consumer-specific ad-hoc parsers, or a second storage/media table beside the canonical Storage library.
 
 ## Performance
 
@@ -170,7 +179,7 @@ Storage list/reference rendering must remain bounded.
 
 `MediaReferenceCatalog` may aggregate references across structured/Rich Text consumers, but expensive global content scans should be treated as a real performance concern if browser measurements show they slow normal Storage navigation. Request-local caching can reduce repetition but is not evidence that a broad scan is cheap.
 
-Normal Storage navigation must not trigger an authoritative recursive filesystem walk. The capacity stage uses an already-cached display snapshot; explicit measurement refresh and file-mutating operations are the allowed expensive boundaries.
+Normal Storage navigation, library filtering, donut selection and destination drilldown must not trigger an authoritative recursive filesystem walk. The capacity stage uses an already-cached display snapshot; explicit measurement refresh and file-mutating operations are the allowed expensive boundaries.
 
 Do not dismiss source-side media-reference/preload latency merely because local Docker amplifies it. See [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md).
 
@@ -193,6 +202,8 @@ Durable verification covers:
 - public/preview policy separation;
 - reference-aware deletion;
 - cleanup failure semantics;
-- uncatalogued authoritative-original detection.
+- uncatalogued authoritative-original detection;
+- exclusive area accounting and non-exclusive concrete destination drilldown;
+- bounded Storage reference projection.
 
 `php artisan media:verify` is the release/recovery integrity check. See [RELEASE.md](RELEASE.md).
