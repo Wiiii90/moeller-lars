@@ -1,6 +1,7 @@
 /* Storage-specific content inside the shared Visual Stage geometry. */
 
-.admin-storage {
+.admin-storage,
+.admin-storage-capacity {
     --storage-color-galleries: #b45309;
     --storage-color-journal: #3f6f92;
     --storage-color-cv: #76558f;
@@ -11,10 +12,11 @@
     --storage-color-shared: #a15578;
     --storage-color-unassigned: #8b6a38;
     --storage-color-uncatalogued: var(--admin-danger);
-    --storage-color-remaining: color-mix(in srgb, var(--admin-line) 78%, var(--admin-subtle));
+    --storage-color-remaining: color-mix(in srgb, var(--admin-line) 42%, var(--admin-subtle));
 }
 
-.dark .admin-storage {
+.dark .admin-storage,
+.dark .admin-storage-capacity {
     --storage-color-galleries: #d68a2f;
     --storage-color-journal: #70a3c4;
     --storage-color-cv: #aa8bc0;
@@ -25,7 +27,7 @@
     --storage-color-shared: #cc86a5;
     --storage-color-unassigned: #b89a67;
     --storage-color-uncatalogued: var(--admin-danger);
-    --storage-color-remaining: color-mix(in srgb, var(--admin-line) 72%, transparent);
+    --storage-color-remaining: color-mix(in srgb, var(--admin-line) 56%, transparent);
 }
 
 .admin-storage__visual-main,
@@ -89,13 +91,6 @@
     gap: .75rem;
     align-items: center;
     justify-content: space-between;
-}
-
-.admin-storage__visual-actions {
-    display: flex;
-    gap: .3rem;
-    align-items: center;
-    flex: 0 0 auto;
 }
 
 .admin-storage__eyebrow {
@@ -305,117 +300,129 @@
     color: var(--admin-accent-strong);
 }
 
-.admin-storage__capacity-plot {
-    position: relative;
+/* Shared Storage/Dashboard capacity visual. The whole disk is the configured
+ * allowance; neutral area is free capacity and colored wedges are actual use. */
+.admin-storage-capacity {
     display: grid;
     width: min(100%, 14rem);
+    min-width: 0;
     min-height: 0;
-    aspect-ratio: 1;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: .35rem;
     place-self: center;
-    place-items: center;
+    align-items: center;
+    justify-items: center;
 }
 
-.admin-storage__donut {
+.admin-storage-capacity__pie {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: min(100%, 12.75rem);
+    max-height: 100%;
+    aspect-ratio: 1;
     overflow: visible;
 }
 
-.admin-storage__capacity-base {
+.admin-storage-capacity__remaining {
+    fill: var(--storage-color-remaining);
+}
+
+.admin-storage-capacity__outline {
     fill: none;
-    stroke: var(--storage-color-remaining);
-    stroke-width: 13.5;
+    stroke: var(--admin-line-strong);
+    stroke-width: .8;
     vector-effect: non-scaling-stroke;
 }
 
-.admin-storage__usage-segment {
-    stroke: color-mix(in srgb, var(--admin-line) 54%, transparent);
-    stroke-width: .7;
+.admin-storage-capacity__tick {
+    stroke: var(--admin-faint);
+    stroke-width: 1;
     vector-effect: non-scaling-stroke;
-    cursor: pointer;
+}
+
+.admin-storage-capacity__segment {
+    stroke: var(--admin-surface);
+    stroke-width: 1.2;
+    vector-effect: non-scaling-stroke;
     transform: translate(0, 0);
     transform-box: fill-box;
     transform-origin: center;
     transition: opacity .16s ease, transform .18s ease, filter .16s ease;
 }
 
-.admin-storage__usage-segment:hover,
-.admin-storage__usage-segment:focus-visible {
+.admin-storage-capacity__segment[role="button"] {
+    cursor: pointer;
+}
+
+.admin-storage-capacity__segment[role="button"]:hover,
+.admin-storage-capacity__segment[role="button"]:focus-visible {
     filter: brightness(.93);
     outline: none;
 }
 
-.dark .admin-storage__usage-segment:hover,
-.dark .admin-storage__usage-segment:focus-visible {
+.dark .admin-storage-capacity__segment[role="button"]:hover,
+.dark .admin-storage-capacity__segment[role="button"]:focus-visible {
     filter: brightness(1.12);
 }
 
-.admin-storage__usage-segment.is-selected {
+.admin-storage-capacity__segment.is-selected {
     filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--admin-text) 18%, transparent));
     transform: translate(var(--storage-slice-x), var(--storage-slice-y));
 }
 
-.admin-storage__usage-segment.is-muted {
+.admin-storage-capacity__segment.is-muted {
     opacity: .22;
 }
 
-.admin-storage__usage-segment--galleries { fill: var(--storage-color-galleries); }
-.admin-storage__usage-segment--journal { fill: var(--storage-color-journal); }
-.admin-storage__usage-segment--cv { fill: var(--storage-color-cv); }
-.admin-storage__usage-segment--home { fill: var(--storage-color-home); }
-.admin-storage__usage-segment--custom-pages { fill: var(--storage-color-custom-pages); }
-.admin-storage__usage-segment--site-identity { fill: var(--storage-color-site-identity); }
-.admin-storage__usage-segment--referenced { fill: var(--storage-color-referenced); }
-.admin-storage__usage-segment--shared { fill: var(--storage-color-shared); }
-.admin-storage__usage-segment--unassigned { fill: var(--storage-color-unassigned); }
-.admin-storage__usage-segment--uncatalogued { fill: var(--storage-color-uncatalogued); }
+.admin-storage-capacity__segment--used { fill: var(--admin-accent); }
+.admin-storage-capacity__segment--galleries { fill: var(--storage-color-galleries); }
+.admin-storage-capacity__segment--journal { fill: var(--storage-color-journal); }
+.admin-storage-capacity__segment--cv { fill: var(--storage-color-cv); }
+.admin-storage-capacity__segment--home { fill: var(--storage-color-home); }
+.admin-storage-capacity__segment--custom-pages { fill: var(--storage-color-custom-pages); }
+.admin-storage-capacity__segment--site-identity { fill: var(--storage-color-site-identity); }
+.admin-storage-capacity__segment--referenced { fill: var(--storage-color-referenced); }
+.admin-storage-capacity__segment--shared { fill: var(--storage-color-shared); }
+.admin-storage-capacity__segment--unassigned { fill: var(--storage-color-unassigned); }
+.admin-storage-capacity__segment--uncatalogued { fill: var(--storage-color-uncatalogued); }
 
-.admin-storage__capacity-core {
-    position: absolute;
-    inset: 30%;
+.admin-storage-capacity__readout {
     display: grid;
     min-width: 0;
-    place-items: center;
-    pointer-events: none;
+    gap: .08rem;
+    justify-items: center;
+    color: var(--admin-muted);
+    font-size: .6rem;
+    line-height: 1.3;
     text-align: center;
 }
 
-.admin-storage__capacity-core > div {
-    display: grid;
-    width: 100%;
-    min-width: 0;
-    gap: .2rem;
-    justify-items: center;
-}
-
-.admin-storage__capacity-core strong,
-.admin-storage__capacity-core span,
-.admin-storage__capacity-core small {
-    display: block;
-    max-width: 100%;
-    overflow-wrap: anywhere;
-}
-
-.admin-storage__capacity-core strong {
+.admin-storage-capacity__readout strong {
     color: var(--admin-text);
-    font-size: clamp(.98rem, 1.65vw, 1.45rem);
-    font-weight: 560;
-    letter-spacing: -.03em;
-    line-height: 1.05;
-}
-
-.admin-storage__capacity-core span {
-    color: var(--admin-text);
-    font-size: .64rem;
+    font-size: .78rem;
     font-weight: 600;
-    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
 }
 
-.admin-storage__capacity-core small {
-    color: var(--admin-muted);
+.admin-storage-capacity__readout span,
+.admin-storage-capacity__readout small {
+    white-space: nowrap;
+}
+
+.admin-storage-capacity.is-compact {
+    width: min(100%, 10rem);
+    gap: .2rem;
+}
+
+.admin-storage-capacity.is-compact .admin-storage-capacity__pie {
+    width: min(100%, 8.25rem);
+}
+
+.admin-storage-capacity.is-compact .admin-storage-capacity__readout strong {
+    font-size: .72rem;
+}
+
+.admin-storage-capacity.is-compact .admin-storage-capacity__readout {
     font-size: .56rem;
-    line-height: 1.25;
 }
 
 .admin-storage__capacity-copy {
@@ -446,30 +453,6 @@
 
 .admin-storage .media-workspace__library {
     --media-task-surface-header-height: 2.25rem;
-}
-
-/* The shared add-row owns the single thin separator on each edge. Storage's
- * table/pager borders yield exactly at those two adjacencies. */
-.admin-storage .media-workspace__table-wrap + .admin-add-row {
-    border-top: 0;
-}
-
-.admin-storage .admin-add-row + .media-workspace__pager {
-    border-top: 0;
-}
-
-/* Storage keeps the shared add-row primitive but uses the compact table density
- * so the insert affordance does not become a second oversized task surface. */
-.admin-storage .admin-add-row--compact {
-    min-height: 2.35rem;
-    padding-block: .22rem;
-}
-
-.admin-storage .admin-add-row--compact .admin-add-row__mark {
-    width: 1.5rem;
-    height: 1.5rem;
-    flex-basis: 1.5rem;
-    font-size: .9rem;
 }
 
 .admin-storage .media-workspace__table .admin-action {
@@ -526,7 +509,7 @@
         padding-left: 0;
     }
 
-    .admin-storage__capacity-plot {
+    .admin-storage-capacity {
         width: min(100%, 13.25rem);
     }
 
@@ -540,7 +523,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .admin-storage__usage-segment,
+    .admin-storage-capacity__segment,
     .admin-storage__target-track i {
         transition: none;
     }
