@@ -27,6 +27,10 @@ function readConfig(element) {
     }
 }
 
+function chartSurface(element) {
+    return element.querySelector(':scope > [data-admin-viz-surface]') || element;
+}
+
 function resolveCssColor(element, variable, fallback) {
     const probe = document.createElement('span');
     probe.style.cssText = `position:absolute;pointer-events:none;opacity:0;color:var(${variable}, ${fallback})`;
@@ -239,7 +243,6 @@ function storageOption(element, config, state) {
                 center: ['50%', '53%'],
                 radius: '86%',
                 axisLine: {
-                    roundCap: true,
                     lineStyle: {
                         width: 20,
                         color: storageAxisColors(config, colors, state.selected),
@@ -534,17 +537,25 @@ function mountElement(element) {
     const config = readConfig(element);
     if (! config) return;
 
+    const surface = chartSurface(element);
     const signature = JSON.stringify(config);
     const existing = instances.get(element);
     const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 
-    if (existing && existing.signature === signature && existing.theme === theme) return;
+    if (
+        existing
+        && existing.signature === signature
+        && existing.theme === theme
+        && existing.surface === surface
+    ) return;
+
     if (existing) disposeElement(element);
 
-    const chart = echarts.init(element, null, { renderer: 'svg' });
+    const chart = echarts.init(surface, null, { renderer: 'svg' });
     const state = { selected: config.selected || null };
     const entry = {
         chart,
+        surface,
         config,
         signature,
         theme,
@@ -569,7 +580,7 @@ function mountElement(element) {
     }
 
     entry.resizeObserver = new ResizeObserver(() => chart.resize());
-    entry.resizeObserver.observe(element);
+    entry.resizeObserver.observe(surface);
     instances.set(element, entry);
 }
 
