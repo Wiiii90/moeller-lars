@@ -121,8 +121,8 @@
 }
 
 /* Pages uses the same six visual units as its metrics. The first two units
- * contain Position/Drag + Name + Status, Page Type and Template each own one
- * full unit, and Actions + trailing Selection own the final two units. */
+ * contain Position/Drag + Name, Page Type and Template each own one full unit,
+ * and Actions + trailing Selection own the final two units. */
 .admin-hierarchy--pages .admin-pages__header,
 .admin-hierarchy--pages .admin-pages__row {
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -138,7 +138,7 @@
     display: grid;
     min-width: 0;
     grid-column: span 2;
-    grid-template-columns: 3.25rem 2rem minmax(0, 1fr) 6.5rem;
+    grid-template-columns: 3.25rem 2rem minmax(0, 1fr);
     gap: .45rem;
     align-items: center;
 }
@@ -381,7 +381,7 @@
     }
 
     .admin-pages__primary-grid {
-        grid-template-columns: 3.1rem 1.8rem minmax(0, 1fr) 5.8rem;
+        grid-template-columns: 3.1rem 1.8rem minmax(0, 1fr);
         gap: .3rem;
     }
 
