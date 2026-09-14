@@ -29,6 +29,19 @@ enum SiteNodeType: string
         return self::creatableOptions();
     }
 
+    /** @return array<string, string> */
+    public static function compactOptions(): array
+    {
+        $options = [];
+        foreach (self::cases() as $type) {
+            if ($type->isCreatable()) {
+                $options[$type->value] = $type->compactLabel();
+            }
+        }
+
+        return $options;
+    }
+
     public function label(?JournalTemplate $journalTemplate = null): string
     {
         if ($this === self::Journal && $journalTemplate !== null) {
@@ -40,7 +53,16 @@ enum SiteNodeType: string
             self::Gallery => 'Gallery',
             self::Journal => 'Journal',
             self::CustomPage => 'Custom Page',
-            self::NavigationNode => 'Navigation Group',
+            self::NavigationNode => 'Group Node',
+        };
+    }
+
+    public function compactLabel(): string
+    {
+        return match ($this) {
+            self::CustomPage => 'Custom',
+            self::NavigationNode => 'Group',
+            default => $this->label(),
         };
     }
 
