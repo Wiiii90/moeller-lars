@@ -1,6 +1,7 @@
 @props([
     'capacity',
     'breakdown' => [],
+    'segments' => [],
     'compact' => false,
 ])
 
@@ -12,6 +13,10 @@
     $configured = (bool) ($capacity['configured'] ?? false);
     $rows = array_values(array_filter(
         is_array($breakdown) ? $breakdown : [],
+        static fn (mixed $row): bool => is_array($row) && (int) ($row['bytes'] ?? 0) > 0,
+    ));
+    $segmentRows = array_values(array_filter(
+        is_array($segments) ? $segments : [],
         static fn (mixed $row): bool => is_array($row) && (int) ($row['bytes'] ?? 0) > 0,
     ));
     $vizConfig = [
@@ -32,6 +37,18 @@
                 'percent' => (float) ($row['percent'] ?? 0),
             ],
             $rows,
+        ),
+        'segments' => array_map(
+            static fn (array $row): array => [
+                'key' => (string) ($row['key'] ?? 'referenced'),
+                'label' => (string) ($row['label'] ?? 'Referenced'),
+                'area' => (string) ($row['area'] ?? 'referenced'),
+                'area_label' => (string) ($row['area_label'] ?? 'Referenced'),
+                'bytes' => (int) ($row['bytes'] ?? 0),
+                'display_bytes' => (string) ($row['display_bytes'] ?? '—'),
+                'files' => (int) ($row['files'] ?? 0),
+            ],
+            $segmentRows,
         ),
     ];
 @endphp
