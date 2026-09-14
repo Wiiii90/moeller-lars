@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Admin\DashboardNotificationRetention;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,6 +16,16 @@ final class AdminNotification extends Model
         'body',
         'read_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(static function (AdminNotification $notification): void {
+            $userId = (int) $notification->getAttribute('user_id');
+            if ($userId > 0) {
+                app(DashboardNotificationRetention::class)->pruneFor($userId);
+            }
+        });
+    }
 
     protected function casts(): array
     {
