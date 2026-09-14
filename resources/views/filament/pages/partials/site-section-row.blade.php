@@ -39,12 +39,6 @@
                 <strong>{{ $label }}</strong>
             @endif
         </div>
-
-        <div class="admin-pages__status" role="cell" data-cell="status">
-            <span class="admin-status {{ $section['state'] === 'published' ? 'is-published' : 'is-unpublished' }}">
-                {{ $section['state'] === 'published' ? 'Published' : 'Unpublished' }}
-            </span>
-        </div>
     </div>
 
     <div class="admin-pages__type" role="cell" data-cell="page-type">
