@@ -155,7 +155,7 @@
 .admin-detail-dialog__meta > div:last-child { padding-right: 0; border-right: 0; }
 
 .admin-detail-dialog dt,
-.admin-detail-dialog__message > span {
+.admin-detail-dialog__field > span {
     color: var(--admin-muted);
     font-size: .65rem;
     font-weight: 700;
@@ -191,18 +191,24 @@
     line-height: 1.45;
 }
 
-.admin-detail-dialog__message {
+.admin-detail-dialog__field {
     display: grid;
     gap: .35rem;
 }
 
-.admin-detail-dialog__message p {
+.admin-detail-dialog__field p {
     margin: 0;
     color: var(--admin-text);
     font-size: .82rem;
     line-height: 1.65;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+}
+
+.admin-detail-dialog__field:first-of-type p {
+    font-size: .9rem;
+    font-weight: 620;
+    line-height: 1.45;
 }
 
 .admin-detail-dialog__link {
