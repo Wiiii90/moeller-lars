@@ -188,7 +188,6 @@
     padding-inline: .1rem;
     justify-content: flex-start !important;
     overflow: hidden;
-    font-size: .65rem;
 }
 
 .admin-pages__row-actions .admin-action--state {
@@ -387,7 +386,6 @@
 
     .admin-pages__row-actions .admin-action {
         padding-inline: .06rem;
-        font-size: .63rem;
     }
 }
 
