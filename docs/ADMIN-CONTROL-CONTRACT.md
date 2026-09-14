@@ -28,13 +28,15 @@ The factory returns native Filament fields. Filament continues to own state, val
 
 Raw core Filament fields are allowed only when a field cannot be represented by the factory or when a framework integration requires the concrete construction point. In that case call `AdminControl::decorate()` on the field so it still participates in the shared contract.
 
+The admin panel also registers the adapter globally. This protects existing schemas while they are migrated and prevents an ordinary raw Filament field from silently falling back to a second visual language. New code should still prefer the factory because it makes ownership explicit.
+
 ## Specialized canonical controls
 
 These are intentionally specialized and remain canonical:
 
 - `MediaAssetSelect` for reusable Media Files selection;
 - `ArtworkMaterialSelect` for material presets and creation;
-- `AdminRichText` for Markdown/rich text plus canonical Media Files insertion;
+- `AdminRichText` for rich text plus canonical Media Files insertion;
 - `AdminColorControl` for the General appearance color workflow.
 
 Do not create alternative media pickers, rich-text editors, material selectors or color controls for one page.
@@ -63,9 +65,21 @@ Use discrete semantic commits:
 
 Always normalize and compare with the persisted value before writing. Activity/Audit records successful writes; it is not the persistence trigger.
 
-`wire:model.live.debounce.*`, Filament `->debounce(...)`, `searchDebounce(...)`, `setTimeout`-based persistence and polling-based persistence are forbidden for saves.
+`wire:model.live.debounce.*`, Filament `->debounce(...)`, `searchDebounce(...)`, `setTimeout`-based persistence and polling-based persistence are forbidden **when they trigger writes**. Changing a timer value does not make timer-driven persistence acceptable.
 
-Search filtering is also expected to avoid timer-based debounce in the canonical admin unless a future explicit performance review establishes and documents a narrowly scoped exception.
+### Search and remote typeahead
+
+Search is not persistence. The default workspace-search pattern should still avoid timer-driven server reloads when a normal Enter/change/blur interaction gives equivalent usability.
+
+A remote searchable select may use a short debounce solely as **transport throttling** when every keystroke would otherwise issue a server request. This is an explicit exception for query traffic, not for mutation traffic. It must satisfy all of these conditions:
+
+- the callback is read-only;
+- selecting or clearing the final value is the only semantic state change;
+- the debounce does not save any record or setting;
+- removing the throttle would materially increase request fan-out;
+- the control remains keyboard accessible through Filament's normal listbox behavior.
+
+`MediaAssetSelect` and remote Hero Artwork search are examples of this typeahead case. Do not replace their throttle with `0`; that merely converts a controlled query into a request per keystroke.
 
 ## Dialog ownership
 
