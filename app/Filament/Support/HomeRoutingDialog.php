@@ -69,6 +69,21 @@ final class HomeRoutingDialog
         $this->routing->update($settings, $enabled, $enabled ? $targetId : null);
     }
 
+    /** @return array{skip_home:bool,skip_target_label:?string} */
+    public function tableState(): array
+    {
+        $settings = $this->resolver->settings();
+        $target = $this->resolver->skipTarget();
+        $targetLabel = $target instanceof SiteSection
+            ? trim((string) ($target->getAttribute('navigation_label') ?: $target->getAttribute('title')))
+            : null;
+
+        return [
+            'skip_home' => $this->routing->enabled($settings),
+            'skip_target_label' => $targetLabel !== '' ? $targetLabel : null,
+        ];
+    }
+
     /** @return array<int, string> */
     private function targetOptions(): array
     {
