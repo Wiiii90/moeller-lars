@@ -249,8 +249,14 @@
                                 @endif
                             </div>
                             <div class="media-workspace__grid-actions-right">
-                                <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>Edit</button>
-                                <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>Delete</button>
+                                <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon media-workspace__action-icon" />
+                                    <span class="admin-action__label">Edit</span>
+                                </button>
+                                <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon media-workspace__action-icon" />
+                                    <span class="admin-action__label">Delete</span>
+                                </button>
                             </div>
                         </div>
                     </article>
@@ -418,7 +424,6 @@
     @endif
 
     <x-admin.add-row
-        class="admin-add-row--data"
         type="button"
         x-on:click="document.getElementById('storage-upload')?.click()"
         aria-controls="storage-upload"
@@ -427,7 +432,15 @@
     <footer class="media-workspace__pager">
         <div
             class="media-workspace__pager-size"
-            x-data="{ open: false }"
+            x-data="{
+                open: false,
+                toggle() {
+                    this.open = ! this.open;
+                    if (this.open) {
+                        this.$nextTick(() => this.$refs.menu?.scrollIntoView({ block: 'nearest' }));
+                    }
+                },
+            }"
             x-on:click.outside="open = false"
             x-on:keydown.escape.window="open = false"
         >
@@ -436,7 +449,7 @@
                 <button
                     class="admin-pager-size-picker__trigger"
                     type="button"
-                    x-on:click="open = ! open"
+                    x-on:click="toggle()"
                     x-bind:aria-expanded="open.toString()"
                     aria-haspopup="listbox"
                     aria-label="Files per page"
@@ -446,6 +459,7 @@
                 </button>
                 <div
                     class="admin-pager-size-picker__menu"
+                    x-ref="menu"
                     role="listbox"
                     aria-label="Files per page"
                     x-show="open"
