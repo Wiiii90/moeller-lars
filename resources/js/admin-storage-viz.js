@@ -80,6 +80,13 @@ function formatBytes(value) {
     return `${amount.toFixed(decimals).replace(/\.0+$|(?<=\.[0-9])0$/, '')} ${unit}`;
 }
 
+function displayRowLabel(row) {
+    const area = row?.area || row?.key;
+    if (area === 'site-identity') return 'Site icon';
+
+    return row?.label || row?.key || 'Storage';
+}
+
 function inspectorNodes(element) {
     return {
         title: element.querySelector('[data-admin-viz-inspector-title]'),
@@ -232,7 +239,7 @@ function usedSlices(config, colors, compact) {
             displayBytes: formatBytes(bytes),
             files,
             capacityShare,
-            members: grouped.slice(0, 3).map((entry) => entry.row.label || entry.row.key),
+            members: grouped.slice(0, 3).map((entry) => displayRowLabel(entry.row)),
             itemStyle: {
                 color: colors.chart[slices.length % colors.chart.length],
                 opacity: 0.84,
@@ -254,9 +261,9 @@ function sliceFromEntry(entry, color, compact) {
 
     return {
         key: row.key,
-        name: row.label || row.key,
+        name: displayRowLabel(row),
         area,
-        areaLabel: row.area_label || row.label || area,
+        areaLabel: area === 'site-identity' ? 'Appearance' : (row.area_label || row.label || area),
         value: entry.capacityShare,
         displayBytes: row.display_bytes || formatBytes(entry.bytes),
         files: Number(row.files) || 0,
@@ -458,6 +465,7 @@ function disposeElement(element) {
     if (entry.resizeFrame !== null) window.cancelAnimationFrame(entry.resizeFrame);
     if (entry.resizeObserver) entry.resizeObserver.disconnect();
     if (! entry.chart.isDisposed()) entry.chart.dispose();
+    element.classList.remove('is-ready');
     instances.delete(element);
 }
 
@@ -482,6 +490,7 @@ function mountElement(element) {
             existing.theme = theme;
         }
         resetInspector(element, config);
+        element.classList.add('is-ready');
 
         return;
     }
@@ -509,6 +518,7 @@ function mountElement(element) {
     });
     resetInspector(element, config);
     bindInspector(element, entry);
+    element.classList.add('is-ready');
 
     entry.resizeObserver = new ResizeObserver((entries) => {
         const rect = entries[0]?.contentRect;
