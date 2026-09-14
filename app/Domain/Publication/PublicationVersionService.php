@@ -311,7 +311,7 @@ final class PublicationVersionService
 
         foreach (PublicationSnapshot::TABLES as $table) {
             $row = DB::selectOne(
-                "WITH target AS (SELECT (jsonb_populate_record(NULL::public.{$table}, version_row.payload)).* FROM publication_version_rows AS version_row WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = ?) SELECT COUNT(*)::int AS aggregate FROM public.{$table} AS working FULL OUTER JOIN target USING (id) WHERE ".PublicationSnapshot::ROW_DIFFERENCE_SQL,
+                "WITH target AS (SELECT (jsonb_populate_record(NULL::public.{$table}, version_row.payload)).* FROM publication_version_rows AS version_row WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = ?) SELECT COUNT(*)::int AS aggregate FROM public.{$table} AS working FULL OUTER JOIN target AS committed USING (id) WHERE ".PublicationSnapshot::ROW_DIFFERENCE_SQL,
                 [(int) $checkpoint->getKey(), $table],
             );
             $total += (int) ($row?->aggregate ?? 0);
