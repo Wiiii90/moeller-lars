@@ -1,6 +1,7 @@
 @php
     $summary = $publication['summary'];
     $preflight = $publication['preflight'];
+    $details = app(\App\Domain\Publication\PublicationService::class)->pendingDetails();
 @endphp
 
 <div class="admin-detail-dialog activity-publication-review">
@@ -34,6 +35,29 @@
         <div class="admin-detail-dialog__field">
             <span>What will publish</span>
             <p>No working-state changes currently differ from the live snapshot.</p>
+        </div>
+    @endif
+
+    @if ($details['rows'] !== [])
+        <div class="admin-detail-dialog__field">
+            <span>Changed records</span>
+            <div class="activity-publication-review__records">
+                @foreach ($details['rows'] as $row)
+                    <article>
+                        <div>
+                            <strong>{{ $row['label'] }}</strong>
+                            <span>{{ ucfirst($row['change']) }}</span>
+                        </div>
+                        <small>{{ $row['area'] }} · {{ $row['entity'] }} · #{{ $row['row_key'] }}</small>
+                        @if ($row['fields'] !== [])
+                            <small>Fields: {{ implode(', ', $row['fields']) }}</small>
+                        @endif
+                    </article>
+                @endforeach
+            </div>
+            @if ($details['truncated'])
+                <p class="admin-detail-dialog__context">Only the first {{ number_format(count($details['rows'])) }} changed records are shown.</p>
+            @endif
         </div>
     @endif
 
