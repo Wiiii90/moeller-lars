@@ -202,6 +202,10 @@ final class Activity extends Page
     protected function getViewData(): array
     {
         $viewMode = request()->query('view') === 'commits' ? 'commits' : 'activity';
+        if ($viewMode === 'commits') {
+            return $this->commitViewData();
+        }
+
         $area = request()->query('area');
         $family = request()->query('family');
         $search = request()->query('search');
@@ -239,17 +243,7 @@ final class Activity extends Page
             date: $activeDateValue,
             hour: $activeHour,
         );
-        $publicationContext = $activityFeed->publicationContext();
-        $liveCheckpoint = app(PublicationVersionService::class)->currentLiveCheckpoint();
-        if (is_array($publicationContext['latest']) && $liveCheckpoint instanceof PublicationCheckpoint) {
-            $publicationContext['latest']['hash'] = (string) ($liveCheckpoint->getAttribute('hash') ?? '');
-            $publicationContext['latest']['short_hash'] = $liveCheckpoint->shortHash();
-            $publicationContext['latest']['snapshot_available'] = (bool) $liveCheckpoint->getAttribute('snapshot_available');
-        }
-
-        $commitHistory = $viewMode === 'commits'
-            ? app(AdminPublicationHistory::class)->page()
-            : ['commits' => [], 'paginator' => null];
+        $publicationContext = $this->decoratePublicationContext($activityFeed->publicationContext());
 
         $calendarStart = CarbonImmutable::create($calendarYear, 1, 1)->startOfDay();
         $calendarEnd = CarbonImmutable::create($calendarYear, 12, 31)->endOfDay();
@@ -362,9 +356,9 @@ final class Activity extends Page
 
         return [
             ...$feed,
-            'viewMode' => $viewMode,
-            'commits' => $commitHistory['commits'],
-            'commitPaginator' => $commitHistory['paginator'],
+            'viewMode' => 'activity',
+            'commits' => [],
+            'commitPaginator' => null,
             'area' => $area,
             'family' => $family,
             'search' => $search,
@@ -403,6 +397,36 @@ final class Activity extends Page
                 : ($selectedLatestAt !== null ? 'Latest activity' : 'No activity'),
             'publicationContext' => $publicationContext,
         ];
+    }
+
+    /** @return array<string,mixed> */
+    private function commitViewData(): array
+    {
+        $activityFeed = app(AdminActivityFeed::class);
+        $publicationContext = $this->decoratePublicationContext($activityFeed->publicationContext());
+        $history = app(AdminPublicationHistory::class)->page();
+
+        return [
+            'viewMode' => 'commits',
+            'publicationContext' => $publicationContext,
+            'commits' => $history['commits'],
+            'commitPaginator' => $history['paginator'],
+        ];
+    }
+
+    /** @param array<string,mixed> $context
+     * @return array<string,mixed>
+     */
+    private function decoratePublicationContext(array $context): array
+    {
+        $liveCheckpoint = app(PublicationVersionService::class)->currentLiveCheckpoint();
+        if (is_array($context['latest'] ?? null) && $liveCheckpoint instanceof PublicationCheckpoint) {
+            $context['latest']['hash'] = (string) ($liveCheckpoint->getAttribute('hash') ?? '');
+            $context['latest']['short_hash'] = $liveCheckpoint->shortHash();
+            $context['latest']['snapshot_available'] = (bool) $liveCheckpoint->getAttribute('snapshot_available');
+        }
+
+        return $context;
     }
 
     private function requestedActivityDate(CarbonImmutable $today): ?CarbonImmutable
