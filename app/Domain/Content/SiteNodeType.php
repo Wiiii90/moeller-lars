@@ -102,7 +102,7 @@ enum SiteNodeType: string
 
     public function canChangePlacement(): bool
     {
-        return true;
+        return $this !== self::Home;
     }
 
     public function canChangePublication(): bool
