@@ -15,17 +15,19 @@ All sizes are capped by the current viewport gutter. Do not create page-local mo
 
 ## Chrome and actions
 
-Inspect/detail dialogs use the native Filament close control as the final control at the top right. Contextual actions sit immediately to its left and use canonical `AdminIcon` entries. Apply `admin-dialog--header-actions` when this chrome is required.
+The native Filament close control is the final control at the top right. Contextual actions sit immediately to its left and use canonical `AdminIcon` entries. Apply `admin-dialog--header-actions` when the dialog has actions beyond close/cancel.
 
-For inspect/detail dialogs:
+The common rule is:
 
-- keep the close `X` at the far right;
-- render contextual actions as icon-only controls immediately before it;
-- use central canonical icons, never local SVGs;
-- keep destructive actions last and require confirmation where appropriate;
-- do not add a redundant bottom button row when close/header actions are sufficient.
+- keep the close `X` at the far right; closing also cancels an uncommitted task;
+- place contextual actions immediately before it in semantic order, with the action nearest the `X` being the right-most action;
+- use the shared circular `admin-dialog__header-action` chrome;
+- use central canonical icons, never local SVGs or emoji;
+- keep destructive actions nearest the close control when present;
+- use a commit/check action in the header for tasks that require explicit confirmation or form submission;
+- do not add a redundant bottom action row.
 
-Form dialogs may retain explicit submit/cancel controls when the task actually requires form submission. The header-action rule is not a reason to hide necessary form semantics.
+Confirmation prompts use `admin-dialog--mini`: commit/check confirms, `X` cancels. Small settings tasks normally use `admin-dialog--small`; ordinary detail/edit dialogs use `admin-dialog--default`.
 
 ## Content
 
