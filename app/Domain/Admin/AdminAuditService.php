@@ -20,6 +20,7 @@ class AdminAuditService
         'blog_post',
         'blog_setting',
         'public_content_setting',
+        'publication_checkpoint',
     ];
 
     private const REASONS = [
@@ -52,6 +53,7 @@ class AdminAuditService
             $validReference = in_array($key, [
                 'artwork_id', 'media_asset_id', 'artwork_media_id', 'neighbor_artwork_media_id',
                 'previous_artwork_media_id', 'next_artwork_media_id', 'site_section_id',
+                'source_publication_checkpoint_id',
             ], true) && is_int($value) && $value > 0;
             $validPosition = in_array($key, ['position', 'from_position', 'to_position'], true)
                 && is_int($value) && $value >= 0;
