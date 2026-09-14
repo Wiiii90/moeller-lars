@@ -436,7 +436,7 @@
  * controls primitive. */
 .admin-storage .media-workspace__controls {
     display: grid;
-    grid-template-columns: repeat(48, minmax(0, 1fr));
+    grid-template-columns: repeat(64, minmax(0, 1fr));
     gap: .35rem;
     padding-top: 0;
     padding-bottom: var(--admin-section-gap);
@@ -449,18 +449,22 @@
     min-width: 0 !important;
 }
 
-.admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 24; }
-.admin-storage .media-workspace__controls > :nth-child(2) { grid-column: span 3; }
+.admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 32; }
+.admin-storage .media-workspace__controls > :nth-child(2) { grid-column: span 5; }
 .admin-storage .media-workspace__controls > :nth-child(3) { grid-column: span 4; }
-.admin-storage .media-workspace__controls > :nth-child(4) { grid-column: span 4; }
-.admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 4; }
-.admin-storage .media-workspace__controls > :nth-child(6) { grid-column: span 2; }
-.admin-storage .media-workspace__controls > :nth-child(7) { grid-column: span 3; }
-.admin-storage .media-workspace__controls > :nth-child(8) { grid-column: span 4; }
+.admin-storage .media-workspace__controls > :nth-child(4) { grid-column: span 5; }
+.admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 6; }
+.admin-storage .media-workspace__controls > :nth-child(6) { grid-column: span 3; }
+.admin-storage .media-workspace__controls > :nth-child(7) { grid-column: span 4; }
+.admin-storage .media-workspace__controls > :nth-child(8) { grid-column: span 5; }
 
 .admin-storage .media-workspace__controls .admin-data-field select,
 .admin-storage .media-workspace__controls .admin-data-field input {
     padding-inline: .35rem;
+}
+
+.admin-storage .media-workspace__controls .admin-data-field select {
+    white-space: nowrap;
 }
 
 .admin-storage .media-workspace__controls .admin-data-control-group > .admin-action,
@@ -543,15 +547,16 @@
 }
 
 .admin-storage .media-workspace__row-actions .admin-action {
-    display: grid;
-    width: 100%;
+    display: inline-flex;
+    width: auto;
     min-width: 0;
-    padding-inline: .4rem;
-    grid-template-columns: 1rem minmax(0, 1fr);
+    padding-inline: .35rem;
     gap: .28rem;
-    justify-content: stretch;
+    align-items: center;
+    justify-self: center;
+    justify-content: center;
     overflow: hidden;
-    text-align: left;
+    text-align: center;
 }
 
 .admin-storage .media-workspace__row-actions .admin-action__icon {
@@ -586,9 +591,8 @@
     }
 
     .admin-storage .media-workspace__row-actions .admin-action {
-        grid-template-columns: 1rem;
+        justify-self: center;
         justify-content: center;
-        justify-items: center;
     }
 }
 
