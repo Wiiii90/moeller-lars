@@ -3,6 +3,7 @@
 namespace App\Filament\Support\Dialogs;
 
 use App\Filament\Support\AdminIcon;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Support\Enums\Width;
 
@@ -62,8 +63,8 @@ final class AdminDialog
 
     public static function confirm(
         Action $action,
-        string $heading,
-        ?string $description = null,
+        string|Closure $heading,
+        string|Closure|null $description = null,
         string $submitLabel = 'Confirm',
         bool $danger = false,
         AdminDialogSize $size = AdminDialogSize::Mini,
