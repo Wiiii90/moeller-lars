@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkSelectionOrder;
+use App\Filament\Support\Dialogs\AdminDialog;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use Filament\Actions\Action;
@@ -109,7 +110,7 @@ trait GalleryWorkspaceMoveActions
 
     public function moveArtworkToGalleryAction(): Action
     {
-        return Action::make('moveArtworkToGallery')
+        $action = Action::make('moveArtworkToGallery')
             ->label('Move to Gallery')
             ->modalHeading(fn (array $arguments): string => 'Move '.$this->actionArtwork($arguments)->getAttribute('title'))
             ->schema([
@@ -121,11 +122,13 @@ trait GalleryWorkspaceMoveActions
             ->action(function (array $data, array $arguments): void {
                 $this->reassignArtworkTo((int) ($arguments['artwork'] ?? 0), (int) ($data['target_gallery_id'] ?? 0));
             });
+
+        return AdminDialog::command($action, 'Move artwork');
     }
 
     public function moveSelectedToGalleryAction(): Action
     {
-        return Action::make('moveSelectedToGallery')
+        $action = Action::make('moveSelectedToGallery')
             ->label('Move to Gallery')
             ->modalHeading('Move selected artworks')
             ->schema([
@@ -137,6 +140,8 @@ trait GalleryWorkspaceMoveActions
             ->action(function (array $data): void {
                 $this->reassignSelectedArtworksTo((int) ($data['target_gallery_id'] ?? 0));
             });
+
+        return AdminDialog::command($action, 'Move selected artworks');
     }
 
     private function reassignArtworkTo(int $artworkId, int $targetGalleryId): void
