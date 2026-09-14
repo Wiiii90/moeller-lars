@@ -1,5 +1,6 @@
 @php
     $storageTargets = is_array($storageAttention['targets'] ?? null) ? $storageAttention['targets'] : [];
+    $storageSegments = is_array($storageAttention['capacity_segments'] ?? null) ? $storageAttention['capacity_segments'] : [];
     $capacityPercent = ($capacity['percent'] ?? null) !== null
         ? min(100, max(0, (float) $capacity['percent']))
         : null;
@@ -211,6 +212,7 @@
             <x-admin.storage-capacity-visual
                 :capacity="$capacity"
                 :breakdown="$storageBreakdown"
+                :segments="$storageSegments"
             />
         </div>
     </div>
