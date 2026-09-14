@@ -19,8 +19,12 @@
     --admin-table-selection-width: 2.5rem;
 }
 
-/* Position and the persistent add affordance use one leading-square geometry.
- * This keeps ranked rows and the bottom + action on the same visual axis. */
+/* A controls row immediately followed by a table/hierarchy does not draw a
+ * second separator. The table header owns that boundary. */
+.admin-task-controls {
+    border-bottom: 0 !important;
+}
+
 .admin-position {
     min-width: var(--admin-table-leading-square);
     min-height: var(--admin-table-leading-square);
@@ -42,9 +46,6 @@
     text-align: left !important;
 }
 
-/* Six-unit alignment helpers remain valid even when the metric strip is hidden.
- * Responsive work may later replace these tokens together with deliberate
- * content reduction; metric visibility itself is not the owner. */
 .admin-table--six-grid {
     table-layout: fixed;
 }
@@ -63,9 +64,6 @@
 .admin-table__col-two-units-minus-selection { width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)); }
 .admin-table__selection-col { width: var(--admin-table-selection-width); }
 
-/* Icon + label is the desktop action form. Keeping label/icon as separate
- * elements lets a future compact breakpoint hide labels without changing DOM
- * order, button semantics or keyboard order. */
 .admin-action--with-icon {
     gap: .3rem;
 }
@@ -93,13 +91,8 @@
     gap: .25rem;
 }
 
-.admin-row-actions--three {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.admin-row-actions--four {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-}
+.admin-row-actions--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.admin-row-actions--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 .admin-row-actions--three .admin-action,
 .admin-row-actions--four .admin-action {
@@ -107,7 +100,6 @@
     justify-content: center;
 }
 
-/* Selection is deliberately a trailing utility gutter when present. */
 .admin-table__selection--trailing,
 .admin-hierarchy__selection--trailing,
 .media-workspace__selection-head--trailing,
@@ -115,8 +107,6 @@
     padding-right: var(--admin-table-edge-inset) !important;
 }
 
-/* Hierarchies use the same role order as flat tables. The shared Position
- * heading spans the Position + Drag columns; Selection is the final gutter. */
 .admin-hierarchy {
     --admin-hierarchy-position-column: max(3rem, calc((var(--admin-hierarchy-position-digits, 2) * .72rem) + 1rem));
 }
@@ -130,16 +120,165 @@
     padding-left: var(--admin-table-edge-inset);
 }
 
-.admin-hierarchy--pages {
-    --admin-hierarchy-columns:
-        var(--admin-hierarchy-position-column)
-        var(--admin-hierarchy-drag-column)
-        8.5rem
-        minmax(12rem, 1fr)
-        8.5rem
-        8rem
-        var(--admin-hierarchy-actions-column)
-        var(--admin-hierarchy-select-column);
+/* Pages uses the same six visual units as its metrics. The first two units
+ * contain Position/Drag + Page + Status, Page Type and Template each own one
+ * full unit, and Actions + trailing Selection own the final two units. */
+.admin-hierarchy--pages .admin-pages__header,
+.admin-hierarchy--pages .admin-pages__row {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    column-gap: 0;
+}
+
+.admin-pages__primary-grid {
+    display: grid;
+    min-width: 0;
+    grid-column: span 2;
+    grid-template-columns: 3.25rem 2rem minmax(0, 1fr) 6.5rem;
+    gap: .45rem;
+    align-items: center;
+}
+
+.admin-pages__utility-grid {
+    display: grid;
+    min-width: 0;
+    grid-column: span 2;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    gap: .35rem;
+    align-items: center;
+}
+
+.admin-pages__header > .admin-pages__type,
+.admin-pages__header > .admin-pages__template,
+.admin-pages__row > .admin-pages__type,
+.admin-pages__row > .admin-pages__template {
+    box-sizing: border-box;
+    min-width: 0;
+    padding-inline: .65rem;
+}
+
+.admin-pages__header .admin-pages__utility-grid > :first-child {
+    padding-left: .65rem;
+}
+
+.admin-pages__row-actions {
+    min-width: 0;
+    gap: .08rem !important;
+    padding-left: .35rem;
+}
+
+.admin-pages__row-actions .admin-action {
+    min-width: 0;
+    padding-inline: .3rem;
+    font-size: .68rem;
+}
+
+.admin-pages__row-actions .admin-action--state {
+    min-width: 0;
+}
+
+.admin-pages__action-placeholder {
+    width: 3.6rem;
+    min-width: 3.6rem;
+    height: 2rem;
+    flex: 0 0 3.6rem;
+}
+
+.admin-pages__drag-placeholder {
+    display: block;
+    width: 1.75rem;
+    height: 2rem;
+    margin-inline: auto;
+}
+
+.admin-pages__page-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.admin-pages__page-link:hover strong,
+.admin-pages__page-link:focus-visible strong {
+    color: var(--admin-accent-strong);
+}
+
+.admin-hierarchy--pages .admin-hierarchy__row.is-child .admin-hierarchy__content {
+    padding-left: 0;
+}
+
+.admin-hierarchy--pages .admin-hierarchy__row.is-child {
+    min-height: 3rem;
+}
+
+/* During a drag every eligible parent exposes a small landing seam. The seam
+ * expands only for the parent currently under the pointer, avoiding the large
+ * layout jumps caused by permanently open child drop rows. */
+.admin-pages__child-drop {
+    position: relative;
+    transition: min-height .12s ease, padding-top .12s ease, background-color .12s ease;
+}
+
+.admin-pages__child-drop.is-drop-eligible {
+    min-height: .55rem;
+}
+
+.admin-pages__child-drop.is-drop-hover {
+    min-height: 2.45rem;
+    padding-top: 2rem;
+    background: color-mix(in srgb, var(--admin-accent) 4%, transparent);
+}
+
+.admin-pages__child-drop.is-drop-hover::before {
+    position: absolute;
+    top: .28rem;
+    right: var(--admin-table-edge-inset);
+    left: var(--admin-table-edge-inset);
+    display: flex;
+    height: 1.42rem;
+    padding-inline: .5rem;
+    align-items: center;
+    border: 1px dashed color-mix(in srgb, var(--admin-accent) 58%, var(--admin-line-strong));
+    color: var(--admin-accent-strong);
+    content: attr(data-drop-label);
+    font-size: .64rem;
+    font-weight: 650;
+    letter-spacing: .02em;
+    pointer-events: none;
+}
+
+/* Pages controls use the same six-unit reference. Search + filters + Reset
+ * consume the first four metric units; Add Page and Selection own the final two. */
+.admin-task-controls--pages {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 0;
+    align-items: end;
+}
+
+.admin-task-controls--pages > * {
+    min-width: 0;
+    padding-right: .65rem;
+}
+
+.admin-task-controls--pages > :nth-child(1) { grid-column: span 4; }
+.admin-task-controls--pages > :nth-child(2) { grid-column: span 2; }
+.admin-task-controls--pages > :nth-child(3) { grid-column: span 1; }
+.admin-task-controls--pages > :nth-child(4) { grid-column: span 1; }
+.admin-task-controls--pages > :nth-child(5) { grid-column: span 2; }
+.admin-task-controls--pages > :nth-child(6) {
+    grid-column: span 2;
+    padding-right: 0;
+    justify-items: end;
+}
+
+.admin-selection--unlabeled {
+    align-self: end;
+}
+
+.admin-task-form--pages {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.admin-task-form--pages__title {
+    grid-column: span 2;
 }
 
 .custom-page-component-sequence {
@@ -154,8 +293,6 @@
         var(--admin-hierarchy-select-column);
 }
 
-/* Child add/empty rows start at the semantic content axis after ordering;
- * Selection moved to the trailing gutter and therefore does not contribute. */
 .custom-page-component-add-row {
     --admin-add-row-inset: calc(
         var(--admin-hierarchy-position-column)
@@ -174,6 +311,12 @@
     );
 }
 
+@media (min-width: 821px) {
+    .admin-hierarchy--pages {
+        overflow-x: visible;
+    }
+}
+
 @media (max-width: 1180px) {
     .custom-page-component-sequence {
         --admin-hierarchy-columns:
@@ -184,5 +327,28 @@
             8.25rem
             var(--admin-hierarchy-actions-column)
             var(--admin-hierarchy-select-column);
+    }
+
+    .admin-pages__primary-grid {
+        grid-template-columns: 3.1rem 1.8rem minmax(0, 1fr) 5.8rem;
+        gap: .3rem;
+    }
+
+    .admin-pages__row-actions .admin-action {
+        padding-inline: .2rem;
+    }
+}
+
+@media (max-width: 900px) {
+    .admin-task-controls--pages {
+        display: flex;
+    }
+
+    .admin-task-controls--pages > * {
+        padding-right: 0;
+    }
+
+    .admin-task-form--pages {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
