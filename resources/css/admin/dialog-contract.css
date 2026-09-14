@@ -10,6 +10,8 @@
     --admin-dialog-width-large: 53.333rem;
     --admin-dialog-viewport-gutter: 2rem;
     --admin-dialog-header-action-size: 2rem;
+    --admin-dialog-header-action-gap: .35rem;
+    --admin-dialog-header-action-inset: 1rem;
 }
 
 .admin-dialog--mini { --admin-dialog-width: var(--admin-dialog-width-mini); }
@@ -25,19 +27,33 @@
     max-width: min(var(--admin-dialog-width), calc(100vw - var(--admin-dialog-viewport-gutter))) !important;
 }
 
-/* Context actions remain native Filament actions, but all consumers use one
- * stable rail immediately to the left of Filament's canonical X control. */
-.admin-dialog--header-actions { position: relative; }
+/*
+ * Header chrome
+ * -------------
+ * Filament owns modal state, focus, Escape and the native close button. We only
+ * normalize the visual rail. Context actions stay native Filament Actions in
+ * the modal footer, but are lifted into one top-right rail immediately before
+ * the native X. This keeps semantics intact without introducing a second close
+ * implementation.
+ */
+.admin-dialog--header-actions {
+    position: relative;
+}
 
 .admin-dialog--header-actions .fi-modal-header {
-    padding-inline-end: 7.4rem;
+    min-height: calc(var(--admin-dialog-header-action-size) + (2 * var(--admin-dialog-header-action-inset)));
+    padding-inline-end: 7.5rem;
 }
 
 .admin-dialog--header-actions .fi-modal-footer {
     position: absolute;
     z-index: 10;
-    top: 1rem;
-    right: 3.15rem;
+    top: var(--admin-dialog-header-action-inset);
+    right: calc(
+        var(--admin-dialog-header-action-inset)
+        + var(--admin-dialog-header-action-size)
+        + var(--admin-dialog-header-action-gap)
+    );
     width: auto;
     padding: 0;
     border: 0;
@@ -47,49 +63,64 @@
 
 .admin-dialog--header-actions .fi-modal-footer-actions,
 .admin-dialog--header-actions.admin-task-dialog .fi-modal-footer-actions {
+    display: flex;
     width: auto;
-    gap: .28rem;
+    gap: var(--admin-dialog-header-action-gap);
     align-items: center;
     flex-wrap: nowrap;
 }
 
-.admin-dialog__header-action {
-    display: grid !important;
+/* Context actions and the native Filament X intentionally share the exact same
+ * hit target, border, icon scale and vertical axis. */
+.admin-dialog__header-action,
+.admin-dialog--header-actions .fi-modal-close-btn {
     box-sizing: border-box;
+    display: grid !important;
     width: var(--admin-dialog-header-action-size) !important;
     min-width: var(--admin-dialog-header-action-size) !important;
     height: var(--admin-dialog-header-action-size) !important;
     min-height: var(--admin-dialog-header-action-size) !important;
+    margin: 0 !important;
     padding: 0 !important;
     place-items: center;
     border: 1px solid var(--admin-line-strong) !important;
     border-radius: 999px !important;
-    background: transparent !important;
+    background: var(--admin-surface) !important;
     color: var(--admin-muted) !important;
     box-shadow: none !important;
 }
 
+.admin-dialog--header-actions .fi-modal-close-btn {
+    top: var(--admin-dialog-header-action-inset) !important;
+    right: var(--admin-dialog-header-action-inset) !important;
+    inset-inline-end: var(--admin-dialog-header-action-inset) !important;
+}
+
 .admin-dialog__header-action:hover,
-.admin-dialog__header-action:focus-visible {
+.admin-dialog__header-action:focus-visible,
+.admin-dialog--header-actions .fi-modal-close-btn:hover,
+.admin-dialog--header-actions .fi-modal-close-btn:focus-visible {
     border-color: var(--admin-text) !important;
     background: var(--admin-subtle) !important;
     color: var(--admin-text) !important;
     outline: none;
 }
 
-.admin-dialog__header-action svg {
+.admin-dialog__header-action svg,
+.admin-dialog--header-actions .fi-modal-close-btn svg {
     width: .92rem !important;
     height: .92rem !important;
 }
 
 .admin-dialog__header-action.is-danger {
+    border-color: color-mix(in srgb, var(--admin-danger) 36%, var(--admin-line-strong)) !important;
     color: color-mix(in srgb, var(--admin-danger) 78%, var(--admin-text)) !important;
 }
 
 .admin-dialog__header-action.is-danger:hover,
 .admin-dialog__header-action.is-danger:focus-visible {
-    border-color: color-mix(in srgb, var(--admin-danger) 52%, var(--admin-line-strong)) !important;
-    background: color-mix(in srgb, var(--admin-danger) 7%, transparent) !important;
+    border-color: color-mix(in srgb, var(--admin-danger) 58%, var(--admin-line-strong)) !important;
+    background: color-mix(in srgb, var(--admin-danger) 7%, var(--admin-surface)) !important;
     color: var(--admin-danger) !important;
 }
 
@@ -98,20 +129,88 @@
     color: var(--admin-accent-strong) !important;
 }
 
+.admin-dialog__header-action.is-primary:hover,
+.admin-dialog__header-action.is-primary:focus-visible {
+    background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface)) !important;
+}
+
+/* Feed details use the metadata row as their visible top heading. Keep the
+ * Filament heading in the accessibility tree, but do not duplicate the entry
+ * title above the metadata. */
+.admin-dialog--header-actions:has(.admin-detail-dialog) .fi-modal-heading {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+.admin-dialog--header-actions:has(.admin-detail-dialog) .fi-modal-header {
+    min-height: calc(var(--admin-dialog-header-action-size) + (2 * var(--admin-dialog-header-action-inset)));
+    padding: 0;
+}
+
+.admin-dialog--header-actions:has(.admin-detail-dialog) .fi-modal-content {
+    padding-top: .35rem;
+}
+
+/* Confirmation dialogs are intentionally one metric-cell wide. Their copy
+ * sits below the action rail so the small width is never consumed by chrome.
+ * The large stock confirmation icon is suppressed; confirmation is represented
+ * by the canonical commit action beside the X. */
+.admin-dialog--confirmation .fi-modal-icon-ctn {
+    display: none !important;
+}
+
+.admin-dialog--confirmation .fi-modal-header {
+    min-height: 0;
+    padding: calc(
+        var(--admin-dialog-header-action-inset)
+        + var(--admin-dialog-header-action-size)
+        + .85rem
+    ) 1.35rem 0;
+}
+
+.admin-dialog--confirmation .fi-modal-heading {
+    margin-inline-end: 0 !important;
+    font-size: 1rem;
+    line-height: 1.3;
+}
+
+.admin-dialog--confirmation .fi-modal-description {
+    margin-top: .5rem;
+    font-size: .76rem;
+    line-height: 1.5;
+}
+
 .admin-dialog--confirmation .fi-modal-content {
     font-size: .78rem;
     line-height: 1.5;
 }
 
 @media (max-width: 760px) {
-    :root { --admin-dialog-viewport-gutter: 1rem; }
-
-    .admin-dialog--header-actions .fi-modal-header {
-        padding-inline-end: 6.5rem;
+    :root {
+        --admin-dialog-viewport-gutter: 1rem;
+        --admin-dialog-header-action-inset: .75rem;
     }
 
-    .admin-dialog--header-actions .fi-modal-footer {
-        top: .75rem;
-        right: 2.8rem;
+    .admin-dialog--header-actions .fi-modal-header {
+        padding-inline-end: 6.75rem;
+    }
+
+    .admin-dialog--header-actions:has(.admin-detail-dialog) .fi-modal-header {
+        padding: 0;
+    }
+
+    .admin-dialog--confirmation .fi-modal-header {
+        padding: calc(
+            var(--admin-dialog-header-action-inset)
+            + var(--admin-dialog-header-action-size)
+            + .75rem
+        ) 1rem 0;
     }
 }
