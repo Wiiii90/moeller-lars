@@ -98,24 +98,22 @@
                     role="table"
                     aria-label="Pages"
                     x-data="{ dragging: false, draggedId: null, draggedDepth: null, draggedParentId: null, draggedHasChildren: false, hoverParent: null }"
-                    x-on:pointerdown.capture="
-                        if (!$event.target.closest('.admin-drag-handle:not(:disabled)')) return;
+                    x-on:dragstart.capture="
                         const row = $event.target.closest('.admin-pages__row');
-                        if (!row) return;
+                        if (!row || !row.querySelector('.admin-drag-handle:not(:disabled)')) return;
                         dragging = true;
                         draggedId = Number(row.dataset.sectionId);
                         draggedDepth = Number(row.dataset.depth);
                         draggedParentId = row.dataset.parentId === '' ? null : Number(row.dataset.parentId);
                         draggedHasChildren = row.dataset.hasChildren === 'true';
                     "
-                    x-on:pointerup.window="dragging = false; hoverParent = null"
                     x-on:dragend.window="dragging = false; hoverParent = null"
                     x-on:drop.window="dragging = false; hoverParent = null"
                 >
                     <div class="admin-hierarchy__header admin-pages__header" role="row">
                         <div class="admin-pages__primary-grid" role="presentation">
                             <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">Position</span>
-                            <span role="columnheader" data-column="page">Page</span>
+                            <span role="columnheader" data-column="page">Name</span>
                             <span role="columnheader" data-column="status">Status</span>
                         </div>
                         <span class="admin-pages__type" role="columnheader" data-column="page-type">Page type</span>
@@ -147,7 +145,6 @@
                             @endif
                         >
                             @foreach ($sections as $section)
-                                @php($parentLabel = $section['navigation_label'] ?: $section['title'])
                                 <div class="admin-hierarchy__group" wire:key="site-page-root-{{ $section['id'] }}" @if ($reorderEnabled) wire:sort:item="{{ $section['id'] }}" @endif>
                                     @include('filament.pages.partials.site-section-row', [
                                         'section' => $section,
@@ -159,19 +156,9 @@
                                     @if ($section['children'] !== [] || $reorderEnabled)
                                         <div class="admin-hierarchy__children">
                                             <div
-                                                class="admin-hierarchy__children-rows admin-pages__child-drop"
+                                                class="admin-hierarchy__children-rows"
                                                 role="rowgroup"
                                                 aria-label="Child pages under {{ $section['title'] }}"
-                                                data-drop-label="Move under {{ $parentLabel }}"
-                                                x-bind:class="{
-                                                    'is-drop-eligible': dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }},
-                                                    'is-drop-hover': dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }} && hoverParent === {{ $section['id'] }}
-                                                }"
-                                                x-on:pointerenter="if (dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) hoverParent = {{ $section['id'] }}"
-                                                x-on:pointerleave="if (dragging && hoverParent === {{ $section['id'] }}) hoverParent = null"
-                                                x-on:dragenter.prevent="if (dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) hoverParent = {{ $section['id'] }}"
-                                                x-on:dragleave="if (!$el.contains($event.relatedTarget) && hoverParent === {{ $section['id'] }}) hoverParent = null"
-                                                x-on:drop="hoverParent = null"
                                                 @if ($reorderEnabled)
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
