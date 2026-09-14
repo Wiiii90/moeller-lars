@@ -257,15 +257,15 @@
         <div class="admin-storage__attention" aria-label="Storage attention">
             @if (($storageAttention['unreferenced_files'] ?? 0) > 0)
                 <div class="admin-storage__attention-row">
-                    <span>Unused files</span>
-                    <strong>{{ number_format($storageAttention['unreferenced_files']) }} · {{ $storageAttention['unreferenced_display_bytes'] }}</strong>
+                    <span>Unused storage</span>
+                    <strong>{{ $storageAttention['unreferenced_display_bytes'] }} · {{ number_format($storageAttention['unreferenced_files']) }} {{ ($storageAttention['unreferenced_files'] ?? 0) === 1 ? 'file' : 'files' }}</strong>
                 </div>
             @endif
 
             @if (($storageAttention['uncatalogued_files'] ?? 0) > 0)
                 <div class="admin-storage__attention-row is-warning">
-                    <span>Uncatalogued files</span>
-                    <strong>{{ number_format($storageAttention['uncatalogued_files']) }} · {{ $storageAttention['uncatalogued_display_bytes'] }}</strong>
+                    <span>Uncatalogued storage</span>
+                    <strong>{{ $storageAttention['uncatalogued_display_bytes'] }} · {{ number_format($storageAttention['uncatalogued_files']) }} {{ ($storageAttention['uncatalogued_files'] ?? 0) === 1 ? 'file' : 'files' }}</strong>
                 </div>
             @endif
 
