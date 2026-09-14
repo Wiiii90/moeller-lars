@@ -62,13 +62,14 @@
                     <div class="admin-task-control-group">
                         <span class="admin-task-control-label">PAGES</span>
                         <div class="admin-task-control-actions">
-                            <button class="admin-action" type="button" wire:click="startAddingPage">Add page</button>
+                            <button class="admin-action" type="button" wire:click="mountAction('addPage')">Add page</button>
                         </div>
                     </div>
                 </x-slot:actions>
 
                 <x-slot:selection>
-                    <div class="admin-task-control-group admin-selection admin-selection--unlabeled" x-data="{ open: false }">
+                    <div class="admin-task-control-group admin-selection" x-data="{ open: false }">
+                        <span class="admin-task-control-label">SELECTION</span>
                         <div class="admin-selection__anchor">
                             <button
                                 class="admin-action admin-selection__trigger"
@@ -217,7 +218,7 @@
                                 </x-admin.empty-state>
                             @else
                                 <x-admin.empty-state title="No pages yet" minimal>
-                                    <x-slot:actions><button class="admin-action" type="button" wire:click="startAddingPage">Add page</button></x-slot:actions>
+                                    <x-slot:actions><button class="admin-action" type="button" wire:click="mountAction('addPage')">Add page</button></x-slot:actions>
                                 </x-admin.empty-state>
                             @endif
                         </div>
@@ -225,58 +226,7 @@
                 </div>
             </x-admin.table>
 
-            <x-admin.add-row wire:click="startAddingPage" aria-expanded="{{ $addingPage ? 'true' : 'false' }}">Add page</x-admin.add-row>
-
-            @if ($addingPage)
-                <form class="admin-task-form admin-task-form--pages" wire:submit="createPage">
-                    <label class="admin-task-field">
-                        <span>PAGE TYPE</span>
-                        <select wire:model.live="newPageType">
-                            @foreach (SiteNodeType::compactOptions() as $value => $label)
-                                <option value="{{ $value }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </label>
-
-                    <label class="admin-task-field admin-task-form--pages__title">
-                        <span>TITLE</span>
-                        <input type="text" maxlength="160" wire:model="newPageTitle" required>
-                    </label>
-
-                    @if (SiteNodeType::tryFrom($newPageType)?->requiresSlug())
-                        <label class="admin-task-field">
-                            <span>PUBLIC SLUG</span>
-                            <input type="text" maxlength="80" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" wire:model="newPageSlug" required>
-                        </label>
-                    @endif
-
-                    <label class="admin-task-field">
-                        <span>PARENT</span>
-                        <select wire:model="newPageParent">
-                            <option value="">Top level</option>
-                            @foreach ($parentOptions as $value => $label)
-                                <option value="{{ $value }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </label>
-
-                    @if ($newPageType === SiteNodeType::Journal->value)
-                        <label class="admin-task-field">
-                            <span>TEMPLATE</span>
-                            <select wire:model="newJournalTemplate">
-                                @foreach ($journalTemplateOptions as $value => $label)
-                                    <option value="{{ $value }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                    @endif
-
-                    <div class="admin-task-form__actions">
-                        <button class="admin-action is-primary" type="submit">Create</button>
-                        <button class="admin-action" type="button" wire:click="cancelAddingPage">Cancel</button>
-                    </div>
-                </form>
-            @endif
+            <x-admin.add-row wire:click="mountAction('addPage')">Add page</x-admin.add-row>
 
             <footer class="admin-pager" aria-label="Pages pagination">
                 <label class="admin-pager__size">
