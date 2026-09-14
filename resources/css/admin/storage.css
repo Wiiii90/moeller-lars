@@ -2,48 +2,48 @@
 
 .admin-storage,
 .admin-storage-capacity {
-    --storage-color-galleries: #b65f19;
-    --storage-color-journal: #8d664c;
-    --storage-color-cv: #9d5a3f;
-    --storage-color-home: #c58b63;
-    --storage-color-custom-pages: #b9864b;
-    --storage-color-site-identity: #a06f4e;
-    --storage-color-referenced: #7f6a58;
-    --storage-color-shared: #95684d;
-    --storage-color-unassigned: #9a8060;
+    --storage-color-galleries: #b45309;
+    --storage-color-journal: #8e6040;
+    --storage-color-cv: #a95a20;
+    --storage-color-home: #b9783a;
+    --storage-color-custom-pages: #c47a28;
+    --storage-color-site-identity: #965028;
+    --storage-color-referenced: #755442;
+    --storage-color-shared: #9b6544;
+    --storage-color-unassigned: #9b7650;
     --storage-color-uncatalogued: var(--admin-danger);
     --storage-color-remaining: color-mix(in srgb, var(--admin-line) 42%, var(--admin-subtle));
-    --storage-target-1: #b65f19;
-    --storage-target-2: #c07a28;
-    --storage-target-3: #9d5a3f;
-    --storage-target-4: #b9864b;
-    --storage-target-5: #8d664c;
-    --storage-target-6: #c58b63;
-    --storage-target-7: #a06f4e;
-    --storage-target-8: #7f6a58;
+    --storage-target-1: #b45309;
+    --storage-target-2: #bd6712;
+    --storage-target-3: #a95a20;
+    --storage-target-4: #c47a28;
+    --storage-target-5: #965028;
+    --storage-target-6: #b9783a;
+    --storage-target-7: #8e6040;
+    --storage-target-8: #755442;
 }
 
 .dark .admin-storage,
 .dark .admin-storage-capacity {
-    --storage-color-galleries: #d9823a;
-    --storage-color-journal: #b18a6e;
-    --storage-color-cv: #c77b63;
-    --storage-color-home: #dfa983;
-    --storage-color-custom-pages: #d0a05e;
-    --storage-color-site-identity: #c58d69;
-    --storage-color-referenced: #ad9988;
-    --storage-color-shared: #ba896c;
-    --storage-color-unassigned: #b6a078;
+    --storage-color-galleries: #d68a2f;
+    --storage-color-journal: #aa7758;
+    --storage-color-cv: #c97b42;
+    --storage-color-home: #d19454;
+    --storage-color-custom-pages: #e0a45a;
+    --storage-color-site-identity: #bd6f3c;
+    --storage-color-referenced: #8f6d5b;
+    --storage-color-shared: #b37d5c;
+    --storage-color-unassigned: #b2906c;
     --storage-color-uncatalogued: var(--admin-danger);
     --storage-color-remaining: color-mix(in srgb, var(--admin-line) 56%, transparent);
-    --storage-target-1: #d9823a;
-    --storage-target-2: #d49a49;
-    --storage-target-3: #c77b63;
-    --storage-target-4: #d0a05e;
-    --storage-target-5: #b18a6e;
-    --storage-target-6: #dfa983;
-    --storage-target-7: #c58d69;
-    --storage-target-8: #ad9988;
+    --storage-target-1: #d68a2f;
+    --storage-target-2: #dda04b;
+    --storage-target-3: #c97b42;
+    --storage-target-4: #e0a45a;
+    --storage-target-5: #bd6f3c;
+    --storage-target-6: #d19454;
+    --storage-target-7: #aa7758;
+    --storage-target-8: #8f6d5b;
 }
 
 .admin-storage__visual-main,
@@ -137,7 +137,7 @@
     display: grid;
     min-height: 0;
     align-content: start;
-    overflow: auto;
+    overflow: hidden;
 }
 
 .admin-storage__distribution-columns,
@@ -148,7 +148,7 @@
 .admin-storage__distribution-columns {
     display: grid;
     gap: .55rem;
-    padding: .08rem 0 .24rem;
+    padding: .08rem 0 .22rem;
     border-bottom: 1px solid var(--admin-line);
     color: var(--admin-muted);
     font-size: .55rem;
@@ -171,7 +171,7 @@
     width: 100%;
     min-width: 0;
     gap: .55rem;
-    padding: .43rem 0;
+    padding: .34rem 0;
     align-items: center;
     appearance: none;
     border: 0;
@@ -201,7 +201,7 @@
 .admin-storage__target-label {
     display: grid;
     min-width: 0;
-    gap: .06rem;
+    gap: .04rem;
 }
 
 .admin-storage__target-label strong,
@@ -420,34 +420,154 @@
     gap: .28rem;
 }
 
-/* Only the task-specific column distribution is local. Field/action geometry
- * comes from x-admin.controls and the shared admin-data-* primitives. */
+/* Storage follows the same fixed data axes as the six metric cells: the search
+ * occupies the broad left half; the remaining controls form a compact rail. */
 .admin-storage .media-workspace__controls {
     display: grid;
-    grid-template-columns:
-        minmax(14rem, 2fr)
-        minmax(7rem, .7fr)
-        minmax(11rem, 1.15fr)
-        minmax(8rem, .75fr)
-        auto
-        auto
-        auto;
-    gap: .85rem;
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    gap: .35rem;
     padding-top: 0;
     padding-bottom: var(--admin-section-gap);
     align-items: end;
     border-bottom: 0;
 }
 
+.admin-storage .media-workspace__controls > * {
+    width: 100%;
+    min-width: 0 !important;
+}
+
+.admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 12; }
+.admin-storage .media-workspace__controls > :nth-child(2) { grid-column: span 2; }
+.admin-storage .media-workspace__controls > :nth-child(3) { grid-column: span 3; }
+.admin-storage .media-workspace__controls > :nth-child(4) { grid-column: span 2; }
+.admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 1; }
+.admin-storage .media-workspace__controls > :nth-child(6) { grid-column: span 2; }
+.admin-storage .media-workspace__controls > :nth-child(7) { grid-column: span 2; }
+
+.admin-storage .media-workspace__controls .admin-data-field select,
+.admin-storage .media-workspace__controls .admin-data-field input {
+    padding-inline: .35rem;
+}
+
+.admin-storage .media-workspace__controls .admin-data-control-group > .admin-action,
+.admin-storage .media-workspace__multi-action-anchor,
+.admin-storage .media-workspace__selection-trigger,
+.admin-storage .media-workspace__view-options {
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-storage .media-workspace__view-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .12rem;
+}
+
+.admin-storage .media-workspace__view-option {
+    width: 100%;
+}
+
+/* The selection count owns the same trailing 2.5rem axis as table checkboxes. */
+.admin-storage .media-workspace__selection-trigger {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 2.5rem;
+    gap: 0;
+    padding-right: 0;
+    padding-left: .35rem;
+    justify-content: stretch;
+    text-align: left;
+}
+
+.admin-storage .media-workspace__selection-trigger .admin-action__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-storage .media-workspace__selection-count {
+    margin-left: 0;
+    justify-self: center;
+}
+
+/* Six-cell table contract: media uses the first two metric cells, metadata the
+ * middle two, and the stable action/selection rail the final two. */
+.admin-storage .media-workspace__table {
+    min-width: 70rem;
+    table-layout: fixed;
+}
+
+.admin-storage .media-workspace__col-preview { width: 4.75rem; }
+.admin-storage .media-workspace__col-media { width: calc(33.333% - 4.75rem); }
+.admin-storage .media-workspace__table-wrap.is-dense .media-workspace__col-media { width: 33.333%; }
+.admin-storage .media-workspace__col-type { width: 8.5%; }
+.admin-storage .media-workspace__col-status { width: 7.5%; }
+.admin-storage .media-workspace__col-usage { width: 12%; }
+.admin-storage .media-workspace__col-size { width: 5.333%; }
+.admin-storage .media-workspace__col-actions { width: calc(33.334% - 2.5rem); }
+.admin-storage .media-workspace__col-selection { width: 2.5rem; }
+
+.admin-storage .media-workspace__identity,
+.admin-storage .media-workspace__references {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.admin-storage .media-workspace__actions {
+    width: auto;
+    padding-inline: .35rem !important;
+}
+
+.admin-storage .media-workspace__row-actions {
+    display: grid !important;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .18rem;
+    align-items: center;
+}
+
+.admin-storage .media-workspace__row-actions .admin-action {
+    width: 100%;
+    min-width: 0;
+    padding-inline: .3rem;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
+.admin-storage .media-workspace__row-actions .admin-action__icon {
+    flex: 0 0 1rem;
+}
+
+.admin-storage .media-workspace__row-actions .admin-action__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 @media (max-width: 1180px) {
     .admin-storage .media-workspace__controls {
-        grid-template-columns: minmax(14rem, 2fr) repeat(3, minmax(8rem, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .65rem;
     }
+
+    .admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 2; }
+    .admin-storage .media-workspace__controls > :nth-child(n + 2) { grid-column: span 1; }
 
     .admin-storage__distribution-columns,
     .admin-storage__target-row {
         grid-template-columns: minmax(7rem, 1fr) 2.35rem minmax(3rem, .62fr) 4.2rem;
         gap: .4rem;
+    }
+
+    .admin-storage .media-workspace__row-actions .admin-action__label {
+        display: none;
+    }
+
+    .admin-storage .media-workspace__row-actions .admin-action {
+        justify-content: center;
     }
 }
 
@@ -481,6 +601,10 @@
 
     .admin-storage .media-workspace__controls {
         grid-template-columns: 1fr;
+    }
+
+    .admin-storage .media-workspace__controls > :nth-child(n) {
+        grid-column: 1;
     }
 }
 
