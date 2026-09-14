@@ -430,57 +430,13 @@
     >Add Media File</x-admin.add-row>
 
     <footer class="media-workspace__pager">
-        <div
+        <x-admin.page-size-picker
             class="media-workspace__pager-size"
-            x-data="{
-                open: false,
-                toggle() {
-                    this.open = ! this.open;
-                    if (this.open) {
-                        this.$nextTick(() => this.$refs.menu?.scrollIntoView({ block: 'nearest' }));
-                    }
-                },
-            }"
-            x-on:click.outside="open = false"
-            x-on:keydown.escape.window="open = false"
-        >
-            <span>Per page</span>
-            <div class="admin-pager-size-picker">
-                <button
-                    class="admin-pager-size-picker__trigger"
-                    type="button"
-                    x-on:click="toggle()"
-                    x-bind:aria-expanded="open.toString()"
-                    aria-haspopup="listbox"
-                    aria-label="Files per page"
-                >
-                    <span>{{ $pageSize }}</span>
-                    <span aria-hidden="true">▾</span>
-                </button>
-                <div
-                    class="admin-pager-size-picker__menu"
-                    x-ref="menu"
-                    role="listbox"
-                    aria-label="Files per page"
-                    x-show="open"
-                    x-cloak
-                >
-                    @foreach ([25, 50, 100] as $sizeOption)
-                        <button
-                            class="admin-pager-size-picker__option {{ $pageSize === $sizeOption ? 'is-active' : '' }}"
-                            type="button"
-                            role="option"
-                            aria-selected="{{ $pageSize === $sizeOption ? 'true' : 'false' }}"
-                            wire:click="setPageSize({{ $sizeOption }})"
-                            x-on:click="open = false"
-                        >
-                            <span class="admin-pager-size-picker__check" aria-hidden="true">{{ $pageSize === $sizeOption ? '✓' : '' }}</span>
-                            <span>{{ $sizeOption }}</span>
-                        </button>
-                    @endforeach
-                </div>
-            </div>
-        </div>
+            :value="$pageSize"
+            :options="[25, 50, 100]"
+            wire-action="setPageSize"
+            aria-label="Files per page"
+        />
 
         <span class="media-workspace__pager-range">
             @if ($total === 0)
