@@ -28,41 +28,25 @@
     margin-left: -.4rem;
 }
 
-/* Dashboard previews use the canonical visuals from Storage, Activity and
- * Analytics. These rules only constrain their outer box; the visual classes
- * themselves remain owned by their source pages. */
+/* Storage and Activity keep their canonical source-page sizing. Dashboard only
+ * supplies the pane box; it does not carry a compact or bespoke scale. */
 .admin-dashboard__storage-visual,
 .admin-dashboard__activity-visual {
-    display: grid !important;
     min-width: 0;
     min-height: 0;
     height: 100%;
-    place-items: center;
     overflow: hidden;
 }
 
-.admin-dashboard__storage-visual .admin-storage__capacity-plot {
-    width: min(100%, 12.75rem) !important;
-    max-width: 100%;
-    max-height: 100%;
+.admin-dashboard__storage-visual {
+    display: grid;
+    place-items: center;
 }
 
 .admin-dashboard__activity-visual {
     grid-template-columns: 1fr !important;
     grid-template-rows: minmax(0, 1fr) !important;
     gap: 0 !important;
-}
-
-.admin-dashboard__activity-visual .activity-clock__figure {
-    width: 100%;
-    height: 100%;
-    padding: .2rem 0 !important;
-}
-
-.admin-dashboard__activity-visual .activity-clock__dial {
-    width: min(100%, 14.25rem) !important;
-    max-width: 100%;
-    max-height: 100%;
 }
 
 .admin-dashboard__analytics-visual {
