@@ -60,5 +60,11 @@
     aria-label="@if ($configured && $measurementAvailable && $capacityPercent !== null) {{ number_format($capacityPercent, 1) }} percent of {{ $capacity['allowance'] ?? 'the storage allowance' }} is used @elseif ($measurementAvailable) Authoritative storage measured without a configured allowance @else Storage measurement unavailable @endif"
 >
     <div class="admin-storage-capacity__surface" data-admin-viz-surface wire:ignore></div>
+    @unless ($compact)
+        <div class="admin-storage-capacity__inspector" data-admin-viz-inspector aria-hidden="true">
+            <strong data-admin-viz-inspector-title>{{ $capacity['authoritative'] ?? '—' }}</strong>
+            <span data-admin-viz-inspector-meta>@if ($capacityPercent !== null) {{ number_format($capacityPercent, 1) }}% used · {{ $capacity['remaining'] ?? '—' }} free @endif</span>
+        </div>
+    @endunless
     <script type="application/json" data-admin-viz-config>@json($vizConfig)</script>
 </div>
