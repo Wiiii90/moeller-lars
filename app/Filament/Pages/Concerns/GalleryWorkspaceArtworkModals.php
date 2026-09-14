@@ -5,10 +5,11 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
-use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -17,7 +18,7 @@ trait GalleryWorkspaceArtworkModals
 {
     public function addArtworkAction(): Action
     {
-        return Action::make('addArtwork')
+        $action = Action::make('addArtwork')
             ->label('Add artwork')
             ->fillForm(fn (): array => [
                 'primary_media_asset_id' => $this->pendingPrimaryMediaAssetId,
@@ -26,8 +27,6 @@ trait GalleryWorkspaceArtworkModals
             ])
             ->schema($this->artworkFormSchema(true))
             ->modalHeading('Add artwork')
-            ->modalSubmitActionLabel('Create draft')
-            ->modalWidth(Width::SevenExtraLarge)
             ->action(function (array $data): void {
                 $upload = $data['primary_upload'] ?? null;
                 $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
@@ -57,11 +56,13 @@ trait GalleryWorkspaceArtworkModals
                 $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Artwork draft created')->success()->send();
             });
+
+        return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
     }
 
     public function editArtworkAction(): Action
     {
-        return Action::make('editArtwork')
+        $action = Action::make('editArtwork')
             ->label('Edit')
             ->modalHeading(fn (array $arguments): string => 'Edit '.$this->actionArtwork($arguments)->getAttribute('title'))
             ->fillForm(function (array $arguments): array {
@@ -86,9 +87,6 @@ trait GalleryWorkspaceArtworkModals
                 ];
             })
             ->schema($this->artworkFormSchema(false))
-            ->modalSubmitActionLabel('Save artwork')
-            ->modalCancelActionLabel('Cancel')
-            ->modalWidth(Width::SevenExtraLarge)
             ->action(function (array $data, array $arguments): void {
                 $artwork = $this->actionArtwork($arguments);
                 $currentPrimary = $artwork->artworkMedia()->where('role', 'primary')->first();
@@ -125,5 +123,7 @@ trait GalleryWorkspaceArtworkModals
                 $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Artwork saved')->success()->send();
             });
+
+        return AdminDialog::editCommit($action, 'Save artwork', AdminDialogSize::Large);
     }
 }
