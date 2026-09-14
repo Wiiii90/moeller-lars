@@ -250,7 +250,6 @@
                                     @if ($sourceHasRecords)
                                         <x-admin.empty-state title="No matching Galleries" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">Clear filters</button></x-slot:actions>
-                                        </x-admin.empty-state>
                                     @else
                                         <x-admin.empty-state title="No Gallery sources" minimal />
                                     @endif
@@ -263,10 +262,12 @@
 
             @if ($sourceRows->total() > $sourceRows->perPage() || $sourceRows->currentPage() > 1)
                 <footer class="admin-pager">
-                    <label class="admin-pager__size">
-                        <span>Per page</span>
-                        <select wire:model.live.number="sourcePerPage"><option value="10">10</option><option value="25">25</option></select>
-                    </label>
+                    <x-admin.page-size-picker
+                        :value="$sourcePerPage"
+                        :options="[10, 25]"
+                        wire-model="sourcePerPage"
+                        aria-label="Gallery sources per page"
+                    />
                     <span class="admin-pager__range">{{ $sourceRows->firstItem() ?? 0 }}–{{ $sourceRows->lastItem() ?? 0 }} of {{ $sourceRows->total() }}</span>
                     <div class="admin-pager__actions admin-toolbar">
                         <button class="admin-action" type="button" wire:click="goToSourcePage({{ $sourceRows->currentPage() - 1 }})" @disabled($sourceRows->onFirstPage())>Previous</button>
