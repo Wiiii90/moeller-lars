@@ -142,7 +142,6 @@
                         <div class="admin-pages__primary-grid" role="presentation">
                             <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">Position</span>
                             <span role="columnheader" data-column="page">Name</span>
-                            <span role="columnheader" data-column="status">Status</span>
                         </div>
                         <span class="admin-pages__type" role="columnheader" data-column="page-type">Page type</span>
                         <span class="admin-pages__template" role="columnheader" data-column="template">Template</span>
