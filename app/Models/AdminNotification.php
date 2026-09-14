@@ -11,9 +11,17 @@ final class AdminNotification extends Model
     protected $fillable = [
         'user_id',
         'source_id',
+        'type',
         'status',
         'title',
         'body',
+        'action_url',
+        'action_label',
+        'entity_type',
+        'entity_id',
+        'audit_event_id',
+        'publication_checkpoint_id',
+        'metadata',
         'read_at',
     ];
 
@@ -30,6 +38,7 @@ final class AdminNotification extends Model
     protected function casts(): array
     {
         return [
+            'metadata' => 'array',
             'read_at' => 'datetime',
         ];
     }
@@ -37,6 +46,16 @@ final class AdminNotification extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function auditEvent(): BelongsTo
+    {
+        return $this->belongsTo(AuditEvent::class);
+    }
+
+    public function publicationCheckpoint(): BelongsTo
+    {
+        return $this->belongsTo(PublicationCheckpoint::class);
     }
 
     public function markRead(): void
