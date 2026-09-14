@@ -6,6 +6,7 @@ use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminUndoService;
+use App\Domain\Publication\PublicationService;
 use App\Filament\Support\AdminActivityFeed;
 use App\Filament\Support\AdminIcon;
 use App\Models\AuditEvent;
@@ -64,6 +65,11 @@ final class Activity extends Page
         $this->mountAction('activityDetails', ['id' => $eventId]);
     }
 
+    public function openPublicationReview(): void
+    {
+        $this->mountAction('publicationReview');
+    }
+
     public function activityDetailsAction(): Action
     {
         return Action::make('activityDetails')
@@ -76,6 +82,23 @@ final class Activity extends Page
             ->modalSubmitAction(false)
             ->modalCancelAction(false)
             ->extraModalFooterActions(fn (array $arguments): array => $this->activityDetailsHeaderActions($arguments))
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes([
+                'class' => 'admin-task-dialog admin-dialog--default admin-dialog--header-actions',
+            ]);
+    }
+
+    public function publicationReviewAction(): Action
+    {
+        return Action::make('publicationReview')
+            ->label('Review changes')
+            ->modalHeading('Review staged changes')
+            ->modalContent(fn (): View => view(
+                'filament.pages.partials.activity-publication-review-dialog',
+                ['publication' => $this->publicationReview()],
+            ))
+            ->modalSubmitAction(false)
+            ->modalCancelAction(false)
             ->modalWidth(Width::Large)
             ->extraModalWindowAttributes([
                 'class' => 'admin-task-dialog admin-dialog--default admin-dialog--header-actions',
@@ -330,6 +353,18 @@ final class Activity extends Page
             $eventId,
             app(AdminAuditService::class)->requireActor(),
         );
+    }
+
+    /** @return array{summary:array{total:int,groups:list<array{area:string,entity:string,count:int}>},preflight:array{status:string,label:string,blockers:list<string>}} */
+    private function publicationReview(): array
+    {
+        $publication = app(PublicationService::class);
+        $summary = $publication->pendingSummary();
+
+        return [
+            'summary' => $summary,
+            'preflight' => $publication->preflight($summary),
+        ];
     }
 
     /** @param array<string, mixed> $arguments
