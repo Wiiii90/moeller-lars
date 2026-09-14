@@ -12,6 +12,7 @@
     --admin-dialog-header-action-size: 2rem;
     --admin-dialog-header-action-gap: .35rem;
     --admin-dialog-header-action-inset: 1rem;
+    --admin-dialog-content-inset: 1.35rem;
 }
 
 .admin-dialog--mini { --admin-dialog-width: var(--admin-dialog-width-mini); }
@@ -170,57 +171,25 @@
     padding-top: .35rem;
 }
 
-/* Confirmation dialogs are intentionally one metric-cell wide. Their copy
- * sits below a dedicated two-action header rail. The rail is dimensioned
- * explicitly instead of inheriting Filament's confirmation-footer geometry,
- * so the commit action can never collide with the native close action. */
+/* Confirmation dialogs use the same shared header-action rail as every other
+ * dialog. The confirmation role only changes content density: suppress the
+ * stock Filament warning icon and reserve a compact content block below the
+ * shared rail. It must never reposition or resize the header actions. */
 .admin-dialog--confirmation .fi-modal-icon-ctn {
     display: none !important;
-}
-
-.admin-dialog--confirmation .fi-modal-footer {
-    right: calc(
-        (2 * var(--admin-dialog-header-action-inset))
-        + var(--admin-dialog-header-action-size)
-        + var(--admin-dialog-header-action-gap)
-    ) !important;
-    inset-inline-end: calc(
-        (2 * var(--admin-dialog-header-action-inset))
-        + var(--admin-dialog-header-action-size)
-        + var(--admin-dialog-header-action-gap)
-    ) !important;
-    width: var(--admin-dialog-header-action-size) !important;
-    min-width: var(--admin-dialog-header-action-size) !important;
-    max-width: var(--admin-dialog-header-action-size) !important;
-}
-
-.admin-dialog--confirmation .fi-modal-footer-actions,
-.admin-dialog--confirmation.admin-task-dialog .fi-modal-footer-actions {
-    display: grid !important;
-    grid-template-columns: var(--admin-dialog-header-action-size) !important;
-    width: var(--admin-dialog-header-action-size) !important;
-    min-width: var(--admin-dialog-header-action-size) !important;
-    max-width: var(--admin-dialog-header-action-size) !important;
-    gap: 0 !important;
-    place-items: center !important;
-}
-
-.admin-dialog--confirmation .fi-modal-footer-actions > * {
-    width: var(--admin-dialog-header-action-size) !important;
-    min-width: var(--admin-dialog-header-action-size) !important;
-    max-width: var(--admin-dialog-header-action-size) !important;
-    margin: 0 !important;
-    transform: none !important;
 }
 
 .admin-dialog--confirmation .fi-modal-header {
     display: block;
     min-height: 0;
-    padding: calc(
-        var(--admin-dialog-header-action-inset)
-        + var(--admin-dialog-header-action-size)
-        + .85rem
-    ) 1.35rem 0;
+    padding:
+        calc(
+            var(--admin-dialog-header-action-inset)
+            + var(--admin-dialog-header-action-size)
+            + .85rem
+        )
+        var(--admin-dialog-content-inset)
+        var(--admin-dialog-content-inset);
     text-align: left;
 }
 
@@ -251,6 +220,7 @@
     :root {
         --admin-dialog-viewport-gutter: 1rem;
         --admin-dialog-header-action-inset: .75rem;
+        --admin-dialog-content-inset: 1rem;
     }
 
     .admin-dialog--header-actions .fi-modal-header {
@@ -262,10 +232,13 @@
     }
 
     .admin-dialog--confirmation .fi-modal-header {
-        padding: calc(
-            var(--admin-dialog-header-action-inset)
-            + var(--admin-dialog-header-action-size)
-            + .75rem
-        ) 1rem 0;
+        padding:
+            calc(
+                var(--admin-dialog-header-action-inset)
+                + var(--admin-dialog-header-action-size)
+                + .75rem
+            )
+            var(--admin-dialog-content-inset)
+            var(--admin-dialog-content-inset);
     }
 }
