@@ -1,0 +1,158 @@
+/* Dashboard feed composition only. Shared table/dialog primitives own chrome. */
+.admin-dashboard__feed-controls {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: .85rem;
+    align-items: end;
+}
+
+.admin-dashboard__feed-controls > * {
+    min-width: 0 !important;
+    width: 100%;
+}
+
+.admin-dashboard__feed-controls > :first-child { grid-column: span 8; }
+.admin-dashboard__feed-controls > :not(:first-child) { grid-column: span 1; }
+
+.admin-dashboard__feed-controls .admin-data-control-group,
+.admin-dashboard__feed-controls .admin-selection__anchor { width: 100%; }
+
+.admin-dashboard__feed-controls .admin-data-control-group > .admin-action,
+.admin-dashboard__feed-controls .admin-selection__trigger {
+    width: 100%;
+    min-width: 0;
+    padding-inline: .35rem;
+}
+
+.admin-dashboard .admin-data-row { cursor: default; }
+.admin-dashboard__feed-table { overflow-x: hidden; }
+.admin-dashboard__feed-table > table { min-width: 0; table-layout: fixed; }
+
+.admin-dashboard__feed-table .admin-data-title,
+.admin-dashboard__feed-table .admin-data-sender {
+    min-width: 0;
+    max-width: none;
+    width: auto;
+}
+
+.admin-dashboard__feed-table .admin-data-title,
+.admin-dashboard__feed-table .admin-data-nowrap,
+.admin-dashboard__feed-table .admin-data-sender strong,
+.admin-dashboard__feed-table .admin-data-sender small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Read is neutral. Unread is a quiet attention state. Pinned is a warm sticky
+ * state. Selection deliberately wins over both. Cell backgrounds are used
+ * because the shared table surface paints its own cells. */
+.admin-dashboard__feed-row > td { background: var(--admin-surface); }
+.admin-dashboard__feed-row.is-unread > td { background: color-mix(in srgb, var(--admin-accent) 6%, var(--admin-surface)); }
+.admin-dashboard__feed-row.is-pinned > td { background: color-mix(in srgb, #d6a52f 15%, var(--admin-surface)); }
+.admin-dashboard__feed-row:hover > td { background: var(--admin-subtle); }
+.admin-dashboard__feed-row.is-unread:hover > td { background: color-mix(in srgb, var(--admin-accent) 9%, var(--admin-surface)); }
+.admin-dashboard__feed-row.is-pinned:hover > td { background: color-mix(in srgb, #d6a52f 20%, var(--admin-surface)); }
+
+.admin-dashboard__feed-row.is-selected > td,
+.admin-dashboard__feed-row.is-selected:hover > td {
+    background: color-mix(in srgb, var(--admin-accent) 16%, var(--admin-surface));
+    box-shadow: inset 0 2px 0 var(--admin-accent), inset 0 -2px 0 var(--admin-accent);
+}
+
+.admin-dashboard__feed-row.is-selected > td:first-child,
+.admin-dashboard__feed-row.is-selected:hover > td:first-child {
+    box-shadow: inset 2px 0 0 var(--admin-accent), inset 0 2px 0 var(--admin-accent), inset 0 -2px 0 var(--admin-accent);
+}
+
+.admin-dashboard__feed-row.is-selected > td:last-child,
+.admin-dashboard__feed-row.is-selected:hover > td:last-child {
+    box-shadow: inset -2px 0 0 var(--admin-accent), inset 0 2px 0 var(--admin-accent), inset 0 -2px 0 var(--admin-accent);
+}
+
+.admin-dashboard__priority-position {
+    border-color: color-mix(in srgb, #c28b19 58%, var(--admin-line-strong));
+    background: color-mix(in srgb, #d6a52f 20%, var(--admin-surface));
+    color: color-mix(in srgb, #8a5e00 82%, var(--admin-text));
+    font-weight: 700;
+}
+
+.admin-dashboard__pin-action.is-active { color: color-mix(in srgb, #9a6800 82%, var(--admin-text)); }
+
+/* Stable four-slot rail keeps every icon on one axis regardless of label. */
+.admin-dashboard__feed-actions {
+    display: grid !important;
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .18rem;
+    align-items: center;
+}
+
+.admin-dashboard__feed-actions .admin-action {
+    width: 100%;
+    min-width: 0;
+    padding-inline: .3rem;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
+.admin-dashboard__feed-actions .admin-action__icon { flex: 0 0 .9rem; }
+.admin-dashboard__feed-actions .admin-action__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.admin-dashboard__action-placeholder { display: block; min-width: 0; min-height: 1px; }
+
+.admin-detail-dialog__meta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.admin-detail-dialog__meta > div,
+.admin-detail-dialog__meta > div:nth-child(even),
+.admin-detail-dialog__meta > div:nth-last-child(-n + 2) {
+    padding: .75rem .85rem;
+    border-bottom: 0;
+    border-left: 0;
+    border-right: 1px solid var(--admin-line);
+}
+.admin-detail-dialog__meta > div:first-child { padding-left: 0; }
+.admin-detail-dialog__meta > div:last-child { padding-right: 0; border-right: 0; }
+.admin-detail-dialog__sender { display: grid; gap: .08rem; }
+.admin-detail-dialog__sender strong { font-weight: 620; }
+.admin-detail-dialog__context {
+    display: flex;
+    gap: .3rem;
+    margin: -.2rem 0 0;
+    align-items: baseline;
+    flex-wrap: wrap;
+    color: var(--admin-muted);
+    font-size: .7rem;
+    line-height: 1.45;
+}
+.admin-detail-dialog__link { justify-self: start; color: var(--admin-muted) !important; font-size: .74rem; }
+
+@media (max-width: 1180px) {
+    .admin-dashboard__feed-controls { display: flex; }
+    .admin-dashboard__feed-controls > * { width: auto; }
+    .admin-dashboard__feed-controls > :first-child { min-width: 12rem !important; flex: 1 1 16rem; }
+    .admin-dashboard__feed-controls .admin-data-control-group,
+    .admin-dashboard__feed-controls .admin-selection__anchor { width: auto; }
+    .admin-dashboard__feed-controls .admin-data-control-group > .admin-action,
+    .admin-dashboard__feed-controls .admin-selection__trigger { width: auto; }
+}
+
+@media (max-width: 980px) {
+    .admin-dashboard__feed-table .admin-action__label { display: none; }
+    .admin-dashboard__feed-actions .admin-action { justify-content: center; padding-inline: .2rem; }
+}
+
+@media (max-width: 520px) {
+    .admin-detail-dialog__meta { grid-template-columns: 1fr; }
+    .admin-detail-dialog__meta > div,
+    .admin-detail-dialog__meta > div:nth-child(even),
+    .admin-detail-dialog__meta > div:nth-last-child(-n + 2) {
+        padding: .65rem 0;
+        border-right: 0;
+        border-bottom: 1px solid var(--admin-line);
+    }
+    .admin-detail-dialog__meta > div:last-child { border-bottom: 0; }
+}
