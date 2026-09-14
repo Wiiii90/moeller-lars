@@ -12,6 +12,11 @@
     --admin-control-label-size: .68rem;
     --admin-control-value-size: .78rem;
     --admin-control-text-inset: .25rem;
+    --admin-control-popover-surface: #fff;
+}
+
+.dark {
+    --admin-control-popover-surface: rgb(24, 24, 27);
 }
 
 .admin-control-field {
@@ -44,7 +49,8 @@
 }
 
 .admin-control-field .fi-input,
-.admin-control-field .fi-select-input {
+.admin-control-field .fi-select-input,
+.admin-control-field .fi-select-input-btn {
     min-height: calc(var(--admin-control-height) - 1px);
     border-radius: 0 !important;
     background: transparent !important;
@@ -52,10 +58,144 @@
     font-size: var(--admin-control-value-size) !important;
 }
 
+.admin-control-field .fi-select-input-btn {
+    padding-inline: var(--admin-control-text-inset) !important;
+}
+
+.admin-control-field .fi-select-input-placeholder {
+    color: var(--admin-faint) !important;
+}
+
 .admin-control-field textarea.fi-input {
     min-height: 8rem;
     padding-block: .55rem;
     line-height: 1.45;
+}
+
+/* Filament's searchable/multi Select renders its own popover rather than a
+ * native <select>. The popover is still part of the same admin control grammar.
+ * Keep these selectors global to the admin theme because Filament may anchor
+ * the list outside the immediate field wrapper. */
+.fi-select-input-dropdown {
+    overflow: hidden;
+    border: 1px solid var(--admin-line-strong) !important;
+    border-radius: 0 !important;
+    background: var(--admin-control-popover-surface) !important;
+    color: var(--admin-text) !important;
+    box-shadow: 0 .7rem 2rem rgba(0, 0, 0, .12) !important;
+}
+
+.fi-select-input-search-wrp {
+    border-bottom: 1px solid var(--admin-line) !important;
+    background: transparent !important;
+}
+
+.fi-select-input-search-input {
+    min-height: var(--admin-control-height);
+    padding-inline: var(--admin-control-text-inset) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--admin-text) !important;
+    font: inherit !important;
+    font-size: var(--admin-control-value-size) !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+
+.fi-select-input-search-input::placeholder {
+    color: var(--admin-faint) !important;
+    opacity: 1;
+}
+
+.fi-select-input-options-ctn {
+    padding: .35rem !important;
+}
+
+.fi-select-input-option,
+.fi-select-input-option-group-header {
+    border-radius: 0 !important;
+}
+
+.fi-select-input-option {
+    min-height: 2rem;
+    padding: .42rem .5rem !important;
+    color: var(--admin-text) !important;
+    font-size: var(--admin-control-value-size) !important;
+    line-height: 1.25;
+}
+
+.fi-select-input-option:hover,
+.fi-select-input-option:focus-visible {
+    background: var(--admin-subtle) !important;
+    outline: 0;
+}
+
+.fi-select-input-option.fi-selected,
+.fi-select-input-option[aria-selected="true"] {
+    background: color-mix(in srgb, var(--admin-accent) 8%, var(--admin-control-popover-surface)) !important;
+}
+
+.fi-select-input-option.fi-selected:hover,
+.fi-select-input-option[aria-selected="true"]:hover {
+    background: color-mix(in srgb, var(--admin-accent) 12%, var(--admin-control-popover-surface)) !important;
+}
+
+.fi-select-input-option-label {
+    color: inherit !important;
+    font: inherit !important;
+}
+
+.fi-select-input-option-group-header {
+    padding: .42rem .5rem .3rem !important;
+    color: var(--admin-muted) !important;
+    font-size: var(--admin-control-label-size) !important;
+    font-weight: 700 !important;
+    letter-spacing: .09em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.fi-select-input-empty {
+    padding: .7rem .5rem !important;
+    color: var(--admin-muted) !important;
+    font-size: var(--admin-control-value-size) !important;
+}
+
+.fi-select-input-selected-item {
+    border: 1px solid var(--admin-line-strong) !important;
+    border-radius: .2rem !important;
+    background: color-mix(in srgb, var(--admin-surface) 88%, transparent) !important;
+    color: var(--admin-text) !important;
+    font-size: var(--admin-font-size-table-support) !important;
+}
+
+.dark .fi-select-input-selected-item {
+    background: rgba(20, 20, 20, .78) !important;
+}
+
+.fi-select-input-selected-item-delete-btn,
+.fi-select-input-clear-btn {
+    color: var(--admin-muted) !important;
+}
+
+.fi-select-input-selected-item-delete-btn:hover,
+.fi-select-input-selected-item-delete-btn:focus-visible,
+.fi-select-input-clear-btn:hover,
+.fi-select-input-clear-btn:focus-visible {
+    color: var(--admin-text) !important;
+    outline: 0;
+}
+
+.fi-select-input-option-checkbox {
+    border-color: var(--admin-line-strong) !important;
+    border-radius: .22rem !important;
+    color: var(--admin-text) !important;
+}
+
+.fi-select-input-option-checkbox:checked {
+    border-color: var(--admin-accent) !important;
+    background: var(--admin-accent) !important;
 }
 
 /* Native workspace fields are the Blade/native adapter of the same contract. */
