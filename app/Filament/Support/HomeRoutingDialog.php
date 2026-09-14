@@ -23,10 +23,14 @@ final class HomeRoutingDialog
     public function fill(): array
     {
         $routing = $this->routing->configuration($this->resolver->settings());
+        $targetId = $routing['skip_target_section_id'];
+        if ($targetId !== null && ! array_key_exists($targetId, $this->targetOptions())) {
+            $targetId = null;
+        }
 
         return [
             'skip_home' => $routing['skip_home'],
-            'skip_target_section_id' => $routing['skip_target_section_id'],
+            'skip_target_section_id' => $targetId,
         ];
     }
 
