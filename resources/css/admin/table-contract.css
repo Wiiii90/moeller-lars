@@ -121,12 +121,17 @@
 }
 
 /* Pages uses the same six visual units as its metrics. The first two units
- * contain Position/Drag + Page + Status, Page Type and Template each own one
+ * contain Position/Drag + Name + Status, Page Type and Template each own one
  * full unit, and Actions + trailing Selection own the final two units. */
 .admin-hierarchy--pages .admin-pages__header,
 .admin-hierarchy--pages .admin-pages__row {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     column-gap: 0;
+}
+
+.admin-pages__row {
+    position: relative;
+    min-height: 3rem;
 }
 
 .admin-pages__primary-grid {
@@ -218,44 +223,49 @@
     padding-left: 0;
 }
 
-.admin-hierarchy--pages .admin-hierarchy__row.is-child {
-    min-height: 3rem;
-}
-
-/* During a drag every eligible parent exposes a small landing seam. The seam
- * expands only for the parent currently under the pointer, avoiding the large
- * layout jumps caused by permanently open child drop rows. */
-.admin-pages__child-drop {
-    position: relative;
-    transition: min-height .12s ease, padding-top .12s ease, background-color .12s ease;
-}
-
-.admin-pages__child-drop.is-drop-eligible {
-    min-height: .55rem;
-}
-
-.admin-pages__child-drop.is-drop-hover {
-    min-height: 2.45rem;
-    padding-top: 2rem;
-    background: color-mix(in srgb, var(--admin-accent) 4%, transparent);
-}
-
-.admin-pages__child-drop.is-drop-hover::before {
+/* Nesting is an overlay on the target row, never an inserted/expanded row.
+ * This keeps every table coordinate fixed from drag start through drop. The
+ * center overlay makes the gesture explicit: drop on a page to nest; drop in
+ * the ordinary sortable gaps to reorder on the current level. */
+.admin-pages__nest-target {
     position: absolute;
-    top: .28rem;
-    right: var(--admin-table-edge-inset);
-    left: var(--admin-table-edge-inset);
+    z-index: 8;
+    top: .32rem;
+    right: 33.333333%;
+    bottom: .32rem;
+    left: 10%;
     display: flex;
-    height: 1.42rem;
-    padding-inline: .5rem;
+    min-width: 0;
+    padding-inline: .55rem;
     align-items: center;
-    border: 1px dashed color-mix(in srgb, var(--admin-accent) 58%, var(--admin-line-strong));
+    justify-content: center;
+    border: 1px dashed color-mix(in srgb, var(--admin-accent) 52%, var(--admin-line-strong));
+    background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-surface) 84%, transparent);
     color: var(--admin-accent-strong);
-    content: attr(data-drop-label);
-    font-size: .64rem;
+    font-size: .65rem;
     font-weight: 650;
-    letter-spacing: .02em;
+    letter-spacing: .015em;
+    line-height: 1;
+    opacity: .84;
+    pointer-events: auto;
+    transition: opacity .1s ease, background-color .1s ease, border-color .1s ease, box-shadow .1s ease;
+}
+
+.admin-pages__nest-target span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     pointer-events: none;
+}
+
+.admin-pages__nest-target.is-hovered {
+    border-style: solid;
+    border-color: var(--admin-accent);
+    background: color-mix(in srgb, var(--admin-accent) 15%, var(--admin-surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--admin-accent) 22%, transparent);
+    opacity: 1;
 }
 
 /* Match Dashboard's wide-control rhythm: Search owns the first four metric
