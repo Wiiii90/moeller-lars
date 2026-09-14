@@ -67,6 +67,40 @@ final class PublicationService
         return ['total' => $total, 'groups' => $groups];
     }
 
+    /**
+     * Report exactly the readiness checks the current Commit path can enforce.
+     * Business-domain mutations are expected to preserve their own invariants
+     * before they reach the publication snapshot.
+     *
+     * @return array{status:string,label:string,blockers:list<string>}
+     */
+    public function preflight(): array
+    {
+        if (! $this->hasPendingChanges()) {
+            return [
+                'status' => 'idle',
+                'label' => 'Nothing staged',
+                'blockers' => [],
+            ];
+        }
+
+        try {
+            $this->schemaGuard->assertParity();
+        } catch (\Throwable $exception) {
+            return [
+                'status' => 'blocked',
+                'label' => 'Publication blocked',
+                'blockers' => [$exception->getMessage()],
+            ];
+        }
+
+        return [
+            'status' => 'ready',
+            'label' => 'Ready to publish',
+            'blockers' => [],
+        ];
+    }
+
     public function commit(User $actor, ?string $message = null): ?PublicationCheckpoint
     {
         $message = is_string($message) ? trim($message) : null;
