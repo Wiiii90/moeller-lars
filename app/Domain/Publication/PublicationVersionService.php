@@ -80,6 +80,7 @@ final class PublicationVersionService
             $this->mediaCleanup->queueAbandonedWorkingMedia();
             $this->replaceWorkingFromCheckpoint($checkpoint);
             $this->eventStates->clearUncheckpointedPendingStates();
+            $this->setWorkingContext('restore', (int) $checkpoint->getKey());
             $this->audit->record(
                 $actor,
                 'publication.version_restored',
@@ -102,12 +103,15 @@ final class PublicationVersionService
             $this->schemaGuard->assertParity();
             $changed = $this->pendingCount();
             if ($changed < 1) {
+                $this->clearWorkingContext();
+
                 return 0;
             }
 
             $this->mediaCleanup->queueAbandonedWorkingMedia();
             $this->replaceWorkingFromSchema('committed');
             $this->eventStates->clearUncheckpointedPendingStates();
+            $this->clearWorkingContext();
 
             $live = $this->currentLiveCheckpoint();
             $this->audit->record(
@@ -149,6 +153,7 @@ final class PublicationVersionService
             $this->mediaCleanup->queueAbandonedWorkingMedia();
             $this->replaceWorkingFromCheckpoint($parent);
             $this->eventStates->clearUncheckpointedPendingStates();
+            $this->setWorkingContext('revert', (int) $live->getKey());
             $this->audit->record(
                 $actor,
                 'publication.commit_revert_staged',
@@ -189,6 +194,29 @@ final class PublicationVersionService
             ->first();
 
         return $checkpoint;
+    }
+
+    public function workingContext(): array
+    {
+        $context = DB::table('publication_working_context')->where('id', 1)->first();
+        $operation = is_string($context?->operation ?? null) ? (string) $context->operation : null;
+        $sourceId = is_numeric($context?->source_publication_checkpoint_id ?? null)
+            ? (int) $context->source_publication_checkpoint_id
+            : null;
+
+        return [
+            'operation' => in_array($operation, ['restore', 'revert'], true) ? $operation : null,
+            'source_publication_checkpoint_id' => $sourceId,
+        ];
+    }
+
+    public function clearWorkingContext(): void
+    {
+        DB::table('publication_working_context')->where('id', 1)->update([
+            'operation' => null,
+            'source_publication_checkpoint_id' => null,
+            'updated_at' => now(),
+        ]);
     }
 
     public function schemaHash(): string
@@ -318,5 +346,14 @@ final class PublicationVersionService
         }
 
         return $total;
+    }
+
+    private function setWorkingContext(string $operation, int $sourceCheckpointId): void
+    {
+        DB::table('publication_working_context')->where('id', 1)->update([
+            'operation' => $operation,
+            'source_publication_checkpoint_id' => $sourceCheckpointId,
+            'updated_at' => now(),
+        ]);
     }
 }
