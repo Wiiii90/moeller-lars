@@ -21,7 +21,7 @@
 
 /* A controls row immediately followed by a table/hierarchy does not draw a
  * second separator. The table header owns that boundary. */
-.admin-task-controls {
+.admin-task-controls:has(+ .admin-table) {
     border-bottom: 0 !important;
 }
 
@@ -160,27 +160,41 @@
     padding-left: .65rem;
 }
 
+/* Stable five-slot rail mirrors the Social Media table: every semantic action
+ * keeps one slot even when Home intentionally renders a placeholder. */
 .admin-pages__row-actions {
+    display: grid !important;
+    width: 100%;
     min-width: 0;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: .08rem !important;
     padding-left: .35rem;
 }
 
 .admin-pages__row-actions .admin-action {
+    width: 100%;
     min-width: 0;
-    padding-inline: .3rem;
-    font-size: .68rem;
+    padding-inline: .22rem;
+    justify-content: center !important;
+    overflow: hidden;
+    font-size: .66rem;
 }
 
 .admin-pages__row-actions .admin-action--state {
     min-width: 0;
 }
 
+.admin-pages__row-actions .admin-action__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .admin-pages__action-placeholder {
-    width: 3.6rem;
-    min-width: 3.6rem;
-    height: 2rem;
-    flex: 0 0 3.6rem;
+    display: block;
+    min-width: 0;
+    min-height: 2rem;
 }
 
 .admin-pages__drag-placeholder {
@@ -342,7 +356,8 @@
     }
 
     .admin-pages__row-actions .admin-action {
-        padding-inline: .2rem;
+        padding-inline: .14rem;
+        font-size: .64rem;
     }
 }
 
