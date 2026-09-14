@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
 use App\Domain\Admin\DashboardFeedPins;
 use App\Domain\Admin\DashboardNotificationRetention;
@@ -11,7 +12,6 @@ use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
@@ -25,6 +25,7 @@ final class Dashboard extends Page
     private const NOTIFICATION_FILTERS = [
         'all' => 'All notifications',
         'success' => 'Successful',
+        'info' => 'Information',
         'warning' => 'Warnings',
         'danger' => 'Errors',
     ];
@@ -253,10 +254,10 @@ final class Dashboard extends Page
     {
         app(DashboardFeed::class)->markContactUnread($contactMessageId);
 
-        Notification::make()
-            ->title('Contact message marked unread')
-            ->success()
-            ->send();
+        app(AdminNotifier::class)->toast(
+            title: 'Contact message marked unread',
+            status: 'success',
+        );
     }
 
     public function deleteContactMessage(int $contactMessageId): void
@@ -264,10 +265,10 @@ final class Dashboard extends Page
         app(DashboardFeedPins::class)->forget('contact:'.$contactMessageId);
         app(DashboardFeed::class)->deleteContact($contactMessageId);
 
-        Notification::make()
-            ->title('Contact message deleted')
-            ->success()
-            ->send();
+        app(AdminNotifier::class)->toast(
+            title: 'Contact message deleted',
+            status: 'success',
+        );
 
         $this->feedPage = $this->feedPagination()['page'];
     }
