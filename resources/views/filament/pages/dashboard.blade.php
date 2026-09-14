@@ -14,7 +14,7 @@
                 </header>
 
                 <div class="admin-dashboard__storage-visual" aria-label="Storage capacity preview">
-                    <x-admin.storage-capacity-visual :capacity="$storage" compact />
+                    <x-admin.storage-capacity-visual :capacity="$storage" />
                 </div>
                 <p class="admin-dashboard__facts">
                     <span>Used <strong>{{ $storage['authoritative'] }}</strong></span>
