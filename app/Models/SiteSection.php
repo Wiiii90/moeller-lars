@@ -86,7 +86,7 @@ final class SiteSection extends Model
                     throw ValidationException::withMessages(['artwork_category_id' => 'A Gallery site node must reference its Gallery record.']);
                 }
             } elseif ($section->getAttribute('artwork_category_id') !== null) {
-                throw ValidationException::withMessages(['artwork_category_id' => 'Only Gallery site nodes may reference its Gallery record.']);
+                throw ValidationException::withMessages(['artwork_category_id' => 'Only Gallery site nodes may reference their Gallery record.']);
             }
 
             $slug = $section->getAttribute('slug');
