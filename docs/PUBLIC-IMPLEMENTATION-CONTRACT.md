@@ -41,12 +41,15 @@ The public visual composition remains artist-specific rather than adopting a gen
 
 ## Home presentation
 
-Home supports four presentation modes:
+Home content uses one of three templates:
 
-- **Artwork** — deterministic hero Artwork from eligible public Gallery/Artwork sources;
+- **Hero Artwork** — deterministic hero Artwork from eligible public Gallery/Artwork sources;
 - **Under Construction** — explicit gated structured component presentation;
-- **Skip Home** — redirect/fallback behavior to an eligible target;
 - **Custom** — ordered structured Home components.
+
+**Skip Home is routing state, not a content template.** It can be enabled independently of the selected Home content template and may point at an explicit eligible published top-level page. When no explicit valid target is stored, the target is the next eligible published top-level public page after Home in canonical Site Node order. If no eligible target exists, `/` renders the selected Home template rather than redirecting into an invalid route or loop.
+
+Changing the Home content template does not implicitly enable, disable or retarget Skip Home. Existing legacy `skip_home` template rows are normalized to Hero Artwork plus enabled Skip Home routing.
 
 Artwork selection uses canonical Gallery eligibility, Artwork date and explicit tie-break semantics. Ambiguous invalid state is surfaced rather than resolved by incidental DB order.
 
