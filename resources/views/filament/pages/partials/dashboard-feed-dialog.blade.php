@@ -1,7 +1,7 @@
 @php
     $body = trim((string) ($entry['body'] ?? ''));
     $title = trim((string) ($entry['title'] ?? ''));
-    $showMessage = $body !== '' && $body !== $title;
+    $message = $entry['type'] === 'notification' && $body === $title ? '' : $body;
 @endphp
 
 <div class="admin-detail-dialog">
@@ -36,6 +36,16 @@
         @endif
     </dl>
 
+    <div class="admin-detail-dialog__field">
+        <span>Title</span>
+        <p>{{ $title !== '' ? $title : '—' }}</p>
+    </div>
+
+    <div class="admin-detail-dialog__field">
+        <span>Message</span>
+        <p>{{ $message !== '' ? $message : '—' }}</p>
+    </div>
+
     @if ($entry['type'] === 'contact')
         <p class="admin-detail-dialog__context">
             <span>{{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }}</span>
@@ -44,13 +54,6 @@
                 <span>Mail {{ strtolower($entry['mail_delivery_status']) }}@if ($entry['mail_delivered_at']) · {{ $entry['mail_delivered_at'] }}@endif</span>
             @endif
         </p>
-    @endif
-
-    @if ($showMessage)
-        <div class="admin-detail-dialog__message">
-            <span>Message</span>
-            <p>{{ $body }}</p>
-        </div>
     @endif
 
     @if ($entry['type'] !== 'contact' && $entry['type'] !== 'notification' && $entry['link'] !== null && $entry['link_label'] !== null)
