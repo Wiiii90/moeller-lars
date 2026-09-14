@@ -227,57 +227,12 @@
             <x-admin.add-row wire:click="mountAction('addPage')">Add page</x-admin.add-row>
 
             <footer class="admin-pager" aria-label="Pages pagination">
-                <div
-                    class="admin-pager__size"
-                    x-data="{
-                        open: false,
-                        toggle() {
-                            this.open = ! this.open;
-                            if (this.open) {
-                                this.$nextTick(() => this.$refs.menu?.scrollIntoView({ block: 'nearest' }));
-                            }
-                        },
-                    }"
-                    x-on:click.outside="open = false"
-                    x-on:keydown.escape.window="open = false"
-                >
-                    <span>Per page</span>
-                    <div class="admin-pager-size-picker">
-                        <button
-                            class="admin-pager-size-picker__trigger"
-                            type="button"
-                            x-on:click="toggle()"
-                            x-bind:aria-expanded="open.toString()"
-                            aria-haspopup="listbox"
-                            aria-label="Pages per page"
-                        >
-                            <span>{{ $perPage }}</span>
-                            <span aria-hidden="true">▾</span>
-                        </button>
-                        <div
-                            class="admin-pager-size-picker__menu"
-                            x-ref="menu"
-                            role="listbox"
-                            aria-label="Pages per page"
-                            x-show="open"
-                            x-cloak
-                        >
-                            @foreach ([25, 50, 100] as $sizeOption)
-                                <button
-                                    class="admin-pager-size-picker__option {{ $perPage === $sizeOption ? 'is-active' : '' }}"
-                                    type="button"
-                                    role="option"
-                                    aria-selected="{{ $perPage === $sizeOption ? 'true' : 'false' }}"
-                                    wire:click="$set('perPage', {{ $sizeOption }})"
-                                    x-on:click="open = false"
-                                >
-                                    <span class="admin-pager-size-picker__check" aria-hidden="true">{{ $perPage === $sizeOption ? '✓' : '' }}</span>
-                                    <span>{{ $sizeOption }}</span>
-                                </button>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
+                <x-admin.page-size-picker
+                    :value="$perPage"
+                    :options="[25, 50, 100]"
+                    wire-model="perPage"
+                    aria-label="Pages per page"
+                />
                 <span class="admin-pager__range">{{ $rangeStart }}–{{ $rangeEnd }} of {{ $totalGroups }}</span>
                 <div class="admin-toolbar admin-pager__actions">
                     <button class="admin-action" type="button" wire:click="previousPage" @disabled($pageNumber <= 1)>Previous</button>
