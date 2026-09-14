@@ -28,6 +28,12 @@
                 <dt>Status</dt>
                 <dd>{{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }} · {{ ucfirst($entry['notification_status']) }}</dd>
             </div>
+            @if ($entry['link'] !== null && $entry['link_label'] !== null)
+                <div>
+                    <dt>Reference</dt>
+                    <dd><a href="{{ $entry['link'] }}">{{ $entry['link_label'] }}</a></dd>
+                </div>
+            @endif
         @elseif ($entry['link'] !== null && $entry['link_label'] !== null)
             <div>
                 <dt>Reference</dt>
@@ -56,7 +62,7 @@
         </p>
     @endif
 
-    @if ($entry['type'] !== 'contact' && $entry['type'] !== 'notification' && $entry['link'] !== null && $entry['link_label'] !== null)
+    @if ($entry['type'] !== 'contact' && $entry['link'] !== null && $entry['link_label'] !== null)
         <a class="admin-detail-dialog__link" href="{{ $entry['link'] }}">{{ $entry['link_label'] }}</a>
     @endif
 </div>
