@@ -9,15 +9,31 @@ enum HomeTemplate: string
     case SkipHome = 'skip_home';
     case Custom = 'custom';
 
-    /** @return array<string, string> */
+    /**
+     * Templates that actually render Home content.
+     *
+     * SkipHome remains readable as a legacy persisted value, but redirecting
+     * the public root is routing state and is no longer offered as a template.
+     *
+     * @return array<string, string>
+     */
     public static function options(): array
     {
         return [
             self::Artwork->value => self::Artwork->label(),
             self::UnderConstruction->value => self::UnderConstruction->label(),
-            self::SkipHome->value => self::SkipHome->label(),
             self::Custom->value => self::Custom->label(),
         ];
+    }
+
+    public function contentTemplate(): self
+    {
+        return $this === self::SkipHome ? self::Artwork : $this;
+    }
+
+    public function isContentTemplate(): bool
+    {
+        return $this !== self::SkipHome;
     }
 
     public function label(): string
