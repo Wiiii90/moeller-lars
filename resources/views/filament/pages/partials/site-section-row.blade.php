@@ -42,7 +42,9 @@
     </div>
 
     <div class="admin-pages__type" role="cell" data-cell="page-type">
-        @if ($section['can_convert'])
+        @if ($isHome)
+            <span>Landing Page</span>
+        @elseif ($section['can_convert'])
             <select
                 class="admin-inline-select"
                 aria-label="Page type for {{ $label }}"
@@ -58,7 +60,9 @@
     </div>
 
     <div class="admin-pages__template" role="cell" data-cell="template">
-        @if ($section['type'] === \App\Domain\Content\SiteNodeType::Journal->value)
+        @if ($isHome)
+            <span>{{ $homeTemplateLabel }}</span>
+        @elseif ($section['type'] === \App\Domain\Content\SiteNodeType::Journal->value)
             <select
                 class="admin-inline-select"
                 aria-label="Journal template for {{ $label }}"
@@ -88,14 +92,10 @@
             @endif
 
             @if ($isHome)
-                @if ($section['workspace_url'])
-                    <a class="admin-action admin-action--with-icon" href="{{ $section['workspace_url'] }}">
-                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
-                        <span class="admin-action__label">Edit</span>
-                    </a>
-                @else
-                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
-                @endif
+                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editHome')">
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
+                    <span class="admin-action__label">Edit</span>
+                </button>
             @else
                 <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editPage', { section: {{ $section['id'] }} })">
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
