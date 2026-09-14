@@ -50,7 +50,7 @@ final class PublicationEventStateService
 
     public static function tracks(string $entityType): bool
     {
-        return array_key_exists($entityType, self::ENTITY_ROWS);
+        return $entityType === 'publication_checkpoint' || array_key_exists($entityType, self::ENTITY_ROWS);
     }
 
     public function record(AuditEvent $event): void
@@ -124,6 +124,10 @@ final class PublicationEventStateService
 
     public function entityHasPendingChanges(string $entityType, int $entityId): bool
     {
+        if ($entityType === 'publication_checkpoint') {
+            return $this->publicationHasPendingChanges();
+        }
+
         $rows = self::ENTITY_ROWS[$entityType] ?? [];
         foreach ($rows as $definition) {
             $table = $definition['table'];
@@ -139,6 +143,38 @@ final class PublicationEventStateService
         }
 
         return false;
+    }
+
+    public function clearUncheckpointedPendingStates(): void
+    {
+        DB::table('publication_event_states')
+            ->where('status', PublicationEventState::STATUS_PENDING)
+            ->whereNotExists(function ($query): void {
+                $query->selectRaw('1')
+                    ->from('publication_checkpoint_events')
+                    ->whereColumn('publication_checkpoint_events.audit_event_id', 'publication_event_states.audit_event_id');
+            })
+            ->update([
+                'status' => PublicationEventState::STATUS_NOT_PENDING,
+                'updated_at' => now(),
+            ]);
+    }
+
+    private function publicationHasPendingChanges(): bool
+    {
+        $parts = array_map(
+            static fn (string $table): string => sprintf(
+                'SELECT 1 AS changed FROM public.%1$s AS working FULL OUTER JOIN committed.%1$s AS committed USING (id) WHERE '.PublicationSnapshot::ROW_DIFFERENCE_SQL,
+                $table,
+            ),
+            PublicationSnapshot::TABLES,
+        );
+
+        $row = DB::selectOne(
+            'SELECT EXISTS (SELECT 1 FROM ('.implode(' UNION ALL ', $parts).') AS publication_changes LIMIT 1) AS pending',
+        );
+
+        return in_array($row?->pending ?? false, [true, 1, '1', 't'], true);
     }
 
     private function markGenerationNotPending(string $entityType, int $entityId, mixed $updatedAt): void
