@@ -48,6 +48,7 @@ it('registers the shared admin control adapter panel wide', function (): void {
     $root = dirname(__DIR__, 2);
     $provider = file_get_contents($root.'/app/Providers/Filament/AdminPanelProvider.php');
     $adapter = file_get_contents($root.'/app/Filament/Support/Controls/AdminControl.php');
+    $controls = file_get_contents($root.'/resources/css/admin/controls.css');
 
     expect($provider)
         ->toContain('AdminControl::register();');
@@ -59,4 +60,12 @@ it('registers the shared admin control adapter panel wide', function (): void {
         ->toContain('Textarea::configureUsing')
         ->toContain('Checkbox::configureUsing')
         ->toContain('Toggle::configureUsing');
+
+    expect($controls)
+        ->toContain('.fi-select-input-dropdown')
+        ->toContain('.fi-select-input-search-input')
+        ->toContain('.fi-select-input-option')
+        ->toContain('.fi-select-input-option.fi-selected')
+        ->toContain('.fi-select-input-option-group-header')
+        ->toContain('.fi-select-input-selected-item');
 });
