@@ -2,8 +2,8 @@
     use App\Domain\Content\JournalTemplate;
     use App\Domain\Content\SiteNodeType;
 
-    $typeOptions = collect(SiteNodeType::cases())->mapWithKeys(fn (SiteNodeType $type): array => [$type->value => $type->label()])->all();
-    $editableTypeOptions = SiteNodeType::editableOptions();
+    $typeOptions = collect(SiteNodeType::cases())->mapWithKeys(fn (SiteNodeType $type): array => [$type->value => $type->compactLabel()])->all();
+    $editableTypeOptions = SiteNodeType::compactOptions();
     $journalTemplateOptions = JournalTemplate::options();
     $selectedCount = count($selectedSectionIds);
 @endphp
@@ -24,12 +24,7 @@
                 <x-slot:search>
                     <label class="admin-task-field">
                         <span>SEARCH</span>
-                        <input
-                            type="search"
-                            value="{{ $search }}"
-                            placeholder="Search pages"
-                            wire:model.live.debounce.300ms="search"
-                        >
+                        <input type="search" value="{{ $search }}" placeholder="Search pages" wire:model.live.debounce.300ms="search">
                     </label>
                 </x-slot:search>
 
@@ -73,8 +68,7 @@
                 </x-slot:actions>
 
                 <x-slot:selection>
-                    <div class="admin-task-control-group admin-selection" x-data="{ open: false }">
-                        <span class="admin-task-control-label">SELECTION</span>
+                    <div class="admin-task-control-group admin-selection admin-selection--unlabeled" x-data="{ open: false }">
                         <div class="admin-selection__anchor">
                             <button
                                 class="admin-action admin-selection__trigger"
@@ -82,6 +76,7 @@
                                 x-on:click="open = ! open"
                                 x-bind:aria-expanded="open"
                                 aria-haspopup="menu"
+                                aria-label="Selected pages: {{ $selectedCount }}"
                                 @disabled($selectedCount === 0)
                             >
                                 <span>Selected</span>
@@ -90,14 +85,7 @@
                             <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
                                 <button class="admin-action" type="button" role="menuitem" wire:click="bulkPublish" @disabled($selectedCount === 0)>Publish selected</button>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpublish" @disabled($selectedCount === 0)>Unpublish selected</button>
-                                <button
-                                    class="admin-action is-danger"
-                                    type="button"
-                                    role="menuitem"
-                                    wire:click="bulkDelete"
-                                    wire:confirm="Delete the selected pages that satisfy their safety rules?"
-                                    @disabled($selectedCount === 0)
-                                >Delete selected</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="bulkDelete" wire:confirm="Delete the selected pages that satisfy their safety rules?" @disabled($selectedCount === 0)>Delete selected</button>
                             </div>
                         </div>
                     </div>
@@ -105,30 +93,51 @@
             </x-admin.controls>
 
             <x-admin.table>
-                <div class="admin-hierarchy admin-hierarchy--pages" role="table" aria-label="Pages">
-                    <div class="admin-hierarchy__header" role="row">
-                        <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">Position</span>
-                        <span role="columnheader" data-column="page-type">Page type</span>
-                        <span role="columnheader" data-column="page">Page</span>
-                        <span role="columnheader" data-column="template">Template</span>
-                        <span role="columnheader" data-column="status">Status</span>
-                        <span role="columnheader" data-column="actions">Actions</span>
-                        <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="columnheader" data-column="selection">
-                            <input
-                                type="checkbox"
-                                aria-label="Select all visible pages"
-                                aria-checked="{{ $selectionIndeterminate ? 'mixed' : ($allVisibleSelected ? 'true' : 'false') }}"
-                                wire:click="toggleSelectAll"
-                                @checked($allVisibleSelected)
-                                x-data
-                                x-effect="$el.indeterminate = {{ $selectionIndeterminate ? 'true' : 'false' }}"
-                            >
-                            <span class="sr-only">Selection</span>
-                        </label>
+                <div
+                    class="admin-hierarchy admin-hierarchy--pages"
+                    role="table"
+                    aria-label="Pages"
+                    x-data="{ dragging: false, draggedId: null, draggedDepth: null, draggedHasChildren: false, hoverParent: null }"
+                    x-on:pointerdown.capture="
+                        if (!$event.target.closest('.admin-drag-handle:not(:disabled)')) return;
+                        const row = $event.target.closest('.admin-pages__row');
+                        if (!row) return;
+                        dragging = true;
+                        draggedId = Number(row.dataset.sectionId);
+                        draggedDepth = Number(row.dataset.depth);
+                        draggedHasChildren = row.dataset.hasChildren === 'true';
+                    "
+                    x-on:pointerup.window="dragging = false; hoverParent = null"
+                    x-on:dragend.window="dragging = false; hoverParent = null"
+                    x-on:drop.window="dragging = false; hoverParent = null"
+                >
+                    <div class="admin-hierarchy__header admin-pages__header" role="row">
+                        <div class="admin-pages__primary-grid" role="presentation">
+                            <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">Position</span>
+                            <span role="columnheader" data-column="page">Page</span>
+                            <span role="columnheader" data-column="status">Status</span>
+                        </div>
+                        <span class="admin-pages__type" role="columnheader" data-column="page-type">Page type</span>
+                        <span class="admin-pages__template" role="columnheader" data-column="template">Template</span>
+                        <div class="admin-pages__utility-grid" role="presentation">
+                            <span role="columnheader" data-column="actions">Actions</span>
+                            <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="columnheader" data-column="selection">
+                                <input
+                                    type="checkbox"
+                                    aria-label="Select all visible pages"
+                                    aria-checked="{{ $selectionIndeterminate ? 'mixed' : ($allVisibleSelected ? 'true' : 'false') }}"
+                                    wire:click="toggleSelectAll"
+                                    @checked($allVisibleSelected)
+                                    x-data
+                                    x-effect="$el.indeterminate = {{ $selectionIndeterminate ? 'true' : 'false' }}"
+                                >
+                            </label>
+                        </div>
                     </div>
 
                     @if ($sections !== [])
                         <div
+                            class="admin-pages__root-rows"
                             role="rowgroup"
                             @if ($reorderEnabled)
                                 wire:sort="sortSection"
@@ -137,11 +146,8 @@
                             @endif
                         >
                             @foreach ($sections as $section)
-                                <div
-                                    class="admin-hierarchy__group"
-                                    wire:key="site-page-root-{{ $section['id'] }}"
-                                    @if ($reorderEnabled) wire:sort:item="{{ $section['id'] }}" @endif
-                                >
+                                @php($parentLabel = $section['navigation_label'] ?: $section['title'])
+                                <div class="admin-hierarchy__group" wire:key="site-page-root-{{ $section['id'] }}" @if ($reorderEnabled) wire:sort:item="{{ $section['id'] }}" @endif>
                                     @include('filament.pages.partials.site-section-row', [
                                         'section' => $section,
                                         'reorderEnabled' => $reorderEnabled,
@@ -152,9 +158,17 @@
                                     @if ($section['children'] !== [] || $reorderEnabled)
                                         <div class="admin-hierarchy__children">
                                             <div
-                                                class="admin-hierarchy__children-rows"
+                                                class="admin-hierarchy__children-rows admin-pages__child-drop"
                                                 role="rowgroup"
                                                 aria-label="Child pages under {{ $section['title'] }}"
+                                                data-drop-label="Move under {{ $parentLabel }}"
+                                                x-bind:class="{
+                                                    'is-drop-eligible': dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }},
+                                                    'is-drop-hover': dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && hoverParent === {{ $section['id'] }}
+                                                }"
+                                                x-on:dragenter.prevent="if (dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }}) hoverParent = {{ $section['id'] }}"
+                                                x-on:dragleave="if (!$el.contains($event.relatedTarget) && hoverParent === {{ $section['id'] }}) hoverParent = null"
+                                                x-on:drop="hoverParent = null"
                                                 @if ($reorderEnabled)
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
@@ -163,10 +177,7 @@
                                                 @endif
                                             >
                                                 @foreach ($section['children'] as $child)
-                                                    <div
-                                                        wire:key="site-page-child-{{ $child['id'] }}"
-                                                        @if ($reorderEnabled) wire:sort:item="{{ $child['id'] }}" @endif
-                                                    >
+                                                    <div wire:key="site-page-child-{{ $child['id'] }}" @if ($reorderEnabled) wire:sort:item="{{ $child['id'] }}" @endif>
                                                         @include('filament.pages.partials.site-section-row', [
                                                             'section' => $child,
                                                             'reorderEnabled' => $reorderEnabled,
@@ -185,15 +196,11 @@
                         <div class="admin-hierarchy__empty" role="row">
                             @if ($metrics['total'] > 0)
                                 <x-admin.empty-state title="No matching pages" minimal>
-                                    <x-slot:actions>
-                                        <button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button>
-                                    </x-slot:actions>
+                                    <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button></x-slot:actions>
                                 </x-admin.empty-state>
                             @else
                                 <x-admin.empty-state title="No pages yet" minimal>
-                                    <x-slot:actions>
-                                        <button class="admin-action" type="button" wire:click="startAddingPage">Add page</button>
-                                    </x-slot:actions>
+                                    <x-slot:actions><button class="admin-action" type="button" wire:click="startAddingPage">Add page</button></x-slot:actions>
                                 </x-admin.empty-state>
                             @endif
                         </div>
@@ -201,23 +208,20 @@
                 </div>
             </x-admin.table>
 
-            <x-admin.add-row
-                wire:click="startAddingPage"
-                aria-expanded="{{ $addingPage ? 'true' : 'false' }}"
-            >Add page</x-admin.add-row>
+            <x-admin.add-row wire:click="startAddingPage" aria-expanded="{{ $addingPage ? 'true' : 'false' }}">Add page</x-admin.add-row>
 
             @if ($addingPage)
-                <form class="admin-task-form" wire:submit="createPage">
+                <form class="admin-task-form admin-task-form--pages" wire:submit="createPage">
                     <label class="admin-task-field">
                         <span>PAGE TYPE</span>
                         <select wire:model.live="newPageType">
-                            @foreach (SiteNodeType::creatableOptions() as $value => $label)
+                            @foreach (SiteNodeType::compactOptions() as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>
                             @endforeach
                         </select>
                     </label>
 
-                    <label class="admin-task-field">
+                    <label class="admin-task-field admin-task-form--pages__title">
                         <span>TITLE</span>
                         <input type="text" maxlength="160" wire:model="newPageTitle" required>
                     </label>
@@ -228,6 +232,16 @@
                             <input type="text" maxlength="80" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" wire:model="newPageSlug" required>
                         </label>
                     @endif
+
+                    <label class="admin-task-field">
+                        <span>PARENT</span>
+                        <select wire:model="newPageParent">
+                            <option value="">Top level</option>
+                            @foreach ($parentOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
 
                     @if ($newPageType === SiteNodeType::Journal->value)
                         <label class="admin-task-field">
