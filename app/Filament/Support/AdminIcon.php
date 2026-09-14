@@ -29,6 +29,7 @@ enum AdminIcon: string
 
     case OpenPublic = 'heroicon-o-arrow-top-right-on-square';
     case OpenEntry = 'heroicon-o-inbox-arrow-down';
+    case Redirect = 'heroicon-o-arrow-right';
     case Publish = 'heroicon-o-eye';
     case Unpublish = 'heroicon-o-eye-slash';
     case Edit = 'heroicon-o-pencil-square';
