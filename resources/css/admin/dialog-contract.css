@@ -9,6 +9,7 @@
     --admin-dialog-width-default: 40rem;
     --admin-dialog-width-large: 53.333rem;
     --admin-dialog-viewport-gutter: 2rem;
+    --admin-dialog-header-action-size: 2rem;
 }
 
 .admin-dialog--mini { --admin-dialog-width: var(--admin-dialog-width-mini); }
@@ -24,16 +25,12 @@
     max-width: min(var(--admin-dialog-width), calc(100vw - var(--admin-dialog-viewport-gutter))) !important;
 }
 
-/* Detail/inspect dialogs keep Filament's canonical close button at the far
- * right. Contextual icon-only actions occupy the rail immediately before it.
- * The actions remain native Filament Action objects so confirmations and focus
- * management are not reimplemented locally. */
-.admin-dialog--header-actions {
-    position: relative;
-}
+/* Context actions remain native Filament actions, but all consumers use one
+ * stable rail immediately to the left of Filament's canonical X control. */
+.admin-dialog--header-actions { position: relative; }
 
 .admin-dialog--header-actions .fi-modal-header {
-    padding-inline-end: 7rem;
+    padding-inline-end: 7.4rem;
 }
 
 .admin-dialog--header-actions .fi-modal-footer {
@@ -51,18 +48,66 @@
 .admin-dialog--header-actions .fi-modal-footer-actions,
 .admin-dialog--header-actions.admin-task-dialog .fi-modal-footer-actions {
     width: auto;
-    gap: .2rem;
+    gap: .28rem;
     align-items: center;
     flex-wrap: nowrap;
 }
 
+.admin-dialog__header-action {
+    display: grid !important;
+    box-sizing: border-box;
+    width: var(--admin-dialog-header-action-size) !important;
+    min-width: var(--admin-dialog-header-action-size) !important;
+    height: var(--admin-dialog-header-action-size) !important;
+    min-height: var(--admin-dialog-header-action-size) !important;
+    padding: 0 !important;
+    place-items: center;
+    border: 1px solid var(--admin-line-strong) !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    color: var(--admin-muted) !important;
+    box-shadow: none !important;
+}
+
+.admin-dialog__header-action:hover,
+.admin-dialog__header-action:focus-visible {
+    border-color: var(--admin-text) !important;
+    background: var(--admin-subtle) !important;
+    color: var(--admin-text) !important;
+    outline: none;
+}
+
+.admin-dialog__header-action svg {
+    width: .92rem !important;
+    height: .92rem !important;
+}
+
+.admin-dialog__header-action.is-danger {
+    color: color-mix(in srgb, var(--admin-danger) 78%, var(--admin-text)) !important;
+}
+
+.admin-dialog__header-action.is-danger:hover,
+.admin-dialog__header-action.is-danger:focus-visible {
+    border-color: color-mix(in srgb, var(--admin-danger) 52%, var(--admin-line-strong)) !important;
+    background: color-mix(in srgb, var(--admin-danger) 7%, transparent) !important;
+    color: var(--admin-danger) !important;
+}
+
+.admin-dialog__header-action.is-primary {
+    border-color: color-mix(in srgb, var(--admin-accent) 58%, var(--admin-line-strong)) !important;
+    color: var(--admin-accent-strong) !important;
+}
+
+.admin-dialog--confirmation .fi-modal-content {
+    font-size: .78rem;
+    line-height: 1.5;
+}
+
 @media (max-width: 760px) {
-    :root {
-        --admin-dialog-viewport-gutter: 1rem;
-    }
+    :root { --admin-dialog-viewport-gutter: 1rem; }
 
     .admin-dialog--header-actions .fi-modal-header {
-        padding-inline-end: 6.25rem;
+        padding-inline-end: 6.5rem;
     }
 
     .admin-dialog--header-actions .fi-modal-footer {
