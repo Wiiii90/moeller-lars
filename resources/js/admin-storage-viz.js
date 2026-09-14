@@ -1,13 +1,12 @@
 import * as echarts from 'echarts/core';
 import { PieChart } from 'echarts/charts';
-import { GraphicComponent, TooltipComponent } from 'echarts/components';
-import { SVGRenderer } from 'echarts/renderers';
+import { GraphicComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
 
 echarts.use([
     PieChart,
     GraphicComponent,
-    TooltipComponent,
-    SVGRenderer,
+    CanvasRenderer,
 ]);
 
 const instances = new Map();
@@ -40,26 +39,36 @@ function resolveCssColor(element, variable, fallback) {
 
 function palette(element) {
     const token = (name, fallback) => resolveCssColor(element, name, fallback);
+    const storage = {
+        galleries: token('--storage-color-galleries', '#b45309'),
+        journal: token('--storage-color-journal', '#3f6f92'),
+        cv: token('--storage-color-cv', '#76558f'),
+        home: token('--storage-color-home', '#4f7d5b'),
+        'custom-pages': token('--storage-color-custom-pages', '#c47a2c'),
+        'site-identity': token('--storage-color-site-identity', '#2f7a78'),
+        referenced: token('--storage-color-referenced', '#687386'),
+        shared: token('--storage-color-shared', '#a15578'),
+        unassigned: token('--storage-color-unassigned', '#8b6a38'),
+        uncatalogued: token('--storage-color-uncatalogued', '#b42318'),
+        remaining: token('--storage-color-remaining', '#e8e8e5'),
+    };
 
     return {
         text: token('--admin-text', '#181818'),
         muted: token('--admin-muted', '#707070'),
-        surface: token('--admin-surface', '#ffffff'),
-        line: token('--admin-line', '#dedede'),
         accent: token('--admin-accent', '#b45309'),
-        storage: {
-            galleries: token('--storage-color-galleries', '#b45309'),
-            journal: token('--storage-color-journal', '#3f6f92'),
-            cv: token('--storage-color-cv', '#76558f'),
-            home: token('--storage-color-home', '#4f7d5b'),
-            'custom-pages': token('--storage-color-custom-pages', '#c47a2c'),
-            'site-identity': token('--storage-color-site-identity', '#2f7a78'),
-            referenced: token('--storage-color-referenced', '#687386'),
-            shared: token('--storage-color-shared', '#a15578'),
-            unassigned: token('--storage-color-unassigned', '#8b6a38'),
-            uncatalogued: token('--storage-color-uncatalogued', '#b42318'),
-            remaining: token('--storage-color-remaining', '#e8e8e5'),
-        },
+        storage,
+        chart: [
+            storage.galleries,
+            storage.journal,
+            storage.cv,
+            storage['site-identity'],
+            storage.home,
+            storage.shared,
+            storage.referenced,
+            storage['custom-pages'],
+            storage.unassigned,
+        ],
     };
 }
 
@@ -125,16 +134,15 @@ function storageSlices(config, colors, compact) {
     const usedPercent = clamp(config.percent, 0, 100);
     const rows = storageRows(config, compact);
     const totalUsedBytes = rows.reduce((sum, row) => sum + (Number(row.bytes) || 0), 0);
-    const areaIndexes = new Map();
 
     const slices = totalUsedBytes > 0
-        ? rows.map((row) => {
+        ? rows.map((row, index) => {
             const bytes = Number(row.bytes) || 0;
             const capacityShare = usedPercent * (bytes / totalUsedBytes);
             const area = row.area || row.key || 'referenced';
-            const index = areaIndexes.get(area) || 0;
-            areaIndexes.set(area, index + 1);
-            const opacity = compact ? 1 : [0.9, 0.76, 0.64, 0.54][Math.min(index, 3)];
+            const color = compact
+                ? (colors.storage[area] || colors.storage[row.key] || colors.accent)
+                : colors.chart[index % colors.chart.length];
 
             return {
                 key: row.key,
@@ -146,12 +154,13 @@ function storageSlices(config, colors, compact) {
                 files: Number(row.files) || 0,
                 capacityShare,
                 itemStyle: {
-                    color: colors.storage[area] || colors.storage[row.key] || colors.accent,
-                    opacity,
+                    color,
+                    opacity: compact ? 1 : 0.88,
                 },
                 emphasis: compact ? {
                     disabled: true,
                 } : {
+                    focus: 'none',
                     scale: false,
                     itemStyle: {
                         opacity: 1,
@@ -173,11 +182,12 @@ function storageSlices(config, colors, compact) {
             capacityShare: usedPercent,
             itemStyle: {
                 color: colors.accent,
-                opacity: compact ? 1 : 0.9,
+                opacity: compact ? 1 : 0.88,
             },
             emphasis: compact ? {
                 disabled: true,
             } : {
+                focus: 'none',
                 scale: false,
                 itemStyle: { opacity: 1 },
             },
@@ -224,39 +234,6 @@ function storageOption(element, config) {
     return {
         animation: false,
         stateAnimation: { duration: 0 },
-        tooltip: compact ? { show: false } : {
-            show: true,
-            trigger: 'item',
-            renderMode: 'richText',
-            confine: true,
-            transitionDuration: 0,
-            backgroundColor: colors.surface,
-            borderColor: colors.line,
-            borderWidth: 1,
-            padding: [7, 9],
-            textStyle: {
-                color: colors.text,
-                fontSize: 10,
-                lineHeight: 15,
-            },
-            formatter(params) {
-                const datum = params.data || {};
-                if (datum.key === 'remaining') {
-                    return `Remaining\n${datum.displayBytes} of ${config.allowance || 'allowance'}`;
-                }
-
-                const area = datum.areaLabel && datum.areaLabel !== datum.name
-                    ? ` · ${datum.areaLabel}`
-                    : '';
-                const files = Number(datum.files) || 0;
-                const fileCopy = files > 0
-                    ? `\n${files.toLocaleString()} ${files === 1 ? 'original' : 'originals'}`
-                    : '';
-                const share = Number(datum.capacityShare) || 0;
-
-                return `${datum.name}${area}\n${datum.displayBytes}${fileCopy}\n${share.toFixed(share < 0.1 ? 2 : 1)}% of ${config.allowance || 'allowance'}`;
-            },
-        },
         graphic: [
             {
                 type: 'text',
@@ -306,6 +283,7 @@ function storageOption(element, config) {
                 emphasis: compact ? {
                     disabled: true,
                 } : {
+                    focus: 'none',
                     scale: false,
                 },
                 data: slices,
@@ -314,10 +292,34 @@ function storageOption(element, config) {
     };
 }
 
+function scheduleResize(entry, width, height) {
+    const nextWidth = Math.round(width || 0);
+    const nextHeight = Math.round(height || 0);
+    if (nextWidth <= 0 || nextHeight <= 0) return;
+    if (nextWidth === entry.width && nextHeight === entry.height) return;
+
+    entry.width = nextWidth;
+    entry.height = nextHeight;
+    if (entry.resizeFrame !== null) return;
+
+    entry.resizeFrame = window.requestAnimationFrame(() => {
+        entry.resizeFrame = null;
+        if (! entry.chart.isDisposed()) {
+            entry.chart.resize({
+                width: entry.width,
+                height: entry.height,
+                animation: { duration: 0 },
+                silent: true,
+            });
+        }
+    });
+}
+
 function disposeElement(element) {
     const entry = instances.get(element);
     if (! entry) return;
 
+    if (entry.resizeFrame !== null) window.cancelAnimationFrame(entry.resizeFrame);
     if (entry.resizeObserver) entry.resizeObserver.disconnect();
     if (! entry.chart.isDisposed()) entry.chart.dispose();
     instances.delete(element);
@@ -332,27 +334,45 @@ function mountElement(element) {
     const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
     const existing = instances.get(element);
 
-    if (
-        existing
-        && existing.signature === signature
-        && existing.theme === theme
-        && existing.surface === surface
-    ) return;
+    if (existing && existing.surface === surface) {
+        if (existing.signature !== signature || existing.theme !== theme) {
+            existing.chart.setOption(storageOption(element, config), {
+                notMerge: true,
+                lazyUpdate: false,
+                silent: true,
+            });
+            existing.signature = signature;
+            existing.theme = theme;
+        }
+
+        return;
+    }
 
     if (existing) disposeElement(element);
 
-    const chart = echarts.init(surface, null, { renderer: 'svg' });
+    const chart = echarts.init(surface, null, { renderer: 'canvas' });
     const entry = {
         chart,
         surface,
         signature,
         theme,
         resizeObserver: null,
+        resizeFrame: null,
+        width: 0,
+        height: 0,
     };
 
-    chart.setOption(storageOption(element, config), { notMerge: true });
+    chart.setOption(storageOption(element, config), {
+        notMerge: true,
+        lazyUpdate: false,
+        silent: true,
+    });
 
-    entry.resizeObserver = new ResizeObserver(() => chart.resize());
+    entry.resizeObserver = new ResizeObserver((entries) => {
+        const rect = entries[0]?.contentRect;
+        if (! rect) return;
+        scheduleResize(entry, rect.width, rect.height);
+    });
     entry.resizeObserver.observe(surface);
     instances.set(element, entry);
 }
