@@ -11,8 +11,6 @@ use Illuminate\Validation\ValidationException;
 
 final class HomeRoutingSettingsService
 {
-    private const ROUTING_KEY = 'routing';
-
     public function __construct(
         private readonly AdminAuditService $audit,
         private readonly SiteNodeRoute $routes,
@@ -21,15 +19,12 @@ final class HomeRoutingSettingsService
     /** @return array{skip_home:bool,skip_target_section_id:?int} */
     public function configuration(HomePresentationSetting $settings): array
     {
-        $root = $settings->getAttribute('template_settings');
-        $root = is_array($root) ? $root : [];
-        $routing = is_array($root[self::ROUTING_KEY] ?? null) ? $root[self::ROUTING_KEY] : [];
-        $targetId = filter_var($routing['skip_target_section_id'] ?? null, FILTER_VALIDATE_INT);
+        $targetId = filter_var($settings->getAttribute('skip_target_section_id'), FILTER_VALIDATE_INT);
 
         return [
-            // Legacy rows used Skip Home as a template. Keep those rows behaving
-            // exactly as before until the next settings write normalizes them.
-            'skip_home' => (bool) ($routing['skip_home'] ?? false)
+            // Keep pre-migration rows readable while rolling deployments cross
+            // the schema boundary. The migration normalizes Skip Home to Artwork.
+            'skip_home' => (bool) $settings->getAttribute('skip_home')
                 || $settings->template() === HomeTemplate::SkipHome,
             'skip_target_section_id' => $targetId === false || $targetId <= 0 ? null : (int) $targetId,
         ];
@@ -58,21 +53,17 @@ final class HomeRoutingSettingsService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $root = $fresh->getAttribute('template_settings');
-            $root = is_array($root) ? $root : [];
-            $root[self::ROUTING_KEY] = [
-                'skip_home' => $enabled,
-                'skip_target_section_id' => $targetSectionId,
-            ];
-            $fresh->setAttribute('template_settings', $root);
+            $fresh->setAttribute('skip_home', $enabled);
+            $fresh->setAttribute('skip_target_section_id', $enabled ? $targetSectionId : null);
 
             // Normalize the old fourth-template representation without losing
-            // its behaviour. Hero Artwork is the legacy row's content fallback.
+            // its routing behaviour. Hero Artwork is the legacy content fallback.
             if ($fresh->template() === HomeTemplate::SkipHome) {
                 $fresh->setAttribute('template', HomeTemplate::Artwork->value);
+                $fresh->setAttribute('skip_home', true);
             }
 
-            if (! $fresh->isDirty(['template', 'template_settings'])) {
+            if (! $fresh->isDirty(['template', 'skip_home', 'skip_target_section_id'])) {
                 return false;
             }
 
