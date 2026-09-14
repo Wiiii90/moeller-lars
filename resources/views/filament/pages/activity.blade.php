@@ -19,7 +19,6 @@
                 return request()->url().($query === [] ? '' : '?'.http_build_query($query));
             };
             $stageQuery = [
-                'period' => $period,
                 'search' => $search,
                 'area' => $area,
                 'family' => $family,
@@ -33,9 +32,15 @@
                 'calendar_year' => $calendarYear,
                 'calendar_date' => $date,
             ]);
-            $activitySourceExists = $paginator->total() > 0 || \App\Models\AuditEvent::query()
-                ->where('occurred_at', '>=', now()->subDays(\App\Filament\Support\AdminActivityFeed::ACTIVITY_WINDOW_DAYS))
-                ->exists();
+            $hourUrls = [];
+            foreach (range(0, 23) as $hour) {
+                $hourUrls[$hour] = $activityUrl([
+                    ...$stageQuery,
+                    'calendar_year' => $calendarYear,
+                    'calendar_date' => $selectedCalendarDate,
+                    'hour' => $hour,
+                ]);
+            }
         @endphp
 
         <section class="activity-atlas" aria-label="Activity visualization">
@@ -113,12 +118,12 @@
                                                 ></span>
                                             @else
                                                 <a
-                                                    class="activity-calendar__day is-level-{{ $day['level'] }} {{ $day['selected'] ? 'is-selected' : '' }} {{ $day['today'] ? 'is-today' : '' }}"
+                                                    class="activity-calendar__day is-level-{{ $day['level'] }} {{ $day['selected'] ? 'is-selected' : '' }} {{ $day['filtered'] ? 'is-filtered' : '' }} {{ $day['today'] ? 'is-today' : '' }}"
                                                     href="{{ $calendarDateUrl($day['date']) }}"
                                                     wire:navigate
                                                     role="gridcell"
-                                                    aria-current="{{ $day['selected'] ? 'date' : 'false' }}"
-                                                    aria-label="{{ $day['label'] }}: {{ $day['count'] }} changes"
+                                                    aria-current="{{ $day['filtered'] ? 'date' : 'false' }}"
+                                                    aria-label="Filter {{ $day['label'] }}: {{ $day['count'] }} changes"
                                                     title="{{ $day['label'] }} · {{ $day['count'] }} changes"
                                                 ></a>
                                             @endif
@@ -142,32 +147,62 @@
                         :activity="$clockActivity"
                         :peak-count="$clockPeakCount"
                         :peak-hour="$clockPeakHour"
+                        :selected-hour="$activeHour"
+                        :hour-urls="$hourUrls"
                         :caption-label="$selectedCalendarLabel"
                         :aria-context="'activity distribution for '.$selectedCalendarLabel"
                     />
                 </div>
 
-                <aside class="activity-publication admin-visual-stage__pane" aria-label="Publication context">
+                <aside class="activity-publication admin-visual-stage__pane" aria-label="Next publication">
                     <header class="activity-publication__header">
-                        <strong>Publication</strong>
+                        <strong>Next publication</strong>
                     </header>
 
                     <div class="activity-publication__staged">
-                        <span>Staged activity</span>
+                        <span>Pending changes</span>
                         <strong>{{ number_format($publicationContext['staged']) }}</strong>
-                        <small>Pending audit events not yet checkpointed</small>
+                        <small>
+                            Working state compared with the current live snapshot
+                            @if ($publicationContext['staged_events'] > 0)
+                                · {{ number_format($publicationContext['staged_events']) }} related activity events
+                            @endif
+                        </small>
+                    </div>
+
+                    @if ($publicationContext['staged_groups'] !== [])
+                        <div class="activity-publication__recent activity-publication__groups">
+                            <span>What will publish</span>
+                            @foreach ($publicationContext['staged_groups'] as $group)
+                                <article>
+                                    <div>
+                                        <strong>{{ $group['area'] }}</strong>
+                                        <span>{{ number_format($group['count']) }}</span>
+                                    </div>
+                                    <small>{{ $group['entity'] }}</small>
+                                </article>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    <div class="activity-publication__readiness is-{{ $publicationContext['preflight']['status'] }}">
+                        <span>Preflight</span>
+                        <strong>{{ $publicationContext['preflight']['label'] }}</strong>
+                        @foreach ($publicationContext['preflight']['blockers'] as $blocker)
+                            <small>{{ $blocker }}</small>
+                        @endforeach
                     </div>
 
                     @if ($publicationContext['latest'])
                         <div class="activity-publication__latest">
-                            <span>Latest checkpoint</span>
+                            <span>Current live checkpoint</span>
                             <strong>#{{ $publicationContext['latest']['id'] }} · {{ $publicationContext['latest']['when'] }}</strong>
                             <small>{{ number_format($publicationContext['latest']['change_count']) }} changes · {{ $publicationContext['latest']['timestamp'] }}</small>
                             <p title="{{ $publicationContext['latest']['message'] ?? 'No checkpoint message' }}">{{ $publicationContext['latest']['message'] ?? 'No checkpoint message' }}</p>
                         </div>
                     @else
                         <div class="activity-publication__latest is-empty">
-                            <span>Latest checkpoint</span>
+                            <span>Current live checkpoint</span>
                             <strong>No checkpoints yet</strong>
                         </div>
                     @endif
@@ -190,9 +225,7 @@
             </div>
 
             <form method="get" action="{{ request()->url() }}" class="admin-visual-stage-followup">
-                <input type="hidden" name="period" value="{{ $period }}">
                 <input type="hidden" name="calendar_year" value="{{ $calendarYear }}">
-                <input type="hidden" name="calendar_date" value="{{ $selectedCalendarDate }}">
                 <x-admin.controls class="activity-workspace__controls" aria-label="Activity controls">
                     <x-slot:search>
                         <label class="admin-data-field">
@@ -228,28 +261,34 @@
                                 @endforeach
                             </select>
                         </label>
+                        <label class="admin-data-field">
+                            <span>Date</span>
+                            <input
+                                type="date"
+                                name="calendar_date"
+                                value="{{ $activeDate ?? '' }}"
+                                min="2000-01-01"
+                                max="{{ $todayDate }}"
+                                x-on:change="$el.form.requestSubmit()"
+                            >
+                        </label>
+                        <label class="admin-data-field">
+                            <span>Time</span>
+                            <select name="hour" x-on:change="$el.form.requestSubmit()" @disabled($activeDate === null)>
+                                <option value="">All times</option>
+                                @foreach (range(0, 23) as $hour)
+                                    <option value="{{ $hour }}" @selected($activeHour === $hour)>{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}:00–{{ str_pad((string) (($hour + 1) % 24), 2, '0', STR_PAD_LEFT) }}:00</option>
+                                @endforeach
+                            </select>
+                        </label>
                     </x-slot:filters>
 
                     <x-slot:reset>
                         <div class="admin-data-control-group">
                             <span class="admin-data-control-label">Filter</span>
-                            <a class="admin-action" href="{{ $activityUrl(['period' => $period, 'calendar_year' => $calendarYear, 'calendar_date' => $selectedCalendarDate]) }}">Reset</a>
+                            <a class="admin-action" href="{{ $activityUrl(['calendar_year' => $calendarYear]) }}">Reset</a>
                         </div>
                     </x-slot:reset>
-
-                    <x-slot:actions>
-                        <div class="admin-data-control-group">
-                            <span class="admin-data-control-label">Range</span>
-                            <x-admin.toolbar aria-label="Activity period">
-                                @foreach ($periodOptions as $value => $label)
-                                    <a
-                                        class="admin-action {{ $period === $value ? 'is-primary' : '' }}"
-                                        href="{{ $activityUrl(['period' => $value, 'search' => $search, 'area' => $area, 'family' => $family, 'calendar_year' => $calendarYear, 'calendar_date' => $selectedCalendarDate]) }}"
-                                    >{{ $label }}</a>
-                                @endforeach
-                            </x-admin.toolbar>
-                        </div>
-                    </x-slot:actions>
                 </x-admin.controls>
             </form>
         </section>
@@ -258,21 +297,20 @@
             <table>
                 <thead>
                     <tr>
-                        <th scope="col">Area</th>
-                        <th scope="col">Change</th>
-                        <th scope="col">Target</th>
+                        <th scope="col">Activity</th>
                         <th scope="col">Publication</th>
-                        <th scope="col">Actor</th>
-                        <th scope="col">Time</th>
+                        <th scope="col">Who / when</th>
                         <th scope="col" class="admin-table__actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($activity as $event)
                         <tr>
-                            <td>{{ $event['area'] }}</td>
-                            <td>{{ $event['action'] }}</td>
-                            <td class="admin-table__identity"><strong>{{ $event['target'] }}</strong></td>
+                            <td class="admin-table__identity activity-event-cell">
+                                <strong>{{ $event['action'] }}</strong>
+                                <span>{{ $event['target'] }}</span>
+                                <small>{{ $event['area'] }} · {{ $event['family'] }}</small>
+                            </td>
                             <td class="activity-publication-cell">
                                 @if ($event['publication_status'] === 'committed')
                                     <span class="admin-status is-published">Committed</span>
@@ -282,46 +320,34 @@
                                     @endif
                                 @elseif ($event['publication_status'] === 'pending')
                                     <span class="admin-status">Staged</span>
-                                    <small>Pending checkpoint</small>
+                                    <small>Included in next publish</small>
                                 @elseif ($event['publication_status'] === 'not_pending')
-                                    <span class="admin-status">No pending delta</span>
-                                    <small>Not checkpointed</small>
+                                    <span class="admin-status">No staged delta</span>
+                                    <small>Later changes neutralized this event</small>
                                 @else
                                     <span class="activity-publication-cell__empty" aria-label="No publication state">—</span>
                                 @endif
                             </td>
-                            <td>{{ $event['actor'] }}</td>
-                            <td>
+                            <td class="activity-event-meta">
+                                <strong>{{ $event['actor'] }}</strong>
                                 <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
                             </td>
                             <td class="admin-table__actions">
                                 <x-admin.toolbar>
-                                    @if ($event['undo'] !== null)
-                                        <button
-                                            class="admin-action"
-                                            type="button"
-                                            wire:click="undo({{ $event['undo']['id'] }})"
-                                            wire:confirm="{{ $event['undo']['confirmation'] }}"
-                                        >Undo</button>
-                                    @else
-                                        <button class="admin-action" type="button" disabled>Undo</button>
-                                    @endif
-
+                                    <button class="admin-action" type="button" wire:click="openActivityDetails({{ $event['id'] }})">Details</button>
                                     @if ($event['url'] !== null)
-                                        <a class="admin-action" href="{{ $event['url'] }}">Open</a>
-                                    @else
-                                        <button class="admin-action" type="button" disabled>Open</button>
+                                        <a class="admin-action" href="{{ $event['url'] }}">Open record</a>
                                     @endif
                                 </x-admin.toolbar>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td class="admin-table__empty-cell" colspan="7">
+                            <td class="admin-table__empty-cell" colspan="4">
                                 @if ($activitySourceExists)
                                     <x-admin.empty-state title="No matching activity" minimal>
                                         <x-slot:actions>
-                                            <a class="admin-action" href="{{ $activityUrl([]) }}">Clear filters</a>
+                                            <a class="admin-action" href="{{ $activityUrl(['calendar_year' => $calendarYear]) }}">Clear filters</a>
                                         </x-slot:actions>
                                     </x-admin.empty-state>
                                 @else
