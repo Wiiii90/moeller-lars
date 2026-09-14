@@ -313,27 +313,10 @@
     line-height: 1.4;
 }
 
-/* Data-table add rows use the shared add-row primitive at table density and
- * align its leading affordance with the .6rem data-cell inset. The canonical
- * add-row top border remains the single separator after the table. */
-.admin-add-row--data {
-    --admin-add-row-inset: .6rem;
-    min-height: 2.25rem;
-    margin-top: 0;
-    padding: .18rem .6rem;
-}
-
-.admin-add-row--data .admin-add-row__mark {
-    width: 1.4rem;
-    height: 1.4rem;
-    flex-basis: 1.4rem;
-    font-size: .86rem;
-}
-
-/* The table wrapper itself does not add a second separator immediately above
- * the add row; the add-row primitive owns the one canonical line. */
-.media-workspace__table-wrap:has(+ .admin-add-row--data),
-.admin-table--data:has(+ .admin-add-row--data) {
+/* The shared add-row primitive owns the one separator after a data table.
+ * Never compress its height or marker for an individual workspace. */
+.media-workspace__table-wrap:has(+ .admin-add-row),
+.admin-table--data:has(+ .admin-add-row) {
     border-bottom: 0 !important;
 }
 
@@ -407,8 +390,8 @@
     outline: none;
 }
 
-/* Shared deterministic page-size picker. It owns a compact width and always
- * opens below the trigger instead of delegating placement to native select UI. */
+/* Shared deterministic page-size picker. The menu stays compact and the
+ * caller scrolls it into view when opening near the viewport edge. */
 .admin-pager-size-picker {
     position: relative;
     display: inline-flex;
@@ -418,10 +401,10 @@
 .admin-pager-size-picker__trigger {
     display: inline-grid;
     height: 2rem;
-    min-width: 4.25rem;
-    padding: 0 .45rem;
+    min-width: 3.8rem;
+    padding: 0 .38rem;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: .35rem;
+    gap: .24rem;
     align-items: center;
     border: 1px solid var(--admin-line-strong);
     border-radius: .2rem;
@@ -443,27 +426,27 @@
 
 .admin-pager-size-picker__menu {
     position: absolute;
-    top: calc(100% + .2rem);
+    top: calc(100% + .18rem);
     left: 0;
     z-index: 50;
     display: grid;
-    width: 4.75rem;
+    width: 4rem;
     min-width: 100%;
-    padding: .2rem 0;
+    padding: .1rem 0;
     border: 1px solid var(--admin-line-strong);
     border-radius: .2rem;
     background: var(--admin-control-popup-surface);
-    box-shadow: 0 .55rem 1.35rem rgba(0, 0, 0, .14);
+    box-shadow: 0 .45rem 1rem rgba(0, 0, 0, .12);
     color: var(--admin-control-popup-ink);
 }
 
 .admin-pager-size-picker__option {
     display: grid;
     width: 100%;
-    min-height: 1.9rem;
-    padding: .3rem .5rem .3rem .35rem;
-    grid-template-columns: .8rem minmax(0, 1fr);
-    gap: .25rem;
+    min-height: 1.65rem;
+    padding: .16rem .35rem .16rem .28rem;
+    grid-template-columns: .65rem minmax(0, 1fr);
+    gap: .16rem;
     align-items: center;
     border: 0;
     background: transparent;
@@ -471,6 +454,7 @@
     font: inherit;
     font-size: var(--admin-font-size-table-support);
     font-variant-numeric: tabular-nums;
+    line-height: 1;
     text-align: left;
     cursor: pointer;
 }
