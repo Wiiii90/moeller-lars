@@ -16,6 +16,7 @@
     --admin-table-two-units: 33.333333%;
     --admin-table-edge-inset: .5rem;
     --admin-table-leading-square: 1.65rem;
+    --admin-table-selection-width: 2.5rem;
 }
 
 /* Position and the persistent add affordance use one leading-square geometry.
@@ -59,6 +60,8 @@
 .admin-table__col-five-quarter-units { width: var(--admin-table-five-quarter-units); }
 .admin-table__col-one-half-units { width: var(--admin-table-one-half-units); }
 .admin-table__col-two-units { width: var(--admin-table-two-units); }
+.admin-table__col-two-units-minus-selection { width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)); }
+.admin-table__selection-col { width: var(--admin-table-selection-width); }
 
 /* Icon + label is the desktop action form. Keeping label/icon as separate
  * elements lets a future compact breakpoint hide labels without changing DOM
