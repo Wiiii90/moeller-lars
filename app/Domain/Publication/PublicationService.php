@@ -129,6 +129,8 @@ final class PublicationService
 
             $summary = $this->pendingSummary();
             if ($summary['total'] < 1) {
+                $this->versions->clearWorkingContext();
+
                 return null;
             }
 
@@ -138,6 +140,13 @@ final class PublicationService
                 ->orderByDesc('published_at')
                 ->orderByDesc('id')
                 ->first();
+            $workingContext = $this->versions->workingContext();
+            $operation = $workingContext['operation'] ?? 'commit';
+            $sourceId = $workingContext['source_publication_checkpoint_id'] ?? null;
+            /** @var PublicationCheckpoint|null $source */
+            $source = is_int($sourceId)
+                ? PublicationCheckpoint::query()->find($sourceId)
+                : null;
 
             DB::statement(
                 'TRUNCATE TABLE '.implode(', ', array_map(
@@ -157,7 +166,12 @@ final class PublicationService
                 'change_count' => $summary['total'],
                 'published_at' => now(),
             ]);
-            $checkpoint = $this->versions->capture($checkpoint, $parent);
+            $checkpoint = $this->versions->capture(
+                $checkpoint,
+                $parent,
+                is_string($operation) ? $operation : 'commit',
+                $source,
+            );
 
             if ($pendingAuditEventIds !== []) {
                 $createdAt = now();
@@ -170,6 +184,8 @@ final class PublicationService
                     $pendingAuditEventIds,
                 ));
             }
+
+            $this->versions->clearWorkingContext();
 
             return $checkpoint;
         }, attempts: 1);
