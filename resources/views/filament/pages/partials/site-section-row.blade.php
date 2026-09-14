@@ -92,13 +92,14 @@
                     <span class="admin-pages__redirect-marker" aria-label="Skip Home">
                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Redirect->mini()" class="admin-action__icon" />
                     </span>
-                    @if ($homeState['skip_target_url'] ?? null)
-                        <a class="admin-action admin-pages__redirect-target" href="{{ $homeState['skip_target_url'] }}" title="Skip Home to {{ $homeState['skip_target_label'] }}">
-                            <span class="admin-action__label">{{ $homeState['skip_target_label'] }}</span>
-                        </a>
-                    @else
-                        <span class="admin-pages__redirect-target admin-pages__redirect-target--missing">No target</span>
-                    @endif
+                    <button
+                        class="admin-action admin-pages__redirect-target"
+                        type="button"
+                        wire:click="mountAction('skipHome')"
+                        title="Change Skip Home target"
+                    >
+                        <span class="admin-action__label">{{ $homeState['skip_target_label'] ?: 'Set target' }}</span>
+                    </button>
                 @else
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
@@ -108,7 +109,18 @@
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
                     <span class="admin-action__label">Edit</span>
                 </button>
-                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+
+                <button
+                    class="admin-action admin-action--with-icon admin-action--state"
+                    type="button"
+                    wire:click="mountAction('skipHome')"
+                    aria-label="{{ ($homeState['skip_home'] ?? false) ? 'Edit Skip Home' : 'Configure Skip Home' }}"
+                    title="{{ ($homeState['skip_home'] ?? false) ? 'Edit Skip Home' : 'Configure Skip Home' }}"
+                >
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::SkipHome->mini()" class="admin-action__icon" />
+                    <span class="admin-action__label">Skip Home</span>
+                </button>
+
                 <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
             @else
                 @if ($section['can_reorder'])
