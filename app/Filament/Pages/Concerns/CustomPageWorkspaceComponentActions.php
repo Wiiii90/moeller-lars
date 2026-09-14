@@ -2,35 +2,11 @@
 
 namespace App\Filament\Pages\Concerns;
 
-use App\Domain\Admin\CvEntryEditorialService;
-use App\Domain\Admin\EditorialRecordService;
-use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\CustomPageEditorialService;
-use App\Domain\Content\SiteNodeType;
-use App\Domain\Content\SitePreviewContext;
-use App\Domain\Content\SiteSectionEditorialService;
-use App\Domain\Content\SocialLinks;
-use App\Filament\Support\AdminRichText;
-use App\Filament\Support\MediaAssetSelect;
-use App\Models\CustomPageSetting;
-use App\Models\CvEntry;
-use App\Models\MediaAsset;
-use App\Models\PublicContentSetting;
-use App\Models\SiteSection;
-use App\Routing\SiteNodeRoute;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
-use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -167,7 +143,7 @@ trait CustomPageWorkspaceComponentActions
 
     public function addComponentAction(): Action
     {
-        return Action::make('addComponent')
+        $action = Action::make('addComponent')
             ->label('Add component')
             ->fillForm(fn (): array => [
                 'type' => 'text',
@@ -178,10 +154,6 @@ trait CustomPageWorkspaceComponentActions
             ])
             ->schema($this->componentEditorSchema(includeTypeSelect: true))
             ->modalHeading('Add component')
-            ->modalSubmitAction(fn (Action $action): Action => $action->label('Add component')->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
-            ->modalWidth(Width::SevenExtraLarge)
-            ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $data): void {
                 DB::transaction(function () use ($data): void {
                     app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
@@ -194,11 +166,13 @@ trait CustomPageWorkspaceComponentActions
                 $this->reloadWorkspace();
                 Notification::make()->title('Component added')->success()->send();
             });
+
+        return AdminDialog::create($action, 'Add component', AdminDialogSize::Large);
     }
 
     public function editComponentAction(): Action
     {
-        return Action::make('editComponent')
+        $action = Action::make('editComponent')
             ->label('Edit')
             ->fillForm(fn (array $arguments): array => $this->componentEditorData($this->actionComponent($arguments)))
             ->schema($this->componentEditorSchema(includeTypeSelect: false))
@@ -207,10 +181,6 @@ trait CustomPageWorkspaceComponentActions
 
                 return 'Edit '.(self::COMPONENT_LABELS[(string) $block['type']] ?? 'component');
             })
-            ->modalSubmitAction(fn (Action $action): Action => $action->label('Save')->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
-            ->modalWidth(Width::SevenExtraLarge)
-            ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $existing = $this->actionComponent($arguments);
@@ -231,26 +201,23 @@ trait CustomPageWorkspaceComponentActions
                 $this->reloadWorkspace();
                 Notification::make()->title('Component saved')->success()->send();
             });
+
+        return AdminDialog::editCommit($action, 'Save component', AdminDialogSize::Large);
     }
 
     public function changeComponentTypeAction(): Action
     {
-        return Action::make('changeComponentType')
-            ->label('Change component type')
-            ->requiresConfirmation(fn (array $arguments): bool => $this->componentTypeChangeLosesContent($arguments))
-            ->modalHeading('Change component type?')
-            ->modalDescription(function (array $arguments): string {
-                [, $oldType] = $this->actionComponentTarget($arguments);
-                $targetType = $this->actionTargetComponentType($arguments);
+        $description = function (array $arguments): string {
+            [, $oldType] = $this->actionComponentTarget($arguments);
+            $targetType = $this->actionTargetComponentType($arguments);
 
-                return 'Changing '.(self::COMPONENT_LABELS[$oldType] ?? $oldType)
-                    .' to '.(self::COMPONENT_LABELS[$targetType] ?? $targetType)
-                    .' can remove component-specific content that cannot be carried over.';
-            })
-            ->modalSubmitAction(fn (Action $action): Action => $action->label('Change type')->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
+            return 'Changing '.(self::COMPONENT_LABELS[$oldType] ?? $oldType)
+                .' to '.(self::COMPONENT_LABELS[$targetType] ?? $targetType)
+                .' can remove component-specific content that cannot be carried over.';
+        };
+
+        $action = Action::make('changeComponentType')
+            ->label('Change component type')
             ->action(function (array $arguments): void {
                 [$index, $oldType] = $this->actionComponentTarget($arguments);
                 $targetType = $this->actionTargetComponentType($arguments);
@@ -262,19 +229,21 @@ trait CustomPageWorkspaceComponentActions
                     Notification::make()->title('Component type updated')->success()->send();
                 }
             });
+
+        return AdminDialog::confirm(
+            $action,
+            'Change component type?',
+            $description,
+            'Change type',
+            required: fn (array $arguments): bool => $this->componentTypeChangeLosesContent($arguments),
+        );
     }
 
     public function deleteComponentAction(): Action
     {
-        return Action::make('deleteComponent')
+        $action = Action::make('deleteComponent')
             ->label('Delete')
             ->color('danger')
-            ->requiresConfirmation()
-            ->modalHeading('Delete component?')
-            ->modalSubmitAction(fn (Action $action): Action => $action->label('Delete')->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 app(CustomPageEditorialService::class)->deleteBlock($this->settings(), $index, $type);
@@ -282,19 +251,15 @@ trait CustomPageWorkspaceComponentActions
                 $this->reloadWorkspace();
                 Notification::make()->title('Component deleted')->success()->send();
             });
+
+        return AdminDialog::confirm($action, 'Delete component?', submitLabel: 'Delete', danger: true);
     }
 
     public function deleteSelectedAction(): Action
     {
-        return Action::make('deleteSelected')
+        $action = Action::make('deleteSelected')
             ->label('Delete selected')
             ->color('danger')
-            ->requiresConfirmation()
-            ->modalHeading('Delete selected items?')
-            ->modalSubmitAction(fn (Action $action): Action => $action->label('Delete')->extraAttributes(['class' => 'custom-page-dialog__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action->label('Cancel')->extraAttributes(['class' => 'custom-page-dialog__cancel']))
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'custom-page-dialog'])
             ->action(function (): void {
                 $parents = $this->selectedComponentTargetData();
                 $children = $this->selectedChildTargetData();
@@ -318,6 +283,8 @@ trait CustomPageWorkspaceComponentActions
                     ->success()
                     ->send();
             });
+
+        return AdminDialog::confirm($action, 'Delete selected items?', submitLabel: 'Delete', danger: true);
     }
 
     public function deleteSelectedComponentsAction(): Action
