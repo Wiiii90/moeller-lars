@@ -69,6 +69,63 @@ final class PublicationService
     }
 
     /**
+     * Concrete current Working-vs-LIVE rows for on-demand review.
+     * Framework-only timestamps are omitted from field differences just as they
+     * are from PublicationSnapshot::ROW_DIFFERENCE_SQL.
+     *
+     * @return array{rows:list<array{area:string,entity:string,table:string,row_key:string,label:string,change:string,fields:list<string>}>,truncated:bool}
+     */
+    public function pendingDetails(int $limit = 200): array
+    {
+        $limit = max(1, min(500, $limit));
+        $rows = [];
+        $truncated = false;
+
+        foreach (PublicationSnapshot::TABLES as $table) {
+            $remaining = $limit - count($rows);
+            if ($remaining < 1) {
+                $truncated = true;
+                break;
+            }
+
+            $changes = DB::select(
+                "SELECT COALESCE(working.id, committed.id)::text AS row_key, CASE WHEN working.id IS NULL THEN 'removed' WHEN committed.id IS NULL THEN 'added' ELSE 'changed' END AS change_kind, to_jsonb(working)::text AS working_payload, to_jsonb(committed)::text AS committed_payload FROM public.{$table} AS working FULL OUTER JOIN committed.{$table} AS committed USING (id) WHERE ".PublicationSnapshot::ROW_DIFFERENCE_SQL.' ORDER BY COALESCE(working.id, committed.id) LIMIT ?',
+                [$remaining + 1],
+            );
+
+            if (count($changes) > $remaining) {
+                $changes = array_slice($changes, 0, $remaining);
+                $truncated = true;
+            }
+
+            $definition = PublicationSnapshot::GROUPS[$table];
+            foreach ($changes as $change) {
+                $working = $this->decodePayload($change->working_payload ?? null);
+                $committed = $this->decodePayload($change->committed_payload ?? null);
+                $changeKind = (string) $change->change_kind;
+
+                $rows[] = [
+                    'area' => $definition['area'],
+                    'entity' => $definition['entity'],
+                    'table' => $table,
+                    'row_key' => (string) $change->row_key,
+                    'label' => $this->publicationRowLabel($working ?? $committed, (string) $change->row_key),
+                    'change' => $changeKind,
+                    'fields' => $changeKind === 'changed'
+                        ? $this->changedFields($working ?? [], $committed ?? [])
+                        : [],
+                ];
+            }
+
+            if ($truncated) {
+                break;
+            }
+        }
+
+        return ['rows' => $rows, 'truncated' => $truncated];
+    }
+
+    /**
      * Report exactly the readiness checks the current Commit path can enforce.
      * Business-domain mutations are expected to preserve their own invariants
      * before they reach the publication snapshot.
@@ -195,5 +252,50 @@ final class PublicationService
         }
 
         return $checkpoint;
+    }
+
+    /** @return array<string,mixed>|null */
+    private function decodePayload(mixed $payload): ?array
+    {
+        if (! is_string($payload) || $payload === '') {
+            return null;
+        }
+
+        $decoded = json_decode($payload, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /** @param array<string,mixed>|null $payload */
+    private function publicationRowLabel(?array $payload, string $rowKey): string
+    {
+        if ($payload !== null) {
+            foreach (['title', 'name', 'original_filename', 'navigation_label', 'slug', 'scope', 'storage_key', 'type'] as $key) {
+                $value = $payload[$key] ?? null;
+                if (is_string($value) && trim($value) !== '') {
+                    return trim($value);
+                }
+            }
+        }
+
+        return '#'.$rowKey;
+    }
+
+    /**
+     * @param array<string,mixed> $working
+     * @param array<string,mixed> $committed
+     * @return list<string>
+     */
+    private function changedFields(array $working, array $committed): array
+    {
+        $ignored = ['id' => true, 'created_at' => true, 'updated_at' => true];
+        $keys = array_values(array_unique([...array_keys($working), ...array_keys($committed)]));
+        sort($keys);
+
+        return array_values(array_filter(
+            $keys,
+            static fn (string $key): bool => ! isset($ignored[$key])
+                && ($working[$key] ?? null) !== ($committed[$key] ?? null),
+        ));
     }
 }
