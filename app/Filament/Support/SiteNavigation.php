@@ -53,7 +53,7 @@ final class SiteNavigation
             ->key('site-section-'.$section->getKey())
             ->icon($this->presentation->icon($type))
             ->url($url)
-            ->isActiveWhen(fn (): bool => $this->urlIsActive($url))
+            ->isActiveWhen(fn (): bool => $this->branchIsActive($section, $childrenByParent))
             ->extraAttributes([
                 'data-admin-site-section' => (string) $section->getKey(),
                 'data-admin-site-section-depth' => (string) $depth,
@@ -69,6 +69,22 @@ final class SiteNavigation
         }
 
         return $item;
+    }
+
+    /** @param array<int, list<SiteSection>> $childrenByParent */
+    private function branchIsActive(SiteSection $section, array $childrenByParent): bool
+    {
+        if ($this->urlIsActive($this->presentation->workspaceUrl($section))) {
+            return true;
+        }
+
+        foreach ($childrenByParent[(int) $section->getKey()] ?? [] as $child) {
+            if ($this->branchIsActive($child, $childrenByParent)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function urlIsActive(?string $url): bool
