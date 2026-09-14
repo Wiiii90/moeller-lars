@@ -5,8 +5,6 @@ namespace App\Filament\Support;
 use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\MatomoReportingClient;
 use App\Domain\Content\SiteNodeType;
-use App\Domain\Media\MediaCapacityService;
-use App\Domain\Media\MediaStorageUnits;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
@@ -26,7 +24,7 @@ final class DashboardOverview
     public function snapshot(): array
     {
         $analytics = $this->analyticsOverview(app(MatomoReportingClient::class)->report('30d'));
-        $storage = $this->storageOverview(app(MediaCapacityService::class)->cachedSnapshotIfAvailable());
+        $storage = $this->storageOverview();
         $activity = $this->activityOverview();
         $publishedArtworks = Artwork::query()->where('state', 'published')->count();
         $publishedPages = SiteSection::query()
@@ -39,7 +37,7 @@ final class DashboardOverview
             ['label' => 'Unique visitors', 'value' => $analytics['visitors_display'], 'detail' => 'Last 30 days'],
             ['label' => 'Published artworks', 'value' => number_format($publishedArtworks), 'detail' => 'Public now'],
             ['label' => 'Published pages', 'value' => number_format($publishedPages), 'detail' => 'Navigation groups excluded'],
-            ['label' => 'Storage used', 'value' => $storage['percent'] === null ? '—' : $storage['percent'].'%', 'detail' => $storage['metric_detail']],
+            ['label' => 'Storage used', 'value' => $storage['percent'] === null ? '—' : $storage['percent'].'%', 'detail' => $storage['metric_detail'],],
             ['label' => 'Recent changes', 'value' => number_format($activity['recent_changes']), 'detail' => 'Last 30 days'],
         ];
 
@@ -137,69 +135,20 @@ final class DashboardOverview
     }
 
     /** @return array<string, mixed> */
-    private function storageOverview(?array $snapshot): array
+    private function storageOverview(): array
     {
-        if ($snapshot === null) {
-            return [
-                'status' => 'not_measured',
-                'label' => 'No recent measurement',
-                'detail' => 'Open Storage for a current measurement.',
-                'metric_detail' => 'No cached measurement',
-                'configured' => false,
-                'configuration_valid' => false,
-                'measurement_available' => false,
-                'percent' => null,
-                'authoritative' => '—',
-                'generated' => '—',
-                'used' => '—',
-                'remaining' => '—',
-                'allowance' => '—',
-                'url' => MediaAssetResource::getUrl('index'),
-            ];
-        }
-
-        $configurationValid = (bool) ($snapshot['configuration_valid'] ?? false);
-        $configured = (bool) ($snapshot['configured'] ?? false);
-        $measurementAvailable = (bool) ($snapshot['measurement_available'] ?? false);
-        $ratio = is_numeric($snapshot['authoritative_ratio'] ?? null) ? (float) $snapshot['authoritative_ratio'] : null;
-        $status = is_string($snapshot['status'] ?? null) ? $snapshot['status'] : 'unavailable';
-        $authoritative = MediaStorageUnits::formatBytes($snapshot['authoritative_bytes'] ?? null);
-        $generated = MediaStorageUnits::formatBytes($snapshot['generated_bytes'] ?? null);
-        $remaining = $configured && $measurementAvailable
-            ? MediaStorageUnits::formatBytes($snapshot['remaining_bytes'] ?? null)
-            : '—';
-        $allowance = $configured && $configurationValid
-            ? MediaStorageUnits::formatBytes($snapshot['quota_bytes'] ?? null)
-            : '—';
-        $percent = $configured && $measurementAvailable && $ratio !== null
-            ? (int) round(min(1, max(0, $ratio)) * 100)
-            : null;
+        $snapshot = app(StorageWorkspaceOverview::class)->snapshot();
+        $capacity = is_array($snapshot['capacity'] ?? null) ? $snapshot['capacity'] : [];
+        $breakdown = is_array($snapshot['breakdown'] ?? null) ? $snapshot['breakdown'] : [];
+        $attention = is_array($snapshot['attention'] ?? null) ? $snapshot['attention'] : [];
+        $segments = is_array($attention['capacity_segments'] ?? null) ? $attention['capacity_segments'] : [];
 
         return [
-            'status' => $status,
-            'label' => match ($status) {
-                'full' => 'Allowance full',
-                'near_capacity' => 'Near capacity',
-                'healthy' => 'Healthy',
-                'unavailable' => $configurationValid ? 'Measurement unavailable' : 'Allowance unavailable',
-                default => 'Allowance not configured',
-            },
-            'detail' => null,
-            'metric_detail' => match (true) {
-                ! $configurationValid => 'Allowance unavailable',
-                ! $configured => 'Allowance not configured',
-                ! $measurementAvailable => 'Measurement unavailable',
-                default => 'Cached authoritative originals',
-            },
-            'configured' => $configured,
-            'configuration_valid' => $configurationValid,
-            'measurement_available' => $measurementAvailable,
-            'percent' => $percent,
-            'authoritative' => $authoritative,
-            'generated' => $generated,
-            'used' => $authoritative,
-            'remaining' => $remaining,
-            'allowance' => $allowance,
+            ...$capacity,
+            'metric_detail' => (string) ($capacity['remaining_detail'] ?? 'Storage allowance'),
+            'used' => (string) ($capacity['authoritative'] ?? '—'),
+            'breakdown' => array_values(array_filter($breakdown, 'is_array')),
+            'segments' => array_values(array_filter($segments, 'is_array')),
             'url' => MediaAssetResource::getUrl('index'),
         ];
     }
