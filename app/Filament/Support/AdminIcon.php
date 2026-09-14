@@ -21,7 +21,7 @@ enum AdminIcon: string
     case PreviewZoom = 'heroicon-o-magnifying-glass';
     case PreviewZoomOut = 'heroicon-o-magnifying-glass-minus';
     case PreviewPan = 'heroicon-o-hand-raised';
-    case Commit = 'heroicon-o-check-circle';
+    case Commit = 'heroicon-o-check';
     case Artwork = 'heroicon-o-paint-brush';
     case BlogPost = 'heroicon-o-document';
     case CvEntry = 'heroicon-o-document-text';
