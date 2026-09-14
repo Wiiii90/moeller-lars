@@ -7,13 +7,14 @@ use App\Domain\Admin\DashboardFeedPins;
 use App\Domain\Admin\DashboardNotificationRetention;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\DashboardOverview;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 
 final class Dashboard extends Page
@@ -286,61 +287,54 @@ final class Dashboard extends Page
 
     public function dashboardSettingsAction(): Action
     {
-        return Action::make('dashboardSettings')
-            ->label('Settings')
-            ->modalHeading('Dashboard settings')
-            ->fillForm(function (): array {
-                $user = auth()->user();
+        return AdminDialog::editCommit(
+            Action::make('dashboardSettings')
+                ->label('Settings')
+                ->modalHeading('Dashboard settings')
+                ->fillForm(function (): array {
+                    $user = auth()->user();
 
-                return [
-                    'notification_filter' => $this->notificationFilter,
-                    'notification_retention' => app(DashboardNotificationRetention::class)->limitFor($user instanceof User ? $user : 0),
-                    'delete_without_confirmation' => (bool) $user?->getAttribute('dashboard_delete_without_confirmation'),
-                ];
-            })
-            ->schema([
-                Select::make('notification_filter')
-                    ->label('Notification history')
-                    ->options(self::NOTIFICATION_FILTERS)
-                    ->required(),
-                Select::make('notification_retention')
-                    ->label('Keep notification history')
-                    ->options(DashboardNotificationRetention::options())
-                    ->required(),
-                Checkbox::make('delete_without_confirmation')
-                    ->label('Delete messages without confirmation'),
-            ])
-            ->action(function (array $data): void {
-                $user = auth()->user();
-                if (! $user instanceof User) {
-                    return;
-                }
+                    return [
+                        'notification_filter' => $this->notificationFilter,
+                        'notification_retention' => app(DashboardNotificationRetention::class)->limitFor($user instanceof User ? $user : 0),
+                        'delete_without_confirmation' => (bool) $user?->getAttribute('dashboard_delete_without_confirmation'),
+                    ];
+                })
+                ->schema([
+                    Select::make('notification_filter')
+                        ->label('Notification history')
+                        ->options(self::NOTIFICATION_FILTERS)
+                        ->required(),
+                    Select::make('notification_retention')
+                        ->label('Keep notification history')
+                        ->options(DashboardNotificationRetention::options())
+                        ->required(),
+                    Checkbox::make('delete_without_confirmation')
+                        ->label('Delete messages without confirmation'),
+                ]),
+            'Save settings',
+            AdminDialogSize::Small,
+        )->action(function (array $data): void {
+            $user = auth()->user();
+            if (! $user instanceof User) {
+                return;
+            }
 
-                $filter = $data['notification_filter'] ?? 'all';
-                $this->notificationFilter = is_string($filter) && array_key_exists($filter, self::NOTIFICATION_FILTERS)
-                    ? $filter
-                    : 'all';
-                $retention = app(DashboardNotificationRetention::class)->normalize($data['notification_retention'] ?? 10);
+            $filter = $data['notification_filter'] ?? 'all';
+            $this->notificationFilter = is_string($filter) && array_key_exists($filter, self::NOTIFICATION_FILTERS)
+                ? $filter
+                : 'all';
+            $retention = app(DashboardNotificationRetention::class)->normalize($data['notification_retention'] ?? 10);
 
-                $user->forceFill([
-                    'dashboard_notification_filter' => $this->notificationFilter,
-                    'dashboard_notification_retention' => $retention,
-                    'dashboard_delete_without_confirmation' => (bool) ($data['delete_without_confirmation'] ?? false),
-                ])->save();
+            $user->forceFill([
+                'dashboard_notification_filter' => $this->notificationFilter,
+                'dashboard_notification_retention' => $retention,
+                'dashboard_delete_without_confirmation' => (bool) ($data['delete_without_confirmation'] ?? false),
+            ])->save();
 
-                app(DashboardNotificationRetention::class)->pruneFor($user);
-                $this->refreshFeedFromFirstPage();
-            })
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Save settings')
-                ->icon(AdminIcon::Commit->value)
-                ->iconButton()
-                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
-            ->modalCancelAction(false)
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--small admin-dialog--header-actions',
-            ]);
+            app(DashboardNotificationRetention::class)->pruneFor($user);
+            $this->refreshFeedFromFirstPage();
+        });
     }
 
     public function deleteFeedEntryAction(): Action
@@ -369,20 +363,17 @@ final class Dashboard extends Page
 
     public function feedEntryAction(): Action
     {
-        return Action::make('feedEntry')
-            ->label('Open')
-            ->modalHeading(fn (array $arguments): string => (string) $this->feedEntry($arguments)['title'])
-            ->modalContent(fn (array $arguments): View => view(
-                'filament.pages.partials.dashboard-feed-dialog',
-                ['entry' => $this->feedEntry($arguments)],
-            ))
-            ->modalSubmitAction(false)
-            ->modalCancelAction(false)
-            ->extraModalFooterActions(fn (array $arguments): array => $this->feedEntryHeaderActions($arguments))
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--default admin-dialog--header-actions',
-            ]);
+        return AdminDialog::viewer(
+            Action::make('feedEntry')
+                ->label('Open')
+                ->modalHeading(fn (array $arguments): string => (string) $this->feedEntry($arguments)['title'])
+                ->modalContent(fn (array $arguments): View => view(
+                    'filament.pages.partials.dashboard-feed-dialog',
+                    ['entry' => $this->feedEntry($arguments)],
+                ))
+                ->extraModalFooterActions(fn (array $arguments): array => $this->feedEntryHeaderActions($arguments)),
+            AdminDialogSize::Default,
+        );
     }
 
     /** @return array<string, mixed> */
@@ -601,19 +592,13 @@ final class Dashboard extends Page
 
     private function configureConfirmation(Action $action, string $heading, string $description): Action
     {
-        return $action
-            ->requiresConfirmation()
-            ->modalHeading($heading)
-            ->modalDescription($description)
-            ->modalSubmitAction(fn (Action $submit): Action => $submit
-                ->label('Confirm')
-                ->icon(AdminIcon::Commit->value)
-                ->iconButton()
-                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
-            ->modalCancelAction(false)
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--mini admin-dialog--header-actions admin-dialog--confirmation',
-            ]);
+        return AdminDialog::confirm(
+            $action,
+            heading: $heading,
+            description: $description,
+            submitLabel: 'Confirm',
+            danger: true,
+            size: AdminDialogSize::Mini,
+        );
     }
 }
