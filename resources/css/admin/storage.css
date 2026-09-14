@@ -2,32 +2,48 @@
 
 .admin-storage,
 .admin-storage-capacity {
-    --storage-color-galleries: #b45309;
-    --storage-color-journal: #3f6f92;
-    --storage-color-cv: #76558f;
-    --storage-color-home: #4f7d5b;
-    --storage-color-custom-pages: #c47a2c;
-    --storage-color-site-identity: #2f7a78;
-    --storage-color-referenced: #687386;
-    --storage-color-shared: #a15578;
-    --storage-color-unassigned: #8b6a38;
+    --storage-color-galleries: #b65f19;
+    --storage-color-journal: #8d664c;
+    --storage-color-cv: #9d5a3f;
+    --storage-color-home: #c58b63;
+    --storage-color-custom-pages: #b9864b;
+    --storage-color-site-identity: #a06f4e;
+    --storage-color-referenced: #7f6a58;
+    --storage-color-shared: #95684d;
+    --storage-color-unassigned: #9a8060;
     --storage-color-uncatalogued: var(--admin-danger);
     --storage-color-remaining: color-mix(in srgb, var(--admin-line) 42%, var(--admin-subtle));
+    --storage-target-1: #b65f19;
+    --storage-target-2: #c07a28;
+    --storage-target-3: #9d5a3f;
+    --storage-target-4: #b9864b;
+    --storage-target-5: #8d664c;
+    --storage-target-6: #c58b63;
+    --storage-target-7: #a06f4e;
+    --storage-target-8: #7f6a58;
 }
 
 .dark .admin-storage,
 .dark .admin-storage-capacity {
-    --storage-color-galleries: #d68a2f;
-    --storage-color-journal: #70a3c4;
-    --storage-color-cv: #aa8bc0;
-    --storage-color-home: #79a986;
-    --storage-color-custom-pages: #dda25d;
-    --storage-color-site-identity: #6ba5a1;
-    --storage-color-referenced: #98a3b5;
-    --storage-color-shared: #cc86a5;
-    --storage-color-unassigned: #b89a67;
+    --storage-color-galleries: #d9823a;
+    --storage-color-journal: #b18a6e;
+    --storage-color-cv: #c77b63;
+    --storage-color-home: #dfa983;
+    --storage-color-custom-pages: #d0a05e;
+    --storage-color-site-identity: #c58d69;
+    --storage-color-referenced: #ad9988;
+    --storage-color-shared: #ba896c;
+    --storage-color-unassigned: #b6a078;
     --storage-color-uncatalogued: var(--admin-danger);
     --storage-color-remaining: color-mix(in srgb, var(--admin-line) 56%, transparent);
+    --storage-target-1: #d9823a;
+    --storage-target-2: #d49a49;
+    --storage-target-3: #c77b63;
+    --storage-target-4: #d0a05e;
+    --storage-target-5: #b18a6e;
+    --storage-target-6: #dfa983;
+    --storage-target-7: #c58d69;
+    --storage-target-8: #ad9988;
 }
 
 .admin-storage__visual-main,
@@ -61,7 +77,7 @@
     gap: .55rem;
 }
 
-/* Storage is Upload | Capacity | Destinations. Internal pane breathing belongs
+/* Storage is Upload | Capacity | Distribution. Internal pane breathing belongs
  * here; the shared Stage owns only the outer thirds and divider axes. */
 .admin-storage__upload {
     padding-right: var(--admin-stage-pane-space);
@@ -108,6 +124,7 @@
     padding: 1.4rem;
     align-content: center;
     justify-items: center;
+    background: color-mix(in srgb, var(--admin-subtle) 42%, transparent);
     text-align: center;
 }
 
@@ -119,49 +136,46 @@
 .admin-storage__target-plot {
     display: grid;
     min-height: 0;
-    gap: .1rem;
     align-content: start;
     overflow: auto;
 }
 
-.admin-storage__selection-summary {
+.admin-storage__distribution-columns,
+.admin-storage__target-row {
+    grid-template-columns: minmax(8rem, 1fr) 2.7rem minmax(4.4rem, .72fr) 4.6rem;
+}
+
+.admin-storage__distribution-columns {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: .65rem;
-    padding: .15rem 0 .28rem;
-    align-items: baseline;
-}
-
-.admin-storage__selection-summary strong,
-.admin-storage__selection-summary span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.admin-storage__selection-summary strong {
-    color: var(--admin-text);
-    font-size: .69rem;
-    font-weight: 600;
-}
-
-.admin-storage__selection-summary span {
+    gap: .55rem;
+    padding: .08rem 0 .24rem;
+    border-bottom: 1px solid var(--admin-line);
     color: var(--admin-muted);
-    font-size: .59rem;
-    font-variant-numeric: tabular-nums;
+    font-size: .55rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.admin-storage__distribution-columns span:nth-child(2) {
+    text-align: right;
+}
+
+.admin-storage__distribution-columns span:nth-child(3) {
+    grid-column: 3 / 5;
 }
 
 .admin-storage__target-row {
-    --storage-row-color: var(--admin-accent);
+    --storage-row-color: var(--storage-target-1);
     display: grid;
     width: 100%;
     min-width: 0;
-    grid-template-columns: minmax(7rem, 1fr) minmax(3.8rem, .8fr) auto;
     gap: .55rem;
-    padding: .38rem 0;
+    padding: .43rem 0;
     align-items: center;
     appearance: none;
     border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--admin-line) 72%, transparent);
     background: transparent;
     color: inherit;
     cursor: pointer;
@@ -169,16 +183,15 @@
     text-align: left;
 }
 
-.admin-storage__target-row[data-area="galleries"] { --storage-row-color: var(--storage-color-galleries); }
-.admin-storage__target-row[data-area="journal"] { --storage-row-color: var(--storage-color-journal); }
-.admin-storage__target-row[data-area="cv"] { --storage-row-color: var(--storage-color-cv); }
-.admin-storage__target-row[data-area="home"] { --storage-row-color: var(--storage-color-home); }
-.admin-storage__target-row[data-area="custom-pages"] { --storage-row-color: var(--storage-color-custom-pages); }
-.admin-storage__target-row[data-area="site-identity"] { --storage-row-color: var(--storage-color-site-identity); }
-.admin-storage__target-row[data-area="referenced"] { --storage-row-color: var(--storage-color-referenced); }
-.admin-storage__target-row[data-area="shared"] { --storage-row-color: var(--storage-color-shared); }
-.admin-storage__target-row[data-area="unassigned"] { --storage-row-color: var(--storage-color-unassigned); }
-.admin-storage__target-row[data-area="uncatalogued"] { --storage-row-color: var(--storage-color-uncatalogued); }
+.admin-storage__target-row:last-of-type {
+    border-bottom-color: transparent;
+}
+
+.admin-storage__target-row:disabled,
+.admin-storage__target-row.is-static {
+    opacity: 1;
+    cursor: default;
+}
 
 .admin-storage__target-row:focus-visible {
     outline: 1px solid var(--storage-row-color);
@@ -201,14 +214,19 @@
 .admin-storage__target-label strong {
     color: var(--admin-text);
     font-size: .7rem;
-    font-weight: 580;
+    font-weight: 590;
 }
 
 .admin-storage__target-label small,
+.admin-storage__target-files,
 .admin-storage__target-value {
     color: var(--admin-muted);
     font-size: .6rem;
     font-variant-numeric: tabular-nums;
+}
+
+.admin-storage__target-files {
+    text-align: right;
 }
 
 .admin-storage__target-track {
@@ -221,22 +239,28 @@
     display: block;
     height: 100%;
     background: var(--storage-row-color);
-    transition: width .18s ease, opacity .16s ease;
+    transition: opacity .12s ease;
 }
 
 .admin-storage__target-value {
     color: var(--admin-text);
-    font-weight: 560;
+    font-weight: 570;
+    text-align: right;
     white-space: nowrap;
 }
 
-.admin-storage__target-row:hover .admin-storage__target-track i {
+.admin-storage__target-row:not(:disabled):hover .admin-storage__target-track i {
     opacity: .72;
 }
 
 .admin-storage__target-row.is-active .admin-storage__target-label strong,
+.admin-storage__target-row.is-active .admin-storage__target-files,
 .admin-storage__target-row.is-active .admin-storage__target-value {
     color: var(--storage-row-color);
+}
+
+.admin-storage__target-row.is-context .admin-storage__target-track i {
+    opacity: .82;
 }
 
 .admin-storage__target-empty {
@@ -300,8 +324,8 @@
     color: var(--admin-accent-strong);
 }
 
-/* Shared Storage/Dashboard visualization container. ECharts owns the internal
- * SVG; the existing Admin Stage continues to own pane size and alignment. */
+/* Shared Storage/Dashboard visualization container. ECharts owns the Canvas;
+ * the existing Admin Stage continues to own pane size and alignment. */
 .admin-storage-capacity[data-admin-viz="storage-capacity"] {
     position: relative;
     display: block;
@@ -314,10 +338,48 @@
 }
 
 .admin-storage-capacity__surface[data-admin-viz-surface] {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     min-width: 0;
     min-height: 0;
+}
+
+.admin-storage-capacity__inspector {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    display: grid;
+    width: 50%;
+    gap: .38rem;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    text-align: center;
+}
+
+.admin-storage-capacity__inspector strong,
+.admin-storage-capacity__inspector span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-storage-capacity__inspector strong {
+    color: var(--admin-text);
+    font-size: 1.42rem;
+    font-weight: 620;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+}
+
+.admin-storage-capacity__inspector span {
+    color: var(--admin-muted);
+    font-size: .6rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.35;
 }
 
 .admin-storage-capacity[data-admin-viz="storage-capacity"] > script {
@@ -360,8 +422,9 @@
         grid-template-columns: minmax(14rem, 2fr) repeat(3, minmax(8rem, 1fr));
     }
 
+    .admin-storage__distribution-columns,
     .admin-storage__target-row {
-        grid-template-columns: minmax(7rem, 1fr) minmax(3rem, .65fr) auto;
+        grid-template-columns: minmax(7rem, 1fr) 2.35rem minmax(3rem, .62fr) 4.2rem;
         gap: .4rem;
     }
 }
