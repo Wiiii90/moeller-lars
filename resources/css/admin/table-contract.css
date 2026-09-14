@@ -165,24 +165,30 @@
     padding-left: .65rem;
 }
 
-/* Stable five-slot rail mirrors the Social Media table: every semantic action
- * keeps one slot even when Home intentionally renders a placeholder. */
+/* Stable semantic slots keep every icon on one horizontal axis. The longer
+ * Move down and Publish/Unpublish labels deliberately receive more of the
+ * fixed two-unit action rail; Edit and Delete need less. */
 .admin-pages__row-actions {
     display: grid !important;
     width: 100%;
     min-width: 0;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: .08rem !important;
-    padding-left: .35rem;
+    grid-template-columns:
+        minmax(0, .95fr)
+        minmax(0, 1.15fr)
+        minmax(0, .7fr)
+        minmax(0, 1.35fr)
+        minmax(0, .9fr);
+    gap: .04rem !important;
+    padding-left: .24rem;
 }
 
 .admin-pages__row-actions .admin-action {
     width: 100%;
     min-width: 0;
-    padding-inline: .22rem;
-    justify-content: center !important;
+    padding-inline: .1rem;
+    justify-content: flex-start !important;
     overflow: hidden;
-    font-size: .66rem;
+    font-size: .65rem;
 }
 
 .admin-pages__row-actions .admin-action--state {
@@ -268,11 +274,13 @@
     opacity: 1;
 }
 
-/* Match Dashboard's wide-control rhythm: Search owns the first four metric
- * units. The five compact controls divide the remaining two units. */
+/* Pages toolbar uses the same six-unit reference as the metrics: Search owns
+ * three units; Type, Status, Filter, Pages and Selection divide the other
+ * three. The Selection count terminates on the same trailing gutter as the
+ * table checkboxes below it. */
 .admin-task-controls--pages {
     display: grid;
-    grid-template-columns: repeat(15, minmax(0, 1fr));
+    grid-template-columns: repeat(10, minmax(0, 1fr));
     gap: 0;
     align-items: end;
 }
@@ -283,7 +291,7 @@
     padding-right: .45rem;
 }
 
-.admin-task-controls--pages > :first-child { grid-column: span 10; }
+.admin-task-controls--pages > :first-child { grid-column: span 5; }
 .admin-task-controls--pages > :not(:first-child) { grid-column: span 1; }
 .admin-task-controls--pages > :last-child { padding-right: 0; }
 
@@ -298,6 +306,18 @@
     width: 100%;
     min-width: 0;
     padding-inline: .3rem;
+}
+
+.admin-task-controls--pages .admin-selection__trigger {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    gap: 0;
+    padding-right: 0;
+}
+
+.admin-task-controls--pages .admin-selection__count {
+    margin-left: 0;
+    justify-self: center;
 }
 
 .admin-selection--unlabeled {
@@ -366,8 +386,8 @@
     }
 
     .admin-pages__row-actions .admin-action {
-        padding-inline: .14rem;
-        font-size: .64rem;
+        padding-inline: .06rem;
+        font-size: .63rem;
     }
 }
 
