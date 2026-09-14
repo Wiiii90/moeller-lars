@@ -12,7 +12,10 @@ use App\Models\AuditEvent;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
+use Filament\Support\Enums\Width;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 use UnitEnum;
@@ -54,40 +57,73 @@ final class Activity extends Page
         );
     }
 
+    public function openActivityDetails(int $eventId): void
+    {
+        abort_unless($this->activityEvent($eventId) !== null, 404);
+
+        $this->mountAction('activityDetails', ['id' => $eventId]);
+    }
+
+    public function activityDetailsAction(): Action
+    {
+        return Action::make('activityDetails')
+            ->label('Details')
+            ->modalHeading(fn (array $arguments): string => (string) ($this->activityDetails($arguments)['action'] ?? 'Activity details'))
+            ->modalContent(fn (array $arguments): View => view(
+                'filament.pages.partials.activity-details-dialog',
+                ['event' => $this->activityDetails($arguments)],
+            ))
+            ->modalSubmitAction(false)
+            ->modalCancelAction(false)
+            ->extraModalFooterActions(fn (array $arguments): array => $this->activityDetailsHeaderActions($arguments))
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes([
+                'class' => 'admin-task-dialog admin-dialog--default admin-dialog--header-actions',
+            ]);
+    }
+
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
         $area = request()->query('area');
         $family = request()->query('family');
-        $period = request()->query('period');
         $search = request()->query('search');
         $area = is_string($area) && array_key_exists($area, AdminActionCatalog::areaOptions()) ? $area : null;
         $family = is_string($family) && array_key_exists($family, AdminActionCatalog::familyOptions()) ? $family : null;
         $search = is_string($search) ? trim($search) : '';
-        $periodOptions = [
-            '7d' => '7 days',
-            '30d' => '30 days',
-            '180d' => '180 days',
-        ];
-        $period = is_string($period) && array_key_exists($period, $periodOptions) ? $period : '180d';
-        $days = match ($period) {
-            '7d' => 7,
-            '30d' => 30,
-            default => AdminActivityFeed::ACTIVITY_WINDOW_DAYS,
-        };
-
-        $actor = app(AdminAuditService::class)->requireActor();
-        $activityFeed = app(AdminActivityFeed::class);
-        $feed = $activityFeed->page($area, $family, actor: $actor, days: $days, search: $search);
-        $overview = $activityFeed->overview($area, $family, days: $days, search: $search);
-        $publicationContext = $activityFeed->publicationContext();
 
         $today = CarbonImmutable::today();
         $currentYear = (int) $today->format('Y');
+        $activeDate = $this->requestedActivityDate($today);
+        $activeHour = $activeDate !== null ? $this->requestedActivityHour() : null;
         $requestedYear = request()->query('calendar_year');
         $calendarYear = is_numeric($requestedYear)
             ? max(2000, min($currentYear, (int) $requestedYear))
-            : $currentYear;
+            : ($activeDate?->year ?? $currentYear);
+        if ($activeDate !== null && $activeDate->year !== $calendarYear) {
+            $calendarYear = $activeDate->year;
+        }
+
+        $actor = app(AdminAuditService::class)->requireActor();
+        $activityFeed = app(AdminActivityFeed::class);
+        $activeDateValue = $activeDate?->format('Y-m-d');
+        $feed = $activityFeed->page(
+            $area,
+            $family,
+            actor: $actor,
+            search: $search,
+            date: $activeDateValue,
+            hour: $activeHour,
+        );
+        $overview = $activityFeed->overview(
+            $area,
+            $family,
+            search: $search,
+            date: $activeDateValue,
+            hour: $activeHour,
+        );
+        $publicationContext = $activityFeed->publicationContext();
+
         $calendarStart = CarbonImmutable::create($calendarYear, 1, 1)->startOfDay();
         $calendarEnd = CarbonImmutable::create($calendarYear, 12, 31)->endOfDay();
         $calendarQuery = $this->calendarQuery($area, $family, $search, $calendarStart, $calendarEnd);
@@ -113,7 +149,7 @@ final class Activity extends Page
             $calendarDaily[(string) $row->bucket] = (int) $row->aggregate;
         }
 
-        $selectedDate = $this->requestedCalendarDate($calendarYear, $today);
+        $selectedDate = $activeDate;
         if ($selectedDate === null) {
             if ($calendarYear === $currentYear) {
                 $selectedDate = $today;
@@ -183,6 +219,7 @@ final class Activity extends Page
                 'count' => $count,
                 'level' => $level,
                 'selected' => $date->isSameDay($selectedDate),
+                'filtered' => $activeDate?->isSameDay($date) ?? false,
                 'today' => $date->isSameDay($today),
                 'future' => $date->gt($today),
             ];
@@ -201,11 +238,12 @@ final class Activity extends Page
             'area' => $area,
             'family' => $family,
             'search' => $search,
-            'period' => $period,
             'areaOptions' => AdminActionCatalog::areaOptions(),
             'familyOptions' => AdminActionCatalog::familyOptions(),
-            'periodOptions' => $periodOptions,
-            'selectedPeriodLabel' => $periodOptions[$period],
+            'activeDate' => $activeDateValue,
+            'activeHour' => $activeHour,
+            'todayDate' => $today->format('Y-m-d'),
+            'activitySourceExists' => $activityFeed->exists(),
             'activityMetrics' => [
                 'changes' => $overview['total'],
                 'active_days' => $overview['active_days'],
@@ -237,7 +275,7 @@ final class Activity extends Page
         ];
     }
 
-    private function requestedCalendarDate(int $calendarYear, CarbonImmutable $today): ?CarbonImmutable
+    private function requestedActivityDate(CarbonImmutable $today): ?CarbonImmutable
     {
         $requested = request()->query('calendar_date');
         if (! is_string($requested) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $requested) !== 1) {
@@ -250,11 +288,81 @@ final class Activity extends Page
             return null;
         }
 
-        if ($date->format('Y-m-d') !== $requested || (int) $date->format('Y') !== $calendarYear || $date->gt($today)) {
+        if ($date->format('Y-m-d') !== $requested || $date->year < 2000 || $date->gt($today)) {
             return null;
         }
 
         return $date;
+    }
+
+    private function requestedActivityHour(): ?int
+    {
+        $requested = request()->query('hour');
+        if (! is_numeric($requested)) {
+            return null;
+        }
+
+        $hour = (int) $requested;
+
+        return $hour >= 0 && $hour <= 23 ? $hour : null;
+    }
+
+    /** @param array<string, mixed> $arguments
+     * @return array<string, mixed>
+     */
+    private function activityDetails(array $arguments): array
+    {
+        $eventId = is_numeric($arguments['id'] ?? null) ? (int) $arguments['id'] : 0;
+        $event = $this->activityEvent($eventId);
+        abort_unless(is_array($event), 404);
+
+        return $event;
+    }
+
+    /** @return array<string, mixed>|null */
+    private function activityEvent(int $eventId): ?array
+    {
+        if ($eventId <= 0) {
+            return null;
+        }
+
+        return app(AdminActivityFeed::class)->event(
+            $eventId,
+            app(AdminAuditService::class)->requireActor(),
+        );
+    }
+
+    /** @param array<string, mixed> $arguments
+     * @return list<Action>
+     */
+    private function activityDetailsHeaderActions(array $arguments): array
+    {
+        $event = $this->activityDetails($arguments);
+        $actions = [];
+
+        if (is_array($event['undo'] ?? null)) {
+            $receiptId = (int) $event['undo']['id'];
+            $actions[] = Action::make('undoActivityEvent')
+                ->label('Undo')
+                ->icon(AdminIcon::Refresh->value)
+                ->iconButton()
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Undo change?')
+                ->modalDescription((string) $event['undo']['confirmation'])
+                ->action(fn (): mixed => $this->undo($receiptId));
+        }
+
+        if (is_string($event['url'] ?? null) && $event['url'] !== '') {
+            $actions[] = Action::make('openActivityRecord')
+                ->label('Open record')
+                ->icon(AdminIcon::OpenPublic->value)
+                ->iconButton()
+                ->color('gray')
+                ->url($event['url']);
+        }
+
+        return $actions;
     }
 
     private function calendarQuery(
