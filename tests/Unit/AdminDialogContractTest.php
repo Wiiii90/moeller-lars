@@ -3,6 +3,8 @@
 it('keeps migrated admin dialog surfaces on the shared dialog contract', function (): void {
     $root = dirname(__DIR__, 2);
     $files = [
+        'app/Filament/Pages/Dashboard.php',
+        'app/Filament/Pages/General.php',
         'app/Filament/Pages/HomePresentation.php',
         'app/Filament/Pages/JournalWorkspace.php',
         'app/Filament/Resources/MediaAssets/Pages/ListMediaAssets.php',
