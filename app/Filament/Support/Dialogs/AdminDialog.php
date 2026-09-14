@@ -68,12 +68,13 @@ final class AdminDialog
         string $submitLabel = 'Confirm',
         bool $danger = false,
         AdminDialogSize $size = AdminDialogSize::Mini,
+        bool|Closure $required = true,
     ): Action {
         $submitIcon = $danger ? AdminIcon::Delete : AdminIcon::Commit;
         $submitClass = 'admin-dialog__header-action '.($danger ? 'is-danger' : 'is-primary');
 
         return self::base($action, AdminDialogType::Confirm, $size)
-            ->requiresConfirmation()
+            ->requiresConfirmation($required)
             ->modalHeading($heading)
             ->modalDescription($description)
             ->modalSubmitAction(fn (Action $submit): Action => $submit
