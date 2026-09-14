@@ -244,29 +244,36 @@
     pointer-events: none;
 }
 
-/* Pages controls use the same six-unit reference. Search + filters + Reset
- * consume the first four metric units; Add Page and Selection own the final two. */
+/* Match Dashboard's wide-control rhythm: Search owns the first four metric
+ * units. The five compact controls divide the remaining two units. */
 .admin-task-controls--pages {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: repeat(15, minmax(0, 1fr));
     gap: 0;
     align-items: end;
 }
 
 .admin-task-controls--pages > * {
-    min-width: 0;
-    padding-right: .65rem;
+    min-width: 0 !important;
+    width: 100%;
+    padding-right: .45rem;
 }
 
-.admin-task-controls--pages > :nth-child(1) { grid-column: span 4; }
-.admin-task-controls--pages > :nth-child(2) { grid-column: span 2; }
-.admin-task-controls--pages > :nth-child(3) { grid-column: span 1; }
-.admin-task-controls--pages > :nth-child(4) { grid-column: span 1; }
-.admin-task-controls--pages > :nth-child(5) { grid-column: span 2; }
-.admin-task-controls--pages > :nth-child(6) {
-    grid-column: span 2;
-    padding-right: 0;
-    justify-items: end;
+.admin-task-controls--pages > :first-child { grid-column: span 10; }
+.admin-task-controls--pages > :not(:first-child) { grid-column: span 1; }
+.admin-task-controls--pages > :last-child { padding-right: 0; }
+
+.admin-task-controls--pages .admin-task-control-group,
+.admin-task-controls--pages .admin-selection__anchor,
+.admin-task-controls--pages .admin-task-control-actions {
+    width: 100%;
+}
+
+.admin-task-controls--pages .admin-task-control-actions > .admin-action,
+.admin-task-controls--pages .admin-selection__trigger {
+    width: 100%;
+    min-width: 0;
+    padding-inline: .3rem;
 }
 
 .admin-selection--unlabeled {
