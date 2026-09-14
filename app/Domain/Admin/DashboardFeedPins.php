@@ -47,31 +47,90 @@ final class DashboardFeedPins
             return;
         }
 
-        DB::transaction(function () use ($userId, $key): void {
+        $isPinned = DB::table('dashboard_feed_pins')
+            ->where('user_id', $userId)
+            ->where('entry_key', $key)
+            ->exists();
+
+        if ($isPinned) {
+            $this->unpinMany([$key]);
+
+            return;
+        }
+
+        $this->pinMany([$key]);
+    }
+
+    /** @param list<string> $keys */
+    public function pinMany(array $keys): void
+    {
+        $userId = $this->userId();
+        if ($userId === null) {
+            return;
+        }
+
+        $keys = array_values(array_unique(array_filter(
+            $keys,
+            fn (mixed $key): bool => is_string($key) && $key !== '' && is_array($this->feed->entry($key)),
+        )));
+        if ($keys === []) {
+            return;
+        }
+
+        DB::transaction(function () use ($userId, $keys): void {
             $existing = DB::table('dashboard_feed_pins')
                 ->where('user_id', $userId)
-                ->where('entry_key', $key)
-                ->first();
+                ->pluck('entry_key')
+                ->map(static fn (mixed $key): string => (string) $key)
+                ->all();
 
-            if ($existing !== null) {
-                DB::table('dashboard_feed_pins')->where('id', $existing->id)->delete();
-                $this->normalize($userId);
-
+            $newKeys = array_values(array_diff($keys, $existing));
+            if ($newKeys === []) {
                 return;
             }
 
             DB::table('dashboard_feed_pins')
                 ->where('user_id', $userId)
-                ->increment('position');
+                ->increment('position', count($newKeys));
 
             $now = now();
-            DB::table('dashboard_feed_pins')->insert([
-                'user_id' => $userId,
-                'entry_key' => $key,
-                'position' => 1,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
+            DB::table('dashboard_feed_pins')->insert(array_map(
+                static fn (string $key, int $index): array => [
+                    'user_id' => $userId,
+                    'entry_key' => $key,
+                    'position' => $index + 1,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                $newKeys,
+                array_keys($newKeys),
+            ));
+        });
+    }
+
+    /** @param list<string> $keys */
+    public function unpinMany(array $keys): void
+    {
+        $userId = $this->userId();
+        if ($userId === null) {
+            return;
+        }
+
+        $keys = array_values(array_unique(array_filter(
+            $keys,
+            static fn (mixed $key): bool => is_string($key) && $key !== '',
+        )));
+        if ($keys === []) {
+            return;
+        }
+
+        DB::transaction(function () use ($userId, $keys): void {
+            DB::table('dashboard_feed_pins')
+                ->where('user_id', $userId)
+                ->whereIn('entry_key', $keys)
+                ->delete();
+
+            $this->normalize($userId);
         });
     }
 
@@ -118,19 +177,7 @@ final class DashboardFeedPins
 
     public function forget(string $key): void
     {
-        $userId = $this->userId();
-        if ($userId === null) {
-            return;
-        }
-
-        DB::transaction(function () use ($userId, $key): void {
-            DB::table('dashboard_feed_pins')
-                ->where('user_id', $userId)
-                ->where('entry_key', $key)
-                ->delete();
-
-            $this->normalize($userId);
-        });
+        $this->unpinMany([$key]);
     }
 
     private function normalize(int $userId): void
