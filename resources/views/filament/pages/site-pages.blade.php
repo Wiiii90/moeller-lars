@@ -68,8 +68,7 @@
                 </x-slot:actions>
 
                 <x-slot:selection>
-                    <div class="admin-task-control-group admin-selection" x-data="{ open: false }">
-                        <span class="admin-task-control-label">SELECTION</span>
+                    <div class="admin-task-control-group admin-selection admin-selection--unlabeled" x-data="{ open: false }">
                         <div class="admin-selection__anchor">
                             <button
                                 class="admin-action admin-selection__trigger"
