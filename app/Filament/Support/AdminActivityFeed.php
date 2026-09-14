@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminActionReceiptService;
 use App\Domain\Publication\PublicationService;
+use App\Filament\Pages\Activity;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
@@ -436,6 +437,7 @@ final class AdminActivityFeed
             'blog_post' => $this->pluckLabels(BlogPost::class, $ids->get('blog_post', []), 'title'),
             'blog_setting' => [1 => 'Blog settings'],
             'public_content_setting' => [1 => 'Website settings'],
+            'publication_checkpoint' => $this->checkpointLabels($ids->get('publication_checkpoint', [])),
         ];
     }
 
@@ -457,6 +459,24 @@ final class AdminActivityFeed
             ->all();
     }
 
+    /** @param array<int,int> $ids
+     * @return array<int,string>
+     */
+    private function checkpointLabels(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return PublicationCheckpoint::query()
+            ->whereKey($ids)
+            ->get(['id', 'hash'])
+            ->mapWithKeys(static fn (PublicationCheckpoint $checkpoint): array => [
+                (int) $checkpoint->getKey() => 'Commit '.$checkpoint->shortHash(),
+            ])
+            ->all();
+    }
+
     private function fallbackTarget(string $entityType): string
     {
         return match ($entityType) {
@@ -469,13 +489,14 @@ final class AdminActivityFeed
             'blog_post' => 'Blog post no longer available',
             'blog_setting' => 'Blog settings',
             'public_content_setting' => 'Website settings',
+            'publication_checkpoint' => 'Publication version',
             default => 'Administrative record',
         };
     }
 
     private function targetUrl(string $entityType, int $entityId, bool $exists): ?string
     {
-        if (! $exists && ! in_array($entityType, ['blog_setting', 'public_content_setting'], true)) {
+        if (! $exists && ! in_array($entityType, ['blog_setting', 'public_content_setting', 'publication_checkpoint'], true)) {
             return null;
         }
 
@@ -489,6 +510,7 @@ final class AdminActivityFeed
             'blog_post' => BlogPostResource::getUrl('edit', ['record' => $entityId]),
             'blog_setting' => SitePages::getUrl(),
             'public_content_setting' => PublicContentSettingResource::getNavigationUrl(),
+            'publication_checkpoint' => Activity::getUrl().'?view=commits',
             default => null,
         };
     }
