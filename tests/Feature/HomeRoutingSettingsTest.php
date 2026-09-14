@@ -13,8 +13,9 @@ it('keeps Skip Home out of the content template options', function (): void {
             HomeTemplate::Artwork->value,
             HomeTemplate::UnderConstruction->value,
             HomeTemplate::Custom->value,
-        ])
-        ->not->toHaveKey(HomeTemplate::SkipHome->value);
+        ]);
+
+    expect(HomeTemplate::options())->not->toHaveKey(HomeTemplate::SkipHome->value);
 });
 
 it('stores Home skip routing independently from the content template', function (): void {
@@ -38,11 +39,18 @@ it('stores Home skip routing independently from the content template', function 
         ->and($resolver->skipTarget()?->getKey())->toBe($target->getKey());
 });
 
-it('reads legacy Skip Home rows as Hero Artwork plus enabled routing', function (): void {
-    $settings = app(HomePresentationResolver::class)->settings();
-    $settings->setAttribute('template', HomeTemplate::SkipHome->value);
-    $settings->save();
+it('falls back to the next published top-level page when no skip target is stored', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
 
-    expect(app(HomePresentationResolver::class)->template())->toBe(HomeTemplate::Artwork)
-        ->and(app(HomePresentationResolver::class)->skipEnabled())->toBeTrue();
+    $resolver = app(HomePresentationResolver::class);
+    $settings = $resolver->settings();
+    $sections = app(SiteSectionEditorialService::class);
+
+    $target = $sections->createCustomPage('Next Page', 'next-page');
+    $target = $sections->updatePlacement($target, 'published', true, null);
+
+    app(HomeRoutingSettingsService::class)->update($settings, true, null);
+
+    expect($resolver->skipEnabled())->toBeTrue()
+        ->and($resolver->skipTarget()?->getKey())->toBe($target->getKey());
 });
