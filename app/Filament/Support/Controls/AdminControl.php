@@ -13,7 +13,7 @@ use Filament\Forms\Components\Toggle;
 
 final class AdminControl
 {
-    private const WRAPPER_CLASS = 'admin-form-control';
+    private const WRAPPER_CLASS = 'admin-control-field admin-form-controls';
 
     public static function text(string $name, ?string $label = null): TextInput
     {
