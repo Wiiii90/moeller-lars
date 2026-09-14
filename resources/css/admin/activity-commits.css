@@ -108,34 +108,66 @@
     overflow-wrap: anywhere;
 }
 
-.activity-commit-dialog__events {
+.activity-commit-dialog__events,
+.activity-publication-review__groups,
+.activity-publication-review__records {
     display: grid;
     gap: .45rem;
 }
 
-.activity-commit-dialog__events article {
+.activity-commit-dialog__events article,
+.activity-publication-review__records article {
     display: grid;
     gap: .08rem;
     padding-bottom: .45rem;
     border-bottom: 1px solid var(--admin-line);
 }
 
-.activity-commit-dialog__events article:last-child {
+.activity-commit-dialog__events article:last-child,
+.activity-publication-review__records article:last-child {
     padding-bottom: 0;
     border-bottom: 0;
 }
 
-.activity-commit-dialog__events strong {
+.activity-commit-dialog__events strong,
+.activity-publication-review__records strong {
     color: var(--admin-text);
     font-size: .72rem;
     font-weight: 600;
 }
 
 .activity-commit-dialog__events span,
-.activity-commit-dialog__events small {
+.activity-commit-dialog__events small,
+.activity-publication-review__records span,
+.activity-publication-review__records small {
     color: var(--admin-muted);
     font-size: .66rem;
     line-height: 1.35;
+}
+
+.activity-publication-review__records article > div,
+.activity-publication-review__groups article > div {
+    display: flex;
+    gap: .75rem;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.activity-publication-review__groups article {
+    display: grid;
+    gap: .08rem;
+}
+
+.activity-publication-review__groups strong {
+    color: var(--admin-text);
+    font-size: .72rem;
+    font-weight: 600;
+}
+
+.activity-publication-review__groups span,
+.activity-publication-review__groups small {
+    color: var(--admin-muted);
+    font-size: .66rem;
 }
 
 @media (max-width: 760px) {
