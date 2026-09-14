@@ -1,14 +1,12 @@
         <x-admin.add-row wire:click="mountAction('addComponent')">Add component</x-admin.add-row>
 
         <footer class="admin-pager">
-            <label class="admin-pager__size">
-                <span>Per page</span>
-                <select wire:model.live.number="pageSize">
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-            </label>
+            <x-admin.page-size-picker
+                :value="$pageSize"
+                :options="[25, 50, 100]"
+                wire-model="pageSize"
+                aria-label="Custom page components per page"
+            />
             <span class="admin-pager__range">@if ($total === 0)0 of 0 @else{{ $resultStart }}–{{ $resultEnd }} of {{ $total }}@endif</span>
             <div class="admin-pager__actions admin-toolbar">
                 <button class="admin-action" type="button" wire:click="previousPage" @disabled($page <= 1)>Previous</button>
