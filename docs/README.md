@@ -13,6 +13,7 @@ These describe the durable application architecture/behavior that current accept
 - [MEDIA.md](MEDIA.md) — image/video/audio ingest, Rich Text references, public/preview policy and guarded deletion
 - [ANALYTICS.md](ANALYTICS.md) — Matomo/reporting and operational-metrics boundary
 - [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md) — admin performance budget and investigation rules
+- [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md) — explicit Toast/Notification/Activity/Publication semantics, persistent inbox ownership and server-side delivery contract
 - [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — direct/worker browser-reconciliation modes, shared Visual Stage ownership, icon semantics and local preview loop
 - [RELEASE.md](RELEASE.md) — immutable image, preview, runtime, persistence and release contract
 - [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md) — application/platform ownership boundary; mutable operational implementation lives in `server-platform`
