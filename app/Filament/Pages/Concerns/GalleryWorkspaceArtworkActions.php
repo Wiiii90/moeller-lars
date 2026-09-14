@@ -6,13 +6,15 @@ use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
+use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
-use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -21,11 +23,8 @@ trait GalleryWorkspaceArtworkActions
 {
     public function removeArtworkAction(): Action
     {
-        return Action::make('removeArtwork')
+        $action = Action::make('removeArtwork')
             ->label('Remove')
-            ->requiresConfirmation()
-            ->modalHeading('Remove artwork from Gallery?')
-            ->modalDescription('The artwork becomes unassigned. Its Media Files stay intact and reusable.')
             ->action(function (array $arguments): void {
                 try {
                     app(ArtworkGalleryAssignmentService::class)->detach($this->actionArtwork($arguments));
@@ -38,45 +37,39 @@ trait GalleryWorkspaceArtworkActions
                 $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Artwork removed from Gallery')->success()->send();
             });
+
+        return AdminDialog::confirm(
+            $action,
+            'Remove artwork from Gallery?',
+            'The artwork becomes unassigned. Its Media Files stay intact and reusable.',
+            'Remove',
+            icon: AdminIcon::Detach,
+        );
     }
 
     public function previewArtworkAction(): Action
     {
-        return Action::make('previewArtwork')
+        $action = Action::make('previewArtwork')
             ->label('Preview artwork')
             ->modalHeading(fn (array $arguments): string => (string) $this->actionArtwork($arguments)->getAttribute('title'))
             ->modalContent(fn (array $arguments): View => view(
                 'filament.resources.artworks.partials.preview-dialog',
                 $this->artworkPreviewDialogData($arguments),
             ))
-            ->modalSubmitAction(false)
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Close')
-                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
-            ->extraModalFooterActions(fn (array $arguments): array => $this->artworkPreviewFooterActions($arguments))
-            ->modalWidth(Width::SevenExtraLarge)
-            ->extraModalWindowAttributes(['class' => 'media-file-dialog gallery-artwork-preview-dialog']);
+            ->extraModalFooterActions(fn (array $arguments): array => $this->artworkPreviewHeaderActions($arguments));
+
+        return AdminDialog::viewer($action, AdminDialogSize::Large);
     }
 
     public function deletePrimaryMediaAction(): Action
     {
-        return Action::make('deletePrimaryMedia')
+        $action = Action::make('deletePrimaryMedia')
             ->label('Delete media file')
             ->color('danger')
-            ->requiresConfirmation()
-            ->modalHeading(fn (array $arguments): string => 'Delete '.(string) $this->primaryMediaAsset($arguments)->getAttribute('original_filename').'?')
             ->modalContent(fn (array $arguments): View => view(
                 'filament.resources.media-assets.partials.delete-dialog',
                 ['references' => $this->primaryMediaReferences($this->primaryMediaAsset($arguments))],
             ))
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Delete media file')
-                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'media-file-dialog'])
             ->action(function (array $arguments): void {
                 $asset = $this->primaryMediaAsset($arguments);
                 $affectedArtworkIds = ArtworkMedia::query()
@@ -127,6 +120,14 @@ trait GalleryWorkspaceArtworkActions
                 $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('File deleted')->success()->send();
             });
+
+        return AdminDialog::confirm(
+            $action,
+            fn (array $arguments): string => 'Delete '.(string) $this->primaryMediaAsset($arguments)->getAttribute('original_filename').'?',
+            submitLabel: 'Delete media file',
+            danger: true,
+            size: AdminDialogSize::Default,
+        );
     }
 
     public function publishArtworkAction(): Action
@@ -149,14 +150,20 @@ trait GalleryWorkspaceArtworkActions
 
     public function unpublishArtworkAction(): Action
     {
-        return Action::make('unpublishArtwork')
+        $action = Action::make('unpublishArtwork')
             ->label('Unpublish')
-            ->requiresConfirmation()
             ->action(function (array $arguments): void {
                 app(ArtworkPublicationService::class)->unpublish($this->actionArtwork($arguments));
                 $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Artwork unpublished')->success()->send();
             });
+
+        return AdminDialog::confirm(
+            $action,
+            'Unpublish artwork?',
+            submitLabel: 'Unpublish',
+            icon: AdminIcon::Unpublish,
+        );
     }
 
     /** @return array<string, mixed> */
@@ -227,7 +234,7 @@ trait GalleryWorkspaceArtworkActions
     }
 
     /** @return list<Action> */
-    private function artworkPreviewFooterActions(array $arguments): array
+    private function artworkPreviewHeaderActions(array $arguments): array
     {
         $data = $this->artworkPreviewDialogData($arguments);
         $artwork = $data['artwork'];
@@ -237,14 +244,20 @@ trait GalleryWorkspaceArtworkActions
         if (is_string($artwork['public_url']) && $artwork['public_url'] !== '') {
             $actions[] = Action::make('previewViewPublic')
                 ->label('View public')
+                ->icon(AdminIcon::OpenPublic->value)
+                ->iconButton()
+                ->color('gray')
                 ->url($artwork['public_url'])
                 ->openUrlInNewTab()
-                ->extraAttributes(['class' => 'media-dialog-footer__utility']);
+                ->extraAttributes(['class' => 'admin-dialog__header-action']);
         }
 
         $actions[] = Action::make('previewEditArtwork')
             ->label('Edit artwork')
-            ->extraAttributes(['class' => 'media-dialog-footer__utility'])
+            ->icon(AdminIcon::Edit->value)
+            ->iconButton()
+            ->color('gray')
+            ->extraAttributes(['class' => 'admin-dialog__header-action'])
             ->action(function () use ($artworkId): void {
                 $this->replaceMountedAction('editArtwork', ['artwork' => $artworkId]);
             });
@@ -252,7 +265,10 @@ trait GalleryWorkspaceArtworkActions
         $published = $artwork['state'] === 'published';
         $actions[] = Action::make('previewLifecycle')
             ->label($published ? 'Unpublish' : 'Publish')
-            ->extraAttributes(['class' => 'media-dialog-footer__utility'])
+            ->icon(($published ? AdminIcon::Unpublish : AdminIcon::Publish)->value)
+            ->iconButton()
+            ->color('gray')
+            ->extraAttributes(['class' => 'admin-dialog__header-action'])
             ->action(function () use ($published, $artworkId): void {
                 $this->replaceMountedAction(
                     $published ? 'unpublishArtwork' : 'publishArtwork',
@@ -263,8 +279,10 @@ trait GalleryWorkspaceArtworkActions
         if (is_array($data['primaryMedia'])) {
             $actions[] = Action::make('previewDeletePrimaryMedia')
                 ->label('Delete media file')
+                ->icon(AdminIcon::Delete->value)
+                ->iconButton()
                 ->color('danger')
-                ->extraAttributes(['class' => 'media-dialog-footer__primary'])
+                ->extraAttributes(['class' => 'admin-dialog__header-action is-danger'])
                 ->action(function () use ($artworkId): void {
                     $this->replaceMountedAction('deletePrimaryMedia', ['artwork' => $artworkId]);
                 });
