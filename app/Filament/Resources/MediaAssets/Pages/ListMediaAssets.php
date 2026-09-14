@@ -71,6 +71,8 @@ final class ListMediaAssets extends Page
 
     public string $type = 'all';
 
+    public string $size = 'all';
+
     public string $usage = 'all';
 
     public string $state = 'available';
@@ -116,6 +118,11 @@ final class ListMediaAssets extends Page
         $this->refreshFromFirstPage();
     }
 
+    public function updatedSize(): void
+    {
+        $this->refreshFromFirstPage();
+    }
+
     public function updatedUsage(): void
     {
         $this->refreshFromFirstPage();
@@ -127,6 +134,13 @@ final class ListMediaAssets extends Page
     }
 
     public function updatedPageSize(mixed $value): void
+    {
+        $this->pageSize = $this->normalizePageSize($value);
+        $this->page = 1;
+        $this->loadLibrary();
+    }
+
+    public function setPageSize(int $value): void
     {
         $this->pageSize = $this->normalizePageSize($value);
         $this->page = 1;
@@ -320,6 +334,7 @@ final class ListMediaAssets extends Page
     public function resetFilters(): void
     {
         $this->type = 'all';
+        $this->size = 'all';
         $this->usage = 'all';
         $this->state = 'available';
         $this->search = '';
@@ -617,6 +632,7 @@ final class ListMediaAssets extends Page
         }
 
         $this->applyTypeFilter($query);
+        $this->applySizeFilter($query);
         $catalog->applyUsageFilter($query, $this->usage);
 
         return $query;
@@ -642,6 +658,33 @@ final class ListMediaAssets extends Page
         }
         if (in_array($this->type, MediaTypePolicy::acceptedMimeTypes(), true)) {
             $query->where('mime_type', $this->type);
+        }
+    }
+
+    /** @param Builder<MediaAsset> $query */
+    private function applySizeFilter(Builder $query): void
+    {
+        $megabyte = 1024 * 1024;
+
+        if ($this->size === 'under-1-mb') {
+            $query->where('byte_size', '<', $megabyte);
+
+            return;
+        }
+        if ($this->size === '1-5-mb') {
+            $query->where('byte_size', '>=', $megabyte)
+                ->where('byte_size', '<', 5 * $megabyte);
+
+            return;
+        }
+        if ($this->size === '5-20-mb') {
+            $query->where('byte_size', '>=', 5 * $megabyte)
+                ->where('byte_size', '<', 20 * $megabyte);
+
+            return;
+        }
+        if ($this->size === '20-mb-plus') {
+            $query->where('byte_size', '>=', 20 * $megabyte);
         }
     }
 
