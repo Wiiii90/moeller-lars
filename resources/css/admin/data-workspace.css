@@ -320,6 +320,18 @@
     border-bottom: 0 !important;
 }
 
+/* Native horizontal scrollbar gutters read as phantom spacing between the last
+ * data row and the canonical add-row separator. Tables that flow directly into
+ * an add row keep horizontal scrolling, but do not reserve a visible gutter on
+ * desktop. Narrow layouts restore a discoverable thin scrollbar below. */
+:is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row) {
+    scrollbar-width: none;
+}
+
+:is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row)::-webkit-scrollbar {
+    height: 0;
+}
+
 .admin-add-row + :is(.admin-pager, .media-workspace__pager) {
     border-top: 0;
 }
@@ -335,6 +347,12 @@
     border-top: 1px solid var(--admin-line);
     color: var(--admin-muted);
     font-size: var(--admin-font-size-table-support);
+}
+
+/* Opening a bottom-edge picker temporarily creates enough document room for
+ * the existing scrollIntoView call to reveal the complete downward menu. */
+:is(.admin-pager, .media-workspace__pager):has(.admin-pager-size-picker__menu:not([style*="display: none"])) {
+    padding-bottom: calc(5.25rem + var(--admin-section-gap));
 }
 
 .admin-pager__meta {
@@ -390,18 +408,22 @@
     outline: none;
 }
 
-/* Shared deterministic page-size picker. The menu stays compact and the
- * caller scrolls it into view when opening near the viewport edge. */
+/* Shared deterministic page-size picker. Trigger and popup share one exact
+ * width; options keep the value centered while the checkmark occupies its own
+ * overlay slot so active state never shifts the number. */
 .admin-pager-size-picker {
     position: relative;
     display: inline-flex;
-    min-width: 0;
+    width: 4rem;
+    min-width: 4rem;
 }
 
 .admin-pager-size-picker__trigger {
+    box-sizing: border-box;
     display: inline-grid;
+    width: 100%;
     height: 2rem;
-    min-width: 3.8rem;
+    min-width: 0;
     padding: 0 .38rem;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: .24rem;
@@ -426,28 +448,31 @@
 
 .admin-pager-size-picker__menu {
     position: absolute;
-    top: calc(100% + .18rem);
+    top: calc(100% + .3rem);
     left: 0;
     z-index: 50;
+    box-sizing: border-box;
     display: grid;
-    width: 4rem;
-    min-width: 100%;
-    padding: .1rem 0;
+    width: 100%;
+    min-width: 0;
+    padding: .14rem 0;
     border: 1px solid var(--admin-line-strong);
     border-radius: .2rem;
     background: var(--admin-control-popup-surface);
     box-shadow: 0 .45rem 1rem rgba(0, 0, 0, .12);
     color: var(--admin-control-popup-ink);
+    scroll-margin-bottom: var(--admin-section-gap);
 }
 
 .admin-pager-size-picker__option {
-    display: grid;
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
     width: 100%;
-    min-height: 1.65rem;
-    padding: .16rem .35rem .16rem .28rem;
-    grid-template-columns: .65rem minmax(0, 1fr);
-    gap: .16rem;
+    min-height: 1.75rem;
+    padding: .2rem .35rem;
     align-items: center;
+    justify-content: center;
     border: 0;
     background: transparent;
     color: inherit;
@@ -455,7 +480,7 @@
     font-size: var(--admin-font-size-table-support);
     font-variant-numeric: tabular-nums;
     line-height: 1;
-    text-align: left;
+    text-align: center;
     cursor: pointer;
 }
 
@@ -471,6 +496,8 @@
 }
 
 .admin-pager-size-picker__check {
+    position: absolute;
+    left: .35rem;
     color: var(--admin-accent);
     text-align: center;
 }
@@ -539,6 +566,14 @@
 
     .admin-control-group__actions {
         flex-wrap: wrap;
+    }
+
+    :is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row) {
+        scrollbar-width: thin;
+    }
+
+    :is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row)::-webkit-scrollbar {
+        height: .35rem;
     }
 
     .admin-pager,
