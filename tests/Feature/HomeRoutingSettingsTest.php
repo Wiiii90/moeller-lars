@@ -6,6 +6,7 @@ use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\HomeRoutingDialog;
+use App\Filament\Support\HomeSettingsDialog;
 use App\Models\HomePresentationSetting;
 use App\Models\User;
 
@@ -103,4 +104,29 @@ it('changes an explicit Skip Home target through the routing dialog', function (
     $disabled = $settings->fresh();
     expect(app(HomeRoutingSettingsService::class)->enabled($disabled))->toBeFalse()
         ->and(app(HomeRoutingSettingsService::class)->configuredTargetId($disabled))->toBeNull();
+});
+
+it('does not pin the automatic Skip Home target when the Home template changes', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+
+    $resolver = app(HomePresentationResolver::class);
+    $settings = $resolver->settings();
+    $sections = app(SiteSectionEditorialService::class);
+
+    $target = $sections->createCustomPage('Automatic Target', 'automatic-target');
+    $target = $sections->updatePlacement($target, 'published', true, null);
+    app(SiteSectionOrderService::class)->moveTo($target, null, 1);
+
+    app(HomeRoutingDialog::class)->save([
+        'skip_home' => true,
+        'skip_target_section_id' => null,
+    ]);
+    app(HomeSettingsDialog::class)->changeTemplate(HomeTemplate::Custom);
+
+    /** @var HomePresentationSetting $fresh */
+    $fresh = $settings->fresh();
+    expect($fresh->template())->toBe(HomeTemplate::Custom)
+        ->and(app(HomeRoutingSettingsService::class)->enabled($fresh))->toBeTrue()
+        ->and(app(HomeRoutingSettingsService::class)->configuredTargetId($fresh))->toBeNull()
+        ->and($resolver->skipTarget()?->getKey())->toBe($target->getKey());
 });
