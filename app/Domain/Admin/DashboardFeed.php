@@ -292,7 +292,8 @@ final class DashboardFeed
         return $query->where(static function (Builder $match) use ($pattern): void {
             $match->where('title', 'ilike', $pattern)
                 ->orWhere('body', 'ilike', $pattern)
-                ->orWhere('status', 'ilike', $pattern);
+                ->orWhere('status', 'ilike', $pattern)
+                ->orWhere('type', 'ilike', $pattern);
         });
     }
 
@@ -320,7 +321,8 @@ final class DashboardFeed
             $notifications->where(static function (QueryBuilder $match) use ($pattern): void {
                 $match->where('title', 'ilike', $pattern)
                     ->orWhere('body', 'ilike', $pattern)
-                    ->orWhere('status', 'ilike', $pattern);
+                    ->orWhere('status', 'ilike', $pattern)
+                    ->orWhere('type', 'ilike', $pattern);
             });
         }
 
@@ -447,6 +449,11 @@ final class DashboardFeed
                     'contact_id' => null,
                     'notification_id' => null,
                     'notification_status' => null,
+                    'notification_type' => null,
+                    'entity_type' => null,
+                    'entity_id' => null,
+                    'audit_event_id' => null,
+                    'publication_checkpoint_id' => null,
                     'type' => $type,
                     'type_label' => $type === 'announcement' ? 'Announcement' : 'Changelog',
                     'sort_at' => $parsedDate->toIso8601String(),
@@ -488,6 +495,11 @@ final class DashboardFeed
             'contact_id' => (int) $message->getKey(),
             'notification_id' => null,
             'notification_status' => null,
+            'notification_type' => null,
+            'entity_type' => null,
+            'entity_id' => null,
+            'audit_event_id' => null,
+            'publication_checkpoint_id' => null,
             'type' => 'contact',
             'type_label' => self::types()['contact'],
             'sort_at' => $receivedAt->toIso8601String(),
@@ -518,6 +530,8 @@ final class DashboardFeed
         $status = (string) $notification->getAttribute('status');
         $readAt = $notification->getAttribute('read_at');
         $title = (string) $notification->getAttribute('title');
+        $actionUrl = trim((string) ($notification->getAttribute('action_url') ?? ''));
+        $actionLabel = trim((string) ($notification->getAttribute('action_label') ?? ''));
 
         return [
             'key' => 'notification:'.$notification->getKey(),
@@ -525,6 +539,11 @@ final class DashboardFeed
             'contact_id' => null,
             'notification_id' => (int) $notification->getKey(),
             'notification_status' => $status,
+            'notification_type' => (string) $notification->getAttribute('type'),
+            'entity_type' => $notification->getAttribute('entity_type'),
+            'entity_id' => $notification->getAttribute('entity_id'),
+            'audit_event_id' => $notification->getAttribute('audit_event_id'),
+            'publication_checkpoint_id' => $notification->getAttribute('publication_checkpoint_id'),
             'type' => 'notification',
             'type_label' => self::types()['notification'],
             'sort_at' => $receivedAt->toIso8601String(),
@@ -541,8 +560,8 @@ final class DashboardFeed
             'status' => ($readAt === null ? 'Unread' : 'Read').' · '.ucfirst($status),
             'mail_delivery_status' => null,
             'mail_delivered_at' => null,
-            'link' => null,
-            'link_label' => null,
+            'link' => $actionUrl !== '' ? $actionUrl : null,
+            'link_label' => $actionLabel !== '' ? $actionLabel : null,
         ];
     }
 
@@ -576,7 +595,7 @@ final class DashboardFeed
     {
         $filter = auth()->user()?->getAttribute('dashboard_notification_filter');
 
-        return is_string($filter) && in_array($filter, ['all', 'success', 'warning', 'danger'], true)
+        return is_string($filter) && in_array($filter, ['all', 'success', 'warning', 'danger', 'info'], true)
             ? $filter
             : 'all';
     }
