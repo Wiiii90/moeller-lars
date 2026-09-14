@@ -7,6 +7,8 @@ use App\Domain\Content\PublicAppearance;
 use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
@@ -18,7 +20,6 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Width;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -356,136 +357,122 @@ final class General extends Page
 
     public function addSocialLinkAction(): Action
     {
-        return Action::make('addSocialLink')
-            ->label('Add social link')
-            ->modalHeading('Add social media profile')
-            ->fillForm(fn (): array => [
-                'platform' => '',
-                'url' => '',
-                'position' => count($this->socialLinks()) + 1,
-            ])
-            ->schema([
-                Select::make('platform')
-                    ->label('Platform')
-                    ->options(\App\Domain\Content\SocialLinks::options())
-                    ->native()
-                    ->required(),
-                TextInput::make('url')
-                    ->label('Profile URL')
-                    ->url()
-                    ->maxLength(2048)
-                    ->required(),
-                TextInput::make('position')
-                    ->label('Position')
-                    ->numeric()
-                    ->integer()
-                    ->minValue(1)
-                    ->required(),
-            ])
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Add social media profile')
-                ->icon(AdminIcon::Commit->value)
-                ->iconButton()
-                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
-            ->modalCancelAction(false)
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--small admin-dialog--header-actions',
-            ])
-            ->action(function (array $data): void {
-                $links = $this->socialLinks();
-                $platform = (string) ($data['platform'] ?? '');
-                $url = (string) ($data['url'] ?? '');
+        return AdminDialog::create(
+            Action::make('addSocialLink')
+                ->label('Add social link')
+                ->modalHeading('Add social media profile')
+                ->fillForm(fn (): array => [
+                    'platform' => '',
+                    'url' => '',
+                    'position' => count($this->socialLinks()) + 1,
+                ])
+                ->schema([
+                    Select::make('platform')
+                        ->label('Platform')
+                        ->options(\App\Domain\Content\SocialLinks::options())
+                        ->native()
+                        ->required(),
+                    TextInput::make('url')
+                        ->label('Profile URL')
+                        ->url()
+                        ->maxLength(2048)
+                        ->required(),
+                    TextInput::make('position')
+                        ->label('Position')
+                        ->numeric()
+                        ->integer()
+                        ->minValue(1)
+                        ->required(),
+                ]),
+            'Add social media profile',
+            AdminDialogSize::Small,
+        )->action(function (array $data): void {
+            $links = $this->socialLinks();
+            $platform = (string) ($data['platform'] ?? '');
+            $url = (string) ($data['url'] ?? '');
 
-                foreach ($links as $link) {
-                    if (($link['platform'] ?? null) === $platform) {
-                        throw ValidationException::withMessages([
-                            'platform' => 'Each social platform can only be configured once.',
-                        ]);
-                    }
+            foreach ($links as $link) {
+                if (($link['platform'] ?? null) === $platform) {
+                    throw ValidationException::withMessages([
+                        'platform' => 'Each social platform can only be configured once.',
+                    ]);
                 }
+            }
 
-                $position = max(1, min((int) ($data['position'] ?? count($links) + 1), count($links) + 1));
-                array_splice($links, $position - 1, 0, [[
-                    'platform' => $platform,
-                    'url' => $url,
-                ]]);
+            $position = max(1, min((int) ($data['position'] ?? count($links) + 1), count($links) + 1));
+            array_splice($links, $position - 1, 0, [[
+                'platform' => $platform,
+                'url' => $url,
+            ]]);
 
-                $this->saveSocialLinks($links);
-            });
+            $this->saveSocialLinks($links);
+        });
     }
 
     public function editSocialLinkAction(): Action
     {
-        return Action::make('editSocialLink')
-            ->label('Edit')
-            ->modalHeading('Edit social media profile')
-            ->fillForm(function (array $arguments): array {
-                $index = $this->socialLinkIndexForAction($arguments);
-                $link = $this->socialLinkForAction($arguments);
+        return AdminDialog::editCommit(
+            Action::make('editSocialLink')
+                ->label('Edit')
+                ->modalHeading('Edit social media profile')
+                ->fillForm(function (array $arguments): array {
+                    $index = $this->socialLinkIndexForAction($arguments);
+                    $link = $this->socialLinkForAction($arguments);
 
-                return [
-                    'platform' => (string) ($link['platform'] ?? ''),
-                    'url' => (string) ($link['url'] ?? ''),
-                    'position' => $index === null ? 1 : $index + 1,
-                ];
-            })
-            ->schema([
-                Select::make('platform')
-                    ->label('Platform')
-                    ->options(\App\Domain\Content\SocialLinks::options())
-                    ->native()
-                    ->required(),
-                TextInput::make('url')
-                    ->label('Profile URL')
-                    ->url()
-                    ->maxLength(2048)
-                    ->required(),
-                TextInput::make('position')
-                    ->label('Position')
-                    ->numeric()
-                    ->integer()
-                    ->minValue(1)
-                    ->required(),
-            ])
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Save social media profile')
-                ->icon(AdminIcon::Commit->value)
-                ->iconButton()
-                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
-            ->modalCancelAction(false)
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--small admin-dialog--header-actions',
-            ])
-            ->action(function (array $data, array $arguments): void {
-                $index = $this->socialLinkIndexForAction($arguments);
-                if ($index === null) {
-                    return;
+                    return [
+                        'platform' => (string) ($link['platform'] ?? ''),
+                        'url' => (string) ($link['url'] ?? ''),
+                        'position' => $index === null ? 1 : $index + 1,
+                    ];
+                })
+                ->schema([
+                    Select::make('platform')
+                        ->label('Platform')
+                        ->options(\App\Domain\Content\SocialLinks::options())
+                        ->native()
+                        ->required(),
+                    TextInput::make('url')
+                        ->label('Profile URL')
+                        ->url()
+                        ->maxLength(2048)
+                        ->required(),
+                    TextInput::make('position')
+                        ->label('Position')
+                        ->numeric()
+                        ->integer()
+                        ->minValue(1)
+                        ->required(),
+                ]),
+            'Save social media profile',
+            AdminDialogSize::Small,
+        )->action(function (array $data, array $arguments): void {
+            $index = $this->socialLinkIndexForAction($arguments);
+            if ($index === null) {
+                return;
+            }
+
+            $links = $this->socialLinks();
+            $platform = (string) ($data['platform'] ?? '');
+            $url = (string) ($data['url'] ?? '');
+
+            foreach ($links as $otherIndex => $link) {
+                if ($otherIndex !== $index && ($link['platform'] ?? null) === $platform) {
+                    throw ValidationException::withMessages([
+                        'platform' => 'Each social platform can only be configured once.',
+                    ]);
                 }
+            }
 
-                $links = $this->socialLinks();
-                $platform = (string) ($data['platform'] ?? '');
-                $url = (string) ($data['url'] ?? '');
+            $links[$index] = [
+                'platform' => $platform,
+                'url' => $url,
+            ];
+            $position = max(1, min((int) ($data['position'] ?? $index + 1), count($links)));
+            $moved = array_splice($links, $index, 1);
+            array_splice($links, $position - 1, 0, $moved);
 
-                foreach ($links as $otherIndex => $link) {
-                    if ($otherIndex !== $index && ($link['platform'] ?? null) === $platform) {
-                        throw ValidationException::withMessages([
-                            'platform' => 'Each social platform can only be configured once.',
-                        ]);
-                    }
-                }
-
-                $links[$index] = [
-                    'platform' => $platform,
-                    'url' => $url,
-                ];
-                $position = max(1, min((int) ($data['position'] ?? $index + 1), count($links)));
-                $moved = array_splice($links, $index, 1);
-                array_splice($links, $position - 1, 0, $moved);
-
-                $this->saveSocialLinks($links);
-            });
+            $this->saveSocialLinks($links);
+        });
     }
 
     public function addSocialLink(): void
