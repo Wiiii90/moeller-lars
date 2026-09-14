@@ -50,6 +50,7 @@ it('projects announcements changelog and contact into the shared feed without tu
         'announcement' => 'Announcements',
         'changelog' => 'Changelog',
         'contact' => 'Contact',
+        'notification' => 'Notifications',
     ]);
 
     $all = $feed->paginate();
