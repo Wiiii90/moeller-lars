@@ -360,14 +360,12 @@
 
             @if ($detailTable['total'] > 12)
                 <footer class="admin-pager" aria-label="Analytics detail pagination">
-                    <label class="admin-pager__size">
-                        <span>Per page</span>
-                        <select wire:model.live.number="detailPageSize">
-                            <option value="12">12</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                        </select>
-                    </label>
+                    <x-admin.page-size-picker
+                        :value="$detailPageSize"
+                        :options="[12, 25, 50]"
+                        wire-model="detailPageSize"
+                        aria-label="Analytics rows per page"
+                    />
 
                     <span class="admin-pager__range">
                         {{ $detailTable['start'] }}–{{ $detailTable['end'] }} of {{ $detailTable['total'] }}
