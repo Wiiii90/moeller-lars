@@ -10,6 +10,7 @@
     role="row"
     data-depth="{{ $section['depth'] }}"
     data-section-id="{{ $section['id'] }}"
+    data-parent-id="{{ $section['parent_id'] ?? '' }}"
     data-has-children="{{ $section['has_children'] ? 'true' : 'false' }}"
 >
     <div class="admin-pages__primary-grid" role="presentation">
