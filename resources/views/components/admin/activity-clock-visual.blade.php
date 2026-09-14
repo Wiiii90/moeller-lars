@@ -2,6 +2,8 @@
     'activity' => [],
     'peakCount' => 0,
     'peakHour' => null,
+    'selectedHour' => null,
+    'hourUrls' => [],
     'captionLabel' => null,
     'ariaContext' => 'activity distribution',
 ])
@@ -53,18 +55,40 @@
                 @php
                     $activityRatio = $peakCount > 0 ? sqrt($bucket['count'] / $peakCount) : 0;
                     $activityOpacity = $bucket['count'] > 0 ? 0.28 + (0.72 * $activityRatio) : 0.12;
+                    $hourUrl = $hourUrls[$bucket['hour']] ?? null;
+                    $tickClass = 'activity-clock__activity-tick'.($bucket['hour'] === $peakHour ? ' is-peak' : '').($bucket['hour'] === $selectedHour ? ' is-selected' : '');
                 @endphp
-                <line
-                    class="activity-clock__activity-tick {{ $bucket['hour'] === $peakHour ? 'is-peak' : '' }}"
-                    x1="160"
-                    y1="33"
-                    x2="160"
-                    y2="19"
-                    transform="rotate({{ $bucket['hour'] * 15 }} 160 160)"
-                    opacity="{{ number_format($activityOpacity, 3, '.', '') }}"
-                >
-                    <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 · {{ number_format($bucket['count']) }} changes</title>
-                </line>
+
+                @if (is_string($hourUrl) && $hourUrl !== '')
+                    <a
+                        href="{{ $hourUrl }}"
+                        aria-label="Filter {{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00, {{ number_format($bucket['count']) }} changes"
+                    >
+                        <line
+                            class="{{ $tickClass }}"
+                            x1="160"
+                            y1="33"
+                            x2="160"
+                            y2="19"
+                            transform="rotate({{ $bucket['hour'] * 15 }} 160 160)"
+                            opacity="{{ number_format($activityOpacity, 3, '.', '') }}"
+                        >
+                            <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 · {{ number_format($bucket['count']) }} changes</title>
+                        </line>
+                    </a>
+                @else
+                    <line
+                        class="{{ $tickClass }}"
+                        x1="160"
+                        y1="33"
+                        x2="160"
+                        y2="19"
+                        transform="rotate({{ $bucket['hour'] * 15 }} 160 160)"
+                        opacity="{{ number_format($activityOpacity, 3, '.', '') }}"
+                    >
+                        <title>{{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00 · {{ number_format($bucket['count']) }} changes</title>
+                    </line>
+                @endif
             @endforeach
 
             <circle class="activity-clock__face" cx="160" cy="160" r="112" />
