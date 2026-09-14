@@ -70,12 +70,6 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --ignore-scripts
 
-      # Temporary PR verification bridge only. Current dev imports ECharts in
-      # admin-storage-viz.js without declaring it in package.json/package-lock.
-      # Remove this step again after the full verification run.
-      - name: Install missing dev ECharts dependency for verification
-        run: npm install --no-save --ignore-scripts echarts@6.1.0
-
       - name: Build frontend
         run: npm run build
 
