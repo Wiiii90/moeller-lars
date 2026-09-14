@@ -1,4 +1,4 @@
-/* Canonical admin table ordering, alignment and row-action contract.
+/* Canonical admin table ordering, alignment, typography and row-action contract.
  *
  * Role order for ordinary editorial tables/hierarchies:
  * Position + Drag -> primary identity -> secondary data -> Actions -> Selection.
@@ -17,6 +17,20 @@
     --admin-table-edge-inset: .5rem;
     --admin-table-leading-square: 1.65rem;
     --admin-table-selection-width: 2.5rem;
+
+    /* Shared semantic typography for ordinary table/control surfaces. Feature
+     * layouts consume these tokens instead of shrinking text to make it fit. */
+    --admin-font-size-control-label: .68rem;
+    --admin-font-size-control-value: .78rem;
+    --admin-font-size-table-header: .64rem;
+    --admin-font-size-table-body: .76rem;
+    --admin-font-size-table-identity: .8rem;
+    --admin-font-size-table-meta: .66rem;
+    --admin-font-size-table-compact: .68rem;
+    --admin-font-size-table-support: .72rem;
+    --admin-font-size-table-empty: .74rem;
+    --admin-font-size-table-add-row: .73rem;
+    --admin-font-size-selection-count: .55rem;
 }
 
 /* A controls row immediately followed by a table/hierarchy does not draw a
@@ -148,7 +162,7 @@
     min-width: 0;
     grid-column: span 2;
     grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
-    gap: .35rem;
+    gap: .15rem;
     align-items: center;
 }
 
@@ -165,27 +179,27 @@
     padding-left: .65rem;
 }
 
-/* Stable semantic slots keep every icon on one horizontal axis. The longer
- * Move down and Publish/Unpublish labels deliberately receive more of the
- * fixed two-unit action rail; Edit and Delete need less. */
+/* Stable semantic slots keep every icon on one horizontal axis. Geometry,
+ * padding and slot weights absorb label length; typography never changes to
+ * squeeze an action into the fixed two-unit rail. */
 .admin-pages__row-actions {
     display: grid !important;
     width: 100%;
     min-width: 0;
     grid-template-columns:
-        minmax(0, .95fr)
-        minmax(0, 1.15fr)
-        minmax(0, .7fr)
-        minmax(0, 1.35fr)
-        minmax(0, .9fr);
-    gap: .04rem !important;
-    padding-left: .24rem;
+        minmax(0, 1fr)
+        minmax(0, 1.18fr)
+        minmax(0, .64fr)
+        minmax(0, 1.2fr)
+        minmax(0, .72fr);
+    gap: 0 !important;
+    padding-left: 0;
 }
 
 .admin-pages__row-actions .admin-action {
     width: 100%;
     min-width: 0;
-    padding-inline: .1rem;
+    padding-inline: .06rem;
     justify-content: flex-start !important;
     overflow: hidden;
 }
@@ -248,7 +262,7 @@
     background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-surface) 84%, transparent);
     color: var(--admin-accent-strong);
-    font-size: .65rem;
+    font-size: var(--admin-font-size-table-meta);
     font-weight: 650;
     letter-spacing: .015em;
     line-height: 1;
@@ -385,7 +399,7 @@
     }
 
     .admin-pages__row-actions .admin-action {
-        padding-inline: .06rem;
+        padding-inline: .02rem;
     }
 }
 
