@@ -8,6 +8,7 @@ use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionIdentityService;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
@@ -16,7 +17,6 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
-use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -24,7 +24,7 @@ trait ManagesSitePageEditDialog
 {
     public function editPageAction(): Action
     {
-        return Action::make('editPage')
+        $action = Action::make('editPage')
             ->label('Edit')
             ->modalHeading('Edit page')
             ->fillForm(function (array $arguments): array {
@@ -87,24 +87,15 @@ trait ManagesSitePageEditDialog
                 $this->loadSections();
                 Notification::make()->title('Page updated')->success()->send();
             })
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Save page')
-                ->icon(AdminIcon::Commit->value)
-                ->iconButton()
-                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
-            ->modalCancelAction(false)
-            ->extraModalFooterActions(fn (array $arguments): array => $this->pageDialogHeaderActions($arguments))
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--small admin-dialog--header-actions',
-            ]);
+            ->extraModalFooterActions(fn (array $arguments): array => $this->pageDialogHeaderActions($arguments));
+
+        return AdminDialog::editCommit($action, 'Save page');
     }
 
     public function editHomeAction(): Action
     {
         $dialog = app(HomeSettingsDialog::class);
-
-        return Action::make('editHome')
+        $action = Action::make('editHome')
             ->label('Edit')
             ->modalHeading('Home settings')
             ->fillForm(fn (): array => $dialog->fill())
@@ -113,17 +104,9 @@ trait ManagesSitePageEditDialog
                 $dialog->save($data);
                 $this->loadSections();
                 Notification::make()->title('Home settings saved')->success()->send();
-            })
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Save Home')
-                ->icon(AdminIcon::Commit->value)
-                ->iconButton()
-                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
-            ->modalCancelAction(false)
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--small admin-dialog--header-actions',
-            ]);
+            });
+
+        return AdminDialog::editCommit($action, 'Save Home');
     }
 
     /** @param array<string, mixed> $data */
