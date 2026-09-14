@@ -6,6 +6,7 @@ use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaReferenceQuery;
 use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
@@ -33,6 +34,41 @@ final class PublicationMediaCleanupService
 
         if ($rows !== []) {
             DB::table('publication_media_cleanups')->insertOrIgnore($rows);
+        }
+    }
+
+    public function queueAbandonedWorkingMedia(): void
+    {
+        $keysByAsset = [];
+
+        $assets = DB::table('media_assets as working')
+            ->leftJoin('committed.media_assets as committed', 'committed.id', '=', 'working.id')
+            ->whereNull('committed.id')
+            ->get(['working.id', 'working.storage_key']);
+
+        foreach ($assets as $asset) {
+            $assetId = (int) $asset->id;
+            $key = (string) ($asset->storage_key ?? '');
+            if ($assetId > 0 && $key !== '') {
+                $keysByAsset[$assetId][] = $key;
+            }
+        }
+
+        $variants = DB::table('media_variants as working')
+            ->leftJoin('committed.media_variants as committed', 'committed.id', '=', 'working.id')
+            ->whereNull('committed.id')
+            ->get(['working.media_asset_id', 'working.storage_key']);
+
+        foreach ($variants as $variant) {
+            $assetId = (int) $variant->media_asset_id;
+            $key = (string) ($variant->storage_key ?? '');
+            if ($assetId > 0 && $key !== '') {
+                $keysByAsset[$assetId][] = $key;
+            }
+        }
+
+        foreach ($keysByAsset as $assetId => $keys) {
+            $this->queue((int) $assetId, array_values(array_unique($keys)));
         }
     }
 
@@ -128,6 +164,17 @@ final class PublicationMediaCleanupService
             ->exists();
         if ($committedRequiresAsset) {
             return false;
+        }
+
+        if (Schema::hasTable('publication_version_rows')) {
+            $historicalVersionRequiresAsset = DB::table('publication_version_rows')
+                ->where('table_name', 'media_assets')
+                ->where('row_key', (string) $mediaAssetId)
+                ->whereRaw("COALESCE(payload->>'state', '') <> 'deleted'")
+                ->exists();
+            if ($historicalVersionRequiresAsset) {
+                return false;
+            }
         }
 
         /** @var MediaAsset|null $workingAsset */
