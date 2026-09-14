@@ -1,6 +1,6 @@
 # Admin Table Contract
 
-This document is the canonical ordering and alignment contract for ordinary editorial tables and table-like hierarchies in the authenticated admin.
+This document is the canonical ordering, alignment and typography contract for ordinary editorial tables and table-like hierarchies in the authenticated admin.
 
 It complements `ui-skills.md`. Where older table examples in `ui-skills.md` still show Selection first or Drag before Position, this document and `resources/css/admin/table-contract.css` define the current contract.
 
@@ -53,6 +53,22 @@ These are composition tools, not mandatory filler. A table should merge or omit 
 
 `resources/css/admin/table-contract.css` owns the shared alignment-unit helpers.
 
+## Typography and fitting
+
+Ordinary table, hierarchy and adjacent control-bar typography is shared UI grammar. Feature/page CSS does not choose a smaller font merely because a local column is tight.
+
+The semantic sizes for control labels/values, table headers, table body text, table identity/meta text and compact table utilities are owned by the shared admin theme/table contract. Consumers use those shared tokens or inherit the shared primitive. In particular:
+
+- table and hierarchy headers use the shared table-header typography;
+- ordinary row actions inherit `.admin-action` typography;
+- search/filter/tool-bar labels and values use the shared control typography;
+- table body/identity/meta roles use the corresponding shared table typography;
+- responsive rules must not reduce any of these font sizes just to recover a few pixels.
+
+When content does not fit, solve geometry first: redistribute grid tracks, remove avoidable gaps/padding, allow the canonical ellipsis behavior, remove genuinely secondary columns, or switch actions to icon-only at an explicit responsive breakpoint while preserving accessible labels. Do not create page-local `font-size` overrides or media-query font shrinkage as a fitting technique.
+
+If a genuinely new semantic text size is needed across the admin, add or change the shared theme/token intentionally and apply it by role. Do not introduce an unexplained literal in one table or toolbar.
+
 ## Control-to-table boundary
 
 When a search/filter/control row directly precedes a table or hierarchy header, there is one separator only. The table/header boundary owns it.
@@ -83,7 +99,8 @@ Rules:
 - Delete is last;
 - state/workflow actions keep stable slots where row-state variation would otherwise make controls jump;
 - desktop may use icon + label when space supports it;
-- compact responsive modes may hide action labels while retaining the same DOM/action order, icon, accessible label and keyboard order.
+- compact responsive modes may hide action labels while retaining the same DOM/action order, icon, accessible label and keyboard order;
+- action labels are never made smaller on one feature to force them into their slots.
 
 ## Selection
 
@@ -94,8 +111,8 @@ When bulk selection exists:
 - the row checkbox is the far-right column;
 - the select-all checkbox is directly above it;
 - the control-bar multi-action trigger remains the corresponding bulk-action affordance;
-- a self-describing trigger such as `Selected 3` does not receive a redundant visible `Selection` label above it;
-- the checkbox column does not receive redundant visible `Selection` text; an accessible label on the select-all checkbox is sufficient;
+- when sibling toolbar groups use visible role labels such as `TYPE`, `STATUS`, `FILTER` and `PAGES`, the bulk group uses the same `SELECTION` label so the toolbar hierarchy stays consistent;
+- the checkbox column itself does not receive redundant visible `Selection` text; an accessible label on the select-all checkbox is sufficient;
 - destructive bulk behavior retains the same domain safeguards as row actions.
 
 ## Responsive direction
@@ -118,8 +135,10 @@ Shared implementation lives in:
 
 - `resources/css/admin/table-contract.css`
 - `resources/css/admin/task-surfaces.css`
+- `resources/css/admin/data-workspace.css`
 - `x-admin.table`
+- `x-admin.controls`
 - `x-admin.add-row`
 - shared `.admin-position`, `.admin-drag-handle`, `.admin-row-actions`, `.admin-table__selection` primitives
 
-Feature CSS may size genuinely task-specific content columns, but it must not redefine the canonical role order, Position/Add Row axis, action order, single control-to-table boundary or trailing Selection convention.
+Feature CSS may size genuinely task-specific content columns, but it must not redefine the canonical role order, typography roles, Position/Add Row axis, action order, single control-to-table boundary or trailing Selection convention.
