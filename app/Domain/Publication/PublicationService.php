@@ -72,11 +72,14 @@ final class PublicationService
      * Business-domain mutations are expected to preserve their own invariants
      * before they reach the publication snapshot.
      *
+     * @param array{total:int,groups:list<array{area:string,entity:string,count:int}>}|null $summary
      * @return array{status:string,label:string,blockers:list<string>}
      */
-    public function preflight(): array
+    public function preflight(?array $summary = null): array
     {
-        if (! $this->hasPendingChanges()) {
+        $summary ??= $this->pendingSummary();
+
+        if ($summary['total'] < 1) {
             return [
                 'status' => 'idle',
                 'label' => 'Nothing staged',
