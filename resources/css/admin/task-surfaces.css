@@ -54,7 +54,7 @@
     justify-content: center;
     border: 1px solid var(--admin-line-strong);
     border-radius: 999px;
-    font-size: .55rem;
+    font-size: var(--admin-font-size-selection-count);
     font-variant-numeric: tabular-nums;
     line-height: 1;
 }
@@ -284,7 +284,7 @@
     border: 1px solid var(--admin-line-strong);
     background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
     color: var(--admin-muted);
-    font-size: .68rem;
+    font-size: var(--admin-font-size-table-compact);
     font-variant-numeric: tabular-nums;
     letter-spacing: .08em;
     white-space: nowrap;
@@ -305,7 +305,7 @@
     background: transparent;
     color: var(--admin-text);
     font: inherit;
-    font-size: .72rem;
+    font-size: var(--admin-font-size-table-support);
     line-height: 1;
     outline: none;
 }
@@ -322,7 +322,7 @@
     align-items: center;
     gap: .35rem;
     color: var(--admin-muted);
-    font-size: .68rem;
+    font-size: var(--admin-font-size-table-compact);
     white-space: nowrap;
 }
 
@@ -406,7 +406,7 @@
     min-height: 2.35rem;
     border-bottom: 1px solid var(--admin-line);
     color: var(--admin-muted);
-    font-size: .61rem;
+    font-size: var(--admin-font-size-table-header);
     font-weight: 700;
     letter-spacing: .08em;
     text-transform: uppercase;
@@ -434,7 +434,7 @@
     border: 0;
     background: transparent;
     color: var(--admin-muted);
-    font-size: .72rem;
+    font-size: var(--admin-font-size-table-support);
 }
 
 .admin-hierarchy__row.is-child:hover { background: var(--admin-subtle); }
@@ -460,18 +460,18 @@
 
 .admin-hierarchy__content strong {
     color: var(--admin-text);
-    font-size: .76rem;
+    font-size: var(--admin-font-size-table-body);
     font-weight: 580;
 }
 
 .admin-hierarchy__content > span {
     color: var(--admin-muted);
-    font-size: .68rem;
+    font-size: var(--admin-font-size-table-compact);
 }
 
 .admin-hierarchy__content small {
     color: var(--admin-muted);
-    font-size: .68rem;
+    font-size: var(--admin-font-size-table-compact);
 }
 
 .admin-hierarchy__row.is-child .admin-hierarchy__content { padding-left: 1.15rem; }
@@ -480,12 +480,12 @@
 .admin-task-note,
 .admin-hierarchy__empty {
     color: var(--admin-muted);
-    font-size: .68rem;
+    font-size: var(--admin-font-size-table-compact);
 }
 
 .admin-hierarchy__empty {
     padding: 1rem 0;
-    font-size: .74rem;
+    font-size: var(--admin-font-size-table-empty);
 }
 
 .admin-add-row,
@@ -537,7 +537,7 @@
 
 .admin-add-row > span:last-child,
 .custom-page-component-add-row > strong {
-    font-size: .73rem;
+    font-size: var(--admin-font-size-table-add-row);
     font-weight: 600;
 }
 
