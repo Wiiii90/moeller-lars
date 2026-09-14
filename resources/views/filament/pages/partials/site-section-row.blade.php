@@ -3,6 +3,7 @@
     $selected = in_array((int) $section['id'], array_map('intval', $selectedSectionIds), true);
     $isChild = (int) $section['depth'] === 1;
     $isHome = $section['type'] === \App\Domain\Content\SiteNodeType::Home->value;
+    $homeTemplateLabel = $isHome ? app(\App\Filament\Support\HomeSettingsDialog::class)->templateLabel() : null;
 @endphp
 
 <div
