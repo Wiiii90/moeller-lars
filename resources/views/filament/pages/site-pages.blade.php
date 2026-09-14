@@ -97,27 +97,45 @@
                     class="admin-hierarchy admin-hierarchy--pages"
                     role="table"
                     aria-label="Pages"
-                    x-data="{ dragging: false, draggedId: null, draggedDepth: null, draggedParentId: null, draggedHasChildren: false, hoverParent: null }"
+                    x-data="{
+                        dragging: false,
+                        dragArmed: false,
+                        dragStartX: 0,
+                        dragStartY: 0,
+                        draggedId: null,
+                        draggedParentId: null,
+                        draggedHasChildren: false,
+                        hoverParent: null,
+                        resetDrag() {
+                            this.dragging = false;
+                            this.dragArmed = false;
+                            this.draggedId = null;
+                            this.draggedParentId = null;
+                            this.draggedHasChildren = false;
+                            this.hoverParent = null;
+                        },
+                    }"
                     x-on:pointerdown.capture="
                         const handle = $event.target.closest('.admin-drag-handle:not(:disabled)');
                         if (!handle) return;
                         const row = handle.closest('.admin-pages__row');
                         if (!row) return;
+                        dragArmed = true;
+                        dragStartX = $event.clientX;
+                        dragStartY = $event.clientY;
                         draggedId = Number(row.dataset.sectionId);
-                        draggedDepth = Number(row.dataset.depth);
                         draggedParentId = row.dataset.parentId === '' ? null : Number(row.dataset.parentId);
                         draggedHasChildren = row.dataset.hasChildren === 'true';
                     "
-                    x-on:dragstart.capture="if (draggedId !== null) dragging = true"
-                    x-on:pointerup.window="
-                        if (dragging) return;
-                        draggedId = null;
-                        draggedDepth = null;
-                        draggedParentId = null;
-                        draggedHasChildren = false;
+                    x-on:pointermove.window="
+                        if (!dragArmed || dragging || ($event.buttons & 1) !== 1) return;
+                        if (Math.hypot($event.clientX - dragStartX, $event.clientY - dragStartY) >= 4) dragging = true;
                     "
-                    x-on:dragend.window="dragging = false; hoverParent = null; draggedId = null; draggedDepth = null; draggedParentId = null; draggedHasChildren = false"
-                    x-on:drop.window="dragging = false; hoverParent = null"
+                    x-on:dragstart.capture="if (dragArmed) dragging = true"
+                    x-on:pointerup.window="resetDrag()"
+                    x-on:pointercancel.window="resetDrag()"
+                    x-on:dragend.window="resetDrag()"
+                    x-on:drop.window="resetDrag()"
                 >
                     <div class="admin-hierarchy__header admin-pages__header" role="row">
                         <div class="admin-pages__primary-grid" role="presentation">
