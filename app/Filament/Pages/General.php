@@ -18,6 +18,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -353,17 +354,80 @@ final class General extends Page
         $this->data['background_secondary_color'] = $this->data['background_gradient_end'] ?? null;
     }
 
+    public function addSocialLinkAction(): Action
+    {
+        return Action::make('addSocialLink')
+            ->label('Add social link')
+            ->modalHeading('Add social media profile')
+            ->fillForm(fn (): array => [
+                'platform' => '',
+                'url' => '',
+                'position' => count($this->socialLinks()) + 1,
+            ])
+            ->schema([
+                Select::make('platform')
+                    ->label('Platform')
+                    ->options(\App\Domain\Content\SocialLinks::options())
+                    ->native()
+                    ->required(),
+                TextInput::make('url')
+                    ->label('Profile URL')
+                    ->url()
+                    ->maxLength(2048)
+                    ->required(),
+                TextInput::make('position')
+                    ->label('Position')
+                    ->numeric()
+                    ->integer()
+                    ->minValue(1)
+                    ->required(),
+            ])
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Add social media profile')
+                ->icon(AdminIcon::Commit->value)
+                ->iconButton()
+                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
+            ->modalCancelAction(false)
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes([
+                'class' => 'admin-task-dialog admin-dialog--small admin-dialog--header-actions',
+            ])
+            ->action(function (array $data): void {
+                $links = $this->socialLinks();
+                $platform = (string) ($data['platform'] ?? '');
+                $url = (string) ($data['url'] ?? '');
+
+                foreach ($links as $link) {
+                    if (($link['platform'] ?? null) === $platform) {
+                        throw ValidationException::withMessages([
+                            'platform' => 'Each social platform can only be configured once.',
+                        ]);
+                    }
+                }
+
+                $position = max(1, min((int) ($data['position'] ?? count($links) + 1), count($links) + 1));
+                array_splice($links, $position - 1, 0, [[
+                    'platform' => $platform,
+                    'url' => $url,
+                ]]);
+
+                $this->saveSocialLinks($links);
+            });
+    }
+
     public function editSocialLinkAction(): Action
     {
         return Action::make('editSocialLink')
             ->label('Edit')
             ->modalHeading('Edit social media profile')
             ->fillForm(function (array $arguments): array {
+                $index = $this->socialLinkIndexForAction($arguments);
                 $link = $this->socialLinkForAction($arguments);
 
                 return [
                     'platform' => (string) ($link['platform'] ?? ''),
                     'url' => (string) ($link['url'] ?? ''),
+                    'position' => $index === null ? 1 : $index + 1,
                 ];
             })
             ->schema([
@@ -377,8 +441,23 @@ final class General extends Page
                     ->url()
                     ->maxLength(2048)
                     ->required(),
+                TextInput::make('position')
+                    ->label('Position')
+                    ->numeric()
+                    ->integer()
+                    ->minValue(1)
+                    ->required(),
             ])
-            ->modalSubmitActionLabel('Save')
+            ->modalSubmitAction(fn (Action $action): Action => $action
+                ->label('Save social media profile')
+                ->icon(AdminIcon::Commit->value)
+                ->iconButton()
+                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
+            ->modalCancelAction(false)
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes([
+                'class' => 'admin-task-dialog admin-dialog--small admin-dialog--header-actions',
+            ])
             ->action(function (array $data, array $arguments): void {
                 $index = $this->socialLinkIndexForAction($arguments);
                 if ($index === null) {
@@ -401,34 +480,11 @@ final class General extends Page
                     'platform' => $platform,
                     'url' => $url,
                 ];
-                $links = array_values($links);
+                $position = max(1, min((int) ($data['position'] ?? $index + 1), count($links)));
+                $moved = array_splice($links, $index, 1);
+                array_splice($links, $position - 1, 0, $moved);
 
-                try {
-                    app(AdminSettingsService::class)->updatePublicContent(
-                        PublicContentSetting::general(),
-                        ['social_links' => $links],
-                    );
-                } catch (ValidationException $exception) {
-                    $mapped = [];
-                    foreach ($exception->errors() as $key => $messages) {
-                        if (str_ends_with($key, '.platform')) {
-                            $mapped['platform'] = $messages;
-                        } elseif (str_ends_with($key, '.url')) {
-                            $mapped['url'] = $messages;
-                        }
-                    }
-
-                    throw ValidationException::withMessages(
-                        $mapped !== [] ? $mapped : ['url' => 'This social profile could not be saved.'],
-                    );
-                } catch (Throwable $exception) {
-                    report($exception);
-                    throw ValidationException::withMessages([
-                        'url' => 'This social profile could not be saved. Please try again.',
-                    ]);
-                }
-
-                $this->data['social_links'] = $links;
+                $this->saveSocialLinks($links);
             });
     }
 
@@ -671,6 +727,39 @@ final class General extends Page
         return is_array($this->data['social_links'] ?? null)
             ? array_values(array_filter($this->data['social_links'], 'is_array'))
             : [];
+    }
+
+    /** @param array<int, array<string, mixed>> $links */
+    private function saveSocialLinks(array $links): void
+    {
+        $links = array_values($links);
+
+        try {
+            app(AdminSettingsService::class)->updatePublicContent(
+                PublicContentSetting::general(),
+                ['social_links' => $links],
+            );
+        } catch (ValidationException $exception) {
+            $mapped = [];
+            foreach ($exception->errors() as $key => $messages) {
+                if (str_ends_with($key, '.platform')) {
+                    $mapped['platform'] = $messages;
+                } elseif (str_ends_with($key, '.url')) {
+                    $mapped['url'] = $messages;
+                }
+            }
+
+            throw ValidationException::withMessages(
+                $mapped !== [] ? $mapped : ['url' => 'This social profile could not be saved.'],
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+            throw ValidationException::withMessages([
+                'url' => 'This social profile could not be saved. Please try again.',
+            ]);
+        }
+
+        $this->data['social_links'] = $links;
     }
 
     /** @return array<string, mixed> */

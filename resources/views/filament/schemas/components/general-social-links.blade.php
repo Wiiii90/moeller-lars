@@ -2,7 +2,6 @@
     $rows = $generalPage->socialRows();
     $links = $get('social_links');
     $links = is_array($links) ? array_values($links) : [];
-    $platformOptions = \App\Domain\Content\SocialLinks::options();
 @endphp
 
 <section class="general-social-section" aria-labelledby="general-social-heading">
@@ -39,10 +38,6 @@
                     <tr
                         wire:key="general-social-link-{{ $index }}"
                         wire:sort:item="{{ $index }}"
-                        x-data="{
-                            editPlatform: @js($platform === ''),
-                            editUrl: @js($url === ''),
-                        }"
                     >
                         <td class="admin-table__position">
                             <span class="admin-position">{{ $index + 1 }}</span>
@@ -57,54 +52,10 @@
                             >⋮⋮</button>
                         </td>
                         <td class="general-social-table__platform">
-                            <button
-                                class="general-social-table__editable"
-                                type="button"
-                                x-show="! editPlatform"
-                                x-on:click="editPlatform = true; $nextTick(() => $refs.platform?.focus())"
-                                title="Edit platform"
-                            >{{ $platformLabel }}</button>
-                            <select
-                                x-ref="platform"
-                                x-show="editPlatform"
-                                x-cloak
-                                class="admin-form-control general-social-table__editor"
-                                aria-label="Platform for social link {{ $index + 1 }}"
-                                wire:change="updateSocialLink({{ $index }}, 'platform', $event.target.value)"
-                                x-on:change="editPlatform = false"
-                                x-on:keydown.escape.prevent="editPlatform = false"
-                            >
-                                <option value="">Choose platform</option>
-                                @foreach ($platformOptions as $value => $label)
-                                    <option value="{{ $value }}" @selected($platform === $value)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                            @error("data.social_links.$index.platform")<p class="admin-form-error">{{ $message }}</p>@enderror
+                            {{ $platformLabel }}
                         </td>
-                        <td class="general-social-table__url">
-                            <button
-                                class="general-social-table__editable general-social-table__editable--url"
-                                type="button"
-                                x-show="! editUrl"
-                                x-on:click="editUrl = true; $nextTick(() => $refs.url?.focus())"
-                                title="Edit profile URL"
-                            >{{ $url !== '' ? $url : 'Add profile URL' }}</button>
-                            <input
-                                x-ref="url"
-                                x-show="editUrl"
-                                x-cloak
-                                class="admin-form-control general-social-table__editor"
-                                type="url"
-                                value="{{ $url }}"
-                                maxlength="2048"
-                                placeholder="https://…"
-                                aria-label="Profile URL for social link {{ $index + 1 }}"
-                                x-on:keydown.enter.prevent="$event.target.blur()"
-                                x-on:keydown.escape.prevent="editUrl = false"
-                                x-on:blur="editUrl = false"
-                                wire:blur="updateSocialLink({{ $index }}, 'url', $event.target.value)"
-                            >
-                            @error("data.social_links.$index.url")<p class="admin-form-error">{{ $message }}</p>@enderror
+                        <td class="general-social-table__url" title="{{ $url }}">
+                            {{ $url }}
                         </td>
                         <td class="admin-table__actions">
                             <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical admin-row-actions--four">
@@ -132,6 +83,7 @@
                                     class="admin-action admin-action--with-icon"
                                     type="button"
                                     wire:click="mountAction('editSocialLink', { index: {{ $index }} })"
+                                    aria-label="Edit social link {{ $index + 1 }}"
                                 >
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Edit</span>
@@ -140,6 +92,7 @@
                                     class="admin-action admin-action--with-icon is-danger"
                                     type="button"
                                     wire:click="deleteSocialLink({{ $index }})"
+                                    aria-label="Delete social link {{ $index + 1 }}"
                                 >
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Delete</span>
@@ -158,5 +111,5 @@
         </table>
     </x-admin.table>
 
-    <x-admin.add-row wire:click="addSocialLink">Add social link</x-admin.add-row>
+    <x-admin.add-row wire:click="mountAction('addSocialLink')">Add social link</x-admin.add-row>
 </section>
