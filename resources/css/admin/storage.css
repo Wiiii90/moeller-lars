@@ -136,8 +136,37 @@
 .admin-storage__target-plot {
     display: grid;
     min-height: 0;
+    padding-right: .18rem;
     align-content: start;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: color-mix(in srgb, var(--admin-muted) 42%, transparent) transparent;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+}
+
+.admin-storage__target-plot::-webkit-scrollbar {
+    width: .28rem;
+}
+
+.admin-storage__target-plot::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-storage__target-plot::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--admin-muted) 36%, transparent);
+}
+
+.admin-storage__target-plot::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--admin-muted) 58%, transparent);
+}
+
+.admin-storage__target-plot::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
 }
 
 .admin-storage__distribution-columns,
