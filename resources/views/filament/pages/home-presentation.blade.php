@@ -250,6 +250,7 @@
                                     @if ($sourceHasRecords)
                                         <x-admin.empty-state title="No matching Galleries" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="resetSourceFilters">Clear filters</button></x-slot:actions>
+                                        </x-admin.empty-state>
                                     @else
                                         <x-admin.empty-state title="No Gallery sources" minimal />
                                     @endif
