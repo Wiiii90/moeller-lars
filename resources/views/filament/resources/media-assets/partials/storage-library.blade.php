@@ -134,7 +134,7 @@
                         aria-haspopup="menu"
                         @disabled($selectedAssets === [])
                     >
-                        Selected files
+                        <span class="admin-action__label">Selected</span>
                         <span class="media-workspace__selection-count">{{ count($selectedAssets) }}</span>
                     </button>
                     <div class="media-workspace__multi-action-menu" role="menu" x-show="open" x-cloak>
@@ -248,6 +248,18 @@
         @else
             <x-admin.table class="media-workspace__table-wrap {{ $viewMode === 'dense' ? 'is-dense' : '' }}">
                 <table class="media-workspace__table">
+                    <colgroup>
+                        @if ($viewMode === 'list')
+                            <col class="media-workspace__col-preview">
+                        @endif
+                        <col class="media-workspace__col-media">
+                        <col class="media-workspace__col-type">
+                        <col class="media-workspace__col-status">
+                        <col class="media-workspace__col-usage">
+                        <col class="media-workspace__col-size">
+                        <col class="media-workspace__col-actions">
+                        <col class="media-workspace__col-selection">
+                    </colgroup>
                     <thead>
                         <tr>
                             @if ($viewMode === 'list')
@@ -255,8 +267,8 @@
                             @endif
                             <th scope="col">Media</th>
                             <th scope="col">Type</th>
-                            <th scope="col">Used in</th>
                             <th scope="col">Status</th>
+                            <th scope="col">Used in</th>
                             <th scope="col">Size</th>
                             <th scope="col">Actions</th>
                             <th scope="col" class="media-workspace__selection-head media-workspace__selection-head--trailing">
@@ -319,6 +331,9 @@
                                     @if ($asset['dimensions'])<small>{{ $asset['dimensions'] }}</small>@endif
                                 </td>
                                 <td>
+                                    <span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span>
+                                </td>
+                                <td>
                                     @if ($asset['references'] === [])
                                         <span class="media-workspace__unreferenced">Unreferenced</span>
                                     @else
@@ -335,34 +350,31 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td>
-                                    <span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span>
-                                </td>
                                 <td class="media-workspace__size">{{ $asset['size'] }}</td>
                                 <td class="media-workspace__actions">
-                                    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
+                                    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar media-workspace__row-actions">
                                         <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">
-                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="media-workspace__action-icon" />
-                                            Details
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon media-workspace__action-icon" />
+                                            <span class="admin-action__label">Details</span>
                                         </button>
                                         <button class="admin-action" type="button" wire:click="mountAction('edit', { asset: {{ $asset['id'] }} })" @disabled(! $asset['editable'])>
-                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="media-workspace__action-icon" />
-                                            Edit
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon media-workspace__action-icon" />
+                                            <span class="admin-action__label">Edit</span>
                                         </button>
                                         @if ($asset['state'] === 'available')
                                             <a class="admin-action" href="{{ route('admin.media.download', ['mediaAsset' => $asset['id']]) }}">
-                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Download->mini()" class="media-workspace__action-icon" />
-                                                Download
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Download->mini()" class="admin-action__icon media-workspace__action-icon" />
+                                                <span class="admin-action__label">Download</span>
                                             </a>
                                         @else
                                             <button class="admin-action" type="button" disabled>
-                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Download->mini()" class="media-workspace__action-icon" />
-                                                Download
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Download->mini()" class="admin-action__icon media-workspace__action-icon" />
+                                                <span class="admin-action__label">Download</span>
                                             </button>
                                         @endif
                                         <button class="admin-action is-danger" type="button" wire:click="mountAction('delete', { asset: {{ $asset['id'] }} })" @disabled(! $asset['deletable'])>
-                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="media-workspace__action-icon" />
-                                            Delete
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon media-workspace__action-icon" />
+                                            <span class="admin-action__label">Delete</span>
                                         </button>
                                     </div>
                                 </td>
