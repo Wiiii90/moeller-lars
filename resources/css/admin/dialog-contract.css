@@ -46,16 +46,28 @@
 }
 
 .admin-dialog--header-actions .fi-modal-footer {
-    position: absolute;
+    position: absolute !important;
     z-index: 10;
-    top: var(--admin-dialog-header-action-inset);
+    top: var(--admin-dialog-header-action-inset) !important;
+    inset-block-start: var(--admin-dialog-header-action-inset) !important;
     right: calc(
         var(--admin-dialog-header-action-inset)
         + var(--admin-dialog-header-action-size)
         + var(--admin-dialog-header-action-gap)
-    );
+    ) !important;
+    inset-inline-end: calc(
+        var(--admin-dialog-header-action-inset)
+        + var(--admin-dialog-header-action-size)
+        + var(--admin-dialog-header-action-gap)
+    ) !important;
+    bottom: auto !important;
+    inset-block-end: auto !important;
+    left: auto !important;
+    inset-inline-start: auto !important;
     width: auto;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
     border: 0;
     background: transparent;
     box-shadow: none;
