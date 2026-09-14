@@ -271,57 +271,12 @@
             <x-admin.add-row wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')">Add {{ $entryLabelSingular }}</x-admin.add-row>
 
             <footer class="admin-pager">
-                <div
-                    class="admin-pager__size"
-                    x-data="{
-                        open: false,
-                        toggle() {
-                            this.open = ! this.open;
-                            if (this.open) {
-                                this.$nextTick(() => this.$refs.menu?.scrollIntoView({ block: 'nearest' }));
-                            }
-                        },
-                    }"
-                    x-on:click.outside="open = false"
-                    x-on:keydown.escape.window="open = false"
-                >
-                    <span>Per page</span>
-                    <div class="admin-pager-size-picker">
-                        <button
-                            class="admin-pager-size-picker__trigger"
-                            type="button"
-                            x-on:click="toggle()"
-                            x-bind:aria-expanded="open.toString()"
-                            aria-haspopup="listbox"
-                            aria-label="{{ $isBlog ? 'Blog posts' : 'Exhibitions' }} per page"
-                        >
-                            <span>{{ $pageSize }}</span>
-                            <span aria-hidden="true">▾</span>
-                        </button>
-                        <div
-                            class="admin-pager-size-picker__menu"
-                            x-ref="menu"
-                            role="listbox"
-                            aria-label="{{ $isBlog ? 'Blog posts' : 'Exhibitions' }} per page"
-                            x-show="open"
-                            x-cloak
-                        >
-                            @foreach ([25, 50, 100] as $sizeOption)
-                                <button
-                                    class="admin-pager-size-picker__option {{ $pageSize === $sizeOption ? 'is-active' : '' }}"
-                                    type="button"
-                                    role="option"
-                                    aria-selected="{{ $pageSize === $sizeOption ? 'true' : 'false' }}"
-                                    wire:click="$set('pageSize', {{ $sizeOption }})"
-                                    x-on:click="open = false"
-                                >
-                                    <span class="admin-pager-size-picker__check" aria-hidden="true">{{ $pageSize === $sizeOption ? '✓' : '' }}</span>
-                                    <span>{{ $sizeOption }}</span>
-                                </button>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
+                <x-admin.page-size-picker
+                    :value="$pageSize"
+                    :options="[25, 50, 100]"
+                    wire-model="pageSize"
+                    aria-label="{{ $isBlog ? 'Blog posts per page' : 'Exhibitions per page' }}"
+                />
                 <span class="admin-pager__range">@if ($total === 0)0 of 0 @else{{ $resultStart }}–{{ $resultEnd }} of {{ $total }}@endif</span>
                 <x-admin.toolbar class="admin-pager__actions">
                     <button class="admin-action" type="button" wire:click="previousPage" @disabled($page <= 1)>Previous</button>
