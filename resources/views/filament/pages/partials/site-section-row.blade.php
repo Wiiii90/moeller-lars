@@ -2,23 +2,58 @@
     $label = $section['navigation_label'] ?: $section['title'];
     $selected = in_array((int) $section['id'], array_map('intval', $selectedSectionIds), true);
     $isChild = (int) $section['depth'] === 1;
+    $isHome = $section['type'] === \App\Domain\Content\SiteNodeType::Home->value;
 @endphp
 
-<div class="admin-hierarchy__row {{ $isChild ? 'is-child' : '' }}" role="row" data-depth="{{ $section['depth'] }}">
-    <div class="admin-hierarchy__position-cell" role="cell" data-cell="position">
-        <span class="admin-position">{{ $section['position_label'] }}</span>
+<div
+    class="admin-hierarchy__row admin-pages__row {{ $isChild ? 'is-child' : '' }}"
+    role="row"
+    data-depth="{{ $section['depth'] }}"
+    data-section-id="{{ $section['id'] }}"
+    data-has-children="{{ $section['has_children'] ? 'true' : 'false' }}"
+>
+    <div class="admin-pages__primary-grid" role="presentation">
+        <div class="admin-hierarchy__position-cell" role="cell" data-cell="position">
+            <span class="admin-position">{{ $section['position_label'] }}</span>
+        </div>
+
+        <div class="admin-pages__drag-cell" role="cell" data-cell="drag">
+            @if ($section['can_reorder'])
+                <button
+                    class="admin-drag-handle"
+                    type="button"
+                    @if ($reorderEnabled) wire:sort:handle @else disabled @endif
+                    aria-label="Drag {{ $label }} to a new position"
+                    title="Drag to reorder"
+                >⋮⋮</button>
+            @else
+                <span class="admin-pages__drag-placeholder" aria-hidden="true"></span>
+            @endif
+        </div>
+
+        <div class="admin-hierarchy__content admin-pages__page" role="cell" data-cell="page">
+            @if ($section['workspace_url'])
+                <a class="admin-pages__page-link" href="{{ $section['workspace_url'] }}"><strong>{{ $label }}</strong></a>
+            @else
+                <strong>{{ $label }}</strong>
+            @endif
+            @if ($section['parent_label'] !== null)
+                <small>Child of {{ $section['parent_label'] }}@if (is_string($section['slug']) && $section['slug'] !== '') · /{{ $section['slug'] }}@endif</small>
+            @elseif ($section['filter_context'] ?? false)
+                <small class="admin-hierarchy__context-note">Parent context for matching child</small>
+            @elseif (is_string($section['slug']) && $section['slug'] !== '')
+                <small>/{{ $section['slug'] }}</small>
+            @endif
+        </div>
+
+        <div class="admin-pages__status" role="cell" data-cell="status">
+            <span class="admin-status {{ $section['state'] === 'published' ? 'is-published' : 'is-unpublished' }}">
+                {{ $section['state'] === 'published' ? 'Published' : 'Unpublished' }}
+            </span>
+        </div>
     </div>
 
-    <div role="cell" data-cell="drag">
-        <button
-            class="admin-drag-handle"
-            type="button"
-            @if ($reorderEnabled) wire:sort:handle @else disabled @endif
-            aria-label="Drag {{ $label }} to a new position"
-        >⋮⋮</button>
-    </div>
-
-    <div role="cell" data-cell="page-type">
+    <div class="admin-pages__type" role="cell" data-cell="page-type">
         @if ($section['can_convert'])
             <select
                 class="admin-inline-select"
@@ -34,18 +69,7 @@
         @endif
     </div>
 
-    <div class="admin-hierarchy__content" role="cell" data-cell="page">
-        <strong>{{ $label }}</strong>
-        @if ($section['parent_label'] !== null)
-            <small>Under {{ $section['parent_label'] }}</small>
-        @elseif ($section['filter_context'] ?? false)
-            <small class="admin-hierarchy__context-note">Parent context for matching child</small>
-        @elseif (is_string($section['slug']) && $section['slug'] !== '')
-            <small>/{{ $section['slug'] }}</small>
-        @endif
-    </div>
-
-    <div role="cell" data-cell="template">
+    <div class="admin-pages__template" role="cell" data-cell="template">
         @if ($section['type'] === \App\Domain\Content\SiteNodeType::Journal->value)
             <select
                 class="admin-inline-select"
@@ -56,64 +80,62 @@
                     <option value="{{ $value }}" @selected($section['template'] === $value)>{{ $templateLabel }}</option>
                 @endforeach
             </select>
-        @else
-            <span aria-hidden="true">—</span>
-            <span class="sr-only">No template</span>
         @endif
     </div>
 
-    <div role="cell" data-cell="status">
-        <span class="admin-status {{ $section['state'] === 'published' ? 'is-published' : 'is-unpublished' }}">
-            {{ $section['state'] === 'published' ? 'Published' : 'Unpublished' }}
-        </span>
+    <div class="admin-pages__utility-grid" role="presentation">
+        <div class="admin-row-actions admin-row-actions--canonical admin-toolbar admin-pages__row-actions" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
+            @if ($section['can_reorder'])
+                <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveSection({{ $section['id'] }}, 'up')" @disabled(! $reorderEnabled || ! $section['can_move_up']) aria-label="Move {{ $label }} up">
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
+                    <span class="admin-action__label">Move up</span>
+                </button>
+                <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveSection({{ $section['id'] }}, 'down')" @disabled(! $reorderEnabled || ! $section['can_move_down']) aria-label="Move {{ $label }} down">
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
+                    <span class="admin-action__label">Move down</span>
+                </button>
+            @else
+                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+            @endif
+
+            @if ($isHome)
+                @if ($section['workspace_url'])
+                    <a class="admin-action admin-action--with-icon" href="{{ $section['workspace_url'] }}">
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
+                        <span class="admin-action__label">Edit</span>
+                    </a>
+                @else
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                @endif
+            @else
+                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editPlacement', { section: {{ $section['id'] }} })">
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
+                    <span class="admin-action__label">Edit</span>
+                </button>
+            @endif
+
+            @if ($section['can_change_publication'])
+                <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="toggleSectionState({{ $section['id'] }})">
+                    <x-filament::icon :icon="($section['state'] === 'published' ? \App\Filament\Support\AdminIcon::Unpublish : \App\Filament\Support\AdminIcon::Publish)->mini()" class="admin-action__icon" />
+                    <span class="admin-action__label">{{ $section['state'] === 'published' ? 'Unpublish' : 'Publish' }}</span>
+                </button>
+            @else
+                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+            @endif
+
+            @if ($section['can_delete'])
+                <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="deleteSection({{ $section['id'] }})" wire:confirm="Delete this page? Page-specific content, child pages, publication and navigation safety rules still apply.">
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
+                    <span class="admin-action__label">Delete</span>
+                </button>
+            @else
+                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+            @endif
+        </div>
+
+        <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="cell" data-cell="selection">
+            <input type="checkbox" aria-label="Select {{ $label }}" value="{{ $section['id'] }}" wire:model.live="selectedSectionIds" @checked($selected)>
+        </label>
     </div>
-
-    <div class="admin-row-actions admin-row-actions--canonical admin-toolbar" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
-        <button
-            class="admin-action admin-order-action"
-            type="button"
-            wire:click="moveSection({{ $section['id'] }}, 'up')"
-            aria-label="Move {{ $label }} earlier"
-            @disabled(! $reorderEnabled || ! $section['can_move_up'])
-        >↑</button>
-
-        <button
-            class="admin-action admin-order-action"
-            type="button"
-            wire:click="moveSection({{ $section['id'] }}, 'down')"
-            aria-label="Move {{ $label }} later"
-            @disabled(! $reorderEnabled || ! $section['can_move_down'])
-        >↓</button>
-
-        @if ($section['workspace_url'])
-            <a class="admin-action" href="{{ $section['workspace_url'] }}">Edit</a>
-        @else
-            <button class="admin-action" type="button" disabled>Edit</button>
-        @endif
-
-        <button
-            class="admin-action admin-action--state"
-            type="button"
-            wire:click="toggleSectionState({{ $section['id'] }})"
-            @disabled(! $section['can_change_publication'])
-        >{{ $section['state'] === 'published' ? 'Unpublish' : 'Publish' }}</button>
-
-        <button
-            class="admin-action is-danger"
-            type="button"
-            wire:click="deleteSection({{ $section['id'] }})"
-            wire:confirm="Delete this page? Page-specific content, child pages, publication and navigation safety rules still apply."
-            @disabled(! $section['can_delete'])
-        >Delete</button>
-    </div>
-
-    <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="cell" data-cell="selection">
-        <input
-            type="checkbox"
-            aria-label="Select {{ $label }}"
-            value="{{ $section['id'] }}"
-            wire:model.live="selectedSectionIds"
-            @checked($selected)
-        >
-    </label>
 </div>
