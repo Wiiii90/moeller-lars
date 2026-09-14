@@ -53,6 +53,12 @@ These are composition tools, not mandatory filler. A table should merge or omit 
 
 `resources/css/admin/table-contract.css` owns the shared alignment-unit helpers.
 
+## Control-to-table boundary
+
+When a search/filter/control row directly precedes a table or hierarchy header, there is one separator only. The table/header boundary owns it.
+
+Do not add a second bottom border to the controls row and do not compensate for duplicate separators with page-local margins, overlays or matching colors. The shared table contract removes that duplicate boundary for canonical task controls.
+
 ## Position and Add Row
 
 The Position indicator and the leading `+` square of `x-admin.add-row` share one canonical square geometry and leading inset.
@@ -87,7 +93,9 @@ When bulk selection exists:
 
 - the row checkbox is the far-right column;
 - the select-all checkbox is directly above it;
-- the control-bar Selection / multi-action control remains the corresponding bulk-action affordance;
+- the control-bar multi-action trigger remains the corresponding bulk-action affordance;
+- a self-describing trigger such as `Selected 3` does not receive a redundant visible `Selection` label above it;
+- the checkbox column does not receive redundant visible `Selection` text; an accessible label on the select-all checkbox is sufficient;
 - destructive bulk behavior retains the same domain safeguards as row actions.
 
 ## Responsive direction
@@ -114,4 +122,4 @@ Shared implementation lives in:
 - `x-admin.add-row`
 - shared `.admin-position`, `.admin-drag-handle`, `.admin-row-actions`, `.admin-table__selection` primitives
 
-Feature CSS may size genuinely task-specific content columns, but it must not redefine the canonical role order, Position/Add Row axis, action order or trailing Selection convention.
+Feature CSS may size genuinely task-specific content columns, but it must not redefine the canonical role order, Position/Add Row axis, action order, single control-to-table boundary or trailing Selection convention.
