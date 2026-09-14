@@ -171,11 +171,46 @@
 }
 
 /* Confirmation dialogs are intentionally one metric-cell wide. Their copy
- * sits below the action rail so the small width is never consumed by chrome.
- * The large stock confirmation icon is suppressed; confirmation is represented
- * by the canonical commit action beside the X. */
+ * sits below a dedicated two-action header rail. The rail is dimensioned
+ * explicitly instead of inheriting Filament's confirmation-footer geometry,
+ * so the commit action can never collide with the native close action. */
 .admin-dialog--confirmation .fi-modal-icon-ctn {
     display: none !important;
+}
+
+.admin-dialog--confirmation .fi-modal-footer {
+    right: calc(
+        (2 * var(--admin-dialog-header-action-inset))
+        + var(--admin-dialog-header-action-size)
+        + var(--admin-dialog-header-action-gap)
+    ) !important;
+    inset-inline-end: calc(
+        (2 * var(--admin-dialog-header-action-inset))
+        + var(--admin-dialog-header-action-size)
+        + var(--admin-dialog-header-action-gap)
+    ) !important;
+    width: var(--admin-dialog-header-action-size) !important;
+    min-width: var(--admin-dialog-header-action-size) !important;
+    max-width: var(--admin-dialog-header-action-size) !important;
+}
+
+.admin-dialog--confirmation .fi-modal-footer-actions,
+.admin-dialog--confirmation.admin-task-dialog .fi-modal-footer-actions {
+    display: grid !important;
+    grid-template-columns: var(--admin-dialog-header-action-size) !important;
+    width: var(--admin-dialog-header-action-size) !important;
+    min-width: var(--admin-dialog-header-action-size) !important;
+    max-width: var(--admin-dialog-header-action-size) !important;
+    gap: 0 !important;
+    place-items: center !important;
+}
+
+.admin-dialog--confirmation .fi-modal-footer-actions > * {
+    width: var(--admin-dialog-header-action-size) !important;
+    min-width: var(--admin-dialog-header-action-size) !important;
+    max-width: var(--admin-dialog-header-action-size) !important;
+    margin: 0 !important;
+    transform: none !important;
 }
 
 .admin-dialog--confirmation .fi-modal-header {
