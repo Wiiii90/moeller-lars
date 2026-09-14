@@ -314,13 +314,13 @@
 }
 
 /* Data-table add rows use the shared add-row primitive at table density and
- * align its leading affordance with the .6rem data-cell inset. */
+ * align its leading affordance with the .6rem data-cell inset. The canonical
+ * add-row top border remains the single separator after the table. */
 .admin-add-row--data {
     --admin-add-row-inset: .6rem;
     min-height: 2.25rem;
     margin-top: 0;
     padding: .18rem .6rem;
-    border-top: 0;
 }
 
 .admin-add-row--data .admin-add-row__mark {
@@ -330,13 +330,8 @@
     font-size: .86rem;
 }
 
-.media-workspace__table-wrap + .admin-add-row,
-.admin-table--data + .admin-add-row {
-    border-top: 0;
-}
-
-/* The add-row is the continuation of the table surface. Do not draw a second
- * separator immediately above it; that breaks both hover continuity and axis. */
+/* The table wrapper itself does not add a second separator immediately above
+ * the add row; the add-row primitive owns the one canonical line. */
 .media-workspace__table-wrap:has(+ .admin-add-row--data),
 .admin-table--data:has(+ .admin-add-row--data) {
     border-bottom: 0 !important;
@@ -412,36 +407,88 @@
     outline: none;
 }
 
-/* Modern customizable selects prefer opening below the pager control and only
- * flip above it when the viewport would otherwise clip the picker. */
-@supports (appearance: base-select) {
-    html.fi :is(.admin-pager__size, .media-workspace__pager-size) select,
-    html.fi :is(.admin-pager__size, .media-workspace__pager-size) select::picker(select) {
-        appearance: base-select;
-    }
+/* Shared deterministic page-size picker. It owns a compact width and always
+ * opens below the trigger instead of delegating placement to native select UI. */
+.admin-pager-size-picker {
+    position: relative;
+    display: inline-flex;
+    min-width: 0;
+}
 
-    html.fi :is(.admin-pager__size, .media-workspace__pager-size) select::picker(select) {
-        top: calc(anchor(bottom) + .2rem);
-        bottom: auto;
-        left: anchor(left);
-        min-width: max(100%, 4rem);
-        max-height: 10rem;
-        overflow-y: auto;
-        padding: .2rem 0;
-        border: 1px solid var(--admin-line-strong);
-        border-radius: .2rem;
-        background: var(--admin-control-popup-surface);
-        color: var(--admin-control-popup-ink);
-        box-shadow: none;
-        position-try: normal flip-block;
-        position-try-fallbacks: flip-block;
-    }
+.admin-pager-size-picker__trigger {
+    display: inline-grid;
+    height: 2rem;
+    min-width: 4.25rem;
+    padding: 0 .45rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .35rem;
+    align-items: center;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: var(--admin-font-size-table-support);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    cursor: pointer;
+}
 
-    html.fi :is(.admin-pager__size, .media-workspace__pager-size) select option {
-        padding: .42rem .65rem;
-        background: var(--admin-control-popup-surface);
-        color: var(--admin-control-popup-ink);
-    }
+.admin-pager-size-picker__trigger:hover,
+.admin-pager-size-picker__trigger:focus-visible {
+    border-color: var(--admin-accent);
+    background: var(--admin-subtle);
+    outline: none;
+}
+
+.admin-pager-size-picker__menu {
+    position: absolute;
+    top: calc(100% + .2rem);
+    left: 0;
+    z-index: 50;
+    display: grid;
+    width: 4.75rem;
+    min-width: 100%;
+    padding: .2rem 0;
+    border: 1px solid var(--admin-line-strong);
+    border-radius: .2rem;
+    background: var(--admin-control-popup-surface);
+    box-shadow: 0 .55rem 1.35rem rgba(0, 0, 0, .14);
+    color: var(--admin-control-popup-ink);
+}
+
+.admin-pager-size-picker__option {
+    display: grid;
+    width: 100%;
+    min-height: 1.9rem;
+    padding: .3rem .5rem .3rem .35rem;
+    grid-template-columns: .8rem minmax(0, 1fr);
+    gap: .25rem;
+    align-items: center;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: var(--admin-font-size-table-support);
+    font-variant-numeric: tabular-nums;
+    text-align: left;
+    cursor: pointer;
+}
+
+.admin-pager-size-picker__option:hover,
+.admin-pager-size-picker__option:focus-visible,
+.admin-pager-size-picker__option.is-active {
+    background: var(--admin-subtle);
+    outline: none;
+}
+
+.admin-pager-size-picker__option.is-active {
+    color: var(--admin-text);
+}
+
+.admin-pager-size-picker__check {
+    color: var(--admin-accent);
+    text-align: center;
 }
 
 .admin-pager__range,
