@@ -97,7 +97,7 @@
                     class="admin-hierarchy admin-hierarchy--pages"
                     role="table"
                     aria-label="Pages"
-                    x-data="{ dragging: false, draggedId: null, draggedDepth: null, draggedHasChildren: false, hoverParent: null }"
+                    x-data="{ dragging: false, draggedId: null, draggedDepth: null, draggedParentId: null, draggedHasChildren: false, hoverParent: null }"
                     x-on:pointerdown.capture="
                         if (!$event.target.closest('.admin-drag-handle:not(:disabled)')) return;
                         const row = $event.target.closest('.admin-pages__row');
@@ -105,6 +105,7 @@
                         dragging = true;
                         draggedId = Number(row.dataset.sectionId);
                         draggedDepth = Number(row.dataset.depth);
+                        draggedParentId = row.dataset.parentId === '' ? null : Number(row.dataset.parentId);
                         draggedHasChildren = row.dataset.hasChildren === 'true';
                     "
                     x-on:pointerup.window="dragging = false; hoverParent = null"
@@ -163,10 +164,12 @@
                                                 aria-label="Child pages under {{ $section['title'] }}"
                                                 data-drop-label="Move under {{ $parentLabel }}"
                                                 x-bind:class="{
-                                                    'is-drop-eligible': dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }},
-                                                    'is-drop-hover': dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && hoverParent === {{ $section['id'] }}
+                                                    'is-drop-eligible': dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }},
+                                                    'is-drop-hover': dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }} && hoverParent === {{ $section['id'] }}
                                                 }"
-                                                x-on:dragenter.prevent="if (dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }}) hoverParent = {{ $section['id'] }}"
+                                                x-on:pointerenter="if (dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) hoverParent = {{ $section['id'] }}"
+                                                x-on:pointerleave="if (dragging && hoverParent === {{ $section['id'] }}) hoverParent = null"
+                                                x-on:dragenter.prevent="if (dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) hoverParent = {{ $section['id'] }}"
                                                 x-on:dragleave="if (!$el.contains($event.relatedTarget) && hoverParent === {{ $section['id'] }}) hoverParent = null"
                                                 x-on:drop="hoverParent = null"
                                                 @if ($reorderEnabled)
