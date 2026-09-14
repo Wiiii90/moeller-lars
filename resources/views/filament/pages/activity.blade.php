@@ -41,6 +41,8 @@
                     'hour' => $hour,
                 ]);
             }
+            $visiblePublicationGroups = array_slice($publicationContext['staged_groups'], 0, 4);
+            $hiddenPublicationGroups = max(0, count($publicationContext['staged_groups']) - count($visiblePublicationGroups));
         @endphp
 
         <section class="activity-atlas" aria-label="Activity visualization">
@@ -170,10 +172,10 @@
                         </small>
                     </div>
 
-                    @if ($publicationContext['staged_groups'] !== [])
+                    @if ($visiblePublicationGroups !== [])
                         <div class="activity-publication__recent activity-publication__groups">
                             <span>What will publish</span>
-                            @foreach ($publicationContext['staged_groups'] as $group)
+                            @foreach ($visiblePublicationGroups as $group)
                                 <article>
                                     <div>
                                         <strong>{{ $group['area'] }}</strong>
@@ -182,15 +184,23 @@
                                     <small>{{ $group['entity'] }}</small>
                                 </article>
                             @endforeach
+                            @if ($hiddenPublicationGroups > 0)
+                                <small>+ {{ number_format($hiddenPublicationGroups) }} more group{{ $hiddenPublicationGroups === 1 ? '' : 's' }}</small>
+                            @endif
                         </div>
                     @endif
 
                     <div class="activity-publication__readiness is-{{ $publicationContext['preflight']['status'] }}">
                         <span>Preflight</span>
                         <strong>{{ $publicationContext['preflight']['label'] }}</strong>
-                        @foreach ($publicationContext['preflight']['blockers'] as $blocker)
+                        @foreach (array_slice($publicationContext['preflight']['blockers'], 0, 2) as $blocker)
                             <small>{{ $blocker }}</small>
                         @endforeach
+                        @if ($publicationContext['staged'] > 0)
+                            <x-admin.toolbar>
+                                <button class="admin-action" type="button" wire:click="openPublicationReview">Review changes</button>
+                            </x-admin.toolbar>
+                        @endif
                     </div>
 
                     @if ($publicationContext['latest'])
