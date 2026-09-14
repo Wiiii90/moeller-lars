@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminUndoService;
 use App\Filament\Support\AdminActivityFeed;
 use App\Filament\Support\AdminIcon;
@@ -11,7 +12,6 @@ use App\Models\AuditEvent;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
@@ -38,20 +38,20 @@ final class Activity extends Page
         } catch (ValidationException $exception) {
             $message = $exception->errors()['undo'][0] ?? 'This change can no longer be undone safely.';
 
-            Notification::make()
-                ->warning()
-                ->title('Undo unavailable')
-                ->body($message)
-                ->send();
+            app(AdminNotifier::class)->toast(
+                title: 'Undo unavailable',
+                body: $message,
+                status: 'warning',
+            );
 
             return;
         }
 
-        Notification::make()
-            ->success()
-            ->title('Change undone')
-            ->body($result['inverse'].' was applied as a new editorial action.')
-            ->send();
+        app(AdminNotifier::class)->toast(
+            title: 'Change undone',
+            body: $result['inverse'].' was applied as a new editorial action.',
+            status: 'success',
+        );
     }
 
     /** @return array<string, mixed> */
