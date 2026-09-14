@@ -6,13 +6,18 @@ function hasStorageVisualization() {
     return document.querySelector('[data-admin-viz="storage-capacity"]') !== null;
 }
 
+function ensureStorageRuntime() {
+    storageRuntimePromise ??= import('./admin-storage-viz.js');
+
+    return storageRuntimePromise;
+}
+
 async function refreshVisualizations() {
     refreshFrame = null;
 
     if (! hasStorageVisualization() && storageRuntimePromise === null) return;
 
-    storageRuntimePromise ??= import('./admin-storage-viz.js');
-    const runtime = await storageRuntimePromise;
+    const runtime = await ensureStorageRuntime();
     runtime.refreshStorageVisualizations();
 }
 
@@ -26,11 +31,34 @@ function scheduleStorageRefresh() {
     scheduleRefresh();
 }
 
+function destinationNeedsStorageRuntime(value) {
+    if (! value) return false;
+
+    try {
+        const url = value instanceof URL ? value : new URL(String(value), window.location.href);
+        const path = url.pathname.replace(/\/+$/, '') || '/';
+
+        return path === '/admin' || path === '/admin/storage' || path.startsWith('/admin/storage/');
+    } catch {
+        return false;
+    }
+}
+
+function prewarmStorageRuntime(event) {
+    if (destinationNeedsStorageRuntime(event.detail?.url)) {
+        ensureStorageRuntime();
+    }
+}
+
 function registerLivewireHook() {
     if (livewireHookRegistered || ! window.Livewire?.hook) return;
 
     livewireHookRegistered = true;
     window.Livewire.hook('morph.updated', scheduleStorageRefresh);
+}
+
+if (hasStorageVisualization()) {
+    ensureStorageRuntime();
 }
 
 if (document.readyState === 'loading') {
@@ -42,6 +70,7 @@ if (document.readyState === 'loading') {
 registerLivewireHook();
 document.addEventListener('livewire:init', registerLivewireHook, { once: true });
 document.addEventListener('livewire:navigated', scheduleRefresh);
+document.addEventListener('alpine:navigate', prewarmStorageRuntime);
 
 new MutationObserver(scheduleStorageRefresh).observe(document.documentElement, {
     attributes: true,
