@@ -139,15 +139,22 @@
             x-cloak
             x-show="dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}"
             x-bind:class="{ 'is-hovered': hoverParent === {{ $section['id'] }} }"
+            x-on:pointerenter="if (dragging) hoverParent = {{ $section['id'] }}"
+            x-on:pointerleave="if (hoverParent === {{ $section['id'] }}) hoverParent = null"
             x-on:dragenter.stop.prevent="hoverParent = {{ $section['id'] }}"
             x-on:dragover.stop.prevent="hoverParent = {{ $section['id'] }}"
             x-on:dragleave.stop="if (!$el.contains($event.relatedTarget) && hoverParent === {{ $section['id'] }}) hoverParent = null"
+            x-on:pointerup.stop.prevent="
+                if (dragging && draggedId !== null && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) {
+                    $wire.sortSection(draggedId, 999999, {{ $section['id'] }});
+                }
+                resetDrag();
+            "
             x-on:drop.stop.prevent="
                 if (dragging && draggedId !== null && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) {
                     $wire.sortSection(draggedId, 999999, {{ $section['id'] }});
                 }
-                dragging = false;
-                hoverParent = null;
+                resetDrag();
             "
             aria-hidden="true"
         >
