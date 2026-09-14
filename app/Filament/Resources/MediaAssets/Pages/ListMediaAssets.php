@@ -8,6 +8,9 @@ use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Filament\Support\StorageWorkspaceOverview;
 use App\Models\MediaAsset;
@@ -19,7 +22,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
-use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -359,85 +361,65 @@ final class ListMediaAssets extends Page
 
     public function previewAction(): Action
     {
-        return Action::make('preview')
+        $action = Action::make('preview')
             ->label('Preview')
             ->modalHeading(fn (array $arguments): string => (string) $this->actionAsset($arguments)->getAttribute('original_filename'))
             ->modalContent(fn (array $arguments): View => view(
                 'filament.resources.media-assets.partials.preview-dialog',
                 $this->previewDialogData($arguments),
             ))
-            ->modalSubmitAction(false)
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Close')
-                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
-            ->extraModalFooterActions(fn (array $arguments): array => $this->previewFooterActions($arguments))
-            ->modalWidth(Width::SevenExtraLarge)
-            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
+            ->extraModalFooterActions(fn (array $arguments): array => $this->previewHeaderActions($arguments));
+
+        return AdminDialog::viewer($action, AdminDialogSize::Large);
     }
 
     public function editAction(): Action
     {
-        return Action::make('edit')
+        $action = Action::make('edit')
             ->label('Edit')
             ->modalHeading(fn (array $arguments): string => 'Edit '.(string) $this->actionAsset($arguments)->getAttribute('original_filename'))
             ->fillForm(fn (array $arguments): array => $this->editFormData($this->actionAsset($arguments)))
             ->schema($this->mediaEditSchema())
             ->action(function (array $data, array $arguments): void {
                 $this->saveMetadata($this->actionAsset($arguments), $data);
-            })
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Save')
-                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
-            ->modalWidth(Width::SevenExtraLarge)
-            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
+            });
+
+        return AdminDialog::editCommit($action, 'Save file metadata', AdminDialogSize::Default);
     }
 
     public function deleteAction(): Action
     {
-        return Action::make('delete')
+        $action = Action::make('delete')
             ->label('Delete')
             ->color('danger')
-            ->requiresConfirmation()
-            ->modalHeading(fn (array $arguments): string => 'Delete '.(string) $this->actionAsset($arguments)->getAttribute('original_filename').'?')
             ->modalContent(fn (array $arguments): View => view(
                 'filament.resources.media-assets.partials.delete-dialog',
                 $this->deleteDialogData($this->actionAsset($arguments)),
             ))
-            ->modalSubmitAction(fn (Action $action, array $arguments): Action => $action
-                ->label('Delete')
-                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
             ->action(function (Action $action, array $arguments): void {
                 if (! $this->deleteAsset($this->actionAsset($arguments))) {
                     $action->halt();
                 }
-            })
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
+            });
+
+        return AdminDialog::confirm(
+            $action,
+            fn (array $arguments): string => 'Delete '.(string) $this->actionAsset($arguments)->getAttribute('original_filename').'?',
+            submitLabel: 'Delete',
+            danger: true,
+            size: AdminDialogSize::Default,
+        );
     }
 
     public function deleteSelectedAction(): Action
     {
-        return Action::make('deleteSelected')
+        $action = Action::make('deleteSelected')
             ->label('Delete selected')
             ->color('danger')
-            ->requiresConfirmation()
-            ->modalHeading('Delete selected files?')
             ->modalContent(fn (): View => view(
                 'filament.resources.media-assets.partials.delete-selected-dialog',
                 $this->deleteSelectedDialogData(),
             ))
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Delete')
-                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
             ->action(function (): void {
                 $this->normalizeSelection();
                 $ids = $this->selectedAssets;
@@ -512,9 +494,15 @@ final class ListMediaAssets extends Page
                     ->title('Selected files deleted')
                     ->success()
                     ->send();
-            })
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
+            });
+
+        return AdminDialog::confirm(
+            $action,
+            'Delete selected files?',
+            submitLabel: 'Delete',
+            danger: true,
+            size: AdminDialogSize::Default,
+        );
     }
 
     private function refreshFromFirstPage(): void
@@ -876,7 +864,7 @@ final class ListMediaAssets extends Page
      * @param array<string, mixed> $arguments
      * @return list<Action>
      */
-    private function previewFooterActions(array $arguments): array
+    private function previewHeaderActions(array $arguments): array
     {
         $asset = $this->actionAsset($arguments);
         $assetId = (int) $asset->getKey();
@@ -886,8 +874,11 @@ final class ListMediaAssets extends Page
         if ($state === 'available') {
             $actions[] = Action::make('previewDownload')
                 ->label('Download')
+                ->icon(AdminIcon::Download->value)
+                ->iconButton()
+                ->color('gray')
                 ->url(route('admin.media.download', ['mediaAsset' => $assetId]))
-                ->extraAttributes(['class' => 'media-dialog-footer__utility']);
+                ->extraAttributes(['class' => 'admin-dialog__header-action']);
         }
 
         if ($state !== 'deleted') {
@@ -900,59 +891,58 @@ final class ListMediaAssets extends Page
 
     private function previewEditAction(int $assetId): Action
     {
-        return Action::make('previewEdit')
+        $action = Action::make('previewEdit')
             ->label('Edit')
-            ->extraAttributes(['class' => 'media-dialog-footer__utility'])
+            ->icon(AdminIcon::Edit->value)
+            ->iconButton()
+            ->color('gray')
+            ->extraAttributes(['class' => 'admin-dialog__header-action'])
             ->modalHeading(fn (): string => 'Edit '.(string) $this->assetById($assetId)->getAttribute('original_filename'))
             ->fillForm(fn (): array => $this->editFormData($this->assetById($assetId)))
             ->schema($this->mediaEditSchema())
             ->action(function (array $data) use ($assetId): void {
                 $this->saveMetadata($this->assetById($assetId), $data);
             })
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Save')
-                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->cancelParentActions()
-                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
             ->extraModalFooterActions([
                 Action::make('backToPreview')
                     ->label('Back to preview')
-                    ->extraAttributes(['class' => 'media-dialog-footer__utility'])
+                    ->icon(AdminIcon::Back->value)
+                    ->iconButton()
+                    ->color('gray')
+                    ->extraAttributes(['class' => 'admin-dialog__header-action'])
                     ->action(function (): void {})
                     ->cancelParentActions('previewEdit'),
-            ])
-            ->modalWidth(Width::SevenExtraLarge)
-            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
+            ]);
+
+        return AdminDialog::editCommit($action, 'Save file metadata', AdminDialogSize::Default);
     }
 
     private function previewDeleteAction(int $assetId): Action
     {
-        return Action::make('previewDelete')
+        $action = Action::make('previewDelete')
             ->label('Delete')
+            ->icon(AdminIcon::Delete->value)
+            ->iconButton()
             ->color('danger')
-            ->extraAttributes(['class' => 'media-dialog-footer__primary'])
-            ->requiresConfirmation()
-            ->modalHeading(fn (): string => 'Delete '.(string) $this->assetById($assetId)->getAttribute('original_filename').'?')
+            ->extraAttributes(['class' => 'admin-dialog__header-action is-danger'])
             ->modalContent(fn (): View => view(
                 'filament.resources.media-assets.partials.delete-dialog',
                 $this->deleteDialogData($this->assetById($assetId)),
             ))
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Delete')
-                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
             ->action(function (Action $action) use ($assetId): void {
                 if (! $this->deleteAsset($this->assetById($assetId))) {
                     $action->halt();
                 }
             })
-            ->cancelParentActions()
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'media-file-dialog']);
+            ->cancelParentActions();
+
+        return AdminDialog::confirm(
+            $action,
+            fn (): string => 'Delete '.(string) $this->assetById($assetId)->getAttribute('original_filename').'?',
+            submitLabel: 'Delete',
+            danger: true,
+            size: AdminDialogSize::Default,
+        );
     }
 
     private function deleteAsset(MediaAsset $asset): bool
