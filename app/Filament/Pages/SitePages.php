@@ -23,6 +23,8 @@ use UnitEnum;
 
 final class SitePages extends Page
 {
+    use \App\Filament\Pages\Concerns\ManagesSitePageDialogs;
+
     protected static string|BackedEnum|null $navigationIcon = AdminIcon::Pages;
 
     protected static string|UnitEnum|null $navigationGroup = 'Website';
