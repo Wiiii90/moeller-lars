@@ -46,6 +46,17 @@
             </label>
 
             <label class="admin-data-field">
+                <span>Size</span>
+                <select wire:model.live="size">
+                    <option value="all">Any size</option>
+                    <option value="under-1-mb">Under 1 MB</option>
+                    <option value="1-5-mb">1–5 MB</option>
+                    <option value="5-20-mb">5–20 MB</option>
+                    <option value="20-mb-plus">20 MB+</option>
+                </select>
+            </label>
+
+            <label class="admin-data-field">
                 <span>Usage</span>
                 <select wire:model.live="usage">
                     <option value="all">Any</option>
@@ -254,9 +265,9 @@
                         @endif
                         <col class="media-workspace__col-media">
                         <col class="media-workspace__col-type">
+                        <col class="media-workspace__col-size">
                         <col class="media-workspace__col-status">
                         <col class="media-workspace__col-usage">
-                        <col class="media-workspace__col-size">
                         <col class="media-workspace__col-actions">
                         <col class="media-workspace__col-selection">
                     </colgroup>
@@ -267,9 +278,9 @@
                             @endif
                             <th scope="col">Media</th>
                             <th scope="col">Type</th>
+                            <th scope="col">Size</th>
                             <th scope="col">Status</th>
                             <th scope="col">Used in</th>
-                            <th scope="col">Size</th>
                             <th scope="col">Actions</th>
                             <th scope="col" class="media-workspace__selection-head media-workspace__selection-head--trailing">
                                 <input
@@ -330,6 +341,7 @@
                                     <strong class="media-workspace__type">{{ $asset['type_label'] }}</strong>
                                     @if ($asset['dimensions'])<small>{{ $asset['dimensions'] }}</small>@endif
                                 </td>
+                                <td class="media-workspace__size">{{ $asset['size'] }}</td>
                                 <td>
                                     <span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span>
                                 </td>
@@ -350,7 +362,6 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td class="media-workspace__size">{{ $asset['size'] }}</td>
                                 <td class="media-workspace__actions">
                                     <div class="admin-row-actions admin-row-actions--canonical admin-toolbar media-workspace__row-actions">
                                         <button class="admin-action" type="button" wire:click="mountAction('preview', { asset: {{ $asset['id'] }} })">
@@ -414,14 +425,48 @@
     >Add Media File</x-admin.add-row>
 
     <footer class="media-workspace__pager">
-        <label class="media-workspace__pager-size">
+        <div
+            class="media-workspace__pager-size"
+            x-data="{ open: false }"
+            x-on:click.outside="open = false"
+            x-on:keydown.escape.window="open = false"
+        >
             <span>Per page</span>
-            <select wire:model.live.number="pageSize">
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
-        </label>
+            <div class="admin-pager-size-picker">
+                <button
+                    class="admin-pager-size-picker__trigger"
+                    type="button"
+                    x-on:click="open = ! open"
+                    x-bind:aria-expanded="open.toString()"
+                    aria-haspopup="listbox"
+                    aria-label="Files per page"
+                >
+                    <span>{{ $pageSize }}</span>
+                    <span aria-hidden="true">▾</span>
+                </button>
+                <div
+                    class="admin-pager-size-picker__menu"
+                    role="listbox"
+                    aria-label="Files per page"
+                    x-show="open"
+                    x-cloak
+                >
+                    @foreach ([25, 50, 100] as $sizeOption)
+                        <button
+                            class="admin-pager-size-picker__option {{ $pageSize === $sizeOption ? 'is-active' : '' }}"
+                            type="button"
+                            role="option"
+                            aria-selected="{{ $pageSize === $sizeOption ? 'true' : 'false' }}"
+                            wire:click="setPageSize({{ $sizeOption }})"
+                            x-on:click="open = false"
+                        >
+                            <span class="admin-pager-size-picker__check" aria-hidden="true">{{ $pageSize === $sizeOption ? '✓' : '' }}</span>
+                            <span>{{ $sizeOption }}</span>
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+        </div>
 
         <span class="media-workspace__pager-range">
             @if ($total === 0)
