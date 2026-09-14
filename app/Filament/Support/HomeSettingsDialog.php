@@ -7,7 +7,9 @@ use App\Domain\Content\HomeHeroConfigurationService;
 use App\Domain\Content\HomeHeroResolver;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
+use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\HomeTemplate;
+use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -18,6 +20,7 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Illuminate\Validation\ValidationException;
 
 final class HomeSettingsDialog
 {
@@ -26,8 +29,10 @@ final class HomeSettingsDialog
         private readonly HomePresentationEditorialService $editorial,
         private readonly HomeHeroConfigurationService $heroConfiguration,
         private readonly HomeHeroResolver $heroResolver,
+        private readonly HomeRoutingSettingsService $routing,
         private readonly PublicArtworkQuery $artworks,
         private readonly SiteNodeRoute $routes,
+        private readonly SiteNodePresentation $siteNodes,
     ) {}
 
     /** @return array<string, mixed> */
@@ -36,10 +41,12 @@ final class HomeSettingsDialog
         $settings = $this->resolver->settings();
         $hero = $this->heroConfiguration->configuration($settings);
         $configuration = $this->editorial->configuration($settings);
+        $routing = $this->routing->configuration($settings);
         $section = $this->homeSection($settings);
+        $defaultTarget = $this->resolver->skipTarget();
 
         return [
-            'template' => $settings->template()->value,
+            'template' => $settings->template()->contentTemplate()->value,
             'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
             'show_details' => $hero['show_details'],
             'show_gallery_link' => $hero['show_gallery_link'],
@@ -53,6 +60,8 @@ final class HomeSettingsDialog
             'rotation_interval_count' => $hero['rotation_interval']['count'],
             'rotation_interval_unit' => $hero['rotation_interval']['unit'],
             'public_site_gate' => (bool) ($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? false),
+            'skip_home' => $routing['skip_home'],
+            'skip_target_section_id' => $routing['skip_target_section_id'] ?? $defaultTarget?->getKey(),
         ];
     }
 
@@ -131,10 +140,16 @@ final class HomeSettingsDialog
                 ->label('Temporarily gate the public site')
                 ->helperText('Normal public content URLs return to Home while Under Construction is active. Admin and protected Preview stay available.')
                 ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
-            Placeholder::make('skip_target')
-                ->label('Current redirect target')
-                ->content(fn (): string => $this->skipTargetLabel())
-                ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::SkipHome->value),
+            Toggle::make('skip_home')
+                ->label('Skip Home')
+                ->helperText('Redirect the public root to another published top-level page instead of showing Home.')
+                ->live(),
+            Select::make('skip_target_section_id')
+                ->label('Skip to')
+                ->options(fn (): array => $this->skipTargetOptions())
+                ->required(fn (callable $get): bool => (bool) $get('skip_home'))
+                ->visible(fn (callable $get): bool => (bool) $get('skip_home'))
+                ->native(),
             Placeholder::make('custom_components')
                 ->label('Custom composition')
                 ->content('Components are edited in the Home workspace.')
@@ -146,7 +161,10 @@ final class HomeSettingsDialog
     public function save(array $data): void
     {
         $settings = $this->resolver->settings();
-        $template = HomeTemplate::from((string) $data['template']);
+        $template = HomeTemplate::tryFrom((string) ($data['template'] ?? ''));
+        if (! $template instanceof HomeTemplate || ! $template->isContentTemplate()) {
+            throw ValidationException::withMessages(['template' => 'Choose a Home content template.']);
+        }
 
         if ($template === HomeTemplate::Artwork) {
             $current = $this->heroConfiguration->configuration($settings);
@@ -184,6 +202,18 @@ final class HomeSettingsDialog
             $this->editorial->updateSettings($settings, $template, $input);
         }
 
+        $settings = $settings->fresh();
+        if (! $settings instanceof HomePresentationSetting) {
+            throw ValidationException::withMessages(['home' => 'Home settings changed while editing. Reload and try again.']);
+        }
+
+        $skipHome = (bool) ($data['skip_home'] ?? false);
+        $skipTargetId = $this->nullablePositiveInt($data['skip_target_section_id'] ?? null);
+        if ($skipHome && $skipTargetId === null) {
+            $skipTargetId = $this->resolver->skipTarget()?->getKey();
+        }
+        $this->routing->update($settings, $skipHome, $skipHome ? $skipTargetId : null);
+
         $section = $this->homeSection($settings);
         app(SiteSectionEditorialService::class)->updatePlacement(
             $section,
@@ -193,9 +223,47 @@ final class HomeSettingsDialog
         );
     }
 
+    public function changeTemplate(HomeTemplate $template): void
+    {
+        if (! $template->isContentTemplate()) {
+            throw ValidationException::withMessages(['template' => 'Choose a Home content template.']);
+        }
+
+        $settings = $this->resolver->settings();
+        $routing = $this->routing->configuration($settings);
+        $fallbackTargetId = $this->resolver->skipTarget()?->getKey();
+
+        $this->editorial->updateSettings($settings, $template, []);
+        $fresh = $settings->fresh();
+        if ($fresh instanceof HomePresentationSetting) {
+            $this->routing->update(
+                $fresh,
+                $routing['skip_home'],
+                $routing['skip_target_section_id'] ?? ($routing['skip_home'] ? $fallbackTargetId : null),
+            );
+        }
+    }
+
     public function templateLabel(): string
     {
         return $this->resolver->template()->label();
+    }
+
+    /** @return array{template:string,skip_home:bool,skip_target_label:?string,skip_target_url:?string} */
+    public function tableState(): array
+    {
+        $settings = $this->resolver->settings();
+        $target = $this->resolver->skipTarget();
+        $targetLabel = $target instanceof SiteSection
+            ? trim((string) ($target->getAttribute('navigation_label') ?: $target->getAttribute('title')))
+            : null;
+
+        return [
+            'template' => $settings->template()->contentTemplate()->value,
+            'skip_home' => $this->routing->enabled($settings),
+            'skip_target_label' => $targetLabel !== '' ? $targetLabel : null,
+            'skip_target_url' => $target instanceof SiteSection ? $this->siteNodes->workspaceUrl($target) : null,
+        ];
     }
 
     private function homeSection(HomePresentationSetting $settings): SiteSection
@@ -208,17 +276,34 @@ final class HomeSettingsDialog
         return $section;
     }
 
-    private function skipTargetLabel(): string
+    /** @return array<int, string> */
+    private function skipTargetOptions(): array
     {
-        $target = $this->resolver->skipTarget();
-        if (! $target instanceof SiteSection) {
-            return 'No published top-level page exists after Home. The public root safely remains on Home.';
+        return SiteSection::query()
+            ->whereNull('parent_id')
+            ->where('state', 'published')
+            ->where('type', '<>', SiteNodeType::Home->value)
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (SiteSection $section): bool => $section->nodeType()->hasPublicPage()
+                && $section->nodeType() !== SiteNodeType::NavigationNode
+                && $this->routes->path($section) !== null)
+            ->mapWithKeys(fn (SiteSection $section): array => [
+                (int) $section->getKey() => trim((string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title'))),
+            ])
+            ->all();
+    }
+
+    private function nullablePositiveInt(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
         }
 
-        $label = trim((string) ($target->getAttribute('navigation_label') ?: $target->getAttribute('title')));
-        $path = $this->routes->path($target);
+        $id = filter_var($value, FILTER_VALIDATE_INT);
 
-        return $label.' · '.($path ?? '—');
+        return $id === false || $id <= 0 ? null : (int) $id;
     }
 
     private function heroArtworkSelect(string $name, string $label, bool $multiple = false): Select
