@@ -69,8 +69,9 @@ final class AdminDialog
         bool $danger = false,
         AdminDialogSize $size = AdminDialogSize::Mini,
         bool|Closure $required = true,
+        ?AdminIcon $icon = null,
     ): Action {
-        $submitIcon = $danger ? AdminIcon::Delete : AdminIcon::Commit;
+        $submitIcon = $icon ?? ($danger ? AdminIcon::Delete : AdminIcon::Commit);
         $submitClass = 'admin-dialog__header-action '.($danger ? 'is-danger' : 'is-primary');
 
         return self::base($action, AdminDialogType::Confirm, $size)
