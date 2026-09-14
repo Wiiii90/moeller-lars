@@ -103,7 +103,7 @@
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
                 @endif
             @else
-                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editPlacement', { section: {{ $section['id'] }} })">
+                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editPage', { section: {{ $section['id'] }} })">
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
                     <span class="admin-action__label">Edit</span>
                 </button>
