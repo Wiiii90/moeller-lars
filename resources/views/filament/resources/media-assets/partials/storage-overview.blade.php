@@ -1,9 +1,43 @@
 @php
     $storageTargets = is_array($storageAttention['targets'] ?? null) ? $storageAttention['targets'] : [];
     $storageSegments = is_array($storageAttention['capacity_segments'] ?? null) ? $storageAttention['capacity_segments'] : [];
-    $capacityPercent = ($capacity['percent'] ?? null) !== null
-        ? min(100, max(0, (float) $capacity['percent']))
-        : null;
+
+    $usageByLabel = [];
+    foreach ($usageGroups ?? [] as $usageGroup) {
+        foreach (($usageGroup['options'] ?? []) as $option) {
+            $label = trim((string) ($option['label'] ?? ''));
+            $value = trim((string) ($option['value'] ?? ''));
+            if ($label !== '' && $value !== '') {
+                $usageByLabel[mb_strtolower($label)] = $value;
+            }
+        }
+    }
+
+    $storageTargets = array_map(static function (array $target) use ($usageByLabel): array {
+        $area = (string) ($target['area'] ?? 'referenced');
+        $label = trim((string) ($target['label'] ?? 'Reference'));
+        $exactUsage = $usageByLabel[mb_strtolower($label)] ?? null;
+        $usageFilter = is_string($exactUsage) ? $exactUsage : match ($area) {
+            'home' => 'home',
+            'cv' => 'cv',
+            'site-identity' => 'site-identity',
+            default => null,
+        };
+
+        $target['display_label'] = $area === 'site-identity' ? 'Site icon' : $label;
+        $target['display_area'] = match ($area) {
+            'galleries' => 'Gallery',
+            'journal' => 'Journal',
+            'custom-pages' => 'Custom page',
+            'site-identity' => 'Appearance',
+            'unassigned' => 'Unassigned',
+            'uncatalogued' => 'Uncatalogued',
+            default => (string) ($target['area_label'] ?? ucfirst(str_replace('-', ' ', $area))),
+        };
+        $target['usage_filter'] = $usageFilter;
+
+        return $target;
+    }, $storageTargets);
 @endphp
 
 <x-admin.metrics :columns="6" aria-label="Storage statistics">
@@ -17,13 +51,12 @@
 
 <section
     class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych admin-visual-stage--stackable"
-    aria-label="Storage upload, capacity and destinations"
+    aria-label="Storage upload, capacity and distribution"
     x-data="{
-        selected: null,
+        selectedTarget: null,
+        selectedArea: null,
         usageFilter: $wire.entangle('usage', true),
-        breakdown: @js($storageBreakdown),
         targets: @js($storageTargets),
-        capacityPercent: @js($capacityPercent),
         init() {
             this.$watch('usageFilter', (value) => this.syncUsage(value))
             this.$nextTick(() => this.syncUsage(this.usageFilter))
@@ -40,76 +73,32 @@
             if (normalized === 'cv') return 'cv'
             return null
         },
-        usageFromArea(key) {
-            return ({
-                galleries: 'kind:gallery',
-                journal: 'kind:journal',
-                'custom-pages': 'kind:custom',
-                home: 'home',
-                cv: 'cv',
-                'site-identity': 'site-identity',
-                unassigned: 'unreferenced',
-            })[key] ?? null
-        },
-        setSelection(key) {
-            this.selected = key && this.breakdown.some((row) => row.key === key) ? key : null
-        },
-        select(key) {
-            if (! this.breakdown.some((row) => row.key === key)) return
-
-            const next = this.selected === key ? null : key
-            this.setSelection(next)
-
-            const usage = next === null ? 'all' : this.usageFromArea(next)
-            if (usage !== null) this.usageFilter = usage
-        },
         syncUsage(value) {
-            this.setSelection(this.areaFromUsage(value))
+            const exact = this.targets.find((target) => target.usage_filter === value) ?? null
+            this.selectedTarget = exact?.key ?? null
+            this.selectedArea = exact ? null : this.areaFromUsage(value)
         },
-        selectedRow() {
-            return this.breakdown.find((row) => row.key === this.selected) ?? null
-        },
-        capacityShare(row) {
-            const used = Number(this.capacityPercent)
-            const shareOfUsed = Number(row?.percent)
-            if (! Number.isFinite(used) || ! Number.isFinite(shareOfUsed)) return null
-
-            return (used * shareOfUsed) / 100
+        selectTarget(target) {
+            if (! target?.usage_filter) return
+            this.usageFilter = this.selectedTarget === target.key ? 'all' : target.usage_filter
         },
         visibleTargets() {
-            const rows = this.selected
-                ? this.targets.filter((target) => target.area === this.selected)
+            const rows = this.selectedArea
+                ? this.targets.filter((target) => target.area === this.selectedArea)
                 : this.targets
 
-            return rows.slice(0, 5)
+            return rows.slice(0, 6)
         },
         targetWidth(bytes) {
             const rows = this.visibleTargets()
             const max = Math.max(1, ...rows.map((row) => Number(row.bytes) || 0))
 
-            return Math.max(4, Math.round(((Number(bytes) || 0) / max) * 100))
-        },
-        selectedMeta() {
-            const row = this.selectedRow()
-            if (! row) return ''
-
-            const files = Number(row.files) || 0
-            const capacityShare = this.capacityShare(row)
-            const capacityCopy = capacityShare === null
-                ? ''
-                : ` · ${capacityShare.toFixed(capacityShare < 0.1 ? 2 : 1)}% of allowance`
-
-            return `${row.display_bytes} · ${files} ${files === 1 ? 'original' : 'originals'}${capacityCopy}`
+            return Math.max(2, Math.round(((Number(bytes) || 0) / max) * 100))
         },
         emptyDetail() {
-            const row = this.selectedRow()
-            if (! row) return 'No measured destination usage is available.'
-
-            if (row.key === 'unassigned') return 'These originals are not referenced by a canonical consumer.'
-            if (row.key === 'uncatalogued') return 'These originals exist on disk without a matching MediaAsset record.'
-            if (row.key === 'shared') return 'These originals span more than one area, so destination totals overlap by design.'
-
-            return 'No destination breakdown is available for this area.'
+            if (this.selectedArea === 'unassigned') return 'No unassigned files are present in the measured storage.'
+            if (this.selectedArea === 'uncatalogued') return 'No uncatalogued files are present in the measured storage.'
+            return 'No measured distribution is available for this filter.'
         },
     }"
 >
@@ -219,28 +208,36 @@
 
     <div class="admin-storage__distribution admin-visual-stage__pane">
         <div class="admin-storage__visual-heading">
-            <p class="admin-storage__eyebrow">Destinations</p>
+            <p class="admin-storage__eyebrow">Distribution</p>
         </div>
 
         <div class="admin-storage__target-plot" aria-live="polite">
-            <div class="admin-storage__selection-summary" x-show="selectedRow()" x-cloak>
-                <strong x-text="selectedRow()?.label"></strong>
-                <span x-text="selectedMeta()"></span>
+            <div class="admin-storage__distribution-columns" aria-hidden="true">
+                <span>Area</span>
+                <span>Files</span>
+                <span>Storage</span>
             </div>
 
-            <template x-for="target in visibleTargets()" x-bind:key="target.key">
+            <template x-for="(target, index) in visibleTargets()" x-bind:key="target.key">
                 <button
                     class="admin-storage__target-row"
                     type="button"
-                    x-bind:data-area="target.area"
-                    x-on:click="select(target.area)"
-                    x-bind:aria-pressed="(selected === target.area).toString()"
-                    x-bind:class="{ 'is-active': selected === target.area }"
+                    x-bind:style="`--storage-row-color: var(--storage-target-${(index % 8) + 1})`"
+                    x-on:click="selectTarget(target)"
+                    x-bind:disabled="! target.usage_filter"
+                    x-bind:aria-pressed="target.usage_filter ? (selectedTarget === target.key).toString() : null"
+                    x-bind:aria-label="`${target.display_label}, ${Number(target.files) || 0} files, ${target.display_bytes}`"
+                    x-bind:class="{
+                        'is-active': selectedTarget === target.key,
+                        'is-context': selectedArea === target.area,
+                        'is-static': ! target.usage_filter,
+                    }"
                 >
                     <span class="admin-storage__target-label">
-                        <strong x-text="target.label"></strong>
-                        <small x-text="`${Number(target.files) || 0} ${(Number(target.files) || 0) === 1 ? 'original' : 'originals'}`"></small>
+                        <strong x-text="target.display_label"></strong>
+                        <small x-text="target.display_area"></small>
                     </span>
+                    <span class="admin-storage__target-files" x-text="Number(target.files) || 0"></span>
                     <span class="admin-storage__target-track" aria-hidden="true">
                         <i x-bind:style="`width: ${targetWidth(target.bytes)}%`"></i>
                     </span>
@@ -250,23 +247,20 @@
 
             <div class="admin-storage__target-empty" x-show="visibleTargets().length === 0" x-cloak>
                 <p x-text="emptyDetail()"></p>
-                <template x-if="selectedRow()">
-                    <strong x-text="`${selectedRow().display_bytes} · ${Number(selectedRow().files) || 0} ${(Number(selectedRow().files) || 0) === 1 ? 'original' : 'originals'}`"></strong>
-                </template>
             </div>
         </div>
 
         <div class="admin-storage__attention" aria-label="Storage attention">
             @if (($storageAttention['unreferenced_files'] ?? 0) > 0)
                 <div class="admin-storage__attention-row">
-                    <span>Unused originals</span>
+                    <span>Unused files</span>
                     <strong>{{ number_format($storageAttention['unreferenced_files']) }} · {{ $storageAttention['unreferenced_display_bytes'] }}</strong>
                 </div>
             @endif
 
             @if (($storageAttention['uncatalogued_files'] ?? 0) > 0)
                 <div class="admin-storage__attention-row is-warning">
-                    <span>Uncatalogued originals</span>
+                    <span>Uncatalogued files</span>
                     <strong>{{ number_format($storageAttention['uncatalogued_files']) }} · {{ $storageAttention['uncatalogued_display_bytes'] }}</strong>
                 </div>
             @endif
@@ -280,7 +274,7 @@
 
             @if (is_array($storageAttention['largest_file'] ?? null))
                 <div class="admin-storage__attention-row">
-                    <span>Largest original</span>
+                    <span>Largest file</span>
                     <strong title="{{ $storageAttention['largest_file']['filename'] }}">{{ $storageAttention['largest_file']['filename'] }} · {{ $storageAttention['largest_file']['display_bytes'] }}</strong>
                 </div>
             @endif
