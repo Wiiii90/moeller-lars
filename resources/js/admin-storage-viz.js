@@ -1,11 +1,12 @@
 import * as echarts from 'echarts/core';
 import { PieChart } from 'echarts/charts';
-import { GraphicComponent } from 'echarts/components';
+import { GraphicComponent, TooltipComponent } from 'echarts/components';
 import { SVGRenderer } from 'echarts/renderers';
 
 echarts.use([
     PieChart,
     GraphicComponent,
+    TooltipComponent,
     SVGRenderer,
 ]);
 
@@ -44,6 +45,7 @@ function palette(element) {
         text: token('--admin-text', '#181818'),
         muted: token('--admin-muted', '#707070'),
         surface: token('--admin-surface', '#ffffff'),
+        line: token('--admin-line', '#dedede'),
         accent: token('--admin-accent', '#b45309'),
         storage: {
             galleries: token('--storage-color-galleries', '#b45309'),
@@ -105,25 +107,55 @@ function unavailableOption(element, config, compact) {
     };
 }
 
-function storageSlices(config, colors) {
+function storageRows(config, compact) {
+    if (! compact && Array.isArray(config.segments) && config.segments.length > 0) {
+        return config.segments.filter((row) => Number(row.bytes) > 0);
+    }
+
+    return (Array.isArray(config.breakdown) ? config.breakdown : [])
+        .filter((row) => Number(row.bytes) > 0)
+        .map((row) => ({
+            ...row,
+            area: row.key,
+            area_label: row.label,
+        }));
+}
+
+function storageSlices(config, colors, compact) {
     const usedPercent = clamp(config.percent, 0, 100);
-    const rows = (Array.isArray(config.breakdown) ? config.breakdown : [])
-        .filter((row) => Number(row.bytes) > 0);
+    const rows = storageRows(config, compact);
     const totalUsedBytes = rows.reduce((sum, row) => sum + (Number(row.bytes) || 0), 0);
+    const areaIndexes = new Map();
 
     const slices = totalUsedBytes > 0
         ? rows.map((row) => {
             const bytes = Number(row.bytes) || 0;
             const capacityShare = usedPercent * (bytes / totalUsedBytes);
+            const area = row.area || row.key || 'referenced';
+            const index = areaIndexes.get(area) || 0;
+            areaIndexes.set(area, index + 1);
+            const opacity = compact ? 1 : [0.9, 0.76, 0.64, 0.54][Math.min(index, 3)];
 
             return {
                 key: row.key,
                 name: row.label || row.key,
+                area,
+                areaLabel: row.area_label || row.label || area,
                 value: capacityShare,
                 displayBytes: row.display_bytes || '—',
                 files: Number(row.files) || 0,
+                capacityShare,
                 itemStyle: {
-                    color: colors.storage[row.key] || colors.accent,
+                    color: colors.storage[area] || colors.storage[row.key] || colors.accent,
+                    opacity,
+                },
+                emphasis: compact ? {
+                    disabled: true,
+                } : {
+                    scale: false,
+                    itemStyle: {
+                        opacity: 1,
+                    },
                 },
             };
         }).filter((slice) => slice.value > 0)
@@ -133,11 +165,21 @@ function storageSlices(config, colors) {
         slices.push({
             key: 'used',
             name: 'Used',
+            area: 'referenced',
+            areaLabel: 'Used storage',
             value: usedPercent,
             displayBytes: config.authoritative || '—',
             files: 0,
+            capacityShare: usedPercent,
             itemStyle: {
                 color: colors.accent,
+                opacity: compact ? 1 : 0.9,
+            },
+            emphasis: compact ? {
+                disabled: true,
+            } : {
+                scale: false,
+                itemStyle: { opacity: 1 },
             },
         });
     }
@@ -147,11 +189,15 @@ function storageSlices(config, colors) {
         slices.push({
             key: 'remaining',
             name: 'Remaining',
+            area: 'remaining',
+            areaLabel: 'Remaining',
             value: remainingPercent > 0 ? remainingPercent : 100,
             displayBytes: config.remaining || '—',
             files: 0,
+            capacityShare: remainingPercent,
             itemStyle: {
                 color: colors.storage.remaining,
+                opacity: 1,
             },
             emphasis: {
                 disabled: true,
@@ -170,18 +216,53 @@ function storageOption(element, config) {
 
     const colors = palette(element);
     const usedPercent = clamp(config.percent, 0, 100);
-    const slices = storageSlices(config, colors);
-    const usedCopy = `${usedPercent.toFixed(usedPercent < 10 ? 1 : 0)}% of ${config.allowance || 'allowance'}`;
+    const slices = storageSlices(config, colors, compact);
+    const usedCopy = compact
+        ? `${usedPercent.toFixed(1)}% used`
+        : `${usedPercent.toFixed(usedPercent < 10 ? 1 : 0)}% used · ${config.remaining || '—'} free`;
 
     return {
         animation: false,
         stateAnimation: { duration: 0 },
+        tooltip: compact ? { show: false } : {
+            show: true,
+            trigger: 'item',
+            renderMode: 'richText',
+            confine: true,
+            transitionDuration: 0,
+            backgroundColor: colors.surface,
+            borderColor: colors.line,
+            borderWidth: 1,
+            padding: [7, 9],
+            textStyle: {
+                color: colors.text,
+                fontSize: 10,
+                lineHeight: 15,
+            },
+            formatter(params) {
+                const datum = params.data || {};
+                if (datum.key === 'remaining') {
+                    return `Remaining\n${datum.displayBytes} of ${config.allowance || 'allowance'}`;
+                }
+
+                const area = datum.areaLabel && datum.areaLabel !== datum.name
+                    ? ` · ${datum.areaLabel}`
+                    : '';
+                const files = Number(datum.files) || 0;
+                const fileCopy = files > 0
+                    ? `\n${files.toLocaleString()} ${files === 1 ? 'original' : 'originals'}`
+                    : '';
+                const share = Number(datum.capacityShare) || 0;
+
+                return `${datum.name}${area}\n${datum.displayBytes}${fileCopy}\n${share.toFixed(share < 0.1 ? 2 : 1)}% of ${config.allowance || 'allowance'}`;
+            },
+        },
         graphic: [
             {
                 type: 'text',
                 silent: true,
                 left: 'center',
-                top: compact ? '39%' : '39%',
+                top: compact ? '39%' : '38%',
                 style: {
                     text: config.authoritative || '—',
                     fill: colors.text,
@@ -197,9 +278,9 @@ function storageOption(element, config) {
                 left: 'center',
                 top: compact ? '54%' : '53%',
                 style: {
-                    text: compact ? `${usedPercent.toFixed(1)}% used` : usedCopy,
+                    text: usedCopy,
                     fill: colors.muted,
-                    fontSize: compact ? 8 : 10,
+                    fontSize: compact ? 8 : 9,
                     fontWeight: 600,
                     fontFamily: 'inherit',
                     textAlign: 'center',
@@ -210,7 +291,8 @@ function storageOption(element, config) {
             {
                 id: 'storage-capacity-donut',
                 type: 'pie',
-                radius: compact ? ['61%', '82%'] : ['59%', '82%'],
+                silent: compact,
+                radius: compact ? ['61%', '82%'] : ['54%', '84%'],
                 center: ['50%', '50%'],
                 startAngle: 90,
                 clockwise: true,
@@ -218,23 +300,13 @@ function storageOption(element, config) {
                 selectedMode: false,
                 stillShowZeroSum: false,
                 avoidLabelOverlap: true,
+                padAngle: 0,
                 label: { show: false },
                 labelLine: { show: false },
-                itemStyle: {
-                    borderColor: colors.surface,
-                    borderWidth: compact ? 1 : 2,
-                    borderRadius: compact ? 1 : 3,
-                },
                 emphasis: compact ? {
                     disabled: true,
                 } : {
-                    focus: 'none',
                     scale: false,
-                    itemStyle: {
-                        borderColor: colors.text,
-                        borderWidth: 3,
-                        opacity: 1,
-                    },
                 },
                 data: slices,
             },
