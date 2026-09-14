@@ -1,3 +1,9 @@
+@php
+    $body = trim((string) ($entry['body'] ?? ''));
+    $title = trim((string) ($entry['title'] ?? ''));
+    $showMessage = $body !== '' && $body !== $title;
+@endphp
+
 <div class="admin-detail-dialog">
     <dl class="admin-detail-dialog__meta">
         <div>
@@ -20,10 +26,7 @@
         @elseif ($entry['type'] === 'notification')
             <div>
                 <dt>Status</dt>
-                <dd>
-                    {{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }}
-                    · {{ ucfirst($entry['notification_status']) }}
-                </dd>
+                <dd>{{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }} · {{ ucfirst($entry['notification_status']) }}</dd>
             </div>
         @elseif ($entry['link'] !== null && $entry['link_label'] !== null)
             <div>
@@ -38,20 +41,17 @@
             <span>{{ str_starts_with($entry['status'], 'Unread') ? 'Unread' : 'Read' }}</span>
             @if ($entry['mail_delivery_status'])
                 <span aria-hidden="true">·</span>
-                <span>
-                    Mail {{ strtolower($entry['mail_delivery_status']) }}
-                    @if ($entry['mail_delivered_at'])
-                        · {{ $entry['mail_delivered_at'] }}
-                    @endif
-                </span>
+                <span>Mail {{ strtolower($entry['mail_delivery_status']) }}@if ($entry['mail_delivered_at']) · {{ $entry['mail_delivered_at'] }}@endif</span>
             @endif
         </p>
     @endif
 
-    <div class="admin-detail-dialog__message">
-        <span>Message</span>
-        <p>{{ $entry['body'] }}</p>
-    </div>
+    @if ($showMessage)
+        <div class="admin-detail-dialog__message">
+            <span>Message</span>
+            <p>{{ $body }}</p>
+        </div>
+    @endif
 
     @if ($entry['type'] !== 'contact' && $entry['type'] !== 'notification' && $entry['link'] !== null && $entry['link_label'] !== null)
         <a class="admin-detail-dialog__link" href="{{ $entry['link'] }}">{{ $entry['link_label'] }}</a>
