@@ -168,9 +168,23 @@ Rich Text references use Markdown `media:<id>` and are discovered by `RichTextMe
 
 See [MEDIA.md](MEDIA.md).
 
+## Admin notifications
+
+`admin_notifications` stores persistent user-scoped admin inbox entries. It is deliberately separate from append-only audit history and from Filament's ephemeral toast presentation.
+
+The durable identity is `(user_id, source_id)`: the recipient and the server-originated source event/condition together provide idempotency. Notification rows may carry bounded structured context for their severity/type, destination action and related entity/audit/publication identifiers, but they are not a second audit payload store.
+
+`read_at` is persistent inbox state. Deletion and retention apply only to notification rows; they never delete related Activity/audit or Publication history. Pinned feed entries remain protected by the dashboard retention contract.
+
+Persistent notifications are created by the central server-side admin notifier. Rendered Filament DOM/classes are not a persistence source.
+
+See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
+
 ## Audit and editorial checkpoints
 
-`audit_events` is durable append-only admin history. Domain writes are persisted/audited independently of any future logical Commit/checkpoint feature.
+`audit_events` is durable append-only admin history. Domain writes are persisted/audited independently of logical Commit/checkpoint behavior and independently of notification retention.
+
+Activity records successful administrative facts. A persistent notification may reference an audit event for navigation/context, but notification read/delete/prune operations do not mutate audit history.
 
 ## Operational metrics
 
@@ -189,6 +203,7 @@ Laravel user/session/cache/job tables support authenticated administration/runti
 - disabling a presentation feature does not silently detach/delete its retained data.
 - Gallery detach is Artwork unassignment, not Artwork/Media deletion.
 - destructive/publication operations are authorized/audited and go through canonical domain services.
+- deleting/pruning a notification never deletes related Activity/audit or Publication history.
 
 ## Migration boundary
 
