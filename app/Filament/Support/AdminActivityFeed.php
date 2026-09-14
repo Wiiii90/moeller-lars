@@ -4,6 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminActionReceiptService;
+use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
@@ -36,7 +37,10 @@ final class AdminActivityFeed
 
     private const FILTER_WINDOWS = [7, 30, self::ACTIVITY_WINDOW_DAYS];
 
-    public function __construct(private readonly AdminActionReceiptService $receipts) {}
+    public function __construct(
+        private readonly AdminActionReceiptService $receipts,
+        private readonly PublicationService $publication,
+    ) {}
 
     /**
      * @return array{activity: array<int, array<string, mixed>>, paginator: LengthAwarePaginator<int, AuditEvent>}
@@ -48,8 +52,10 @@ final class AdminActivityFeed
         ?User $actor = null,
         int $days = self::ACTIVITY_WINDOW_DAYS,
         ?string $search = null,
+        ?string $date = null,
+        ?int $hour = null,
     ): array {
-        $query = $this->filteredQuery($area, $family, $days, $search)
+        $query = $this->filteredQuery($area, $family, $days, $search, $date, $hour)
             ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState'])
             ->orderByDesc('occurred_at')
             ->orderByDesc('id');
@@ -61,6 +67,26 @@ final class AdminActivityFeed
             'activity' => $this->project($paginator->getCollection(), $actor),
             'paginator' => $paginator,
         ];
+    }
+
+    /** @return array<string, mixed>|null */
+    public function event(int $eventId, ?User $actor = null): ?array
+    {
+        /** @var AuditEvent|null $event */
+        $event = AuditEvent::query()
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState'])
+            ->find($eventId);
+
+        if (! $event instanceof AuditEvent) {
+            return null;
+        }
+
+        return $this->project(new EloquentCollection([$event]), $actor)[0] ?? null;
+    }
+
+    public function exists(): bool
+    {
+        return AuditEvent::query()->exists();
     }
 
     /**
@@ -80,8 +106,10 @@ final class AdminActivityFeed
         ?string $family = null,
         int $days = self::ACTIVITY_WINDOW_DAYS,
         ?string $search = null,
+        ?string $date = null,
+        ?int $hour = null,
     ): array {
-        $query = $this->filteredQuery($area, $family, $days, $search);
+        $query = $this->filteredQuery($area, $family, $days, $search, $date, $hour);
         $driver = $query->getModel()->getConnection()->getDriverName();
         $hourExpression = match ($driver) {
             'sqlite' => "CAST(strftime('%H', occurred_at) AS INTEGER)",
@@ -101,9 +129,9 @@ final class AdminActivityFeed
             ->orderBy('bucket')
             ->get();
         foreach ($hourRows as $row) {
-            $hour = (int) $row->bucket;
-            if ($hour >= 0 && $hour <= 23) {
-                $hourly[$hour] = (int) $row->aggregate;
+            $hourValue = (int) $row->bucket;
+            if ($hourValue >= 0 && $hourValue <= 23) {
+                $hourly[$hourValue] = (int) $row->aggregate;
             }
         }
 
@@ -151,6 +179,9 @@ final class AdminActivityFeed
     /**
      * @return array{
      *     staged:int,
+     *     staged_groups:list<array{area:string,entity:string,count:int}>,
+     *     staged_events:int,
+     *     preflight:array{status:string,label:string,blockers:list<string>},
      *     latest:?array{id:int,message:?string,change_count:int,when:string,timestamp:string,actor:string},
      *     recent:array<int, array{id:int,message:?string,change_count:int,when:string,timestamp:string,actor:string}>
      * }
@@ -158,7 +189,8 @@ final class AdminActivityFeed
     public function publicationContext(int $limit = 4): array
     {
         $limit = max(1, min(6, $limit));
-        $staged = PublicationEventState::query()
+        $summary = $this->publication->pendingSummary();
+        $stagedEvents = PublicationEventState::query()
             ->where('status', PublicationEventState::STATUS_PENDING)
             ->whereDoesntHave('auditEvent.publicationCheckpointEvent')
             ->count();
@@ -191,7 +223,10 @@ final class AdminActivityFeed
             ->all();
 
         return [
-            'staged' => $staged,
+            'staged' => $summary['total'],
+            'staged_groups' => $summary['groups'],
+            'staged_events' => $stagedEvents,
+            'preflight' => $this->publication->preflight($summary),
             'latest' => $checkpoints[0] ?? null,
             'recent' => array_slice($checkpoints, 1),
         ];
@@ -216,9 +251,31 @@ final class AdminActivityFeed
         ?string $family = null,
         int $days = self::ACTIVITY_WINDOW_DAYS,
         ?string $search = null,
+        ?string $date = null,
+        ?int $hour = null,
     ): Builder {
-        $days = in_array($days, self::FILTER_WINDOWS, true) ? $days : self::ACTIVITY_WINDOW_DAYS;
-        $query = AuditEvent::query()->where('occurred_at', '>=', now()->subDays($days));
+        $query = AuditEvent::query();
+        $driver = $query->getModel()->getConnection()->getDriverName();
+        $dateExpression = match ($driver) {
+            'pgsql' => 'occurred_at::date',
+            default => 'DATE(occurred_at)',
+        };
+        $hourExpression = match ($driver) {
+            'sqlite' => "CAST(strftime('%H', occurred_at) AS INTEGER)",
+            'mysql', 'mariadb' => 'HOUR(occurred_at)',
+            default => 'EXTRACT(HOUR FROM occurred_at)::int',
+        };
+
+        if (is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1) {
+            $query->whereRaw($dateExpression.' = ?', [$date]);
+
+            if ($hour !== null && $hour >= 0 && $hour <= 23) {
+                $query->whereRaw($hourExpression.' = ?', [$hour]);
+            }
+        } else {
+            $days = in_array($days, self::FILTER_WINDOWS, true) ? $days : self::ACTIVITY_WINDOW_DAYS;
+            $query->where('occurred_at', '>=', now()->subDays($days));
+        }
 
         $actionKeys = $this->filteredActionKeys($area, $family);
         if ($actionKeys !== null) {
@@ -314,6 +371,7 @@ final class AdminActivityFeed
                 ? $checkpointEvent->getRelationValue('checkpoint')
                 : null;
             $publicationEventState = $event->getRelationValue('publicationEventState');
+            $metadata = $event->getAttribute('metadata');
 
             if (is_array($receipt)) {
                 $inverseLabel = (string) $receipt['inverse_label'];
@@ -330,11 +388,14 @@ final class AdminActivityFeed
                 'action' => $definition['label'],
                 'area' => $definition['area'],
                 'family' => $definition['family'],
+                'entity_type' => $entityType,
+                'entity_id' => $entityId,
                 'target' => $target,
                 'url' => $this->targetUrl($entityType, $entityId, isset($labels[$entityType][$entityId])),
                 'actor' => $adminUser?->getAttribute('name') ?? 'Admin',
                 'when' => $occurredAt->diffForHumans(),
                 'timestamp' => $occurredAt->format('Y-m-d H:i'),
+                'metadata' => is_array($metadata) ? $metadata : [],
                 'publication_status' => $checkpoint !== null
                     ? 'committed'
                     : ($publicationEventState instanceof PublicationEventState
