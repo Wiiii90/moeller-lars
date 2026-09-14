@@ -86,7 +86,7 @@ final class SiteSection extends Model
                     throw ValidationException::withMessages(['artwork_category_id' => 'A Gallery site node must reference its Gallery record.']);
                 }
             } elseif ($section->getAttribute('artwork_category_id') !== null) {
-                throw ValidationException::withMessages(['artwork_category_id' => 'Only Gallery site nodes may reference a Gallery record.']);
+                throw ValidationException::withMessages(['artwork_category_id' => 'Only Gallery site nodes may reference its Gallery record.']);
             }
 
             $slug = $section->getAttribute('slug');
@@ -98,8 +98,13 @@ final class SiteSection extends Model
                 throw ValidationException::withMessages(['slug' => $nodeType->label().' does not own a public URL slug.']);
             }
 
-            if ($nodeType === SiteNodeType::Home && (string) $section->getAttribute('state') !== 'published') {
-                throw ValidationException::withMessages(['state' => 'Home is always published.']);
+            if ($nodeType === SiteNodeType::Home) {
+                if ((string) $section->getAttribute('state') !== 'published') {
+                    throw ValidationException::withMessages(['state' => 'Home is always published.']);
+                }
+                if ($section->getAttribute('parent_id') !== null) {
+                    throw ValidationException::withMessages(['parent_id' => 'Home is always a top-level page.']);
+                }
             }
 
             $parentId = $section->getAttribute('parent_id');
