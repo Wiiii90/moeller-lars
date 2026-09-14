@@ -189,9 +189,30 @@ Self-hosted Matomo Community/Core is the canonical human-analytics source. The a
 
 See [ANALYTICS.md](ANALYTICS.md).
 
+## Admin feedback and notifications
+
+Administrative feedback has four separate meanings and persistence contracts:
+
+- **Toast** — ephemeral immediate feedback for an action the current user just performed;
+- **Notification** — persistent user-scoped information that deserves later attention in the Dashboard feed;
+- **Activity** — append-only factual history of successful administrative changes;
+- **Publication** — working/live/version state and publication operations.
+
+`App\Domain\Admin\AdminNotifier` is the server-side authority for admin feedback delivery. Callers explicitly choose toast-only, persistent inbox, or both. A rendered Filament toast is never itself a persistence source.
+
+`AdminNotification` stores persistent inbox entries and remains integrated into `DashboardFeed`, retention, pins and read/unread state. Persistent notifications use origin-generated `source_id` values with `(user_id, source_id)` idempotency and may carry bounded action/entity/audit/publication context.
+
+DOM observation, Filament CSS-class parsing and browser round-tripping are not part of the notification architecture. Background jobs and other server-side processes may create persistent notifications directly for an explicit recipient without an open browser.
+
+Notification retention/deletion never deletes or rewrites Activity/audit history or Publication history. Routine successful editorial actions normally need a toast plus Activity, not a duplicate persistent inbox entry.
+
+See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
+
 ## Audit and logical Commit
 
-`audit_events` is append-only administrative history. Normal domain persistence happens independently of any future logical Commit/checkpoint feature. A shell-level Commit may group already-persisted audited changes; it is not Save and not Git integration.
+`audit_events` is append-only administrative history. Normal domain persistence happens independently of logical Commit/checkpoint behavior and independently of notification retention. Activity records successful writes; it is not the persistence trigger and it is not an inbox.
+
+A shell-level Commit groups already-persisted working changes into the public/live publication state. Commit/restore/reset/revert behavior continues through canonical Publication services rather than through Notifications. Publication failures or blockers may create persistent notifications when they remain actionable.
 
 ## Security and trust boundaries
 
@@ -199,6 +220,7 @@ See [ANALYTICS.md](ANALYTICS.md).
 - `/admin` requires authenticated/authorized access;
 - protected preview is authenticated and does not publish draft media/content;
 - uploads and migrated source files are untrusted input;
+- persistent admin notifications are scoped to their intended authenticated recipient;
 - secrets live in runtime/platform configuration, never Git;
 - Production and Validation do not share writable application database/media state;
 - legacy authentication/SQL/session/upload implementation is never a runtime dependency.
