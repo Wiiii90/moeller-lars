@@ -13,6 +13,7 @@ final class PublicationService
         private readonly PublicationMediaCleanupService $mediaCleanup,
         private readonly PublicationEventStateService $eventStates,
         private readonly PublicationSchemaGuard $schemaGuard,
+        private readonly PublicationVersionService $versions,
     ) {}
 
     public function hasPendingChanges(): bool
@@ -132,6 +133,11 @@ final class PublicationService
             }
 
             $pendingAuditEventIds = $this->eventStates->pendingEventIdsForCommit();
+            /** @var PublicationCheckpoint|null $parent */
+            $parent = PublicationCheckpoint::query()
+                ->orderByDesc('published_at')
+                ->orderByDesc('id')
+                ->first();
 
             DB::statement(
                 'TRUNCATE TABLE '.implode(', ', array_map(
@@ -151,6 +157,7 @@ final class PublicationService
                 'change_count' => $summary['total'],
                 'published_at' => now(),
             ]);
+            $checkpoint = $this->versions->capture($checkpoint, $parent);
 
             if ($pendingAuditEventIds !== []) {
                 $createdAt = now();
