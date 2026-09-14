@@ -38,13 +38,6 @@
             @else
                 <strong>{{ $label }}</strong>
             @endif
-            @if ($section['parent_label'] !== null)
-                <small>Child of {{ $section['parent_label'] }}@if (is_string($section['slug']) && $section['slug'] !== '') · /{{ $section['slug'] }}@endif</small>
-            @elseif ($section['filter_context'] ?? false)
-                <small class="admin-hierarchy__context-note">Parent context for matching child</small>
-            @elseif (is_string($section['slug']) && $section['slug'] !== '')
-                <small>/{{ $section['slug'] }}</small>
-            @endif
         </div>
 
         <div class="admin-pages__status" role="cell" data-cell="status">
@@ -139,4 +132,26 @@
             <input type="checkbox" aria-label="Select {{ $label }}" value="{{ $section['id'] }}" wire:model.live="selectedSectionIds" @checked($selected)>
         </label>
     </div>
+
+    @if (! $isChild && $reorderEnabled)
+        <div
+            class="admin-pages__nest-target"
+            x-cloak
+            x-show="dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}"
+            x-bind:class="{ 'is-hovered': hoverParent === {{ $section['id'] }} }"
+            x-on:dragenter.stop.prevent="hoverParent = {{ $section['id'] }}"
+            x-on:dragover.stop.prevent="hoverParent = {{ $section['id'] }}"
+            x-on:dragleave.stop="if (!$el.contains($event.relatedTarget) && hoverParent === {{ $section['id'] }}) hoverParent = null"
+            x-on:drop.stop.prevent="
+                if (dragging && draggedId !== null && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) {
+                    $wire.sortSection(draggedId, 999999, {{ $section['id'] }});
+                }
+                dragging = false;
+                hoverParent = null;
+            "
+            aria-hidden="true"
+        >
+            <span>Drop as child of {{ $label }}</span>
+        </div>
+    @endif
 </div>
