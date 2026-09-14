@@ -7,9 +7,12 @@ use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminUndoService;
 use App\Domain\Publication\PublicationService;
+use App\Domain\Publication\PublicationVersionService;
 use App\Filament\Support\AdminActivityFeed;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\AdminPublicationHistory;
 use App\Models\AuditEvent;
+use App\Models\PublicationCheckpoint;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -58,6 +61,72 @@ final class Activity extends Page
         );
     }
 
+    public function resetStagedChanges(): void
+    {
+        $actor = app(AdminAuditService::class)->requireActor();
+
+        try {
+            $changed = app(PublicationVersionService::class)->resetStagedChanges($actor);
+        } catch (ValidationException $exception) {
+            $this->publicationWarning($exception, 'Staged changes could not be reset.');
+
+            return;
+        }
+
+        app(AdminNotifier::class)->toast(
+            title: $changed > 0 ? 'Staged changes reset' : 'Nothing staged',
+            body: $changed > 0
+                ? number_format($changed).' working row'.($changed === 1 ? '' : 's').' restored from the current live version.'
+                : 'The working state already matches the current live version.',
+            status: $changed > 0 ? 'success' : 'info',
+        );
+    }
+
+    public function restoreVersion(int $checkpointId): void
+    {
+        /** @var PublicationCheckpoint|null $checkpoint */
+        $checkpoint = PublicationCheckpoint::query()->find($checkpointId);
+        abort_unless($checkpoint instanceof PublicationCheckpoint, 404);
+
+        try {
+            app(PublicationVersionService::class)->stageVersion(
+                $checkpoint,
+                app(AdminAuditService::class)->requireActor(),
+            );
+        } catch (ValidationException $exception) {
+            $this->publicationWarning($exception, 'This version cannot be restored safely.');
+
+            return;
+        }
+
+        $staged = app(PublicationService::class)->pendingSummary()['total'];
+        app(AdminNotifier::class)->toast(
+            title: 'Version restored to working state',
+            body: $checkpoint->shortHash().' is now staged with '.number_format($staged).' pending change'.($staged === 1 ? '' : 's').'.',
+            status: 'success',
+        );
+    }
+
+    public function revertCurrentCommit(): void
+    {
+        try {
+            $result = app(PublicationVersionService::class)->stageRevertOfCurrent(
+                app(AdminAuditService::class)->requireActor(),
+            );
+        } catch (ValidationException $exception) {
+            $this->publicationWarning($exception, 'The current commit cannot be reverted safely.');
+
+            return;
+        }
+
+        $staged = app(PublicationService::class)->pendingSummary()['total'];
+        app(AdminNotifier::class)->toast(
+            title: 'Commit revert staged',
+            body: $result['reverted']->shortHash().' will be reversed by publishing the parent state '.$result['checkpoint']->shortHash().'. '.number_format($staged).' change'.($staged === 1 ? '' : 's').' staged.',
+            status: 'success',
+        );
+    }
+
     public function openActivityDetails(int $eventId): void
     {
         abort_unless($this->activityEvent($eventId) !== null, 404);
@@ -68,6 +137,13 @@ final class Activity extends Page
     public function openPublicationReview(): void
     {
         $this->mountAction('publicationReview');
+    }
+
+    public function openCommitDetails(int $checkpointId): void
+    {
+        abort_unless($this->commitDetails(['id' => $checkpointId]) !== null, 404);
+
+        $this->mountAction('commitDetails', ['id' => $checkpointId]);
     }
 
     public function activityDetailsAction(): Action
@@ -105,9 +181,27 @@ final class Activity extends Page
             ]);
     }
 
+    public function commitDetailsAction(): Action
+    {
+        return Action::make('commitDetails')
+            ->label('Commit details')
+            ->modalHeading(fn (array $arguments): string => 'Commit '.($this->commitDetails($arguments)['short_hash'] ?? ''))
+            ->modalContent(fn (array $arguments): View => view(
+                'filament.pages.partials.activity-commit-details-dialog',
+                ['commit' => $this->commitDetails($arguments)],
+            ))
+            ->modalSubmitAction(false)
+            ->modalCancelAction(false)
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes([
+                'class' => 'admin-task-dialog admin-dialog--default admin-dialog--header-actions',
+            ]);
+    }
+
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
+        $viewMode = request()->query('view') === 'commits' ? 'commits' : 'activity';
         $area = request()->query('area');
         $family = request()->query('family');
         $search = request()->query('search');
@@ -146,6 +240,16 @@ final class Activity extends Page
             hour: $activeHour,
         );
         $publicationContext = $activityFeed->publicationContext();
+        $liveCheckpoint = app(PublicationVersionService::class)->currentLiveCheckpoint();
+        if (is_array($publicationContext['latest']) && $liveCheckpoint instanceof PublicationCheckpoint) {
+            $publicationContext['latest']['hash'] = (string) ($liveCheckpoint->getAttribute('hash') ?? '');
+            $publicationContext['latest']['short_hash'] = $liveCheckpoint->shortHash();
+            $publicationContext['latest']['snapshot_available'] = (bool) $liveCheckpoint->getAttribute('snapshot_available');
+        }
+
+        $commitHistory = $viewMode === 'commits'
+            ? app(AdminPublicationHistory::class)->page()
+            : ['commits' => [], 'paginator' => null];
 
         $calendarStart = CarbonImmutable::create($calendarYear, 1, 1)->startOfDay();
         $calendarEnd = CarbonImmutable::create($calendarYear, 12, 31)->endOfDay();
@@ -258,6 +362,9 @@ final class Activity extends Page
 
         return [
             ...$feed,
+            'viewMode' => $viewMode,
+            'commits' => $commitHistory['commits'],
+            'commitPaginator' => $commitHistory['paginator'],
             'area' => $area,
             'family' => $family,
             'search' => $search,
@@ -355,6 +462,16 @@ final class Activity extends Page
         );
     }
 
+    /** @return array<string,mixed>|null */
+    private function commitDetails(array $arguments): ?array
+    {
+        $checkpointId = is_numeric($arguments['id'] ?? null) ? (int) $arguments['id'] : 0;
+
+        return $checkpointId > 0
+            ? app(AdminPublicationHistory::class)->checkpoint($checkpointId)
+            : null;
+    }
+
     /** @return array{summary:array{total:int,groups:list<array{area:string,entity:string,count:int}>},preflight:array{status:string,label:string,blockers:list<string>}} */
     private function publicationReview(): array
     {
@@ -398,6 +515,17 @@ final class Activity extends Page
         }
 
         return $actions;
+    }
+
+    private function publicationWarning(ValidationException $exception, string $fallback): void
+    {
+        $message = $exception->errors()['publication'][0] ?? $fallback;
+
+        app(AdminNotifier::class)->toast(
+            title: 'Publication action unavailable',
+            body: $message,
+            status: 'warning',
+        );
     }
 
     private function calendarQuery(
