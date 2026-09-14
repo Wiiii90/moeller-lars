@@ -6,6 +6,7 @@ use App\Models\PublicationCheckpoint;
 use App\Models\PublicationCheckpointEvent;
 use App\Models\PublicationEventState;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,6 +20,7 @@ function activityReconciliationEvent(
     CarbonInterface $occurredAt,
     string $entityType = 'blog_setting',
     int $entityId = 1,
+    ?array $metadata = null,
 ): AuditEvent {
     return AuditEvent::query()->create([
         'admin_user_id' => $actor->getKey(),
@@ -27,7 +29,7 @@ function activityReconciliationEvent(
         'entity_id' => $entityId,
         'occurred_at' => $occurredAt,
         'request_id' => null,
-        'metadata' => null,
+        'metadata' => $metadata,
     ]);
 }
 
@@ -71,6 +73,26 @@ it('keeps full-window Activity aggregates stable across table pages and applies 
         ->and($feed->overview(family: 'settings', days: 7)['total'])->toBe(20)
         ->and($feed->overview(days: 7, search: 'Alice Activity')['total'])->toBe(20)
         ->and($feed->overview(days: 7, search: 'uploaded media')['total'])->toBe(20);
+});
+
+it('lets explicit calendar date and hour filters drive Activity beyond the default window', function (): void {
+    $actor = User::factory()->admin()->create();
+    $feed = app(AdminActivityFeed::class);
+    $date = CarbonImmutable::parse('2025-10-01 00:00:00');
+
+    $first = activityReconciliationEvent($actor, 'blog_setting.updated', $date->setTime(14, 15));
+    $second = activityReconciliationEvent($actor, 'blog_setting.updated', $date->setTime(15, 45));
+    activityReconciliationEvent($actor, 'blog_setting.updated', $date->addDay()->setTime(14, 30));
+
+    $dayOverview = $feed->overview(date: '2025-10-01');
+    $hourOverview = $feed->overview(date: '2025-10-01', hour: 14);
+    $hourPage = $feed->page(actor: $actor, date: '2025-10-01', hour: 14);
+
+    expect($dayOverview['total'])->toBe(2)
+        ->and($hourOverview['total'])->toBe(1)
+        ->and($hourOverview['hourly'][14])->toBe(1)
+        ->and(collect($hourPage['activity'])->pluck('id')->all())->toBe([(int) $first->getKey()])
+        ->and(collect($hourPage['activity'])->pluck('id')->all())->not->toContain((int) $second->getKey());
 });
 
 it('projects staged committed and not-pending publication states without conflating them', function (): void {
@@ -125,7 +147,7 @@ it('projects staged committed and not-pending publication states without conflat
         ->and($activity->firstWhere('id', (int) $committed->getKey())['checkpoint_message'])->toBe('Activity checkpoint');
 });
 
-it('returns bounded current staged activity and ordered checkpoint context', function (): void {
+it('separates real staged snapshot rows from related pending Activity events', function (): void {
     $actor = User::factory()->admin()->create();
     $feed = app(AdminActivityFeed::class);
     $initial = PublicationCheckpoint::query()
@@ -142,6 +164,10 @@ it('returns bounded current staged activity and ordered checkpoint context', fun
         'status' => PublicationEventState::STATUS_PENDING,
         'updated_at' => now(),
     ]);
+
+    DB::table('public_content_settings')
+        ->where('scope', 'general')
+        ->update(['legal_disclaimer' => 'Staged publication reconciliation change']);
 
     $checkpointed = activityReconciliationEvent($actor, 'blog_setting.updated', now()->subMinutes(3));
     PublicationEventState::query()->create([
@@ -173,6 +199,13 @@ it('returns bounded current staged activity and ordered checkpoint context', fun
     $context = $feed->publicationContext(4);
 
     expect($context['staged'])->toBe(1)
+        ->and($context['staged_events'])->toBe(1)
+        ->and($context['staged_groups'])->toContain([
+            'area' => 'Website',
+            'entity' => 'General',
+            'count' => 1,
+        ])
+        ->and($context['preflight']['status'])->toBe('ready')
         ->and($context['latest']['id'])->toBe((int) $latest->getKey())
         ->and($context['latest']['message'])->toBe('Latest checkpoint')
         ->and($context['latest']['change_count'])->toBe(5)
@@ -184,6 +217,24 @@ it('returns bounded current staged activity and ordered checkpoint context', fun
             'Older checkpoint',
             'Initial public state',
         ]);
+});
+
+it('projects event metadata for the Activity details surface', function (): void {
+    $actor = User::factory()->admin()->create(['name' => 'Detail Actor']);
+    $event = activityReconciliationEvent(
+        $actor,
+        'blog_setting.updated',
+        now()->subMinute(),
+        metadata: ['reason' => 'settings_updated'],
+    );
+
+    $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
+
+    expect($projected)->not->toBeNull()
+        ->and($projected['id'])->toBe((int) $event->getKey())
+        ->and($projected['actor'])->toBe('Detail Actor')
+        ->and($projected['metadata'])->toBe(['reason' => 'settings_updated'])
+        ->and($projected)->toHaveKeys(['entity_type', 'entity_id', 'action_key', 'publication_status', 'undo']);
 });
 
 it('keeps Activity overview aggregation query count fixed as event volume grows', function (): void {
