@@ -95,6 +95,10 @@
 
             return Math.max(2, Math.round(((Number(bytes) || 0) / max) * 100))
         },
+        toneIndex(target) {
+            const index = this.targets.findIndex((row) => row.key === target?.key)
+            return ((index < 0 ? 0 : index) % 8) + 1
+        },
         emptyDetail() {
             if (this.selectedArea === 'unassigned') return 'No unassigned files are present in the measured storage.'
             if (this.selectedArea === 'uncatalogued') return 'No uncatalogued files are present in the measured storage.'
@@ -218,11 +222,11 @@
                 <span>Storage</span>
             </div>
 
-            <template x-for="(target, index) in visibleTargets()" x-bind:key="target.key">
+            <template x-for="target in visibleTargets()" x-bind:key="target.key">
                 <button
                     class="admin-storage__target-row"
                     type="button"
-                    x-bind:style="`--storage-row-color: var(--storage-target-${(index % 8) + 1})`"
+                    x-bind:style="`--storage-row-color: var(--storage-target-${toneIndex(target)})`"
                     x-on:click="selectTarget(target)"
                     x-bind:disabled="! target.usage_filter"
                     x-bind:aria-pressed="target.usage_filter ? (selectedTarget === target.key).toString() : null"
@@ -262,13 +266,6 @@
                 <div class="admin-storage__attention-row is-warning">
                     <span>Uncatalogued files</span>
                     <strong>{{ number_format($storageAttention['uncatalogued_files']) }} · {{ $storageAttention['uncatalogued_display_bytes'] }}</strong>
-                </div>
-            @endif
-
-            @if (is_array($storageAttention['largest_gallery'] ?? null))
-                <div class="admin-storage__attention-row">
-                    <span>Largest gallery</span>
-                    <strong title="{{ $storageAttention['largest_gallery']['label'] }}">{{ $storageAttention['largest_gallery']['label'] }} · {{ $storageAttention['largest_gallery']['display_bytes'] }}</strong>
                 </div>
             @endif
 
