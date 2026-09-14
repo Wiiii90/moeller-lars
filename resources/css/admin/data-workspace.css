@@ -123,7 +123,7 @@
 .gallery-workspace__field > span,
 .gallery-workspace__control-label {
     color: var(--admin-muted);
-    font-size: .68rem;
+    font-size: var(--admin-font-size-control-label);
     font-weight: 700;
     letter-spacing: .09em;
     line-height: 1.2;
@@ -150,7 +150,7 @@
     background: transparent;
     color: var(--admin-text);
     font: inherit;
-    font-size: .78rem;
+    font-size: var(--admin-font-size-control-value);
     outline: none;
 }
 
@@ -244,7 +244,7 @@
     padding: var(--admin-data-header-padding);
     border-bottom: 1px solid var(--admin-line);
     color: var(--admin-muted);
-    font-size: .64rem;
+    font-size: var(--admin-font-size-table-header);
     font-weight: 650;
     letter-spacing: .08em;
     text-align: left;
@@ -256,7 +256,7 @@
     padding: var(--admin-data-cell-padding);
     border-bottom: 1px solid var(--admin-line);
     color: var(--admin-muted);
-    font-size: .76rem;
+    font-size: var(--admin-font-size-table-body);
     vertical-align: middle;
 }
 
@@ -301,7 +301,7 @@
 
 .admin-table__identity strong {
     color: var(--admin-text);
-    font-size: .8rem;
+    font-size: var(--admin-font-size-table-identity);
     font-weight: 600;
     white-space: nowrap;
 }
@@ -309,7 +309,7 @@
 .admin-table__identity small {
     margin-top: .17rem;
     color: var(--admin-muted);
-    font-size: .66rem;
+    font-size: var(--admin-font-size-table-meta);
     line-height: 1.4;
 }
 
@@ -356,13 +356,13 @@
     align-items: center;
     border-top: 1px solid var(--admin-line);
     color: var(--admin-muted);
-    font-size: .72rem;
+    font-size: var(--admin-font-size-table-support);
 }
 
 .admin-pager__meta {
     justify-self: start;
     color: var(--admin-muted);
-    font-size: .72rem;
+    font-size: var(--admin-font-size-table-support);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
@@ -380,7 +380,7 @@
 .admin-pager__size > span,
 .media-workspace__pager-size > span {
     color: var(--admin-muted);
-    font-size: .68rem;
+    font-size: var(--admin-font-size-control-label);
     line-height: 1;
 }
 
@@ -397,7 +397,7 @@
     background: transparent;
     color: var(--admin-text);
     font: inherit;
-    font-size: .72rem;
+    font-size: var(--admin-font-size-table-support);
     line-height: 1;
     vertical-align: middle;
     cursor: pointer;
@@ -448,7 +448,7 @@
 .media-workspace__pager-range {
     justify-self: center;
     color: var(--admin-muted);
-    font-size: .72rem;
+    font-size: var(--admin-font-size-table-support);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
