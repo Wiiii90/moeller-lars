@@ -1,9 +1,5 @@
 /* Dashboard stage refinements that build on the shared visual primitives. */
 
-.admin-dashboard__overview-column {
-    grid-template-rows: auto minmax(0, 1fr) auto !important;
-}
-
 .admin-dashboard__overview-head {
     margin-bottom: .45rem;
 }
@@ -95,8 +91,7 @@
     object-fit: contain;
 }
 
-/* The visual row owns the flexible height. Facts therefore occupy only their
- * actual text height and settle against the lower stage rhythm. */
+/* Facts occupy only their actual text height below the canonical stage. */
 .admin-dashboard__facts {
     min-height: 0;
     align-content: end;
