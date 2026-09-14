@@ -4,6 +4,7 @@ use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Content\SiteSectionOrderService;
 use App\Models\HomePresentationSetting;
 use App\Models\User;
 
@@ -48,6 +49,7 @@ it('falls back to the next published top-level page when no skip target is store
 
     $target = $sections->createCustomPage('Next Page', 'next-page');
     $target = $sections->updatePlacement($target, 'published', true, null);
+    app(SiteSectionOrderService::class)->moveTo($target, null, 1);
 
     app(HomeRoutingSettingsService::class)->update($settings, true, null);
 
