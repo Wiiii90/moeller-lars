@@ -3,9 +3,11 @@
 namespace App\Filament\Support\Controls;
 
 use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -14,6 +16,20 @@ use Filament\Forms\Components\Toggle;
 final class AdminControl
 {
     private const WRAPPER_CLASS = 'admin-control-field admin-form-controls';
+
+    public static function register(): void
+    {
+        TextInput::configureUsing(fn (TextInput $field) => self::decorate($field));
+        Textarea::configureUsing(fn (Textarea $field) => self::decorate($field));
+        Select::configureUsing(fn (Select $field) => self::decorate($field));
+        Checkbox::configureUsing(fn (Checkbox $field) => self::decorate($field));
+        Toggle::configureUsing(fn (Toggle $field) => self::decorate($field));
+        DatePicker::configureUsing(fn (DatePicker $field) => self::decorate($field));
+        DateTimePicker::configureUsing(fn (DateTimePicker $field) => self::decorate($field));
+        FileUpload::configureUsing(fn (FileUpload $field) => self::decorate($field));
+        MarkdownEditor::configureUsing(fn (MarkdownEditor $field) => self::decorate($field));
+        ColorPicker::configureUsing(fn (ColorPicker $field) => self::decorate($field));
+    }
 
     public static function text(string $name, ?string $label = null): TextInput
     {
@@ -79,7 +95,7 @@ final class AdminControl
         return $field->extraFieldWrapperAttributes([
             'class' => self::WRAPPER_CLASS,
             'data-admin-control' => $field->getName(),
-        ]);
+        ], merge: true);
     }
 
     /** @template T of \Filament\Forms\Components\Field
