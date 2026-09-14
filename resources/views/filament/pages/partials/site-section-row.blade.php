@@ -3,7 +3,8 @@
     $selected = in_array((int) $section['id'], array_map('intval', $selectedSectionIds), true);
     $isChild = (int) $section['depth'] === 1;
     $isHome = $section['type'] === \App\Domain\Content\SiteNodeType::Home->value;
-    $homeTemplateLabel = $isHome ? app(\App\Filament\Support\HomeSettingsDialog::class)->templateLabel() : null;
+    $homeState = $isHome ? app(\App\Filament\Support\HomeSettingsDialog::class)->tableState() : null;
+    $homeTemplateOptions = $isHome ? \App\Domain\Content\HomeTemplate::options() : [];
 @endphp
 
 <div
@@ -62,7 +63,15 @@
 
     <div class="admin-pages__template" role="cell" data-cell="template">
         @if ($isHome)
-            <span>{{ $homeTemplateLabel }}</span>
+            <select
+                class="admin-inline-select"
+                aria-label="Home template"
+                wire:change="changeHomeTemplate({{ $section['id'] }}, $event.target.value)"
+            >
+                @foreach ($homeTemplateOptions as $value => $templateLabel)
+                    <option value="{{ $value }}" @selected(($homeState['template'] ?? null) === $value)>{{ $templateLabel }}</option>
+                @endforeach
+            </select>
         @elseif ($section['type'] === \App\Domain\Content\SiteNodeType::Journal->value)
             <select
                 class="admin-inline-select"
@@ -78,48 +87,66 @@
 
     <div class="admin-pages__utility-grid" role="presentation">
         <div class="admin-row-actions admin-row-actions--canonical admin-toolbar admin-pages__row-actions" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
-            @if ($section['can_reorder'])
-                <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveSection({{ $section['id'] }}, 'up')" @disabled(! $reorderEnabled || ! $section['can_move_up']) aria-label="Move {{ $label }} up">
-                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
-                    <span class="admin-action__label">Move up</span>
-                </button>
-                <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveSection({{ $section['id'] }}, 'down')" @disabled(! $reorderEnabled || ! $section['can_move_down']) aria-label="Move {{ $label }} down">
-                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
-                    <span class="admin-action__label">Move down</span>
-                </button>
-            @else
-                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
-                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
-            @endif
-
             @if ($isHome)
+                @if ($homeState['skip_home'] ?? false)
+                    <span class="admin-pages__redirect-marker" aria-label="Skip Home">
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Redirect->mini()" class="admin-action__icon" />
+                    </span>
+                    @if ($homeState['skip_target_url'] ?? null)
+                        <a class="admin-action admin-pages__redirect-target" href="{{ $homeState['skip_target_url'] }}" title="Skip Home to {{ $homeState['skip_target_label'] }}">
+                            <span class="admin-action__label">{{ $homeState['skip_target_label'] }}</span>
+                        </a>
+                    @else
+                        <span class="admin-pages__redirect-target admin-pages__redirect-target--missing">No target</span>
+                    @endif
+                @else
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                @endif
+
                 <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editHome')">
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
                     <span class="admin-action__label">Edit</span>
                 </button>
+                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
             @else
+                @if ($section['can_reorder'])
+                    <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveSection({{ $section['id'] }}, 'up')" @disabled(! $reorderEnabled || ! $section['can_move_up']) aria-label="Move {{ $label }} up">
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
+                        <span class="admin-action__label">Move up</span>
+                    </button>
+                    <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveSection({{ $section['id'] }}, 'down')" @disabled(! $reorderEnabled || ! $section['can_move_down']) aria-label="Move {{ $label }} down">
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
+                        <span class="admin-action__label">Move down</span>
+                    </button>
+                @else
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                @endif
+
                 <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editPage', { section: {{ $section['id'] }} })">
                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
                     <span class="admin-action__label">Edit</span>
                 </button>
-            @endif
 
-            @if ($section['can_change_publication'])
-                <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="toggleSectionState({{ $section['id'] }})">
-                    <x-filament::icon :icon="($section['state'] === 'published' ? \App\Filament\Support\AdminIcon::Unpublish : \App\Filament\Support\AdminIcon::Publish)->mini()" class="admin-action__icon" />
-                    <span class="admin-action__label">{{ $section['state'] === 'published' ? 'Unpublish' : 'Publish' }}</span>
-                </button>
-            @else
-                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
-            @endif
+                @if ($section['can_change_publication'])
+                    <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="toggleSectionState({{ $section['id'] }})">
+                        <x-filament::icon :icon="($section['state'] === 'published' ? \App\Filament\Support\AdminIcon::Unpublish : \App\Filament\Support\AdminIcon::Publish)->mini()" class="admin-action__icon" />
+                        <span class="admin-action__label">{{ $section['state'] === 'published' ? 'Unpublish' : 'Publish' }}</span>
+                    </button>
+                @else
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                @endif
 
-            @if ($section['can_delete'])
-                <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="deleteSection({{ $section['id'] }})" wire:confirm="Delete this page? Page-specific content, child pages, publication and navigation safety rules still apply.">
-                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
-                    <span class="admin-action__label">Delete</span>
-                </button>
-            @else
-                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                @if ($section['can_delete'])
+                    <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="deleteSection({{ $section['id'] }})" wire:confirm="Delete this page? Page-specific content, child pages, publication and navigation safety rules still apply.">
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
+                        <span class="admin-action__label">Delete</span>
+                    </button>
+                @else
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                @endif
             @endif
         </div>
 
