@@ -12,6 +12,8 @@ use App\Filament\Support\SiteNodePresentation;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -38,13 +40,7 @@ final class SitePages extends Page
     /** @var list<array<string, mixed>> */
     public array $sections = [];
 
-    /**
-     * Visible rows in their rendered hierarchy order. This is deliberately
-     * derived from the grouped projection instead of being a separate flat
-     * filter projection.
-     *
-     * @var list<array<string, mixed>>
-     */
+    /** @var list<array<string, mixed>> */
     public array $filteredRows = [];
 
     /** @var array{total:int,published:int,unpublished:int,top_level:int,children:int,navigation:int} */
@@ -60,40 +56,27 @@ final class SitePages extends Page
     /** @var list<int|string> */
     public array $selectedSectionIds = [];
 
+    /** @var array<int, string> */
+    public array $parentOptions = [];
+
     public string $search = '';
-
     public string $typeFilter = '';
-
     public string $statusFilter = '';
-
     public bool $filtersActive = false;
-
     public bool $reorderEnabled = true;
-
     public bool $allVisibleSelected = false;
-
     public bool $selectionIndeterminate = false;
-
     public bool $addingPage = false;
-
     public string $newPageType = 'custom';
-
     public string $newPageTitle = '';
-
     public string $newPageSlug = '';
-
     public string $newJournalTemplate = 'blog';
-
+    public string $newPageParent = '';
     public int $perPage = 25;
-
     public int $pageNumber = 1;
-
     public int $totalGroups = 0;
-
     public int $lastPage = 1;
-
     public int $rangeStart = 0;
-
     public int $rangeEnd = 0;
 
     private ?SiteSectionOrderService $orderService = null;
@@ -241,6 +224,56 @@ final class SitePages extends Page
         }
     }
 
+    public function editPlacementAction(): Action
+    {
+        return Action::make('editPlacement')
+            ->label('Edit')
+            ->modalHeading('Edit page placement')
+            ->modalDescription('Choose whether this page is top level or belongs under another top-level page.')
+            ->fillForm(function (array $arguments): array {
+                /** @var SiteSection $section */
+                $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
+
+                return [
+                    'parent_id' => $section->getAttribute('parent_id'),
+                ];
+            })
+            ->schema([
+                Select::make('parent_id')
+                    ->label('Parent page')
+                    ->options(fn (): array => $this->parentOptions)
+                    ->placeholder('Top level')
+                    ->native()
+                    ->nullable(),
+            ])
+            ->modalSubmitActionLabel('Save')
+            ->action(function (array $data, array $arguments): void {
+                /** @var SiteSection $section */
+                $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
+                if ($section->nodeType() === SiteNodeType::Home) {
+                    return;
+                }
+
+                $parentId = isset($data['parent_id']) && $data['parent_id'] !== '' && $data['parent_id'] !== null
+                    ? (int) $data['parent_id']
+                    : null;
+
+                try {
+                    app(SiteSectionEditorialService::class)->updatePlacement(
+                        $section,
+                        (string) $section->getAttribute('state'),
+                        (bool) $section->getAttribute('show_in_navigation'),
+                        $parentId,
+                    );
+                    Notification::make()->title('Page placement updated')->success()->send();
+                } catch (ValidationException $exception) {
+                    $this->validationNotification('Page placement unchanged', $exception);
+                }
+
+                $this->loadSections();
+            });
+    }
+
     public function toggleSectionState(int $sectionId): void
     {
         /** @var SiteSection $section */
@@ -253,10 +286,6 @@ final class SitePages extends Page
         $this->updatePlacement($section, $state, (bool) $section->getAttribute('show_in_navigation'));
     }
 
-    /**
-     * Navigation visibility remains part of the domain contract and is used by
-     * page edit/settings flows. It is intentionally not exposed as a row action.
-     */
     public function toggleSectionNavigation(int $sectionId): void
     {
         /** @var SiteSection $section */
@@ -355,6 +384,7 @@ final class SitePages extends Page
         $this->addingPage = true;
         $this->newPageType = SiteNodeType::CustomPage->value;
         $this->newJournalTemplate = JournalTemplate::Blog->value;
+        $this->newPageParent = '';
     }
 
     public function cancelAddingPage(): void
@@ -362,6 +392,7 @@ final class SitePages extends Page
         $this->addingPage = false;
         $this->newPageTitle = '';
         $this->newPageSlug = '';
+        $this->newPageParent = '';
     }
 
     public function createPage(): void
@@ -369,12 +400,13 @@ final class SitePages extends Page
         $type = SiteNodeType::tryFrom($this->newPageType);
 
         try {
+            $parentId = $this->newParentId();
             $message = match ($type) {
-                SiteNodeType::NavigationNode => $this->createNavigationGroup(),
-                SiteNodeType::CustomPage => $this->createCustomPage(),
-                SiteNodeType::Journal => $this->createJournal(),
-                SiteNodeType::Gallery => $this->createGallery(),
-                default => throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Navigation Group.']),
+                SiteNodeType::NavigationNode => $this->createNavigationGroup($parentId),
+                SiteNodeType::CustomPage => $this->createCustomPage($parentId),
+                SiteNodeType::Journal => $this->createJournal($parentId),
+                SiteNodeType::Gallery => $this->createGallery($parentId),
+                default => throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Group Node.']),
             };
 
             $this->addingPage = false;
@@ -382,6 +414,7 @@ final class SitePages extends Page
             $this->newPageSlug = '';
             $this->newPageType = SiteNodeType::CustomPage->value;
             $this->newJournalTemplate = JournalTemplate::Blog->value;
+            $this->newPageParent = '';
             $this->pageNumber = 1;
             $this->loadSections();
             Notification::make()->title($message)->success()->send();
@@ -390,42 +423,69 @@ final class SitePages extends Page
         }
     }
 
-    private function createNavigationGroup(): string
+    private function createNavigationGroup(?int $parentId): string
     {
-        app(SiteSectionEditorialService::class)->createNavigationGroup($this->newPageTitle);
+        $section = app(SiteSectionEditorialService::class)->createNavigationGroup($this->newPageTitle);
+        $this->placeCreatedSection($section, $parentId);
 
-        return 'Navigation Group added';
+        return 'Group Node added';
     }
 
-    private function createCustomPage(): string
+    private function createCustomPage(?int $parentId): string
     {
-        app(SiteSectionEditorialService::class)->createCustomPage($this->newPageTitle, $this->newPageSlug);
+        $section = app(SiteSectionEditorialService::class)->createCustomPage($this->newPageTitle, $this->newPageSlug);
+        $this->placeCreatedSection($section, $parentId);
 
         return 'Custom Page added as unpublished';
     }
 
-    private function createJournal(): string
+    private function createJournal(?int $parentId): string
     {
-        app(SiteSectionEditorialService::class)->createJournal(
+        $section = app(SiteSectionEditorialService::class)->createJournal(
             $this->newPageTitle,
             $this->newPageSlug,
             $this->newJournalTemplate,
         );
+        $this->placeCreatedSection($section, $parentId);
 
         return 'Journal added as unpublished';
     }
 
-    private function createGallery(): string
+    private function createGallery(?int $parentId): string
     {
         app(GalleryEditorialService::class)->create([
             'name' => $this->newPageTitle,
             'slug' => $this->newPageSlug,
-            'parent_section_id' => null,
+            'parent_section_id' => $parentId,
             'description' => null,
             'show_on_home' => false,
         ]);
 
         return 'Gallery added as unpublished';
+    }
+
+    private function placeCreatedSection(SiteSection $section, ?int $parentId): void
+    {
+        if ($parentId !== null) {
+            $this->orderService()->moveTo($section, $parentId, PHP_INT_MAX);
+        }
+    }
+
+    private function newParentId(): ?int
+    {
+        if ($this->newPageParent === '') {
+            return null;
+        }
+        if (! ctype_digit($this->newPageParent)) {
+            throw ValidationException::withMessages(['parent_id' => 'Choose a valid top-level parent page.']);
+        }
+
+        $parentId = (int) $this->newPageParent;
+        if (! SiteSection::query()->whereKey($parentId)->whereNull('parent_id')->exists()) {
+            throw ValidationException::withMessages(['parent_id' => 'The parent must be a top-level page.']);
+        }
+
+        return $parentId;
     }
 
     private function loadSections(): void
@@ -451,13 +511,16 @@ final class SitePages extends Page
             /** @var EloquentCollection<int, SiteSection> $children */
             $children = $section->getRelation('children');
             $label = $this->sectionLabel($section);
+            $isHome = $section->nodeType() === SiteNodeType::Home;
+            $previous = $topIndex > 0 ? $topLevel->values()->get($topIndex - 1) : null;
+            $previousIsHome = $previous instanceof SiteSection && $previous->nodeType() === SiteNodeType::Home;
             $row = $this->row(
                 $section,
                 0,
-                $topIndex + 1,
+                (string) ($topIndex + 1),
                 null,
-                $topIndex > 0,
-                $topIndex < $topCount - 1,
+                ! $isHome && $topIndex > 0 && ! $previousIsHome,
+                ! $isHome && $topIndex < $topCount - 1,
                 $children->isNotEmpty(),
             );
 
@@ -467,7 +530,7 @@ final class SitePages extends Page
                 $childRows[] = $this->row(
                     $child,
                     1,
-                    $childIndex + 1,
+                    ($topIndex + 1).'.'.($childIndex + 1),
                     $label,
                     $childIndex > 0,
                     $childIndex < $childCount - 1,
@@ -481,6 +544,11 @@ final class SitePages extends Page
             foreach ($childRows as $childRow) {
                 $allRows[] = $childRow;
             }
+        }
+
+        $this->parentOptions = [];
+        foreach ($allGroups as $group) {
+            $this->parentOptions[(int) $group['id']] = (string) ($group['navigation_label'] ?: $group['title']);
         }
 
         $this->metrics = [
@@ -507,9 +575,6 @@ final class SitePages extends Page
 
         $visibleIds = array_map(static fn (array $row): int => (int) $row['id'], $this->filteredRows);
         $this->selectedSectionIds = array_values(array_intersect($this->selectedIds(), $visibleIds));
-
-        // Native Livewire sorting operates only when the complete canonical root
-        // set is visible. A root group (root + direct children) is never split.
         $this->reorderEnabled = ! $this->filtersActive && $this->totalGroups <= $this->perPage;
         $this->syncSelectionState();
     }
@@ -564,7 +629,7 @@ final class SitePages extends Page
     private function row(
         SiteSection $section,
         int $depth,
-        int $positionLabel,
+        string $positionLabel,
         ?string $parentLabel,
         bool $canMoveUp,
         bool $canMoveDown,
@@ -590,6 +655,7 @@ final class SitePages extends Page
             'parent_label' => $parentLabel,
             'has_children' => $hasChildren,
             'depth' => $depth,
+            'can_reorder' => $type !== SiteNodeType::Home,
             'can_move_up' => $canMoveUp,
             'can_move_down' => $canMoveDown,
             'can_delete' => $type->canDelete(),
