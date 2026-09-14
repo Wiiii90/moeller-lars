@@ -18,18 +18,39 @@ final class SiteSectionOrderService
     {
         $this->validateDirection($direction);
 
+        if ($section->nodeType() === SiteNodeType::Home) {
+            return false;
+        }
+
         $ids = $this->orderedSiblingIds($section->getAttribute('parent_id'));
         $index = array_search((int) $section->getKey(), $ids, true);
         if ($index === false) {
             return false;
         }
 
-        return $direction === 'up' ? $index > 0 : $index < count($ids) - 1;
+        if ($direction === 'up') {
+            if ($index <= 0) {
+                return false;
+            }
+
+            $targetId = $ids[$index - 1] ?? null;
+            if ($section->getAttribute('parent_id') === null && $targetId !== null && $this->isHomeId($targetId)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        return $index < count($ids) - 1;
     }
 
     public function move(SiteSection $section, string $direction): bool
     {
         $this->validateDirection($direction);
+
+        if (! $this->canMove($section, $direction)) {
+            return false;
+        }
 
         $ids = $this->orderedSiblingIds($section->getAttribute('parent_id'));
         $index = array_search((int) $section->getKey(), $ids, true);
@@ -38,9 +59,6 @@ final class SiteSectionOrderService
         }
 
         $targetIndex = $direction === 'up' ? $index - 1 : $index + 1;
-        if (! array_key_exists($targetIndex, $ids)) {
-            return false;
-        }
 
         return $this->moveTo(
             $section,
@@ -52,6 +70,7 @@ final class SiteSectionOrderService
     /**
      * Move a page to a zero-based position in a sibling group. The target parent is
      * deliberately type-agnostic: only the two-level hierarchy contract matters.
+     * Home is the sole placement exception: it is always the first root node.
      */
     public function moveTo(SiteSection $section, ?int $parentSectionId, int $position): bool
     {
@@ -64,6 +83,17 @@ final class SiteSectionOrderService
         return DB::transaction(function () use ($section, $parentSectionId, $position, $actor): bool {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($fresh->nodeType() === SiteNodeType::Home) {
+                if ($parentSectionId !== null || $position !== 0) {
+                    throw ValidationException::withMessages([
+                        'position' => 'Home is always the first top-level page.',
+                    ]);
+                }
+
+                return false;
+            }
+
             $targetParent = $this->targetParent($fresh, $parentSectionId);
             $targetParentId = $targetParent?->getKey();
             $targetParentId = $targetParentId === null ? null : (int) $targetParentId;
@@ -112,6 +142,9 @@ final class SiteSectionOrderService
             }
 
             $targetIndex = min($position, count($targetIds));
+            if ($targetParentId === null && $targetIds !== [] && $this->isHomeId($targetIds[0])) {
+                $targetIndex = max(1, $targetIndex);
+            }
             array_splice($targetIds, $targetIndex, 0, [(int) $fresh->getKey()]);
 
             if ($sourceParentId === $targetParentId) {
@@ -218,6 +251,14 @@ final class SiteSectionOrderService
                 ]);
             }
         }
+    }
+
+    private function isHomeId(int $id): bool
+    {
+        return SiteSection::query()
+            ->whereKey($id)
+            ->where('type', SiteNodeType::Home->value)
+            ->exists();
     }
 
     private function validateDirection(string $direction): void
