@@ -5,13 +5,18 @@ namespace App\Providers;
 use App\Database\PublicationPostgresGrammar;
 use App\Domain\Content\PublicSiteContext;
 use App\Domain\Publication\PublicationReadContext;
+use App\Support\AdminPasswordPolicy;
 use App\Support\LocalPreviewDatabaseGuard;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Contracts\Validation\UncompromisedVerifier;
 use Illuminate\Database\Connection;
 use Illuminate\Database\PostgresConnection;
+use Illuminate\Http\Client\Factory as HttpClientFactory;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\NotPwnedVerifier;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(
             PublicationReadContext::class,
             static fn (): PublicationReadContext => new PublicationReadContext,
+        );
+
+        $this->app->singleton(
+            UncompromisedVerifier::class,
+            fn ($app): UncompromisedVerifier => new NotPwnedVerifier($app->make(HttpClientFactory::class), 3),
         );
 
         Connection::resolverFor('pgsql', static function ($pdo, $database, $prefix, array $config): PostgresConnection {
@@ -32,6 +42,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Password::defaults(fn (): Password => AdminPasswordPolicy::rule());
+
         Event::listen(CommandStarting::class, function (CommandStarting $event): void {
             if (in_array($event->command, [
                 'db:wipe',
