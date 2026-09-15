@@ -1,0 +1,5 @@
+Pixel Flags v1.0.0
+Source: https://github.com/tgines/pixel-flags
+License: MIT
+
+This repository vendors the small 16x12 SVG flags used by the Analytics geography list. No browser request is made to an external flag service.
