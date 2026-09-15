@@ -30,6 +30,23 @@ The project owns the restrained authentication presentation through the custom F
 
 Password fields are not configured as revealable in the panel.
 
+Sensitive authentication fields must never use per-keystroke or reactive server synchronization. In particular, password/account authentication code must not use Filament `live()`, `liveOnBlur()` or `wire:model.live` for password values. Passwords are sent to the server only as part of the explicit form submission that needs them. This invariant is protected by an architecture test.
+
+## Password policy and generation
+
+Provisioning, authenticated password changes and password reset all use the same central policy defined in [ADMIN-PASSWORD-POLICY.md](ADMIN-PASSWORD-POLICY.md).
+
+The durable contract is:
+
+- local/testing may use the deliberately relaxed development minimum documented there and does not perform the external compromised-password lookup;
+- Validation/Production require the strict 15–128-character policy, compromised-password rejection and the project-specific obvious-credential blocklist;
+- character-class composition requirements are not imposed merely to satisfy legacy complexity conventions;
+- password-manager paste/autofill remains supported;
+- the admin password generator uses browser Web Crypto, fills password plus confirmation locally and performs no server request merely to generate a value;
+- copying a generated password is an explicit user action.
+
+The policy applies when a password is created or replaced. It does not retroactively invalidate an existing local development password at login.
+
 ## Account and security surface
 
 Authenticated administrators manage their account from the `Account` action in the user badge. It opens the shared admin dialog system rather than a standalone Filament profile page.
@@ -106,7 +123,7 @@ Initial/explicit administrator provisioning uses:
 php artisan admin:provision
 ```
 
-The command keeps password entry interactive/hidden rather than accepting a password as a command-line argument. A newly provisioned administrator can use the panel immediately and may enable TOTP later from the `Account` dialog in the user menu.
+The command keeps password entry interactive/hidden rather than accepting a password as a command-line argument. It uses the same canonical password policy as account changes and password recovery. A newly provisioned administrator can use the panel immediately and may enable TOTP later from the `Account` dialog in the user menu.
 
 ## Deployment expectations
 
@@ -117,6 +134,8 @@ At minimum, deployment/release review should establish:
 - the required forward migration for MFA columns has been applied;
 - the intended administrator account can reach `/admin` without being forced through MFA enrollment;
 - the user badge exposes the Account dialog while Dark/Night mode and Logout remain available;
+- the strict target-environment password policy is enforced for provisioning, account changes and reset;
+- the browser password generator works without a generation-time server request;
 - optional MFA can be enabled, challenged and disabled correctly when configured;
 - SMTP/runtime mail configuration is injected outside Git;
 - the configured sender is accepted by the mail platform;
@@ -126,6 +145,6 @@ Do not use a real password-reset email test as an excuse to place credentials or
 
 ## Verification ownership
 
-Durable application tests should protect the security contract rather than Filament markup. Current coverage includes private `/admin` access, rejection of authenticated non-admin users, access for administrators without MFA, the user-menu Account surface instead of a standalone profile route, the app-authentication/recovery contract and admin-only reset mail behavior.
+Durable application tests should protect the security contract rather than Filament markup. Current coverage includes private `/admin` access, rejection of authenticated non-admin users, access for administrators without MFA, the user-menu Account surface instead of a standalone profile route, the app-authentication/recovery contract, shared password-policy behavior, the browser password generator, prohibition of reactive auth-field synchronization and admin-only reset mail behavior.
 
 The canonical release verification remains defined in [RELEASE.md](RELEASE.md). Mail-server/runtime verification belongs to the platform/deployment layer, not to unit tests in this repository.
