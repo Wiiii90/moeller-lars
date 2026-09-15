@@ -70,7 +70,7 @@ The canonical verification job covers:
 - Pint;
 - JavaScript tests.
 
-PHPStan is currently executed with `continue-on-error` while its existing baseline is tracked separately, so it remains visible diagnostic evidence but is not presently a blocking workflow gate. Pest, dependency/build steps, Pint and JavaScript tests remain blocking according to the workflow definition.
+PHPStan is currently executed with `continue-on-error`, so it remains visible diagnostic evidence but is not presently a blocking workflow gate. Project-wide PHPStan cleanup and the path to making the gate blocking are tracked by #189. Pest, dependency/build steps, Pint and JavaScript tests remain blocking according to the workflow definition.
 
 Commands used in disposable CI (not a recipe for the persistent local browser database):
 
@@ -171,7 +171,7 @@ No legacy admin credential is migrated/seeded and public admin registration is n
 php artisan admin:provision
 ```
 
-Password input remains interactive/hidden and is not accepted as a command-line argument. Newly provisioned administrators are subject to required TOTP MFA setup before ordinary panel use. Password recovery is email-based and sends a reset link, never an existing password.
+Password input remains interactive/hidden and is not accepted as a command-line argument. Newly provisioned administrators can use the panel without MFA enrollment and may enable TOTP/recovery codes later from the Account dialog. Provisioning, account password changes and password reset share the canonical policy in [ADMIN-PASSWORD-POLICY.md](ADMIN-PASSWORD-POLICY.md). Password recovery is email-based and sends a reset link, never an existing password.
 
 ## Workers and scheduling
 
@@ -190,7 +190,7 @@ For an exact deployed candidate:
 5. run `legacy:validate` only when frozen migration data is part of the gate;
 6. run application smoke contract;
 7. perform required public/admin browser acceptance;
-8. when authentication/mail configuration changed, exercise administrator login/MFA and password-reset delivery in the target environment without logging secrets or reset URLs.
+8. when authentication/mail configuration changed, exercise administrator login, Account dialog, strict password policy/generator, optional MFA enable/challenge/disable and password-reset delivery in the target environment without logging secrets or reset URLs.
 
 CI, migrations and health are evidence; none alone is complete product acceptance.
 
