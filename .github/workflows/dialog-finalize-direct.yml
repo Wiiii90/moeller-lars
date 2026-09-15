@@ -58,13 +58,14 @@ jobs:
         run: |
           set -euo pipefail
           git pull --ff-only origin dev
-          python3 scripts/admin_dialog_finalize.py
+          python3 scripts/admin_dialog_extras.py
           rm -f \
-            scripts/admin_dialog_migration.py \
-            scripts/admin_dialog_finalize.py \
+            scripts/admin_dialog_extras.py \
             scripts/dialog-finalize-error.txt \
             .github/workflows/dialog-migration-direct.yml \
             .github/workflows/dialog-finalize-direct.yml
+          python3 scripts/admin_dialog_finalize.py
+          rm -f scripts/admin_dialog_migration.py scripts/admin_dialog_finalize.py
           git diff --check
           find app -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
 
