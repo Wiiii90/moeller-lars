@@ -21,7 +21,7 @@ jobs:
           coverage: none
 
       - name: Update locked static-analysis dependencies
-        run: composer require --dev "larastan/larastan:^3.0" --with-all-dependencies --no-interaction --no-progress
+        run: composer require --dev "larastan/larastan:^3.0" --no-interaction --no-progress
 
       - name: Upload generated Composer files
         uses: actions/upload-artifact@v4
