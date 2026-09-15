@@ -313,9 +313,7 @@
                         @if ($detailTable['state'] === 'unavailable')
                             <tr>
                                 <td class="admin-table__empty-cell" colspan="{{ max(1, count($detailTable['columns'])) }}">
-                                    <x-admin.status tone="danger">
-                                        {{ $detailTable['message'] ?? $detailReportLabel.' unavailable' }}
-                                    </x-admin.status>
+                                    {{ $detailTable['message'] ?? $detailReportLabel.' unavailable' }}
                                 </td>
                             </tr>
                         @else
