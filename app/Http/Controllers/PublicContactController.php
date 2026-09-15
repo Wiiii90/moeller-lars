@@ -99,10 +99,16 @@ class PublicContactController extends Controller
             ->get(['blocks'])
             ->contains(function (CustomPageSetting $settings): bool {
                 foreach ($settings->components() as $block) {
-                    if (($block['type'] ?? null) === 'contact'
-                        && ($block['show_form'] ?? true) === true
-                        && ($block['form_state'] ?? 'enabled') === 'enabled') {
-                        return true;
+                    if (($block['type'] ?? null) !== 'contact' || ! CustomPageSetting::componentPublished($block)) {
+                        continue;
+                    }
+
+                    foreach ($settings->contactChildren($block) as $child) {
+                        if (($child['type'] ?? null) === 'contact_form'
+                            && CustomPageSetting::contactChildPublished($child)
+                            && ($child['form_state'] ?? 'enabled') === 'enabled') {
+                            return true;
+                        }
                     }
                 }
 
