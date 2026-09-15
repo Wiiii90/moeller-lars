@@ -15,7 +15,7 @@ it('keeps migrated admin dialog surfaces on the shared dialog contract', functio
         'app/Filament/Pages/Concerns/CustomPageWorkspaceLifecycle.php',
         'app/Filament/Pages/Concerns/CustomPageWorkspaceListContactActions.php',
         'app/Filament/Pages/Concerns/GalleryWorkspaceArtworkActions.php',
-        'app/Filament/Pages/Concerns/GalleryWorkspaceArtworkModals.php',
+        'app/Filament/Pages/Concerns/GalleryWorkspaceArtworkDialogs.php',
         'app/Filament/Pages/Concerns/GalleryWorkspaceBatchActions.php',
         'app/Filament/Pages/Concerns/GalleryWorkspaceMoveActions.php',
         'app/Filament/Pages/Concerns/GalleryWorkspaceUploadSettings.php',
@@ -32,6 +32,30 @@ it('keeps migrated admin dialog surfaces on the shared dialog contract', functio
             ->not->toContain('media-dialog-footer__')
             ->not->toContain('custom-page-dialog');
     }
+});
+
+it('keeps dialog naming and publication bridge placement canonical', function (): void {
+    $root = dirname(__DIR__, 2);
+    $dialogConcern = $root.'/app/Filament/Pages/Concerns/GalleryWorkspaceArtworkDialogs.php';
+    $legacyConcern = $root.'/app/Filament/Pages/Concerns/GalleryWorkspaceArtworkModals.php';
+    $bridgeHook = $root.'/resources/views/filament/partials/publication-state-bridge-hook.blade.php';
+    $legacyBridgeHook = $root.'/resources/views/filament/partials/publication-state-bridge.blade.php';
+    $livewireBridge = $root.'/resources/views/livewire/admin/publication-state-bridge.blade.php';
+    $provider = file_get_contents($root.'/app/Providers/Filament/AdminPanelProvider.php');
+
+    expect(file_exists($dialogConcern))->toBeTrue();
+    expect(file_exists($legacyConcern))->toBeFalse();
+    expect(file_exists($bridgeHook))->toBeTrue();
+    expect(file_exists($legacyBridgeHook))->toBeFalse();
+    expect(file_exists($livewireBridge))->toBeTrue();
+
+    expect(file_get_contents($dialogConcern))
+        ->toContain('trait GalleryWorkspaceArtworkDialogs')
+        ->not->toContain('trait GalleryWorkspaceArtworkModals');
+
+    expect($provider)
+        ->toContain("view('filament.partials.publication-state-bridge-hook')")
+        ->not->toContain("view('filament.partials.publication-state-bridge')");
 });
 
 it('retires the legacy dialog stylesheet without reintroducing legacy footer chrome', function (): void {

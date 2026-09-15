@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
-trait GalleryWorkspaceArtworkModals
+trait GalleryWorkspaceArtworkDialogs
 {
     use InteractsWithAdminEditDialogAutosave;
 

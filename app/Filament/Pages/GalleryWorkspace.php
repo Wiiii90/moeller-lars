@@ -4,7 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Filament\Pages\Concerns\GalleryWorkspaceArtworkActions;
-use App\Filament\Pages\Concerns\GalleryWorkspaceArtworkModals;
+use App\Filament\Pages\Concerns\GalleryWorkspaceArtworkDialogs;
 use App\Filament\Pages\Concerns\GalleryWorkspaceBatchActions;
 use App\Filament\Pages\Concerns\GalleryWorkspaceDataProjection;
 use App\Filament\Pages\Concerns\GalleryWorkspaceDirectUpload;
@@ -23,7 +23,7 @@ use Livewire\WithFileUploads;
 final class GalleryWorkspace extends Page
 {
     use GalleryWorkspaceArtworkActions;
-    use GalleryWorkspaceArtworkModals;
+    use GalleryWorkspaceArtworkDialogs;
     use GalleryWorkspaceBatchActions;
     use GalleryWorkspaceDataProjection;
     use GalleryWorkspaceDirectUpload;
