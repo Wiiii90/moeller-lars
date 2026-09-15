@@ -71,6 +71,75 @@ it('searches only the active report and resets search when the report view chang
         ->and($analytics->detailReport)->toBe('geography');
 });
 
+it('projects behavior from reports already present in the Matomo bulk payload', function (): void {
+    $analytics = new Analytics;
+    $analytics->detailReport = 'behavior';
+    $analytics->matomo = [
+        'status' => 'available',
+        'metrics' => ['nb_visits' => 10],
+        'returning' => ['nb_visits_returning' => 4],
+        'visit_duration' => [[
+            'label' => '0-10s',
+            'nb_visits' => 6,
+            'nb_uniq_visitors' => 5,
+        ]],
+        'pages_per_visit' => [[
+            'label' => '2',
+            'nb_visits' => 3,
+            'nb_uniq_visitors' => 3,
+        ]],
+        'local_time' => [[
+            'label' => '14',
+            'nb_visits' => 2,
+            'nb_uniq_visitors' => 2,
+        ]],
+        'day_of_week' => [[
+            'label' => '1',
+            'nb_visits' => 5,
+            'nb_uniq_visitors' => 4,
+        ]],
+        'warnings' => [],
+    ];
+
+    $table = $analytics->detailTable();
+
+    expect($analytics->detailReportOptions())
+        ->toHaveKey('behavior', 'Behavior')
+        ->and($table['rows'])
+        ->toContain(['Visit type', 'New visits', '6', '—', '60.0%'])
+        ->toContain(['Visit type', 'Returning visits', '4', '—', '40.0%'])
+        ->toContain(['Visit duration', '0-10s', '6', '5', '60.0%'])
+        ->toContain(['Pages per visit', '2 pages', '3', '3', '30.0%'])
+        ->toContain(['Local time', '14:00–14:59', '2', '2', '20.0%'])
+        ->toContain(['Day of week', 'Monday', '5', '4', '50.0%']);
+});
+
+it('keeps recurring traffic metrics on a stable right edge', function (): void {
+    $analytics = new Analytics;
+
+    foreach (['content', 'geography', 'acquisition', 'behavior', 'interactions', 'technology'] as $report) {
+        $analytics->detailReport = $report;
+        $layout = $analytics->detailTableLayout();
+        $lastColumn = $layout['columns'][array_key_last($layout['columns'])];
+
+        expect($lastColumn)
+            ->toMatchArray([
+                'index' => in_array($report, ['content', 'acquisition', 'behavior', 'interactions', 'technology'], true) ? 2 : 1,
+                'span' => 2,
+                'numeric' => true,
+            ]);
+    }
+
+    $analytics->detailReport = 'acquisition';
+    expect($analytics->detailTableLayout()['meta_index'])->toBe(0);
+
+    $analytics->detailReport = 'technology';
+    expect($analytics->detailTableLayout()['meta_index'])->toBe(0);
+
+    $analytics->detailReport = 'artwork';
+    expect($analytics->detailTableLayout()['meta_index'])->toBe(1);
+});
+
 it('keeps analytics geography flags local', function (): void {
     $view = file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
     $notice = file_get_contents(public_path('vendor/pixel-flags/NOTICE'));
@@ -113,7 +182,7 @@ it('keeps geography as one storage-style rail with local flags and secondary con
         ->not->toContain('buildApplicationSignals');
 });
 
-it('uses the shared admin controls table identity and pager contracts', function (): void {
+it('uses shared controls table identity and pager contracts without a fake filter reset', function (): void {
     $view = file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
     $pager = file_get_contents(resource_path('views/components/admin/pager.blade.php'));
     $css = file_get_contents(resource_path('css/admin/analytics.css'));
@@ -122,13 +191,16 @@ it('uses the shared admin controls table identity and pager contracts', function
         ->toContain('<x-admin.controls aria-label="Analytics report controls">')
         ->toContain('class="admin-data-field"')
         ->toContain('wire:change="setRange($event.target.value)"')
-        ->toContain("'geography' => [0, 3, 1, 2, 4]")
+        ->toContain('$detailLayout = $this->detailTableLayout();')
+        ->toContain('@for ($column = 0; $column < 12; $column++)')
+        ->toContain('<col class="admin-table__col-half-unit">')
         ->toContain('admin-table--six-grid')
-        ->toContain('<strong title="{{ $cellValue }}">{{ $cellValue }}</strong>')
         ->toContain('<x-admin.pager')
         ->toContain('page-size-wire-model="detailPageSize"')
         ->toContain('previous-wire-action="previousDetailPage"')
         ->toContain('next-wire-action="nextDetailPage"')
+        ->toContain('<small title="{{ $metaValue }}">{{ $metaValue }}</small>')
+        ->not->toContain('<x-slot:reset>')
         ->not->toContain('class="admin-pager__leading"')
         ->not->toContain('admin-pager__meta')
         ->not->toContain('analytics-controls')
