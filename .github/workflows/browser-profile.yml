@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: browser-profile-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/dev' }}
+  cancel-in-progress: false
 
 jobs:
   admin-interactions:
