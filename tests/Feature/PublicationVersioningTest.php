@@ -171,8 +171,15 @@ it('keeps physical media while any retained publication version still references
 
 it('keeps publication commit history permanent at the database boundary', function (): void {
     $checkpoint = PublicationCheckpoint::query()->latest('id')->firstOrFail();
+    $pdo = DB::connection()->getPdo();
+    $pdo->exec('SAVEPOINT publication_history_guard');
 
-    expect(fn () => DB::table('publication_checkpoints')->where('id', $checkpoint->getKey())->delete())
-        ->toThrow(QueryException::class)
-        ->and(PublicationCheckpoint::query()->whereKey($checkpoint->getKey())->exists())->toBeTrue();
+    try {
+        expect(fn () => DB::table('publication_checkpoints')->where('id', $checkpoint->getKey())->delete())
+            ->toThrow(QueryException::class);
+    } finally {
+        $pdo->exec('ROLLBACK TO SAVEPOINT publication_history_guard');
+    }
+
+    expect(PublicationCheckpoint::query()->whereKey($checkpoint->getKey())->exists())->toBeTrue();
 });

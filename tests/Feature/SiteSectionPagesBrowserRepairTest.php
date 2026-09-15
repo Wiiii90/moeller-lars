@@ -183,15 +183,16 @@ it('rejects self parenting level three and nesting a page that already has child
         ->toThrow(ValidationException::class, 'A page that already has child pages cannot itself become a child page.');
 });
 
-it('preserves Home publication delete and conversion guards even when Home is reparented', function (): void {
+it('keeps Home fixed at the top level and preserves its publication delete and conversion guards', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
     $home = SiteSection::query()->where('type', SiteNodeType::Home->value)->firstOrFail();
     $parent = $service->createCustomPage('Home Parent', 'home-parent-repair');
 
-    expect($order->moveTo($home, (int) $parent->getKey(), 0))->toBeTrue();
-    expect($home->refresh()->parent_id)->toBe((int) $parent->getKey())
+    expect(fn () => $order->moveTo($home, (int) $parent->getKey(), 0))
+        ->toThrow(ValidationException::class, 'Home is always the first top-level page.');
+    expect($home->refresh()->parent_id)->toBeNull()
         ->and($home->state)->toBe('published');
 
     expect(fn () => $service->updatePlacement($home, 'hidden', false, (int) $parent->getKey()))

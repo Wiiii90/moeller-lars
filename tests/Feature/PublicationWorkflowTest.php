@@ -242,7 +242,7 @@ it('keeps Preview authentication and private indexing protections unchanged', fu
     publicationWorkflowAssertPrivateNoCache($preview);
 });
 
-it('defers deletion of files that still belong to the committed snapshot until Commit', function (): void {
+it('retains files referenced by a retained publication snapshot after a later Commit', function (): void {
     Storage::fake(config('media.disk'));
 
     $asset = MediaAsset::query()->create([
@@ -279,9 +279,9 @@ it('defers deletion of files that still belong to the committed snapshot until C
 
     expect(app(PublicationService::class)->commit($this->actor))->toBeInstanceOf(PublicationCheckpoint::class);
 
-    Storage::disk(config('media.disk'))->assertMissing($asset->getAttribute('storage_key'));
-    Storage::disk(config('media.disk'))->assertMissing($variant->getAttribute('storage_key'));
-    expect(DB::table('publication_media_cleanups')->count())->toBe(0);
+    Storage::disk(config('media.disk'))->assertExists($asset->getAttribute('storage_key'));
+    Storage::disk(config('media.disk'))->assertExists($variant->getAttribute('storage_key'));
+    expect(DB::table('publication_media_cleanups')->count())->toBe(2);
 });
 
 it('retains working-only media while a Working reference still needs the file', function (): void {

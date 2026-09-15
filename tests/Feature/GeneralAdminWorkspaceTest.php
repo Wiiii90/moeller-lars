@@ -2,6 +2,7 @@
 
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\General;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Filament\Support\MediaAssetSelect;
@@ -236,7 +237,8 @@ it('validates and canonicalizes structured public background settings', function
         ->toThrow(ValidationException::class);
 });
 
-it('renders default solid and gradient appearance through a request-local CSP nonce', function (): void {
+it('renders only committed default solid and gradient appearance through a request-local CSP nonce', function (): void {
+    $actor = User::query()->firstOrFail();
     $settings = PublicContentSetting::general();
     app(AdminSettingsService::class)->updatePublicContent($settings, [
         'background_mode' => null,
@@ -259,6 +261,11 @@ it('renders default solid and gradient appearance through a request-local CSP no
         'background_mode' => 'solid',
         'background_color' => '#123456',
     ]);
+
+    $stagedSolidHtml = (string) $this->get(route('home'))->assertOk()->getContent();
+    expect($stagedSolidHtml)->not->toContain('--public-page: #123456');
+
+    app(PublicationService::class)->commit($actor, 'Publish solid appearance');
     $solidResponse = $this->get(route('home'))->assertOk();
     $solidCsp = (string) $solidResponse->headers->get('Content-Security-Policy');
     $solidHtml = (string) $solidResponse->getContent();
@@ -276,6 +283,12 @@ it('renders default solid and gradient appearance through a request-local CSP no
         'background_gradient_end' => '#AABBCC',
         'background_gradient_angle' => 45,
     ]);
+
+    $stagedGradientHtml = (string) $this->get(route('home'))->assertOk()->getContent();
+    expect($stagedGradientHtml)->toContain('--public-page: #123456')
+        ->and($stagedGradientHtml)->not->toContain('--public-page: linear-gradient(45deg, #112233, #AABBCC) fixed');
+
+    app(PublicationService::class)->commit($actor, 'Publish gradient appearance');
     $gradientResponse = $this->get(route('home'))->assertOk();
     $gradientCsp = (string) $gradientResponse->headers->get('Content-Security-Policy');
     $gradientHtml = (string) $gradientResponse->getContent();
@@ -368,7 +381,8 @@ it('keeps text persistence event-driven without debounce or timer autosave', fun
         ->and($pageSource)->not->toContain('debounce(')
         ->and($pageSource)->not->toContain('setTimeout')
         ->and($viewSource)->not->toContain('wire:model.debounce')
-        ->and($socialSource)->toContain('wire:blur="updateSocialLink')
+        ->and($socialSource)->toContain("mountAction('editSocialLink'")
+        ->and($socialSource)->toContain("mountAction('addSocialLink')")
         ->and($socialSource)->not->toContain('wire:model.debounce.300ms="data.social_links')
         ->and($socialSource)->not->toContain('socialSearch')
         ->and($socialSource)->not->toContain('socialVisibility')
