@@ -42,12 +42,12 @@ final class ArtworkGalleryAssignmentService
             ], static fn (?int $id): bool => $id !== null)));
             sort($categoryIds);
 
-            $lockedCategoryCount = ArtworkCategory::query()
+            $lockedCategories = ArtworkCategory::query()
                 ->whereIn('id', $categoryIds)
                 ->orderBy('id')
                 ->lockForUpdate()
-                ->get()
-                ->count();
+                ->get(['id']);
+            $lockedCategoryCount = count($lockedCategories);
 
             if ($lockedCategoryCount !== count($categoryIds)) {
                 throw ValidationException::withMessages([

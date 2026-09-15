@@ -42,59 +42,95 @@ use Illuminate\Validation\ValidationException;
 final class HomePresentation extends Page
 {
     protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $title = 'Home';
+
     protected static ?string $slug = 'pages/home';
+
     protected string $view = 'filament.pages.home-presentation';
 
     /** @var list<array{label:string,value:string,description:string}> */
     public array $metrics = [];
+
     public string $template = 'artwork';
+
     public string $templateLabel = 'Hero Artwork';
+
     public string $previewUrl = '';
+
     public int $settingsId = 0;
+
     public int $homeSectionId = 0;
+
     public bool $showHomeInNavigation = true;
+
     public bool $artworkShowDetails = true;
+
     public bool $artworkShowGalleryLink = true;
+
     public bool $publicSiteGate = false;
 
     public string $heroGroupSource = 'automatic';
+
     public string $heroDisplayStrategy = 'ordered';
+
     public string $heroNewestBy = 'artwork_date';
+
     public int $heroGroupSize = HomeHeroConfigurationService::DEFAULT_GROUP_SIZE;
+
     public string $heroPoolRule = 'all';
+
     public ?int $heroPoolYear = null;
+
     /** @var list<int> */
     public array $manualHeroCandidateIds = [];
+
     /** @var list<array{artwork_id:int,weight:int}> */
     public array $manualHeroGroup = [];
+
     public int $rotationIntervalCount = 1;
+
     public string $rotationIntervalUnit = 'weeks';
+
     public ?string $rotationStartedAt = null;
+
     public ?string $nextRotationAt = null;
 
     /** @var array<string,mixed>|null */
     public ?array $currentArtwork = null;
+
     /** @var list<array<string,mixed>> */
     public array $heroRailRows = [];
+
     public int $candidatePoolCount = 0;
+
     public ?string $selectionIssue = null;
+
     public int $eligibleArtworkCount = 0;
+
     public int $sourceGalleryCount = 0;
+
     public ?int $newestEligibleYear = null;
 
     public string $sourceSearch = '';
+
     public string $sourceStatusFilter = 'any';
+
     public string $sourceHomeFilter = 'any';
+
     public int $sourcePage = 1;
+
     public int $sourcePerPage = 10;
+
     /** @var list<int|string> */
     public array $selectedSourceIds = [];
 
     /** @var list<array<string,mixed>> */
     public array $componentDataset = [];
+
     /** @var list<array<string,mixed>> */
     public array $components = [];
+
     /** @var array<string,string> */
     public array $componentTypeOptions = [
         'image' => 'Image',
@@ -102,16 +138,21 @@ final class HomePresentation extends Page
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
     ];
+
     /** @var array<string,string> */
     public array $newComponentOptions = [
         'image' => 'Image',
         'rich_text' => 'Rich Text',
         'divider' => 'Divider',
     ];
+
     public string $componentSearch = '';
+
     public string $componentType = 'any';
+
     /** @var list<string> */
     public array $selectedComponentTargets = [];
+
     /** @var array{components:int,images:int,headings:int,rich_text:int,dividers:int,media_references:int} */
     public array $componentStats = [
         'components' => 0,
@@ -124,9 +165,13 @@ final class HomePresentation extends Page
 
     /** @var array<string,mixed>|null */
     public ?array $skipTarget = null;
+
     public bool $homeAnalyticsLoaded = false;
+
     public string $homeAnalyticsStatus = 'loading';
+
     public ?float $homeVisits = null;
+
     public ?float $homeViews = null;
 
     public function mount(): void
@@ -231,6 +276,7 @@ final class HomePresentation extends Page
             $this->selectedComponentTargets = $selected
                 ->reject(static fn (string $target): bool => in_array($target, $visibleTargets, true))
                 ->values()->all();
+
             return;
         }
         $this->selectedComponentTargets = $selected->merge($visibleTargets)->unique()->values()->all();
@@ -477,6 +523,7 @@ final class HomePresentation extends Page
             Action::make('editComponent')->label('Edit')
                 ->fillForm(function (array $arguments): array {
                     $component = $this->componentFromArguments($arguments);
+
                     return [
                         'type' => $component['type'],
                         'editor_kind' => $this->editorKind($component),
@@ -644,6 +691,7 @@ final class HomePresentation extends Page
         $selected = collect($this->selectedSourceIds)->map(static fn ($id): int => (int) $id)->filter()->unique()->values();
         if ($selected->intersect($visibleIds)->count() === count($visibleIds)) {
             $this->selectedSourceIds = $selected->reject(static fn (int $id): bool => in_array($id, $visibleIds, true))->values()->all();
+
             return;
         }
         $this->selectedSourceIds = $selected->merge($visibleIds)->unique()->values()->all();
@@ -721,6 +769,7 @@ final class HomePresentation extends Page
             $preference = (bool) $gallery->getAttribute('show_on_home');
             $effective = $preference && $state === 'published';
             $galleryCandidates = $candidates->get((int) $gallery->getKey(), collect());
+
             return [
                 'id' => (int) $gallery->getKey(),
                 'name' => (string) $gallery->getAttribute('name'),
@@ -818,6 +867,7 @@ final class HomePresentation extends Page
 
         if ($this->heroGroupSource === 'manual') {
             $this->heroRailRows = $this->manualHeroRows($resolution);
+
             return;
         }
 
@@ -831,12 +881,13 @@ final class HomePresentation extends Page
             $row['sequence_label'] = $this->heroDisplayStrategy === 'sequential'
                 ? ($index === 0 ? 'Current' : ($index === 1 ? 'Next' : 'Then'))
                 : ($row['id'] === $currentId ? 'Current' : null);
+
             return $row;
         })->all();
     }
 
     /** @param array<string,mixed> $resolution
-     *  @return list<array<string,mixed>>
+     * @return list<array<string,mixed>>
      */
     private function manualHeroRows(array $resolution): array
     {
@@ -878,6 +929,7 @@ final class HomePresentation extends Page
             $row['can_move_down'] = $displayIndex < count($displayIds) - 1;
             $rows[] = $row;
         }
+
         return $rows;
     }
 
@@ -961,6 +1013,7 @@ final class HomePresentation extends Page
             if ($type !== 'any' && ($component['filter_type'] ?? null) !== $type) {
                 return false;
             }
+
             return $term === '' || str_contains((string) ($component['search_text'] ?? ''), $term);
         })->values()->all();
     }
@@ -994,6 +1047,7 @@ final class HomePresentation extends Page
                 ['label' => 'Candidate Group', 'value' => number_format($this->heroGroupSource === 'manual' ? count($this->manualHeroGroup) : $this->candidatePoolCount), 'description' => $this->heroGroupSource === 'manual' ? 'Stored members' : 'Effective group'],
                 ['label' => 'Newest Year', 'value' => $this->newestEligibleYear === null ? '—' : (string) $this->newestEligibleYear, 'description' => 'Eligible newest'],
             ];
+
             return;
         }
         if (in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
@@ -1005,6 +1059,7 @@ final class HomePresentation extends Page
                 ['label' => 'Dividers', 'value' => number_format($this->componentStats['dividers']), 'description' => 'Divider blocks'],
                 ['label' => 'Media References', 'value' => number_format($this->componentStats['media_references']), 'description' => 'Referenced files'],
             ];
+
             return;
         }
         $this->metrics = [];
@@ -1025,6 +1080,7 @@ final class HomePresentation extends Page
             $gallery = $artwork->getRelationValue('category');
         }
         $workDate = $artwork->getAttribute('work_date');
+
         return [
             'id' => (int) $artwork->getKey(),
             'title' => (string) $artwork->getAttribute('title'),
@@ -1047,6 +1103,7 @@ final class HomePresentation extends Page
         } else {
             $select->getOptionLabelUsing(fn (mixed $value): ?string => $this->heroArtworkOptionLabel($value));
         }
+
         return $select;
     }
 
@@ -1054,17 +1111,19 @@ final class HomePresentation extends Page
     private function heroArtworkOptions(string $search): array
     {
         $used = $this->heroGroupSource === 'manual' ? array_column($this->manualHeroGroup, 'artwork_id') : [];
+
         return app(PublicArtworkQuery::class)->searchHomeCandidates($search, 30)
             ->reject(fn (Artwork $artwork): bool => in_array((int) $artwork->getKey(), $used, true))
             ->mapWithKeys(fn (Artwork $artwork): array => [(int) $artwork->getKey() => $this->heroArtworkLabel($artwork)])->all();
     }
 
     /** @param list<mixed> $values
-     *  @return array<int,string>
+     * @return array<int,string>
      */
     private function heroArtworkOptionLabels(array $values): array
     {
         $ids = collect($values)->map(static fn ($value): int => (int) $value)->filter()->unique()->values()->all();
+
         return app(PublicArtworkQuery::class)->homeCandidatesByIds($ids)
             ->mapWithKeys(fn (Artwork $artwork): array => [(int) $artwork->getKey() => $this->heroArtworkLabel($artwork)])->all();
     }
@@ -1076,6 +1135,7 @@ final class HomePresentation extends Page
             return null;
         }
         $artwork = app(PublicArtworkQuery::class)->homeCandidateById((int) $id);
+
         return $artwork instanceof Artwork ? $this->heroArtworkLabel($artwork) : null;
     }
 
@@ -1084,6 +1144,7 @@ final class HomePresentation extends Page
         $gallery = $artwork->getRelationValue('category');
         $galleryName = $gallery instanceof ArtworkCategory ? (string) $gallery->getAttribute('name') : 'Gallery';
         $year = $artwork->getAttribute('work_year');
+
         return (string) $artwork->getAttribute('title').' · '.$galleryName.($year === null ? '' : ' · '.$year);
     }
 
@@ -1097,6 +1158,7 @@ final class HomePresentation extends Page
                 $field->required(fn (callable $get): bool => $get($stateField) === $stateValue);
             }
         }
+
         return $fields;
     }
 
@@ -1110,6 +1172,7 @@ final class HomePresentation extends Page
         $body = $component['body'] ?? null;
         $hasTitle = is_string($title) && trim($title) !== '';
         $hasBody = is_string($body) && trim($body) !== '';
+
         return $hasTitle && ! $hasBody ? 'heading' : 'rich_text';
     }
 
@@ -1118,8 +1181,10 @@ final class HomePresentation extends Page
         if ($this->settingsId > 0) {
             /** @var HomePresentationSetting $settings */
             $settings = HomePresentationSetting::query()->findOrFail($this->settingsId);
+
             return $settings;
         }
+
         return app(HomePresentationResolver::class)->settings();
     }
 
@@ -1130,6 +1195,7 @@ final class HomePresentation extends Page
         }
         /** @var SiteSection $section */
         $section = SiteSection::query()->whereKey($this->homeSectionId)->firstOrFail();
+
         return $section;
     }
 
@@ -1139,6 +1205,7 @@ final class HomePresentation extends Page
         if (! in_array($template, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
             throw ValidationException::withMessages(['component' => 'The active Home template does not use editable components.']);
         }
+
         return $template;
     }
 
@@ -1148,7 +1215,7 @@ final class HomePresentation extends Page
     }
 
     /** @param array<string,mixed> $arguments
-     *  @return array<string,mixed>
+     * @return array<string,mixed>
      */
     private function componentFromArguments(array $arguments): array
     {
@@ -1164,6 +1231,7 @@ final class HomePresentation extends Page
         if (! is_array($component) || ($component['type'] ?? null) !== $expectedType) {
             throw ValidationException::withMessages(['component' => 'This Home component changed. Reload the workspace and try again.']);
         }
+
         return $component;
     }
 
@@ -1178,6 +1246,7 @@ final class HomePresentation extends Page
             }
             $targets[] = $this->parseComponentTarget($target);
         }
+
         return $targets;
     }
 
@@ -1191,6 +1260,7 @@ final class HomePresentation extends Page
         if (! ctype_digit($index) || ! in_array($type, ['image', 'text', 'divider'], true)) {
             throw ValidationException::withMessages(['component' => 'The Home component target is invalid.']);
         }
+
         return ['index' => (int) $index, 'type' => $type];
     }
 
@@ -1209,6 +1279,7 @@ final class HomePresentation extends Page
         if (! is_array($metric) || ($metric['state'] ?? null) !== 'available' || ! is_numeric($metric['value'] ?? null)) {
             return null;
         }
+
         return (float) $metric['value'];
     }
 
@@ -1217,6 +1288,7 @@ final class HomePresentation extends Page
         if ($value === null) {
             return '—';
         }
+
         return number_format($value, $value === floor($value) ? 0 : 1);
     }
 
@@ -1225,6 +1297,7 @@ final class HomePresentation extends Page
         if (! $this->homeAnalyticsLoaded) {
             return 'Loading · 30d';
         }
+
         return match ($this->homeAnalyticsStatus) {
             'stale' => 'Cached · 30d',
             'available' => 'Home · 30d',

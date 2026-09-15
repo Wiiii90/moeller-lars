@@ -71,7 +71,7 @@ final class DashboardFeedPins
 
         $keys = array_values(array_unique(array_filter(
             $keys,
-            fn (mixed $key): bool => is_string($key) && $key !== '' && is_array($this->feed->entry($key)),
+            fn (string $key): bool => $key !== '' && is_array($this->feed->entry($key)),
         )));
         if ($keys === []) {
             return;
@@ -118,7 +118,7 @@ final class DashboardFeedPins
 
         $keys = array_values(array_unique(array_filter(
             $keys,
-            static fn (mixed $key): bool => is_string($key) && $key !== '',
+            static fn (string $key): bool => $key !== '',
         )));
         if ($keys === []) {
             return;

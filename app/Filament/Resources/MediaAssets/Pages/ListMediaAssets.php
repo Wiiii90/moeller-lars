@@ -861,7 +861,7 @@ final class ListMediaAssets extends Page
     }
 
     /**
-     * @param array<string, mixed> $arguments
+     * @param  array<string, mixed>  $arguments
      * @return list<Action>
      */
     private function previewHeaderActions(array $arguments): array

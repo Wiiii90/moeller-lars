@@ -17,7 +17,7 @@ final class CanonicalMediaImageRenderer implements NodeRendererInterface
         private readonly SafeLinkPolicy $safeLinkPolicy,
     ) {}
 
-    public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable|string|null
+    public function render(Node $node, ChildNodeRendererInterface $childRenderer): HtmlElement
     {
         if (! $node instanceof Image) {
             throw UnsafeRichTextException::unsupportedSyntax();

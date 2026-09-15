@@ -226,6 +226,7 @@ final class JournalEntryMediaService
         if ($id === false || $id <= 0) {
             throw ValidationException::withMessages([$field => 'Choose an image from Media Files.']);
         }
+
         return (int) $id;
     }
 

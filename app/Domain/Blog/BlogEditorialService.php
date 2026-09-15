@@ -32,6 +32,7 @@ final class BlogEditorialService
     {
         $actor = $this->audit->requireActor();
         $validated = $this->validate($data);
+
         return DB::transaction(fn (): BlogPost => $this->createValidated($validated, $data, $actor));
     }
 
@@ -39,6 +40,7 @@ final class BlogEditorialService
     {
         $actor = $this->audit->requireActor();
         $sectionId = $this->journalSectionId($data['site_section_id'] ?? null);
+
         return DB::transaction(function () use ($data, $sectionId, $actor): BlogPost {
             $payload = $data;
             $payload['site_section_id'] = $sectionId;
@@ -46,6 +48,7 @@ final class BlogEditorialService
             $payload['position'] = $this->order->nextPosition(new BlogPost, $sectionId);
             $payload['published_at'] = null;
             $payload['scheduled_at'] = null;
+
             return $this->createValidated($this->validate($payload), $payload, $actor);
         });
     }
@@ -76,6 +79,7 @@ final class BlogEditorialService
                 $fresh->save();
                 $this->audit->record($actor, 'blog_post.updated', 'blog_post', $fresh->getKey());
             }
+
             return $fresh->fresh(['mediaUsages.mediaAsset']);
         });
     }
@@ -83,10 +87,13 @@ final class BlogEditorialService
     public function publish(BlogPost $post): BlogPost
     {
         $actor = $this->audit->requireActor();
+
         return DB::transaction(function () use ($post, $actor): BlogPost {
             $fresh = $this->locked($post);
             $state = (string) $fresh->getAttribute('state');
-            if ($state === 'published') { return $fresh; }
+            if ($state === 'published') {
+                return $fresh;
+            }
             if (! in_array($state, ['draft', 'scheduled', 'unpublished'], true)) {
                 throw ValidationException::withMessages(['state' => 'Restore this post to draft before publishing it again.']);
             }
@@ -95,6 +102,7 @@ final class BlogEditorialService
             $this->prepareLifecycle($fresh);
             $fresh->save();
             $this->audit->record($actor, 'blog_post.published', 'blog_post', $fresh->getKey());
+
             return $fresh->fresh(['mediaUsages.mediaAsset']);
         });
     }
@@ -106,6 +114,7 @@ final class BlogEditorialService
         if (! $date instanceof CarbonImmutable || ! $date->isFuture()) {
             throw ValidationException::withMessages(['scheduled_at' => 'Scheduled publication must be in the future.']);
         }
+
         return DB::transaction(function () use ($post, $date, $actor): BlogPost {
             $fresh = $this->locked($post);
             $state = (string) $fresh->getAttribute('state');
@@ -117,15 +126,35 @@ final class BlogEditorialService
             $this->prepareLifecycle($fresh);
             $fresh->save();
             $this->audit->record($actor, 'blog_post.scheduled', 'blog_post', $fresh->getKey());
+
             return $fresh->fresh(['mediaUsages.mediaAsset']);
         });
     }
 
-    public function unpublish(BlogPost $post): BlogPost { return $this->transition($post, 'unpublished', 'unpublished', onlyFrom: 'published'); }
-    public function archive(BlogPost $post): BlogPost { return $this->transition($post, 'archived', 'archived'); }
-    public function restoreDraft(BlogPost $post): BlogPost { return $this->transition($post, 'draft', 'restored_to_draft', onlyFrom: ['scheduled', 'unpublished', 'archived']); }
-    public function canMove(BlogPost $post, string $direction): bool { return $this->order->canMove($post, $direction); }
-    public function move(BlogPost $post, string $direction): bool { return $this->order->move($post, $direction); }
+    public function unpublish(BlogPost $post): BlogPost
+    {
+        return $this->transition($post, 'unpublished', 'unpublished', onlyFrom: 'published');
+    }
+
+    public function archive(BlogPost $post): BlogPost
+    {
+        return $this->transition($post, 'archived', 'archived');
+    }
+
+    public function restoreDraft(BlogPost $post): BlogPost
+    {
+        return $this->transition($post, 'draft', 'restored_to_draft', onlyFrom: ['scheduled', 'unpublished', 'archived']);
+    }
+
+    public function canMove(BlogPost $post, string $direction): bool
+    {
+        return $this->order->canMove($post, $direction);
+    }
+
+    public function move(BlogPost $post, string $direction): bool
+    {
+        return $this->order->move($post, $direction);
+    }
 
     public function delete(BlogPost $post): void
     {
@@ -163,21 +192,28 @@ final class BlogEditorialService
             $this->media->assertPublicReady($post);
         }
         $this->audit->record($actor, 'blog_post.created', 'blog_post', $post->getKey(), ['site_section_id' => (int) $post->getAttribute('site_section_id')]);
+
         return $post->fresh(['mediaUsages.mediaAsset']);
     }
 
     private function transition(BlogPost $post, string $state, string $action, string|array|null $onlyFrom = null): BlogPost
     {
         $actor = $this->audit->requireActor();
+
         return DB::transaction(function () use ($post, $state, $action, $onlyFrom, $actor): BlogPost {
             $fresh = $this->locked($post);
             $current = (string) $fresh->getAttribute('state');
             $allowed = $onlyFrom === null ? null : (array) $onlyFrom;
-            if ($current === $state || ($allowed !== null && ! in_array($current, $allowed, true))) { return $fresh; }
+            if ($current === $state || ($allowed !== null && ! in_array($current, $allowed, true))) {
+                return $fresh;
+            }
             $fresh->setAttribute('state', $state);
-            if ($state !== 'scheduled') { $fresh->setAttribute('scheduled_at', null); }
+            if ($state !== 'scheduled') {
+                $fresh->setAttribute('scheduled_at', null);
+            }
             $fresh->save();
             $this->audit->record($actor, 'blog_post.'.$action, 'blog_post', $fresh->getKey());
+
             return $fresh->fresh(['mediaUsages.mediaAsset']);
         });
     }
@@ -186,6 +222,7 @@ final class BlogEditorialService
     {
         /** @var BlogPost $fresh */
         $fresh = BlogPost::query()->whereKey($post->getKey())->lockForUpdate()->firstOrFail();
+
         return $fresh;
     }
 
@@ -206,7 +243,9 @@ final class BlogEditorialService
         } elseif (is_string($body) && trim($body) !== '') {
             $this->richText->assertValid($body, allowEmbeddedMedia: true);
         }
-        if ($state === 'published' && $post->getAttribute('published_at') === null) { $post->setAttribute('published_at', now()); }
+        if ($state === 'published' && $post->getAttribute('published_at') === null) {
+            $post->setAttribute('published_at', now());
+        }
         if ($state === 'scheduled' && ! $post->getAttribute('scheduled_at') instanceof CarbonInterface) {
             throw ValidationException::withMessages(['scheduled_at' => 'Scheduled posts require a publication time.']);
         }
@@ -215,24 +254,42 @@ final class BlogEditorialService
     private function validate(array $data, ?int $ignoreId = null): array
     {
         foreach (['site_section_id', 'title', 'slug', 'state', 'position'] as $required) {
-            if (! array_key_exists($required, $data)) { throw ValidationException::withMessages([$required => 'Required Blog Journal form data is missing.']); }
+            if (! array_key_exists($required, $data)) {
+                throw ValidationException::withMessages([$required => 'Required Blog Journal form data is missing.']);
+            }
         }
         $sectionId = $this->journalSectionId($data['site_section_id']);
         $title = is_string($data['title']) ? trim($data['title']) : '';
-        if ($title === '' || mb_strlen($title) > 240) { throw ValidationException::withMessages(['title' => 'The blog title is invalid.']); }
+        if ($title === '' || mb_strlen($title) > 240) {
+            throw ValidationException::withMessages(['title' => 'The blog title is invalid.']);
+        }
         $slug = is_string($data['slug']) ? trim($data['slug']) : '';
-        if ($slug === '' || mb_strlen($slug) > 220 || ! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) { throw ValidationException::withMessages(['slug' => 'The blog slug is invalid.']); }
+        if ($slug === '' || mb_strlen($slug) > 220 || ! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
+            throw ValidationException::withMessages(['slug' => 'The blog slug is invalid.']);
+        }
         $slugQuery = BlogPost::query()->where('slug', $slug);
-        if ($ignoreId !== null) { $slugQuery->whereKeyNot($ignoreId); }
-        if ($slugQuery->exists()) { throw ValidationException::withMessages(['slug' => 'The blog slug is already in use.']); }
+        if ($ignoreId !== null) {
+            $slugQuery->whereKeyNot($ignoreId);
+        }
+        if ($slugQuery->exists()) {
+            throw ValidationException::withMessages(['slug' => 'The blog slug is already in use.']);
+        }
         $state = $data['state'];
-        if (! is_string($state) || ! in_array($state, ['draft', 'scheduled', 'published', 'unpublished', 'archived'], true)) { throw ValidationException::withMessages(['state' => 'The blog state is invalid.']); }
+        if (! is_string($state) || ! in_array($state, ['draft', 'scheduled', 'published', 'unpublished', 'archived'], true)) {
+            throw ValidationException::withMessages(['state' => 'The blog state is invalid.']);
+        }
         $position = filter_var($data['position'], FILTER_VALIDATE_INT);
-        if ($position === false || $position < 0) { throw ValidationException::withMessages(['position' => 'The blog position is invalid.']); }
+        if ($position === false || $position < 0) {
+            throw ValidationException::withMessages(['position' => 'The blog position is invalid.']);
+        }
         $body = $data['body'] ?? null;
-        if ($body !== null && ! is_string($body)) { throw ValidationException::withMessages(['body' => 'The blog content must be text.']); }
+        if ($body !== null && ! is_string($body)) {
+            throw ValidationException::withMessages(['body' => 'The blog content must be text.']);
+        }
         $excerpt = $data['excerpt'] ?? null;
-        if ($excerpt !== null && (! is_string($excerpt) || mb_strlen($excerpt) > 1000)) { throw ValidationException::withMessages(['excerpt' => 'The blog excerpt is invalid.']); }
+        if ($excerpt !== null && (! is_string($excerpt) || mb_strlen($excerpt) > 1000)) {
+            throw ValidationException::withMessages(['excerpt' => 'The blog excerpt is invalid.']);
+        }
 
         return [
             'site_section_id' => $sectionId,
@@ -250,18 +307,33 @@ final class BlogEditorialService
     private function journalSectionId(mixed $value): int
     {
         $sectionId = filter_var($value, FILTER_VALIDATE_INT);
-        if ($sectionId === false || $sectionId <= 0) { throw ValidationException::withMessages(['site_section_id' => 'Choose a Blog Journal page.']); }
+        if ($sectionId === false || $sectionId <= 0) {
+            throw ValidationException::withMessages(['site_section_id' => 'Choose a Blog Journal page.']);
+        }
         $exists = SiteSection::query()->whereKey($sectionId)->where('type', SiteNodeType::Journal->value)->where('template', JournalTemplate::Blog->value)->exists();
-        if (! $exists) { throw ValidationException::withMessages(['site_section_id' => 'The selected page is not a Blog Journal.']); }
+        if (! $exists) {
+            throw ValidationException::withMessages(['site_section_id' => 'The selected page is not a Blog Journal.']);
+        }
+
         return (int) $sectionId;
     }
 
     private function dateTime(mixed $value, string $field): ?CarbonImmutable
     {
-        if ($value === null || $value === '') { return null; }
-        if ($value instanceof DateTimeInterface) { return CarbonImmutable::instance($value); }
-        if (! is_string($value)) { throw ValidationException::withMessages([$field => 'The publication time is invalid.']); }
-        try { return CarbonImmutable::parse($value); } catch (Throwable) { throw ValidationException::withMessages([$field => 'The publication time is invalid.']); }
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if ($value instanceof DateTimeInterface) {
+            return CarbonImmutable::instance($value);
+        }
+        if (! is_string($value)) {
+            throw ValidationException::withMessages([$field => 'The publication time is invalid.']);
+        }
+        try {
+            return CarbonImmutable::parse($value);
+        } catch (Throwable) {
+            throw ValidationException::withMessages([$field => 'The publication time is invalid.']);
+        }
     }
 
     private function hasStructuredMediaInput(array $data): bool

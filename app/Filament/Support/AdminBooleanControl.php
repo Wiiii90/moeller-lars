@@ -6,7 +6,7 @@ use Filament\Forms\Components\Select;
 
 final class AdminBooleanControl
 {
-    /** @return array<string, string> */
+    /** @return array<int, string> */
     public static function options(string $trueLabel = 'Visible', string $falseLabel = 'Hidden'): array
     {
         return [

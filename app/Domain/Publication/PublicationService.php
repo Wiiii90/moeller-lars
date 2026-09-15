@@ -130,7 +130,7 @@ final class PublicationService
      * Business-domain mutations are expected to preserve their own invariants
      * before they reach the publication snapshot.
      *
-     * @param array{total:int,groups:list<array{area:string,entity:string,count:int}>}|null $summary
+     * @param  array{total:int,groups:list<array{area:string,entity:string,count:int}>}|null  $summary
      * @return array{status:string,label:string,blockers:list<string>}
      */
     public function preflight(?array $summary = null): array
@@ -282,8 +282,8 @@ final class PublicationService
     }
 
     /**
-     * @param array<string,mixed> $working
-     * @param array<string,mixed> $committed
+     * @param  array<string,mixed>  $working
+     * @param  array<string,mixed>  $committed
      * @return list<string>
      */
     private function changedFields(array $working, array $committed): array

@@ -24,14 +24,14 @@ return new class extends Migration
             $table->unique('embed_key');
         });
 
-        DB::statement("ALTER TABLE journal_entry_media ADD CONSTRAINT journal_entry_media_owner_check CHECK ((CASE WHEN blog_post_id IS NULL THEN 0 ELSE 1 END) + (CASE WHEN exhibition_id IS NULL THEN 0 ELSE 1 END) = 1)");
+        DB::statement('ALTER TABLE journal_entry_media ADD CONSTRAINT journal_entry_media_owner_check CHECK ((CASE WHEN blog_post_id IS NULL THEN 0 ELSE 1 END) + (CASE WHEN exhibition_id IS NULL THEN 0 ELSE 1 END) = 1)');
         DB::statement("ALTER TABLE journal_entry_media ADD CONSTRAINT journal_entry_media_role_check CHECK (role IN ('cover', 'inline', 'gallery'))");
         DB::statement('ALTER TABLE journal_entry_media ADD CONSTRAINT journal_entry_media_position_check CHECK (position >= 0)');
         DB::statement("ALTER TABLE journal_entry_media ADD CONSTRAINT journal_entry_media_embed_check CHECK ((role = 'inline' AND embed_key IS NOT NULL) OR (role <> 'inline' AND embed_key IS NULL))");
         DB::statement("CREATE UNIQUE INDEX journal_entry_media_blog_cover_unique ON journal_entry_media (blog_post_id) WHERE blog_post_id IS NOT NULL AND role = 'cover'");
         DB::statement("CREATE UNIQUE INDEX journal_entry_media_exhibition_cover_unique ON journal_entry_media (exhibition_id) WHERE exhibition_id IS NOT NULL AND role = 'cover'");
-        DB::statement("CREATE UNIQUE INDEX journal_entry_media_blog_role_position_unique ON journal_entry_media (blog_post_id, role, position) WHERE blog_post_id IS NOT NULL");
-        DB::statement("CREATE UNIQUE INDEX journal_entry_media_exhibition_role_position_unique ON journal_entry_media (exhibition_id, role, position) WHERE exhibition_id IS NOT NULL");
+        DB::statement('CREATE UNIQUE INDEX journal_entry_media_blog_role_position_unique ON journal_entry_media (blog_post_id, role, position) WHERE blog_post_id IS NOT NULL');
+        DB::statement('CREATE UNIQUE INDEX journal_entry_media_exhibition_role_position_unique ON journal_entry_media (exhibition_id, role, position) WHERE exhibition_id IS NOT NULL');
 
         DB::statement(<<<'SQL'
             INSERT INTO journal_entry_media (blog_post_id, media_asset_id, role, position, created_at, updated_at)

@@ -415,7 +415,7 @@ final class Dashboard extends Page
     }
 
     /**
-     * @param array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int} $pagination
+     * @param  array{items:list<array<string,mixed>>,page:int,per_page:int,total:int,pages:int,start:int,end:int}  $pagination
      * @return list<array<string,mixed>>
      */
     private function feedViewItems(array $pagination): array
@@ -522,7 +522,7 @@ final class Dashboard extends Page
     }
 
     /**
-     * @param array<string, mixed> $arguments
+     * @param  array<string, mixed>  $arguments
      * @return array<string, mixed>
      */
     private function feedEntry(array $arguments): array
@@ -535,7 +535,7 @@ final class Dashboard extends Page
     }
 
     /**
-     * @param array<string, mixed> $arguments
+     * @param  array<string, mixed>  $arguments
      * @return list<Action>
      */
     private function feedEntryHeaderActions(array $arguments): array

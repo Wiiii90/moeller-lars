@@ -4,7 +4,9 @@ namespace App\Domain\Content;
 
 use App\Domain\Media\PublicMedia;
 use App\Models\JournalEntryMedia;
+use App\Models\MediaAsset;
 use Illuminate\Support\HtmlString;
+use LogicException;
 
 final class JournalMediaRenderer
 {
@@ -14,6 +16,10 @@ final class JournalMediaRenderer
     {
         $usage->loadMissing('mediaAsset.variants');
         $asset = $usage->mediaAsset;
+        if (! $asset instanceof MediaAsset) {
+            throw new LogicException('Journal media usage requires a media asset.');
+        }
+
         $variant = $this->media->thumbnailVariantForAsset($asset);
         $alt = $this->media->altTextForAsset($asset);
         $width = (int) ($variant->getAttribute('width') ?? 0);

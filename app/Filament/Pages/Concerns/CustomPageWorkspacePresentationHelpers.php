@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
 trait CustomPageWorkspacePresentationHelpers
 {
     /**
-     * @param array<string,mixed> $block
+     * @param  array<string,mixed>  $block
      * @return array{primary:string,secondary:string,meta:string}
      */
     private function componentContent(CustomPageSetting $settings, array $block, ?string $imageName): array

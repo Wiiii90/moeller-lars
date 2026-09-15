@@ -37,7 +37,7 @@ final class DashboardOverview
             ['label' => 'Unique visitors', 'value' => $analytics['visitors_display'], 'detail' => 'Last 30 days'],
             ['label' => 'Published artworks', 'value' => number_format($publishedArtworks), 'detail' => 'Public now'],
             ['label' => 'Published pages', 'value' => number_format($publishedPages), 'detail' => 'Navigation groups excluded'],
-            ['label' => 'Storage used', 'value' => $storage['percent'] === null ? '—' : $storage['percent'].'%', 'detail' => $storage['metric_detail'],],
+            ['label' => 'Storage used', 'value' => $storage['percent'] === null ? '—' : $storage['percent'].'%', 'detail' => $storage['metric_detail']],
             ['label' => 'Recent changes', 'value' => number_format($activity['recent_changes']), 'detail' => 'Last 30 days'],
         ];
 

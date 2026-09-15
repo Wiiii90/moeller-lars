@@ -380,6 +380,7 @@ final class ExhibitionEditorialService
                 return null;
             }
         }
+
         return $street;
     }
 

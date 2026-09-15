@@ -22,7 +22,6 @@ use Livewire\WithFileUploads;
 
 final class GalleryWorkspace extends Page
 {
-    use WithFileUploads;
     use GalleryWorkspaceArtworkActions;
     use GalleryWorkspaceArtworkModals;
     use GalleryWorkspaceBatchActions;
@@ -33,6 +32,7 @@ final class GalleryWorkspace extends Page
     use GalleryWorkspaceReadinessSupport;
     use GalleryWorkspaceSelectionSupport;
     use GalleryWorkspaceUploadSettings;
+    use WithFileUploads;
 
     protected static bool $shouldRegisterNavigation = false;
 

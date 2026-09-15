@@ -143,7 +143,7 @@ final class MediaReferenceQuery
     }
 
     /** @param iterable<SiteSection> $sections
-     *  @return list<int>
+     * @return list<int>
      */
     public function mediaIdsForJournalSections(iterable $sections): array
     {
@@ -207,7 +207,7 @@ final class MediaReferenceQuery
     }
 
     /** @param iterable<mixed> $values
-     *  @return list<int>
+     * @return list<int>
      */
     private function richTextIds(iterable $values): array
     {

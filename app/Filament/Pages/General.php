@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
+use App\Domain\Content\SocialLinks;
 use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
@@ -369,7 +370,7 @@ final class General extends Page
                 ->schema([
                     Select::make('platform')
                         ->label('Platform')
-                        ->options(\App\Domain\Content\SocialLinks::options())
+                        ->options(SocialLinks::options())
                         ->native()
                         ->required(),
                     TextInput::make('url')
@@ -428,7 +429,7 @@ final class General extends Page
                 ->schema([
                     Select::make('platform')
                         ->label('Platform')
-                        ->options(\App\Domain\Content\SocialLinks::options())
+                        ->options(SocialLinks::options())
                         ->native()
                         ->required(),
                     TextInput::make('url')

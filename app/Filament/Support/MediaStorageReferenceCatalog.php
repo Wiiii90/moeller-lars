@@ -28,7 +28,7 @@ final class MediaStorageReferenceCatalog
      * Resolve the canonical referenced set in one bounded query through the
      * exact same MediaReferenceCatalog instance used by Media Files.
      *
-     * @param list<int> $assetIds
+     * @param  list<int>  $assetIds
      * @return list<int>
      */
     public function referencedIds(array $assetIds): array
@@ -85,7 +85,7 @@ final class MediaStorageReferenceCatalog
     }
 
     /**
-     * @param EloquentCollection<int, MediaAsset> $assets
+     * @param  EloquentCollection<int, MediaAsset>  $assets
      * @return array<int, list<array{area:string,area_label:string,target_key:string,target_label:string,type:string,label:string,url:?string}>>
      */
     public function referencesByAssetId(EloquentCollection $assets): array

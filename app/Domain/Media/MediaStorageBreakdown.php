@@ -37,10 +37,10 @@ final class MediaStorageBreakdown
      * storage is used by files referenced here?" and therefore may overlap across
      * targets. A file is still counted at most once inside any individual target.
      *
-     * @param array<string, int> $authoritativeFiles
-     * @param EloquentCollection<int, MediaAsset> $assets
-     * @param array<int, list<array{area:string,area_label:string,target_key:string,target_label:string,type:string,label:string,url:?string}>> $referencesByMediaId
-     * @param list<int> $referencedIds
+     * @param  array<string, int>  $authoritativeFiles
+     * @param  EloquentCollection<int, MediaAsset>  $assets
+     * @param  array<int, list<array{area:string,area_label:string,target_key:string,target_label:string,type:string,label:string,url:?string}>>  $referencesByMediaId
+     * @param  list<int>  $referencedIds
      * @return array{
      *   breakdown:list<array{key:string,label:string,bytes:int,files:int,percent:float}>,
      *   file_rows:list<array<string,mixed>>,

@@ -153,7 +153,7 @@ it('archives selected authoritative originals without creating MediaAssets and r
     $temporaryPath = $binaryResponse->getFile()->getPathname();
     expect(is_file($temporaryPath))->toBeTrue();
 
-    $zip = new ZipArchive();
+    $zip = new ZipArchive;
     expect($zip->open($temporaryPath))->toBeTrue()
         ->and($zip->numFiles)->toBe(2)
         ->and($zip->getFromName('duplicate.jpg'))->toBe('first-original')

@@ -225,7 +225,7 @@ final class SiteSectionOrderService
     }
 
     /**
-     * @param list<array{0:?int,1:list<int>}> $groups
+     * @param  list<array{0:?int,1:list<int>}>  $groups
      */
     private function rewriteGroups(array $groups): void
     {

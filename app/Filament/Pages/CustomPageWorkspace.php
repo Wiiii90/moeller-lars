@@ -17,17 +17,17 @@ use Filament\Pages\Page;
 
 final class CustomPageWorkspace extends Page
 {
-    use CustomPageWorkspaceLifecycle;
-    use CustomPageWorkspaceComponentActions;
-    use CustomPageWorkspaceListContactActions;
-    use CustomPageWorkspaceCvActions;
     use CustomPageWorkspaceChildOrdering;
-    use CustomPageWorkspaceProjectionState;
     use CustomPageWorkspaceChildProjection;
-    use CustomPageWorkspaceTargetHelpers;
+    use CustomPageWorkspaceComponentActions;
+    use CustomPageWorkspaceCvActions;
     use CustomPageWorkspaceForms;
-    use CustomPageWorkspaceSecondaryForms;
+    use CustomPageWorkspaceLifecycle;
+    use CustomPageWorkspaceListContactActions;
     use CustomPageWorkspacePresentationHelpers;
+    use CustomPageWorkspaceProjectionState;
+    use CustomPageWorkspaceSecondaryForms;
+    use CustomPageWorkspaceTargetHelpers;
 
     private const PAGE_SIZES = [25, 50, 100];
 

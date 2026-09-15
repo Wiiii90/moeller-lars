@@ -66,9 +66,8 @@ final class DashboardNotificationRetention
             ->when($pinnedIds !== [], fn ($builder) => $builder->whereNotIn('id', $pinnedIds))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
+            ->skip($keepUnpinned)
             ->pluck('id')
-            ->slice($keepUnpinned)
-            ->values()
             ->all();
 
         if ($deleteIds !== []) {

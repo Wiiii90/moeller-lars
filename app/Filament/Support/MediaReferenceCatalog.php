@@ -566,8 +566,8 @@ final class MediaReferenceCatalog
     }
 
     /**
-     * @param array<int, list<array{type:string,label:string,url:?string}>> $rows
-     * @param array{type:string,label:string,url:?string} $row
+     * @param  array<int, list<array{type:string,label:string,url:?string}>>  $rows
+     * @param  array{type:string,label:string,url:?string}  $row
      */
     private function appendReferenceRow(array &$rows, int $mediaId, array $row): void
     {

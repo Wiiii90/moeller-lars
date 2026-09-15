@@ -111,7 +111,7 @@ class MediaIngestService
     }
 
     /**
-     * @param array{mime:string,width:?int,height:?int,path:string,size:int,sha256:string,thumbnail_bytes:?string,thumbnail_width:?int,thumbnail_height:?int} $prepared
+     * @param  array{mime:string,width:?int,height:?int,path:string,size:int,sha256:string,thumbnail_bytes:?string,thumbnail_width:?int,thumbnail_height:?int}  $prepared
      */
     private function storePreparedLocked(UploadedFile $upload, array $prepared): MediaAsset
     {
@@ -576,10 +576,10 @@ class MediaIngestService
                 2 => [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384],
                 3 => [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320],
             }
-            : match ($layer) {
-                1 => [0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
-                2, 3 => [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
-            };
+        : match ($layer) {
+            1 => [0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
+            2, 3 => [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+        };
         $sampleRate = $sampleRates[$sampleRateIndex];
         $bitRate = $bitRates[$bitrateIndex] * 1000;
 

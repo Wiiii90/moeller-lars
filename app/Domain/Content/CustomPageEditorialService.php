@@ -517,7 +517,7 @@ final class CustomPageEditorialService
     }
 
     /**
-     * @param callable(list<array<string,mixed>>): list<array<string,mixed>> $mutator
+     * @param  callable(list<array<string,mixed>>): list<array<string,mixed>>  $mutator
      */
     private function mutateListItems(
         CustomPageSetting $settings,
@@ -536,7 +536,7 @@ final class CustomPageEditorialService
     }
 
     /**
-     * @param callable(list<array<string,mixed>>): list<array<string,mixed>> $mutator
+     * @param  callable(list<array<string,mixed>>): list<array<string,mixed>>  $mutator
      */
     private function mutateContactChildren(
         CustomPageSetting $settings,
@@ -568,8 +568,8 @@ final class CustomPageEditorialService
     }
 
     /** @param list<array<string, mixed>> $blocks
-     *  @param list<array{index:int,type:string}> $targets
-     *  @return list<int>
+     * @param  list<array{index:int,type:string}>  $targets
+     * @return list<int>
      */
     private function validatedIndices(array $blocks, array $targets): array
     {
@@ -623,7 +623,7 @@ final class CustomPageEditorialService
     }
 
     /** @param array<string, mixed> $block
-     *  @return list<array<string,mixed>>
+     * @return list<array<string,mixed>>
      */
     private function listItems(array $block): array
     {
@@ -731,6 +731,7 @@ final class CustomPageEditorialService
                     return true;
                 }
             }
+
             return false;
         }
 

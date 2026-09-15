@@ -208,7 +208,7 @@ final class HomePresentationResolver
     }
 
     /** @param list<array<string, mixed>> $components
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     private function componentPresentation(HomeTemplate $template, array $components, bool $gateActive): array
     {

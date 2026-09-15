@@ -267,6 +267,7 @@ class MediaAssetEditorialService
                     && is_numeric($block['media_asset_id'] ?? null)
                     && (int) $block['media_asset_id'] === $assetId) {
                     $this->customPages->deleteBlock($customPage, $index, 'image');
+
                     continue;
                 }
 
@@ -277,6 +278,7 @@ class MediaAssetEditorialService
                         $block['body'] = $clean;
                         $this->customPages->updateBlock($customPage, $index, 'text', $block);
                     }
+
                     continue;
                 }
 
@@ -360,6 +362,7 @@ class MediaAssetEditorialService
                         && (int) $component['media_asset_id'] === $assetId) {
                         $component['media_asset_id'] = null;
                         $this->homePresentation->updateComponent($settings, $mode, $index, 'image', $component);
+
                         continue;
                     }
 

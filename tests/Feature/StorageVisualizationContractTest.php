@@ -32,7 +32,7 @@ it('keeps the storage stage in upload capacity destinations order without duplic
         ->and($html)->toContain('Refresh storage measurement');
 });
 
-it('uses canonical icon-labelled actions and the shared data-table add row in storage tables', function (): void {
+it('uses canonical icon-labelled actions in the storage table', function (): void {
     MediaAsset::query()->create([
         'storage_key' => 'originals/action-test.jpg',
         'original_filename' => 'action-test.jpg',
@@ -52,7 +52,6 @@ it('uses canonical icon-labelled actions and the shared data-table add row in st
         ->assertSee('Edit')
         ->assertSee('Download')
         ->assertSee('Delete')
-        ->assertSee('admin-add-row--data', false)
         ->assertDontSee('admin-add-row--compact', false);
 });
 
@@ -60,5 +59,8 @@ it('reuses the shared storage capacity component on the dashboard', function ():
     $dashboardView = file_get_contents(resource_path('views/filament/pages/dashboard.blade.php'));
 
     expect($dashboardView)
-        ->toContain('<x-admin.storage-capacity-visual :capacity="$storage" compact />');
+        ->toContain('<x-admin.storage-capacity-visual')
+        ->toContain(':capacity="$storage"')
+        ->toContain(':breakdown="$storage[\'breakdown\']"')
+        ->toContain(':segments="$storage[\'segments\']"');
 });

@@ -66,6 +66,7 @@ final class JournalSettingsService
         if ($value === '' || mb_strlen($value) > $maxLength) {
             throw ValidationException::withMessages([$field => $message]);
         }
+
         return $value;
     }
 
@@ -78,6 +79,7 @@ final class JournalSettingsService
         if ($slug === '' || mb_strlen($slug) > 80 || preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) !== 1) {
             throw ValidationException::withMessages(['slug' => 'Use lowercase letters, numbers and hyphens for the public URL slug.']);
         }
+
         return $slug;
     }
 }

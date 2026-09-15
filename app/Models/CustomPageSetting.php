@@ -92,7 +92,7 @@ final class CustomPageSetting extends Model
     }
 
     /** @param array<string, mixed> $block
-     *  @return list<array<string, mixed>>
+     * @return list<array<string, mixed>>
      */
     public function contactChildren(array $block): array
     {
@@ -116,6 +116,7 @@ final class CustomPageSetting extends Model
             $type = $block['type'] ?? null;
             if (! is_string($type) || ! in_array($type, self::COMPONENT_TYPES, true)) {
                 $normalized[] = ['type' => $type];
+
                 continue;
             }
 
@@ -244,6 +245,7 @@ final class CustomPageSetting extends Model
             if ($requirePublicMedia) {
                 throw ValidationException::withMessages(['blocks' => 'Published image components must reference an image from Media.']);
             }
+
             return;
         }
 
@@ -415,7 +417,7 @@ final class CustomPageSetting extends Model
     }
 
     /** @param array<string, mixed> $block
-     *  @return list<array<string, mixed>>
+     * @return list<array<string, mixed>>
      */
     private function normalizeContactChildren(array $block): array
     {

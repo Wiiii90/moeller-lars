@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PublicationEventState extends Model
 {
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_NOT_PENDING = 'not_pending';
 
     public $timestamps = false;

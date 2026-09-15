@@ -47,7 +47,7 @@ final class AdminNotifier
      * type, action_url, action_label, entity_type, entity_id,
      * audit_event_id, publication_checkpoint_id, metadata.
      *
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $context
      */
     public function inbox(
         User|int $user,
@@ -88,7 +88,7 @@ final class AdminNotifier
      * Persist the notification and also show immediate feedback in the current
      * request. Background jobs should normally use inbox() instead.
      *
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $context
      */
     public function both(
         User|int $user,
@@ -130,7 +130,7 @@ final class AdminNotifier
     }
 
     /**
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed>  $context
      * @return array<string, mixed>
      */
     private function normalizeContext(array $context): array

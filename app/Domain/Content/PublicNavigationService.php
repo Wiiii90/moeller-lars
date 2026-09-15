@@ -55,6 +55,7 @@ final class PublicNavigationService
         return $sections->map(function (SiteSection $section): array {
             /** @var EloquentCollection<int, SiteSection> $childSections */
             $childSections = $section->getRelation('children');
+            /** @var list<array{label:string,url:?string,current:bool}> $children */
             $children = $childSections->map(fn (SiteSection $child): array => [
                 'label' => (string) $child->getAttribute('navigation_label'),
                 'url' => $this->sectionUrl($child),

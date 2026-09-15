@@ -160,7 +160,7 @@ final class StorageWorkspaceOverview
     private function analyze(array $authoritativeFiles): array
     {
         /** @var EloquentCollection<int, MediaAsset> $assets */
-        $assets = new EloquentCollection();
+        $assets = new EloquentCollection;
         if ($authoritativeFiles !== []) {
             $query = MediaAsset::query()->whereIn('storage_key', array_keys($authoritativeFiles));
             $this->references->eagerLoad($query);

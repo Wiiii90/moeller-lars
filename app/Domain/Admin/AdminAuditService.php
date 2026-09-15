@@ -36,6 +36,7 @@ class AdminAuditService
         if (! $actor instanceof User || ! (bool) $actor->getAttribute('is_admin')) {
             throw new AuthorizationException('An admin actor is required.');
         }
+
         return $actor;
     }
 

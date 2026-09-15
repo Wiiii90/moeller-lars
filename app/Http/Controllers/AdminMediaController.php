@@ -194,14 +194,14 @@ final class AdminMediaController extends Controller
     }
 
     /**
-     * @param list<array{path:string,filename:string,mime_type:string,byte_size:int,sha256:string}> $files
+     * @param  list<array{path:string,filename:string,mime_type:string,byte_size:int,sha256:string}>  $files
      */
     private function archiveResponse(array $files): Response
     {
         $temporaryPath = tempnam(sys_get_temp_dir(), 'media-download-');
         abort_unless(is_string($temporaryPath) && $temporaryPath !== '', 500, 'The download archive could not be created.');
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         $opened = $zip->open($temporaryPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
         if ($opened !== true) {
             @unlink($temporaryPath);

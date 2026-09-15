@@ -34,9 +34,11 @@ use LogicException;
 class PublicContentSetting extends Model
 {
     public const SCOPE_GENERAL = 'general';
+
     public const SCOPES = [self::SCOPE_GENERAL];
 
     protected $table = 'public_content_settings';
+
     public $incrementing = false;
 
     protected function casts(): array

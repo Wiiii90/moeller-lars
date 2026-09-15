@@ -17,8 +17,11 @@ class MediaAsset extends Model
     use HasFactory;
 
     public const COPYRIGHT_INHERIT = 'inherit';
+
     public const COPYRIGHT_OVERRIDE = 'override';
+
     public const COPYRIGHT_NONE = 'none';
+
     public const COPYRIGHT_MODES = [self::COPYRIGHT_INHERIT, self::COPYRIGHT_OVERRIDE, self::COPYRIGHT_NONE];
 
     protected function casts(): array
@@ -49,11 +52,30 @@ class MediaAsset extends Model
         };
     }
 
-    public function variants(): HasMany { return $this->hasMany(MediaVariant::class); }
-    public function cvEntries(): HasMany { return $this->hasMany(CvEntry::class, 'image_media_asset_id'); }
-    public function blogPosts(): HasMany { return $this->hasMany(BlogPost::class, 'cover_media_asset_id'); }
-    public function siteIdentitySettings(): HasMany { return $this->hasMany(PublicContentSetting::class, 'favicon_media_asset_id'); }
-    public function journalEntryMedia(): HasMany { return $this->hasMany(JournalEntryMedia::class); }
+    public function variants(): HasMany
+    {
+        return $this->hasMany(MediaVariant::class);
+    }
+
+    public function cvEntries(): HasMany
+    {
+        return $this->hasMany(CvEntry::class, 'image_media_asset_id');
+    }
+
+    public function blogPosts(): HasMany
+    {
+        return $this->hasMany(BlogPost::class, 'cover_media_asset_id');
+    }
+
+    public function siteIdentitySettings(): HasMany
+    {
+        return $this->hasMany(PublicContentSetting::class, 'favicon_media_asset_id');
+    }
+
+    public function journalEntryMedia(): HasMany
+    {
+        return $this->hasMany(JournalEntryMedia::class);
+    }
 
     public function artworks(): BelongsToMany
     {
@@ -62,7 +84,10 @@ class MediaAsset extends Model
     }
 
     /** Legacy compatibility only. */
-    public function exhibitionMedia(): HasMany { return $this->hasMany(ExhibitionMedia::class); }
+    public function exhibitionMedia(): HasMany
+    {
+        return $this->hasMany(ExhibitionMedia::class);
+    }
 
     /** Legacy compatibility only. */
     public function exhibitions(): BelongsToMany
@@ -85,6 +110,7 @@ class MediaAsset extends Model
             }
             if ($mode !== self::COPYRIGHT_OVERRIDE) {
                 $asset->setAttribute('copyright_notice', null);
+
                 return;
             }
             $notice = $asset->getAttribute('copyright_notice');
@@ -97,8 +123,11 @@ class MediaAsset extends Model
 
     private function normalCopyrightNotice(mixed $value): ?string
     {
-        if (! is_string($value)) { return null; }
+        if (! is_string($value)) {
+            return null;
+        }
         $value = trim($value);
+
         return $value === '' ? null : $value;
     }
 }

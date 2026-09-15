@@ -78,7 +78,7 @@ it('keeps page type out of hierarchy compatibility', function (): void {
     foreach (SiteNodeType::cases() as $child) {
         expect($child->canHaveParent())->toBeTrue()
             ->and($child->canContainChildren())->toBeTrue()
-            ->and($child->canChangePlacement())->toBeTrue();
+            ->and($child->canChangePlacement())->toBe($child !== SiteNodeType::Home);
 
         foreach (SiteNodeType::cases() as $parent) {
             expect($child->canBeChildOf($parent))->toBeTrue();

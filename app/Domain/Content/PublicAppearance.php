@@ -8,15 +8,25 @@ use Illuminate\Validation\ValidationException;
 final class PublicAppearance
 {
     public const MODE_DEFAULT = 'default';
+
     public const MODE_SOLID = 'solid';
+
     public const MODE_GRADIENT = 'gradient';
+
     public const DEFAULT_PAGE_COLOR = '#777777';
+
     public const DEFAULT_GRADIENT_ANGLE = 180;
+
     public const DEFAULT_PAGE_WIDTH = 800;
+
     public const DEFAULT_CONTENT_PADDING = 75;
+
     public const MIN_PAGE_WIDTH = 640;
+
     public const MAX_PAGE_WIDTH = 1440;
+
     public const MIN_CONTENT_PADDING = 24;
+
     public const MAX_CONTENT_PADDING = 180;
 
     /** @return array<string, string> */

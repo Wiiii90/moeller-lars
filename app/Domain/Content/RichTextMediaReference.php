@@ -92,7 +92,7 @@ final class RichTextMediaReference
      * Extract only canonical rich-text media fields from Custom Page blocks.
      * Titles, URLs, labels and other plain-text fields are deliberately ignored.
      *
-     * @param list<array<string, mixed>> $blocks
+     * @param  list<array<string, mixed>>  $blocks
      * @return list<int>
      */
     public static function idsFromCustomPageBlocks(array $blocks): array
