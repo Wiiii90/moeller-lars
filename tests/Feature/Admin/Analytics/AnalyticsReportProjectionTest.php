@@ -1,6 +1,5 @@
 <?php
 
-use App\Domain\Analytics\MatomoReportingClient;
 use App\Filament\Pages\Analytics;
 
 it('projects disabled empty and missing analytics values without inventing zeroes', function (): void {
@@ -72,27 +71,18 @@ it('searches only the active report and resets search when the report view chang
         ->and($analytics->detailReport)->toBe('geography');
 });
 
-it('preserves Matomo country presentation metadata without changing ordinary report rows', function (): void {
-    $client = (new ReflectionClass(MatomoReportingClient::class))->newInstanceWithoutConstructor();
-    $method = new ReflectionMethod(MatomoReportingClient::class, 'normalizeRows');
-    $payload = [[
-        'label' => 'Germany',
-        'nb_visits' => 8,
-        'metadata' => [
-            'code' => 'de',
-            'logo' => 'plugins/Morpheus/icons/dist/flags/de.png',
-        ],
-    ]];
+it('keeps analytics geography flags local', function (): void {
+    $view = file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
+    $notice = file_get_contents(public_path('vendor/pixel-flags/NOTICE'));
 
-    expect($method->invoke($client, $payload, ['nb_visits'], 'generic', true)[0])
-        ->toMatchArray([
-            'label' => 'Germany',
-            'nb_visits' => 8.0,
-            'code' => 'de',
-            'logo' => 'plugins/Morpheus/icons/dist/flags/de.png',
-        ])
-        ->and($method->invoke($client, $payload, ['nb_visits'])[0])
-        ->not->toHaveKeys(['code', 'logo']);
+    expect($view)
+        ->toContain('vendor/pixel-flags/svg/')
+        ->toContain('analytics-country-rank__flag--square')
+        ->not->toContain("config('analytics.matomo.base_url')")
+        ->and($notice)
+        ->toContain('Pixel Flags v1.0.0')
+        ->toContain('https://github.com/tgines/pixel-flags')
+        ->toContain('License: MIT');
 });
 
 it('keeps geography as one storage-style rail with local flags and secondary context', function (): void {
@@ -121,4 +111,24 @@ it('keeps geography as one storage-style rail with local flags and secondary con
         ->and($page)
         ->not->toContain('OperationalMetricsQuery')
         ->not->toContain('buildApplicationSignals');
+});
+
+it('aligns analytics controls and report tables to the shared six-unit grid', function (): void {
+    $view = file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
+    $css = file_get_contents(resource_path('css/admin/analytics.css'));
+
+    expect($view)
+        ->toContain('analytics-controls__search')
+        ->toContain('analytics-controls__report')
+        ->toContain('analytics-controls__filter')
+        ->toContain('analytics-controls__range')
+        ->toContain("'geography' => [0, 3, 1, 2, 4]")
+        ->toContain('admin-table--six-grid')
+        ->toContain("'7d' => '7 days'")
+        ->toContain("'30d' => '30 days'")
+        ->toContain("'12m' => '12 months'")
+        ->and($css)
+        ->toContain('grid-template-columns: repeat(6, minmax(0, 1fr));')
+        ->toContain('.analytics-range-selector.admin-toolbar')
+        ->toContain('.analytics-detail-table__numeric');
 });
