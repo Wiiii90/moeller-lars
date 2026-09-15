@@ -35,7 +35,7 @@ final class Analytics extends Page
     ];
 
     /** @var list<int> */
-    private const DETAIL_PAGE_SIZES = [12, 25, 50];
+    private const DETAIL_PAGE_SIZES = [25, 50, 100];
 
     public string $range = '30d';
 
@@ -45,7 +45,7 @@ final class Analytics extends Page
 
     public int $detailPage = 1;
 
-    public int $detailPageSize = 12;
+    public int $detailPageSize = 25;
 
     /** @var array<string, mixed> */
     public array $matomo = [];
@@ -110,7 +110,7 @@ final class Analytics extends Page
     public function updatedDetailPageSize(int $size): void
     {
         if (! in_array($size, self::DETAIL_PAGE_SIZES, true)) {
-            $this->detailPageSize = 12;
+            $this->detailPageSize = 25;
         }
 
         $this->detailPage = 1;
@@ -177,7 +177,7 @@ final class Analytics extends Page
         $total = count($rows);
         $pageSize = in_array($this->detailPageSize, self::DETAIL_PAGE_SIZES, true)
             ? $this->detailPageSize
-            : 12;
+            : 25;
         $pages = max(1, (int) ceil($total / $pageSize));
         $page = min(max(1, $this->detailPage), $pages);
         $start = $total === 0 ? 0 : (($page - 1) * $pageSize) + 1;
