@@ -6,7 +6,9 @@ use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Publication\PublicationVersionService;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
+use App\Models\PublicationCheckpointEvent;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 final class AdminPublicationHistory
@@ -16,14 +18,20 @@ final class AdminPublicationHistory
     /**
      * @return array{commits:list<array<string,mixed>>,paginator:LengthAwarePaginator<int,PublicationCheckpoint>}
      */
-    public function page(int $perPage = 20): array
-    {
+    public function page(
+        ?string $area = null,
+        ?string $family = null,
+        string $search = '',
+        ?string $date = null,
+        ?int $hour = null,
+        int $perPage = 20,
+    ): array {
         $perPage = max(10, min(50, $perPage));
         $currentSchemaHash = $this->versions->schemaHash();
         $liveId = $this->versions->currentLiveCheckpoint()?->getKey();
 
         /** @var LengthAwarePaginator<int, PublicationCheckpoint> $paginator */
-        $paginator = PublicationCheckpoint::query()
+        $paginator = $this->queryForFilters($area, $family, $search, $date, $hour)
             ->with([
                 'adminUser:id,name',
                 'parent:id,hash,snapshot_available,schema_hash',
@@ -46,6 +54,96 @@ final class AdminPublicationHistory
                 ->all(),
             'paginator' => $paginator,
         ];
+    }
+
+    /**
+     * @return array{total:int,active_days:int,changes:int,events:int,actors:int,latest_at:mixed}
+     */
+    public function overview(
+        ?string $area = null,
+        ?string $family = null,
+        string $search = '',
+        ?string $date = null,
+        ?int $hour = null,
+    ): array {
+        $query = $this->queryForFilters($area, $family, $search, $date, $hour);
+        $driver = $query->getModel()->getConnection()->getDriverName();
+        $dateExpression = $this->dateExpression($driver);
+
+        $activeDays = (clone $query)
+            ->toBase()
+            ->selectRaw($dateExpression.' AS bucket')
+            ->groupByRaw($dateExpression)
+            ->get()
+            ->count();
+
+        $checkpointIds = (clone $query)->select('publication_checkpoints.id');
+
+        return [
+            'total' => (clone $query)->count(),
+            'active_days' => $activeDays,
+            'changes' => (int) (clone $query)->sum('change_count'),
+            'events' => PublicationCheckpointEvent::query()
+                ->whereIn('publication_checkpoint_id', $checkpointIds)
+                ->count(),
+            'actors' => (clone $query)
+                ->whereNotNull('admin_user_id')
+                ->distinct()
+                ->count('admin_user_id'),
+            'latest_at' => (clone $query)->max('published_at'),
+        ];
+    }
+
+    /** @return Builder<PublicationCheckpoint> */
+    public function queryForFilters(
+        ?string $area = null,
+        ?string $family = null,
+        string $search = '',
+        ?string $date = null,
+        ?int $hour = null,
+    ): Builder {
+        $query = PublicationCheckpoint::query();
+        $driver = $query->getModel()->getConnection()->getDriverName();
+
+        $actionKeys = $this->filteredActionKeys($area, $family);
+        if ($actionKeys !== null) {
+            $query->whereHas('auditEvents', static function (Builder $events) use ($actionKeys): void {
+                $events->whereIn('action', $actionKeys);
+            });
+        }
+
+        if (is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1) {
+            $query->whereRaw($this->dateExpression($driver).' = ?', [$date]);
+        }
+
+        if ($hour !== null && $hour >= 0 && $hour <= 23) {
+            $query->whereRaw($this->hourExpression($driver).' = ?', [$hour]);
+        }
+
+        $search = mb_strtolower(trim($search));
+        if ($search === '') {
+            return $query;
+        }
+
+        $needle = '%'.$search.'%';
+        $searchActionKeys = $this->searchActionKeys($search);
+
+        $query->where(function (Builder $query) use ($needle, $searchActionKeys): void {
+            $query
+                ->whereRaw("LOWER(COALESCE(hash, '')) LIKE ?", [$needle])
+                ->orWhereRaw("LOWER(COALESCE(message, '')) LIKE ?", [$needle])
+                ->orWhereHas('adminUser', static function (Builder $adminUserQuery) use ($needle): void {
+                    $adminUserQuery->whereRaw('LOWER(name) LIKE ?', [$needle]);
+                });
+
+            if ($searchActionKeys !== []) {
+                $query->orWhereHas('auditEvents', static function (Builder $events) use ($searchActionKeys): void {
+                    $events->whereIn('action', $searchActionKeys);
+                });
+            }
+        });
+
+        return $query;
     }
 
     /** @return array<string,mixed>|null */
@@ -98,6 +196,57 @@ final class AdminPublicationHistory
             ->all();
 
         return [...$projected, 'events' => $events];
+    }
+
+    /** @return array<int, string>|null */
+    private function filteredActionKeys(?string $area, ?string $family): ?array
+    {
+        $areaKeys = $area !== null && $area !== '' ? AdminActionCatalog::keysForArea($area) : null;
+        $familyKeys = $family !== null && $family !== '' ? AdminActionCatalog::keysForFamily($family) : null;
+
+        if ($areaKeys === null && $familyKeys === null) {
+            return null;
+        }
+        if ($areaKeys === null) {
+            return $familyKeys;
+        }
+        if ($familyKeys === null) {
+            return $areaKeys;
+        }
+
+        return array_values(array_intersect($areaKeys, $familyKeys));
+    }
+
+    /** @return array<int, string> */
+    private function searchActionKeys(string $search): array
+    {
+        return array_values(array_filter(
+            AdminActionCatalog::keys(),
+            static function (string $key) use ($search): bool {
+                $definition = AdminActionCatalog::definition($key);
+                foreach ([$definition['label'], $definition['area'], $definition['family']] as $value) {
+                    if (mb_stripos($value, $search) !== false) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
+        ));
+    }
+
+    private function dateExpression(string $driver): string
+    {
+        return $driver === 'pgsql' ? 'published_at::date' : 'DATE(published_at)';
+    }
+
+    private function hourExpression(string $driver): string
+    {
+        return match ($driver) {
+            'sqlite' => "CAST(strftime('%H', published_at) AS INTEGER)",
+            'mysql', 'mariadb' => 'HOUR(published_at)',
+            default => 'EXTRACT(HOUR FROM published_at)::int',
+        };
     }
 
     /** @return array<string,mixed> */
