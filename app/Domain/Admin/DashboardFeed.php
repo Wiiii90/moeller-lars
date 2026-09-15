@@ -387,6 +387,29 @@ final class DashboardFeed
                 return $microsecond;
             }
 
+            $leftContactId = $left['contact_id'] ?? null;
+            $leftNotificationId = $left['notification_id'] ?? null;
+            $rightContactId = $right['contact_id'] ?? null;
+            $rightNotificationId = $right['notification_id'] ?? null;
+            $leftSourceId = is_int($leftContactId)
+                ? $leftContactId
+                : (is_int($leftNotificationId) ? $leftNotificationId : null);
+            $rightSourceId = is_int($rightContactId)
+                ? $rightContactId
+                : (is_int($rightNotificationId) ? $rightNotificationId : null);
+
+            if ($leftSourceId !== null && $rightSourceId !== null) {
+                $sourceId = $rightSourceId <=> $leftSourceId;
+                if ($sourceId !== 0) {
+                    return $sourceId;
+                }
+
+                $sourceType = strcmp((string) $left['type'], (string) $right['type']);
+                if ($sourceType !== 0) {
+                    return $sourceType;
+                }
+            }
+
             return strcmp((string) $right['key'], (string) $left['key']);
         });
 
