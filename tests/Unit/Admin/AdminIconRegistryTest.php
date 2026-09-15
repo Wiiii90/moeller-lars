@@ -14,11 +14,18 @@ use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\SiteNodePresentation;
 
-it('derives compact admin icons from the central outline semantics with the pinned solid exception', function (): void {
+it('derives compact admin icons from central semantics with explicit solid and custom exceptions', function (): void {
     foreach (AdminIcon::cases() as $icon) {
         if ($icon === AdminIcon::Pinned) {
             expect($icon->value)->toBe('heroicon-s-bookmark')
                 ->and($icon->mini())->toBe('heroicon-s-bookmark');
+
+            continue;
+        }
+
+        if ($icon === AdminIcon::NavigationNode) {
+            expect($icon->value)->toBe('admin-node')
+                ->and($icon->mini())->toBe('admin-node');
 
             continue;
         }
