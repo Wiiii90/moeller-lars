@@ -129,7 +129,7 @@ trait ManagesSitePageEditDialog
 
         $editorial = app(SiteSectionEditorialService::class);
         if ($section->nodeType() !== $targetType) {
-            $section = $editorial->convertType($section, $targetType);
+            $section = $editorial->convertType($section, $targetType->value);
         }
 
         /** @var SiteSection $section */
