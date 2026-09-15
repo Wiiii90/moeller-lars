@@ -28,6 +28,7 @@ export default defineConfig({
                 'resources/css/custom-pages.css',
                 'resources/js/app.js',
                 'resources/js/admin-viz.js',
+                'resources/js/admin-password-tools.js',
             ],
             refresh: true,
         }),
