@@ -138,18 +138,16 @@
         @endif
     </x-admin.table>
 
-    <footer class="admin-pager">
-        <x-admin.page-size-picker :value="$feedPageSize" wire-model="feedPageSize" />
-        <span class="admin-pager__range">
-            @if ($feedPagination['total'] === 0)
-                0 of 0
-            @else
-                {{ $feedPagination['start'] }}–{{ $feedPagination['end'] }} of {{ $feedPagination['total'] }}
-            @endif
-        </span>
-        <div class="admin-pager__actions admin-toolbar">
-            <button class="admin-action" type="button" wire:click="previousFeedPage" @disabled($feedPagination['page'] <= 1)>Previous</button>
-            <button class="admin-action" type="button" wire:click="nextFeedPage" @disabled($feedPagination['page'] >= $feedPagination['pages'])>Next</button>
-        </div>
-    </footer>
+    <x-admin.pager
+        :start="$feedPagination['start']"
+        :end="$feedPagination['end']"
+        :total="$feedPagination['total']"
+        :page="$feedPagination['page']"
+        :pages="$feedPagination['pages']"
+        :page-size="$feedPageSize"
+        page-size-wire-model="feedPageSize"
+        previous-wire-action="previousFeedPage"
+        next-wire-action="nextFeedPage"
+        aria-label="Dashboard feed pagination"
+    />
 </x-admin.section>

@@ -332,12 +332,11 @@
     height: 0;
 }
 
-.admin-add-row + :is(.admin-pager, .media-workspace__pager) {
+.admin-add-row + .admin-pager {
     border-top: 0;
 }
 
-.admin-pager,
-.media-workspace__pager {
+.admin-pager {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     gap: 1rem;
@@ -349,24 +348,7 @@
     font-size: var(--admin-font-size-table-support);
 }
 
-.admin-pager__leading {
-    display: inline-flex;
-    min-width: 0;
-    gap: .8rem;
-    align-items: center;
-    justify-self: start;
-}
-
-.admin-pager__meta {
-    justify-self: start;
-    color: var(--admin-muted);
-    font-size: var(--admin-font-size-table-support);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-.admin-pager__size,
-.media-workspace__pager-size {
+.admin-pager__size {
     display: inline-flex;
     min-height: 2rem;
     gap: .45rem;
@@ -375,15 +357,13 @@
     white-space: nowrap;
 }
 
-.admin-pager__size > span,
-.media-workspace__pager-size > span {
+.admin-pager__size > span {
     color: var(--admin-muted);
     font-size: var(--admin-font-size-control-label);
     line-height: 1;
 }
 
-.admin-pager__size select,
-.media-workspace__pager-size select {
+.admin-pager__size select {
     box-sizing: border-box;
     display: inline-flex;
     height: 2rem;
@@ -402,16 +382,14 @@
 }
 
 .admin-pager__size select:hover,
-.admin-pager__size select:focus-visible,
-.media-workspace__pager-size select:hover,
-.media-workspace__pager-size select:focus-visible {
+.admin-pager__size select:focus-visible {
     border-color: var(--admin-line-strong);
     background: var(--admin-subtle);
     outline: none;
 }
 
 /* Shared deterministic page-size picker. Trigger and popup share one exact
- * width; pager popups open inward so they never change document height. */
+ * width; the popup always opens downward and the pager reserves its room. */
 .admin-pager-size-picker {
     position: relative;
     display: inline-flex;
@@ -449,8 +427,8 @@
 
 .admin-pager-size-picker__menu {
     position: absolute;
-    top: auto;
-    bottom: calc(100% + .3rem);
+    top: calc(100% + .3rem);
+    bottom: auto;
     left: 0;
     z-index: 50;
     box-sizing: border-box;
@@ -463,6 +441,10 @@
     background: var(--admin-control-popup-surface);
     box-shadow: 0 .45rem 1rem rgba(0, 0, 0, .12);
     color: var(--admin-control-popup-ink);
+}
+
+.admin-pager:has(.admin-pager-size-picker.is-open) {
+    padding-bottom: calc(5.25rem + var(--admin-section-gap));
 }
 
 .admin-pager-size-picker__option {
@@ -504,8 +486,7 @@
     text-align: center;
 }
 
-.admin-pager__range,
-.media-workspace__pager-range {
+.admin-pager__range {
     justify-self: center;
     color: var(--admin-muted);
     font-size: var(--admin-font-size-table-support);
@@ -513,8 +494,7 @@
     white-space: nowrap;
 }
 
-.admin-pager__actions,
-.media-workspace__pager-actions {
+.admin-pager__actions {
     justify-self: end;
     flex-wrap: nowrap;
 }
@@ -578,59 +558,41 @@
         height: .35rem;
     }
 
-    .admin-pager,
-    .media-workspace__pager {
+    .admin-pager {
         grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    .admin-pager__range,
-    .media-workspace__pager-range {
+    .admin-pager__range {
         grid-column: 1 / -1;
         grid-row: 1;
     }
 
-    .admin-pager__meta {
+    .admin-pager__size {
         grid-column: 1;
         grid-row: 2;
     }
 
-    .admin-pager__size,
-    .media-workspace__pager-size {
-        grid-column: 1;
-        grid-row: 2;
-    }
-
-    .admin-pager__actions,
-    .media-workspace__pager-actions {
+    .admin-pager__actions {
         grid-column: 2;
         grid-row: 2;
     }
 }
 
 @media (max-width: 520px) {
-    .admin-pager,
-    .media-workspace__pager {
+    .admin-pager {
         grid-template-columns: 1fr;
     }
 
-    .admin-pager__meta,
     .admin-pager__range,
     .admin-pager__size,
-    .admin-pager__actions,
-    .media-workspace__pager-range,
-    .media-workspace__pager-size,
-    .media-workspace__pager-actions {
+    .admin-pager__actions {
         grid-column: 1;
         justify-self: start;
     }
 
-    .admin-pager__range,
-    .media-workspace__pager-range { grid-row: 1; }
+    .admin-pager__range { grid-row: 1; }
 
-    .admin-pager__meta,
-    .admin-pager__size,
-    .media-workspace__pager-size { grid-row: 2; }
+    .admin-pager__size { grid-row: 2; }
 
-    .admin-pager__actions,
-    .media-workspace__pager-actions { grid-row: 3; }
+    .admin-pager__actions { grid-row: 3; }
 }

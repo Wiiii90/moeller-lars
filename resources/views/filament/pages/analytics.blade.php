@@ -414,18 +414,19 @@
             </x-admin.table>
 
             @if (($detailTable['total'] ?? 0) > 0)
-                <footer class="admin-pager" aria-label="Analytics detail pagination">
-                    <x-admin.page-size-picker
-                        :value="$detailPageSize"
-                        wire-model="detailPageSize"
-                        aria-label="Analytics rows per page"
-                    />
-                    <span class="admin-pager__range">{{ $detailTable['start'] }}–{{ $detailTable['end'] }} of {{ $detailTable['total'] }}</span>
-                    <div class="admin-toolbar admin-pager__actions">
-                        <button class="admin-action" type="button" wire:click="previousDetailPage" @disabled($detailTable['page'] <= 1)>Previous</button>
-                        <button class="admin-action" type="button" wire:click="nextDetailPage" @disabled($detailTable['page'] >= $detailTable['pages'])>Next</button>
-                    </div>
-                </footer>
+                <x-admin.pager
+                    :start="$detailTable['start']"
+                    :end="$detailTable['end']"
+                    :total="$detailTable['total']"
+                    :page="$detailTable['page']"
+                    :pages="$detailTable['pages']"
+                    :page-size="$detailPageSize"
+                    page-size-wire-model="detailPageSize"
+                    page-size-aria-label="Analytics rows per page"
+                    previous-wire-action="previousDetailPage"
+                    next-wire-action="nextDetailPage"
+                    aria-label="Analytics detail pagination"
+                />
             @endif
         </section>
     </x-admin.workspace>

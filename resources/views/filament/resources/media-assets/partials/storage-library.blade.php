@@ -429,26 +429,18 @@
         aria-controls="storage-upload"
     >Add Media File</x-admin.add-row>
 
-    <footer class="media-workspace__pager">
-        <x-admin.page-size-picker
-            class="media-workspace__pager-size"
-            :value="$pageSize"
-            :options="[25, 50, 100]"
-            wire-action="setPageSize"
-            aria-label="Files per page"
-        />
-
-        <span class="media-workspace__pager-range">
-            @if ($total === 0)
-                0 of 0
-            @else
-                {{ $resultStart }}–{{ $resultEnd }} of {{ $total }}
-            @endif
-        </span>
-
-        <div class="media-workspace__pager-actions admin-toolbar">
-            <button class="admin-action" type="button" wire:click="previousPage" @disabled($page <= 1)>Previous</button>
-            <button class="admin-action" type="button" wire:click="nextPage" @disabled($page >= $pages)>Next</button>
-        </div>
-    </footer>
+    <x-admin.pager
+        :start="$resultStart"
+        :end="$resultEnd"
+        :total="$total"
+        :page="$page"
+        :pages="$pages"
+        :page-size="$pageSize"
+        :page-size-options="[25, 50, 100]"
+        page-size-wire-action="setPageSize"
+        page-size-aria-label="Files per page"
+        previous-wire-action="previousPage"
+        next-wire-action="nextPage"
+        aria-label="Storage pagination"
+    />
 </section>

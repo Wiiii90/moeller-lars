@@ -447,25 +447,19 @@
             </x-admin.table>
 
             @if ($paginator !== null)
-                <footer class="admin-pager" aria-label="Activity pagination">
-                    <div class="admin-pager__leading">
-                        <span class="admin-pager__meta">Page {{ $paginator->currentPage() }} of {{ $paginator->lastPage() }}</span>
-                        <x-admin.page-size-picker :value="$perPage" :options="$pageSizes" :urls="$pageSizeUrls" />
-                    </div>
-                    <span class="admin-pager__range">{{ $paginator->firstItem() ?? 0 }}–{{ $paginator->lastItem() ?? 0 }} of {{ $paginator->total() }}</span>
-                    <div class="admin-pager__actions admin-toolbar">
-                        @if ($paginator->currentPage() > 1)
-                            <a class="admin-action" href="{{ $activityUrl(['view' => null, 'page' => $paginator->currentPage() - 1, 'commits_page' => null]) }}">Previous</a>
-                        @else
-                            <button class="admin-action" type="button" disabled>Previous</button>
-                        @endif
-                        @if ($paginator->currentPage() < $paginator->lastPage())
-                            <a class="admin-action" href="{{ $activityUrl(['view' => null, 'page' => $paginator->currentPage() + 1, 'commits_page' => null]) }}">Next</a>
-                        @else
-                            <button class="admin-action" type="button" disabled>Next</button>
-                        @endif
-                    </div>
-                </footer>
+                <x-admin.pager
+                    :start="$paginator->firstItem() ?? 0"
+                    :end="$paginator->lastItem() ?? 0"
+                    :total="$paginator->total()"
+                    :page="$paginator->currentPage()"
+                    :pages="$paginator->lastPage()"
+                    :page-size="$perPage"
+                    :page-size-options="$pageSizes"
+                    :page-size-urls="$pageSizeUrls"
+                    :previous-url="$activityUrl(['view' => null, 'page' => $paginator->currentPage() - 1, 'commits_page' => null])"
+                    :next-url="$activityUrl(['view' => null, 'page' => $paginator->currentPage() + 1, 'commits_page' => null])"
+                    aria-label="Activity pagination"
+                />
             @endif
         @else
             <x-admin.table class="admin-table--data activity-workspace__table activity-commits-table" wire:key="activity-commits-table">
@@ -558,25 +552,19 @@
             </x-admin.table>
 
             @if ($commitPaginator !== null)
-                <footer class="admin-pager" aria-label="Commit pagination">
-                    <div class="admin-pager__leading">
-                        <span class="admin-pager__meta">Page {{ $commitPaginator->currentPage() }} of {{ $commitPaginator->lastPage() }}</span>
-                        <x-admin.page-size-picker :value="$perPage" :options="$pageSizes" :urls="$pageSizeUrls" />
-                    </div>
-                    <span class="admin-pager__range">{{ $commitPaginator->firstItem() ?? 0 }}–{{ $commitPaginator->lastItem() ?? 0 }} of {{ $commitPaginator->total() }}</span>
-                    <div class="admin-pager__actions admin-toolbar">
-                        @if ($commitPaginator->currentPage() > 1)
-                            <a class="admin-action" href="{{ $activityUrl(['view' => 'commits', 'page' => null, 'commits_page' => $commitPaginator->currentPage() - 1]) }}">Previous</a>
-                        @else
-                            <button class="admin-action" type="button" disabled>Previous</button>
-                        @endif
-                        @if ($commitPaginator->currentPage() < $commitPaginator->lastPage())
-                            <a class="admin-action" href="{{ $activityUrl(['view' => 'commits', 'page' => null, 'commits_page' => $commitPaginator->currentPage() + 1]) }}">Next</a>
-                        @else
-                            <button class="admin-action" type="button" disabled>Next</button>
-                        @endif
-                    </div>
-                </footer>
+                <x-admin.pager
+                    :start="$commitPaginator->firstItem() ?? 0"
+                    :end="$commitPaginator->lastItem() ?? 0"
+                    :total="$commitPaginator->total()"
+                    :page="$commitPaginator->currentPage()"
+                    :pages="$commitPaginator->lastPage()"
+                    :page-size="$perPage"
+                    :page-size-options="$pageSizes"
+                    :page-size-urls="$pageSizeUrls"
+                    :previous-url="$activityUrl(['view' => 'commits', 'page' => null, 'commits_page' => $commitPaginator->currentPage() - 1])"
+                    :next-url="$activityUrl(['view' => 'commits', 'page' => null, 'commits_page' => $commitPaginator->currentPage() + 1])"
+                    aria-label="Commit pagination"
+                />
             @endif
         @endif
     </x-admin.workspace>
