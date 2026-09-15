@@ -42,7 +42,7 @@
         <span>Publication</span>
         <p>{{ $publicationLabel }}</p>
         @if (($event['publication_status'] ?? null) === 'committed')
-            <small>Checkpoint #{{ $event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}</small>
+            <small>Commit {{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}</small>
             @if ($event['checkpoint_message'])
                 <small>{{ $event['checkpoint_message'] }}</small>
             @endif
