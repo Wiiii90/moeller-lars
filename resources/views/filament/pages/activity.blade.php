@@ -300,9 +300,14 @@
 
             <x-admin.table class="admin-table--data activity-workspace__table">
                 <table>
+                    <colgroup>
+                        <col><col><col><col><col><col>
+                    </colgroup>
                     <thead>
                         <tr>
-                            <th scope="col">Activity</th>
+                            <th scope="col">Change</th>
+                            <th scope="col">Target</th>
+                            <th scope="col">Context</th>
                             <th scope="col">Publication</th>
                             <th scope="col">Who / when</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
@@ -311,35 +316,40 @@
                     <tbody>
                         @forelse ($activity as $event)
                             <tr>
-                                <td class="admin-table__identity activity-event-cell">
+                                <td class="activity-change-cell" title="{{ $event['action'] }}">
                                     <strong>{{ $event['action'] }}</strong>
+                                </td>
+                                <td class="activity-target-cell" title="{{ $event['target'] }}">
                                     <span>{{ $event['target'] }}</span>
-                                    <small>{{ $event['area'] }} · {{ $event['family'] }}</small>
+                                </td>
+                                <td class="activity-context-cell" title="{{ $event['area'] }} · {{ $event['family'] }}">
+                                    <span>{{ $event['area'] }} · {{ $event['family'] }}</span>
                                 </td>
                                 <td class="activity-publication-cell">
                                     @if ($event['publication_status'] === 'committed')
-                                        <span class="admin-status is-published">Committed</span>
-                                        <small>Commit {{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}</small>
-                                        @if ($event['checkpoint_message'])
-                                            <small title="{{ $event['checkpoint_message'] }}">{{ $event['checkpoint_message'] }}</small>
-                                        @endif
+                                        <span
+                                            class="activity-publication-cell__state"
+                                            title="Commit {{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}{{ $event['checkpoint_message'] ? ' · '.$event['checkpoint_message'] : '' }}"
+                                        >
+                                            <span class="admin-status is-published">Committed</span>
+                                            <code>{{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }}</code>
+                                        </span>
                                     @elseif ($event['publication_status'] === 'pending')
-                                        <span class="admin-status">Staged</span>
-                                        <small>Included in next publish</small>
+                                        <span class="admin-status" title="Included in next publish">Staged</span>
                                     @elseif ($event['publication_status'] === 'not_pending')
-                                        <span class="admin-status">No staged delta</span>
-                                        <small>Later changes neutralized this event</small>
+                                        <span class="admin-status" title="Later changes neutralized this event">No staged delta</span>
                                     @else
                                         <span class="activity-publication-cell__empty" aria-label="No publication state">—</span>
                                     @endif
                                 </td>
-                                <td class="activity-event-meta">
+                                <td class="activity-event-meta" title="{{ $event['actor'] }} · {{ $event['timestamp'] }}">
                                     <strong>{{ $event['actor'] }}</strong>
-                                    <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
+                                    <span aria-hidden="true">·</span>
+                                    <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}">{{ $event['when'] }}</time>
                                 </td>
                                 <td class="admin-table__actions">
                                     <x-admin.toolbar>
-                                        <button class="admin-action" type="button" wire:click="openActivityDetails({{ $event['id'] }})">Details</button>
+                                        <button class="admin-action" type="button" wire:click="mountAction('activityDetails', { id: {{ $event['id'] }} })">Details</button>
                                         @if ($event['url'] !== null)
                                             <a class="admin-action" href="{{ $event['url'] }}">Open record</a>
                                         @endif
@@ -348,7 +358,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-table__empty-cell" colspan="4">
+                                <td class="admin-table__empty-cell" colspan="6">
                                     @if ($activitySourceExists)
                                         <x-admin.empty-state title="No matching activity" minimal>
                                             <x-slot:actions>
