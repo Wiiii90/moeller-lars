@@ -1,9 +1,9 @@
 <?php
 
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
 use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;

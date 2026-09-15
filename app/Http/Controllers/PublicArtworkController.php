@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Artwork\PublicArtworkQuery;
-use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionPathPolicy;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\PublicMedia;
 use App\Models\ArtworkCategory;
 use App\Models\Redirect;

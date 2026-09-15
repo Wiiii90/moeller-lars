@@ -4,9 +4,9 @@ namespace App\Filament\Pages;
 
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\Concerns\ManagesSitePageDialogs;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;

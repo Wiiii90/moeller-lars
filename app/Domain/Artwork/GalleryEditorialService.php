@@ -3,8 +3,8 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionPathPolicy;
+use App\Domain\Content\SiteSectionType;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\Redirect;

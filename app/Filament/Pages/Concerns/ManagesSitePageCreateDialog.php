@@ -4,8 +4,8 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
