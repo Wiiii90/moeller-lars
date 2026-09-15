@@ -265,6 +265,7 @@
                     <input type="hidden" name="view" value="commits">
                 @endif
                 <input type="hidden" name="calendar_year" value="{{ $calendarYear }}">
+                <input type="hidden" name="per_page" value="{{ $perPage }}">
 
                 <x-admin.controls class="activity-workspace__controls" aria-label="Activity controls">
                     <x-slot:search>
