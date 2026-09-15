@@ -59,12 +59,9 @@
             $code = is_string($row['code'] ?? null) && preg_match('/^[a-z]{2}$/i', trim($row['code'])) === 1
                 ? strtolower(trim($row['code']))
                 : ($previewCountryCodes[$label] ?? null);
-            $flagUrl = null;
-            if ($code !== null && is_file(public_path("vendor/pixel-flags/svg/{$code}.svg"))) {
-                $flagUrl = asset("vendor/pixel-flags/svg/{$code}.svg");
-            } elseif (is_string($row['logo'] ?? null) && trim($row['logo']) !== '' && filled(config('analytics.matomo.base_url'))) {
-                $flagUrl = rtrim((string) config('analytics.matomo.base_url'), '/').'/'.ltrim(trim($row['logo']), '/');
-            }
+            $flagUrl = $code !== null && is_file(public_path("vendor/pixel-flags/svg/{$code}.svg"))
+                ? asset("vendor/pixel-flags/svg/{$code}.svg")
+                : null;
 
             $rankLabel = '—';
             if ($visits !== null) {
@@ -136,6 +133,47 @@
         $detailEmptyTitle = trim($search) !== ''
             ? 'No matching '.$detailReportLabel.' rows'
             : ($detailTable['state'] === 'unavailable' ? $detailReportLabel.' unavailable' : 'No '.$detailReportLabel.' data');
+        $detailColumnOrder = match ($detailReport) {
+            'geography' => [0, 3, 1, 2, 4],
+            default => array_keys($detailTable['columns']),
+        };
+        $detailColumnClasses = match ($detailReport) {
+            'acquisition', 'technology' => [
+                'admin-table__col-one-unit',
+                'admin-table__col-two-units',
+                'admin-table__col-one-unit',
+                'admin-table__col-one-unit',
+                'admin-table__col-one-unit',
+            ],
+            'interactions' => [
+                'admin-table__col-two-units',
+                'admin-table__col-one-unit',
+                'admin-table__col-one-unit',
+                'admin-table__col-two-units',
+            ],
+            'artwork' => [
+                'admin-table__col-one-half-units',
+                'admin-table__col-one-unit',
+                'admin-table__col-three-quarter-unit',
+                'admin-table__col-half-unit',
+                'admin-table__col-half-unit',
+                'admin-table__col-three-quarter-unit',
+                'admin-table__col-one-unit',
+            ],
+            default => [
+                'admin-table__col-two-units',
+                'admin-table__col-one-unit',
+                'admin-table__col-one-unit',
+                'admin-table__col-one-unit',
+                'admin-table__col-one-unit',
+            ],
+        };
+        $detailNumericColumns = match ($detailReport) {
+            'acquisition', 'technology' => [3, 4, 5],
+            'interactions' => [2, 3, 4],
+            'artwork' => [3, 4, 5, 6, 7],
+            default => [2, 3, 4, 5],
+        };
     @endphp
 
     <x-admin.workspace title="Analytics" class="analytics-dashboard">
@@ -207,13 +245,14 @@
                                     class="analytics-country-rank"
                                     x-on:click="selectCountry(@js($label))"
                                     x-bind:class="selectedCountry === @js($label) ? 'is-selected' : ''"
-                                    x-bind:aria-pressed="(selectedCountry === @js($label)).toString()"
+                                    x-bind:aria-pressed="(selectedCountry === @js($label])).toString()"
                                 >
                                     <span class="analytics-country-rank__identity">
                                         @if (is_string($presentation['flag_url'] ?? null))
                                             <img
-                                                class="analytics-country-rank__flag"
+                                                class="analytics-country-rank__flag {{ in_array($presentation['code'] ?? null, ['ch', 'va'], true) ? 'analytics-country-rank__flag--square' : '' }}"
                                                 src="{{ $presentation['flag_url'] }}"
+                                                data-country-code="{{ $presentation['code'] ?? '' }}"
                                                 width="16"
                                                 height="12"
                                                 alt=""
@@ -252,7 +291,7 @@
         <section class="analytics-detail-surface admin-visual-stage-followup" aria-label="Analytics detail table">
             <x-admin.controls class="analytics-controls" aria-label="Analytics report controls">
                 <x-slot:search>
-                    <label class="admin-data-field">
+                    <label class="admin-data-field analytics-controls__search">
                         <span>Search</span>
                         <input
                             type="search"
@@ -264,7 +303,7 @@
                 </x-slot:search>
 
                 <x-slot:filters>
-                    <label class="admin-data-field">
+                    <label class="admin-data-field analytics-controls__report">
                         <span>Report</span>
                         <select wire:model.live="detailReport">
                             @foreach ($detailReportOptions as $report => $label)
@@ -275,21 +314,22 @@
                 </x-slot:filters>
 
                 <x-slot:reset>
-                    <div class="admin-data-control-group">
+                    <div class="admin-data-control-group analytics-controls__filter">
                         <span class="admin-data-control-label">Filter</span>
                         <button class="admin-action" type="button" wire:click="$set('search', '')" @disabled(trim($search) === '')>Reset</button>
                     </div>
                 </x-slot:reset>
 
                 <x-slot:actions>
-                    <div class="admin-data-control-group analytics-range-control">
+                    <div class="admin-data-control-group analytics-range-control analytics-controls__range">
                         <span class="admin-data-control-label">Range</span>
-                        <x-admin.toolbar aria-label="Analytics date range">
-                            @foreach (['today' => 'Today', '7d' => '7d', '30d' => '30d', '12m' => '12m'] as $preset => $label)
+                        <x-admin.toolbar class="analytics-range-selector" aria-label="Analytics date range">
+                            @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', '12m' => '12 months'] as $preset => $label)
                                 <button
                                     type="button"
                                     wire:click="setRange('{{ $preset }}')"
-                                    class="admin-action {{ $range === $preset ? 'is-primary' : '' }}"
+                                    class="admin-action analytics-range-selector__option {{ $range === $preset ? 'is-primary' : '' }}"
+                                    aria-pressed="{{ $range === $preset ? 'true' : 'false' }}"
                                 >{{ $label }}</button>
                             @endforeach
                         </x-admin.toolbar>
@@ -298,14 +338,22 @@
             </x-admin.controls>
 
             <x-admin.table class="admin-table--data analytics-detail-table">
-                <table>
+                <table class="admin-table--six-grid analytics-detail-table__table">
+                    <colgroup>
+                        @foreach ($detailColumnClasses as $columnClass)
+                            <col class="{{ $columnClass }}">
+                        @endforeach
+                    </colgroup>
                     @if ($detailTable['partial'])
                         <caption>{{ $detailTable['partial'] }}</caption>
                     @endif
                     <thead>
                         <tr>
-                            @foreach ($detailTable['columns'] as $column)
-                                <th scope="col">{{ $column }}</th>
+                            @foreach ($detailColumnOrder as $columnIndex)
+                                <th
+                                    scope="col"
+                                    class="{{ in_array($loop->iteration, $detailNumericColumns, true) ? 'analytics-detail-table__numeric' : '' }}"
+                                >{{ $detailTable['columns'][$columnIndex] }}</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -319,8 +367,10 @@
                         @else
                             @forelse ($detailTable['rows'] as $row)
                                 <tr>
-                                    @foreach ($row as $cell)
-                                        <td class="{{ $loop->first ? 'admin-table__identity' : '' }}">{{ $cell }}</td>
+                                    @foreach ($detailColumnOrder as $columnIndex)
+                                        <td class="{{ $loop->first ? 'admin-table__identity ' : '' }}{{ in_array($loop->iteration, $detailNumericColumns, true) ? 'analytics-detail-table__numeric' : '' }}">
+                                            {{ $row[$columnIndex] ?? '—' }}
+                                        </td>
                                     @endforeach
                                 </tr>
                             @empty
