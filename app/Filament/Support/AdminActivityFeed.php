@@ -403,6 +403,7 @@ final class AdminActivityFeed
                         ? (string) $publicationEventState->getAttribute('status')
                         : null),
                 'checkpoint_id' => $checkpoint?->getKey(),
+                'checkpoint_short_hash' => $checkpoint instanceof PublicationCheckpoint ? $checkpoint->shortHash() : null,
                 'checkpoint_message' => $checkpoint?->getAttribute('message'),
                 'checkpoint_at' => $checkpoint?->getAttribute('published_at')?->format('Y-m-d H:i'),
                 'undo' => $undo,

@@ -319,7 +319,7 @@
                                 <td class="activity-publication-cell">
                                     @if ($event['publication_status'] === 'committed')
                                         <span class="admin-status is-published">Committed</span>
-                                        <small>Commit #{{ $event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}</small>
+                                        <small>Commit {{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}</small>
                                         @if ($event['checkpoint_message'])
                                             <small title="{{ $event['checkpoint_message'] }}">{{ $event['checkpoint_message'] }}</small>
                                         @endif

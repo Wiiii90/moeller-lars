@@ -3,6 +3,7 @@
 use App\Filament\Support\AdminActivityFeed;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
+use App\Models\PublicationCheckpointEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -22,10 +23,18 @@ it('projects publication control Activity against the concrete commit history ta
         'metadata' => null,
     ]);
 
+    PublicationCheckpointEvent::query()->create([
+        'publication_checkpoint_id' => $checkpoint->getKey(),
+        'audit_event_id' => $event->getKey(),
+        'created_at' => now(),
+    ]);
+
     $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
 
     expect($projected)->not->toBeNull()
         ->and($projected['area'])->toBe('Publication')
         ->and($projected['target'])->toBe('Commit '.$checkpoint->shortHash())
+        ->and($projected['checkpoint_short_hash'])->toBe($checkpoint->shortHash())
+        ->and($projected['publication_status'])->toBe('committed')
         ->and($projected['url'])->toContain('?view=commits');
 });
