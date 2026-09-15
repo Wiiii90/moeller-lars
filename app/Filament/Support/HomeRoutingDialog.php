@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
 use App\Domain\Content\SiteSectionType;
+use App\Models\HomePresentationSetting;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use Filament\Forms\Components\Select;
@@ -20,9 +21,10 @@ final class HomeRoutingDialog
     ) {}
 
     /** @return array{skip_home:bool,skip_target_section_id:?int} */
-    public function fill(): array
+    public function fill(?HomePresentationSetting $settings = null): array
     {
-        $routing = $this->routing->configuration($this->resolver->settings());
+        $settings ??= $this->resolver->settings();
+        $routing = $this->routing->configuration($settings);
         $targetId = $routing['skip_target_section_id'];
         if ($targetId !== null && ! array_key_exists($targetId, $this->targetOptions())) {
             $targetId = null;

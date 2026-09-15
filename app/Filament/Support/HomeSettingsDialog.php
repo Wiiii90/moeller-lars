@@ -54,7 +54,7 @@ final class HomeSettingsDialog
             'rotation_interval_count' => $hero['rotation_interval']['count'],
             'rotation_interval_unit' => $hero['rotation_interval']['unit'],
             'public_site_gate' => (bool) ($configuration[HomeTemplate::UnderConstruction->value]['public_site_gate'] ?? false),
-            ...$this->routingDialog->fill(),
+            ...$this->routingDialog->fill($settings),
         ];
     }
 
