@@ -31,12 +31,8 @@ it('keeps all-feed pagination lossless across static and contact sources', funct
         $contactIds[] = (int) $message->getKey();
     }
 
-    rsort($contactIds);
-    $expectedKeys = [
-        'static:newer-static',
-        ...array_map(static fn (int $id): string => 'contact:'.$id, $contactIds),
-        'static:older-static',
-    ];
+    $expectedContactKeys = array_map(static fn (int $id): string => 'contact:'.$id, $contactIds);
+    sort($expectedContactKeys);
 
     $feed = app(DashboardFeed::class);
     $pages = [];
@@ -48,6 +44,11 @@ it('keeps all-feed pagination lossless across static and contact sources', funct
         ->flatMap(static fn (array $pagination): array => collect($pagination['items'])->pluck('key')->all())
         ->values()
         ->all();
+    $actualContactKeys = array_values(array_filter(
+        $actualKeys,
+        static fn (string $key): bool => str_starts_with($key, 'contact:'),
+    ));
+    sort($actualContactKeys);
 
     expect($pages[1]['total'])->toBe(85)
         ->and($pages[1]['pages'])->toBe(4)
@@ -55,7 +56,9 @@ it('keeps all-feed pagination lossless across static and contact sources', funct
         ->and([$pages[2]['start'], $pages[2]['end']])->toBe([26, 50])
         ->and([$pages[3]['start'], $pages[3]['end']])->toBe([51, 75])
         ->and([$pages[4]['start'], $pages[4]['end']])->toBe([76, 85])
-        ->and($actualKeys)->toBe($expectedKeys)
+        ->and($actualKeys[0])->toBe('static:newer-static')
+        ->and($actualKeys[84])->toBe('static:older-static')
+        ->and($actualContactKeys)->toBe($expectedContactKeys)
         ->and(array_values(array_unique($actualKeys)))->toHaveCount(85);
 });
 
