@@ -16,6 +16,7 @@ it('reuses supplied Home settings while filling routing state', function (): voi
 
     DB::listen(function (QueryExecuted $query) use (&$settingsSelects, $settingsTable): void {
         $sql = strtolower(ltrim($query->sql));
+
         if (str_starts_with($sql, 'select') && str_contains($sql, $settingsTable)) {
             $settingsSelects[] = $query->sql;
         }
