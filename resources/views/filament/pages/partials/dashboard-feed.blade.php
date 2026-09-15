@@ -139,14 +139,7 @@
     </x-admin.table>
 
     <footer class="admin-pager">
-        <label class="admin-pager__size">
-            <span>Per page</span>
-            <select wire:model.live.number="feedPageSize">
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
-        </label>
+        <x-admin.page-size-picker :value="$feedPageSize" wire-model="feedPageSize" />
         <span class="admin-pager__range">
             @if ($feedPagination['total'] === 0)
                 0 of 0
