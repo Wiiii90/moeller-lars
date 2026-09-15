@@ -12,7 +12,7 @@ enum AdminIcon: string
     case Gallery = 'heroicon-o-photo';
     case Journal = 'heroicon-o-newspaper';
     case CustomPage = 'heroicon-o-identification';
-    case NavigationNode = 'heroicon-o-folder';
+    case NavigationNode = 'admin-node';
     case Analytics = 'heroicon-o-chart-bar';
     case Activity = 'heroicon-o-clock';
     case Storage = 'heroicon-o-circle-stack';
@@ -21,7 +21,8 @@ enum AdminIcon: string
     case PreviewZoom = 'heroicon-o-magnifying-glass';
     case PreviewZoomOut = 'heroicon-o-magnifying-glass-minus';
     case PreviewPan = 'heroicon-o-hand-raised';
-    case Commit = 'heroicon-o-check';
+    case Commit = 'heroicon-o-check-circle';
+    case DialogSubmit = 'heroicon-o-check';
     case Artwork = 'heroicon-o-paint-brush';
     case BlogPost = 'heroicon-o-document';
     case CvEntry = 'heroicon-o-document-text';
