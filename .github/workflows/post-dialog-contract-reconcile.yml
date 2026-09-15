@@ -1,0 +1,36 @@
+name: Post-dialog contract reconcile
+
+on:
+  push:
+    branches:
+      - fix/post-dialog-merge-gate
+    paths:
+      - .github/workflows/post-dialog-contract-reconcile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out cleanup branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/post-dialog-merge-gate
+          fetch-depth: 0
+
+      - name: Apply exact contract replacements
+        run: python3 scripts/post_dialog_contract_reconcile.py
+
+      - name: Verify patch shape
+        run: git diff --check
+
+      - name: Commit reconciliation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests
+          git diff --cached --check
+          git commit -m "test: reconcile post-dialog contracts"
+          git push origin HEAD:fix/post-dialog-merge-gate
