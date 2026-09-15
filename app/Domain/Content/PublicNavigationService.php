@@ -7,6 +7,7 @@ use App\Routing\SiteNodeRoute;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Collection;
 
 final class PublicNavigationService
 {
@@ -16,7 +17,7 @@ final class PublicNavigationService
     ) {}
 
     /**
-     * @return list<array{
+     * @return Collection<int, array{
      *     position:int,
      *     tie_breaker:int,
      *     label:string,
@@ -26,7 +27,7 @@ final class PublicNavigationService
      *     children:list<array{label:string,url:?string,current:bool}>
      * }>
      */
-    public function items(): array
+    public function items(): Collection
     {
         /** @var Builder<SiteSection> $query */
         $query = SiteSection::query();
@@ -51,8 +52,8 @@ final class PublicNavigationService
         /** @var EloquentCollection<int, SiteSection> $sections */
         $sections = $query->get();
 
-        /** @var list<array{position:int,tie_breaker:int,label:string,url:?string,current:bool,active:bool,children:list<array{label:string,url:?string,current:bool}>}> $items */
-        $items = [];
+        /** @var list<array{position:int,tie_breaker:int,label:string,url:?string,current:bool,active:bool,children:list<array{label:string,url:?string,current:bool}>}> $rows */
+        $rows = [];
         foreach ($sections as $section) {
             /** @var EloquentCollection<int, SiteSection> $childSections */
             $childSections = $section->getRelation('children');
@@ -65,7 +66,7 @@ final class PublicNavigationService
             $childCurrent = collect($children)->contains(static fn (array $child): bool => $child['current']);
             $current = $this->routes->isCurrent($section);
 
-            $items[] = [
+            $rows[] = [
                 'position' => (int) $section->getAttribute('position'),
                 'tie_breaker' => (int) $section->getKey(),
                 'label' => (string) $section->getAttribute('navigation_label'),
@@ -75,6 +76,9 @@ final class PublicNavigationService
                 'children' => $children,
             ];
         }
+
+        /** @var Collection<int, array{position:int,tie_breaker:int,label:string,url:?string,current:bool,active:bool,children:list<array{label:string,url:?string,current:bool}>}> $items */
+        $items = collect($rows);
 
         return $items;
     }
