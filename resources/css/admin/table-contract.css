@@ -121,6 +121,24 @@
     padding-right: var(--admin-table-edge-inset) !important;
 }
 
+/* Selection-axis contract: x-admin.controls renders Selection last. For
+ * table/hierarchy toolbars, reserve the same terminal rail for the circular
+ * selected-count badge that the table reserves for its trailing checkboxes. */
+.admin-data-controls > :last-child .admin-selection__trigger,
+.admin-data-controls > :last-child .media-workspace__selection-trigger {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    gap: 0;
+    padding-right: 0;
+    justify-content: stretch;
+}
+
+.admin-data-controls > :last-child .admin-selection__count,
+.admin-data-controls > :last-child .media-workspace__selection-count {
+    margin-left: 0;
+    justify-self: center;
+}
+
 .admin-hierarchy {
     --admin-hierarchy-position-column: max(3rem, calc((var(--admin-hierarchy-position-digits, 2) * .72rem) + 1rem));
 }
@@ -318,8 +336,8 @@
 
 /* Pages toolbar uses the same six-unit reference as the metrics: Search owns
  * three units; Type, Status, Filter, Pages and Selection divide the other
- * three. The Selection count terminates on the same trailing gutter as the
- * table checkboxes below it. */
+ * three. The shared Selection-axis contract owns the final count/checkbox
+ * alignment instead of a Pages-local copy. */
 .admin-task-controls--pages {
     display: grid;
     grid-template-columns: repeat(10, minmax(0, 1fr));
@@ -348,18 +366,6 @@
     width: 100%;
     min-width: 0;
     padding-inline: .3rem;
-}
-
-.admin-task-controls--pages .admin-selection__trigger {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
-    gap: 0;
-    padding-right: 0;
-}
-
-.admin-task-controls--pages .admin-selection__count {
-    margin-left: 0;
-    justify-self: center;
 }
 
 .admin-selection--unlabeled {
