@@ -61,6 +61,9 @@ final class Dashboard extends Page
     /** @var list<string> */
     public array $selectedFeedKeys = [];
 
+    /** @var array<string, array<string, mixed>> */
+    private array $feedEntryCache = [];
+
     public function mount(): void
     {
         $filter = auth()->user()?->getAttribute('dashboard_notification_filter');
@@ -132,6 +135,7 @@ final class Dashboard extends Page
     {
         $entry = app(DashboardFeed::class)->openEntry($key);
         abort_unless(is_array($entry), 404);
+        $this->feedEntryCache[$key] = $entry;
 
         $this->mountAction('feedEntry', ['key' => $key]);
     }
@@ -531,10 +535,14 @@ final class Dashboard extends Page
     private function feedEntry(array $arguments): array
     {
         $key = is_string($arguments['key'] ?? null) ? $arguments['key'] : '';
+        if (array_key_exists($key, $this->feedEntryCache)) {
+            return $this->feedEntryCache[$key];
+        }
+
         $entry = app(DashboardFeed::class)->entry($key);
         abort_unless(is_array($entry), 404);
 
-        return $entry;
+        return $this->feedEntryCache[$key] = $entry;
     }
 
     /**
