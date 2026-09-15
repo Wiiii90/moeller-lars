@@ -75,7 +75,7 @@ class AdminPanelProvider extends PanelProvider
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
             ->brandName('Admin Area')
-            ->brandLogo(fn (): HtmlString => $this->adminGreeting())
+            ->brandLogo(new HtmlString('Lars Möller'))
             ->favicon(asset('admin-favicon.svg').'?v=aperture-1')
             ->homeUrl(fn (): string => route('home'))
             ->breadcrumbs(false)
@@ -129,14 +129,6 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
                 DeferMatomoReporting::class,
             ], isPersistent: true);
-    }
-
-    private function adminGreeting(): HtmlString
-    {
-        $name = trim((string) (auth()->user()->name ?? ''));
-        $greeting = $name !== '' ? "Moin, {$name}!" : 'Lars Möller';
-
-        return new HtmlString(e($greeting));
     }
 
     private function navigation(NavigationBuilder $builder): NavigationBuilder
