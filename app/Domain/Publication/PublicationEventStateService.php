@@ -139,7 +139,7 @@ final class PublicationEventStateService
                 [$entityId, $entityId],
             );
 
-            if (in_array($result?->pending ?? false, [true, 1, '1', 't'], true)) {
+            if (in_array($result->pending ?? false, [true, 1, '1', 't'], true)) {
                 return true;
             }
         }
@@ -176,7 +176,7 @@ final class PublicationEventStateService
             'SELECT EXISTS (SELECT 1 FROM ('.implode(' UNION ALL ', $parts).') AS publication_changes LIMIT 1) AS pending',
         );
 
-        return in_array($row?->pending ?? false, [true, 1, '1', 't'], true);
+        return in_array($row->pending ?? false, [true, 1, '1', 't'], true);
     }
 
     private function markGenerationNotPending(string $entityType, int $entityId, mixed $updatedAt): void

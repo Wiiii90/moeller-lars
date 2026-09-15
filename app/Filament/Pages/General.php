@@ -525,7 +525,7 @@ final class General extends Page
 
         $moved = array_splice($links, $from, 1);
         array_splice($links, $position, 0, $moved);
-        $this->data['social_links'] = array_values($links);
+        $this->data['social_links'] = $links;
         $this->persistChangedField('social_links');
     }
 

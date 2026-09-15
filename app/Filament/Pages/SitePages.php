@@ -594,7 +594,7 @@ final class SitePages extends Page
         $this->pageNumber = min(max(1, $this->pageNumber), $this->lastPage);
 
         $offset = ($this->pageNumber - 1) * $this->perPage;
-        $this->sections = array_values(array_slice($groups, $offset, $this->perPage));
+        $this->sections = array_slice($groups, $offset, $this->perPage);
         $this->rangeStart = $this->totalGroups === 0 ? 0 : $offset + 1;
         $this->rangeEnd = $this->totalGroups === 0 ? 0 : min($offset + count($this->sections), $this->totalGroups);
         $this->filteredRows = $this->flattenGroups($this->sections);

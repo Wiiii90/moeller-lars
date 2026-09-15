@@ -125,7 +125,7 @@ class AdminPanelProvider extends PanelProvider
 
     private function adminGreeting(): HtmlString
     {
-        $name = trim((string) (auth()->user()?->name ?? ''));
+        $name = trim((string) (auth()->user()->name ?? ''));
         $greeting = $name !== '' ? "Moin, {$name}!" : 'Lars Möller';
 
         return new HtmlString(e($greeting));

@@ -199,8 +199,8 @@ final class PublicationVersionService
     public function workingContext(): array
     {
         $context = DB::table('publication_working_context')->where('id', 1)->first();
-        $operation = is_string($context?->operation ?? null) ? (string) $context->operation : null;
-        $sourceId = is_numeric($context?->source_publication_checkpoint_id ?? null)
+        $operation = is_string($context->operation ?? null) ? (string) $context->operation : null;
+        $sourceId = is_numeric($context->source_publication_checkpoint_id ?? null)
             ? (int) $context->source_publication_checkpoint_id
             : null;
 
@@ -327,7 +327,7 @@ final class PublicationVersionService
                 'SELECT COUNT(*)::int AS aggregate FROM public.%1$s AS working FULL OUTER JOIN committed.%1$s AS committed USING (id) WHERE '.PublicationSnapshot::ROW_DIFFERENCE_SQL,
                 $table,
             ));
-            $total += (int) ($row?->aggregate ?? 0);
+            $total += (int) ($row->aggregate ?? 0);
         }
 
         return $total;
@@ -342,7 +342,7 @@ final class PublicationVersionService
                 "WITH target AS (SELECT (jsonb_populate_record(NULL::public.{$table}, version_row.payload)).* FROM publication_version_rows AS version_row WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = ?) SELECT COUNT(*)::int AS aggregate FROM public.{$table} AS working FULL OUTER JOIN target AS committed USING (id) WHERE ".PublicationSnapshot::ROW_DIFFERENCE_SQL,
                 [(int) $checkpoint->getKey(), $table],
             );
-            $total += (int) ($row?->aggregate ?? 0);
+            $total += (int) ($row->aggregate ?? 0);
         }
 
         return $total;

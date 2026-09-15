@@ -281,7 +281,7 @@ final class HomeHeroConfigurationService
         $current = $this->configuration($settings->fresh());
         $group = $current['manual_group'];
         $expected = $this->manualGroupIds($group);
-        $actual = array_values(array_map('intval', $artworkIds));
+        $actual = array_map('intval', $artworkIds);
         if (count($actual) !== count(array_unique($actual))) {
             throw ValidationException::withMessages(['manual_group' => 'Manual Home group order contains duplicates.']);
         }
@@ -387,7 +387,7 @@ final class HomeHeroConfigurationService
      */
     private function manualGroupIds(array $group): array
     {
-        return array_values(array_map(static fn (array $member): int => $member['artwork_id'], $group));
+        return array_map(static fn (array $member): int => $member['artwork_id'], $group);
     }
 
     /** @param list<int> $left

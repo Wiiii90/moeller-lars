@@ -333,7 +333,7 @@ final class Activity extends Page
         $requestedYear = request()->query('calendar_year');
         $calendarYear = is_numeric($requestedYear)
             ? max(2000, min($currentYear, (int) $requestedYear))
-            : ($activeDate?->year ?? $currentYear);
+            : ($activeDate->year ?? $currentYear);
         if ($activeDate !== null && $activeDate->year !== $calendarYear) {
             $calendarYear = $activeDate->year;
         }
@@ -392,7 +392,7 @@ final class Activity extends Page
         $activityLatest = $overview['latest_at'] !== null
             ? CarbonImmutable::parse((string) $overview['latest_at'])
             : null;
-        $commitLatest = isset($commitSummary?->latest_at) && $commitSummary->latest_at !== null
+        $commitLatest = isset($commitSummary->latest_at) && $commitSummary->latest_at !== null
             ? CarbonImmutable::parse((string) $commitSummary->latest_at)
             : null;
         $latestAt = match (true) {
@@ -404,8 +404,8 @@ final class Activity extends Page
 
         $workspaceMetrics = [
             ['label' => 'Changes', 'value' => number_format($overview['total']), 'description' => 'Matching activity events'],
-            ['label' => 'Commits', 'value' => number_format((int) ($commitSummary?->aggregate ?? 0)), 'description' => 'Matching published versions'],
-            ['label' => 'Committed changes', 'value' => number_format((int) ($commitSummary?->changed_rows ?? 0)), 'description' => 'Rows in matching commits'],
+            ['label' => 'Commits', 'value' => number_format((int) ($commitSummary->aggregate ?? 0)), 'description' => 'Matching published versions'],
+            ['label' => 'Committed changes', 'value' => number_format((int) ($commitSummary->changed_rows ?? 0)), 'description' => 'Rows in matching commits'],
             ['label' => 'Active days', 'value' => number_format($overview['active_days']), 'description' => 'Days with matching activity'],
             ['label' => 'Pending', 'value' => number_format((int) $publicationContext['staged']), 'description' => 'Working changes not LIVE yet'],
             ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt?->format('Y-m-d H:i') ?? 'No matching activity'],

@@ -413,7 +413,7 @@ final class DashboardFeed
             return strcmp((string) $right['key'], (string) $left['key']);
         });
 
-        return array_values($items);
+        return $items;
     }
 
     /** @return array{0:int,1:int,2:int} */

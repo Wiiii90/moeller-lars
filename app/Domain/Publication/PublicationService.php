@@ -30,7 +30,7 @@ final class PublicationService
             'SELECT EXISTS (SELECT 1 FROM ('.implode(' UNION ALL ', $parts).') AS publication_changes LIMIT 1) AS pending',
         );
 
-        return in_array($row?->pending ?? false, [true, 1, '1', 't'], true);
+        return in_array($row->pending ?? false, [true, 1, '1', 't'], true);
     }
 
     /**
@@ -49,7 +49,7 @@ final class PublicationService
                 'SELECT COUNT(*)::int AS aggregate FROM public.%1$s AS working FULL OUTER JOIN committed.%1$s AS committed USING (id) WHERE '.PublicationSnapshot::ROW_DIFFERENCE_SQL,
                 $table,
             ));
-            $count = (int) ($row?->aggregate ?? 0);
+            $count = (int) ($row->aggregate ?? 0);
             if ($count < 1) {
                 continue;
             }

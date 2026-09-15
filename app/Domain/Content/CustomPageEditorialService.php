@@ -70,7 +70,7 @@ final class CustomPageEditorialService
 
             $items = $this->listItems($blocks[$index]);
             $items[] = $item;
-            $blocks[$index]['items'] = array_values($items);
+            $blocks[$index]['items'] = $items;
 
             return $this->persist($fresh, $blocks);
         });
@@ -87,7 +87,7 @@ final class CustomPageEditorialService
             $items = $this->listItems($blocks[$index]);
             $this->assertListItem($items, $itemIndex);
             $items[$itemIndex] = $item;
-            $blocks[$index]['items'] = array_values($items);
+            $blocks[$index]['items'] = $items;
 
             return $this->persist($fresh, $blocks);
         });
@@ -145,7 +145,7 @@ final class CustomPageEditorialService
             }
             [$items[$itemIndex], $items[$target]] = [$items[$target], $items[$itemIndex]];
 
-            return array_values($items);
+            return $items;
         });
     }
 
@@ -163,7 +163,7 @@ final class CustomPageEditorialService
             $position = max(0, min($position, count($items)));
             array_splice($items, $position, 0, [$moved]);
 
-            return array_values($items);
+            return $items;
         });
     }
 
@@ -201,7 +201,7 @@ final class CustomPageEditorialService
             }
             $children[] = $child;
 
-            return array_values($children);
+            return $children;
         });
     }
 
@@ -220,7 +220,7 @@ final class CustomPageEditorialService
             $childIndex = $this->requiredContactChildIndex($children, $childType);
             $children[$childIndex] = $child;
 
-            return array_values($children);
+            return $children;
         });
     }
 
@@ -248,7 +248,7 @@ final class CustomPageEditorialService
                 $children[$childIndex]['published'] = $published;
             }
 
-            return array_values($children);
+            return $children;
         });
     }
 
@@ -269,7 +269,7 @@ final class CustomPageEditorialService
             }
             [$children[$childIndex], $children[$target]] = [$children[$target], $children[$childIndex]];
 
-            return array_values($children);
+            return $children;
         });
     }
 
@@ -287,7 +287,7 @@ final class CustomPageEditorialService
             $position = max(0, min($position, count($children)));
             array_splice($children, $position, 0, [$moved]);
 
-            return array_values($children);
+            return $children;
         });
     }
 
@@ -417,7 +417,7 @@ final class CustomPageEditorialService
 
             [$blocks[$index], $blocks[$target]] = [$blocks[$target], $blocks[$index]];
 
-            return $this->persist($fresh, array_values($blocks));
+            return $this->persist($fresh, $blocks);
         });
     }
 
@@ -529,7 +529,7 @@ final class CustomPageEditorialService
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertListTarget($blocks, $index, $expectedType);
-            $blocks[$index]['items'] = array_values($mutator($this->listItems($blocks[$index])));
+            $blocks[$index]['items'] = $mutator($this->listItems($blocks[$index]));
 
             return $this->persist($fresh, $blocks);
         });
@@ -552,7 +552,7 @@ final class CustomPageEditorialService
             $blocks[$index] = [
                 'type' => 'contact',
                 'published' => CustomPageSetting::componentPublished($blocks[$index]),
-                'children' => array_values($mutator($children)),
+                'children' => $mutator($children),
             ];
 
             return $this->persist($fresh, $blocks);
@@ -761,7 +761,7 @@ final class CustomPageEditorialService
     /** @param list<array<string, mixed>> $blocks */
     private function persist(CustomPageSetting $settings, array $blocks): bool
     {
-        $settings->fill(['blocks' => array_values($blocks)]);
+        $settings->fill(['blocks' => $blocks]);
         if (! $settings->isDirty()) {
             return false;
         }

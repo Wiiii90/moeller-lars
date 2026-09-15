@@ -130,7 +130,7 @@ final class HomePresentationEditorialService
         return $this->mutateComponents($settings, $mode, function (array $components) use ($component): array {
             $components[] = $component;
 
-            return array_values($components);
+            return $components;
         });
     }
 
@@ -152,7 +152,7 @@ final class HomePresentationEditorialService
 
             $components[$index] = $component;
 
-            return array_values($components);
+            return $components;
         });
     }
 
@@ -174,7 +174,7 @@ final class HomePresentationEditorialService
 
             [$components[$index], $components[$target]] = [$components[$target], $components[$index]];
 
-            return array_values($components);
+            return $components;
         });
     }
 
@@ -195,10 +195,10 @@ final class HomePresentationEditorialService
                 ]);
             }
 
-            return array_values(array_map(
+            return array_map(
                 static fn (array $target): array => $components[$target['index']],
                 $targets,
-            ));
+            );
         });
     }
 
@@ -240,10 +240,10 @@ final class HomePresentationEditorialService
                 }
             }
 
-            return array_values(array_map(
+            return array_map(
                 static fn (array $item): array => $item['component'],
                 $sequence,
-            ));
+            );
         });
     }
 
