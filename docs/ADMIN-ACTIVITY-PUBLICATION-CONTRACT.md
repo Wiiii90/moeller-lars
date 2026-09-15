@@ -15,24 +15,41 @@ Notification/inbox state is not part of this contract. See [ADMIN-NOTIFICATION-C
 
 `audit_events` is append-only factual history. Successful mutations create new events; undo/reset/restore/revert operations never rewrite or delete the events that came before them.
 
-Activity uses the shared `AdminActivityFeed` read model. The normal Activity view has four semantic table roles:
+Activity uses the shared `AdminActivityFeed` read model. The current Activity table exposes the factual row roles directly:
 
 ```text
-Activity | Publication | Who / when | Actions
-  2/6    |    1/6      |    1/6     |  2/6
+Change | Who | When | Target | Area | Type | Publication | Actions
 ```
 
-Visible row actions are `Details` and, when a target exists, `Open record`. A safe per-event Undo is offered inside Details only when `AdminActionReceiptService` has a currently valid actor-scoped receipt.
+The Activity workspace uses the shared six-unit admin alignment system, but semantic table columns may subdivide or span those units according to the ordinary table contract. Do not preserve an older four-column `Activity | Publication | Who / when | Actions` layout as a compatibility surface.
+
+`Details` is the stable first row action. When `AdminActionReceiptService` exposes a currently valid actor-scoped receipt, `Undo` appears immediately after Details and applies the inverse as a new audited editorial action. Rows without a safe current receipt simply omit Undo; they do not expose a permanently disabled undo control.
+
+Activity and Commits are two views of the same workspace and switch through the normal View control. Both retain the applicable Search/Area/Change type/Date/Time filter context. Activity and Commits use bounded pagination with the shared page-size choices `25`, `50` and `100`.
 
 ### Date and time filters
 
 Calendar and clock are not decorative secondary controls.
 
-- Clicking a calendar day applies the actual Activity date filter.
+- Clicking a calendar day applies the actual Activity/Commit date filter for the active view.
 - Clicking an hour applies that hour in addition to the selected date.
 - Date/Time are reflected in the normal filter toolbar and can be cleared there.
 - Without an explicit date filter the table uses the normal bounded Activity window; today's calendar highlight is only visual focus.
 - Calendar density retains year context so selecting one day does not collapse the visualization itself.
+
+The top visualization and publication stage is shared context for the active Activity/Commits view. Switching views must not create a second Activity page or a parallel publication surface.
+
+## Commits view
+
+The current Commit-history table exposes:
+
+```text
+Commit | Who | When | Summary | Publication | Actions
+```
+
+`Details` is the stable first action. A compatible historical snapshot may then expose `Restore`; only the current LIVE commit may expose `Revert` when its parent is a compatible retained snapshot. Those contextual actions follow Details rather than shifting it between rows.
+
+Commit history is permanent factual publication history. Working-state controls live in the shared publication stage above the table rather than as a second independent history system.
 
 ## Publication source of truth
 
@@ -43,9 +60,13 @@ public.*       = working/admin state
 committed.*    = current LIVE state
 ```
 
-`PublicationSnapshot::TABLES` is the closed tracked-table set. Publication delta is the row-level semantic difference between those two states, ignoring framework-only `created_at`/`updated_at` differences.
+`PublicationSnapshot::TABLES` is the closed current tracked-table set. Publication delta is the row-level semantic difference between those two states, ignoring framework-only `created_at`/`updated_at` differences.
 
 `PublicationService::pendingSummary()` is the source of truth for **Pending changes**. Pending audit-event count is separate context and must never be presented as the size of the next commit.
+
+Historical migrations must not import `PublicationSnapshot::TABLES` or other mutable runtime publication constants to define their own past behavior. A migration freezes the publication tables/entity types that existed when that migration was introduced; later changes to the current publication contract are applied by later forward migrations.
+
+Legacy migration-evidence tables such as `blog_settings` are not part of the runtime Publication source of truth and are not compatibility fallbacks. They remain outside the tracked-table set and must not hold foreign-key constraints that can block replacement of canonical tracked state. Their eventual physical removal belongs to the explicit post-cutover legacy-retirement migration described in `MIGRATION-PLAN.md`.
 
 ## Preflight
 
@@ -94,16 +115,17 @@ The current implementation retains full version snapshots indefinitely together 
 
 ## Working changes
 
-The Commits view begins with **Working changes** rather than pretending the latest Commit is the only relevant state.
-
-It exposes:
+The shared publication stage exposes Working-vs-LIVE state above both Activity and Commits. It shows:
 
 - true pending row count;
 - grouped affected publication areas/entities;
 - current preflight status;
-- `Review changes`;
-- `Reset staged changes`;
-- `Commit`.
+- current LIVE version context;
+- `Review changes` when staged state exists;
+- `Reset` for the `Reset staged changes` operation when staged state exists;
+- `Commit` when preflight allows publication.
+
+The logical operation name remains **Reset staged changes** even where the compact action label is `Reset`.
 
 ### Reset staged changes
 
@@ -161,10 +183,10 @@ The admin therefore has three deliberately separate reversal mechanisms:
 
 ```text
 One supported editorial action
-Activity Details -> Undo
+Activity row -> Undo
 
 All unpublished work
-Working Changes -> Reset staged changes
+Publication stage -> Reset staged changes
 
 Published state
 Commits -> Restore this version / Revert current commit -> review -> Commit
@@ -213,7 +235,7 @@ Use these labels consistently:
 - `Working changes`
 - `Current live version` / `LIVE`
 - `Review changes`
-- `Reset staged changes`
+- `Reset staged changes` (compact action may read `Reset`)
 - `Restore this version`
 - `Revert commit`
 - `Commit`
@@ -233,5 +255,7 @@ Durable tests should prove at least:
 - Commit history cannot be deleted at the database boundary;
 - media referenced by any retained version cannot be physically deleted;
 - Activity publication-control events project concrete Commit targets;
-- date/hour Activity filtering works beyond the default Activity window;
-- Activity aggregate query cost remains bounded.
+- date/hour filtering works in both Activity and Commits views beyond the default Activity window;
+- Activity and Commit pagination retain filter/view context and support the shared 25/50/100 page-size choices;
+- Activity aggregate query cost remains bounded;
+- historical publication migrations do not depend on mutable runtime snapshot constants.
