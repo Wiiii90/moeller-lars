@@ -16,12 +16,11 @@
 <div
     {{ $attributes->class(['admin-pager__size']) }}
     x-data="{ open: false }"
-    x-bind:class="{ 'is-open': open }"
     x-on:click.outside="open = false"
     x-on:keydown.escape.window="open = false"
 >
     <span>{{ $label }}</span>
-    <div class="admin-pager-size-picker">
+    <div class="admin-pager-size-picker" x-bind:class="{ 'is-open': open }">
         <button
             class="admin-pager-size-picker__trigger"
             type="button"
