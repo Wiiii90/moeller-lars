@@ -58,7 +58,6 @@ jobs:
         run: |
           set -euo pipefail
           git pull --ff-only origin dev
-          python3 scripts/admin_dialog_extras.py
           rm -f \
             scripts/admin_dialog_extras.py \
             scripts/dialog-finalize-error.txt \
