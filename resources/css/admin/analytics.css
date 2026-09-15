@@ -500,9 +500,11 @@
     .analytics-stage-ranking__scroll {
         max-height: 14rem;
     }
+}
 
-    .analytics-range-selector .analytics-range-selector__option {
-        font-size: var(--admin-font-size-table-compact);
+@media (max-width: 480px) {
+    .analytics-range-selector.admin-toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
