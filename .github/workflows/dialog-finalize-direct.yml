@@ -79,16 +79,29 @@ jobs:
           set -euo pipefail
           git diff --check
           find app -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
-          if rg -n 'AdminDialog::editCommit|PublicationCommitDialog|publication-commit-dialog' app resources docs tests; then
+
+          retired=$(grep -RInE -- 'AdminDialog::editCommit|PublicationCommitDialog|publication-commit-dialog' app resources docs tests || true)
+          if [ -n "$retired" ]; then
+            printf '%s\n' "$retired"
             echo 'Retired dialog identifiers remain' >&2
             exit 1
           fi
-          if rg -n --glob '*.php' --glob '!app/Filament/Support/Dialogs/AdminDialog.php' -- '->requiresConfirmation\(|->modalWidth\(|->modalSubmitAction\(|->modalCancelAction\(|->modalSubmitActionLabel\(|->modalCancelActionLabel\(|->extraModalWindowAttributes\(' app/Filament; then
+
+          raw_modal=$(find app/Filament -name '*.php' ! -path 'app/Filament/Support/Dialogs/AdminDialog.php' \
+            -exec grep -nHE -- '->requiresConfirmation\(|->modalWidth\(|->modalSubmitAction\(|->modalCancelAction\(|->modalSubmitActionLabel\(|->modalCancelActionLabel\(|->extraModalWindowAttributes\(' {} + || true)
+          if [ -n "$raw_modal" ]; then
+            printf '%s\n' "$raw_modal"
             echo 'Raw admin modal ownership remains outside AdminDialog' >&2
             exit 1
           fi
+
           test ! -e resources/css/admin/dialogs.css
-          ! rg -n "dialogs\.css" resources app vite.config.js
+          legacy_css_refs=$(grep -RInF -- 'dialogs.css' resources app vite.config.js || true)
+          if [ -n "$legacy_css_refs" ]; then
+            printf '%s\n' "$legacy_css_refs"
+            echo 'Legacy dialog stylesheet references remain' >&2
+            exit 1
+          fi
 
       - name: Audit locked PHP dependencies
         run: composer audit --locked --no-interaction
@@ -101,6 +114,11 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+      - name: Verify Vite manifest contract
+        run: |
+          set -euo pipefail
+          grep -F '"resources/css/admin/auth.css"' public/build/manifest.json >/dev/null
 
       - name: Run Pest
         run: composer test
@@ -131,5 +149,6 @@ jobs:
             vendor/bin/pint --test
             npm run test:js
             npm run build
+            grep -F '"resources/css/admin/auth.css"' public/build/manifest.json >/dev/null
           fi
           git push origin HEAD:dev
