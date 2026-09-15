@@ -27,6 +27,8 @@ enum AdminIcon: string
     case CvEntry = 'heroicon-o-document-text';
     case Exhibition = 'heroicon-o-calendar';
     case Account = 'heroicon-o-user-circle';
+    case GeneratePassword = 'heroicon-o-sparkles';
+    case Copy = 'heroicon-o-clipboard-document';
 
     case Back = 'heroicon-o-arrow-left';
     case OpenPublic = 'heroicon-o-arrow-top-right-on-square';
