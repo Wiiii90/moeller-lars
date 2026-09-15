@@ -12,6 +12,20 @@ permissions:
 jobs:
   migrate:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: moeller_lars_testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moeller_lars_testing"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v4
         with:
@@ -120,9 +134,13 @@ jobs:
           root = Path('.')
           php_files = list((root / 'app' / 'Filament').rglob('*.php'))
           changed = []
-          call_pattern = re.compile(
-              r"AdminDialog::editCommit\(\s*\$action\s*,\s*(?:'(?:\\.|[^'])*'|\"(?:\\.|[^\"])*\")\s*,\s*(AdminDialogSize::[A-Za-z]+)\s*\)",
-              re.S,
+          migrated_call = re.compile(
+              r"(AdminDialog::edit\([\s\S]*?),\s*(?:'(?:\\.|[^'])*'|\"(?:\\.|[^\"])*\")\s*,\s*(AdminDialogSize::[A-Za-z]+)\s*\)",
+              re.M,
+          )
+          migrated_default = re.compile(
+              r"(AdminDialog::edit\([\s\S]*?),\s*(?:'(?:\\.|[^'])*'|\"(?:\\.|[^\"])*\")\s*\)",
+              re.M,
           )
 
           for path in php_files:
@@ -130,12 +148,13 @@ jobs:
               if 'AdminDialog::editCommit' not in text:
                   continue
 
-              migrated, count = call_pattern.subn(r'AdminDialog::edit($action, \1)', text)
-              if count == 0:
-                  raise SystemExit(f'Could not migrate editCommit call in {path}')
-
-              if 'AdminDialog::editCommit' in migrated:
-                  raise SystemExit(f'Unmigrated editCommit call remains in {path}')
+              expected = text.count('AdminDialog::editCommit')
+              migrated = text.replace('AdminDialog::editCommit(', 'AdminDialog::edit(')
+              migrated, sized = migrated_call.subn(r'\1, \2)', migrated)
+              migrated, defaulted = migrated_default.subn(r'\1)', migrated)
+              converted = sized + defaulted
+              if converted != expected:
+                  raise SystemExit(f'Expected {expected} converted edit calls in {path}, got {converted}')
 
               import_line = 'use App\\Filament\\Support\\Dialogs\\InteractsWithAdminEditDialogAutosave;\n'
               if import_line not in migrated:
@@ -152,7 +171,7 @@ jobs:
                   migrated = migrated[:insert_at] + '    use InteractsWithAdminEditDialogAutosave;\n\n' + migrated[insert_at:]
 
               path.write_text(migrated)
-              changed.append((str(path), count))
+              changed.append((str(path), converted))
 
           if not changed:
               raise SystemExit('Expected editCommit flows, found none')
@@ -196,24 +215,29 @@ jobs:
       - name: Format and verify changed PHP
         run: |
           set -euo pipefail
-          vendor/bin/pint app/Filament/Support/Dialogs/AdminDialog.php app/Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php $(git diff --name-only -- 'app/Filament/**/*.php' | tr '\n' ' ')
+          changed_php="$(git diff --name-only -- 'app/Filament/**/*.php')"
+          vendor/bin/pint app/Filament/Support/Dialogs/AdminDialog.php app/Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php $changed_php
           git diff --check
-          php -l app/Filament/Support/Dialogs/AdminDialog.php
-          php -l app/Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php
-          while IFS= read -r file; do php -l "$file" >/dev/null; done < <(git diff --name-only -- 'app/Filament/**/*.php')
+          while IFS= read -r file; do
+            [[ -z "$file" ]] || php -l "$file" >/dev/null
+          done <<< "$changed_php"
 
       - name: Run focused dialog and admin tests
         env:
           APP_ENV: testing
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ':memory:'
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: moeller_lars_testing
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
           MOELLER_LARS_DISPOSABLE_TEST_DATABASE: '1'
           MATOMO_TRACKING_ENABLED: false
           MATOMO_REPORTING_ENABLED: false
         run: |
           set -euo pipefail
           export APP_KEY="$(php artisan key:generate --show)"
-          composer test -- --filter='Dialog|HomePresentation|Dashboard|General|Journal|Gallery|CustomPage|SitePages|MediaAsset' || composer test
+          composer test -- --filter='Dialog|HomePresentation|Dashboard|General|Journal|Gallery|CustomPage|SitePages|MediaAsset'
 
       - name: Commit migration and remove one-shot workflow
         run: |
