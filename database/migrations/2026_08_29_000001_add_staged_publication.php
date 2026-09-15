@@ -1,6 +1,5 @@
 <?php
 
-use App\Domain\Publication\PublicationSnapshot;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -8,6 +7,54 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Historical publication contract as introduced by this migration.
+     *
+     * Keep these lists frozen here. A historical migration must not change its
+     * migrate:fresh behavior when the runtime PublicationSnapshot contract evolves.
+     * Later publication-schema changes belong in later forward migrations.
+     *
+     * @var list<string>
+     */
+    private const TRACKED_TABLES = [
+        'artwork_categories',
+        'artworks',
+        'artwork_media',
+        'media_assets',
+        'media_variants',
+        'site_sections',
+        'custom_page_settings',
+        'journal_settings',
+        'journal_entry_media',
+        'home_presentation_settings',
+        'cv_entries',
+        'exhibitions',
+        'exhibition_media',
+        'blog_posts',
+        'public_content_settings',
+        'redirects',
+    ];
+
+    /** @var list<string> */
+    private const TRACKED_AUDIT_ENTITY_TYPES = [
+        'artwork_category',
+        'artwork',
+        'artwork_media',
+        'media_asset',
+        'media_variant',
+        'site_section',
+        'custom_page_setting',
+        'journal_setting',
+        'journal_entry_media',
+        'home_presentation_setting',
+        'cv_entry',
+        'exhibition',
+        'exhibition_media',
+        'blog_post',
+        'public_content_setting',
+        'redirect',
+    ];
+
     public function up(): void
     {
         Schema::create('publication_checkpoints', function (Blueprint $table): void {
@@ -35,7 +82,7 @@ return new class extends Migration
         DB::statement('DROP SCHEMA IF EXISTS committed CASCADE');
         DB::statement('CREATE SCHEMA committed');
 
-        foreach (PublicationSnapshot::TABLES as $table) {
+        foreach (self::TRACKED_TABLES as $table) {
             DB::statement("CREATE TABLE committed.{$table} (LIKE public.{$table} INCLUDING ALL)");
             DB::statement("INSERT INTO committed.{$table} SELECT * FROM public.{$table}");
         }
@@ -49,7 +96,7 @@ return new class extends Migration
 
         $createdAt = now();
         DB::table('audit_events')
-            ->whereIn('entity_type', PublicationSnapshot::AUDIT_ENTITY_TYPES)
+            ->whereIn('entity_type', self::TRACKED_AUDIT_ENTITY_TYPES)
             ->orderBy('id')
             ->pluck('id')
             ->chunk(500)
