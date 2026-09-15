@@ -75,10 +75,13 @@ Supported aggregate reporting includes, where Matomo provides it:
 - trends for Today, 7d, 30d and 12m;
 - acquisition/referrer/channel information;
 - country/continent geography;
+- visitor behavior such as new/returning visits, visit-duration bands, pages per visit, local visit time and day of week;
 - device class, browser and operating-system aggregates;
 - landing/exit/content paths;
 - downloads/outbound links/site search where available;
 - artist interaction events and content attention.
+
+The Behavior detail view projects the behavior sections already included in the normal bulk Reporting API response; switching to that report does not add another Matomo request.
 
 Human analytics and local operational health remain visually/conceptually distinct.
 
