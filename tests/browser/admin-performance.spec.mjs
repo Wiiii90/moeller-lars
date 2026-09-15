@@ -4,6 +4,49 @@ import { expect, test } from '@playwright/test';
 
 const metricsDirectory = path.resolve('artifacts/performance');
 const metricsPath = path.join(metricsDirectory, 'admin-interactions.json');
+const KiB = 1024;
+
+const structuralBudgets = Object.freeze({
+  warmed_navigation_dashboard_to_pages: {
+    completed_on_first_click: true,
+    full_navigation_count: 1,
+    max_xhr_fetch_count: 0,
+  },
+  pages_add_page_dialog: {
+    completed_on_first_click: true,
+    full_navigation_count: 0,
+    max_xhr_fetch_count: 2,
+    max_response_bytes: 44 * KiB,
+  },
+  pages_create_custom_page: {
+    completed_on_first_click: true,
+    full_navigation_count: 0,
+    max_xhr_fetch_count: 2,
+  },
+  home_settings_dialog: {
+    completed_on_first_click: true,
+    full_navigation_count: 0,
+    max_xhr_fetch_count: 2,
+    max_response_bytes: 76 * KiB,
+  },
+  activity_to_commits: {
+    completed_on_first_click: true,
+    full_navigation_count: 0,
+    max_xhr_fetch_count: 2,
+    max_response_bytes: 640 * KiB,
+  },
+  activity_filter_editorial_area: {
+    completed_on_first_click: true,
+    full_navigation_count: 1,
+    max_xhr_fetch_count: 0,
+  },
+  activity_idle_window: {
+    completed_on_first_click: true,
+    full_navigation_count: 0,
+    max_xhr_fetch_count: 0,
+    max_response_bytes: 0,
+  },
+});
 
 function byteLength(value) {
   return value ? Buffer.byteLength(value) : 0;
@@ -92,6 +135,7 @@ class InteractionProfiler {
 
     const flow = {
       name,
+      structural_budget: structuralBudgets[name] ?? null,
       started_at_ms: Date.now(),
       requests: [],
       console_errors: [],
@@ -165,6 +209,37 @@ function expectNoBrowserErrors(flow) {
   expect(flow.page_errors, `${flow.name} page errors`).toEqual([]);
 }
 
+function expectStructuralBudget(flow) {
+  const budget = structuralBudgets[flow.name];
+  expect(budget, `${flow.name} must have a structural performance budget`).toBeDefined();
+
+  expect(
+    flow.completed_on_first_click,
+    `${flow.name}: interaction did not complete on the first deliberate action`,
+  ).toBe(budget.completed_on_first_click);
+
+  expect(
+    flow.full_navigation_count,
+    `${flow.name}: measured ${flow.full_navigation_count} full navigation(s); expected ${budget.full_navigation_count}`,
+  ).toBe(budget.full_navigation_count);
+
+  expect(
+    flow.xhr_fetch_count,
+    `${flow.name}: measured ${flow.xhr_fetch_count} Fetch/XHR request(s); budget is <= ${budget.max_xhr_fetch_count}`,
+  ).toBeLessThanOrEqual(budget.max_xhr_fetch_count);
+
+  if (budget.max_response_bytes !== undefined) {
+    expect(
+      flow.response_bytes,
+      `${flow.name}: response payload was not measurable; budget is <= ${budget.max_response_bytes} bytes`,
+    ).not.toBeNull();
+    expect(
+      flow.response_bytes,
+      `${flow.name}: measured ${flow.response_bytes} response bytes; budget is <= ${budget.max_response_bytes}`,
+    ).toBeLessThanOrEqual(budget.max_response_bytes);
+  }
+}
+
 test('profiles representative warmed admin interactions', async ({ page }, testInfo) => {
   const email = process.env.PLAYWRIGHT_ADMIN_EMAIL;
   const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD;
@@ -208,6 +283,7 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
         await expect(page.getByRole('heading', { name: 'Pages', exact: true })).toBeVisible();
       },
     );
+    expectStructuralBudget(pagesNavigation);
     expectNoBrowserErrors(pagesNavigation);
 
     const addPage = await profiler.run(
@@ -219,7 +295,7 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
         await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
       },
     );
-    expect(addPage.full_navigation_count).toBe(0);
+    expectStructuralBudget(addPage);
     expectNoBrowserErrors(addPage);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
@@ -239,7 +315,7 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
         await expect(page.getByText(profilePageName, { exact: true }).first()).toBeVisible();
       },
     );
-    expect(createPage.full_navigation_count).toBe(0);
+    expectStructuralBudget(createPage);
     expectNoBrowserErrors(createPage);
 
     await page.goto('/admin/pages/home');
@@ -255,7 +331,7 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
         await expect(page.getByRole('heading', { name: 'Home settings', exact: true })).toBeVisible();
       },
     );
-    expect(homeSettings.full_navigation_count).toBe(0);
+    expectStructuralBudget(homeSettings);
     expectNoBrowserErrors(homeSettings);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Home settings', exact: true })).toBeHidden();
@@ -273,7 +349,7 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
         await expect(page.getByRole('button', { name: 'Commits', exact: true })).toHaveAttribute('aria-pressed', 'true');
       },
     );
-    expect(commits.full_navigation_count).toBe(0);
+    expectStructuralBudget(commits);
     expectNoBrowserErrors(commits);
 
     const areaFilter = await profiler.run(
@@ -288,7 +364,7 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
         await expect(page.getByRole('combobox', { name: 'Editorial area' })).toContainText('Website');
       },
     );
-    expect(areaFilter.full_navigation_count).toBe(1);
+    expectStructuralBudget(areaFilter);
     expectNoBrowserErrors(areaFilter);
 
     const idle = await profiler.run(
@@ -299,8 +375,7 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
       },
       async () => {},
     );
-    expect(idle.full_navigation_count).toBe(0);
-    expect(idle.xhr_fetch_count).toBe(0);
+    expectStructuralBudget(idle);
     expectNoBrowserErrors(idle);
   } finally {
     profiler.write(process.env.GITHUB_SHA ?? 'local');

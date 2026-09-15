@@ -59,7 +59,37 @@ npm run test:browser:profile
 
 CI provides its own PostgreSQL database and synthetic admin. The suite records evidence under `artifacts/performance` and traces failures through Playwright. It does not persist request or response bodies.
 
-The representative flows cover warmed navigation, Pages → Add page, Home → Settings, Activity → Commits and idle behavior. Structural assertions are blocking immediately; wall-clock and payload thresholds become blocking only after stable baselines exist.
+The representative flows cover:
+
+- warmed Dashboard → Pages navigation;
+- Pages → Add page dialog;
+- creation of one synthetic Custom Page through the real Filament action;
+- Home → Settings dialog;
+- Activity → Commits local view switching;
+- Activity editorial-area filtering through its normal GET navigation;
+- an idle Activity observation window that detects unexplained polling/request loops.
+
+### Blocking CI structural budgets
+
+The browser suite stores the applicable budget beside each measured flow in `artifacts/performance/admin-interactions.json`. The current blocking contracts were derived from accepted Chromium runs at `78ae2545` and `9848bebd`; they protect request shape rather than GitHub-runner speed.
+
+| Flow | Full navigation | Fetch/XHR | Response payload |
+| --- | ---: | ---: | ---: |
+| warmed Dashboard → Pages | exactly 1 | exactly 0 | report only |
+| Pages → Add page | exactly 0 | at most 2 | at most 44 KiB |
+| create synthetic Custom Page | exactly 0 | at most 2 | report only |
+| Home → Settings | exactly 0 | at most 2 | at most 76 KiB |
+| Activity → Commits | exactly 0 | at most 2 | at most 640 KiB |
+| Activity editorial-area filter | exactly 1 | exactly 0 | report only |
+| Activity idle window | exactly 0 | exactly 0 | exactly 0 B |
+
+Every protected deliberate interaction must also complete from the first action and produce zero browser console/page errors. The local-action request-count ceiling deliberately allows a future reduction from two requests to one while still rejecting renewed request cascades.
+
+The payload limits are intentionally selective. Pages → Add page, Home → Settings and Activity → Commits produced stable response sizes across both accepted baseline runs; their limits add roughly 25% headroom above the larger observed value. The newer Custom Page mutation and Activity filter have only one accepted baseline so their payload sizes remain report-only. Do not promote another payload threshold until repeated accepted runs show that it is deterministic enough for CI.
+
+`Activity → Commits` currently transfers roughly 0.5 MiB and remains a payload watchpoint even though it is inside the measured ceiling. A passing budget is not a claim that this payload cannot be improved.
+
+Wall-clock durations remain diagnostic output only. Do not turn the repository's product-level response targets into shared-runner microbenchmarks. Existing focused Pest performance tests continue to protect stable query-count/duplicate-query invariants independently from the browser suite.
 
 ## Chrome DevTools interaction capture
 
