@@ -72,6 +72,14 @@ Historical archived rows with missing previous state infer:
 
 Runtime restore still validates current publication readiness and safely falls back to Draft when a historical record cannot currently satisfy Published readiness.
 
+### Publication migration stabilization
+
+The Publication bootstrap migration freezes the tracked tables and audit entity types that existed when that migration was introduced. It does not import today's mutable `PublicationSnapshot` constants. Later changes to tracked schema/state are expressed by later forward migrations.
+
+`blog_settings` remains only as migration/cutover evidence until explicit legacy retirement. Its canonical Blog/Journal state already lives in `site_sections` / `journal_settings`; it is not a runtime fallback and is outside the Publication tracked-table set. Its old `RESTRICT` foreign key to `site_sections` is intentionally not restored because legacy evidence must not block canonical publication-state replacement.
+
+The detailed rules are in [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
+
 ## 5. Journal template retention
 
 The active Journal template is presentation/editorial state, not a destructive data conversion.
@@ -192,4 +200,4 @@ After cutover:
 - resolve Production findings through normal releases;
 - retire legacy runtime/data only after explicit retirement acceptance and recovery requirements are satisfied.
 
-After explicit legacy retirement, migration-only evidence may be archived/removed in a dedicated cleanup.
+After explicit legacy retirement, migration-only evidence may be archived/removed in a dedicated cleanup. That cleanup is the point to remove retained evidence tables such as `blog_settings` through a new forward migration once their recovery/reconciliation purpose has ended.
