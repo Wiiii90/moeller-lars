@@ -33,40 +33,49 @@ trait CustomPageWorkspaceSecondaryForms
             ->default('published')
             ->required();
 
-        $fields[] = Grid::make(1)->schema(function (Get $get) use ($childType): array {
-            $type = $childType ?? (string) $get('child_type');
+        $fields[] = Grid::make()
+            ->columns(['md' => 2])
+            ->schema(function (Get $get) use ($childType): array {
+                $type = $childType ?? (string) $get('child_type');
 
-            return match ($type) {
-                'public_email' => [
-                    Placeholder::make('public_email_note')
-                        ->label('Public Email')
-                        ->content('Uses the canonical public email configured in General.'),
-                ],
-                'social_links' => [
-                    Select::make('social_platforms')
-                        ->label('Social links from General')
-                        ->options($this->availableSocialPlatforms)
-                        ->multiple()
-                        ->default(array_keys($this->availableSocialPlatforms)),
-                ],
-                'contact_form' => [
-                    Select::make('form_state')
-                        ->label('Form presentation')
-                        ->options(['enabled' => 'Enabled', 'under_construction' => 'Under construction'])
-                        ->default('enabled')
-                        ->required()
-                        ->live(),
-                    TextInput::make('status_text')
-                        ->label('Status text')
-                        ->maxLength(500)
-                        ->required(fn (Get $get): bool => $get('form_state') === 'under_construction')
-                        ->visible(fn (Get $get): bool => $get('form_state') === 'under_construction'),
-                ],
-                default => [],
-            };
-        });
+                return match ($type) {
+                    'public_email' => [
+                        Placeholder::make('public_email_note')
+                            ->label('Public Email')
+                            ->content('Uses the canonical public email configured in General.')
+                            ->columnSpanFull(),
+                    ],
+                    'social_links' => [
+                        Select::make('social_platforms')
+                            ->label('Social links from General')
+                            ->options($this->availableSocialPlatforms)
+                            ->multiple()
+                            ->default(array_keys($this->availableSocialPlatforms))
+                            ->columnSpanFull(),
+                    ],
+                    'contact_form' => [
+                        Select::make('form_state')
+                            ->label('Form presentation')
+                            ->options(['enabled' => 'Enabled', 'under_construction' => 'Under construction'])
+                            ->default('enabled')
+                            ->required()
+                            ->live(),
+                        TextInput::make('status_text')
+                            ->label('Status text')
+                            ->maxLength(500)
+                            ->required(fn (Get $get): bool => $get('form_state') === 'under_construction')
+                            ->visible(fn (Get $get): bool => $get('form_state') === 'under_construction'),
+                    ],
+                    default => [],
+                };
+            })
+            ->columnSpanFull();
 
-        return $fields;
+        return [
+            Grid::make()
+                ->columns(['md' => 2])
+                ->schema($fields),
+        ];
     }
 
     /** @param array<string,mixed> $block */

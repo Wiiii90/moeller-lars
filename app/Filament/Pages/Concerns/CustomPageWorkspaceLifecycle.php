@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
@@ -13,6 +14,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 
 trait CustomPageWorkspaceLifecycle
@@ -136,30 +138,34 @@ trait CustomPageWorkspaceLifecycle
                 ];
             })
             ->schema([
-                TextInput::make('title')
-                    ->label('Page title')
-                    ->required()
-                    ->maxLength(160),
-                TextInput::make('navigation_label')
-                    ->label('Navigation label')
-                    ->maxLength(160)
-                    ->helperText('Leave empty to use the page title.'),
-                TextInput::make('slug')
-                    ->label('Public URL slug')
-                    ->required()
-                    ->maxLength(80)
-                    ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                    ->helperText('Changing this keeps the previous public URL as a redirect.'),
-                Select::make('publication_state')
-                    ->label('Page status')
-                    ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-                    ->required(),
-                Toggle::make('show_in_navigation')->label('Show in navigation'),
-                Select::make('parent_id')
-                    ->label('Navigation parent')
-                    ->options(fn (): array => $this->parentOptions())
-                    ->nullable()
-                    ->placeholder('Top level'),
+                Grid::make()
+                    ->columns(['md' => 2])
+                    ->schema([
+                        TextInput::make('title')
+                            ->label('Page title')
+                            ->required()
+                            ->maxLength(160),
+                        TextInput::make('navigation_label')
+                            ->label('Navigation label')
+                            ->maxLength(160)
+                            ->helperText('Leave empty to use the page title.'),
+                        TextInput::make('slug')
+                            ->label('Public URL slug')
+                            ->required()
+                            ->maxLength(80)
+                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                            ->helperText('Changing this keeps the previous public URL as a redirect.'),
+                        Select::make('publication_state')
+                            ->label('Page status')
+                            ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+                            ->required(),
+                        Toggle::make('show_in_navigation')->label('Show in navigation'),
+                        Select::make('parent_id')
+                            ->label('Navigation parent')
+                            ->options(fn (): array => $this->parentOptions())
+                            ->nullable()
+                            ->placeholder('Top level'),
+                    ]),
             ])
             ->modalHeading('Page settings')
             ->action(function (array $data): void {
@@ -186,6 +192,6 @@ trait CustomPageWorkspaceLifecycle
                 Notification::make()->title('Page settings saved')->success()->send();
             });
 
-        return AdminDialog::edit($action);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 }

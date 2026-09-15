@@ -132,7 +132,7 @@ trait CustomPageWorkspaceListContactActions
                 Notification::make()->title('Contact item added')->success()->send();
             });
 
-        return AdminDialog::create($action, 'Add contact item');
+        return AdminDialog::create($action, 'Add contact item', AdminDialogSize::Large);
     }
 
     public function editContactChildAction(): Action
@@ -165,7 +165,7 @@ trait CustomPageWorkspaceListContactActions
                 Notification::make()->title('Contact item saved')->success()->send();
             });
 
-        return AdminDialog::edit($action);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function setContactChildPublished(int $index, string $type, string $childType, bool $published): void

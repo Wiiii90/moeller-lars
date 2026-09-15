@@ -9,6 +9,7 @@ use App\Domain\Content\SiteSectionIdentityService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Models\ArtworkCategory;
@@ -18,6 +19,7 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -44,43 +46,48 @@ trait ManagesSitePageEditDialog
                 ];
             })
             ->schema([
-                Select::make('type')
-                    ->label('Page type')
-                    ->options(SiteSectionType::compactOptions())
-                    ->native()
-                    ->required()
-                    ->live(),
-                Select::make('template')
-                    ->label('Template')
-                    ->options(JournalTemplate::options())
-                    ->native()
-                    ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
-                    ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value),
-                TextInput::make('name')
-                    ->label('Name')
-                    ->required()
-                    ->maxLength(160),
-                TextInput::make('slug')
-                    ->label('Public slug')
-                    ->maxLength(80)
-                    ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                    ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
-                    ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
-                Select::make('parent_id')
-                    ->label('Parent page')
-                    ->options(fn (): array => $this->parentOptions)
-                    ->placeholder('Top level')
-                    ->native()
-                    ->nullable(),
-                TextInput::make('position')
-                    ->label('Position')
-                    ->numeric()
-                    ->integer()
-                    ->minValue(1)
-                    ->required()
-                    ->helperText('Position within the selected level. Home remains fixed at position 1.'),
-                Checkbox::make('show_in_navigation')
-                    ->label('Show in navigation'),
+                Grid::make()
+                    ->columns(['md' => 2])
+                    ->schema([
+                        Select::make('type')
+                            ->label('Page type')
+                            ->options(SiteSectionType::compactOptions())
+                            ->native()
+                            ->required()
+                            ->live(),
+                        Select::make('template')
+                            ->label('Template')
+                            ->options(JournalTemplate::options())
+                            ->native()
+                            ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
+                            ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value),
+                        TextInput::make('name')
+                            ->label('Name')
+                            ->required()
+                            ->maxLength(160),
+                        TextInput::make('slug')
+                            ->label('Public slug')
+                            ->maxLength(80)
+                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                            ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
+                            ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
+                        Select::make('parent_id')
+                            ->label('Parent page')
+                            ->options(fn (): array => $this->parentOptions)
+                            ->placeholder('Top level')
+                            ->native()
+                            ->nullable(),
+                        TextInput::make('position')
+                            ->label('Position')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(1)
+                            ->required()
+                            ->helperText('Position within the selected level. Home remains fixed at position 1.'),
+                        Checkbox::make('show_in_navigation')
+                            ->label('Show in navigation')
+                            ->columnSpanFull(),
+                    ]),
             ])
             ->action(function (array $data, array $arguments): void {
                 DB::transaction(function () use ($data, $arguments): void {
@@ -92,7 +99,7 @@ trait ManagesSitePageEditDialog
             })
             ->extraModalFooterActions(fn (array $arguments): array => $this->pageDialogHeaderActions($arguments));
 
-        return AdminDialog::edit($action);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function editHomeAction(): Action
@@ -109,7 +116,7 @@ trait ManagesSitePageEditDialog
                 Notification::make()->title('Home settings saved')->success()->send();
             });
 
-        return AdminDialog::edit($action);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     /** @param array<string, mixed> $data */

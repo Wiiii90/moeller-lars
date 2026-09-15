@@ -37,15 +37,21 @@ trait CustomPageWorkspaceForms
             : Hidden::make('type')->required();
 
         return [
-            $typeField,
-            Select::make('publication_state')
-                ->label('Status')
-                ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-                ->default('published')
-                ->required(),
-            Grid::make(1)
-                ->schema(fn (Get $get): array => $this->componentTypeFields((string) $get('type'), $includeTypeSelect))
-                ->key('dynamicComponentFields'),
+            Grid::make()
+                ->columns(['md' => 2])
+                ->schema([
+                    $typeField,
+                    Select::make('publication_state')
+                        ->label('Status')
+                        ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+                        ->default('published')
+                        ->required(),
+                    Grid::make()
+                        ->columns(['md' => 2])
+                        ->schema(fn (Get $get): array => $this->componentTypeFields((string) $get('type'), $includeTypeSelect))
+                        ->key('dynamicComponentFields')
+                        ->columnSpanFull(),
+                ]),
         ];
     }
 
@@ -97,7 +103,8 @@ trait CustomPageWorkspaceForms
                     ->label('Contact items')
                     ->content($isNew
                         ? 'Public Email, Social Media Links and Contact Form are created with this component.'
-                        : 'Contact items are managed in the child rows below.'),
+                        : 'Contact items are managed in the child rows below.')
+                    ->columnSpanFull(),
             ],
             'legal_disclaimer' => [
                 Placeholder::make('legal_disclaimer_note')
@@ -108,7 +115,8 @@ trait CustomPageWorkspaceForms
                         return is_string($value) && trim($value) !== ''
                             ? $value
                             : 'No legal disclaimer is configured in General.';
-                    }),
+                    })
+                    ->columnSpanFull(),
             ],
             default => [],
         };
@@ -118,17 +126,21 @@ trait CustomPageWorkspaceForms
     private function listEntrySchema(): array
     {
         return [
-            Select::make('publication_state')
-                ->label('Status')
-                ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-                ->default('published')
-                ->required(),
-            TextInput::make('date')->label('Date / year')->maxLength(120),
-            TextInput::make('title')->label('Entry')->required()->maxLength(240),
-            TextInput::make('meta')->label('Organisation / context')->maxLength(240),
-            TextInput::make('location')->maxLength(240),
-            TextInput::make('url')->label('Optional link')->url()->maxLength(2048),
-            ...AdminRichText::schema('body', 'Details', 10000),
+            Grid::make()
+                ->columns(['md' => 2])
+                ->schema([
+                    Select::make('publication_state')
+                        ->label('Status')
+                        ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+                        ->default('published')
+                        ->required(),
+                    TextInput::make('date')->label('Date / year')->maxLength(120),
+                    TextInput::make('title')->label('Entry')->required()->maxLength(240),
+                    TextInput::make('meta')->label('Organisation / context')->maxLength(240),
+                    TextInput::make('location')->maxLength(240),
+                    TextInput::make('url')->label('Optional link')->url()->maxLength(2048),
+                    ...AdminRichText::schema('body', 'Details', 10000),
+                ]),
         ];
     }
 
@@ -136,17 +148,32 @@ trait CustomPageWorkspaceForms
     private function cvEntryCreateSchema(): array
     {
         return [
-            Select::make('publication_state')
-                ->label('Status')
-                ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
-                ->default('unpublished')
-                ->required(),
-            ...$this->cvEntrySchema(),
+            Grid::make()
+                ->columns(['md' => 2])
+                ->schema([
+                    Select::make('publication_state')
+                        ->label('Status')
+                        ->options(['published' => 'Published', 'unpublished' => 'Unpublished'])
+                        ->default('unpublished')
+                        ->required(),
+                    ...$this->cvEntryFields(),
+                ]),
         ];
     }
 
     /** @return list<mixed> */
     private function cvEntrySchema(): array
+    {
+        return [
+            Grid::make()
+                ->columns(['md' => 2])
+                ->schema($this->cvEntryFields())
+                ->columnSpanFull(),
+        ];
+    }
+
+    /** @return list<mixed> */
+    private function cvEntryFields(): array
     {
         return [
             TextInput::make('section')->required()->maxLength(120)->default('CV'),
@@ -163,7 +190,8 @@ trait CustomPageWorkspaceForms
                 ->schema([
                     DatePicker::make('starts_on')->label('Starts on')->nullable(),
                     DatePicker::make('ends_on')->label('Ends on')->nullable(),
-                ]),
+                ])
+                ->columnSpanFull(),
             TextInput::make('organisation')->maxLength(240)->nullable(),
             TextInput::make('location')->maxLength(240)->nullable(),
             ...AdminRichText::schema('body', 'Details', 10000),

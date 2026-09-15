@@ -7,11 +7,13 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -23,43 +25,47 @@ trait ManagesSitePageCreateDialog
             ->label('Add page')
             ->modalHeading('Add page')
             ->schema([
-                Select::make('type')
-                    ->label('Page type')
-                    ->options(SiteSectionType::compactOptions())
-                    ->default(SiteSectionType::CustomPage->value)
-                    ->native()
-                    ->required()
-                    ->live(),
-                Select::make('template')
-                    ->label('Template')
-                    ->options(JournalTemplate::options())
-                    ->default(JournalTemplate::Blog->value)
-                    ->native()
-                    ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
-                    ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value),
-                TextInput::make('name')
-                    ->label('Name')
-                    ->required()
-                    ->maxLength(160),
-                TextInput::make('slug')
-                    ->label('Public slug')
-                    ->maxLength(80)
-                    ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                    ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
-                    ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
-                Select::make('parent_id')
-                    ->label('Parent page')
-                    ->options(fn (): array => $this->parentOptions)
-                    ->placeholder('Top level')
-                    ->native()
-                    ->nullable(),
-                TextInput::make('position')
-                    ->label('Position')
-                    ->numeric()
-                    ->integer()
-                    ->minValue(1)
-                    ->nullable()
-                    ->helperText('Leave empty to place the page last on the selected level.'),
+                Grid::make()
+                    ->columns(['md' => 2])
+                    ->schema([
+                        Select::make('type')
+                            ->label('Page type')
+                            ->options(SiteSectionType::compactOptions())
+                            ->default(SiteSectionType::CustomPage->value)
+                            ->native()
+                            ->required()
+                            ->live(),
+                        Select::make('template')
+                            ->label('Template')
+                            ->options(JournalTemplate::options())
+                            ->default(JournalTemplate::Blog->value)
+                            ->native()
+                            ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
+                            ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value),
+                        TextInput::make('name')
+                            ->label('Name')
+                            ->required()
+                            ->maxLength(160),
+                        TextInput::make('slug')
+                            ->label('Public slug')
+                            ->maxLength(80)
+                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                            ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
+                            ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
+                        Select::make('parent_id')
+                            ->label('Parent page')
+                            ->options(fn (): array => $this->parentOptions)
+                            ->placeholder('Top level')
+                            ->native()
+                            ->nullable(),
+                        TextInput::make('position')
+                            ->label('Position')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(1)
+                            ->nullable()
+                            ->helperText('Leave empty to place the page last on the selected level.'),
+                    ]),
             ])
             ->action(function (array $data): void {
                 $section = DB::transaction(fn (): SiteSection => $this->createPageFromDialog($data));
@@ -72,7 +78,7 @@ trait ManagesSitePageCreateDialog
                     ->send();
             });
 
-        return AdminDialog::create($action, 'Create page');
+        return AdminDialog::create($action, 'Create page', AdminDialogSize::Large);
     }
 
     /** @param array<string, mixed> $data */

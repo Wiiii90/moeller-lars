@@ -43,7 +43,7 @@
         >Next</button>
     </nav>
 
-    <div class="media-file-dialog__details media-file-dialog__metadata">
+    <div class="media-file-dialog__details">
         <section aria-labelledby="gallery-artwork-preview-details-{{ $artwork['id'] }}">
             <h3 id="gallery-artwork-preview-details-{{ $artwork['id'] }}">Artwork</h3>
             <dl class="media-file-dialog__metadata-grid">
@@ -55,9 +55,7 @@
                 <div><dt>Readiness</dt><dd>{{ $artwork['readiness_label'] }}</dd></div>
             </dl>
         </section>
-    </div>
 
-    <div class="media-file-dialog__details media-file-dialog__metadata">
         <section aria-labelledby="gallery-artwork-preview-media-{{ $artwork['id'] }}">
             <h3 id="gallery-artwork-preview-media-{{ $artwork['id'] }}">Primary Media</h3>
             @if ($primaryMedia !== null)

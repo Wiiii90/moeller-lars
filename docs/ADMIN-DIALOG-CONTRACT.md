@@ -24,6 +24,9 @@ Exactly five semantic dialog types are supported:
 
 Edits operate on an existing record or settings object.
 
+- editorial edit dialogs use the `Large` width by default;
+- `Small` is reserved for deliberately compact utility editors with only a few controls;
+- `Default` and `Mini` are not edit widths: the shared adapter promotes them to the `Large` editorial baseline;
 - changed values persist through the canonical discrete autosave path;
 - no Save/Apply/Cancel footer exists;
 - the native Filament `X` closes the dialog and does not trigger another write;
@@ -37,6 +40,8 @@ Use `AdminDialog::edit()`.
 Creates collect a complete new object before persistence.
 
 - opening the dialog must not create an empty/placeholder record;
+- compact create tasks may use `Small`;
+- multi-field editorial create tasks use `Large` and the same responsive form composition as edit dialogs;
 - the commit/check action creates the record atomically;
 - `X` cancels the uncommitted create task.
 
@@ -48,7 +53,8 @@ Commands collect parameters for a discrete existing-domain action such as Move, 
 
 - no mutation occurs until commit;
 - the commit/check action executes the command atomically;
-- `X` cancels.
+- `X` cancels;
+- one- or two-control commands normally use `Small`.
 
 Use `AdminDialog::command()`.
 
@@ -56,7 +62,7 @@ Use `AdminDialog::command()`.
 
 Confirmation dialogs guard a concrete action without editable form state.
 
-- use the mini width;
+- use the mini width unless the confirmation body contains substantial reference/details content;
 - the header confirmation icon executes the action;
 - destructive confirmations use the danger treatment and canonical Delete icon;
 - `X` cancels;
@@ -70,20 +76,42 @@ Viewers display detail/preview content without form persistence.
 
 - no submit/cancel footer;
 - contextual actions may appear immediately left of `X`;
+- image/media viewers normally use `Large`;
+- compact text-only details may use `Default`;
 - `X` closes the viewer.
 
 Use `AdminDialog::viewer()`.
 
 ## Widths
 
-Dialogs align to the same six-unit desktop workspace used by metrics and canonical tables. Use `AdminDialogSize` rather than page-local width values:
+Dialogs align to the same six-unit desktop workspace used by the admin summary and table geometry. Use `AdminDialogSize` rather than page-local width values:
 
-- `Mini`: 1/6 of the 80rem desktop workspace (`13.333rem`) — confirmations only;
-- `Small`: 2/6 (`26.667rem`) — normal create/edit/command settings tasks;
-- `Default`: 3/6 (`40rem`) — normal viewers or editors needing more horizontal content;
-- `Large`: 4/6 (`53.333rem`) — genuinely large editorial forms/viewers.
+- `Mini`: 1/6 of the 80rem desktop workspace (`13.333rem`) — compact confirmations;
+- `Small`: 2/6 (`26.667rem`) — compact commands and deliberately small utility forms;
+- `Default`: 3/6 (`40rem`) — intermediate read-only/detail surfaces;
+- `Large`: 4/6 (`53.333rem`) — editorial edit/create forms and media/detail viewers.
 
 All sizes are capped by the viewport gutter.
+
+## Content layout
+
+Width and content composition are separate concerns. A `Large` dialog must use its horizontal space instead of becoming a wide single-column scroll tunnel.
+
+For multi-field `Large` create/edit dialogs:
+
+- compose normal controls as a responsive two-column grid on desktop;
+- collapse to one column on narrow viewports;
+- long text, rich-text editors, repeaters, uploads/media pickers and content that genuinely needs width span both columns;
+- keep related fields adjacent where practical (for example title/slug, start/end, width/height);
+- do not remove, hide or truncate form fields merely to make a dialog shorter.
+
+For media/detail viewers:
+
+- keep the primary visual first;
+- place related metadata/detail sections side by side beneath the visual when two meaningful groups exist;
+- collapse those sections to one column on narrow viewports.
+
+Compact summary/fact cells are optional inside dialogs. They are a layout device, not a requirement and not necessarily numerical metrics. Render only meaningful facts, and use exactly as many cells as the content and available width justify; never manufacture or pad a dialog to a fixed metric count.
 
 ## Chrome and actions
 
@@ -111,6 +139,8 @@ Undo must extend the existing Activity/Audit receipt architecture. Do not create
 
 Dialog schemas use the canonical controls from `ADMIN-CONTROL-CONTRACT.md`. A dialog does not get a separate form design language.
 
-## Responsive behavior
+## Scrolling and responsive behavior
 
 Width modifiers are desktop maxima, not fixed mobile widths. On narrow viewports the shared contract reduces the viewport gutter and lets the dialog fit the available screen. Long content scrolls inside the native modal behavior; page-local horizontal compensation is forbidden.
+
+Dialog-internal scrolling remains visibly discoverable. The shared contract styles the internal scrollbar as a narrow, low-contrast thumb with a transparent track; it must remain wheel, trackpad, touch and keyboard scrollable. Do not hide dialog scrollbars by default. This rule does not change the normal main document scrollbar at the right edge of the admin.

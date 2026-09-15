@@ -30,3 +30,23 @@ it('routes migrated admin dialogs through the shared dialog adapter', function (
             ->not->toContain('->extraModalWindowAttributes(');
     }
 });
+
+it('keeps editorial dialog geometry and media details on the shared layout contract', function (): void {
+    $root = dirname(__DIR__, 3);
+    $adapter = file_get_contents($root.'/app/Filament/Support/Dialogs/AdminDialog.php');
+    $contract = file_get_contents($root.'/resources/css/admin/dialog-contract.css');
+    $artworkPreview = file_get_contents($root.'/resources/views/filament/resources/artworks/partials/preview-dialog.blade.php');
+    $mediaPreview = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/preview-dialog.blade.php');
+
+    expect($adapter)
+        ->toContain('AdminDialogSize $size = AdminDialogSize::Large')
+        ->toContain('$size === AdminDialogSize::Small ? AdminDialogSize::Small : AdminDialogSize::Large');
+
+    expect($contract)
+        ->toContain('.admin-task-dialog .fi-modal-content')
+        ->toContain('scrollbar-width: thin')
+        ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
+
+    expect(substr_count($artworkPreview, 'class="media-file-dialog__details"'))->toBe(1);
+    expect(substr_count($mediaPreview, 'class="media-file-dialog__details"'))->toBe(1);
+});

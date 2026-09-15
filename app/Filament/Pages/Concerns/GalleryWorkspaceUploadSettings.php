@@ -15,6 +15,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 
 trait GalleryWorkspaceUploadSettings
@@ -37,15 +38,19 @@ trait GalleryWorkspaceUploadSettings
                 ];
             })
             ->schema([
-                TextInput::make('name')->label('Gallery title')->required()->maxLength(160),
-                TextInput::make('slug')
-                    ->label('Public URL slug')
-                    ->required()
-                    ->maxLength(80)
-                    ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                    ->helperText('Changing this keeps the previous Gallery URL as a redirect.'),
-                Textarea::make('description')->rows(5)->maxLength(10000)->nullable()->columnSpanFull(),
-                Toggle::make('show_on_home')->label('Eligible for homepage presentation'),
+                Grid::make()
+                    ->columns(['md' => 2])
+                    ->schema([
+                        TextInput::make('name')->label('Gallery title')->required()->maxLength(160),
+                        TextInput::make('slug')
+                            ->label('Public URL slug')
+                            ->required()
+                            ->maxLength(80)
+                            ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
+                            ->helperText('Changing this keeps the previous Gallery URL as a redirect.'),
+                        Textarea::make('description')->rows(5)->maxLength(10000)->nullable()->columnSpanFull(),
+                        Toggle::make('show_on_home')->label('Eligible for homepage presentation')->columnSpanFull(),
+                    ]),
             ])
             ->modalHeading('Gallery settings')
             ->action(function (array $data): void {
@@ -73,7 +78,7 @@ trait GalleryWorkspaceUploadSettings
                 Notification::make()->title('Gallery settings saved')->success()->send();
             });
 
-        return AdminDialog::edit($action);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function materialPresetsAction(): Action
