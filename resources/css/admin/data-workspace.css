@@ -349,12 +349,6 @@
     font-size: var(--admin-font-size-table-support);
 }
 
-/* Opening a bottom-edge picker temporarily creates enough document room for
- * the existing scrollIntoView call to reveal the complete downward menu. */
-:is(.admin-pager, .media-workspace__pager):has(.admin-pager-size-picker__menu:not([style*="display: none"])) {
-    padding-bottom: calc(5.25rem + var(--admin-section-gap));
-}
-
 .admin-pager__leading {
     display: inline-flex;
     min-width: 0;
@@ -417,8 +411,7 @@
 }
 
 /* Shared deterministic page-size picker. Trigger and popup share one exact
- * width; options keep the value centered while the checkmark occupies its own
- * overlay slot so active state never shifts the number. */
+ * width; pager popups open inward so they never change document height. */
 .admin-pager-size-picker {
     position: relative;
     display: inline-flex;
@@ -456,7 +449,8 @@
 
 .admin-pager-size-picker__menu {
     position: absolute;
-    top: calc(100% + .3rem);
+    top: auto;
+    bottom: calc(100% + .3rem);
     left: 0;
     z-index: 50;
     box-sizing: border-box;
@@ -469,7 +463,6 @@
     background: var(--admin-control-popup-surface);
     box-shadow: 0 .45rem 1rem rgba(0, 0, 0, .12);
     color: var(--admin-control-popup-ink);
-    scroll-margin-bottom: var(--admin-section-gap);
 }
 
 .admin-pager-size-picker__option {

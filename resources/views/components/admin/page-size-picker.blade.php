@@ -15,15 +15,7 @@
 
 <div
     {{ $attributes->class(['admin-pager__size']) }}
-    x-data="{
-        open: false,
-        toggle() {
-            this.open = ! this.open;
-            if (this.open) {
-                this.$nextTick(() => this.$refs.menu?.scrollIntoView({ block: 'nearest' }));
-            }
-        },
-    }"
+    x-data="{ open: false }"
     x-on:click.outside="open = false"
     x-on:keydown.escape.window="open = false"
 >
@@ -32,18 +24,17 @@
         <button
             class="admin-pager-size-picker__trigger"
             type="button"
-            x-on:click="toggle()"
+            x-on:click="open = ! open"
             x-bind:aria-expanded="open.toString()"
             aria-haspopup="listbox"
             aria-label="{{ $ariaLabel }}"
         >
             <span>{{ $currentValue }}</span>
-            <span aria-hidden="true">▾</span>
+            <span aria-hidden="true">▴</span>
         </button>
 
         <div
             class="admin-pager-size-picker__menu"
-            x-ref="menu"
             role="listbox"
             aria-label="{{ $ariaLabel }}"
             x-show="open"
