@@ -61,26 +61,39 @@ Worker integration and branch deletion follow `AGENTS.md`. A protected Validatio
 
 ## Verification gates
 
-The canonical verification job covers:
+The canonical verification job covers, in order:
 
-- Composer dependency installation/security audit;
-- frontend dependency installation/build;
-- Pest;
-- PHPStan;
-- Pint;
-- JavaScript tests.
+- Composer dependency installation and locked dependency security audit;
+- frontend dependency installation, generated analytics map and Vite production build;
+- Vite manifest contract verification;
+- Pest Unit tests;
+- Pest Integration tests;
+- Pest Feature tests;
+- Pest Architecture tests;
+- Pest Migration tests;
+- PHPStan/Larastan static analysis;
+- Pint formatting verification;
+- JavaScript tests through Node's built-in test runner.
 
-PHPStan is currently executed with `continue-on-error`, so it remains visible diagnostic evidence but is not presently a blocking workflow gate. Project-wide PHPStan cleanup and the path to making the gate blocking are tracked by #189. Pest, dependency/build steps, Pint and JavaScript tests remain blocking according to the workflow definition.
+All verification steps are blocking. PHPStan has no `continue-on-error` escape hatch, and the project does not use a broad PHPStan baseline or ignore set to hide application debt. Test warnings and static-analysis failures are repaired at their source rather than suppressed to obtain a green workflow.
+
+The Pest layers are intentionally separate CI steps so a failure is attributed to its owning layer. The job is fail-fast: if an earlier blocking step fails, later verification steps are skipped for that run and must be observed on the next green-through-that-point run.
 
 Commands used in disposable CI (not a recipe for the persistent local browser database):
 
 ```sh
-composer test
+composer test:unit
+composer test:integration
+composer test:feature
+composer test:architecture
+composer test:migration
 composer analyse
 vendor/bin/pint --test
 npm run test:js
 npm run build
 ```
+
+`composer test` remains available for running all PHP tests together when a disposable test database context is already established. The durable layer ownership, placement rules and browser-testing direction are defined in [TESTING.md](TESTING.md).
 
 Browser/product acceptance remains separate evidence.
 
