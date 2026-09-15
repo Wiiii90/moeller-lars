@@ -41,6 +41,6 @@ final class LocalPreviewDatabaseGuard
     {
         $value = $_SERVER[$key] ?? $_ENV[$key] ?? getenv($key);
 
-        return $value === false || $value === null ? null : (string) $value;
+        return $value === false ? null : (string) $value;
     }
 }
