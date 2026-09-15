@@ -11,6 +11,8 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
@@ -31,7 +33,6 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Str;
@@ -241,7 +242,7 @@ final class JournalWorkspace extends Page
 
     public function journalSettingsAction(): Action
     {
-        return Action::make('journalSettings')
+        $action = Action::make('journalSettings')
             ->label('Settings')
             ->fillForm(function (): array {
                 $section = $this->section();
@@ -267,10 +268,6 @@ final class JournalWorkspace extends Page
                 ])->columns(2),
             ])
             ->modalHeading('Journal settings')
-            ->modalSubmitActionLabel('Save')
-            ->modalCancelActionLabel('Cancel')
-            ->modalWidth(Width::SevenExtraLarge)
-            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
             ->action(function (Action $action, array $data): void {
                 $newTemplate = (string) ($data['template'] ?? '');
                 if ($newTemplate !== $this->template && ! (bool) ($data['confirm_template_change'] ?? false)) {
@@ -295,32 +292,34 @@ final class JournalWorkspace extends Page
                 $this->reloadEntries();
                 Notification::make()->title('Journal settings saved')->success()->send();
             });
+
+        return AdminDialog::editCommit($action, 'Save Journal settings');
     }
 
     public function addPostAction(): Action
     {
-        return Action::make('addPost')->label('Add post')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
+        $action = Action::make('addPost')->label('Add post')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
-            ->modalHeading('Add post')->modalSubmitActionLabel('Create draft')->modalCancelActionLabel('Cancel')
-            ->modalWidth(Width::SevenExtraLarge)->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->modalHeading('Add post')
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try { app(BlogEditorialService::class)->createDraft($data); }
                 catch (ValidationException $exception) { $this->notifyValidationFailure('Post was not created', $exception); $action->halt(); return; }
                 $this->loadPosts(); Notification::make()->title('Post draft created')->success()->send();
             });
+
+        return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
     }
 
     public function editPostAction(): Action
     {
-        return Action::make('editPost')->label('Edit')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
+        $action = Action::make('editPost')->label('Edit')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->fillForm(function (array $arguments): array {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
                 return [...$post->attributesToArray(), ...app(JournalEntryEditorState::class)->for($post)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::blog($schema))
-            ->modalHeading('Edit post')->modalSubmitActionLabel('Save')->modalCancelActionLabel('Cancel')
-            ->modalWidth(Width::SevenExtraLarge)->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->modalHeading('Edit post')
             ->action(function (Action $action, array $data, array $arguments): void {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
                 $data = [...$data, 'site_section_id' => $this->sectionId, 'state' => $post->getAttribute('state'), 'position' => $post->getAttribute('position'), 'published_at' => $post->getAttribute('published_at'), 'scheduled_at' => $post->getAttribute('scheduled_at')];
@@ -328,45 +327,48 @@ final class JournalWorkspace extends Page
                 catch (ValidationException $exception) { $this->notifyValidationFailure('Post unchanged', $exception); $action->halt(); return; }
                 $this->loadPosts(false); Notification::make()->title('Post saved')->success()->send();
             });
+
+        return AdminDialog::editCommit($action, 'Save post', AdminDialogSize::Large);
     }
 
     public function schedulePostAction(): Action
     {
-        return Action::make('schedulePost')->label('Schedule publication')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
+        $action = Action::make('schedulePost')->label('Schedule publication')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Blog)
             ->schema([DateTimePicker::make('scheduled_at')->label('Publish at')->seconds(false)->required()])
-            ->modalHeading('Schedule publication')->modalSubmitActionLabel('Schedule')->modalCancelActionLabel('Cancel')
-            ->modalWidth(Width::Large)->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->modalHeading('Schedule publication')
             ->action(function (Action $action, array $data, array $arguments): void {
                 try { app(BlogEditorialService::class)->schedule($this->post((int) ($arguments['post'] ?? 0)), $data['scheduled_at'] ?? null); }
                 catch (ValidationException $exception) { $this->notifyValidationFailure('Post was not scheduled', $exception); $action->halt(); return; }
                 $this->loadPosts(); Notification::make()->title('Publication scheduled')->success()->send();
             });
+
+        return AdminDialog::command($action, 'Schedule publication');
     }
 
     public function addExhibitionAction(): Action
     {
-        return Action::make('addExhibition')->label('Add exhibition')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
+        $action = Action::make('addExhibition')->label('Add exhibition')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
-            ->modalHeading('Add exhibition')->modalSubmitActionLabel('Create exhibition')->modalCancelActionLabel('Cancel')
-            ->modalWidth(Width::SevenExtraLarge)->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->modalHeading('Add exhibition')
             ->action(function (Action $action, array $data): void {
                 $data['site_section_id'] = $this->sectionId;
                 try { app(ExhibitionEditorialService::class)->createDraft($data); }
                 catch (ValidationException $exception) { $this->notifyValidationFailure('Exhibition was not created', $exception); $action->halt(); return; }
                 $this->loadExhibitions(); Notification::make()->title('Exhibition created')->success()->send();
             });
+
+        return AdminDialog::create($action, 'Create exhibition', AdminDialogSize::Large);
     }
 
     public function editExhibitionAction(): Action
     {
-        return Action::make('editExhibition')->label('Edit')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
+        $action = Action::make('editExhibition')->label('Edit')->visible(fn (): bool => $this->journalTemplate() === JournalTemplate::Exhibitions)
             ->fillForm(function (array $arguments): array {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
                 return [...$entry->attributesToArray(), ...app(JournalEntryEditorState::class)->for($entry)];
             })
             ->schema(fn (Schema $schema): Schema => JournalEntryEditorSchema::exhibition($schema))
-            ->modalHeading('Edit exhibition')->modalSubmitActionLabel('Save')->modalCancelActionLabel('Cancel')
-            ->modalWidth(Width::SevenExtraLarge)->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+            ->modalHeading('Edit exhibition')
             ->action(function (Action $action, array $data, array $arguments): void {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
                 $data['site_section_id'] = $this->sectionId;
@@ -374,6 +376,8 @@ final class JournalWorkspace extends Page
                 catch (ValidationException $exception) { $this->notifyValidationFailure('Exhibition unchanged', $exception); $action->halt(); return; }
                 $this->loadExhibitions(false); Notification::make()->title('Exhibition saved')->success()->send();
             });
+
+        return AdminDialog::editCommit($action, 'Save exhibition', AdminDialogSize::Large);
     }
 
     public function deletePostAction(): Action { return $this->deleteAction('deletePost', 'post'); }
@@ -381,10 +385,7 @@ final class JournalWorkspace extends Page
 
     private function deleteAction(string $name, string $type): Action
     {
-        return Action::make($name)->label('Delete')->color('danger')->requiresConfirmation()
-            ->modalHeading('Delete this '.$type.'?')->modalDescription('Media Files are preserved. Only this Journal entry and its references are removed.')
-            ->modalSubmitActionLabel('Delete')->modalCancelActionLabel('Cancel')->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+        $action = Action::make($name)->label('Delete')->color('danger')
             ->action(function (Action $action, array $arguments) use ($type): void {
                 $id = (int) ($arguments[$type] ?? 0);
                 try {
@@ -393,30 +394,48 @@ final class JournalWorkspace extends Page
                 } catch (ValidationException $exception) { $this->notifyValidationFailure(ucfirst($type).' was not deleted', $exception); $action->halt(); return; }
                 Notification::make()->title(ucfirst($type).' deleted')->success()->send();
             });
+
+        return AdminDialog::confirm(
+            $action,
+            'Delete this '.$type.'?',
+            'Media Files are preserved. Only this Journal entry and its references are removed.',
+            'Delete',
+            danger: true,
+        );
     }
 
     public function deleteSelectedPostsAction(): Action
     {
-        return Action::make('deleteSelectedPosts')->label('Delete selected')->color('danger')->requiresConfirmation()
-            ->modalHeading('Delete selected posts?')->modalDescription('Published and scheduled posts are kept. Media Files are preserved.')
-            ->modalSubmitActionLabel('Delete')->modalCancelActionLabel('Cancel')->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+        $action = Action::make('deleteSelectedPosts')->label('Delete selected')->color('danger')
             ->action(function (): void {
                 [$ok, $failed] = $this->bestEffort($this->selectedPosts(), fn (BlogPost $post): bool => tap(true, fn () => app(BlogEditorialService::class)->delete($post)));
                 $this->selectedPostIds = []; $this->notifyBatch('posts deleted', $ok, $failed); $this->loadPosts();
             });
+
+        return AdminDialog::confirm(
+            $action,
+            'Delete selected posts?',
+            'Published and scheduled posts are kept. Media Files are preserved.',
+            'Delete',
+            danger: true,
+        );
     }
 
     public function deleteSelectedExhibitionsAction(): Action
     {
-        return Action::make('deleteSelectedExhibitions')->label('Delete selected')->color('danger')->requiresConfirmation()
-            ->modalHeading('Delete selected exhibitions?')->modalDescription('Published exhibitions are kept. Media Files are preserved.')
-            ->modalSubmitActionLabel('Delete')->modalCancelActionLabel('Cancel')->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => 'admin-task-dialog'])
+        $action = Action::make('deleteSelectedExhibitions')->label('Delete selected')->color('danger')
             ->action(function (): void {
                 [$ok, $failed] = $this->bestEffort($this->selectedExhibitions(), fn (Exhibition $entry): bool => tap(true, fn () => app(ExhibitionEditorialService::class)->delete($entry)));
                 $this->selectedExhibitionIds = []; $this->notifyBatch('exhibitions deleted', $ok, $failed); $this->loadExhibitions();
             });
+
+        return AdminDialog::confirm(
+            $action,
+            'Delete selected exhibitions?',
+            'Published exhibitions are kept. Media Files are preserved.',
+            'Delete',
+            danger: true,
+        );
     }
 
     private function refreshFromFirstPage(): void { $this->page = 1; $this->reloadEntries(false); }

@@ -5,6 +5,8 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPublicationService;
+use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Dialogs\AdminDialog;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
@@ -14,11 +16,8 @@ trait GalleryWorkspaceBatchActions
 {
     public function removeSelectedArtworksAction(): Action
     {
-        return Action::make('removeSelectedArtworks')
+        $action = Action::make('removeSelectedArtworks')
             ->label('Remove')
-            ->requiresConfirmation()
-            ->modalHeading('Remove selected artworks from Gallery?')
-            ->modalDescription('Artwork records and Media Files remain. Published artworks must be unpublished first.')
             ->action(function (): void {
                 try {
                     $artworks = $this->selectedArtworks();
@@ -38,16 +37,21 @@ trait GalleryWorkspaceBatchActions
                 $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title($count.' selected '.($count === 1 ? 'artwork was' : 'artworks were').' removed')->success()->send();
             });
+
+        return AdminDialog::confirm(
+            $action,
+            'Remove selected artworks from Gallery?',
+            'Artwork records and Media Files remain. Published artworks must be unpublished first.',
+            'Remove',
+            icon: AdminIcon::Detach,
+        );
     }
 
     public function deleteSelectedArtworksAction(): Action
     {
-        return Action::make('deleteSelectedArtworks')
+        $action = Action::make('deleteSelectedArtworks')
             ->label('Delete')
             ->color('danger')
-            ->requiresConfirmation()
-            ->modalHeading('Delete selected artworks?')
-            ->modalDescription('Only draft artworks can be deleted. Media Files are preserved even when they become unreferenced.')
             ->action(function (): void {
                 try {
                     $artworks = $this->selectedArtworks();
@@ -67,6 +71,14 @@ trait GalleryWorkspaceBatchActions
                 $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title($count.' '.($count === 1 ? 'artwork deleted' : 'artworks deleted'))->success()->send();
             });
+
+        return AdminDialog::confirm(
+            $action,
+            'Delete selected artworks?',
+            'Only draft artworks can be deleted. Media Files are preserved even when they become unreferenced.',
+            'Delete',
+            danger: true,
+        );
     }
 
     public function publishSelectedArtworksAction(): Action
@@ -94,9 +106,8 @@ trait GalleryWorkspaceBatchActions
 
     public function unpublishSelectedArtworksAction(): Action
     {
-        return Action::make('unpublishSelectedArtworks')
+        $action = Action::make('unpublishSelectedArtworks')
             ->label('Unpublish')
-            ->requiresConfirmation()
             ->action(function (): void {
                 $artworks = $this->selectedArtworks();
                 DB::transaction(function () use ($artworks): void {
@@ -108,5 +119,12 @@ trait GalleryWorkspaceBatchActions
                 $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Selected artworks unpublished')->success()->send();
             });
+
+        return AdminDialog::confirm(
+            $action,
+            'Unpublish selected artworks?',
+            submitLabel: 'Unpublish',
+            icon: AdminIcon::Unpublish,
+        );
     }
 }

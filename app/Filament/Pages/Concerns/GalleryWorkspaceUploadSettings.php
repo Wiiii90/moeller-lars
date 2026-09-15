@@ -4,6 +4,8 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMaterialPreset;
 use Filament\Actions\Action;
@@ -18,7 +20,7 @@ trait GalleryWorkspaceUploadSettings
 {
     public function gallerySettingsAction(): Action
     {
-        return Action::make('gallerySettings')
+        $action = Action::make('gallerySettings')
             ->label('Settings')
             ->fillForm(function (): array {
                 /** @var ArtworkCategory $gallery */
@@ -43,7 +45,6 @@ trait GalleryWorkspaceUploadSettings
                 Toggle::make('show_on_home')->label('Eligible for homepage presentation'),
             ])
             ->modalHeading('Gallery settings')
-            ->modalSubmitActionLabel('Save changes')
             ->action(function (array $data): void {
                 /** @var ArtworkCategory $gallery */
                 $gallery = ArtworkCategory::query()->findOrFail((int) $this->galleryContext['id']);
@@ -68,11 +69,13 @@ trait GalleryWorkspaceUploadSettings
                 $this->refreshWorkspaceAfterMutation();
                 Notification::make()->title('Gallery settings saved')->success()->send();
             });
+
+        return AdminDialog::editCommit($action, 'Save Gallery settings');
     }
 
     public function materialPresetsAction(): Action
     {
-        return Action::make('materialPresets')
+        $action = Action::make('materialPresets')
             ->label('Materials')
             ->fillForm(fn (): array => [
                 'presets' => ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all(),
@@ -90,16 +93,11 @@ trait GalleryWorkspaceUploadSettings
                     ->helperText('Removing a preset only removes the suggestion. Existing artworks keep their saved Material text.'),
             ])
             ->modalHeading('Material presets')
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Save')
-                ->extraAttributes(['class' => 'media-dialog-footer__primary']))
-            ->modalCancelAction(fn (Action $action): Action => $action
-                ->label('Cancel')
-                ->extraAttributes(['class' => 'media-dialog-footer__cancel']))
-            ->extraModalWindowAttributes(['class' => 'media-file-dialog'])
             ->action(function (array $data): void {
                 app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
                 Notification::make()->title('Material presets saved')->success()->send();
             });
+
+        return AdminDialog::editCommit($action, 'Save material presets', AdminDialogSize::Default);
     }
 }

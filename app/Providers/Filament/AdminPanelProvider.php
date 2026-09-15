@@ -10,6 +10,7 @@ use App\Filament\Pages\General;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\SiteNavigation;
 use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
@@ -33,6 +34,11 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
+    public function boot(): void
+    {
+        AdminControl::register();
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel

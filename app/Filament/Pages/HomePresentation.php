@@ -15,6 +15,8 @@ use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -236,136 +238,140 @@ final class HomePresentation extends Page
 
     public function settingsAction(): Action
     {
-        return Action::make('settings')
-            ->label('Settings')
-            ->fillForm(fn (): array => [
-                'template' => $this->template,
-                'show_in_navigation' => $this->showHomeInNavigation,
-                'show_details' => $this->artworkShowDetails,
-                'show_gallery_link' => $this->artworkShowGalleryLink,
-                'group_source' => $this->heroGroupSource,
-                'display_strategy' => $this->heroDisplayStrategy,
-                'newest_by' => $this->heroNewestBy,
-                'group_size' => $this->heroGroupSize,
-                'pool_rule' => $this->heroPoolRule,
-                'pool_year' => $this->heroPoolYear,
-                'manual_include_ids' => $this->manualHeroCandidateIds,
-                'rotation_interval_count' => $this->rotationIntervalCount,
-                'rotation_interval_unit' => $this->rotationIntervalUnit,
-                'public_site_gate' => $this->publicSiteGate,
-            ])
-            ->schema([
-                Select::make('template')->label('Template')->options(HomeTemplate::options())->required()->live(),
-                Toggle::make('show_in_navigation')
-                    ->label('Show Home in navigation')
-                    ->helperText('Only the public Home link changes. The Home page remains available at /.'),
-                Select::make('group_source')
-                    ->label('Group source')
-                    ->options(['automatic' => 'Automatic', 'manual' => 'Manual'])
-                    ->required()->live()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                TextInput::make('group_size')->label('Group size')->numeric()->minValue(1)
-                    ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)->required()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                Select::make('newest_by')->label('Newest by')
-                    ->options(['artwork_date' => 'Artwork date', 'added' => 'Added'])->required()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                Select::make('pool_rule')->label('Candidate filter')
-                    ->options(['all' => 'All eligible', 'year' => 'Specific Year'])->required()->live()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                TextInput::make('pool_year')->label('Year')->numeric()->minValue(1000)->maxValue(3000)
-                    ->required(fn (callable $get): bool => $get('pool_rule') === 'year')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic' && $get('pool_rule') === 'year'),
-                $this->heroArtworkSelect('manual_include_ids', 'Additional includes', multiple: true)
-                    ->helperText('Adds eligible artworks outside a Specific Year filter before Group size is applied.')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                Select::make('display_strategy')->label('Display strategy')
-                    ->options(['ordered' => 'Ordered', 'random' => 'Random', 'sequential' => 'Sequential'])
-                    ->required()->live()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                TextInput::make('rotation_interval_count')->label('Rotation interval')->numeric()->minValue(1)->required()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
-                Select::make('rotation_interval_unit')->label('Interval unit')
-                    ->options(['days' => 'Days', 'weeks' => 'Weeks'])->required()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
-                Toggle::make('show_details')->label('Show artwork information')
-                    ->helperText('Shows title, material, dimensions and other artwork label information.')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                Toggle::make('show_gallery_link')->label('Show Gallery link')
-                    ->helperText('Shows the Gallery context button independently from artwork information.')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                Toggle::make('public_site_gate')->label('Temporarily gate the public site')
-                    ->helperText('Normal public content URLs return to Home while Under Construction is active. Admin and protected Preview stay available.')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
-                Placeholder::make('skip_target')->label('Current redirect target')
-                    ->content(fn (): string => $this->skipTarget === null
-                        ? 'No published top-level page exists after Home. The public root safely remains on Home.'
-                        : $this->skipTarget['label'].' · '.$this->skipTarget['path'])
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::SkipHome->value),
-                Placeholder::make('custom_components')->label('Custom composition')
-                    ->content('Components are edited in the Home workspace.')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value),
-            ])
-            ->modalHeading('Home settings')
-            ->modalSubmitActionLabel('Save changes')
-            ->action(function (array $data): void {
-                $template = HomeTemplate::from((string) $data['template']);
-                if ($template === HomeTemplate::Artwork) {
-                    $groupSource = (string) ($data['group_source'] ?? $this->heroGroupSource);
-                    $input = [
-                        'show_details' => $data['show_details'] ?? $this->artworkShowDetails,
-                        'show_gallery_link' => $data['show_gallery_link'] ?? $this->artworkShowGalleryLink,
-                        'group_source' => $groupSource,
-                        'display_strategy' => $data['display_strategy'] ?? $this->heroDisplayStrategy,
-                        'newest_by' => $data['newest_by'] ?? $this->heroNewestBy,
-                        'group_size' => $data['group_size'] ?? $this->heroGroupSize,
-                        'candidate_filter' => $data['pool_rule'] ?? $this->heroPoolRule,
-                        'specific_year' => $data['pool_year'] ?? $this->heroPoolYear,
-                        'manual_include_ids' => $data['manual_include_ids'] ?? $this->manualHeroCandidateIds,
-                        'rotation_interval_count' => $data['rotation_interval_count'] ?? $this->rotationIntervalCount,
-                        'rotation_interval_unit' => $data['rotation_interval_unit'] ?? $this->rotationIntervalUnit,
-                    ];
-                    if ($groupSource === 'manual' && $this->manualHeroGroup === [] && $this->currentArtwork !== null) {
-                        $input['manual_group'] = [[
-                            'artwork_id' => (int) $this->currentArtwork['id'],
-                            'weight' => HomeHeroConfigurationService::WEIGHT_TOTAL,
-                        ]];
-                    }
-                    app(HomeHeroConfigurationService::class)->updateArtworkSettings($this->settings(), $input);
-                } else {
-                    $input = [];
-                    if ($template === HomeTemplate::UnderConstruction) {
-                        $input['public_site_gate'] = $data['public_site_gate'] ?? $this->publicSiteGate;
-                    }
-                    app(HomePresentationEditorialService::class)->updateSettings($this->settings(), $template, $input);
+        return AdminDialog::editCommit(
+            Action::make('settings')
+                ->label('Settings')
+                ->fillForm(fn (): array => [
+                    'template' => $this->template,
+                    'show_in_navigation' => $this->showHomeInNavigation,
+                    'show_details' => $this->artworkShowDetails,
+                    'show_gallery_link' => $this->artworkShowGalleryLink,
+                    'group_source' => $this->heroGroupSource,
+                    'display_strategy' => $this->heroDisplayStrategy,
+                    'newest_by' => $this->heroNewestBy,
+                    'group_size' => $this->heroGroupSize,
+                    'pool_rule' => $this->heroPoolRule,
+                    'pool_year' => $this->heroPoolYear,
+                    'manual_include_ids' => $this->manualHeroCandidateIds,
+                    'rotation_interval_count' => $this->rotationIntervalCount,
+                    'rotation_interval_unit' => $this->rotationIntervalUnit,
+                    'public_site_gate' => $this->publicSiteGate,
+                ])
+                ->schema([
+                    Select::make('template')->label('Template')->options(HomeTemplate::options())->required()->live(),
+                    Toggle::make('show_in_navigation')
+                        ->label('Show Home in navigation')
+                        ->helperText('Only the public Home link changes. The Home page remains available at /.'),
+                    Select::make('group_source')
+                        ->label('Group source')
+                        ->options(['automatic' => 'Automatic', 'manual' => 'Manual'])
+                        ->required()->live()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                    TextInput::make('group_size')->label('Group size')->numeric()->minValue(1)
+                        ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)->required()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
+                    Select::make('newest_by')->label('Newest by')
+                        ->options(['artwork_date' => 'Artwork date', 'added' => 'Added'])->required()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
+                    Select::make('pool_rule')->label('Candidate filter')
+                        ->options(['all' => 'All eligible', 'year' => 'Specific Year'])->required()->live()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
+                    TextInput::make('pool_year')->label('Year')->numeric()->minValue(1000)->maxValue(3000)
+                        ->required(fn (callable $get): bool => $get('pool_rule') === 'year')
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic' && $get('pool_rule') === 'year'),
+                    $this->heroArtworkSelect('manual_include_ids', 'Additional includes', multiple: true)
+                        ->helperText('Adds eligible artworks outside a Specific Year filter before Group size is applied.')
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
+                    Select::make('display_strategy')->label('Display strategy')
+                        ->options(['ordered' => 'Ordered', 'random' => 'Random', 'sequential' => 'Sequential'])
+                        ->required()->live()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                    TextInput::make('rotation_interval_count')->label('Rotation interval')->numeric()->minValue(1)->required()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
+                    Select::make('rotation_interval_unit')->label('Interval unit')
+                        ->options(['days' => 'Days', 'weeks' => 'Weeks'])->required()
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
+                    Toggle::make('show_details')->label('Show artwork information')
+                        ->helperText('Shows title, material, dimensions and other artwork label information.')
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                    Toggle::make('show_gallery_link')->label('Show Gallery link')
+                        ->helperText('Shows the Gallery context button independently from artwork information.')
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                    Toggle::make('public_site_gate')->label('Temporarily gate the public site')
+                        ->helperText('Normal public content URLs return to Home while Under Construction is active. Admin and protected Preview stay available.')
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
+                    Placeholder::make('skip_target')->label('Current redirect target')
+                        ->content(fn (): string => $this->skipTarget === null
+                            ? 'No published top-level page exists after Home. The public root safely remains on Home.'
+                            : $this->skipTarget['label'].' · '.$this->skipTarget['path'])
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::SkipHome->value),
+                    Placeholder::make('custom_components')->label('Custom composition')
+                        ->content('Components are edited in the Home workspace.')
+                        ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value),
+                ])
+                ->modalHeading('Home settings'),
+            'Save changes',
+            AdminDialogSize::Large,
+        )->action(function (array $data): void {
+            $template = HomeTemplate::from((string) $data['template']);
+            if ($template === HomeTemplate::Artwork) {
+                $groupSource = (string) ($data['group_source'] ?? $this->heroGroupSource);
+                $input = [
+                    'show_details' => $data['show_details'] ?? $this->artworkShowDetails,
+                    'show_gallery_link' => $data['show_gallery_link'] ?? $this->artworkShowGalleryLink,
+                    'group_source' => $groupSource,
+                    'display_strategy' => $data['display_strategy'] ?? $this->heroDisplayStrategy,
+                    'newest_by' => $data['newest_by'] ?? $this->heroNewestBy,
+                    'group_size' => $data['group_size'] ?? $this->heroGroupSize,
+                    'candidate_filter' => $data['pool_rule'] ?? $this->heroPoolRule,
+                    'specific_year' => $data['pool_year'] ?? $this->heroPoolYear,
+                    'manual_include_ids' => $data['manual_include_ids'] ?? $this->manualHeroCandidateIds,
+                    'rotation_interval_count' => $data['rotation_interval_count'] ?? $this->rotationIntervalCount,
+                    'rotation_interval_unit' => $data['rotation_interval_unit'] ?? $this->rotationIntervalUnit,
+                ];
+                if ($groupSource === 'manual' && $this->manualHeroGroup === [] && $this->currentArtwork !== null) {
+                    $input['manual_group'] = [[
+                        'artwork_id' => (int) $this->currentArtwork['id'],
+                        'weight' => HomeHeroConfigurationService::WEIGHT_TOTAL,
+                    ]];
                 }
+                app(HomeHeroConfigurationService::class)->updateArtworkSettings($this->settings(), $input);
+            } else {
+                $input = [];
+                if ($template === HomeTemplate::UnderConstruction) {
+                    $input['public_site_gate'] = $data['public_site_gate'] ?? $this->publicSiteGate;
+                }
+                app(HomePresentationEditorialService::class)->updateSettings($this->settings(), $template, $input);
+            }
 
-                $homeSection = $this->homeSection();
-                $parentId = $homeSection->getAttribute('parent_id');
-                app(SiteSectionEditorialService::class)->updatePlacement(
-                    $homeSection,
-                    'published',
-                    (bool) ($data['show_in_navigation'] ?? false),
-                    is_numeric($parentId) ? (int) $parentId : null,
-                );
-                $this->showHomeInNavigation = (bool) ($data['show_in_navigation'] ?? false);
-                $this->reloadWorkspace();
-                Notification::make()->title('Home settings saved')->success()->send();
-            });
+            $homeSection = $this->homeSection();
+            $parentId = $homeSection->getAttribute('parent_id');
+            app(SiteSectionEditorialService::class)->updatePlacement(
+                $homeSection,
+                'published',
+                (bool) ($data['show_in_navigation'] ?? false),
+                is_numeric($parentId) ? (int) $parentId : null,
+            );
+            $this->showHomeInNavigation = (bool) ($data['show_in_navigation'] ?? false);
+            $this->reloadWorkspace();
+            Notification::make()->title('Home settings saved')->success()->send();
+        });
     }
 
     public function addHeroArtworkAction(): Action
     {
-        return Action::make('addHeroArtwork')
-            ->label('Add artwork')
-            ->schema([$this->heroArtworkSelect('artwork_id', 'Artwork')->required()])
-            ->modalHeading('Add artwork to Manual group')
-            ->modalSubmitActionLabel('Add artwork')
-            ->action(function (array $data): void {
-                app(HomeHeroConfigurationService::class)->addManualMember($this->settings(), (int) $data['artwork_id']);
-                $this->reloadWorkspace();
-                Notification::make()->title('Artwork added to Home group')->success()->send();
-            });
+        return AdminDialog::command(
+            Action::make('addHeroArtwork')
+                ->label('Add artwork')
+                ->schema([$this->heroArtworkSelect('artwork_id', 'Artwork')->required()])
+                ->modalHeading('Add artwork to Manual group'),
+            'Add artwork',
+            AdminDialogSize::Small,
+        )->action(function (array $data): void {
+            app(HomeHeroConfigurationService::class)->addManualMember($this->settings(), (int) $data['artwork_id']);
+            $this->reloadWorkspace();
+            Notification::make()->title('Artwork added to Home group')->success()->send();
+        });
     }
 
     public function removeHeroArtwork(int $artworkId): void
@@ -432,119 +438,133 @@ final class HomePresentation extends Page
 
     public function addComponentAction(): Action
     {
-        return Action::make('addComponent')->label('Add component')
-            ->schema([
-                Select::make('kind')->label('Component')->options($this->newComponentOptions)->required()->live(),
-                ...$this->homeRichTextFields('kind', 'rich_text', required: true),
-                MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', true)
-                    ->required(fn (callable $get): bool => $get('kind') === 'image')
-                    ->visible(fn (callable $get): bool => $get('kind') === 'image'),
-                Toggle::make('image_decorative')->label('Decorative image')
-                    ->helperText('Leave off for content images. Canonical ALT text is managed in Media Files.')
-                    ->default(false)->visible(fn (callable $get): bool => $get('kind') === 'image'),
-            ])
-            ->modalHeading('Add Home component')->modalSubmitActionLabel('Add component')
-            ->action(function (array $data): void {
-                $kind = (string) ($data['kind'] ?? '');
-                $component = match ($kind) {
-                    'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
-                    'image' => [
-                        'type' => 'image',
-                        'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
-                        'image_decorative' => (bool) ($data['image_decorative'] ?? false),
-                    ],
-                    'divider' => ['type' => 'divider'],
-                    default => throw ValidationException::withMessages(['kind' => 'Choose a supported Home component.']),
-                };
-                app(HomePresentationEditorialService::class)->addComponent($this->settings(), $this->componentTemplate(), $component);
-                $this->reloadWorkspace();
-                Notification::make()->title('Home component added')->success()->send();
-            });
+        return AdminDialog::create(
+            Action::make('addComponent')->label('Add component')
+                ->schema([
+                    Select::make('kind')->label('Component')->options($this->newComponentOptions)->required()->live(),
+                    ...$this->homeRichTextFields('kind', 'rich_text', required: true),
+                    MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', true)
+                        ->required(fn (callable $get): bool => $get('kind') === 'image')
+                        ->visible(fn (callable $get): bool => $get('kind') === 'image'),
+                    Toggle::make('image_decorative')->label('Decorative image')
+                        ->helperText('Leave off for content images. Canonical ALT text is managed in Media Files.')
+                        ->default(false)->visible(fn (callable $get): bool => $get('kind') === 'image'),
+                ])
+                ->modalHeading('Add Home component'),
+            'Add component',
+            AdminDialogSize::Default,
+        )->action(function (array $data): void {
+            $kind = (string) ($data['kind'] ?? '');
+            $component = match ($kind) {
+                'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
+                'image' => [
+                    'type' => 'image',
+                    'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
+                    'image_decorative' => (bool) ($data['image_decorative'] ?? false),
+                ],
+                'divider' => ['type' => 'divider'],
+                default => throw ValidationException::withMessages(['kind' => 'Choose a supported Home component.']),
+            };
+            app(HomePresentationEditorialService::class)->addComponent($this->settings(), $this->componentTemplate(), $component);
+            $this->reloadWorkspace();
+            Notification::make()->title('Home component added')->success()->send();
+        });
     }
 
     public function editComponentAction(): Action
     {
-        return Action::make('editComponent')->label('Edit')
-            ->fillForm(function (array $arguments): array {
-                $component = $this->componentFromArguments($arguments);
-                return [
-                    'type' => $component['type'],
-                    'editor_kind' => $this->editorKind($component),
-                    'title' => $component['title'] ?? null,
-                    'body' => $component['body'] ?? null,
-                    'media_asset_id' => $component['media_asset_id'] ?? null,
-                    'image_decorative' => (bool) ($component['image_decorative'] ?? false),
-                ];
-            })
-            ->schema([
-                Hidden::make('type'), Hidden::make('editor_kind'),
-                TextInput::make('title')->label('Heading')->maxLength(160)
-                    ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
-                    ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
-                ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
-                MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', true)
-                    ->required(fn (callable $get): bool => $get('type') === 'image')
-                    ->visible(fn (callable $get): bool => $get('type') === 'image'),
-                Toggle::make('image_decorative')->label('Decorative image')
-                    ->helperText('Leave off for content images. Canonical ALT text is managed in Media Files.')
-                    ->visible(fn (callable $get): bool => $get('type') === 'image'),
-            ])
-            ->modalHeading('Edit Home component')->modalSubmitActionLabel('Save component')
-            ->action(function (array $data, array $arguments): void {
-                $current = $this->componentFromArguments($arguments);
-                $type = (string) $current['type'];
-                $editorKind = $this->editorKind($current);
-                $component = match ($type) {
-                    'text' => match ($editorKind) {
-                        'heading' => ['type' => 'text', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
-                        'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
-                        default => throw ValidationException::withMessages(['component' => 'This text component has no supported editor mode.']),
-                    },
-                    'image' => [
-                        'type' => 'image',
-                        'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
-                        'image_decorative' => (bool) ($data['image_decorative'] ?? false),
-                    ],
-                    default => throw ValidationException::withMessages(['component' => 'This component has no editable fields.']),
-                };
-                app(HomePresentationEditorialService::class)->updateComponent(
-                    $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, $component,
-                );
-                $this->reloadWorkspace();
-                Notification::make()->title('Home component saved')->success()->send();
-            });
+        return AdminDialog::editCommit(
+            Action::make('editComponent')->label('Edit')
+                ->fillForm(function (array $arguments): array {
+                    $component = $this->componentFromArguments($arguments);
+                    return [
+                        'type' => $component['type'],
+                        'editor_kind' => $this->editorKind($component),
+                        'title' => $component['title'] ?? null,
+                        'body' => $component['body'] ?? null,
+                        'media_asset_id' => $component['media_asset_id'] ?? null,
+                        'image_decorative' => (bool) ($component['image_decorative'] ?? false),
+                    ];
+                })
+                ->schema([
+                    Hidden::make('type'), Hidden::make('editor_kind'),
+                    TextInput::make('title')->label('Heading')->maxLength(160)
+                        ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
+                        ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
+                    ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
+                    MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', true)
+                        ->required(fn (callable $get): bool => $get('type') === 'image')
+                        ->visible(fn (callable $get): bool => $get('type') === 'image'),
+                    Toggle::make('image_decorative')->label('Decorative image')
+                        ->helperText('Leave off for content images. Canonical ALT text is managed in Media Files.')
+                        ->visible(fn (callable $get): bool => $get('type') === 'image'),
+                ])
+                ->modalHeading('Edit Home component'),
+            'Save component',
+            AdminDialogSize::Default,
+        )->action(function (array $data, array $arguments): void {
+            $current = $this->componentFromArguments($arguments);
+            $type = (string) $current['type'];
+            $editorKind = $this->editorKind($current);
+            $component = match ($type) {
+                'text' => match ($editorKind) {
+                    'heading' => ['type' => 'text', 'title' => trim((string) ($data['title'] ?? '')), 'body' => null],
+                    'rich_text' => ['type' => 'text', 'title' => null, 'body' => filled($data['body'] ?? null) ? (string) $data['body'] : null],
+                    default => throw ValidationException::withMessages(['component' => 'This text component has no supported editor mode.']),
+                },
+                'image' => [
+                    'type' => 'image',
+                    'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
+                    'image_decorative' => (bool) ($data['image_decorative'] ?? false),
+                ],
+                default => throw ValidationException::withMessages(['component' => 'This component has no editable fields.']),
+            };
+            app(HomePresentationEditorialService::class)->updateComponent(
+                $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, $component,
+            );
+            $this->reloadWorkspace();
+            Notification::make()->title('Home component saved')->success()->send();
+        });
     }
 
     public function removeComponentAction(): Action
     {
-        return Action::make('removeComponent')->label('Delete')->color('danger')->requiresConfirmation()
-            ->modalHeading('Delete Home component?')
-            ->modalDescription('The component is removed from this Home template. Other template configurations are unchanged.')
-            ->action(function (array $arguments): void {
-                $component = $this->componentFromArguments($arguments);
-                app(HomePresentationEditorialService::class)->deleteComponent(
-                    $this->settings(), $this->componentTemplate(), (int) $arguments['index'], (string) $component['type'],
-                );
-                $this->reloadWorkspace();
-                Notification::make()->title('Home component deleted')->success()->send();
-            });
+        return AdminDialog::confirm(
+            Action::make('removeComponent')->label('Delete')->color('danger'),
+            heading: 'Delete Home component?',
+            description: 'The component is removed from this Home template. Other template configurations are unchanged.',
+            submitLabel: 'Delete',
+            danger: true,
+            size: AdminDialogSize::Mini,
+        )->action(function (array $arguments): void {
+            $component = $this->componentFromArguments($arguments);
+            app(HomePresentationEditorialService::class)->deleteComponent(
+                $this->settings(), $this->componentTemplate(), (int) $arguments['index'], (string) $component['type'],
+            );
+            $this->reloadWorkspace();
+            Notification::make()->title('Home component deleted')->success()->send();
+        });
     }
 
     public function deleteSelectedComponentsAction(): Action
     {
-        return Action::make('deleteSelectedComponents')->label('Delete selected')->color('danger')->requiresConfirmation()
-            ->modalHeading('Delete selected Home components?')
-            ->action(function (): void {
-                $targets = $this->selectedComponentTargetData();
-                if ($targets === []) {
-                    return;
-                }
-                app(HomePresentationEditorialService::class)->deleteComponents($this->settings(), $this->componentTemplate(), $targets);
-                $count = count($targets);
-                $this->reloadWorkspace();
-                Notification::make()->title('Selected Home components deleted')
-                    ->body($count.' component'.($count === 1 ? '' : 's').' deleted.')->success()->send();
-            });
+        return AdminDialog::confirm(
+            Action::make('deleteSelectedComponents')->label('Delete selected')->color('danger'),
+            heading: 'Delete selected Home components?',
+            submitLabel: 'Delete',
+            danger: true,
+            size: AdminDialogSize::Mini,
+        )->action(function (): void {
+            $targets = $this->selectedComponentTargetData();
+            if ($targets === []) {
+                return;
+            }
+            app(HomePresentationEditorialService::class)->deleteComponents($this->settings(), $this->componentTemplate(), $targets);
+            $count = count($targets);
+            $this->reloadWorkspace();
+            Notification::make()->title('Selected Home components deleted')
+                ->body($count.' component'.($count === 1 ? '' : 's').' deleted.')->success()->send();
+        });
     }
 
     public function moveComponent(int $index, string $expectedType, string $direction): void

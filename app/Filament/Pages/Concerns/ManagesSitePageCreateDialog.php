@@ -6,13 +6,12 @@ use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SiteSectionEditorialService;
-use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Dialogs\AdminDialog;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
-use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,7 +19,7 @@ trait ManagesSitePageCreateDialog
 {
     public function addPageAction(): Action
     {
-        return Action::make('addPage')
+        $action = Action::make('addPage')
             ->label('Add page')
             ->modalHeading('Add page')
             ->schema([
@@ -71,17 +70,9 @@ trait ManagesSitePageCreateDialog
                     ->title($section->nodeType()->label().' added')
                     ->success()
                     ->send();
-            })
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Create page')
-                ->icon(AdminIcon::Commit->value)
-                ->iconButton()
-                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
-            ->modalCancelAction(false)
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--small admin-dialog--header-actions',
-            ]);
+            });
+
+        return AdminDialog::create($action, 'Create page');
     }
 
     /** @param array<string, mixed> $data */

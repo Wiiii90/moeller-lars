@@ -2,37 +2,17 @@
 
 namespace App\Filament\Pages\Concerns;
 
-use App\Domain\Admin\CvEntryEditorialService;
-use App\Domain\Admin\EditorialRecordService;
-use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Content\CustomPageEditorialService;
 use App\Domain\Content\SiteNodeType;
-use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionEditorialService;
-use App\Domain\Content\SocialLinks;
-use App\Filament\Support\AdminRichText;
-use App\Filament\Support\MediaAssetSelect;
+use App\Filament\Support\Dialogs\AdminDialog;
 use App\Models\CustomPageSetting;
-use App\Models\CvEntry;
-use App\Models\MediaAsset;
-use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
-use App\Routing\SiteNodeRoute;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
-use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceLifecycle
 {
@@ -138,7 +118,7 @@ trait CustomPageWorkspaceLifecycle
 
     public function pageSettingsAction(): Action
     {
-        return Action::make('pageSettings')
+        $action = Action::make('pageSettings')
             ->label('Settings')
             ->fillForm(function (): array {
                 $section = $this->section();
@@ -179,7 +159,6 @@ trait CustomPageWorkspaceLifecycle
                     ->placeholder('Top level'),
             ])
             ->modalHeading('Page settings')
-            ->modalSubmitActionLabel('Save')
             ->action(function (array $data): void {
                 DB::transaction(function () use ($data): void {
                     $service = app(SiteSectionEditorialService::class);
@@ -203,5 +182,7 @@ trait CustomPageWorkspaceLifecycle
                 $this->reloadWorkspace();
                 Notification::make()->title('Page settings saved')->success()->send();
             });
+
+        return AdminDialog::editCommit($action, 'Save page settings');
     }
 }
