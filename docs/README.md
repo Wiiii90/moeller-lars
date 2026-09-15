@@ -12,6 +12,7 @@ These describe the durable application architecture/behavior that current accept
 - [PUBLIC-IMPLEMENTATION-CONTRACT.md](PUBLIC-IMPLEMENTATION-CONTRACT.md) — public routing/publication/Home/Journal/media behavior
 - [MEDIA.md](MEDIA.md) — image/video/audio ingest, Rich Text references, public/preview policy and guarded deletion
 - [ANALYTICS.md](ANALYTICS.md) — Matomo/reporting and operational-metrics boundary
+- [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md) — `/admin` access, required TOTP MFA/recovery codes, password reset and transactional-mail boundary
 - [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md) — admin performance budget and investigation rules
 - [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md) — explicit Toast/Notification/Activity/Publication semantics, persistent inbox ownership and server-side delivery contract
 - [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) — append-only Activity, Working/LIVE state, SHA-256 Commit history, full snapshots and reset/restore/revert semantics
@@ -75,4 +76,5 @@ Accepted ADRs are historical decisions and are intentionally not rewritten to mi
 - distinguish `MediaAsset` being referenced from it being publicly deliverable;
 - keep the central Rich Text/media stack singular rather than documenting editor-specific parallel implementations;
 - shared admin geometry belongs to shared tokens/primitives; do not document page-local compensations as architecture;
+- security/account-recovery details belong in `ADMIN-AUTHENTICATION.md`; concrete SMTP topology/credentials remain platform-owned;
 - never include secret values, production dumps, private media or access tokens.

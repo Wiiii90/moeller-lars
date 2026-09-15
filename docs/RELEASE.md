@@ -10,7 +10,7 @@ Canonical verification/release workflow:
 .github/workflows/release.yml
 ```
 
-It runs for pull requests targeting `dev` or `main`, direct pushes to `main`, and explicit `workflow_dispatch` runs. Direct pushes to `dev` do not automatically run the canonical full verification suite. Release-image publication is restricted to verified non-PR runs on `main`. Checks on dev and worker branches never publish release images. The disposable PostgreSQL service is marked with `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` inside GitHub Actions.
+It runs for direct pushes to `dev` and `main`, pull requests targeting `dev` or `main`, and explicit `workflow_dispatch` runs. Those events run the verification job. Release-image publication remains restricted to verified non-PR runs on `main`; pushes to `dev` and pull-request checks never publish release images. The disposable PostgreSQL service is marked with `MOELLER_LARS_DISPOSABLE_TEST_DATABASE=1` inside GitHub Actions.
 
 Rapid protected-Validation browser workflow:
 
@@ -42,7 +42,7 @@ That loop is deliberately separate from release qualification:
 
 A local container being healthy means only that the candidate boots. It is not browser acceptance, Validation acceptance or release qualification.
 
-Do not trigger the canonical full release suite merely to inspect a CSS/Blade/editorial-workspace iteration unless a concrete risk warrants it.
+Do not trigger extra/manual canonical verification runs merely to inspect a CSS/Blade/editorial-workspace iteration unless a concrete risk warrants it. Normal pushes to `dev` already invoke the configured verification workflow.
 
 ## Fast protected Validation preview loop
 
@@ -61,7 +61,7 @@ Worker integration and branch deletion follow `AGENTS.md`. A protected Validatio
 
 ## Verification gates
 
-The canonical final workflow covers:
+The canonical verification job covers:
 
 - Composer dependency installation/security audit;
 - frontend dependency installation/build;
@@ -69,6 +69,8 @@ The canonical final workflow covers:
 - PHPStan;
 - Pint;
 - JavaScript tests.
+
+PHPStan is currently executed with `continue-on-error` while its existing baseline is tracked separately, so it remains visible diagnostic evidence but is not presently a blocking workflow gate. Pest, dependency/build steps, Pint and JavaScript tests remain blocking according to the workflow definition.
 
 Commands used in disposable CI (not a recipe for the persistent local browser database):
 
@@ -126,7 +128,7 @@ The canonical media policy supports validated image/video/audio content. Consume
 
 Data migrations may be intentionally forward-only. Rollback can require restoring the matching recoverable database/media state rather than `migrate:rollback`.
 
-Current pre-cutover reconciliation includes forward canonicalization of Journal Rich Text media and Exhibition presentation/restore state; see `MIGRATION-INVARIANTS.md`.
+Current pre-cutover reconciliation includes forward canonicalization of Journal Rich Text media and Exhibition presentation/restore state. Admin authentication also requires the forward user-table migration that provides Filament app-authentication secret/recovery-code storage. See [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md) for migration/reconciliation rules and [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md) for the auth contract.
 
 ## Persistent state
 
@@ -146,7 +148,9 @@ The platform chooses actual Production/Validation mount paths.
 
 Production requires normal Laravel/application values including APP_ENV/APP_KEY/APP_URL, PostgreSQL, secure session/cookies, media disk/quota/type limits, mail transport/sender, Contact recipient fallback and Matomo configuration where enabled.
 
-Real secrets never belong in Git. `.env.example` is the variable-name/default reference only.
+Admin password recovery uses the normal Laravel mail interface. Production/Validation must inject the actual SMTP/runtime values (`MAIL_MAILER`, scheme/host/port, credentials where required, EHLO domain where required, and sender identity) through platform configuration. `.env.example` is the variable-name/default reference only and local development intentionally defaults to the log mailer. Concrete mail-server topology/credentials belong to `server-platform`, not this repository.
+
+Real secrets never belong in Git. See [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md).
 
 ## Matomo
 
@@ -161,17 +165,17 @@ Validation may keep tracking disabled while using a restricted read-only Reporti
 
 ## Administrator provisioning
 
-No legacy admin credential is migrated/seeded.
+No legacy admin credential is migrated/seeded and public admin registration is not enabled.
 
 ```sh
 php artisan admin:provision
 ```
 
-Password input remains interactive/hidden and is not accepted as a command-line argument.
+Password input remains interactive/hidden and is not accepted as a command-line argument. Newly provisioned administrators are subject to required TOTP MFA setup before ordinary panel use. Password recovery is email-based and sends a reset link, never an existing password.
 
 ## Workers and scheduling
 
-Core application operation currently requires no permanent queue worker/application scheduler. Contact delivery is synchronous; scheduled Blog visibility derives from persisted timestamps.
+Core application operation currently requires no permanent queue worker/application scheduler. Contact delivery and administrator password-reset mail are synchronous; scheduled Blog visibility derives from persisted timestamps.
 
 If a future feature requires workers/scheduler, update this document and `server-platform` integration together.
 
@@ -185,7 +189,8 @@ For an exact deployed candidate:
 4. run `php artisan media:verify`;
 5. run `legacy:validate` only when frozen migration data is part of the gate;
 6. run application smoke contract;
-7. perform required public/admin browser acceptance.
+7. perform required public/admin browser acceptance;
+8. when authentication/mail configuration changed, exercise administrator login/MFA and password-reset delivery in the target environment without logging secrets or reset URLs.
 
 CI, migrations and health are evidence; none alone is complete product acceptance.
 

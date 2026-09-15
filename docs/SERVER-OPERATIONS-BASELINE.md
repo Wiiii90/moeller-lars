@@ -17,6 +17,7 @@ Requirements:
 - persistent canonical media originals;
 - HTTPS/canonical-host ingress;
 - runtime secrets supplied outside Git;
+- operational outbound mail transport for features such as admin password recovery;
 - health monitoring and recoverable backups;
 - controlled migration/deployment/rollback sequencing.
 
@@ -42,7 +43,7 @@ Validation may use a deliberately restricted read-only Matomo reporting identity
 - canonical media persistence declaration;
 - `media:verify` and migration/reconciliation commands;
 - application release smoke behavior;
-- required environment-variable names;
+- required environment-variable names, including the mail transport/sender interface;
 - CI verification and GHCR image publication.
 
 The application container listens on its documented internal HTTP interface. Concrete host ports, proxy/container network names and filesystem volume placement are platform details.
@@ -58,7 +59,7 @@ The application container listens on its documented internal HTTP interface. Con
 - host paths and persistent-volume mounts;
 - PostgreSQL runtime placement/credentials;
 - Matomo runtime/database/networking;
-- mail-server/runtime integration;
+- mail-server/runtime integration, SMTP endpoint/credentials/TLS and relay policy;
 - secret placement;
 - CPU/RAM/PID/resource limits;
 - logs and retention;
@@ -79,11 +80,12 @@ The platform contract must provide, at minimum:
 - least-privilege runtime/deploy access;
 - bounded service/resource exposure;
 - secrets outside Git and image layers;
+- authenticated/bounded outbound mail relay rather than an application-owned open relay;
 - recoverable persistent state;
 - monitoring for application/ingress/storage/backup health;
 - a controlled patching/maintenance process.
 
-Application security remains separately responsible for authentication, authorization, CSRF/session policy, rate limiting, input/media validation and safe public/admin behavior.
+Application security remains separately responsible for authentication, authorization, CSRF/session policy, MFA/account-recovery behavior, rate limiting, input/media validation and safe public/admin behavior. See [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md).
 
 ## Persistence and recovery
 
@@ -102,6 +104,6 @@ A backup is not considered proven merely because files exist; the platform resto
 
 A successful CI run or GHCR image publication does not authorize Production mutation.
 
-Before Production deployment/cutover, the exact candidate must pass the project release gates, including isolated Validation/browser acceptance where required and current platform backup/rollback readiness.
+Before Production deployment/cutover, the exact candidate must pass the project release gates, including isolated Validation/browser acceptance where required and current platform backup/rollback readiness. When authentication mail changes, the target environment's reset-mail delivery must be exercised without leaking credentials/reset URLs into logs.
 
 See [RELEASE.md](RELEASE.md) and [MIGRATION-PLAN.md](MIGRATION-PLAN.md).
