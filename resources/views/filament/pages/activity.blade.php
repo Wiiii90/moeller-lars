@@ -64,14 +64,14 @@
             ]);
         @endphp
 
-        <x-admin.metrics :columns="6" aria-label="{{ $viewMode === 'commits' ? 'Commit statistics' : 'Activity statistics' }}">
+        <x-admin.metrics :columns="6" aria-label="Activity statistics">
             @foreach ($workspaceMetrics as $metric)
                 <x-admin.metric :label="$metric['label']" :value="$metric['value']" :description="$metric['description']" />
             @endforeach
         </x-admin.metrics>
 
-        <section class="activity-atlas" aria-label="{{ $viewMode === 'commits' ? 'Commit timeline' : 'Activity timeline' }}">
-            <div class="activity-atlas__grid admin-visual-stage admin-visual-stage--stackable" aria-label="{{ $viewMode === 'commits' ? 'Commit timeline' : 'Activity timeline' }}">
+        <section class="activity-atlas" aria-label="Activity timeline">
+            <div class="activity-atlas__grid admin-visual-stage admin-visual-stage--stackable" aria-label="Activity timeline">
                 <div class="activity-atlas__visual admin-visual-stage__pane">
                     <div class="activity-atlas__view activity-calendar">
                         <div class="activity-calendar__header">
@@ -275,7 +275,7 @@
                                 type="search"
                                 name="search"
                                 value="{{ $search }}"
-                                placeholder="{{ $viewMode === 'commits' ? 'Hash, message, change or actor' : 'Change or actor' }}"
+                                placeholder="Change, actor, hash or message"
                                 autocomplete="off"
                                 x-data
                                 x-on:input.debounce.350ms="$el.form.requestSubmit()"
@@ -334,15 +334,23 @@
                     <x-slot:actions>
                         <div class="admin-data-control-group activity-control--view">
                             <span class="admin-data-control-label">View</span>
-                            <div class="admin-toolbar" role="group" aria-label="Activity view">
-                                <a
+                            <div class="admin-toolbar" role="group" aria-label="Activity table view">
+                                <button
                                     class="admin-action {{ $viewMode === 'activity' ? 'is-primary' : '' }}"
-                                    href="{{ $activityUrl(['view' => null, 'page' => null, 'commits_page' => null]) }}"
-                                >Activity</a>
-                                <a
+                                    type="button"
+                                    wire:click="setViewMode('activity')"
+                                    wire:loading.attr="disabled"
+                                    wire:target="setViewMode"
+                                    aria-pressed="{{ $viewMode === 'activity' ? 'true' : 'false' }}"
+                                >Activity</button>
+                                <button
                                     class="admin-action {{ $viewMode === 'commits' ? 'is-primary' : '' }}"
-                                    href="{{ $activityUrl(['view' => 'commits', 'page' => null, 'commits_page' => null]) }}"
-                                >Commits</a>
+                                    type="button"
+                                    wire:click="setViewMode('commits')"
+                                    wire:loading.attr="disabled"
+                                    wire:target="setViewMode"
+                                    aria-pressed="{{ $viewMode === 'commits' ? 'true' : 'false' }}"
+                                >Commits</button>
                             </div>
                         </div>
                     </x-slot:actions>
@@ -351,7 +359,7 @@
         </section>
 
         @if ($viewMode === 'activity')
-            <x-admin.table class="admin-table--data activity-workspace__table activity-events-table">
+            <x-admin.table class="admin-table--data activity-workspace__table activity-events-table" wire:key="activity-events-table">
                 <table>
                     <colgroup>
                         <col class="activity-col--change">
@@ -378,25 +386,15 @@
                     <tbody>
                         @forelse ($activity as $event)
                             <tr>
-                                <td class="activity-change-cell" title="{{ $event['action'] }}">
-                                    <strong>{{ $event['action'] }}</strong>
-                                </td>
-                                <td class="activity-who-cell" title="{{ $event['actor'] }}">
-                                    <strong>{{ $event['actor'] }}</strong>
-                                </td>
+                                <td class="activity-change-cell" title="{{ $event['action'] }}"><strong>{{ $event['action'] }}</strong></td>
+                                <td class="activity-who-cell" title="{{ $event['actor'] }}"><strong>{{ $event['actor'] }}</strong></td>
                                 <td class="activity-when-cell">
                                     <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
                                     <small>{{ $event['timestamp'] }}</small>
                                 </td>
-                                <td class="activity-target-cell" title="{{ $event['target'] }}">
-                                    <strong>{{ $event['target'] }}</strong>
-                                </td>
-                                <td class="activity-area-cell">
-                                    <span>{{ $event['area'] }}</span>
-                                </td>
-                                <td class="activity-type-cell">
-                                    <span>{{ $familyOptions[$event['family']] ?? ucfirst($event['family']) }}</span>
-                                </td>
+                                <td class="activity-target-cell" title="{{ $event['target'] }}"><strong>{{ $event['target'] }}</strong></td>
+                                <td class="activity-area-cell"><span>{{ $event['area'] }}</span></td>
+                                <td class="activity-type-cell"><span>{{ $familyOptions[$event['family']] ?? ucfirst($event['family']) }}</span></td>
                                 <td class="activity-publication-cell">
                                     @if ($event['publication_status'] === 'committed')
                                         <div class="activity-publication-cell__stack" title="Commit {{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}{{ $event['checkpoint_message'] ? ' · '.$event['checkpoint_message'] : '' }}">
@@ -436,9 +434,7 @@
                                 <td class="admin-table__empty-cell" colspan="8">
                                     @if ($activitySourceExists)
                                         <x-admin.empty-state title="No matching activity" minimal>
-                                            <x-slot:actions>
-                                                <a class="admin-action" href="{{ $resetUrl }}">Clear filters</a>
-                                            </x-slot:actions>
+                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}">Clear filters</a></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
                                         <x-admin.empty-state title="No activity yet" minimal />
@@ -458,13 +454,13 @@
                     </div>
                     <span class="admin-pager__range">{{ $paginator->firstItem() ?? 0 }}–{{ $paginator->lastItem() ?? 0 }} of {{ $paginator->total() }}</span>
                     <div class="admin-pager__actions admin-toolbar">
-                        @if ($paginator->previousPageUrl())
-                            <a class="admin-action" href="{{ $paginator->previousPageUrl() }}">Previous</a>
+                        @if ($paginator->currentPage() > 1)
+                            <a class="admin-action" href="{{ $activityUrl(['view' => null, 'page' => $paginator->currentPage() - 1, 'commits_page' => null]) }}">Previous</a>
                         @else
                             <button class="admin-action" type="button" disabled>Previous</button>
                         @endif
-                        @if ($paginator->nextPageUrl())
-                            <a class="admin-action" href="{{ $paginator->nextPageUrl() }}">Next</a>
+                        @if ($paginator->currentPage() < $paginator->lastPage())
+                            <a class="admin-action" href="{{ $activityUrl(['view' => null, 'page' => $paginator->currentPage() + 1, 'commits_page' => null]) }}">Next</a>
                         @else
                             <button class="admin-action" type="button" disabled>Next</button>
                         @endif
@@ -472,7 +468,7 @@
                 </footer>
             @endif
         @else
-            <x-admin.table class="admin-table--data activity-workspace__table activity-commits-table">
+            <x-admin.table class="admin-table--data activity-workspace__table activity-commits-table" wire:key="activity-commits-table">
                 <table>
                     <colgroup>
                         <col class="activity-commit-col--commit">
@@ -498,14 +494,10 @@
                                 <td class="activity-commit-cell">
                                     <div class="activity-commit-cell__heading">
                                         <code>{{ $commit['short_hash'] }}</code>
-                                        @if ($commit['live'])
-                                            <span class="admin-status is-published">LIVE</span>
-                                        @endif
+                                        @if ($commit['live'])<span class="admin-status is-published">LIVE</span>@endif
                                     </div>
                                 </td>
-                                <td class="activity-who-cell">
-                                    <strong>{{ $commit['actor'] }}</strong>
-                                </td>
+                                <td class="activity-who-cell"><strong>{{ $commit['actor'] }}</strong></td>
                                 <td class="activity-when-cell">
                                     <time datetime="{{ str_replace(' ', 'T', $commit['timestamp']) }}" title="{{ $commit['timestamp'] }}">{{ $commit['when'] }}</time>
                                     <small>{{ $commit['timestamp'] }}</small>
@@ -514,9 +506,7 @@
                                     <strong>{{ $commit['message'] ?? 'No commit message' }}</strong>
                                     <small>
                                         {{ $commit['operation_label'] }}
-                                        @if ($commit['parent_short_hash'])
-                                            · parent {{ $commit['parent_short_hash'] }}
-                                        @endif
+                                        @if ($commit['parent_short_hash']) · parent {{ $commit['parent_short_hash'] }} @endif
                                     </small>
                                 </td>
                                 <td class="activity-publication-cell">
@@ -555,9 +545,7 @@
                                 <td class="admin-table__empty-cell" colspan="6">
                                     @if ($activitySourceExists)
                                         <x-admin.empty-state title="No matching commits" minimal>
-                                            <x-slot:actions>
-                                                <a class="admin-action" href="{{ $resetUrl }}">Clear filters</a>
-                                            </x-slot:actions>
+                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}">Clear filters</a></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
                                         <x-admin.empty-state title="No commits yet" minimal />
@@ -577,13 +565,13 @@
                     </div>
                     <span class="admin-pager__range">{{ $commitPaginator->firstItem() ?? 0 }}–{{ $commitPaginator->lastItem() ?? 0 }} of {{ $commitPaginator->total() }}</span>
                     <div class="admin-pager__actions admin-toolbar">
-                        @if ($commitPaginator->previousPageUrl())
-                            <a class="admin-action" href="{{ $commitPaginator->previousPageUrl() }}">Previous</a>
+                        @if ($commitPaginator->currentPage() > 1)
+                            <a class="admin-action" href="{{ $activityUrl(['view' => 'commits', 'page' => null, 'commits_page' => $commitPaginator->currentPage() - 1]) }}">Previous</a>
                         @else
                             <button class="admin-action" type="button" disabled>Previous</button>
                         @endif
-                        @if ($commitPaginator->nextPageUrl())
-                            <a class="admin-action" href="{{ $commitPaginator->nextPageUrl() }}">Next</a>
+                        @if ($commitPaginator->currentPage() < $commitPaginator->lastPage())
+                            <a class="admin-action" href="{{ $activityUrl(['view' => 'commits', 'page' => null, 'commits_page' => $commitPaginator->currentPage() + 1]) }}">Next</a>
                         @else
                             <button class="admin-action" type="button" disabled>Next</button>
                         @endif
