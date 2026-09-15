@@ -64,6 +64,9 @@ jobs:
       - name: Audit locked PHP dependencies
         run: composer audit --locked --no-interaction
 
+      - name: Prepare test environment
+        run: cp .env.example .env
+
       - name: Generate test application key
         run: echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
 
