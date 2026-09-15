@@ -60,7 +60,7 @@ class AdminPanelProvider extends PanelProvider
             ->authGuard('web')
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
-            ->brandName('Lars Möller')
+            ->brandName('Admin Area')
             ->brandLogo(fn (): HtmlString => $this->adminGreeting())
             ->favicon(asset('admin-favicon.svg').'?v=aperture-1')
             ->homeUrl(fn (): string => route('home'))
