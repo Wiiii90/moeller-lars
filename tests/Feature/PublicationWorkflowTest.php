@@ -8,7 +8,7 @@ use App\Domain\Publication\PublicationService;
 use App\Domain\Publication\PublicationSnapshot;
 use App\Filament\Support\AdminActivityFeed;
 use App\Http\Middleware\ProtectArtistPreview;
-use App\Livewire\Admin\PublicationCommitDialog;
+use App\Livewire\Admin\PublicationStateBridge;
 use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
@@ -150,7 +150,7 @@ it('keeps the real public layout on committed appearance until one idempotent Co
 it('refreshes Commit state centrally for a Working mutation and a net-zero revert', function (): void {
     publicationWorkflowSetGradientBaseline();
 
-    $control = Livewire::test(PublicationCommitDialog::class)
+    $control = Livewire::test(PublicationStateBridge::class)
         ->assertSet('hasPendingChanges', false);
 
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
@@ -178,7 +178,7 @@ it('commits current Pending state in one component action and repeated clicks st
     ]);
 
     $initialCheckpointCount = PublicationCheckpoint::query()->count();
-    $control = Livewire::test(PublicationCommitDialog::class)
+    $control = Livewire::test(PublicationStateBridge::class)
         ->assertSet('hasPendingChanges', true)
         ->call('commitPublication')
         ->assertSet('hasPendingChanges', false);

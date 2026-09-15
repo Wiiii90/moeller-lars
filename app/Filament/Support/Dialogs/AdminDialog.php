@@ -18,19 +18,28 @@ final class AdminDialog
     }
 
     /**
-     * Edit dialogs use autosave and therefore have no submit/cancel footer.
-     * Optional session-level Undo actions are supplied by the caller through
-     * Filament's extra modal footer actions and are lifted into the header rail.
+     * Edit dialogs autosave on native change events: text controls commit on
+     * blur, while select/toggle controls commit immediately. No timers or
+     * hidden submit buttons participate in persistence.
+     *
+     * @param  array<mixed>|Closure  $windowAttributes
      */
     public static function edit(
         Action $action,
         AdminDialogSize $size = AdminDialogSize::Small,
+        array|Closure $windowAttributes = [],
     ): Action {
-        return self::base($action, AdminDialogType::Edit, $size)
+        $action = self::base($action, AdminDialogType::Edit, $size)
             ->modalSubmitAction(false)
-            ->modalCancelAction(false);
-    }
+            ->modalCancelAction(false)
+            ->extraModalWindowAttributes(['wire:change' => 'persistMountedAdminEdit'], merge: true);
 
+        if ($windowAttributes instanceof Closure || $windowAttributes !== []) {
+            $action->extraModalWindowAttributes($windowAttributes, merge: true);
+        }
+
+        return $action;
+    }
 
     public static function command(
         Action $action,
@@ -103,18 +112,10 @@ final class AdminDialog
             $classes[] = 'admin-dialog--confirmation';
         }
 
-        $attributes = ['class' => implode(' ', $classes)];
-
-        if ($type === AdminDialogType::Edit) {
-            // Native change events give text/textarea blur commits and immediate
-            // select/toggle commits without timer-driven persistence.
-            $attributes['wire:change'] = 'persistMountedAdminEdit';
-        }
-
         return $action
             // Filament still owns modal state, focus, Escape and the native X.
             // The shared CSS width modifier is the actual visual authority.
             ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes($attributes);
+            ->extraModalWindowAttributes(['class' => implode(' ', $classes)]);
     }
 }

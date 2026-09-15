@@ -10,8 +10,8 @@ use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Filament\Support\StorageWorkspaceOverview;
 use App\Models\MediaAsset;
@@ -35,7 +35,6 @@ use Throwable;
 final class ListMediaAssets extends Page
 {
     use InteractsWithAdminEditDialogAutosave;
-
     use WithFileUploads;
 
     /** @var list<int> */

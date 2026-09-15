@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Artworks\Support;
 
 use App\Domain\Artwork\ArtworkMaterialPresetService;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkMaterialPreset;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -35,8 +37,10 @@ final class ArtworkMaterialSelect
 
                 return (string) $preset->getAttribute('name');
             })
-            ->createOptionAction(fn (Action $action): Action => $action
-                ->label('Add material')
-                ->modalSubmitActionLabel('Add material'));
+            ->createOptionAction(fn (Action $action): Action => AdminDialog::create(
+                $action->label('Add material'),
+                'Add material',
+                AdminDialogSize::Small,
+            ));
     }
 }

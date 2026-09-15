@@ -5,12 +5,13 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\HomeRoutingDialog;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
-use Filament\Support\Enums\Width;
 use Illuminate\Validation\ValidationException;
 
 trait ManagesHomePagePresentation
@@ -42,27 +43,21 @@ trait ManagesHomePagePresentation
     {
         $dialog = app(HomeRoutingDialog::class);
 
-        return Action::make('skipHome')
-            ->label('Skip Home')
-            ->icon(AdminIcon::SkipHome->value)
-            ->modalHeading('Skip Home')
-            ->modalDescription('Choose whether Home redirects and where it goes. Without an explicit target, the next eligible page in the current order is used.')
-            ->fillForm(fn (): array => $dialog->fill())
-            ->schema($dialog->schema())
-            ->action(function (array $data) use ($dialog): void {
-                $dialog->save($data);
-                $this->loadSections();
-                Notification::make()->title('Home routing updated')->success()->send();
-            })
-            ->modalSubmitAction(fn (Action $action): Action => $action
-                ->label('Save Skip Home')
-                ->icon(AdminIcon::Commit->value)
-                ->iconButton()
-                ->extraAttributes(['class' => 'admin-dialog__header-action is-primary']))
-            ->modalCancelAction(false)
-            ->modalWidth(Width::Medium)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--small admin-dialog--header-actions',
-            ]);
+        return AdminDialog::command(
+            Action::make('skipHome')
+                ->label('Skip Home')
+                ->icon(AdminIcon::SkipHome->value)
+                ->modalHeading('Skip Home')
+                ->modalDescription('Choose whether Home redirects and where it goes. Without an explicit target, the next eligible page in the current order is used.')
+                ->fillForm(fn (): array => $dialog->fill())
+                ->schema($dialog->schema())
+                ->action(function (array $data) use ($dialog): void {
+                    $dialog->save($data);
+                    $this->loadSections();
+                    Notification::make()->title('Home routing updated')->success()->send();
+                }),
+            'Save Skip Home',
+            AdminDialogSize::Small,
+        );
     }
 }

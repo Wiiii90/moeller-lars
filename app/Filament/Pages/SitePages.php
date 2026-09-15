@@ -9,6 +9,8 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Pages\Concerns\ManagesSitePageDialogs;
 use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\SiteNodePresentation;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
@@ -247,52 +249,54 @@ final class SitePages extends Page
 
     public function editPlacementAction(): Action
     {
-        return Action::make('editPlacement')
-            ->label('Edit')
-            ->modalHeading('Edit page placement')
-            ->modalDescription('Choose whether this page is top level or belongs under another top-level page.')
-            ->fillForm(function (array $arguments): array {
-                /** @var SiteSection $section */
-                $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
+        return AdminDialog::edit(
+            Action::make('editPlacement')
+                ->label('Edit')
+                ->modalHeading('Edit page placement')
+                ->modalDescription('Choose whether this page is top level or belongs under another top-level page.')
+                ->fillForm(function (array $arguments): array {
+                    /** @var SiteSection $section */
+                    $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
 
-                return [
-                    'parent_id' => $section->getAttribute('parent_id'),
-                ];
-            })
-            ->schema([
-                Select::make('parent_id')
-                    ->label('Parent page')
-                    ->options(fn (): array => $this->parentOptions)
-                    ->placeholder('Top level')
-                    ->native()
-                    ->nullable(),
-            ])
-            ->modalSubmitActionLabel('Save')
-            ->action(function (array $data, array $arguments): void {
-                /** @var SiteSection $section */
-                $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
-                if ($section->nodeType() === SiteNodeType::Home) {
-                    return;
-                }
+                    return [
+                        'parent_id' => $section->getAttribute('parent_id'),
+                    ];
+                })
+                ->schema([
+                    Select::make('parent_id')
+                        ->label('Parent page')
+                        ->options(fn (): array => $this->parentOptions)
+                        ->placeholder('Top level')
+                        ->native()
+                        ->nullable(),
+                ])
+                ->action(function (array $data, array $arguments): void {
+                    /** @var SiteSection $section */
+                    $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
+                    if ($section->nodeType() === SiteNodeType::Home) {
+                        return;
+                    }
 
-                $parentId = isset($data['parent_id']) && $data['parent_id'] !== '' && $data['parent_id'] !== null
-                    ? (int) $data['parent_id']
-                    : null;
+                    $parentId = isset($data['parent_id']) && $data['parent_id'] !== '' && $data['parent_id'] !== null
+                        ? (int) $data['parent_id']
+                        : null;
 
-                try {
-                    app(SiteSectionEditorialService::class)->updatePlacement(
-                        $section,
-                        (string) $section->getAttribute('state'),
-                        (bool) $section->getAttribute('show_in_navigation'),
-                        $parentId,
-                    );
-                    Notification::make()->title('Page placement updated')->success()->send();
-                } catch (ValidationException $exception) {
-                    $this->validationNotification('Page placement unchanged', $exception);
-                }
+                    try {
+                        app(SiteSectionEditorialService::class)->updatePlacement(
+                            $section,
+                            (string) $section->getAttribute('state'),
+                            (bool) $section->getAttribute('show_in_navigation'),
+                            $parentId,
+                        );
+                        Notification::make()->title('Page placement updated')->success()->send();
+                    } catch (ValidationException $exception) {
+                        $this->validationNotification('Page placement unchanged', $exception);
+                    }
 
-                $this->loadSections();
-            });
+                    $this->loadSections();
+                }),
+            AdminDialogSize::Default,
+        );
     }
 
     public function toggleSectionState(int $sectionId): void

@@ -9,8 +9,8 @@ use App\Domain\Admin\DashboardNotificationRetention;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\DashboardOverview;
 use App\Filament\Support\Dialogs\AdminDialog;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
@@ -292,49 +292,49 @@ final class Dashboard extends Page
     public function dashboardSettingsAction(): Action
     {
         return AdminDialog::edit(Action::make('dashboardSettings')
-                ->label('Settings')
-                ->modalHeading('Dashboard settings')
-                ->fillForm(function (): array {
-                    $user = auth()->user();
+            ->label('Settings')
+            ->modalHeading('Dashboard settings')
+            ->fillForm(function (): array {
+                $user = auth()->user();
 
-                    return [
-                        'notification_filter' => $this->notificationFilter,
-                        'notification_retention' => app(DashboardNotificationRetention::class)->limitFor($user instanceof User ? $user : 0),
-                        'delete_without_confirmation' => (bool) $user?->getAttribute('dashboard_delete_without_confirmation'),
-                    ];
-                })
-                ->schema([
-                    Select::make('notification_filter')
-                        ->label('Notification history')
-                        ->options(self::NOTIFICATION_FILTERS)
-                        ->required(),
-                    Select::make('notification_retention')
-                        ->label('Keep notification history')
-                        ->options(DashboardNotificationRetention::options())
-                        ->required(),
-                    Checkbox::make('delete_without_confirmation')
-                        ->label('Delete messages without confirmation'),
-                ]), AdminDialogSize::Small)->action(function (array $data): void {
-            $user = auth()->user();
-            if (! $user instanceof User) {
-                return;
-            }
+                return [
+                    'notification_filter' => $this->notificationFilter,
+                    'notification_retention' => app(DashboardNotificationRetention::class)->limitFor($user instanceof User ? $user : 0),
+                    'delete_without_confirmation' => (bool) $user?->getAttribute('dashboard_delete_without_confirmation'),
+                ];
+            })
+            ->schema([
+                Select::make('notification_filter')
+                    ->label('Notification history')
+                    ->options(self::NOTIFICATION_FILTERS)
+                    ->required(),
+                Select::make('notification_retention')
+                    ->label('Keep notification history')
+                    ->options(DashboardNotificationRetention::options())
+                    ->required(),
+                Checkbox::make('delete_without_confirmation')
+                    ->label('Delete messages without confirmation'),
+            ]), AdminDialogSize::Small)->action(function (array $data): void {
+                $user = auth()->user();
+                if (! $user instanceof User) {
+                    return;
+                }
 
-            $filter = $data['notification_filter'] ?? 'all';
-            $this->notificationFilter = is_string($filter) && array_key_exists($filter, self::NOTIFICATION_FILTERS)
-                ? $filter
-                : 'all';
-            $retention = app(DashboardNotificationRetention::class)->normalize($data['notification_retention'] ?? 10);
+                $filter = $data['notification_filter'] ?? 'all';
+                $this->notificationFilter = is_string($filter) && array_key_exists($filter, self::NOTIFICATION_FILTERS)
+                    ? $filter
+                    : 'all';
+                $retention = app(DashboardNotificationRetention::class)->normalize($data['notification_retention'] ?? 10);
 
-            $user->forceFill([
-                'dashboard_notification_filter' => $this->notificationFilter,
-                'dashboard_notification_retention' => $retention,
-                'dashboard_delete_without_confirmation' => (bool) ($data['delete_without_confirmation'] ?? false),
-            ])->save();
+                $user->forceFill([
+                    'dashboard_notification_filter' => $this->notificationFilter,
+                    'dashboard_notification_retention' => $retention,
+                    'dashboard_delete_without_confirmation' => (bool) ($data['delete_without_confirmation'] ?? false),
+                ])->save();
 
-            app(DashboardNotificationRetention::class)->pruneFor($user);
-            $this->refreshFeedFromFirstPage();
-        });
+                app(DashboardNotificationRetention::class)->pruneFor($user);
+                $this->refreshFeedFromFirstPage();
+            });
     }
 
     public function deleteFeedEntryAction(): Action

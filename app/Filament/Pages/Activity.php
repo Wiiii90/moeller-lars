@@ -11,6 +11,8 @@ use App\Domain\Publication\PublicationVersionService;
 use App\Filament\Support\AdminActivityFeed;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\AdminPublicationHistory;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
 use BackedEnum;
@@ -18,7 +20,6 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
-use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
@@ -156,54 +157,45 @@ final class Activity extends Page
 
     public function activityDetailsAction(): Action
     {
-        return Action::make('activityDetails')
-            ->label('Details')
-            ->modalHeading(fn (array $arguments): string => (string) ($this->activityDetails($arguments)['action'] ?? 'Activity details'))
-            ->modalContent(fn (array $arguments): View => view(
-                'filament.pages.partials.activity-details-dialog',
-                ['event' => $this->activityDetails($arguments)],
-            ))
-            ->modalSubmitAction(false)
-            ->modalCancelAction(false)
-            ->extraModalFooterActions(fn (array $arguments): array => $this->activityDetailsHeaderActions($arguments))
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--default admin-dialog--header-actions',
-            ]);
+        return AdminDialog::viewer(
+            Action::make('activityDetails')
+                ->label('Details')
+                ->modalHeading(fn (array $arguments): string => (string) ($this->activityDetails($arguments)['action'] ?? 'Activity details'))
+                ->modalContent(fn (array $arguments): View => view(
+                    'filament.pages.partials.activity-details-dialog',
+                    ['event' => $this->activityDetails($arguments)],
+                ))
+                ->extraModalFooterActions(fn (array $arguments): array => $this->activityDetailsHeaderActions($arguments)),
+            AdminDialogSize::Default,
+        );
     }
 
     public function publicationReviewAction(): Action
     {
-        return Action::make('publicationReview')
-            ->label('Review changes')
-            ->modalHeading('Review staged changes')
-            ->modalContent(fn (): View => view(
-                'filament.pages.partials.activity-publication-review-dialog',
-                ['publication' => $this->publicationReview()],
-            ))
-            ->modalSubmitAction(false)
-            ->modalCancelAction(false)
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--default admin-dialog--header-actions',
-            ]);
+        return AdminDialog::viewer(
+            Action::make('publicationReview')
+                ->label('Review changes')
+                ->modalHeading('Review staged changes')
+                ->modalContent(fn (): View => view(
+                    'filament.pages.partials.activity-publication-review-dialog',
+                    ['publication' => $this->publicationReview()],
+                )),
+            AdminDialogSize::Default,
+        );
     }
 
     public function commitDetailsAction(): Action
     {
-        return Action::make('commitDetails')
-            ->label('Commit details')
-            ->modalHeading(fn (array $arguments): string => 'Commit '.($this->commitDetails($arguments)['short_hash'] ?? ''))
-            ->modalContent(fn (array $arguments): View => view(
-                'filament.pages.partials.activity-commit-details-dialog',
-                ['commit' => $this->commitDetails($arguments)],
-            ))
-            ->modalSubmitAction(false)
-            ->modalCancelAction(false)
-            ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes([
-                'class' => 'admin-task-dialog admin-dialog--default admin-dialog--header-actions',
-            ]);
+        return AdminDialog::viewer(
+            Action::make('commitDetails')
+                ->label('Commit details')
+                ->modalHeading(fn (array $arguments): string => 'Commit '.($this->commitDetails($arguments)['short_hash'] ?? ''))
+                ->modalContent(fn (array $arguments): View => view(
+                    'filament.pages.partials.activity-commit-details-dialog',
+                    ['commit' => $this->commitDetails($arguments)],
+                )),
+            AdminDialogSize::Default,
+        );
     }
 
     /** @return array<string, mixed> */
@@ -607,15 +599,20 @@ final class Activity extends Page
 
         if (is_array($event['undo'] ?? null)) {
             $receiptId = (int) $event['undo']['id'];
-            $actions[] = Action::make('undoActivityEvent')
-                ->label('Undo')
-                ->icon(AdminIcon::Refresh->value)
-                ->iconButton()
-                ->color('gray')
-                ->requiresConfirmation()
-                ->modalHeading('Undo change?')
-                ->modalDescription((string) $event['undo']['confirmation'])
-                ->action(fn (): mixed => $this->undo($receiptId));
+            $actions[] = AdminDialog::confirm(
+                Action::make('undoActivityEvent')
+                    ->label('Undo')
+                    ->icon(AdminIcon::Refresh->value)
+                    ->iconButton()
+                    ->color('gray')
+                    ->action(fn (): mixed => $this->undo($receiptId)),
+                heading: 'Undo change?',
+                description: (string) $event['undo']['confirmation'],
+                submitLabel: 'Undo',
+                danger: false,
+                size: AdminDialogSize::Mini,
+                icon: AdminIcon::Refresh,
+            );
         }
 
         if (is_string($event['url'] ?? null) && $event['url'] !== '') {

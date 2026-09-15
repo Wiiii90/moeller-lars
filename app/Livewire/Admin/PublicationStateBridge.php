@@ -10,7 +10,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
-final class PublicationCommitDialog extends Component
+final class PublicationStateBridge extends Component
 {
     public bool $hasPendingChanges = false;
 
@@ -74,6 +74,6 @@ final class PublicationCommitDialog extends Component
 
     public function render(): View
     {
-        return view('livewire.admin.publication-commit-dialog');
+        return view('livewire.admin.publication-state-bridge');
     }
 }

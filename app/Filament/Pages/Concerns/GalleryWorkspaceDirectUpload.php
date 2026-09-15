@@ -7,6 +7,8 @@ use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\Artwork;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
@@ -15,7 +17,6 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
-use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -123,106 +124,107 @@ trait GalleryWorkspaceDirectUpload
 
     public function batchAddArtworksAction(): Action
     {
-        return Action::make('batchAddArtworks')
-            ->label('Add artworks')
-            ->modalHeading(fn (): string => 'Add '.count($this->pendingBatchArtworkMedia).' artworks')
-            ->fillForm(fn (): array => ['artworks' => $this->pendingBatchArtworkMedia])
-            ->schema([
-                Repeater::make('artworks')
-                    ->label('New artwork drafts')
-                    ->extraAttributes(['class' => 'gallery-batch-artworks'])
-                    ->schema([
-                        Hidden::make('media_asset_id'),
-                        Placeholder::make('visual')
-                            ->label('Media')
-                            ->content(fn (callable $get): HtmlString|string => $this->batchArtworkVisual((int) $get('media_asset_id'))),
-                        Placeholder::make('filename')
-                            ->label('File')
-                            ->content(fn (callable $get): string => $this->batchArtworkFilename((int) $get('media_asset_id'))),
-                        TextInput::make('title')
-                            ->label('Title')
-                            ->required()
-                            ->maxLength(240),
-                    ])
-                    ->columns(3)
-                    ->addable(false)
-                    ->deletable(false)
-                    ->reorderable(false),
-            ])
-            ->modalSubmitActionLabel(fn (): string => 'Add '.count($this->pendingBatchArtworkMedia).' artworks')
-            ->modalCancelActionLabel('Cancel')
-            ->modalWidth(Width::SevenExtraLarge)
-            ->action(function (array $data): void {
-                $rows = is_array($data['artworks'] ?? null) ? array_values($data['artworks']) : [];
-                $pendingIds = collect($this->pendingBatchArtworkMedia)
-                    ->pluck('media_asset_id')
-                    ->map(static fn (mixed $id): int => (int) $id)
-                    ->sort()
-                    ->values()
-                    ->all();
-                $submittedIds = collect($rows)
-                    ->map(static fn (mixed $row): int => is_array($row) ? (int) ($row['media_asset_id'] ?? 0) : 0)
-                    ->filter(static fn (int $id): bool => $id > 0)
-                    ->sort()
-                    ->values()
-                    ->all();
+        return AdminDialog::create(
+            Action::make('batchAddArtworks')
+                ->label('Add artworks')
+                ->modalHeading(fn (): string => 'Add '.count($this->pendingBatchArtworkMedia).' artworks')
+                ->fillForm(fn (): array => ['artworks' => $this->pendingBatchArtworkMedia])
+                ->schema([
+                    Repeater::make('artworks')
+                        ->label('New artwork drafts')
+                        ->extraAttributes(['class' => 'gallery-batch-artworks'])
+                        ->schema([
+                            Hidden::make('media_asset_id'),
+                            Placeholder::make('visual')
+                                ->label('Media')
+                                ->content(fn (callable $get): HtmlString|string => $this->batchArtworkVisual((int) $get('media_asset_id'))),
+                            Placeholder::make('filename')
+                                ->label('File')
+                                ->content(fn (callable $get): string => $this->batchArtworkFilename((int) $get('media_asset_id'))),
+                            TextInput::make('title')
+                                ->label('Title')
+                                ->required()
+                                ->maxLength(240),
+                        ])
+                        ->columns(3)
+                        ->addable(false)
+                        ->deletable(false)
+                        ->reorderable(false),
+                ])
+                ->action(function (array $data): void {
+                    $rows = is_array($data['artworks'] ?? null) ? array_values($data['artworks']) : [];
+                    $pendingIds = collect($this->pendingBatchArtworkMedia)
+                        ->pluck('media_asset_id')
+                        ->map(static fn (mixed $id): int => (int) $id)
+                        ->sort()
+                        ->values()
+                        ->all();
+                    $submittedIds = collect($rows)
+                        ->map(static fn (mixed $row): int => is_array($row) ? (int) ($row['media_asset_id'] ?? 0) : 0)
+                        ->filter(static fn (int $id): bool => $id > 0)
+                        ->sort()
+                        ->values()
+                        ->all();
 
-                if ($pendingIds === [] || $submittedIds !== $pendingIds || count($rows) !== count($pendingIds)) {
-                    throw ValidationException::withMessages([
-                        'artworks' => 'The uploaded media selection changed. Review the batch and try again.',
-                    ]);
-                }
-
-                $galleryId = (int) $this->galleryContext['id'];
-                $assets = MediaAsset::query()
-                    ->whereIn('id', $pendingIds)
-                    ->where('state', 'available')
-                    ->get()
-                    ->keyBy(static fn (MediaAsset $asset): int => (int) $asset->getKey());
-
-                if ($assets->count() !== count($pendingIds)) {
-                    throw ValidationException::withMessages([
-                        'artworks' => 'One or more uploaded Media Files are no longer available.',
-                    ]);
-                }
-
-                DB::transaction(function () use ($rows, $assets, $galleryId): void {
-                    foreach ($rows as $row) {
-                        if (! is_array($row)) {
-                            continue;
-                        }
-
-                        $assetId = (int) ($row['media_asset_id'] ?? 0);
-                        $title = preg_replace('/\s+/u', ' ', trim((string) ($row['title'] ?? '')));
-                        $title = is_string($title) ? $title : trim((string) ($row['title'] ?? ''));
-                        if ($title === '') {
-                            throw ValidationException::withMessages(['artworks' => 'Each uploaded file needs an artwork title.']);
-                        }
-
-                        $asset = $assets->get($assetId);
-                        if (! $asset instanceof MediaAsset || ! $this->isGalleryPrimaryVisual($asset)) {
-                            throw ValidationException::withMessages(['artworks' => 'Each artwork requires an available image or video Media File.']);
-                        }
-
-                        $artwork = app(ArtworkDraftService::class)->create([
-                            'artwork_category_id' => $galleryId,
-                            'slug' => $this->uniqueBatchArtworkSlug($title),
-                            'title' => $title,
-                            'work_date' => null,
+                    if ($pendingIds === [] || $submittedIds !== $pendingIds || count($rows) !== count($pendingIds)) {
+                        throw ValidationException::withMessages([
+                            'artworks' => 'The uploaded media selection changed. Review the batch and try again.',
                         ]);
-                        app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
                     }
-                });
 
-                $count = count($rows);
-                $this->pendingBatchArtworkMedia = [];
-                $this->refreshWorkspaceAfterMutation();
-                Notification::make()
-                    ->title($count.' artworks added')
-                    ->body('The new artworks were created as drafts with their uploaded Media Files as primary media.')
-                    ->success()
-                    ->send();
-            });
+                    $galleryId = (int) $this->galleryContext['id'];
+                    $assets = MediaAsset::query()
+                        ->whereIn('id', $pendingIds)
+                        ->where('state', 'available')
+                        ->get()
+                        ->keyBy(static fn (MediaAsset $asset): int => (int) $asset->getKey());
+
+                    if ($assets->count() !== count($pendingIds)) {
+                        throw ValidationException::withMessages([
+                            'artworks' => 'One or more uploaded Media Files are no longer available.',
+                        ]);
+                    }
+
+                    DB::transaction(function () use ($rows, $assets, $galleryId): void {
+                        foreach ($rows as $row) {
+                            if (! is_array($row)) {
+                                continue;
+                            }
+
+                            $assetId = (int) ($row['media_asset_id'] ?? 0);
+                            $title = preg_replace('/\s+/u', ' ', trim((string) ($row['title'] ?? '')));
+                            $title = is_string($title) ? $title : trim((string) ($row['title'] ?? ''));
+                            if ($title === '') {
+                                throw ValidationException::withMessages(['artworks' => 'Each uploaded file needs an artwork title.']);
+                            }
+
+                            $asset = $assets->get($assetId);
+                            if (! $asset instanceof MediaAsset || ! $this->isGalleryPrimaryVisual($asset)) {
+                                throw ValidationException::withMessages(['artworks' => 'Each artwork requires an available image or video Media File.']);
+                            }
+
+                            $artwork = app(ArtworkDraftService::class)->create([
+                                'artwork_category_id' => $galleryId,
+                                'slug' => $this->uniqueBatchArtworkSlug($title),
+                                'title' => $title,
+                                'work_date' => null,
+                            ]);
+                            app(ArtworkPrimaryMediaService::class)->attachAsset($artwork, $asset);
+                        }
+                    });
+
+                    $count = count($rows);
+                    $this->pendingBatchArtworkMedia = [];
+                    $this->refreshWorkspaceAfterMutation();
+                    Notification::make()
+                        ->title($count.' artworks added')
+                        ->body('The new artworks were created as drafts with their uploaded Media Files as primary media.')
+                        ->success()
+                        ->send();
+                }),
+            'Add artworks',
+            AdminDialogSize::Large,
+        );
     }
 
     private function isGalleryPrimaryVisual(MediaAsset $asset): bool

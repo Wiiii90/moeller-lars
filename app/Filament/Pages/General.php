@@ -9,8 +9,8 @@ use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
-use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
@@ -416,63 +416,63 @@ final class General extends Page
     public function editSocialLinkAction(): Action
     {
         return AdminDialog::edit(Action::make('editSocialLink')
-                ->label('Edit')
-                ->modalHeading('Edit social media profile')
-                ->fillForm(function (array $arguments): array {
-                    $index = $this->socialLinkIndexForAction($arguments);
-                    $link = $this->socialLinkForAction($arguments);
+            ->label('Edit')
+            ->modalHeading('Edit social media profile')
+            ->fillForm(function (array $arguments): array {
+                $index = $this->socialLinkIndexForAction($arguments);
+                $link = $this->socialLinkForAction($arguments);
 
-                    return [
-                        'platform' => (string) ($link['platform'] ?? ''),
-                        'url' => (string) ($link['url'] ?? ''),
-                        'position' => $index === null ? 1 : $index + 1,
-                    ];
-                })
-                ->schema([
-                    Select::make('platform')
-                        ->label('Platform')
-                        ->options(SocialLinks::options())
-                        ->native()
-                        ->required(),
-                    TextInput::make('url')
-                        ->label('Profile URL')
-                        ->url()
-                        ->maxLength(2048)
-                        ->required(),
-                    TextInput::make('position')
-                        ->label('Position')
-                        ->numeric()
-                        ->integer()
-                        ->minValue(1)
-                        ->required(),
-                ]), AdminDialogSize::Small)->action(function (array $data, array $arguments): void {
-            $index = $this->socialLinkIndexForAction($arguments);
-            if ($index === null) {
-                return;
-            }
-
-            $links = $this->socialLinks();
-            $platform = (string) ($data['platform'] ?? '');
-            $url = (string) ($data['url'] ?? '');
-
-            foreach ($links as $otherIndex => $link) {
-                if ($otherIndex !== $index && ($link['platform'] ?? null) === $platform) {
-                    throw ValidationException::withMessages([
-                        'platform' => 'Each social platform can only be configured once.',
-                    ]);
+                return [
+                    'platform' => (string) ($link['platform'] ?? ''),
+                    'url' => (string) ($link['url'] ?? ''),
+                    'position' => $index === null ? 1 : $index + 1,
+                ];
+            })
+            ->schema([
+                Select::make('platform')
+                    ->label('Platform')
+                    ->options(SocialLinks::options())
+                    ->native()
+                    ->required(),
+                TextInput::make('url')
+                    ->label('Profile URL')
+                    ->url()
+                    ->maxLength(2048)
+                    ->required(),
+                TextInput::make('position')
+                    ->label('Position')
+                    ->numeric()
+                    ->integer()
+                    ->minValue(1)
+                    ->required(),
+            ]), AdminDialogSize::Small)->action(function (array $data, array $arguments): void {
+                $index = $this->socialLinkIndexForAction($arguments);
+                if ($index === null) {
+                    return;
                 }
-            }
 
-            $links[$index] = [
-                'platform' => $platform,
-                'url' => $url,
-            ];
-            $position = max(1, min((int) ($data['position'] ?? $index + 1), count($links)));
-            $moved = array_splice($links, $index, 1);
-            array_splice($links, $position - 1, 0, $moved);
+                $links = $this->socialLinks();
+                $platform = (string) ($data['platform'] ?? '');
+                $url = (string) ($data['url'] ?? '');
 
-            $this->saveSocialLinks($links);
-        });
+                foreach ($links as $otherIndex => $link) {
+                    if ($otherIndex !== $index && ($link['platform'] ?? null) === $platform) {
+                        throw ValidationException::withMessages([
+                            'platform' => 'Each social platform can only be configured once.',
+                        ]);
+                    }
+                }
+
+                $links[$index] = [
+                    'platform' => $platform,
+                    'url' => $url,
+                ];
+                $position = max(1, min((int) ($data['position'] ?? $index + 1), count($links)));
+                $moved = array_splice($links, $index, 1);
+                array_splice($links, $position - 1, 0, $moved);
+
+                $this->saveSocialLinks($links);
+            });
     }
 
     public function addSocialLink(): void
