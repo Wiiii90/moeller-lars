@@ -66,7 +66,7 @@ committed.*    = current LIVE state
 
 Historical migrations must not import `PublicationSnapshot::TABLES` or other mutable runtime publication constants to define their own past behavior. A migration freezes the publication tables/entity types that existed when that migration was introduced; later changes to the current publication contract are applied by later forward migrations.
 
-Legacy migration-evidence tables such as `blog_settings` are not part of the runtime Publication source of truth and are not compatibility fallbacks. They remain outside the tracked-table set and must not hold foreign-key constraints that can block replacement of canonical tracked state. Their eventual physical removal belongs to the explicit post-cutover legacy-retirement migration described in `MIGRATION-PLAN.md`.
+`blog_settings` is not legacy-source evidence and is not part of the runtime Publication source of truth. It was an early application-owned Blog-settings table whose canonical values were normalized into `site_sections` / `journal_settings`; a forward migration retires it after the obsolete foreign-key coupling is removed. Historical migrations may still mention it solely because they reconstruct the application's actual schema evolution. It must never return as a Publication fallback or tracked source.
 
 ## Preflight
 

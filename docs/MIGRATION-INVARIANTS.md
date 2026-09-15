@@ -163,17 +163,17 @@ Historical migrations must preserve the schema/domain contract that existed when
 - do not import mutable runtime constants such as current publication tracked-table/entity lists into a historical migration;
 - freeze the migration's own table/entity set when that set determines `migrate:fresh` behavior;
 - evolve the current schema/domain contract through a later forward migration instead of changing history indirectly through runtime code;
-- comments may document deliberately asymmetric rollback behavior where restoring a superseded legacy constraint would recreate an invalid dependency.
+- comments may document deliberately asymmetric rollback behavior where restoring a superseded constraint would recreate an invalid dependency.
 
 This rule keeps clean-database reconstruction deterministic without treating old migrations as runtime authority.
 
-## Legacy evidence and retirement
+## Legacy evidence and internal schema retirement
 
-A retained legacy table is migration evidence only unless a current domain contract explicitly says otherwise.
+True legacy evidence comes from the frozen pre-Laravel source and remains subject to the cutover/legacy-retirement boundary where that evidence still protects reconciliation or recovery.
 
-`blog_settings` is currently retained for migration/cutover evidence. Its canonical values were normalized into the Journal/SiteSection model; runtime and Publication do not read it as a fallback or tracked source. The old `blog_settings -> site_sections` RESTRICT foreign key is intentionally removed so evidence cannot block canonical publication-state replacement.
+`blog_settings` is explicitly **not** legacy-source evidence. It was created by this Laravel application for the original dedicated Blog settings model. Its canonical values were later normalized into `site_sections` / `journal_settings`; runtime and Publication stopped using it as authority or fallback. A later forward migration therefore retires the obsolete table independently of legacy-site retirement.
 
-Physical removal of migration-only evidence is a separate forward migration after explicit legacy-retirement acceptance. Do not reattach runtime reads or compatibility foreign keys merely because the evidence table still exists before that gate.
+Historical migrations continue to mention `blog_settings` because they must reconstruct the application's actual schema evolution. Do not rewrite those historical steps merely to hide a superseded internal design. The old `blog_settings -> site_sections` RESTRICT foreign key remains intentionally non-restored because recreating that obsolete coupling would invalidate canonical replacement behavior.
 
 ## Redirect and public-route reconciliation
 

@@ -21,7 +21,7 @@ Normalization:
 
 - legacy artwork categories → **Gallery** persistence + Gallery Site Nodes;
 - legacy Home → **Home** presentation state;
-- legacy Blog → **Journal / Blog**;
+- application-owned Blog editorial model → **Journal / Blog**; this is target-schema evolution, not a legacy-source mapping;
 - legacy Exhibitions → **Journal / Exhibitions**;
 - legacy CV/Vita placement/content → **Custom Page/CV composition** + retained provenance;
 - legacy Contact content/placement → reusable **Contact component**;
@@ -76,7 +76,7 @@ Runtime restore still validates current publication readiness and safely falls b
 
 The Publication bootstrap migration freezes the tracked tables and audit entity types that existed when that migration was introduced. It does not import today's mutable `PublicationSnapshot` constants. Later changes to tracked schema/state are expressed by later forward migrations.
 
-`blog_settings` remains only as migration/cutover evidence until explicit legacy retirement. Its canonical Blog/Journal state already lives in `site_sections` / `journal_settings`; it is not a runtime fallback and is outside the Publication tracked-table set. Its old `RESTRICT` foreign key to `site_sections` is intentionally not restored because legacy evidence must not block canonical publication-state replacement.
+`blog_settings` was not legacy-site evidence. It was an application-owned table from the original dedicated Blog settings model. Its canonical Blog/Journal values were already normalized into `site_sections` / `journal_settings`, it was removed from runtime/Publication authority, and its obsolete `RESTRICT` foreign key was detached before a forward migration retired the table. Historical migrations still mention it only to reconstruct that schema evolution.
 
 The detailed rules are in [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
 
@@ -200,4 +200,4 @@ After cutover:
 - resolve Production findings through normal releases;
 - retire legacy runtime/data only after explicit retirement acceptance and recovery requirements are satisfied.
 
-After explicit legacy retirement, migration-only evidence may be archived/removed in a dedicated cleanup. That cleanup is the point to remove retained evidence tables such as `blog_settings` through a new forward migration once their recovery/reconciliation purpose has ended.
+After explicit legacy retirement, true migration-only legacy evidence may be archived/removed in a dedicated cleanup once its recovery/reconciliation purpose has ended. Superseded application-owned schema such as the former `blog_settings` table is retired independently through normal forward migrations and is not gated on legacy-site retirement.

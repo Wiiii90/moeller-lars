@@ -11,6 +11,7 @@ use App\Models\SiteSection;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -40,6 +41,11 @@ function invariantAsset(): MediaAsset
 
     return $asset;
 }
+
+it('retires superseded internal Blog settings after Journal canonicalization', function (): void {
+    expect(Schema::hasTable('blog_settings'))->toBeFalse()
+        ->and(Schema::hasTable('journal_settings'))->toBeTrue();
+});
 
 it('enforces unique visible top-level SiteSection navigation positions', function (): void {
     $first = ArtworkCategory::create(['slug' => 'first', 'name' => 'First', 'show_on_home' => false]);
