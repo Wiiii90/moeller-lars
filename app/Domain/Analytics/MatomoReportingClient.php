@@ -5,12 +5,16 @@ namespace App\Domain\Analytics;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use LogicException;
 use RuntimeException;
 use Throwable;
 
 final class MatomoReportingClient
 {
+    private const CACHE_SCHEMA = 6;
+
+    private const CACHE_NAMESPACE = 'analytics:matomo:v5';
+
+    /** @var list<string> */
     private const METRICS = [
         'nb_visits',
         'nb_uniq_visitors',
@@ -20,132 +24,111 @@ final class MatomoReportingClient
         'bounce_rate',
     ];
 
-    private const PRESETS = ['today', '7d', '30d', '12m'];
-
-    private const CACHE_SCHEMA = 6;
-
     public function __construct(private readonly MatomoConfiguration $configuration) {}
 
     /** @return array<string, mixed> */
-    public function report(string $preset = '30d'): array
+    public function report(string $preset): array
     {
-        if (! in_array($preset, self::PRESETS, true)) {
-            throw new \InvalidArgumentException('Unsupported analytics range.');
-        }
+        $preset = in_array($preset, ['today', '7d', '30d', '12m'], true) ? $preset : '30d';
 
-        if (! (bool) config('analytics.matomo.reporting_enabled')) {
-            return ['status' => 'disabled', 'message' => 'Matomo reporting is disabled.'];
+        if (! $this->configuration->reportingEnabled()) {
+            return $this->emptyReport($preset, 'disabled');
         }
 
         try {
-            $siteId = $this->configuration->siteId();
-            $range = $this->range($preset);
-            $freshKey = "analytics:matomo:v5:site:{$siteId}:{$preset}:fresh";
-            $staleKey = "analytics:matomo:v5:site:{$siteId}:{$preset}:stale";
+            $this->configuration->validateForReporting();
+        } catch (RuntimeException $exception) {
+            return $this->emptyReport($preset, 'unavailable', $exception->getMessage());
+        }
 
-            $cached = Cache::get($freshKey);
-            if (is_array($cached) && ($cached['schema'] ?? null) === self::CACHE_SCHEMA) {
-                $cached['cache'] = 'fresh';
+        $freshKey = $this->cacheKey($preset, 'fresh');
+        $staleKey = $this->cacheKey($preset, 'stale');
+        $fresh = Cache::get($freshKey);
+        if ($this->isCurrentSchema($fresh)) {
+            $fresh['cache'] = 'fresh';
 
-                return $cached;
+            return $fresh;
+        }
+        if ($fresh !== null) {
+            Cache::forget($freshKey);
+        }
+
+        try {
+            $report = $this->fetchReport($preset);
+            Cache::put($freshKey, $report, now()->addSeconds($this->configuration->reportCacheSeconds()));
+            Cache::put($staleKey, $report, now()->addSeconds($this->configuration->reportStaleSeconds()));
+            $report['cache'] = 'miss';
+
+            return $report;
+        } catch (ConnectionException|RuntimeException $exception) {
+            $stale = Cache::get($staleKey);
+            if ($this->isCurrentSchema($stale)) {
+                $stale['status'] = 'stale';
+                $stale['cache'] = 'stale';
+                $stale['warning'] = $exception->getMessage();
+
+                return $stale;
+            }
+            if ($stale !== null) {
+                Cache::forget($staleKey);
             }
 
-            try {
-                $report = $this->fetchReport($siteId, $range);
-                $report['cache'] = 'live';
-                Cache::put($freshKey, $report, $this->configuration->reportCacheSeconds());
-                Cache::put($staleKey, $report, $this->configuration->reportStaleSeconds());
+            return $this->emptyReport($preset, 'unavailable', $exception->getMessage());
+        } catch (Throwable $exception) {
+            report($exception);
 
-                return $report;
-            } catch (Throwable $exception) {
-                $stale = Cache::get($staleKey);
-                if (is_array($stale) && ($stale['schema'] ?? null) === self::CACHE_SCHEMA) {
-                    $stale['status'] = 'stale';
-                    $stale['cache'] = 'stale';
-                    $stale['message'] = 'Live Matomo reporting is unavailable. Showing cached aggregate data.';
-
-                    return $stale;
-                }
-
-                throw $exception;
-            }
-        } catch (ConnectionException) {
-            return ['status' => 'unavailable', 'message' => 'Matomo Reporting API is unreachable.'];
-        } catch (LogicException|RuntimeException $exception) {
-            return ['status' => 'unavailable', 'message' => $exception->getMessage()];
-        } catch (Throwable) {
-            return ['status' => 'unavailable', 'message' => 'Matomo Reporting API failed unexpectedly.'];
+            return $this->emptyReport($preset, 'unavailable', 'Matomo reporting is temporarily unavailable.');
         }
     }
 
     /** @return array<string, mixed> */
-    public function summary(): array
+    private function fetchReport(string $preset): array
     {
-        $report = $this->report('30d');
-
-        if (! in_array($report['status'] ?? null, ['available', 'stale'], true)) {
-            return $report;
+        $range = $this->range($preset);
+        $siteId = $this->configuration->siteId();
+        if ($siteId === null) {
+            throw new RuntimeException('Matomo site ID is unavailable.');
         }
 
-        return [
-            'status' => $report['status'],
-            'metrics' => $report['metrics'],
-            'message' => $report['message'] ?? null,
-        ];
-    }
-
-    /** @param array{preset:string,label:string,start:string,end:string,previous_start:string,previous_end:string} $range
-     * @return array<string, mixed>
-     */
-    private function fetchReport(int $siteId, array $range): array
-    {
         $date = $range['start'].','.$range['end'];
         $previousDate = $range['previous_start'].','.$range['previous_end'];
-        $summaryPeriod = $range['preset'] === 'today' ? 'day' : 'range';
-        $summaryDate = $range['preset'] === 'today' ? $range['end'] : $date;
-        $previousSummaryDate = $range['preset'] === 'today' ? $range['previous_end'] : $previousDate;
-        $artworkEventOptions = [
-            'expanded' => 1,
-            'secondaryDimension' => 'eventName',
-            'filter_pattern' => '^artwork_',
-            'filter_column' => 'label',
-            'filter_limit' => 100,
-            'filter_sort_column' => 'nb_events',
-            'filter_sort_order' => 'desc',
-        ];
 
         $definitions = [
-            'summary' => $this->nestedRequest('VisitsSummary.get', $siteId, $summaryPeriod, $summaryDate),
-            'previous_summary' => $this->nestedRequest('VisitsSummary.get', $siteId, $summaryPeriod, $previousSummaryDate),
+            'summary' => $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $date),
+            'previous_summary' => $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $previousDate),
             'series' => $this->nestedRequest('VisitsSummary.get', $siteId, 'day', $date),
-            'content' => $this->nestedRequest('Actions.getPageUrls', $siteId, 'range', $date, $this->topRows(15, ['flat' => 1, 'filter_sort_column' => 'nb_hits'])),
-            'entry_pages' => $this->nestedRequest('Actions.getEntryPageUrls', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1, 'filter_sort_column' => 'nb_entrances'])),
-            'exit_pages' => $this->nestedRequest('Actions.getExitPageUrls', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1, 'filter_sort_column' => 'nb_exits'])),
-            'downloads' => $this->nestedRequest('Actions.getDownloads', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1, 'filter_sort_column' => 'nb_hits'])),
-            'outlinks' => $this->nestedRequest('Actions.getOutlinks', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1, 'filter_sort_column' => 'nb_hits'])),
-            'site_searches' => $this->nestedRequest('Actions.getSiteSearchKeywords', $siteId, 'range', $date, $this->topRows(12)),
-            'site_search_no_results' => $this->nestedRequest('Actions.getSiteSearchNoResultKeywords', $siteId, 'range', $date, $this->topRows(8)),
-            'events' => $this->nestedRequest('Events.getAction', $siteId, 'range', $date, $this->topRows(30, ['filter_sort_column' => 'nb_events'])),
-            'event_categories' => $this->nestedRequest('Events.getCategory', $siteId, 'range', $date, $this->topRows(20, ['filter_sort_column' => 'nb_events'])),
-            'event_names' => $this->nestedRequest('Events.getName', $siteId, 'range', $date, $this->topRows(30, ['filter_sort_column' => 'nb_events'])),
-            'referrers' => $this->nestedRequest('Referrers.getReferrerType', $siteId, 'range', $date, $this->topRows(10)),
-            'referrer_websites' => $this->nestedRequest('Referrers.getWebsites', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
-            'socials' => $this->nestedRequest('Referrers.getSocials', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
-            'search_engines' => $this->nestedRequest('Referrers.getSearchEngines', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
-            'campaigns' => $this->nestedRequest('Referrers.getCampaigns', $siteId, 'range', $date, $this->topRows(12)),
-            'ai_assistants' => $this->nestedRequest('Referrers.getAIAssistants', $siteId, 'range', $date, $this->topRows(12, ['flat' => 1])),
+            'content' => $this->nestedRequest('Actions.getPageUrls', $siteId, 'range', $date, $this->topRows(30, ['expanded' => 1, 'flat' => 1])),
+            'entry_pages' => $this->nestedRequest('Actions.getEntryPageUrls', $siteId, 'range', $date, $this->topRows(20, ['expanded' => 1, 'flat' => 1])),
+            'exit_pages' => $this->nestedRequest('Actions.getExitPageUrls', $siteId, 'range', $date, $this->topRows(20, ['expanded' => 1, 'flat' => 1])),
+            'downloads' => $this->nestedRequest('Actions.getDownloads', $siteId, 'range', $date, $this->topRows(20, ['expanded' => 1, 'flat' => 1])),
+            'outlinks' => $this->nestedRequest('Actions.getOutlinks', $siteId, 'range', $date, $this->topRows(20, ['expanded' => 1, 'flat' => 1])),
+            'site_searches' => $this->nestedRequest('Actions.getSiteSearchKeywords', $siteId, 'range', $date, $this->topRows(20, ['expanded' => 1, 'flat' => 1])),
+            'site_search_no_results' => $this->nestedRequest('Actions.getSiteSearchNoResultKeywords', $siteId, 'range', $date, $this->topRows(20, ['expanded' => 1, 'flat' => 1])),
+            'events' => $this->nestedRequest('Events.getAction', $siteId, 'range', $date, $this->topRows(40, ['flat' => 1])),
+            'event_categories' => $this->nestedRequest('Events.getCategory', $siteId, 'range', $date, $this->topRows(25, ['flat' => 1])),
+            'event_names' => $this->nestedRequest('Events.getName', $siteId, 'range', $date, $this->topRows(25, ['flat' => 1])),
+            'referrers' => $this->nestedRequest('Referrers.getReferrerType', $siteId, 'range', $date, $this->topRows(20)),
+            'referrer_websites' => $this->nestedRequest('Referrers.getWebsites', $siteId, 'range', $date, $this->topRows(20, ['expanded' => 1, 'flat' => 1])),
+            'socials' => $this->nestedRequest('Referrers.getSocials', $siteId, 'range', $date, $this->topRows(20, ['expanded' => 1, 'flat' => 1])),
+            'search_engines' => $this->nestedRequest('Referrers.getSearchEngines', $siteId, 'range', $date, $this->topRows(20, ['expanded' => 1, 'flat' => 1])),
+            'campaigns' => $this->nestedRequest('Referrers.getCampaigns', $siteId, 'range', $date, $this->topRows(20, ['expanded' => 1, 'flat' => 1])),
+            'ai_assistants' => $this->nestedRequest('Referrers.getAll', $siteId, 'range', $date, $this->topRows(20, [
+                'segment' => 'referrerType==6',
+                'expanded' => 1,
+                'flat' => 1,
+            ])),
             'continents' => $this->nestedRequest('UserCountry.getContinent', $siteId, 'range', $date, $this->topRows(10)),
             'countries' => $this->nestedRequest('UserCountry.getCountry', $siteId, 'range', $date, $this->topRows(15)),
-            'devices' => $this->nestedRequest('DevicesDetection.getType', $siteId, 'range', $date, $this->topRows(10)),
-            'browsers' => $this->nestedRequest('DevicesDetection.getBrowsers', $siteId, 'range', $date, $this->topRows(12)),
-            'operating_systems' => $this->nestedRequest('DevicesDetection.getOsFamilies', $siteId, 'range', $date, $this->topRows(12)),
-            'visit_duration' => $this->nestedRequest('VisitorInterest.getNumberOfVisitsPerVisitDuration', $siteId, 'range', $date),
-            'pages_per_visit' => $this->nestedRequest('VisitorInterest.getNumberOfVisitsPerPage', $siteId, 'range', $date),
-            'local_time' => $this->nestedRequest('VisitTime.getVisitInformationPerLocalTime', $siteId, 'range', $date),
-            'day_of_week' => $this->nestedRequest('VisitTime.getByDayOfWeek', $siteId, 'range', $date),
-            'returning' => $this->nestedRequest('VisitFrequency.get', $siteId, 'range', $date),
-            'artwork_events' => $this->nestedRequest('Events.getAction', $siteId, 'range', $date, $artworkEventOptions),
-            'artwork_event_series' => $this->nestedRequest('Events.getAction', $siteId, 'day', $date, $artworkEventOptions),
+            'devices' => $this->nestedRequest('DevicesDetection.getType', $siteId, 'range', $date, $this->topRows(15)),
+            'browsers' => $this->nestedRequest('DevicesDetection.getBrowsers', $siteId, 'range', $date, $this->topRows(15)),
+            'operating_systems' => $this->nestedRequest('DevicesDetection.getOsFamilies', $siteId, 'range', $date, $this->topRows(15)),
+            'visit_duration' => $this->nestedRequest('VisitorInterest.getNumberOfVisitsPerVisitDuration', $siteId, 'range', $date, $this->topRows(20)),
+            'pages_per_visit' => $this->nestedRequest('VisitorInterest.getNumberOfVisitsPerPage', $siteId, 'range', $date, $this->topRows(20)),
+            'local_time' => $this->nestedRequest('VisitTime.getVisitInformationPerLocalTime', $siteId, 'range', $date, $this->topRows(24)),
+            'day_of_week' => $this->nestedRequest('VisitTime.getByDayOfWeek', $siteId, 'range', $date, $this->topRows(7)),
+            'returning' => $this->nestedRequest('VisitsSummary.get', $siteId, 'range', $date, ['segment' => 'visitorType==returning']),
+            'artwork_events' => $this->nestedRequest('Events.getAction', $siteId, 'range', $date, $this->topRows(100, ['expanded' => 1])),
+            'artwork_event_series' => $this->nestedRequest('Events.getAction', $siteId, 'day', $date, $this->topRows(100, ['expanded' => 1])),
         ];
 
         $response = Http::asForm()
@@ -207,7 +190,7 @@ final class MatomoReportingClient
             'campaigns' => $this->normalizeRows($reports['campaigns'], $visitMetrics),
             'ai_assistants' => $this->normalizeRows($reports['ai_assistants'], $visitMetrics),
             'continents' => $this->normalizeRows($reports['continents'], $visitMetrics),
-            'countries' => $this->normalizeRows($reports['countries'], $visitMetrics),
+            'countries' => $this->normalizeRows($reports['countries'], $visitMetrics, 'generic', true),
             'devices' => $this->normalizeRows($reports['devices'], $visitMetrics),
             'browsers' => $this->normalizeRows($reports['browsers'], $visitMetrics),
             'operating_systems' => $this->normalizeRows($reports['operating_systems'], $visitMetrics),
@@ -439,8 +422,12 @@ final class MatomoReportingClient
     /** @param list<string> $metricNames
      * @return array<int, array<string, float|string|null>>
      */
-    private function normalizeRows(?array $payload, array $metricNames, string $labelMode = 'generic'): array
-    {
+    private function normalizeRows(
+        ?array $payload,
+        array $metricNames,
+        string $labelMode = 'generic',
+        bool $preservePresentationMetadata = false,
+    ): array {
         if ($payload === null) {
             return [];
         }
@@ -455,6 +442,20 @@ final class MatomoReportingClient
             foreach ($metricNames as $metric) {
                 $normalized[$metric] = $this->numericValue($row[$metric] ?? null);
             }
+
+            if ($preservePresentationMetadata) {
+                $metadata = is_array($row['metadata'] ?? null) ? $row['metadata'] : [];
+                $code = $row['code'] ?? $metadata['code'] ?? null;
+                $logo = $row['logo'] ?? $metadata['logo'] ?? null;
+
+                if (is_string($code) && preg_match('/^[a-z]{2}$/i', trim($code)) === 1) {
+                    $normalized['code'] = strtolower(trim($code));
+                }
+                if (is_string($logo) && trim($logo) !== '') {
+                    $normalized['logo'] = trim($logo);
+                }
+            }
+
             $rows[] = $normalized;
         }
 
@@ -576,5 +577,58 @@ final class MatomoReportingClient
         }
 
         return preg_replace('/[?#].*$/', '', $label) ?: $label;
+    }
+
+    /** @return array<string, mixed> */
+    private function emptyReport(string $preset, string $status, ?string $warning = null): array
+    {
+        return [
+            'schema' => self::CACHE_SCHEMA,
+            'status' => $status,
+            'generated_at' => null,
+            'range' => $this->range($preset),
+            'metrics' => array_fill_keys(self::METRICS, null),
+            'comparison' => array_fill_keys(self::METRICS, null),
+            'series' => [],
+            'content' => [],
+            'entry_pages' => [],
+            'exit_pages' => [],
+            'downloads' => [],
+            'outlinks' => [],
+            'site_searches' => [],
+            'site_search_no_results' => [],
+            'events' => [],
+            'event_categories' => [],
+            'event_names' => [],
+            'referrers' => [],
+            'referrer_websites' => [],
+            'socials' => [],
+            'search_engines' => [],
+            'campaigns' => [],
+            'ai_assistants' => [],
+            'continents' => [],
+            'countries' => [],
+            'devices' => [],
+            'browsers' => [],
+            'operating_systems' => [],
+            'visit_duration' => [],
+            'pages_per_visit' => [],
+            'local_time' => [],
+            'day_of_week' => [],
+            'returning' => [],
+            'artwork_events' => [],
+            'artwork_event_series' => [],
+            'warnings' => $warning === null ? [] : [$warning],
+        ];
+    }
+
+    private function cacheKey(string $preset, string $kind): string
+    {
+        return self::CACHE_NAMESPACE.':site:'.$this->configuration->siteId().':'.$preset.':'.$kind;
+    }
+
+    private function isCurrentSchema(mixed $report): bool
+    {
+        return is_array($report) && ($report['schema'] ?? null) === self::CACHE_SCHEMA;
     }
 }
