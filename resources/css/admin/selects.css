@@ -72,7 +72,7 @@
 
 .admin-select__trigger:hover,
 .admin-select__trigger:focus-visible,
-.admin-select:has(+ .admin-controlled-select__native) .admin-select__trigger {
+.admin-select__trigger[aria-expanded="true"] {
     border-bottom-color: var(--admin-control-border-focus, var(--admin-accent));
 }
 
