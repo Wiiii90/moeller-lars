@@ -224,8 +224,8 @@ test('profiles representative warmed admin interactions', async ({ page }) => {
 
     await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
-    await page.getByLabel('Name', { exact: true }).fill('Playwright profile page');
-    await page.getByLabel('Public slug', { exact: true }).fill('playwright-profile-page');
+    await page.locator('[data-admin-control="name"] input').fill('Playwright profile page');
+    await page.locator('[data-admin-control="slug"] input').fill('playwright-profile-page');
 
     const createPage = await profiler.run(
       'pages_create_custom_page',
