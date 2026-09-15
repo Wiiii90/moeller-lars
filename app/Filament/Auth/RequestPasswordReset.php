@@ -34,12 +34,12 @@ class RequestPasswordReset extends BaseRequestPasswordReset
             function (CanResetPassword $user, #[SensitiveParameter] string $token): void {
                 if (
                     ($user instanceof FilamentUser) &&
-                    (!$user->canAccessPanel(Filament::getCurrentOrDefaultPanel()))
+                    (! $user->canAccessPanel(Filament::getCurrentOrDefaultPanel()))
                 ) {
                     return;
                 }
 
-                if (!method_exists($user, 'notify')) {
+                if (! method_exists($user, 'notify')) {
                     $userClass = $user::class;
 
                     throw new LogicException("Model [{$userClass}] does not have a [notify()] method.");
