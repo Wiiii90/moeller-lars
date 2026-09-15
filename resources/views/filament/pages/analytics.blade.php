@@ -84,12 +84,6 @@
             $countryRows === [] => 'No country-level visits in this period.',
             default => null,
         };
-        $workspaceStatusTone = match ($status) {
-            'available' => 'success',
-            'stale' => 'warning',
-            'disabled', 'unavailable' => 'danger',
-            default => 'neutral',
-        };
         $detailTable = $this->detailTable();
         $detailReportOptions = $this->detailReportOptions();
         $detailReportLabel = $detailReportOptions[$detailReport] ?? 'Analytics';
@@ -99,16 +93,6 @@
     @endphp
 
     <x-admin.workspace title="Analytics" class="analytics-dashboard">
-        <x-slot:status>
-            <x-admin.status :tone="$workspaceStatusTone">
-                @if ($status === 'available') Live Matomo
-                @elseif ($status === 'stale') Cached Matomo
-                @elseif ($status === 'disabled') Reporting disabled
-                @else Reporting unavailable
-                @endif
-            </x-admin.status>
-        </x-slot:status>
-
         <x-admin.metrics :columns="6" aria-label="Traffic summary">
             @foreach ($kpis as $kpi)
                 <x-admin.metric
