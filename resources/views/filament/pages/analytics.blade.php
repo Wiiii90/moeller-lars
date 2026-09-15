@@ -370,7 +370,30 @@
                                 <tr>
                                     @foreach ($detailColumnOrder as $columnIndex)
                                         <td class="{{ $loop->iteration === $detailIdentityColumn ? 'admin-table__identity ' : '' }}{{ in_array($loop->iteration, $detailNumericColumns, true) ? 'analytics-detail-table__numeric' : '' }}">
-                                            {{ $row[$columnIndex] ?? '—' }}
+                                            @if ($detailReport === 'geography' && $columnIndex === 0)
+                                                @php
+                                                    $countryLabel = (string) ($row[$columnIndex] ?? '—');
+                                                    $presentation = $countryPresentation[$countryLabel] ?? [];
+                                                @endphp
+                                                <span class="analytics-country-rank__identity">
+                                                    @if (is_string($presentation['flag_url'] ?? null))
+                                                        <img
+                                                            class="analytics-country-rank__flag {{ in_array($presentation['code'] ?? null, ['ch', 'va'], true) ? 'analytics-country-rank__flag--square' : '' }}"
+                                                            src="{{ $presentation['flag_url'] }}"
+                                                            data-country-code="{{ $presentation['code'] ?? '' }}"
+                                                            width="16"
+                                                            height="12"
+                                                            alt=""
+                                                            loading="lazy"
+                                                        >
+                                                    @elseif (is_string($presentation['code'] ?? null))
+                                                        <span class="analytics-country-rank__flag-code" aria-hidden="true">{{ strtoupper($presentation['code']) }}</span>
+                                                    @endif
+                                                    <span>{{ $countryLabel }}</span>
+                                                </span>
+                                            @else
+                                                {{ $row[$columnIndex] ?? '—' }}
+                                            @endif
                                         </td>
                                     @endforeach
                                 </tr>
@@ -392,25 +415,32 @@
                 </table>
             </x-admin.table>
 
-            @if ($detailTable['total'] > 12)
-                <footer class="admin-pager" aria-label="Analytics detail pagination">
+            <footer class="admin-pager" aria-label="Analytics detail pagination">
+                <div class="admin-pager__range">
+                    @if ($detailTable['total'] > 0)
+                        <span>{{ $detailTable['start'] }}–{{ $detailTable['end'] }} of {{ $detailTable['total'] }}</span>
+                    @else
+                        <span>0 entries</span>
+                    @endif
+                </div>
+
+                <div class="admin-pager__controls">
                     <x-admin.page-size-picker
                         :value="$detailPageSize"
-                        :options="[12, 25, 50]"
                         wire-model="detailPageSize"
-                        aria-label="Analytics rows per page"
+                        aria-label="Rows per page"
                     />
-
-                    <span class="admin-pager__range">
-                        {{ $detailTable['start'] }}–{{ $detailTable['end'] }} of {{ $detailTable['total'] }}
-                    </span>
-
-                    <div class="admin-pager__actions admin-toolbar">
-                        <button class="admin-action" type="button" wire:click="previousDetailPage" @disabled($detailTable['page'] <= 1)>Previous</button>
-                        <button class="admin-action" type="button" wire:click="nextDetailPage" @disabled($detailTable['page'] >= $detailTable['pages'])>Next</button>
-                    </div>
-                </footer>
-            @endif
+                    <button class="admin-pager__button" type="button" wire:click="previousDetailPage" @disabled($detailTable['page'] <= 1)>
+                        <x-filament::icon icon="heroicon-m-chevron-left" class="w-4 h-4" />
+                        <span>Previous</span>
+                    </button>
+                    <span class="admin-pager__page">Page {{ $detailTable['page'] }} of {{ $detailTable['pages'] }}</span>
+                    <button class="admin-pager__button" type="button" wire:click="nextDetailPage" @disabled($detailTable['page'] >= $detailTable['pages'])>
+                        <span>Next</span>
+                        <x-filament::icon icon="heroicon-m-chevron-right" class="w-4 h-4" />
+                    </button>
+                </div>
+            </footer>
         </section>
     </x-admin.workspace>
 </x-filament-panels::page>
