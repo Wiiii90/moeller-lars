@@ -469,13 +469,11 @@ a.activity-calendar__day:focus-visible {
 .activity-workspace__table:not(.activity-commits-table) th,
 .activity-workspace__table:not(.activity-commits-table) td {
     box-sizing: border-box;
-    border-left: 1px solid var(--admin-line);
 }
 
 .activity-workspace__table:not(.activity-commits-table) th:first-child,
 .activity-workspace__table:not(.activity-commits-table) td:first-child {
     padding-left: 0;
-    border-left: 0;
 }
 
 .activity-workspace__table:not(.activity-commits-table) th:not(:first-child),
