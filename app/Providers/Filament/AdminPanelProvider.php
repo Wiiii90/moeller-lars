@@ -3,6 +3,9 @@
 namespace App\Providers\Filament;
 
 use App\Domain\Publication\PublicationService;
+use App\Filament\Auth\Login;
+use App\Filament\Auth\RequestPasswordReset;
+use App\Filament\Auth\ResetPassword;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
 use App\Filament\Pages\Dashboard;
@@ -14,6 +17,7 @@ use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\SiteNavigation;
 use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -45,11 +49,18 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(Login::class)
+            ->passwordReset(RequestPasswordReset::class, ResetPassword::class)
+            ->profile(isSimple: false)
+            ->multiFactorAuthentication([
+                AppAuthentication::make()
+                    ->recoverable()
+                    ->brandName('Lars Möller Administration'),
+            ], isRequired: true)
             ->authGuard('web')
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
-            ->brandName('Admin Area')
+            ->brandName('Lars Möller')
             ->brandLogo(fn (): HtmlString => $this->adminGreeting())
             ->favicon(asset('admin-favicon.svg').'?v=aperture-1')
             ->homeUrl(fn (): string => route('home'))
@@ -61,6 +72,18 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::STYLES_AFTER,
                 fn (): string => view('filament.partials.admin-theme')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
+                fn (): string => view('filament.partials.admin-auth-back')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::AUTH_PASSWORD_RESET_REQUEST_FORM_AFTER,
+                fn (): string => view('filament.partials.admin-auth-back')->render(),
+            )
+            ->renderHook(
+                PanelsRenderHook::AUTH_PASSWORD_RESET_RESET_FORM_AFTER,
+                fn (): string => view('filament.partials.admin-auth-back')->render(),
             )
             ->renderHook(
                 PanelsRenderHook::BODY_END,
@@ -97,7 +120,7 @@ class AdminPanelProvider extends PanelProvider
     private function adminGreeting(): HtmlString
     {
         $name = trim((string) (auth()->user()?->name ?? ''));
-        $greeting = $name !== '' ? "Moin, {$name}!" : 'Admin Area';
+        $greeting = $name !== '' ? "Moin, {$name}!" : 'Lars Möller';
 
         return new HtmlString(e($greeting));
     }

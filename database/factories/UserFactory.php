@@ -48,6 +48,8 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_admin' => true,
+            'app_authentication_secret' => 'JBSWY3DPEHPK3PXP',
+            'app_authentication_recovery_codes' => [Hash::make('test-recovery-code')],
         ]);
     }
 }

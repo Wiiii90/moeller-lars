@@ -1,10 +1,16 @@
 <?php
 
+use App\Filament\Auth\RequestPasswordReset;
 use App\Filament\Pages\Dashboard;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\User;
+use App\Notifications\AdminPasswordResetNotification;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 
 function authPreviewAsset(): array
 {
@@ -35,10 +41,10 @@ function authPreviewAsset(): array
     return [$asset, $variant];
 }
 
-it('keeps the admin surface private', function (): void {
+it('keeps the admin surface private while exposing password recovery', function (): void {
     $this->get('/admin')->assertRedirect('/admin/login');
     $this->get('/admin/register')->assertNotFound();
-    $this->get('/admin/password-reset/request')->assertNotFound();
+    $this->get('/admin/password-reset/request')->assertSuccessful();
 });
 
 it('denies the admin surface to authenticated non-admin users', function (): void {
@@ -53,6 +59,46 @@ it('redirects admin users to the canonical dashboard', function (): void {
         ->assertRedirect(Dashboard::getUrl());
 
     $this->get('/admin/dashboard')->assertSuccessful();
+});
+
+it('requires authenticator setup for administrators who have not configured MFA', function (): void {
+    $admin = User::factory()->create(['is_admin' => true]);
+
+    $this->actingAs($admin, 'web')
+        ->get('/admin/dashboard')
+        ->assertRedirect('/admin/multi-factor-authentication/set-up');
+});
+
+it('uses encrypted app authentication with recovery support', function (): void {
+    $admin = User::factory()->admin()->create();
+
+    expect($admin)
+        ->toBeInstanceOf(HasAppAuthentication::class)
+        ->toBeInstanceOf(HasAppAuthenticationRecovery::class)
+        ->and(config('auth.passwords.users.expire'))->toBe(30);
+});
+
+it('sends password reset mail only to administrator accounts', function (): void {
+    Notification::fake();
+
+    $admin = User::factory()->admin()->create(['email' => 'admin@example.com']);
+    $nonAdmin = User::factory()->create(['email' => 'visitor@example.com']);
+
+    Livewire::test(RequestPasswordReset::class)
+        ->set('data.email', $admin->email)
+        ->call('request');
+
+    Notification::assertSentTo(
+        $admin,
+        AdminPasswordResetNotification::class,
+        fn (AdminPasswordResetNotification $notification): bool => str_contains($notification->url, '/admin/password-reset/reset'),
+    );
+
+    Livewire::test(RequestPasswordReset::class)
+        ->set('data.email', $nonAdmin->email)
+        ->call('request');
+
+    Notification::assertNotSentTo($nonAdmin, AdminPasswordResetNotification::class);
 });
 
 it('keeps unpublished media private while allowing admin preview', function (): void {

@@ -1,0 +1,71 @@
+/* Authentication and required-MFA simple pages share the admin's restrained editorial grammar. */
+.fi-simple-layout {
+    min-height: 100svh;
+    background: var(--admin-surface);
+    color: var(--admin-text);
+}
+
+.fi-simple-main-ctn {
+    padding: clamp(2rem, 7vh, 5rem) 1.5rem;
+}
+
+.fi-simple-main {
+    width: 100%;
+    max-width: 27rem !important;
+}
+
+.fi-simple-page-content {
+    gap: 1.75rem;
+}
+
+.fi-simple-header {
+    align-items: flex-start;
+    gap: .45rem;
+    text-align: left;
+}
+
+.fi-simple-header .fi-logo {
+    color: var(--admin-text);
+    font-size: .78rem;
+    font-weight: 650;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.fi-simple-header-heading {
+    color: var(--admin-text);
+    font-size: clamp(1.65rem, 4vw, 2.05rem);
+    font-weight: 620;
+    letter-spacing: -.035em;
+    line-height: 1.05;
+}
+
+.fi-simple-header-subheading {
+    max-width: 36rem;
+    color: var(--admin-muted);
+    font-size: .8rem;
+    line-height: 1.5;
+    text-align: left;
+}
+
+.fi-simple-page .fi-btn {
+    border-radius: .2rem;
+}
+
+.admin-auth-back {
+    margin-top: .15rem;
+    text-align: center;
+}
+
+.admin-auth-back a {
+    color: var(--admin-muted);
+    font-size: .76rem;
+    text-decoration: none;
+}
+
+.admin-auth-back a:hover,
+.admin-auth-back a:focus-visible {
+    color: var(--admin-text);
+    text-decoration: underline;
+    text-underline-offset: .2em;
+}
