@@ -4,7 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\MatomoReportingClient;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
@@ -28,7 +28,7 @@ final class DashboardOverview
         $activity = $this->activityOverview();
         $publishedArtworks = Artwork::query()->where('state', 'published')->count();
         $publishedPages = SiteSection::query()
-            ->where('type', '<>', SiteNodeType::NavigationNode->value)
+            ->where('type', '<>', SiteSectionType::NavigationNode->value)
             ->where('state', 'published')
             ->count();
 

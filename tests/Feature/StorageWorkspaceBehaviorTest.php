@@ -1,7 +1,7 @@
 <?php
 
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaCapacityService;
 use App\Filament\Support\StorageWorkspaceOverview;
 use App\Models\Artwork;
@@ -51,7 +51,7 @@ function storageBehaviorGallery(string $name): ArtworkCategory
     ]);
 
     SiteSection::query()->create([
-        'type' => SiteNodeType::Gallery->value,
+        'type' => SiteSectionType::Gallery->value,
         'template' => null,
         'title' => $name,
         'navigation_label' => $name,
@@ -90,7 +90,7 @@ function storageBehaviorJournal(string $title): SiteSection
     $sequence++;
 
     return SiteSection::query()->create([
-        'type' => SiteNodeType::Journal->value,
+        'type' => SiteSectionType::Journal->value,
         'template' => JournalTemplate::Blog->value,
         'title' => $title,
         'navigation_label' => $title,

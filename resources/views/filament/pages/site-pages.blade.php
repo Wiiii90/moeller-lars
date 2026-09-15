@@ -1,9 +1,9 @@
 @php
     use App\Domain\Content\JournalTemplate;
-    use App\Domain\Content\SiteNodeType;
+    use App\Domain\Content\SiteSectionType;
 
-    $typeOptions = collect(SiteNodeType::cases())->mapWithKeys(fn (SiteNodeType $type): array => [$type->value => $type->compactLabel()])->all();
-    $editableTypeOptions = SiteNodeType::compactOptions();
+    $typeOptions = collect(SiteSectionType::cases())->mapWithKeys(fn (SiteSectionType $type): array => [$type->value => $type->compactLabel()])->all();
+    $editableTypeOptions = SiteSectionType::compactOptions();
     $journalTemplateOptions = JournalTemplate::options();
     $selectedCount = count($selectedSectionIds);
 @endphp

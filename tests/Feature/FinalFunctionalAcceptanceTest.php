@@ -4,11 +4,11 @@ use App\Domain\Admin\EditorialRecordService;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\GalleryEditorialService;
-use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\ExhibitionDraftService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\PublicNavigationService;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Publication\PublicationService;
@@ -57,7 +57,7 @@ function acceptanceAsset(string $suffix): MediaAsset
 }
 
 it('keeps Home singular published navigable and undeletable', function (): void {
-    $home = SiteSection::query()->where('type', SiteNodeType::Home->value)->sole();
+    $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->sole();
 
     expect($home->getAttribute('slug'))->toBeNull()
         ->and($home->getAttribute('state'))->toBe('published')
@@ -201,7 +201,7 @@ it('assigns Artwork draft positions moves without losing media and deletes only 
 
 it('covers Blog draft edit publication unpublication and safe deletion', function (): void {
     $journal = SiteSection::query()
-        ->where('type', SiteNodeType::Journal->value)
+        ->where('type', SiteSectionType::Journal->value)
         ->where('template', JournalTemplate::Blog->value)
         ->firstOrFail();
     $service = app(BlogEditorialService::class);

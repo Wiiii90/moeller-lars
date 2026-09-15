@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Contact\ContactDeliveryReadiness;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Publication\CommittedRead;
 use App\Mail\WebsiteContactMessage;
 use App\Models\ContactMessage;
@@ -94,7 +94,7 @@ class PublicContactController extends Controller
     {
         return CustomPageSetting::query()
             ->whereHas('siteSection', static fn ($query) => $query
-                ->where('type', SiteNodeType::CustomPage->value)
+                ->where('type', SiteSectionType::CustomPage->value)
                 ->where('state', 'published'))
             ->get(['blocks'])
             ->contains(function (CustomPageSetting $settings): bool {

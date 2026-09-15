@@ -2,7 +2,7 @@
     $label = $section['navigation_label'] ?: $section['title'];
     $selected = in_array((int) $section['id'], array_map('intval', $selectedSectionIds), true);
     $isChild = (int) $section['depth'] === 1;
-    $isHome = $section['type'] === \App\Domain\Content\SiteNodeType::Home->value;
+    $isHome = $section['type'] === \App\Domain\Content\SiteSectionType::Home->value;
     $homeState = $isHome ? app(\App\Filament\Support\HomeSettingsDialog::class)->tableState() : null;
     $homeTemplateOptions = $isHome ? \App\Domain\Content\HomeTemplate::options() : [];
 @endphp
@@ -72,7 +72,7 @@
                     <option value="{{ $value }}" @selected(($homeState['template'] ?? null) === $value)>{{ $templateLabel }}</option>
                 @endforeach
             </select>
-        @elseif ($section['type'] === \App\Domain\Content\SiteNodeType::Journal->value)
+        @elseif ($section['type'] === \App\Domain\Content\SiteSectionType::Journal->value)
             <select
                 class="admin-inline-select"
                 aria-label="Journal template for {{ $label }}"

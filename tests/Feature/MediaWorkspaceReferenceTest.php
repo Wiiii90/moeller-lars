@@ -1,7 +1,7 @@
 <?php
 
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaReferenceQuery;
 use App\Filament\Resources\MediaAssets\Pages\ListMediaAssets;
@@ -62,9 +62,9 @@ function workspaceReferenceNode(string $type, string $title, ?string $template =
 
 it('builds broad and specific Usage destinations from canonical site nodes', function (): void {
     $category = ArtworkCategory::query()->create(['slug' => 'archive', 'name' => 'Archive']);
-    $gallery = workspaceReferenceNode(SiteNodeType::Gallery->value, 'Archive', categoryId: $category->id);
-    $journal = workspaceReferenceNode(SiteNodeType::Journal->value, 'Studio Notes', JournalTemplate::Blog->value);
-    $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'Biography');
+    $gallery = workspaceReferenceNode(SiteSectionType::Gallery->value, 'Archive', categoryId: $category->id);
+    $journal = workspaceReferenceNode(SiteSectionType::Journal->value, 'Studio Notes', JournalTemplate::Blog->value);
+    $custom = workspaceReferenceNode(SiteSectionType::CustomPage->value, 'Biography');
     $custom->customPageSetting()->create(['blocks' => []]);
 
     $groups = app(MediaReferenceCatalog::class)->destinationGroups();
@@ -82,11 +82,11 @@ it('builds broad and specific Usage destinations from canonical site nodes', fun
         )
         ->and($options->pluck('value')->all())
         ->toContain(
-            'kind:'.SiteNodeType::Gallery->value,
+            'kind:'.SiteSectionType::Gallery->value,
             'node:'.$gallery->id,
-            'kind:'.SiteNodeType::Journal->value,
+            'kind:'.SiteSectionType::Journal->value,
             'node:'.$journal->id,
-            'kind:'.SiteNodeType::CustomPage->value,
+            'kind:'.SiteSectionType::CustomPage->value,
             'node:'.$custom->id,
             'site-identity',
         );
@@ -99,7 +99,7 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
     $other = workspaceReferenceAsset('other.jpg');
 
     $category = ArtworkCategory::query()->create(['slug' => 'paintings', 'name' => 'Paintings']);
-    $gallery = workspaceReferenceNode(SiteNodeType::Gallery->value, 'Paintings', categoryId: $category->id);
+    $gallery = workspaceReferenceNode(SiteSectionType::Gallery->value, 'Paintings', categoryId: $category->id);
     $artwork = Artwork::query()->create([
         'artwork_category_id' => $category->id,
         'slug' => 'red-painting',
@@ -114,7 +114,7 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
         'position' => 0,
     ]);
 
-    $journal = workspaceReferenceNode(SiteNodeType::Journal->value, 'Artist Blog', JournalTemplate::Blog->value);
+    $journal = workspaceReferenceNode(SiteSectionType::Journal->value, 'Artist Blog', JournalTemplate::Blog->value);
     $post = BlogPost::query()->create([
         'site_section_id' => $journal->id,
         'slug' => 'studio-notes',
@@ -130,7 +130,7 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
         'position' => 0,
     ]);
 
-    $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'CV');
+    $custom = workspaceReferenceNode(SiteSectionType::CustomPage->value, 'CV');
     $custom->customPageSetting()->create([
         'blocks' => [[
             'type' => 'image',
@@ -167,15 +167,15 @@ it('uses one canonical Usage path for in-use unreferenced broad and specific des
     expect($specificGallery->pluck('id')->all())->toBe([$galleryAsset->id]);
 
     $anyGallery = MediaAsset::query();
-    $catalog->applyUsageFilter($anyGallery, 'kind:'.SiteNodeType::Gallery->value);
+    $catalog->applyUsageFilter($anyGallery, 'kind:'.SiteSectionType::Gallery->value);
     expect($anyGallery->pluck('id')->all())->toBe([$galleryAsset->id]);
 
     $anyJournal = MediaAsset::query();
-    $catalog->applyUsageFilter($anyJournal, 'kind:'.SiteNodeType::Journal->value);
+    $catalog->applyUsageFilter($anyJournal, 'kind:'.SiteSectionType::Journal->value);
     expect($anyJournal->pluck('id')->all())->toBe([$journalAsset->id]);
 
     $anyCustomPage = MediaAsset::query();
-    $catalog->applyUsageFilter($anyCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
+    $catalog->applyUsageFilter($anyCustomPage, 'kind:'.SiteSectionType::CustomPage->value);
     expect($anyCustomPage->pluck('id')->all())->toBe([$customAsset->id]);
 
     $inUse = MediaAsset::query();
@@ -197,7 +197,7 @@ it('counts available images videos and audio in the six library metrics', functi
     workspaceReferenceAsset('metric-quarantined.jpg', state: 'quarantined', alt: null, bytes: 100);
 
     $category = ArtworkCategory::query()->create(['slug' => 'metric-gallery', 'name' => 'Metric gallery']);
-    workspaceReferenceNode(SiteNodeType::Gallery->value, 'Metric gallery', categoryId: $category->id);
+    workspaceReferenceNode(SiteSectionType::Gallery->value, 'Metric gallery', categoryId: $category->id);
     $artwork = Artwork::query()->create([
         'artwork_category_id' => $category->id,
         'slug' => 'metric-artwork',
@@ -233,7 +233,7 @@ it('projects migrated CV media through the canonical Custom Page usage only', fu
         'image_media_asset_id' => $asset->id,
     ]);
 
-    $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'Biography');
+    $custom = workspaceReferenceNode(SiteSectionType::CustomPage->value, 'Biography');
     $custom->customPageSetting()->create([
         'blocks' => [
             [
@@ -296,7 +296,7 @@ it('ignores legacy CV media pointers that the current Custom Page runtime does n
         'image_media_asset_id' => $asset->id,
     ]);
 
-    $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'CV records');
+    $custom = workspaceReferenceNode(SiteSectionType::CustomPage->value, 'CV records');
     $custom->customPageSetting()->create(['blocks' => [['type' => 'cv_list']]]);
 
     $catalog = app(MediaReferenceCatalog::class);
@@ -318,7 +318,7 @@ it('ignores legacy CV media pointers that the current Custom Page runtime does n
     expect($specificCustomPage->pluck('id')->all())->not->toContain($asset->id);
 
     $anyCustomPage = MediaAsset::query();
-    $catalog->applyUsageFilter($anyCustomPage, 'kind:'.SiteNodeType::CustomPage->value);
+    $catalog->applyUsageFilter($anyCustomPage, 'kind:'.SiteSectionType::CustomPage->value);
     expect($anyCustomPage->pluck('id')->all())->not->toContain($asset->id);
 
     expect(app(MediaAssetEditorialService::class)->delete($asset))->toBeTrue();
@@ -355,7 +355,7 @@ it('opens Preview and Edit as workspace actions and saves canonical metadata in 
 
 it('removes Custom Page image references before deleting the asset', function (): void {
     $asset = workspaceReferenceAsset('custom-page.jpg');
-    $custom = workspaceReferenceNode(SiteNodeType::CustomPage->value, 'CV');
+    $custom = workspaceReferenceNode(SiteSectionType::CustomPage->value, 'CV');
     $custom->customPageSetting()->create([
         'blocks' => [[
             'type' => 'image',

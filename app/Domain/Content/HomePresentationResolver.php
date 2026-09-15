@@ -27,7 +27,7 @@ final class HomePresentationResolver
     {
         /** @var HomePresentationSetting|null $settings */
         $settings = HomePresentationSetting::query()
-            ->whereHas('siteSection', fn ($query) => $query->where('type', SiteNodeType::Home->value))
+            ->whereHas('siteSection', fn ($query) => $query->where('type', SiteSectionType::Home->value))
             ->with('siteSection')
             ->first();
 
@@ -163,7 +163,7 @@ final class HomePresentationResolver
             $configured = SiteSection::query()->find($configuredId);
             if ($configured instanceof SiteSection
                 && $configured->getAttribute('parent_id') === null
-                && $configured->nodeType() !== SiteNodeType::Home
+                && $configured->nodeType() !== SiteSectionType::Home
                 && $configured->nodeType()->hasPublicPage()
                 && (string) $configured->getAttribute('state') === 'published'
                 && $this->routes->path($configured) !== null) {
@@ -175,7 +175,7 @@ final class HomePresentationResolver
         $home = $settings->getRelationValue('siteSection');
         if (! $home instanceof SiteSection) {
             $home = SiteSection::query()
-                ->where('type', SiteNodeType::Home->value)
+                ->where('type', SiteSectionType::Home->value)
                 ->whereNull('parent_id')
                 ->first();
         }
@@ -202,7 +202,7 @@ final class HomePresentationResolver
 
         return $candidates->first(function (SiteSection $section): bool {
             return $section->nodeType()->hasPublicPage()
-                && $section->nodeType() !== SiteNodeType::Home
+                && $section->nodeType() !== SiteSectionType::Home
                 && $this->routes->path($section) !== null;
         });
     }

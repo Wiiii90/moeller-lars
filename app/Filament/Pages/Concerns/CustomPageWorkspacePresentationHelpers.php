@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Models\CustomPageSetting;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
@@ -218,7 +218,7 @@ trait CustomPageWorkspacePresentationHelpers
         /** @var SiteSection $section */
         $section = SiteSection::query()
             ->whereKey($this->sectionId)
-            ->where('type', SiteNodeType::CustomPage->value)
+            ->where('type', SiteSectionType::CustomPage->value)
             ->firstOrFail();
 
         return $section;

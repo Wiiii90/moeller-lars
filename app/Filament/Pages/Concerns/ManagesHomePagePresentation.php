@@ -3,7 +3,7 @@
 namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Content\HomeTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -21,7 +21,7 @@ trait ManagesHomePagePresentation
         try {
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
-            if ($section->nodeType() !== SiteNodeType::Home) {
+            if ($section->nodeType() !== SiteSectionType::Home) {
                 throw ValidationException::withMessages(['template' => 'Only Home has a Home template.']);
             }
 

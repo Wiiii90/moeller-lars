@@ -4,7 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeRoutingSettingsService;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
 use Filament\Forms\Components\Select;
@@ -90,12 +90,12 @@ final class HomeRoutingDialog
         return SiteSection::query()
             ->whereNull('parent_id')
             ->where('state', 'published')
-            ->where('type', '<>', SiteNodeType::Home->value)
+            ->where('type', '<>', SiteSectionType::Home->value)
             ->orderBy('position')
             ->orderBy('id')
             ->get()
             ->filter(fn (SiteSection $section): bool => $section->nodeType()->hasPublicPage()
-                && $section->nodeType() !== SiteNodeType::NavigationNode
+                && $section->nodeType() !== SiteSectionType::NavigationNode
                 && $this->routes->path($section) !== null)
             ->mapWithKeys(fn (SiteSection $section): array => [
                 (int) $section->getKey() => trim((string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title'))),

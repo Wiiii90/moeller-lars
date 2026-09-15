@@ -2,7 +2,7 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\CustomPageWorkspace;
 use App\Filament\Pages\GalleryWorkspace;
 use App\Filament\Pages\HomePresentation;
@@ -12,29 +12,29 @@ use LogicException;
 
 final class SiteNodePresentation
 {
-    public function icon(SiteNodeType $type): AdminIcon
+    public function icon(SiteSectionType $type): AdminIcon
     {
         return match ($type) {
-            SiteNodeType::Home => AdminIcon::Home,
-            SiteNodeType::Gallery => AdminIcon::Gallery,
-            SiteNodeType::Journal => AdminIcon::Journal,
-            SiteNodeType::CustomPage => AdminIcon::CustomPage,
-            SiteNodeType::NavigationNode => AdminIcon::NavigationNode,
+            SiteSectionType::Home => AdminIcon::Home,
+            SiteSectionType::Gallery => AdminIcon::Gallery,
+            SiteSectionType::Journal => AdminIcon::Journal,
+            SiteSectionType::CustomPage => AdminIcon::CustomPage,
+            SiteSectionType::NavigationNode => AdminIcon::NavigationNode,
         };
     }
 
     public function workspaceUrl(SiteSection $section): ?string
     {
         return match ($section->nodeType()) {
-            SiteNodeType::Home => HomePresentation::getUrl(),
-            SiteNodeType::Gallery => GalleryWorkspace::getUrl([
+            SiteSectionType::Home => HomePresentation::getUrl(),
+            SiteSectionType::Gallery => GalleryWorkspace::getUrl([
                 'gallery' => $this->galleryId($section),
             ]),
-            SiteNodeType::Journal => $this->journalWorkspaceUrl($section),
-            SiteNodeType::CustomPage => CustomPageWorkspace::getUrl([
+            SiteSectionType::Journal => $this->journalWorkspaceUrl($section),
+            SiteSectionType::CustomPage => CustomPageWorkspace::getUrl([
                 'section' => $section->getKey(),
             ]),
-            SiteNodeType::NavigationNode => null,
+            SiteSectionType::NavigationNode => null,
         };
     }
 

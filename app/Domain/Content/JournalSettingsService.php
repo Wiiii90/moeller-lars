@@ -17,7 +17,7 @@ final class JournalSettingsService
     /** @param array<string, mixed> $data */
     public function update(SiteSection $section, array $data): SiteSection
     {
-        if ($section->nodeType() !== SiteNodeType::Journal) {
+        if ($section->nodeType() !== SiteSectionType::Journal) {
             throw ValidationException::withMessages(['section' => 'Only Journal pages have Journal settings.']);
         }
 
@@ -33,7 +33,7 @@ final class JournalSettingsService
         return DB::transaction(function () use ($section, $templateValue, $title, $navigationLabel, $slug, $actor): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
-            if ($fresh->nodeType() !== SiteNodeType::Journal) {
+            if ($fresh->nodeType() !== SiteSectionType::Journal) {
                 throw ValidationException::withMessages(['section' => 'This page is no longer a Journal.']);
             }
 

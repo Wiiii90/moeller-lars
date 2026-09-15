@@ -30,7 +30,7 @@ final class SiteSectionEditorialService
 
         return DB::transaction(function () use ($title, $actor): SiteSection {
             $section = SiteSection::query()->create([
-                'type' => SiteNodeType::NavigationNode->value,
+                'type' => SiteSectionType::NavigationNode->value,
                 'template' => null,
                 'title' => $title,
                 'navigation_label' => $title,
@@ -56,7 +56,7 @@ final class SiteSectionEditorialService
 
         return DB::transaction(function () use ($title, $slug, $actor): SiteSection {
             $section = SiteSection::query()->create([
-                'type' => SiteNodeType::CustomPage->value,
+                'type' => SiteSectionType::CustomPage->value,
                 'template' => null,
                 'title' => $title,
                 'navigation_label' => $title,
@@ -86,7 +86,7 @@ final class SiteSectionEditorialService
 
         return DB::transaction(function () use ($title, $slug, $template, $actor): SiteSection {
             $section = SiteSection::query()->create([
-                'type' => SiteNodeType::Journal->value,
+                'type' => SiteSectionType::Journal->value,
                 'template' => $template,
                 'title' => $title,
                 'navigation_label' => $title,
@@ -114,11 +114,11 @@ final class SiteSectionEditorialService
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             $type = $fresh->nodeType();
 
-            if (! in_array($type, [SiteNodeType::CustomPage, SiteNodeType::Journal, SiteNodeType::NavigationNode], true)) {
+            if (! in_array($type, [SiteSectionType::CustomPage, SiteSectionType::Journal, SiteSectionType::NavigationNode], true)) {
                 throw ValidationException::withMessages(['section' => 'This page cannot be deleted from the configurable page workflow.']);
             }
             if (
-                $type !== SiteNodeType::Journal
+                $type !== SiteSectionType::Journal
                 && ((string) $fresh->getAttribute('state') !== 'hidden' || (bool) $fresh->getAttribute('show_in_navigation'))
             ) {
                 throw ValidationException::withMessages(['section' => 'Unpublish the page and remove it from navigation before deleting it.']);
@@ -127,7 +127,7 @@ final class SiteSectionEditorialService
                 throw ValidationException::withMessages(['section' => 'Move or delete child pages before deleting their parent.']);
             }
             if (
-                $type === SiteNodeType::Journal
+                $type === SiteSectionType::Journal
                 && (
                     BlogPost::query()->where('site_section_id', $fresh->getKey())->exists()
                     || Exhibition::query()->where('site_section_id', $fresh->getKey())->exists()
@@ -148,7 +148,7 @@ final class SiteSectionEditorialService
         bool $showInNavigation,
         ?int $parentSectionId,
     ): SiteSection {
-        if ($section->nodeType() !== SiteNodeType::Gallery) {
+        if ($section->nodeType() !== SiteSectionType::Gallery) {
             throw ValidationException::withMessages(['type' => 'Only Gallery sections support Gallery placement controls.']);
         }
 
@@ -161,7 +161,7 @@ final class SiteSectionEditorialService
         ?string $navigationLabel,
         string $slug,
     ): SiteSection {
-        if ($section->nodeType() !== SiteNodeType::CustomPage) {
+        if ($section->nodeType() !== SiteSectionType::CustomPage) {
             throw ValidationException::withMessages(['type' => 'Only Custom Pages support these page identity settings.']);
         }
 
@@ -178,7 +178,7 @@ final class SiteSectionEditorialService
         return DB::transaction(function () use ($section, $title, $navigationLabel, $slug, $actor): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
-            if ($fresh->nodeType() !== SiteNodeType::CustomPage) {
+            if ($fresh->nodeType() !== SiteSectionType::CustomPage) {
                 throw ValidationException::withMessages(['type' => 'Only Custom Pages support these page identity settings.']);
             }
 
@@ -214,7 +214,7 @@ final class SiteSectionEditorialService
         if (! in_array($state, ['published', 'hidden'], true)) {
             throw ValidationException::withMessages(['state' => 'The section publication state is invalid.']);
         }
-        if ($section->nodeType() === SiteNodeType::Home && $state !== 'published') {
+        if ($section->nodeType() === SiteSectionType::Home && $state !== 'published') {
             throw ValidationException::withMessages(['state' => 'Home is always published.']);
         }
 
@@ -223,7 +223,7 @@ final class SiteSectionEditorialService
         return DB::transaction(function () use ($section, $state, $showInNavigation, $parentSectionId, $actor): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
-            if ($fresh->nodeType() === SiteNodeType::Home && $state !== 'published') {
+            if ($fresh->nodeType() === SiteSectionType::Home && $state !== 'published') {
                 throw ValidationException::withMessages(['state' => 'Home is always published.']);
             }
 
@@ -259,11 +259,11 @@ final class SiteSectionEditorialService
 
     public function convertType(SiteSection $section, string $targetType): SiteSection
     {
-        $target = SiteNodeType::tryFrom($targetType);
+        $target = SiteSectionType::tryFrom($targetType);
         if ($target === null) {
             throw ValidationException::withMessages(['type' => 'Choose a supported page type.']);
         }
-        if ($target === SiteNodeType::Home || $section->nodeType() === SiteNodeType::Home) {
+        if ($target === SiteSectionType::Home || $section->nodeType() === SiteSectionType::Home) {
             throw ValidationException::withMessages(['type' => 'Home cannot be converted to or from another page type.']);
         }
 
@@ -273,7 +273,7 @@ final class SiteSectionEditorialService
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             $source = $fresh->nodeType();
-            if ($source === SiteNodeType::Home || $target === SiteNodeType::Home) {
+            if ($source === SiteSectionType::Home || $target === SiteSectionType::Home) {
                 throw ValidationException::withMessages(['type' => 'Home cannot be converted to or from another page type.']);
             }
             if ($source === $target) {
@@ -318,7 +318,7 @@ final class SiteSectionEditorialService
         return DB::transaction(function () use ($section, $target, $actor): SiteSection {
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
-            if ($fresh->nodeType() !== SiteNodeType::Journal) {
+            if ($fresh->nodeType() !== SiteSectionType::Journal) {
                 throw ValidationException::withMessages(['template' => 'Only Journal pages have a Journal template.']);
             }
 
@@ -503,13 +503,13 @@ final class SiteSectionEditorialService
         return $settings;
     }
 
-    private function assertSourceConfigurationIsDiscardable(SiteSection $section, SiteNodeType $source): ?ArtworkCategory
+    private function assertSourceConfigurationIsDiscardable(SiteSection $section, SiteSectionType $source): ?ArtworkCategory
     {
-        if ($source === SiteNodeType::Home) {
+        if ($source === SiteSectionType::Home) {
             throw ValidationException::withMessages(['type' => 'Home cannot be converted to another page type.']);
         }
 
-        if ($source === SiteNodeType::CustomPage) {
+        if ($source === SiteSectionType::CustomPage) {
             /** @var CustomPageSetting|null $settings */
             $settings = CustomPageSetting::query()->where('site_section_id', $section->getKey())->lockForUpdate()->first();
             if ($settings instanceof CustomPageSetting && $settings->getAttribute('blocks') !== []) {
@@ -521,7 +521,7 @@ final class SiteSectionEditorialService
             return null;
         }
 
-        if ($source === SiteNodeType::Journal) {
+        if ($source === SiteSectionType::Journal) {
             if (
                 BlogPost::query()->where('site_section_id', $section->getKey())->exists()
                 || Exhibition::query()->where('site_section_id', $section->getKey())->exists()
@@ -549,7 +549,7 @@ final class SiteSectionEditorialService
             return null;
         }
 
-        if ($source === SiteNodeType::Gallery) {
+        if ($source === SiteSectionType::Gallery) {
             /** @var ArtworkCategory|null $gallery */
             $gallery = ArtworkCategory::query()
                 ->whereKey($section->getAttribute('artwork_category_id'))
@@ -581,27 +581,27 @@ final class SiteSectionEditorialService
     }
 
     /** @return array{0:?string,1:?string,2:?int} */
-    private function prepareTargetConfiguration(SiteSection $section, SiteNodeType $target): array
+    private function prepareTargetConfiguration(SiteSection $section, SiteSectionType $target): array
     {
-        if ($target === SiteNodeType::NavigationNode) {
+        if ($target === SiteSectionType::NavigationNode) {
             return [null, null, null];
         }
 
-        $slug = $this->conversionSlug($section, $target === SiteNodeType::Gallery);
+        $slug = $this->conversionSlug($section, $target === SiteSectionType::Gallery);
 
-        if ($target === SiteNodeType::CustomPage) {
+        if ($target === SiteSectionType::CustomPage) {
             $this->ensureCustomPageSetting($section);
 
             return [$slug, null, null];
         }
 
-        if ($target === SiteNodeType::Journal) {
+        if ($target === SiteSectionType::Journal) {
             $this->ensureJournalSetting($section);
 
             return [$slug, JournalTemplate::Blog->value, null];
         }
 
-        if ($target === SiteNodeType::Gallery) {
+        if ($target === SiteSectionType::Gallery) {
             if (ArtworkCategory::query()->where('slug', $slug)->exists()) {
                 throw ValidationException::withMessages(['type' => 'A Gallery configuration already uses this page slug.']);
             }
@@ -649,18 +649,18 @@ final class SiteSectionEditorialService
 
     private function discardSourceConfiguration(
         SiteSection $section,
-        SiteNodeType $source,
+        SiteSectionType $source,
         ?ArtworkCategory $sourceGallery,
     ): void {
-        if ($source === SiteNodeType::CustomPage) {
+        if ($source === SiteSectionType::CustomPage) {
             CustomPageSetting::query()->where('site_section_id', $section->getKey())->delete();
         }
 
-        if ($source === SiteNodeType::Journal) {
+        if ($source === SiteSectionType::Journal) {
             JournalSetting::query()->where('site_section_id', $section->getKey())->delete();
         }
 
-        if ($source === SiteNodeType::Gallery && $sourceGallery instanceof ArtworkCategory) {
+        if ($source === SiteSectionType::Gallery && $sourceGallery instanceof ArtworkCategory) {
             $sourceGallery->delete();
         }
     }

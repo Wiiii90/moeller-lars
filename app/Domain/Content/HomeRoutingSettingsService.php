@@ -86,8 +86,8 @@ final class HomeRoutingSettingsService
         $target = SiteSection::query()->find($targetSectionId);
         if (! $target instanceof SiteSection
             || $target->getAttribute('parent_id') !== null
-            || $target->nodeType() === SiteNodeType::Home
-            || $target->nodeType() === SiteNodeType::NavigationNode
+            || $target->nodeType() === SiteSectionType::Home
+            || $target->nodeType() === SiteSectionType::NavigationNode
             || (string) $target->getAttribute('state') !== 'published'
             || ! $target->nodeType()->hasPublicPage()
             || $this->routes->path($target) === null) {

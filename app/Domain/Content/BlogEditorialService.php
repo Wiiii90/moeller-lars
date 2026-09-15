@@ -1,13 +1,8 @@
 <?php
 
-namespace App\Domain\Blog;
+namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Content\JournalEntryMediaService;
-use App\Domain\Content\JournalEntryOrderService;
-use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SafeRichTextRenderer;
-use App\Domain\Content\SiteNodeType;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -310,7 +305,7 @@ final class BlogEditorialService
         if ($sectionId === false || $sectionId <= 0) {
             throw ValidationException::withMessages(['site_section_id' => 'Choose a Blog Journal page.']);
         }
-        $exists = SiteSection::query()->whereKey($sectionId)->where('type', SiteNodeType::Journal->value)->where('template', JournalTemplate::Blog->value)->exists();
+        $exists = SiteSection::query()->whereKey($sectionId)->where('type', SiteSectionType::Journal->value)->where('template', JournalTemplate::Blog->value)->exists();
         if (! $exists) {
             throw ValidationException::withMessages(['site_section_id' => 'The selected page is not a Blog Journal.']);
         }

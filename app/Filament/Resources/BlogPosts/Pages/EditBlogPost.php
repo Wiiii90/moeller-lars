@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\BlogPosts\Pages;
 
-use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\BlogEditorialService;
 use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Pages\JournalWorkspace;
 use App\Filament\Resources\BlogPosts\BlogPostResource;

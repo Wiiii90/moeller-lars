@@ -22,7 +22,7 @@ Accepted stack: PHP 8.3+, Laravel 13, Blade public rendering, Filament 5 for `/a
 
 The persisted site/navigation tree is represented by `SiteSection`; application behavior is defined by typed domain concepts.
 
-`App\Domain\Content\SiteNodeType` defines five runtime node types:
+`App\Domain\Content\SiteSectionType` defines five runtime node types:
 
 | Type | Public page | Creatable | Children | Parent |
 | --- | --- | --- | --- | --- |
@@ -34,7 +34,7 @@ The persisted site/navigation tree is represented by `SiteSection`; application 
 
 `Home` is the singleton root. `JournalTemplate` supports Blog and Exhibitions.
 
-`SiteSection` stores type/template, title/navigation label, slug, publication/navigation state, position, parent and optional Gallery persistence reference. Runtime decisions use `SiteNodeType` / `JournalTemplate`, not raw historical strings.
+`SiteSection` stores type/template, title/navigation label, slug, publication/navigation state, position, parent and optional Gallery persistence reference. Runtime decisions use `SiteSectionType` / `JournalTemplate`, not raw historical strings.
 
 Journal template switching is non-destructive: changing a Journal from Blog to Exhibitions or back changes the active presentation/editorial projection but does not convert or delete the inactive template's retained entry rows.
 

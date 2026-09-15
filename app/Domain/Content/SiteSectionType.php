@@ -2,7 +2,7 @@
 
 namespace App\Domain\Content;
 
-enum SiteNodeType: string
+enum SiteSectionType: string
 {
     case Home = 'home';
     case Gallery = 'gallery';

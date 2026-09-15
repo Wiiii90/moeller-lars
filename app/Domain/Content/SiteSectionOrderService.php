@@ -18,7 +18,7 @@ final class SiteSectionOrderService
     {
         $this->validateDirection($direction);
 
-        if ($section->nodeType() === SiteNodeType::Home) {
+        if ($section->nodeType() === SiteSectionType::Home) {
             return false;
         }
 
@@ -84,7 +84,7 @@ final class SiteSectionOrderService
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($fresh->nodeType() === SiteNodeType::Home) {
+            if ($fresh->nodeType() === SiteSectionType::Home) {
                 if ($parentSectionId !== null || $position !== 0) {
                     throw ValidationException::withMessages([
                         'position' => 'Home is always the first top-level page.',
@@ -257,7 +257,7 @@ final class SiteSectionOrderService
     {
         return SiteSection::query()
             ->whereKey($id)
-            ->where('type', SiteNodeType::Home->value)
+            ->where('type', SiteSectionType::Home->value)
             ->exists();
     }
 

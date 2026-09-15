@@ -4,7 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionIdentityService;
 use App\Filament\Support\AdminIcon;
@@ -46,7 +46,7 @@ trait ManagesSitePageEditDialog
             ->schema([
                 Select::make('type')
                     ->label('Page type')
-                    ->options(SiteNodeType::compactOptions())
+                    ->options(SiteSectionType::compactOptions())
                     ->native()
                     ->required()
                     ->live(),
@@ -54,8 +54,8 @@ trait ManagesSitePageEditDialog
                     ->label('Template')
                     ->options(JournalTemplate::options())
                     ->native()
-                    ->required(fn (callable $get): bool => $get('type') === SiteNodeType::Journal->value)
-                    ->visible(fn (callable $get): bool => $get('type') === SiteNodeType::Journal->value),
+                    ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
+                    ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value),
                 TextInput::make('name')
                     ->label('Name')
                     ->required()
@@ -64,8 +64,8 @@ trait ManagesSitePageEditDialog
                     ->label('Public slug')
                     ->maxLength(80)
                     ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                    ->required(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
-                    ->visible(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
+                    ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
+                    ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
                 Select::make('parent_id')
                     ->label('Parent page')
                     ->options(fn (): array => $this->parentOptions)
@@ -115,8 +115,8 @@ trait ManagesSitePageEditDialog
     /** @param array<string, mixed> $data */
     private function savePageFromDialog(SiteSection $section, array $data): void
     {
-        $targetType = SiteNodeType::tryFrom((string) ($data['type'] ?? ''));
-        if ($targetType === null || $targetType === SiteNodeType::Home) {
+        $targetType = SiteSectionType::tryFrom((string) ($data['type'] ?? ''));
+        if ($targetType === null || $targetType === SiteSectionType::Home) {
             throw ValidationException::withMessages(['type' => 'Choose a supported editable page type.']);
         }
 
@@ -131,7 +131,7 @@ trait ManagesSitePageEditDialog
         $slug = isset($data['slug']) ? trim((string) $data['slug']) : null;
         $section = $this->updateDialogIdentity($section, $name, $slug);
 
-        if ($section->nodeType() === SiteNodeType::Journal) {
+        if ($section->nodeType() === SiteSectionType::Journal) {
             $section = $editorial->updateJournalTemplate(
                 $section,
                 (string) ($data['template'] ?? JournalTemplate::Blog->value),
@@ -157,7 +157,7 @@ trait ManagesSitePageEditDialog
 
     private function updateDialogIdentity(SiteSection $section, string $name, ?string $slug): SiteSection
     {
-        if ($section->nodeType() !== SiteNodeType::Gallery) {
+        if ($section->nodeType() !== SiteSectionType::Gallery) {
             return app(SiteSectionIdentityService::class)->update($section, $name, $slug);
         }
 

@@ -4,7 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Models\SiteSection;
@@ -25,8 +25,8 @@ trait ManagesSitePageCreateDialog
             ->schema([
                 Select::make('type')
                     ->label('Page type')
-                    ->options(SiteNodeType::compactOptions())
-                    ->default(SiteNodeType::CustomPage->value)
+                    ->options(SiteSectionType::compactOptions())
+                    ->default(SiteSectionType::CustomPage->value)
                     ->native()
                     ->required()
                     ->live(),
@@ -35,8 +35,8 @@ trait ManagesSitePageCreateDialog
                     ->options(JournalTemplate::options())
                     ->default(JournalTemplate::Blog->value)
                     ->native()
-                    ->required(fn (callable $get): bool => $get('type') === SiteNodeType::Journal->value)
-                    ->visible(fn (callable $get): bool => $get('type') === SiteNodeType::Journal->value),
+                    ->required(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value)
+                    ->visible(fn (callable $get): bool => $get('type') === SiteSectionType::Journal->value),
                 TextInput::make('name')
                     ->label('Name')
                     ->required()
@@ -45,8 +45,8 @@ trait ManagesSitePageCreateDialog
                     ->label('Public slug')
                     ->maxLength(80)
                     ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                    ->required(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
-                    ->visible(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
+                    ->required(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
+                    ->visible(fn (callable $get): bool => SiteSectionType::tryFrom((string) $get('type'))?->requiresSlug() ?? false),
                 Select::make('parent_id')
                     ->label('Parent page')
                     ->options(fn (): array => $this->parentOptions)
@@ -78,7 +78,7 @@ trait ManagesSitePageCreateDialog
     /** @param array<string, mixed> $data */
     private function createPageFromDialog(array $data): SiteSection
     {
-        $type = SiteNodeType::tryFrom((string) ($data['type'] ?? ''));
+        $type = SiteSectionType::tryFrom((string) ($data['type'] ?? ''));
         if ($type === null || ! $type->isCreatable()) {
             throw ValidationException::withMessages(['type' => 'Choose a supported page type.']);
         }
@@ -90,14 +90,14 @@ trait ManagesSitePageCreateDialog
         $editorial = app(SiteSectionEditorialService::class);
 
         $section = match ($type) {
-            SiteNodeType::NavigationNode => $editorial->createNavigationGroup($name),
-            SiteNodeType::CustomPage => $editorial->createCustomPage($name, $slug),
-            SiteNodeType::Journal => $editorial->createJournal(
+            SiteSectionType::NavigationNode => $editorial->createNavigationGroup($name),
+            SiteSectionType::CustomPage => $editorial->createCustomPage($name, $slug),
+            SiteSectionType::Journal => $editorial->createJournal(
                 $name,
                 $slug,
                 (string) ($data['template'] ?? JournalTemplate::Blog->value),
             ),
-            SiteNodeType::Gallery => $this->createGallerySection($name, $slug),
+            SiteSectionType::Gallery => $this->createGallerySection($name, $slug),
             default => throw ValidationException::withMessages(['type' => 'Choose a supported page type.']),
         };
 
@@ -132,7 +132,7 @@ trait ManagesSitePageCreateDialog
 
         /** @var SiteSection $section */
         $section = SiteSection::query()
-            ->where('type', SiteNodeType::Gallery->value)
+            ->where('type', SiteSectionType::Gallery->value)
             ->where('artwork_category_id', $gallery->getKey())
             ->firstOrFail();
 

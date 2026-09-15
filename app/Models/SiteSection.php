@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
@@ -29,7 +29,7 @@ final class SiteSection extends Model
 {
     /**
      * Persistence values retained for migrations and raw database boundaries.
-     * SiteNodeType and JournalTemplate own application behavior.
+     * SiteSectionType and JournalTemplate own application behavior.
      */
     public const TYPE_HOME = 'home';
 
@@ -60,20 +60,20 @@ final class SiteSection extends Model
     protected static function booted(): void
     {
         self::saving(function (self $section): void {
-            $nodeType = SiteNodeType::tryFrom((string) $section->getAttribute('type'));
+            $nodeType = SiteSectionType::tryFrom((string) $section->getAttribute('type'));
             if ($nodeType === null) {
                 throw ValidationException::withMessages(['type' => 'The site node type is invalid.']);
             }
 
             if ($section->exists && $section->isDirty('type')) {
-                $originalType = SiteNodeType::tryFrom((string) $section->getRawOriginal('type'));
-                if ($originalType === SiteNodeType::Home || $nodeType === SiteNodeType::Home) {
+                $originalType = SiteSectionType::tryFrom((string) $section->getRawOriginal('type'));
+                if ($originalType === SiteSectionType::Home || $nodeType === SiteSectionType::Home) {
                     throw ValidationException::withMessages(['type' => 'Home cannot be converted to or from another page type.']);
                 }
             }
 
             $template = $section->getAttribute('template');
-            if ($nodeType === SiteNodeType::Journal) {
+            if ($nodeType === SiteSectionType::Journal) {
                 if (! is_string($template) || JournalTemplate::tryFrom($template) === null) {
                     throw ValidationException::withMessages(['template' => 'A Journal page requires a supported template.']);
                 }
@@ -81,7 +81,7 @@ final class SiteSection extends Model
                 throw ValidationException::withMessages(['template' => 'Only Journal pages may select a template.']);
             }
 
-            if ($nodeType === SiteNodeType::Gallery) {
+            if ($nodeType === SiteSectionType::Gallery) {
                 if (! is_numeric($section->getAttribute('artwork_category_id'))) {
                     throw ValidationException::withMessages(['artwork_category_id' => 'A Gallery site node must reference its Gallery record.']);
                 }
@@ -98,7 +98,7 @@ final class SiteSection extends Model
                 throw ValidationException::withMessages(['slug' => $nodeType->label().' does not own a public URL slug.']);
             }
 
-            if ($nodeType === SiteNodeType::Home) {
+            if ($nodeType === SiteSectionType::Home) {
                 if ((string) $section->getAttribute('state') !== 'published') {
                     throw ValidationException::withMessages(['state' => 'Home is always published.']);
                 }
@@ -135,7 +135,7 @@ final class SiteSection extends Model
                 }
             }
 
-            if ($nodeType === SiteNodeType::CustomPage && (string) $section->getAttribute('state') === 'published' && $section->exists) {
+            if ($nodeType === SiteSectionType::CustomPage && (string) $section->getAttribute('state') === 'published' && $section->exists) {
                 /** @var CustomPageSetting|null $settings */
                 $settings = $section->customPageSetting()->first();
                 if (! $settings instanceof CustomPageSetting) {
@@ -146,7 +146,7 @@ final class SiteSection extends Model
         });
 
         self::deleting(function (self $section): void {
-            if ($section->nodeType() === SiteNodeType::Home) {
+            if ($section->nodeType() === SiteSectionType::Home) {
                 throw ValidationException::withMessages(['section' => 'Home cannot be deleted.']);
             }
         });
@@ -157,14 +157,14 @@ final class SiteSection extends Model
         return self::query()->where('type', $type)->where('state', 'published')->exists();
     }
 
-    public function nodeType(): SiteNodeType
+    public function nodeType(): SiteSectionType
     {
-        return SiteNodeType::from((string) $this->getAttribute('type'));
+        return SiteSectionType::from((string) $this->getAttribute('type'));
     }
 
     public function journalTemplate(): ?JournalTemplate
     {
-        if ($this->nodeType() !== SiteNodeType::Journal) {
+        if ($this->nodeType() !== SiteSectionType::Journal) {
             return null;
         }
 

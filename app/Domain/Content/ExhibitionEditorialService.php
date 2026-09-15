@@ -400,7 +400,7 @@ final class ExhibitionEditorialService
         }
 
         $exists = SiteSection::query()->whereKey($id)
-            ->where('type', SiteNodeType::Journal->value)
+            ->where('type', SiteSectionType::Journal->value)
             ->where('template', JournalTemplate::Exhibitions->value)
             ->exists();
         if (! $exists) {

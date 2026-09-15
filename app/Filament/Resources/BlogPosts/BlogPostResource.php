@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\BlogPosts;
 
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\ListBlogPosts;
 use App\Filament\Support\AdminIcon;
@@ -42,7 +42,7 @@ final class BlogPostResource extends Resource
     {
         /** @var SiteSection|null $section */
         $section = $post->siteSection()->first();
-        if (! $section instanceof SiteSection || $section->nodeType() !== SiteNodeType::Journal || $section->journalTemplate() !== JournalTemplate::Blog) {
+        if (! $section instanceof SiteSection || $section->nodeType() !== SiteSectionType::Journal || $section->journalTemplate() !== JournalTemplate::Blog) {
             throw new LogicException('Blog posts must belong to a Blog Journal.');
         }
 

@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\CanonicalUrl;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Models\Artwork;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
@@ -55,7 +55,7 @@ final class PublicSeoController extends Controller
 
         /** @var Collection<int, SiteSection> $blogJournals */
         $blogJournals = $sections
-            ->where('type', SiteNodeType::Journal->value)
+            ->where('type', SiteSectionType::Journal->value)
             ->where('template', JournalTemplate::Blog->value)
             ->values();
 

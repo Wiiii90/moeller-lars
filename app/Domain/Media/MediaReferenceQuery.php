@@ -4,7 +4,7 @@ namespace App\Domain\Media;
 
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\RichTextMediaReference;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
 use App\Models\Exhibition;
@@ -104,7 +104,7 @@ final class MediaReferenceQuery
     /** @return list<int> */
     public function mediaIdsForJournalSection(SiteSection $section): array
     {
-        if ($section->nodeType() !== SiteNodeType::Journal) {
+        if ($section->nodeType() !== SiteSectionType::Journal) {
             return [];
         }
 

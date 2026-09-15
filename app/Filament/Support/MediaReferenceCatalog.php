@@ -5,7 +5,7 @@ namespace App\Filament\Support;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RichTextMediaReference;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaReferenceQuery;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
@@ -42,14 +42,14 @@ final class MediaReferenceCatalog
     public function destinationGroups(): array
     {
         $groups = [
-            SiteNodeType::Gallery->value => ['label' => 'Galleries', 'options' => []],
-            SiteNodeType::Journal->value => ['label' => 'Journals', 'options' => []],
-            SiteNodeType::CustomPage->value => ['label' => 'Custom pages', 'options' => []],
+            SiteSectionType::Gallery->value => ['label' => 'Galleries', 'options' => []],
+            SiteSectionType::Journal->value => ['label' => 'Journals', 'options' => []],
+            SiteSectionType::CustomPage->value => ['label' => 'Custom pages', 'options' => []],
         ];
         $broad = [
-            SiteNodeType::Gallery->value => 'Any Gallery',
-            SiteNodeType::Journal->value => 'Any Journal',
-            SiteNodeType::CustomPage->value => 'Any Custom Page',
+            SiteSectionType::Gallery->value => 'Any Gallery',
+            SiteSectionType::Journal->value => 'Any Journal',
+            SiteSectionType::CustomPage->value => 'Any Custom Page',
         ];
 
         foreach ($this->nodes() as $node) {
@@ -130,8 +130,8 @@ final class MediaReferenceCatalog
             return;
         }
         if (str_starts_with($destination, 'kind:')) {
-            $type = SiteNodeType::tryFrom(substr($destination, 5));
-            if ($type === null || ! in_array($type, [SiteNodeType::Gallery, SiteNodeType::Journal, SiteNodeType::CustomPage], true)) {
+            $type = SiteSectionType::tryFrom(substr($destination, 5));
+            if ($type === null || ! in_array($type, [SiteSectionType::Gallery, SiteSectionType::Journal, SiteSectionType::CustomPage], true)) {
                 $query->whereRaw('1 = 0');
 
                 return;
@@ -149,9 +149,9 @@ final class MediaReferenceCatalog
         }
 
         match ($node->nodeType()) {
-            SiteNodeType::Gallery => $this->applyGalleryDestination($query, $node),
-            SiteNodeType::Journal => $this->applyJournalDestination($query, $node),
-            SiteNodeType::CustomPage => $this->applyCustomPageDestination($query, $node),
+            SiteSectionType::Gallery => $this->applyGalleryDestination($query, $node),
+            SiteSectionType::Journal => $this->applyJournalDestination($query, $node),
+            SiteSectionType::CustomPage => $this->applyCustomPageDestination($query, $node),
             default => $query->whereRaw('1 = 0'),
         };
     }
@@ -298,20 +298,20 @@ final class MediaReferenceCatalog
     private function customPageNodes(): EloquentCollection
     {
         return $this->nodes()
-            ->filter(fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::CustomPage);
+            ->filter(fn (SiteSection $node): bool => $node->nodeType() === SiteSectionType::CustomPage);
     }
 
     /** @return EloquentCollection<int, SiteSection> */
     private function journalNodes(): EloquentCollection
     {
         return $this->nodes()
-            ->filter(fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::Journal);
+            ->filter(fn (SiteSection $node): bool => $node->nodeType() === SiteSectionType::Journal);
     }
 
     private function homeNode(): ?SiteSection
     {
         $node = $this->nodes()->first(
-            fn (SiteSection $candidate): bool => $candidate->nodeType() === SiteNodeType::Home,
+            fn (SiteSection $candidate): bool => $candidate->nodeType() === SiteSectionType::Home,
         );
 
         return $node instanceof SiteSection ? $node : null;
@@ -331,11 +331,11 @@ final class MediaReferenceCatalog
     }
 
     /** @param Builder<MediaAsset> $query */
-    private function applyKindDestination(Builder $query, SiteNodeType $type): void
+    private function applyKindDestination(Builder $query, SiteSectionType $type): void
     {
-        if ($type === SiteNodeType::Gallery) {
+        if ($type === SiteSectionType::Gallery) {
             $ids = $this->nodes()
-                ->filter(fn (SiteSection $node): bool => $node->nodeType() === SiteNodeType::Gallery)
+                ->filter(fn (SiteSection $node): bool => $node->nodeType() === SiteSectionType::Gallery)
                 ->pluck('artwork_category_id')
                 ->filter(static fn (mixed $id): bool => is_numeric($id))
                 ->map(static fn (mixed $id): int => (int) $id)
@@ -348,14 +348,14 @@ final class MediaReferenceCatalog
             return;
         }
 
-        if ($type === SiteNodeType::Journal) {
+        if ($type === SiteSectionType::Journal) {
             $ids = $this->referenceQuery->mediaIdsForJournalSections($this->journalNodes());
             $ids === [] ? $query->whereRaw('1 = 0') : $query->whereIn('media_assets.id', $ids);
 
             return;
         }
 
-        if ($type === SiteNodeType::CustomPage) {
+        if ($type === SiteSectionType::CustomPage) {
             $ids = [];
             foreach ($this->customPageNodes() as $node) {
                 $settings = $node->getRelationValue('customPageSetting');

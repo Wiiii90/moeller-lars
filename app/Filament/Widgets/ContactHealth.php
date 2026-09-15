@@ -3,7 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Domain\Contact\ContactDeliveryReadiness;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Models\CustomPageSetting;
 use Filament\Widgets\Widget;
 
@@ -46,7 +46,7 @@ final class ContactHealth extends Widget
 
         $settings = CustomPageSetting::query()
             ->whereHas('siteSection', static fn ($query) => $query
-                ->where('type', SiteNodeType::CustomPage->value)
+                ->where('type', SiteSectionType::CustomPage->value)
                 ->where('state', 'published'))
             ->get(['blocks']);
 

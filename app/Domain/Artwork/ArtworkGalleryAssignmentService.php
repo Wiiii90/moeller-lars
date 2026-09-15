@@ -3,7 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
@@ -58,7 +58,7 @@ final class ArtworkGalleryAssignmentService
             if ($lockedArtwork->getAttribute('state') === 'published') {
                 /** @var SiteSection|null $destinationSection */
                 $destinationSection = SiteSection::query()
-                    ->where('type', SiteNodeType::Gallery->value)
+                    ->where('type', SiteSectionType::Gallery->value)
                     ->where('artwork_category_id', $destinationCategoryId)
                     ->lockForUpdate()
                     ->first();

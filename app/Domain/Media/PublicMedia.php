@@ -5,7 +5,7 @@ namespace App\Domain\Media;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\RichTextMediaReference;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SitePreviewContext;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
@@ -67,7 +67,7 @@ class PublicMedia
                 $usage->whereHas('blogPost', fn ($posts) => $posts
                     ->publiclyVisible()
                     ->whereHas('siteSection', fn ($section) => $section
-                        ->where('type', SiteNodeType::Journal->value)
+                        ->where('type', SiteSectionType::Journal->value)
                         ->where('template', JournalTemplate::Blog->value)
                         ->where('state', 'published')))
                     ->orWhere(function ($exhibitionUsage): void {
@@ -75,7 +75,7 @@ class PublicMedia
                             ->whereHas('exhibition', fn ($entries) => $entries
                                 ->where('state', 'published')
                                 ->whereHas('siteSection', fn ($section) => $section
-                                    ->where('type', SiteNodeType::Journal->value)
+                                    ->where('type', SiteSectionType::Journal->value)
                                     ->where('template', JournalTemplate::Exhibitions->value)
                                     ->where('state', 'published')))
                             ->where(function ($role): void {
@@ -232,7 +232,7 @@ class PublicMedia
     {
         $publishedCustomPages = CustomPageSetting::query()
             ->whereHas('siteSection', fn ($query) => $query
-                ->where('type', SiteNodeType::CustomPage->value)
+                ->where('type', SiteSectionType::CustomPage->value)
                 ->where('state', 'published'))
             ->get(['id', 'blocks']);
 
@@ -298,7 +298,7 @@ class PublicMedia
     {
         /** @var HomePresentationSetting|null $settings */
         $settings = HomePresentationSetting::query()
-            ->whereHas('siteSection', fn ($query) => $query->where('type', SiteNodeType::Home->value))
+            ->whereHas('siteSection', fn ($query) => $query->where('type', SiteSectionType::Home->value))
             ->first(['id', 'template', 'configuration']);
         if (! $settings instanceof HomePresentationSetting) {
             return false;
@@ -332,7 +332,7 @@ class PublicMedia
             ->publiclyVisible()
             ->whereNotNull('body')
             ->whereHas('siteSection', fn ($section) => $section
-                ->where('type', SiteNodeType::Journal->value)
+                ->where('type', SiteSectionType::Journal->value)
                 ->where('template', JournalTemplate::Blog->value)
                 ->where('state', 'published'))
             ->pluck('body');
@@ -347,7 +347,7 @@ class PublicMedia
             ->where('state', 'published')
             ->whereNotNull('description')
             ->whereHas('siteSection', fn ($section) => $section
-                ->where('type', SiteNodeType::Journal->value)
+                ->where('type', SiteSectionType::Journal->value)
                 ->where('template', JournalTemplate::Exhibitions->value)
                 ->where('state', 'published'))
             ->pluck('description');

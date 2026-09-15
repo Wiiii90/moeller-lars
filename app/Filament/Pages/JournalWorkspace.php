@@ -3,12 +3,12 @@
 namespace App\Filament\Pages;
 
 use App\Domain\Analytics\ArtistReportingService;
-use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -95,7 +95,7 @@ final class JournalWorkspace extends Page
 
     public function mount(int|string $section): void
     {
-        $siteSection = SiteSection::query()->whereKey((int) $section)->where('type', SiteNodeType::Journal->value)->firstOrFail();
+        $siteSection = SiteSection::query()->whereKey((int) $section)->where('type', SiteSectionType::Journal->value)->firstOrFail();
         $template = $siteSection->journalTemplate();
         abort_unless($template instanceof JournalTemplate, 404);
         $this->sectionId = (int) $siteSection->getKey();
@@ -938,7 +938,7 @@ final class JournalWorkspace extends Page
 
     private function section(): SiteSection
     {
-        return SiteSection::query()->whereKey($this->sectionId)->where('type', SiteNodeType::Journal->value)->where('template', $this->journalTemplate()->value)->firstOrFail();
+        return SiteSection::query()->whereKey($this->sectionId)->where('type', SiteSectionType::Journal->value)->where('template', $this->journalTemplate()->value)->firstOrFail();
     }
 
     private function journalTemplate(): JournalTemplate

@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\JournalMediaRenderer;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SafeRichTextRenderer;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Domain\Media\PublicMedia;
@@ -58,20 +58,20 @@ final class PublicSiteSectionController extends Controller
             return $this->artworks->category($section);
         }
 
-        if ($siteSection->nodeType() === SiteNodeType::Gallery) {
+        if ($siteSection->nodeType() === SiteSectionType::Gallery) {
             return $this->artworks->category($section);
         }
 
         return match ($siteSection->nodeType()) {
-            SiteNodeType::CustomPage => $this->customPage($siteSection),
-            SiteNodeType::Journal => $this->journal($siteSection),
+            SiteSectionType::CustomPage => $this->customPage($siteSection),
+            SiteSectionType::Journal => $this->journal($siteSection),
             default => abort(404),
         };
     }
 
     public function journalEntry(string $section, string $slug): View
     {
-        $sectionQuery = SiteSection::query()->where('type', SiteNodeType::Journal->value)->where('template', JournalTemplate::Blog->value)->where('slug', $section);
+        $sectionQuery = SiteSection::query()->where('type', SiteSectionType::Journal->value)->where('template', JournalTemplate::Blog->value)->where('slug', $section);
         $this->preview->constrainSectionQuery($sectionQuery);
         $journal = $sectionQuery->first();
         abort_unless($journal instanceof SiteSection, 404);

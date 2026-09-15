@@ -3,7 +3,7 @@
 namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionPathPolicy;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -33,7 +33,7 @@ final class GalleryEditorialService
             $gallery->save();
 
             SiteSection::query()->create([
-                'type' => SiteNodeType::Gallery->value,
+                'type' => SiteSectionType::Gallery->value,
                 'title' => (string) $gallery->getAttribute('name'),
                 'navigation_label' => (string) $gallery->getAttribute('name'),
                 'slug' => (string) $gallery->getAttribute('slug'),
@@ -70,7 +70,7 @@ final class GalleryEditorialService
 
             if ($nameChanged) {
                 SiteSection::query()
-                    ->where('type', SiteNodeType::Gallery->value)
+                    ->where('type', SiteSectionType::Gallery->value)
                     ->where('artwork_category_id', $fresh->getKey())
                     ->where(function (Builder $query) use ($oldName): void {
                         $query->whereNull('navigation_label')->orWhere('navigation_label', $oldName);
@@ -82,7 +82,7 @@ final class GalleryEditorialService
                     ]);
 
                 SiteSection::query()
-                    ->where('type', SiteNodeType::Gallery->value)
+                    ->where('type', SiteSectionType::Gallery->value)
                     ->where('artwork_category_id', $fresh->getKey())
                     ->where('navigation_label', '<>', (string) $fresh->getAttribute('name'))
                     ->update([
@@ -145,7 +145,7 @@ final class GalleryEditorialService
             $fresh->save();
 
             SiteSection::query()
-                ->where('type', SiteNodeType::Gallery->value)
+                ->where('type', SiteSectionType::Gallery->value)
                 ->where('artwork_category_id', $fresh->getKey())
                 ->update([
                     'slug' => $newSlug,
@@ -167,7 +167,7 @@ final class GalleryEditorialService
             $fresh = ArtworkCategory::query()->whereKey($gallery->getKey())->lockForUpdate()->firstOrFail();
             /** @var SiteSection|null $section */
             $section = SiteSection::query()
-                ->where('type', SiteNodeType::Gallery->value)
+                ->where('type', SiteSectionType::Gallery->value)
                 ->where('artwork_category_id', $fresh->getKey())
                 ->lockForUpdate()
                 ->first();
@@ -323,7 +323,7 @@ final class GalleryEditorialService
         $parent = SiteSection::query()->find((int) $parentSectionId);
         if (
             $parent === null
-            || $parent->nodeType() !== SiteNodeType::Gallery
+            || $parent->nodeType() !== SiteSectionType::Gallery
             || $parent->getAttribute('parent_id') !== null
         ) {
             throw ValidationException::withMessages(['parent_section_id' => 'The parent must be a top-level Gallery.']);
@@ -337,7 +337,7 @@ final class GalleryEditorialService
         /** @var Builder<SiteSection> $query */
         $query = SiteSection::query();
         if ($parentSectionId === null) {
-            $query->whereNull('parent_id')->where('type', '<>', SiteNodeType::Home->value);
+            $query->whereNull('parent_id')->where('type', '<>', SiteSectionType::Home->value);
         } else {
             $query->where('parent_id', $parentSectionId);
         }

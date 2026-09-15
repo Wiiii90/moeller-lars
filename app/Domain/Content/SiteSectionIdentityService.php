@@ -29,7 +29,7 @@ final class SiteSectionIdentityService
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             $type = $fresh->nodeType();
-            if ($type === SiteNodeType::Gallery) {
+            if ($type === SiteSectionType::Gallery) {
                 throw ValidationException::withMessages(['name' => 'Gallery identity must be updated through the Gallery workflow.']);
             }
 
@@ -44,7 +44,7 @@ final class SiteSectionIdentityService
                 }
             }
 
-            if ($type === SiteNodeType::Journal) {
+            if ($type === SiteSectionType::Journal) {
                 /** @var JournalSetting|null $settings */
                 $settings = JournalSetting::query()->where('site_section_id', $fresh->getKey())->lockForUpdate()->first();
                 if ($settings instanceof JournalSetting && trim((string) $settings->getAttribute('listing_title')) === $oldName) {

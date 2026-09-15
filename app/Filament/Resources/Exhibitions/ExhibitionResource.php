@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Exhibitions;
 
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Resources\Exhibitions\Pages\EditExhibition;
 use App\Filament\Resources\Exhibitions\Pages\ListExhibitions;
 use App\Filament\Support\AdminIcon;
@@ -40,7 +40,7 @@ class ExhibitionResource extends Resource
         $section = $exhibition->siteSection()->first();
         if (
             ! $section instanceof SiteSection
-            || $section->nodeType() !== SiteNodeType::Journal
+            || $section->nodeType() !== SiteSectionType::Journal
             || $section->journalTemplate() !== JournalTemplate::Exhibitions
         ) {
             throw new LogicException('Exhibitions must belong to an Exhibitions Journal.');

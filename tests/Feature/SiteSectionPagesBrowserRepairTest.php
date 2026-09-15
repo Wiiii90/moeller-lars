@@ -1,7 +1,7 @@
 <?php
 
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Pages\SitePages;
@@ -187,7 +187,7 @@ it('keeps Home fixed at the top level and preserves its publication delete and c
     $this->actingAs(pagesRepairAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
-    $home = SiteSection::query()->where('type', SiteNodeType::Home->value)->firstOrFail();
+    $home = SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail();
     $parent = $service->createCustomPage('Home Parent', 'home-parent-repair');
 
     expect(fn () => $order->moveTo($home, (int) $parent->getKey(), 0))
@@ -197,7 +197,7 @@ it('keeps Home fixed at the top level and preserves its publication delete and c
 
     expect(fn () => $service->updatePlacement($home, 'hidden', false, (int) $parent->getKey()))
         ->toThrow(ValidationException::class, 'Home is always published.')
-        ->and(fn () => $service->convertType($home, SiteNodeType::CustomPage->value))
+        ->and(fn () => $service->convertType($home, SiteSectionType::CustomPage->value))
         ->toThrow(ValidationException::class, 'Home cannot be converted')
         ->and(fn () => $home->refresh()->delete())
         ->toThrow(ValidationException::class, 'Home cannot be deleted.');
@@ -208,26 +208,26 @@ it('initializes target configuration for safe type conversions transactionally',
     $service = app(SiteSectionEditorialService::class);
     $page = $service->createCustomPage('Convertible Page', 'convertible-page-repair');
 
-    $gallery = $service->convertType($page, SiteNodeType::Gallery->value);
+    $gallery = $service->convertType($page, SiteSectionType::Gallery->value);
     $galleryId = (int) $gallery->artwork_category_id;
-    expect($gallery->type)->toBe(SiteNodeType::Gallery->value)
+    expect($gallery->type)->toBe(SiteSectionType::Gallery->value)
         ->and($galleryId)->toBeGreaterThan(0)
         ->and(ArtworkCategory::query()->whereKey($galleryId)->exists())->toBeTrue()
         ->and($gallery->customPageSetting()->exists())->toBeFalse();
 
-    $journal = $service->convertType($gallery, SiteNodeType::Journal->value);
-    expect($journal->type)->toBe(SiteNodeType::Journal->value)
+    $journal = $service->convertType($gallery, SiteSectionType::Journal->value);
+    expect($journal->type)->toBe(SiteSectionType::Journal->value)
         ->and($journal->template)->toBe(JournalTemplate::Blog->value)
         ->and($journal->journalSetting()->exists())->toBeTrue()
         ->and(ArtworkCategory::query()->whereKey($galleryId)->exists())->toBeFalse();
 
-    $group = $service->convertType($journal, SiteNodeType::NavigationNode->value);
-    expect($group->type)->toBe(SiteNodeType::NavigationNode->value)
+    $group = $service->convertType($journal, SiteSectionType::NavigationNode->value);
+    expect($group->type)->toBe(SiteSectionType::NavigationNode->value)
         ->and($group->slug)->toBeNull()
         ->and($group->journalSetting()->exists())->toBeFalse();
 
-    $custom = $service->convertType($group, SiteNodeType::CustomPage->value);
-    expect($custom->type)->toBe(SiteNodeType::CustomPage->value)
+    $custom = $service->convertType($group, SiteSectionType::CustomPage->value);
+    expect($custom->type)->toBe(SiteSectionType::CustomPage->value)
         ->and($custom->slug)->not->toBeNull()
         ->and($custom->customPageSetting()->exists())->toBeTrue();
 });
@@ -244,9 +244,9 @@ it('blocks destructive type conversion when custom page content exists', functio
     ]]);
     $settings->save();
 
-    expect(fn () => $service->convertType($page, SiteNodeType::NavigationNode->value))
+    expect(fn () => $service->convertType($page, SiteSectionType::NavigationNode->value))
         ->toThrow(ValidationException::class, 'contains components');
-    expect($page->refresh()->type)->toBe(SiteNodeType::CustomPage->value)
+    expect($page->refresh()->type)->toBe(SiteSectionType::CustomPage->value)
         ->and($page->customPageSetting()->exists())->toBeTrue();
 });
 
@@ -270,9 +270,9 @@ it('allows safe Journal template changes and blocks changes or conversion when e
 
     expect(fn () => $service->updateJournalTemplate($journal, JournalTemplate::Exhibitions->value))
         ->toThrow(ValidationException::class, 'existing Journal entries')
-        ->and(fn () => $service->convertType($journal, SiteNodeType::NavigationNode->value))
+        ->and(fn () => $service->convertType($journal, SiteSectionType::NavigationNode->value))
         ->toThrow(ValidationException::class, 'contains entries');
 
     expect($journal->refresh()->template)->toBe(JournalTemplate::Blog->value)
-        ->and($journal->type)->toBe(SiteNodeType::Journal->value);
+        ->and($journal->type)->toBe(SiteSectionType::Journal->value);
 });

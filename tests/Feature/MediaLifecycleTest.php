@@ -1,7 +1,7 @@
 <?php
 
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIngestService;
@@ -79,7 +79,7 @@ function lifecycleAsset(): MediaAsset
 function lifecycleJournal(string $template, string $slug): SiteSection
 {
     return SiteSection::query()->create([
-        'type' => SiteNodeType::Journal->value,
+        'type' => SiteSectionType::Journal->value,
         'template' => $template,
         'title' => ucfirst($slug),
         'navigation_label' => ucfirst($slug),

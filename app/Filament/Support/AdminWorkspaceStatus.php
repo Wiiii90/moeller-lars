@@ -2,7 +2,7 @@
 
 namespace App\Filament\Support;
 
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Publication\PublicationService;
 use App\Models\ArtworkCategory;
 use App\Models\PublicContentSetting;
@@ -30,7 +30,7 @@ final class AdminWorkspaceStatus
             }
 
             if ($path === '/admin/pages' && $title === 'Pages') {
-                $pages = SiteSection::query()->where('type', '<>', SiteNodeType::NavigationNode->value);
+                $pages = SiteSection::query()->where('type', '<>', SiteSectionType::NavigationNode->value);
                 $total = (clone $pages)->count();
                 if ($total === 0) {
                     return $this->status('No pages', 'danger');
@@ -84,7 +84,7 @@ final class AdminWorkspaceStatus
     private function homeStatus(string $healthyLabel): array
     {
         $home = SiteSection::query()
-            ->where('type', SiteNodeType::Home->value)
+            ->where('type', SiteSectionType::Home->value)
             ->first(['state']);
 
         return $home instanceof SiteSection && $home->getAttribute('state') === 'published'

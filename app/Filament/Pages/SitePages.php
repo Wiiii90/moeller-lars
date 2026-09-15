@@ -4,7 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Pages\Concerns\ManagesSitePageDialogs;
@@ -273,7 +273,7 @@ final class SitePages extends Page
                 ->action(function (array $data, array $arguments): void {
                     /** @var SiteSection $section */
                     $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
-                    if ($section->nodeType() === SiteNodeType::Home) {
+                    if ($section->nodeType() === SiteSectionType::Home) {
                         return;
                     }
 
@@ -408,7 +408,7 @@ final class SitePages extends Page
     public function startAddingPage(): void
     {
         $this->addingPage = true;
-        $this->newPageType = SiteNodeType::CustomPage->value;
+        $this->newPageType = SiteSectionType::CustomPage->value;
         $this->newJournalTemplate = JournalTemplate::Blog->value;
         $this->newPageParent = '';
     }
@@ -423,22 +423,22 @@ final class SitePages extends Page
 
     public function createPage(): void
     {
-        $type = SiteNodeType::tryFrom($this->newPageType);
+        $type = SiteSectionType::tryFrom($this->newPageType);
 
         try {
             $parentId = $this->newParentId();
             $message = match ($type) {
-                SiteNodeType::NavigationNode => $this->createNavigationGroup($parentId),
-                SiteNodeType::CustomPage => $this->createCustomPage($parentId),
-                SiteNodeType::Journal => $this->createJournal($parentId),
-                SiteNodeType::Gallery => $this->createGallery($parentId),
+                SiteSectionType::NavigationNode => $this->createNavigationGroup($parentId),
+                SiteSectionType::CustomPage => $this->createCustomPage($parentId),
+                SiteSectionType::Journal => $this->createJournal($parentId),
+                SiteSectionType::Gallery => $this->createGallery($parentId),
                 default => throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Group Node.']),
             };
 
             $this->addingPage = false;
             $this->newPageTitle = '';
             $this->newPageSlug = '';
-            $this->newPageType = SiteNodeType::CustomPage->value;
+            $this->newPageType = SiteSectionType::CustomPage->value;
             $this->newJournalTemplate = JournalTemplate::Blog->value;
             $this->newPageParent = '';
             $this->pageNumber = 1;
@@ -537,9 +537,9 @@ final class SitePages extends Page
             /** @var EloquentCollection<int, SiteSection> $children */
             $children = $section->getRelation('children');
             $label = $this->sectionLabel($section);
-            $isHome = $section->nodeType() === SiteNodeType::Home;
+            $isHome = $section->nodeType() === SiteSectionType::Home;
             $previous = $topIndex > 0 ? $topLevel->values()->get($topIndex - 1) : null;
-            $previousIsHome = $previous instanceof SiteSection && $previous->nodeType() === SiteNodeType::Home;
+            $previousIsHome = $previous instanceof SiteSection && $previous->nodeType() === SiteSectionType::Home;
             $row = $this->row(
                 $section,
                 0,
@@ -681,7 +681,7 @@ final class SitePages extends Page
             'parent_label' => $parentLabel,
             'has_children' => $hasChildren,
             'depth' => $depth,
-            'can_reorder' => $type !== SiteNodeType::Home,
+            'can_reorder' => $type !== SiteSectionType::Home,
             'can_move_up' => $canMoveUp,
             'can_move_down' => $canMoveDown,
             'can_delete' => $type->canDelete(),
@@ -788,7 +788,7 @@ final class SitePages extends Page
 
     private function deleteSectionRecord(SiteSection $section): void
     {
-        if ($section->nodeType() === SiteNodeType::Gallery) {
+        if ($section->nodeType() === SiteSectionType::Gallery) {
             /** @var ArtworkCategory $gallery */
             $gallery = ArtworkCategory::query()->findOrFail((int) $section->getAttribute('artwork_category_id'));
             app(GalleryEditorialService::class)->delete($gallery);

@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
@@ -24,7 +24,7 @@ trait CustomPageWorkspaceLifecycle
         /** @var SiteSection $siteSection */
         $siteSection = SiteSection::query()
             ->whereKey((int) $section)
-            ->where('type', SiteNodeType::CustomPage->value)
+            ->where('type', SiteSectionType::CustomPage->value)
             ->firstOrFail();
 
         /** @var CustomPageSetting $settings */

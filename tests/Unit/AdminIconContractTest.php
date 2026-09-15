@@ -1,6 +1,6 @@
 <?php
 
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\Activity;
 use App\Filament\Pages\Analytics;
 use App\Filament\Pages\Dashboard;
@@ -52,14 +52,14 @@ it('keeps static admin navigation icons in the central registry', function (): v
 it('keeps dynamic site node icons in the central registry', function (): void {
     $presentation = new SiteNodePresentation;
     $icons = [
-        SiteNodeType::Home->value => AdminIcon::Home,
-        SiteNodeType::Gallery->value => AdminIcon::Gallery,
-        SiteNodeType::Journal->value => AdminIcon::Journal,
-        SiteNodeType::CustomPage->value => AdminIcon::CustomPage,
-        SiteNodeType::NavigationNode->value => AdminIcon::NavigationNode,
+        SiteSectionType::Home->value => AdminIcon::Home,
+        SiteSectionType::Gallery->value => AdminIcon::Gallery,
+        SiteSectionType::Journal->value => AdminIcon::Journal,
+        SiteSectionType::CustomPage->value => AdminIcon::CustomPage,
+        SiteSectionType::NavigationNode->value => AdminIcon::NavigationNode,
     ];
 
-    foreach (SiteNodeType::cases() as $type) {
+    foreach (SiteSectionType::cases() as $type) {
         expect($presentation->icon($type))->toBe($icons[$type->value]);
     }
 });

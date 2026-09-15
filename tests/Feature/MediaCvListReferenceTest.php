@@ -1,6 +1,6 @@
 <?php
 
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Filament\Support\SiteNodePresentation;
 use App\Models\CvEntry;
@@ -36,7 +36,7 @@ it('uses rendered cv_list media as the canonical CV reference and ignores legacy
     ]);
 
     $section = SiteSection::query()->create([
-        'type' => SiteNodeType::CustomPage->value,
+        'type' => SiteSectionType::CustomPage->value,
         'template' => null,
         'title' => 'Biography',
         'navigation_label' => 'Biography',

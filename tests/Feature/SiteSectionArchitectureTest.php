@@ -2,7 +2,7 @@
 
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\PublicNavigationService;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Publication\PublicationService;
 use App\Models\SiteSection;
@@ -22,10 +22,10 @@ it('keeps Home singular while configurable page types remain reusable', function
     $blog = $service->createJournal('Notes', 'notes-architecture', JournalTemplate::Blog->value);
     $exhibitions = $service->createJournal('Shows', 'shows-architecture', JournalTemplate::Exhibitions->value);
 
-    expect(SiteSection::query()->where('type', SiteNodeType::Home->value)->count())->toBe(1)
-        ->and($firstPage->type)->toBe(SiteNodeType::CustomPage->value)
-        ->and($secondPage->type)->toBe(SiteNodeType::CustomPage->value)
-        ->and($blog->type)->toBe(SiteNodeType::Journal->value)
+    expect(SiteSection::query()->where('type', SiteSectionType::Home->value)->count())->toBe(1)
+        ->and($firstPage->type)->toBe(SiteSectionType::CustomPage->value)
+        ->and($secondPage->type)->toBe(SiteSectionType::CustomPage->value)
+        ->and($blog->type)->toBe(SiteSectionType::Journal->value)
         ->and($blog->template)->toBe(JournalTemplate::Blog->value)
         ->and($exhibitions->template)->toBe(JournalTemplate::Exhibitions->value);
 });
@@ -75,19 +75,19 @@ it('uses committed SiteSection state as the public availability gate', function 
 });
 
 it('keeps page type out of hierarchy compatibility', function (): void {
-    foreach (SiteNodeType::cases() as $child) {
+    foreach (SiteSectionType::cases() as $child) {
         expect($child->canHaveParent())->toBeTrue()
             ->and($child->canContainChildren())->toBeTrue()
-            ->and($child->canChangePlacement())->toBe($child !== SiteNodeType::Home);
+            ->and($child->canChangePlacement())->toBe($child !== SiteSectionType::Home);
 
-        foreach (SiteNodeType::cases() as $parent) {
+        foreach (SiteSectionType::cases() as $parent) {
             expect($child->canBeChildOf($parent))->toBeTrue();
         }
     }
 
-    expect(SiteNodeType::Home->canChangePublication())->toBeFalse()
-        ->and(SiteNodeType::Home->canConvert())->toBeFalse()
-        ->and(SiteNodeType::Home->canDelete())->toBeFalse();
+    expect(SiteSectionType::Home->canChangePublication())->toBeFalse()
+        ->and(SiteSectionType::Home->canConvert())->toBeFalse()
+        ->and(SiteSectionType::Home->canDelete())->toBeFalse();
 });
 
 it('rejects level three trees without introducing type pairing rules', function (): void {
