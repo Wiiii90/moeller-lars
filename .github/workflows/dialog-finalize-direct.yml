@@ -30,13 +30,17 @@ jobs:
           if ! python3 scripts/admin_dialog_finalize.py > /tmp/dialog-finalize.log 2>&1; then
             git reset --hard HEAD
             git clean -fd
-            cp /tmp/dialog-finalize.log scripts/dialog-finalize-error.txt
+            {
+              echo 'Dialog finalizer stopped after CSS consolidation:'
+              cat /tmp/dialog-finalize.log
+            } > scripts/dialog-finalize-error.txt
             git add scripts/dialog-finalize-error.txt
-            git commit -m 'chore: record dialog finalizer stop reason'
+            git commit -m 'chore: update dialog finalizer stop reason'
             git push origin HEAD:dev
             exit 1
           fi
 
+          rm -f scripts/dialog-finalize-error.txt
           rm .github/workflows/dialog-finalize-direct.yml scripts/admin_dialog_finalize.py
           git diff --check
           git add -A
