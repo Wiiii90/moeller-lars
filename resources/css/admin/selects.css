@@ -3,7 +3,6 @@
  * listbox owns presentation and always opens below its trigger. */
 :root {
     --admin-dropdown-max-height: 18rem;
-    --admin-dropdown-gap: .3rem;
 }
 
 .admin-controlled-select__native {
@@ -15,6 +14,23 @@
     display: inline-grid;
     min-width: 0;
     max-width: 100%;
+}
+
+/* Field-label rules intentionally target direct spans. The runtime control is
+ * also a span, so reset that inherited label presentation at the shared layer. */
+.admin-field > .admin-select,
+.admin-data-field > .admin-select,
+.admin-task-field > .admin-select,
+.gallery-workspace__field > .admin-select,
+.media-workspace__field > .admin-select,
+.admin-pager__size > .admin-select,
+.media-workspace__pager-size > .admin-select {
+    color: var(--admin-text);
+    font-size: inherit;
+    font-weight: inherit;
+    letter-spacing: normal;
+    line-height: normal;
+    text-transform: none;
 }
 
 .admin-field > .admin-select,
@@ -55,7 +71,10 @@
     color: var(--admin-text);
     font: inherit;
     font-size: var(--admin-control-value-size, var(--admin-font-size-control-value));
+    font-weight: 400;
+    letter-spacing: normal;
     line-height: 1.2;
+    text-transform: none;
     outline: 0;
     cursor: pointer;
 }
@@ -156,8 +175,11 @@
     color: inherit;
     font: inherit;
     font-size: var(--admin-control-value-size, .78rem);
+    font-weight: 400;
+    letter-spacing: normal;
     line-height: 1.25;
     text-align: left;
+    text-transform: none;
     cursor: pointer;
 }
 
