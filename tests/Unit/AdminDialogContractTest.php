@@ -34,14 +34,20 @@ it('keeps migrated admin dialog surfaces on the shared dialog contract', functio
     }
 });
 
-it('keeps legacy dialog footer chrome out of the shared geometry layer', function (): void {
+it('retires the legacy dialog stylesheet without reintroducing legacy footer chrome', function (): void {
     $root = dirname(__DIR__, 2);
-    $dialogs = file_get_contents($root.'/resources/css/admin/dialogs.css');
+    $legacy = $root.'/resources/css/admin/dialogs.css';
+    $contract = file_get_contents($root.'/resources/css/admin/dialog-contract.css');
+    $media = file_get_contents($root.'/resources/css/admin/media.css');
 
-    expect($dialogs)
-        ->not->toContain('.media-file-dialog .fi-modal-footer-actions')
-        ->not->toContain('media-dialog-footer__')
-        ->not->toContain('admin-dialog-footer__');
+    expect(file_exists($legacy))->toBeFalse();
+
+    foreach ([$contract, $media] as $source) {
+        expect($source)
+            ->not->toContain('.media-file-dialog .fi-modal-footer-actions')
+            ->not->toContain('media-dialog-footer__')
+            ->not->toContain('admin-dialog-footer__');
+    }
 });
 
 it('registers the shared admin control adapter panel wide', function (): void {
