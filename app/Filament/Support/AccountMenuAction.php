@@ -28,7 +28,7 @@ final class AccountMenuAction
                 ->label('Account')
                 ->icon(AdminIcon::Account->value)
                 ->url(null)
-                ->sort(-10)
+                ->sort(0)
                 ->modalHeading('Account & security')
                 ->fillForm(fn (): array => [
                     'name' => (string) self::user()->getAttribute('name'),
