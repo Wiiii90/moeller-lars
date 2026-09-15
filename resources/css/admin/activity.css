@@ -457,56 +457,58 @@ a.activity-calendar__day:focus-visible {
     font-variant-numeric: tabular-nums;
 }
 
-.activity-workspace__table table {
+.activity-workspace__table:not(.activity-commits-table) table {
     min-width: 72rem;
     table-layout: fixed;
 }
 
-.activity-workspace__table col {
+.activity-workspace__table:not(.activity-commits-table) col {
     width: 16.6667%;
 }
 
-.activity-workspace__table th,
-.activity-workspace__table td {
+.activity-workspace__table:not(.activity-commits-table) th,
+.activity-workspace__table:not(.activity-commits-table) td {
     box-sizing: border-box;
     border-left: 1px solid var(--admin-line);
 }
 
-.activity-workspace__table th:first-child,
-.activity-workspace__table td:first-child {
+.activity-workspace__table:not(.activity-commits-table) th:first-child,
+.activity-workspace__table:not(.activity-commits-table) td:first-child {
     padding-left: 0;
     border-left: 0;
 }
 
-.activity-workspace__table th:not(:first-child),
-.activity-workspace__table td:not(:first-child) {
+.activity-workspace__table:not(.activity-commits-table) th:not(:first-child),
+.activity-workspace__table:not(.activity-commits-table) td:not(:first-child) {
     padding-left: 1rem;
 }
 
-.activity-workspace__table th:not(:last-child),
-.activity-workspace__table td:not(:last-child) {
+.activity-workspace__table:not(.activity-commits-table) th:not(:last-child),
+.activity-workspace__table:not(.activity-commits-table) td:not(:last-child) {
     padding-right: 1rem;
 }
 
-.activity-workspace__table th:last-child,
-.activity-workspace__table td:last-child {
-    padding-right: 0;
+.activity-workspace__table:not(.activity-commits-table) th:last-child,
+.activity-workspace__table:not(.activity-commits-table) td:last-child {
+    padding-right: 1rem;
 }
 
-.activity-change-cell,
-.activity-target-cell,
-.activity-context-cell,
-.activity-publication-cell,
-.activity-event-meta {
+.activity-workspace__table:not(.activity-commits-table) :is(
+    .activity-change-cell,
+    .activity-target-cell,
+    .activity-context-cell,
+    .activity-publication-cell,
+    .activity-event-meta
+) {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.activity-change-cell strong,
-.activity-target-cell span,
-.activity-context-cell span {
+.activity-workspace__table:not(.activity-commits-table) .activity-change-cell strong,
+.activity-workspace__table:not(.activity-commits-table) .activity-target-cell span,
+.activity-workspace__table:not(.activity-commits-table) .activity-context-cell span {
     display: block;
     min-width: 0;
     overflow: hidden;
@@ -514,23 +516,23 @@ a.activity-calendar__day:focus-visible {
     white-space: nowrap;
 }
 
-.activity-change-cell strong {
+.activity-workspace__table:not(.activity-commits-table) .activity-change-cell strong {
     color: var(--admin-text);
     font-size: .76rem;
     font-weight: 600;
 }
 
-.activity-target-cell span {
+.activity-workspace__table:not(.activity-commits-table) .activity-target-cell span {
     color: var(--admin-text);
     font-size: .72rem;
 }
 
-.activity-context-cell span {
+.activity-workspace__table:not(.activity-commits-table) .activity-context-cell span {
     color: var(--admin-muted);
     font-size: .68rem;
 }
 
-.activity-publication-cell__state {
+.activity-workspace__table:not(.activity-commits-table) .activity-publication-cell__state {
     display: inline-flex;
     max-width: 100%;
     min-width: 0;
@@ -541,7 +543,7 @@ a.activity-calendar__day:focus-visible {
     white-space: nowrap;
 }
 
-.activity-publication-cell__state code {
+.activity-workspace__table:not(.activity-commits-table) .activity-publication-cell__state code {
     min-width: 0;
     overflow: hidden;
     color: var(--admin-muted);
@@ -554,32 +556,70 @@ a.activity-calendar__day:focus-visible {
     color: var(--admin-faint);
 }
 
-.activity-event-meta strong,
-.activity-event-meta time,
-.activity-event-meta > span {
+.activity-workspace__table:not(.activity-commits-table) .activity-event-meta strong,
+.activity-workspace__table:not(.activity-commits-table) .activity-event-meta time,
+.activity-workspace__table:not(.activity-commits-table) .activity-event-meta > span {
     display: inline;
     font-size: .68rem;
     line-height: 1.35;
 }
 
-.activity-event-meta strong {
+.activity-workspace__table:not(.activity-commits-table) .activity-event-meta strong {
     color: var(--admin-text);
     font-weight: 600;
 }
 
-.activity-event-meta time,
-.activity-event-meta > span {
+.activity-workspace__table:not(.activity-commits-table) .activity-event-meta time,
+.activity-workspace__table:not(.activity-commits-table) .activity-event-meta > span {
     color: var(--admin-muted);
 }
 
-.activity-event-meta > span {
+.activity-workspace__table:not(.activity-commits-table) .activity-event-meta > span {
     margin-inline: .22rem;
 }
 
-.activity-workspace__table .admin-table__actions .admin-toolbar {
+.activity-workspace__table:not(.activity-commits-table) .admin-table__actions .admin-toolbar {
     gap: .2rem;
     justify-content: flex-end;
     flex-wrap: nowrap;
+}
+
+/* Preserve the existing four-column Commits table geometry. */
+.activity-commits-table table {
+    min-width: 56rem;
+    table-layout: fixed;
+}
+
+.activity-commits-table th:nth-child(1),
+.activity-commits-table td:nth-child(1),
+.activity-commits-table th:nth-child(4),
+.activity-commits-table td:nth-child(4) {
+    width: 33.333%;
+}
+
+.activity-commits-table th:nth-child(2),
+.activity-commits-table td:nth-child(2),
+.activity-commits-table th:nth-child(3),
+.activity-commits-table td:nth-child(3) {
+    width: 16.667%;
+}
+
+.activity-commits-table .activity-event-meta > strong,
+.activity-commits-table .activity-event-meta > time {
+    display: block;
+}
+
+.activity-commits-table .activity-event-meta > time,
+.activity-commits-table .activity-publication-cell > small {
+    display: block;
+    max-width: 100%;
+    margin-top: .18rem;
+    overflow: hidden;
+    color: var(--admin-muted);
+    font-size: .64rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 @media (max-width: 980px) {
