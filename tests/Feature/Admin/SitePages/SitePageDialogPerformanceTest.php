@@ -1,17 +1,36 @@
 <?php
 
-use App\Domain\Content\SiteSectionEditorialService;
+use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
-use App\Models\User;
+use App\Models\SiteSection;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 
 it('reuses one Site page dialog section lookup within the component instance', function (): void {
-    $this->actingAs(User::factory()->admin()->create(), 'web');
-
-    $editorial = app(SiteSectionEditorialService::class);
-    $firstSection = $editorial->createCustomPage('First dialog page', 'first-dialog-page');
-    $secondSection = $editorial->createCustomPage('Second dialog page', 'second-dialog-page');
+    $firstSection = SiteSection::query()->create([
+        'type' => SiteSectionType::CustomPage->value,
+        'template' => null,
+        'title' => 'First dialog page',
+        'navigation_label' => 'First dialog page',
+        'slug' => 'first-dialog-page',
+        'state' => 'hidden',
+        'position' => 100,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
+    ]);
+    $secondSection = SiteSection::query()->create([
+        'type' => SiteSectionType::CustomPage->value,
+        'template' => null,
+        'title' => 'Second dialog page',
+        'navigation_label' => 'Second dialog page',
+        'slug' => 'second-dialog-page',
+        'state' => 'hidden',
+        'position' => 200,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
+    ]);
 
     $sectionSelects = [];
     DB::listen(function (QueryExecuted $query) use (&$sectionSelects): void {
