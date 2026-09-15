@@ -1,0 +1,305 @@
+from pathlib import Path
+import re
+
+root = Path('.')
+needle = 'AdminDialog::editCommit('
+pairs = {')': '(', ']': '[', '}': '{'}
+
+
+def call_end(text: str, open_paren: int) -> int:
+    stack = ['(']
+    quote = None
+    escaped = False
+    line_comment = False
+    block_comment = False
+    i = open_paren + 1
+    while i < len(text):
+        ch = text[i]
+        nxt = text[i + 1] if i + 1 < len(text) else ''
+        if line_comment:
+            if ch == '\n':
+                line_comment = False
+            i += 1
+            continue
+        if block_comment:
+            if ch == '*' and nxt == '/':
+                block_comment = False
+                i += 2
+            else:
+                i += 1
+            continue
+        if quote is not None:
+            if escaped:
+                escaped = False
+            elif ch == '\\':
+                escaped = True
+            elif ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch in ("'", '"'):
+            quote = ch
+            i += 1
+            continue
+        if ch == '/' and nxt == '/':
+            line_comment = True
+            i += 2
+            continue
+        if ch == '/' and nxt == '*':
+            block_comment = True
+            i += 2
+            continue
+        if ch in '([{':
+            stack.append(ch)
+        elif ch in ')]}':
+            if not stack or stack[-1] != pairs[ch]:
+                raise ValueError('unbalanced delimiter in editCommit call')
+            stack.pop()
+            if not stack:
+                return i
+        i += 1
+    raise ValueError('unterminated editCommit call')
+
+
+def split_args(source: str) -> list[str]:
+    stack = []
+    quote = None
+    escaped = False
+    line_comment = False
+    block_comment = False
+    cuts = []
+    i = 0
+    while i < len(source):
+        ch = source[i]
+        nxt = source[i + 1] if i + 1 < len(source) else ''
+        if line_comment:
+            if ch == '\n':
+                line_comment = False
+            i += 1
+            continue
+        if block_comment:
+            if ch == '*' and nxt == '/':
+                block_comment = False
+                i += 2
+            else:
+                i += 1
+            continue
+        if quote is not None:
+            if escaped:
+                escaped = False
+            elif ch == '\\':
+                escaped = True
+            elif ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch in ("'", '"'):
+            quote = ch
+            i += 1
+            continue
+        if ch == '/' and nxt == '/':
+            line_comment = True
+            i += 2
+            continue
+        if ch == '/' and nxt == '*':
+            block_comment = True
+            i += 2
+            continue
+        if ch in '([{':
+            stack.append(ch)
+        elif ch in ')]}':
+            if not stack or stack[-1] != pairs[ch]:
+                raise ValueError('unbalanced editCommit argument')
+            stack.pop()
+        elif ch == ',' and not stack:
+            cuts.append(i)
+        i += 1
+
+    args = []
+    start = 0
+    for cut in cuts:
+        args.append(source[start:cut].strip())
+        start = cut + 1
+    args.append(source[start:].strip())
+    if args and args[-1] == '':
+        args.pop()
+    return args
+
+
+def migrate_calls(text: str) -> tuple[str, int]:
+    count = 0
+    cursor = 0
+    while True:
+        start = text.find(needle, cursor)
+        if start < 0:
+            return text, count
+        open_paren = start + len(needle) - 1
+        end = call_end(text, open_paren)
+        args = split_args(text[open_paren + 1:end])
+        if len(args) not in (2, 3):
+            raise ValueError(f'editCommit expected 2/3 arguments, got {len(args)}')
+        if not args[1].lstrip().startswith(("'", '"')):
+            raise ValueError('editCommit submit label must be a string literal')
+        replacement = 'AdminDialog::edit(' + args[0]
+        if len(args) == 3:
+            replacement += ', ' + args[2]
+        replacement += ')'
+        text = text[:start] + replacement + text[end + 1:]
+        cursor = start + len(replacement)
+        count += 1
+
+
+trait_path = root / 'app/Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php'
+trait_path.write_text("""<?php
+
+namespace App\\Filament\\Support\\Dialogs;
+
+use Filament\\Actions\\Action;
+use Filament\\Support\\Exceptions\\Cancel;
+use Filament\\Support\\Exceptions\\Halt;
+use Illuminate\\Validation\\ValidationException;
+use Throwable;
+
+trait InteractsWithAdminEditDialogAutosave
+{
+    /** @var array<string, string> */
+    public array $adminEditDialogPersistedFingerprints = [];
+
+    public function persistMountedAdminEdit(): void
+    {
+        $action = $this->getMountedAction();
+
+        if (! $action instanceof Action) {
+            return;
+        }
+
+        $schema = $this->getMountedActionSchema(mountedAction: $action);
+
+        if ($schema === null) {
+            return;
+        }
+
+        $action->beginDatabaseTransaction();
+
+        try {
+            $action->callBeforeFormValidated();
+            $state = $schema->getState();
+            $action->callAfterFormValidated();
+            $action->data($state);
+
+            $key = $action->getName().':'.hash('sha256', serialize($action->getArguments()));
+            $fingerprint = hash('sha256', serialize($state));
+
+            if (($this->adminEditDialogPersistedFingerprints[$key] ?? null) === $fingerprint) {
+                $action->commitDatabaseTransaction();
+
+                return;
+            }
+
+            $action->callBefore();
+            $action->call(['form' => $schema, 'schema' => $schema]);
+            $action->callAfter();
+            $this->afterActionCalled($action);
+            $action->commitDatabaseTransaction();
+
+            $this->adminEditDialogPersistedFingerprints[$key] = $fingerprint;
+        } catch (Halt $exception) {
+            $exception->shouldRollbackDatabaseTransaction()
+                ? $action->rollBackDatabaseTransaction()
+                : $action->commitDatabaseTransaction();
+        } catch (Cancel $exception) {
+            $exception->shouldRollbackDatabaseTransaction()
+                ? $action->rollBackDatabaseTransaction()
+                : $action->commitDatabaseTransaction();
+        } catch (ValidationException $exception) {
+            $action->rollBackDatabaseTransaction();
+
+            throw $exception;
+        } catch (Throwable $exception) {
+            $action->rollBackDatabaseTransaction();
+
+            throw $exception;
+        }
+    }
+}
+""")
+
+changed = []
+for path in (root / 'app' / 'Filament').rglob('*.php'):
+    text = path.read_text()
+    expected = text.count(needle)
+    if expected == 0:
+        continue
+
+    migrated, converted = migrate_calls(text)
+    if converted != expected or needle in migrated:
+        raise SystemExit(f'Unsafe editCommit migration in {path}: {converted}/{expected}')
+
+    marker = 'use App\\Filament\\Support\\Dialogs\\AdminDialog;\n'
+    import_line = 'use App\\Filament\\Support\\Dialogs\\InteractsWithAdminEditDialogAutosave;\n'
+    if import_line not in migrated:
+        if marker not in migrated:
+            raise SystemExit(f'Missing AdminDialog import in {path}')
+        migrated = migrated.replace(marker, marker + import_line, 1)
+
+    if 'use InteractsWithAdminEditDialogAutosave;' not in migrated:
+        declaration = re.search(r'(?m)^(?:final\s+|abstract\s+)?(?:class|trait)\s+[A-Za-z0-9_]+[^\n]*\n\{\n', migrated)
+        if declaration is None:
+            raise SystemExit(f'Could not find class/trait declaration in {path}')
+        migrated = migrated[:declaration.end()] + '    use InteractsWithAdminEditDialogAutosave;\n\n' + migrated[declaration.end():]
+
+    path.write_text(migrated)
+    changed.append((str(path), converted))
+
+if not changed:
+    raise SystemExit('Expected editCommit flows, found none')
+
+helper = root / 'app/Filament/Support/Dialogs/AdminDialog.php'
+text = helper.read_text()
+text, count = re.subn(
+    r"\n    /\*\*\n     \* Transitional helper for an edit that still has atomic persistence\.[\s\S]*?\n    public static function editCommit\([\s\S]*?\n    \}\n",
+    '\n',
+    text,
+    count=1,
+)
+if count != 1:
+    raise SystemExit('Could not remove AdminDialog::editCommit bridge')
+
+old = """        if ($type === AdminDialogType::Confirm) {
+            $classes[] = 'admin-dialog--confirmation';
+        }
+
+        return $action
+            // Filament still owns modal state, focus, Escape and the native X.
+            // The shared CSS width modifier is the actual visual authority.
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => implode(' ', $classes)]);"""
+new = """        if ($type === AdminDialogType::Confirm) {
+            $classes[] = 'admin-dialog--confirmation';
+        }
+
+        $attributes = ['class' => implode(' ', $classes)];
+
+        if ($type === AdminDialogType::Edit) {
+            // Native change events give text/textarea blur commits and immediate
+            // select/toggle commits without timer-driven persistence.
+            $attributes['wire:change'] = 'persistMountedAdminEdit';
+        }
+
+        return $action
+            // Filament still owns modal state, focus, Escape and the native X.
+            // The shared CSS width modifier is the actual visual authority.
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes($attributes);"""
+if old not in text:
+    raise SystemExit('AdminDialog base block changed unexpectedly')
+helper.write_text(text.replace(old, new, 1))
+
+contract = root / 'docs/ADMIN-DIALOG-CONTRACT.md'
+text = contract.read_text()
+bridge = "\nThe framework helper `AdminDialog::editCommit()` exists only as a migration bridge for existing atomic edit workflows whose domain semantics cannot safely be converted in the same source pass. It must not be used for new dialogs and must be removed from each flow once that flow has canonical autosave/receipt coverage.\n"
+if bridge not in text:
+    raise SystemExit('Dialog contract bridge paragraph changed unexpectedly')
+contract.write_text(text.replace(bridge, '\n'))
+
+print('Migrated edit dialogs:', changed)
