@@ -20,7 +20,9 @@ jobs:
           fetch-depth: 0
 
       - name: Apply refinement
-        run: python3 scripts/activity_workspace_refinement.py
+        run: |
+          python3 scripts/activity_workspace_refinement.py
+          python3 -c "from pathlib import Path; p=Path('tests/Feature/ActivityFilterContractTest.php'); p.write_text(p.read_text().rstrip() + '\n')"
 
       - name: Remove one-shot helpers
         run: rm scripts/activity_workspace_refinement.py .github/workflows/activity-workspace-refinement.yml
