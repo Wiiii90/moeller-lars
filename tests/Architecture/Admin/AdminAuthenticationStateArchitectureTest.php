@@ -1,11 +1,12 @@
 <?php
 
 it('never live-syncs application-owned authentication fields', function (): void {
-    $authFiles = glob(app_path('Filament/Auth/*.php')) ?: [];
+    $appPath = dirname(__DIR__, 3).'/app';
+    $authFiles = glob($appPath.'/Filament/Auth/*.php') ?: [];
     $files = [
         ...$authFiles,
-        app_path('Filament/Support/AccountMenuAction.php'),
-        app_path('Filament/Support/AdminPasswordField.php'),
+        $appPath.'/Filament/Support/AccountMenuAction.php',
+        $appPath.'/Filament/Support/AdminPasswordField.php',
     ];
 
     foreach ($files as $file) {
