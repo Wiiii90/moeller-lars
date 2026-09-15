@@ -35,6 +35,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     $root = dirname(__DIR__, 3);
     $adapter = file_get_contents($root.'/app/Filament/Support/Dialogs/AdminDialog.php');
     $contract = file_get_contents($root.'/resources/css/admin/dialog-contract.css');
+    $layouts = file_get_contents($root.'/resources/css/admin/layouts.css');
     $mediaCss = file_get_contents($root.'/resources/css/admin/media.css');
     $homeWorkspace = file_get_contents($root.'/app/Filament/Pages/HomePresentation.php');
     $artworkPreview = file_get_contents($root.'/resources/views/filament/resources/artworks/partials/preview-dialog.blade.php');
@@ -48,6 +49,11 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('.admin-task-dialog .fi-modal-content')
         ->toContain('scrollbar-width: thin')
         ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
+
+    expect($layouts)
+        ->toContain("html.fi {\n    scrollbar-gutter: stable !important;\n}")
+        ->toContain(".fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
+        ->not->toContain("html.fi,\n.fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}");
 
     expect($homeWorkspace)
         ->toContain('use Filament\\Schemas\\Components\\Grid;')

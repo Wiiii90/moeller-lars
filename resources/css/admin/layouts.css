@@ -22,10 +22,16 @@ html:not(.dark) .fi-sidebar-nav {
 }
 
 /*
- * Do not reserve scrollbar space before either the document or sidebar actually
- * needs it. Filament's modal scroll-lock compensates the document width itself.
+ * Keep the document scrollport width stable while Filament locks body scrolling
+ * for a modal. Without the reserved document gutter, removing/restoring a
+ * classic scrollbar shifts the centered shell and makes a closing dialog jump
+ * sideways before it disappears. The sidebar remains independently scrollable
+ * and should reserve space only when its own content needs it.
  */
-html.fi,
+html.fi {
+    scrollbar-gutter: stable !important;
+}
+
 .fi-sidebar-nav {
     scrollbar-gutter: auto !important;
 }
