@@ -9,7 +9,9 @@ use Illuminate\Validation\Rules\Password;
 final class AdminPasswordPolicy
 {
     public const LOCAL_MINIMUM_LENGTH = 8;
+
     public const STRICT_MINIMUM_LENGTH = 15;
+
     public const MAXIMUM_LENGTH = 128;
 
     private const CONTEXT_VALUES = [
