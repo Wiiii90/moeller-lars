@@ -174,6 +174,7 @@
             'artwork' => [3, 4, 5, 6, 7],
             default => [2, 3, 4, 5],
         };
+        $detailIdentityColumn = in_array($detailReport, ['acquisition', 'technology'], true) ? 2 : 1;
     @endphp
 
     <x-admin.workspace title="Analytics" class="analytics-dashboard">
@@ -245,7 +246,7 @@
                                     class="analytics-country-rank"
                                     x-on:click="selectCountry(@js($label))"
                                     x-bind:class="selectedCountry === @js($label) ? 'is-selected' : ''"
-                                    x-bind:aria-pressed="(selectedCountry === @js($label])).toString()"
+                                    x-bind:aria-pressed="(selectedCountry === @js($label)).toString()"
                                 >
                                     <span class="analytics-country-rank__identity">
                                         @if (is_string($presentation['flag_url'] ?? null))
@@ -368,7 +369,7 @@
                             @forelse ($detailTable['rows'] as $row)
                                 <tr>
                                     @foreach ($detailColumnOrder as $columnIndex)
-                                        <td class="{{ $loop->first ? 'admin-table__identity ' : '' }}{{ in_array($loop->iteration, $detailNumericColumns, true) ? 'analytics-detail-table__numeric' : '' }}">
+                                        <td class="{{ $loop->iteration === $detailIdentityColumn ? 'admin-table__identity ' : '' }}{{ in_array($loop->iteration, $detailNumericColumns, true) ? 'analytics-detail-table__numeric' : '' }}">
                                             {{ $row[$columnIndex] ?? '—' }}
                                         </td>
                                     @endforeach
