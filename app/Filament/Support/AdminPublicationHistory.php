@@ -107,7 +107,7 @@ final class AdminPublicationHistory
 
         $actionKeys = $this->filteredActionKeys($area, $family);
         if ($actionKeys !== null) {
-            $query->whereHas('auditEvents', static function (Builder $events) use ($actionKeys): void {
+            $query->whereHas('auditEvents.auditEvent', static function (Builder $events) use ($actionKeys): void {
                 $events->whereIn('action', $actionKeys);
             });
         }
@@ -137,7 +137,7 @@ final class AdminPublicationHistory
                 });
 
             if ($searchActionKeys !== []) {
-                $query->orWhereHas('auditEvents', static function (Builder $events) use ($searchActionKeys): void {
+                $query->orWhereHas('auditEvents.auditEvent', static function (Builder $events) use ($searchActionKeys): void {
                     $events->whereIn('action', $searchActionKeys);
                 });
             }
