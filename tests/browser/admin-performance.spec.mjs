@@ -211,7 +211,7 @@ test('profiles representative warmed admin interactions', async ({ page }) => {
     const addPage = await profiler.run(
       'pages_add_page_dialog',
       async () => {
-        await page.getByRole('button', { name: 'Add page', exact: true }).click();
+        await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
       },
       async () => {
         await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
