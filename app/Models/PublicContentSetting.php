@@ -37,6 +37,8 @@ class PublicContentSetting extends Model
 
     public const SCOPES = [self::SCOPE_GENERAL];
 
+    private const REQUEST_CACHE_KEY = 'public_content_setting.general';
+
     protected $table = 'public_content_settings';
 
     public $incrementing = false;
@@ -67,7 +69,17 @@ class PublicContentSetting extends Model
 
     public static function general(): self
     {
-        return self::forScope(self::SCOPE_GENERAL);
+        if (app()->bound('request')) {
+            $cached = request()->attributes->get(self::REQUEST_CACHE_KEY);
+            if ($cached instanceof self) {
+                return $cached;
+            }
+        }
+
+        $setting = self::forScope(self::SCOPE_GENERAL);
+        self::cacheGeneralForRequest($setting);
+
+        return $setting;
     }
 
     /** @return BelongsTo<MediaAsset, $this> */
@@ -86,9 +98,22 @@ class PublicContentSetting extends Model
             self::validateGeneral($setting);
         });
 
+        static::saved(function (self $setting): void {
+            self::cacheGeneralForRequest($setting);
+        });
+
         static::deleting(function (): never {
             throw new LogicException('Global public content settings cannot be deleted.');
         });
+    }
+
+    private static function cacheGeneralForRequest(self $setting): void
+    {
+        if (! app()->bound('request')) {
+            return;
+        }
+
+        request()->attributes->set(self::REQUEST_CACHE_KEY, $setting);
     }
 
     private static function validateGeneral(self $setting): void
