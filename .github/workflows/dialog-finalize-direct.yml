@@ -5,7 +5,6 @@ on:
     branches: [dev]
     paths:
       - '.github/workflows/dialog-finalize-direct.yml'
-  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -13,37 +12,124 @@ permissions:
 jobs:
   finalize:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: moeller_lars_testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moeller_lars_testing"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: moeller_lars_testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      MOELLER_LARS_DISPOSABLE_TEST_DATABASE: '1'
+      MATOMO_TRACKING_ENABLED: false
+      MATOMO_REPORTING_ENABLED: false
     steps:
       - uses: actions/checkout@v4
         with:
           ref: dev
           fetch-depth: 0
 
-      - name: Finalize dialog migration
-        shell: bash
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, intl, mbstring, pdo_pgsql, zip
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Apply final dialog migration
+        run: |
+          set -euo pipefail
+          git pull --ff-only origin dev
+          python3 scripts/admin_dialog_finalize.py
+          rm -f \
+            scripts/admin_dialog_migration.py \
+            scripts/admin_dialog_finalize.py \
+            scripts/dialog-finalize-error.txt \
+            .github/workflows/dialog-migration-direct.yml \
+            .github/workflows/dialog-finalize-direct.yml
+          git diff --check
+          find app -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Normalize PHP formatting
+        run: vendor/bin/pint
+
+      - name: Recheck source after formatting
+        run: |
+          set -euo pipefail
+          git diff --check
+          find app -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+          if rg -n 'AdminDialog::editCommit|PublicationCommitDialog|publication-commit-dialog' app resources docs tests; then
+            echo 'Retired dialog identifiers remain' >&2
+            exit 1
+          fi
+          if rg -n --glob '*.php' --glob '!app/Filament/Support/Dialogs/AdminDialog.php' -- '->requiresConfirmation\(|->modalWidth\(|->modalSubmitAction\(|->modalCancelAction\(|->modalSubmitActionLabel\(|->modalCancelActionLabel\(|->extraModalWindowAttributes\(' app/Filament; then
+            echo 'Raw admin modal ownership remains outside AdminDialog' >&2
+            exit 1
+          fi
+          test ! -e resources/css/admin/dialogs.css
+          ! rg -n "dialogs\.css" resources app vite.config.js
+
+      - name: Audit locked PHP dependencies
+        run: composer audit --locked --no-interaction
+
+      - name: Generate test application key
+        run: echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
+
+      - name: Install frontend dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run Pest
+        run: composer test
+
+      - name: Run PHPStan
+        continue-on-error: true
+        run: composer analyse
+
+      - name: Check PHP formatting
+        run: vendor/bin/pint --test
+
+      - name: Run JavaScript tests
+        run: npm run test:js
+
+      - name: Commit directly to dev
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git pull --rebase origin dev
-
-          if ! python3 scripts/admin_dialog_finalize.py > /tmp/dialog-finalize.log 2>&1; then
-            git reset --hard HEAD
-            git clean -fd
-            {
-              echo 'Dialog finalizer stopped after CSS consolidation:'
-              cat /tmp/dialog-finalize.log
-            } > scripts/dialog-finalize-error.txt
-            git add scripts/dialog-finalize-error.txt
-            git commit -m 'chore: update dialog finalizer stop reason'
-            git push origin HEAD:dev
-            exit 1
-          fi
-
-          rm -f scripts/dialog-finalize-error.txt
-          rm .github/workflows/dialog-finalize-direct.yml scripts/admin_dialog_finalize.py
-          git diff --check
           git add -A
-          git commit -m 'refactor: finalize canonical admin dialogs'
+          git commit -m 'refactor: complete canonical admin dialog migration'
+          tested_commit=$(git rev-parse HEAD)
           git pull --rebase origin dev
+          if [ "$(git rev-parse HEAD)" != "$tested_commit" ]; then
+            git diff --check HEAD~1
+            find app -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+            composer test
+            vendor/bin/pint --test
+            npm run test:js
+            npm run build
+          fi
           git push origin HEAD:dev
