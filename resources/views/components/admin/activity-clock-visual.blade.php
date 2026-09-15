@@ -22,7 +22,10 @@
             this.now = new Date()
             if (this.timer !== null) window.clearInterval(this.timer)
             this.timer = window.setInterval(() => {
-                if (document.activeElement?.closest?.('.activity-workspace__controls')) return
+                if (
+                    document.activeElement?.closest?.('.activity-workspace__controls')
+                    || document.querySelector('.fi-modal.fi-modal-open')
+                ) return
                 this.now = new Date()
             }, 1000)
         },
