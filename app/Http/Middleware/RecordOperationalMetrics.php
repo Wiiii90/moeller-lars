@@ -10,6 +10,8 @@ use Throwable;
 
 final class RecordOperationalMetrics
 {
+    private const PENDING_METRICS_ATTRIBUTE = 'operational_metrics.pending';
+
     public function __construct(private readonly OperationalMetricRecorder $metrics) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -53,8 +55,22 @@ final class RecordOperationalMetrics
                 }
             }
 
-            $this->metrics->addMany($pending);
+            $request->attributes->set(self::PENDING_METRICS_ATTRIBUTE, $pending);
         }
+    }
+
+    public function terminate(Request $request, Response $response): void
+    {
+        if ($this->isMediaDeliveryRequest($request)) {
+            return;
+        }
+
+        $pending = $request->attributes->get(self::PENDING_METRICS_ATTRIBUTE, []);
+        if (! is_array($pending)) {
+            return;
+        }
+
+        $this->metrics->addMany($pending);
     }
 
     /** @return array{name:string,value:float,unit:string} */
