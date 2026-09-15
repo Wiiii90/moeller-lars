@@ -161,6 +161,14 @@ Rules:
 
 Prefer flat tables for list-oriented editorial work instead of cards pretending to be rows.
 
+The canonical ordinary-table role order is defined together with `docs/ADMIN-TABLE-CONTRACT.md`:
+
+```text
+Position + Drag | primary identity | secondary data | Actions | Selection
+```
+
+A table renders only roles that actually exist. When Position is absent, Drag may be the leading role; when Selection is absent, Actions remain the final semantic work column. Selection, when present, is always the trailing utility column.
+
 Shared principles:
 
 - one canonical header row;
@@ -178,15 +186,15 @@ Shared principles:
 
 ### Stable action order
 
-Where a table has View and Edit, prefer a stable leading order such as:
+For ordinary editorial tables, use the shared semantic action order when those actions exist:
 
 ```text
-View | Edit | state action(s) | ↑ | ↓ | Delete
+Move up | Move down | Edit / View | state / workflow | other task actions | Delete
 ```
 
-If View is unavailable for a draft/archived state and no protected preview exists, a disabled View slot is preferable to shifting every other action.
+Not every table has every action. Movement comes first because it belongs to ordering, Delete remains last, and state/workflow actions keep stable slots where row-state variation would otherwise make controls jump.
 
-For tables whose canonical leading action is Details rather than View, keep **Details first on every row** and append contextual actions such as Undo/Restore after it. Do not right-pack a lone Details action differently from rows that happen to have more actions.
+For tables whose canonical leading action is Details rather than Edit/View, keep **Details first on every row** and append contextual actions such as Undo/Restore/Revert after it. Do not right-pack a lone Details action differently from rows that happen to have more actions.
 
 ## 8. Ranked tables and Position
 
@@ -214,6 +222,7 @@ Do not build custom HTML5 `draggable`/dragstart/drop state machines.
 
 Rules:
 
+- when both exist, Position precedes Drag and both belong to the leading ordering region;
 - drag handles share one visual geometry on a given table hierarchy;
 - use `.admin-drag-handle` as the current shared drag-handle authority for the Custom/Home component-table family;
 - ordering is persisted by the canonical domain ordering service;
@@ -225,18 +234,18 @@ Rules:
 
 When child rows are part of the same editorial table, they align to the **same global columns**.
 
-Current Custom Page reference:
+Current Custom Page reference when no explicit Position column is rendered:
 
 Parent:
 
 ```text
-[Selection] [Drag] [Component] [Content] [Status] [Actions]
+[Drag] [Component] [Content] [Status] [Actions] [Selection]
 ```
 
 Child:
 
 ```text
-[Selection] [Drag] [Kind] [Content] [Status] [Actions]
+[Drag] [Kind] [Content] [Status] [Actions] [Selection]
 ```
 
 Rules:
@@ -245,7 +254,8 @@ Rules:
 - do not indent the entire child table and thereby destroy global alignment;
 - hierarchy may be shown with a restrained connector line;
 - connector axis aligns with the parent drag column/handle axis;
-- parent and child action cells use the same sixth-column geometry;
+- parent and child action cells use the same action-column geometry;
+- Selection remains the shared trailing utility column;
 - child rows may be more compact, but their column starts do not float.
 
 ## 11. Home component table
@@ -253,7 +263,7 @@ Rules:
 Home component templates currently use:
 
 ```text
-[Selection] [Drag] [Component] [Content] [Actions]
+[Drag] [Component] [Content] [Actions] [Selection]
 ```
 
 There is no artificial Status column because Home components do not have an independent publish lifecycle.
@@ -277,17 +287,19 @@ DnD is enabled only in neutral filter state. Bottom full-width `+ Add component`
 
 ## 12. Journal table references
 
-Current Blog table:
+Current Blog table role order:
 
 ```text
-[Selection] [Drag] [Position] [Image] [Post] [Status] [Publication] [Actions]
+[Position] [Drag] [Image] [Post] [Status] [Publication] [Actions] [Selection]
 ```
 
-Current Exhibitions table:
+Current Exhibitions table role order:
 
 ```text
-[Selection] [Drag] [Position] [Exhibition] [Status] [Timing] [Schedule] [Actions]
+[Position] [Drag] [Exhibition] [Status] [Timing] [Schedule] [Actions] [Selection]
 ```
+
+Position and Drag share the leading ordering region; Selection remains the trailing utility. Omit either role when the task does not expose it rather than inserting a placeholder.
 
 For Exhibition identity, keep the secondary line concise, e.g. `Venue · City`; do not dump full street/country metadata into the collection row.
 
