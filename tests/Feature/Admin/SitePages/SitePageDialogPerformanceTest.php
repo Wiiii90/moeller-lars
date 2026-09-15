@@ -2,10 +2,13 @@
 
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Pages\SitePages;
+use App\Models\User;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 
 it('reuses one Site page dialog section lookup within the component instance', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+
     $editorial = app(SiteSectionEditorialService::class);
     $firstSection = $editorial->createCustomPage('First dialog page', 'first-dialog-page');
     $secondSection = $editorial->createCustomPage('Second dialog page', 'second-dialog-page');
