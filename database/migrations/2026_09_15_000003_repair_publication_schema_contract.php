@@ -30,8 +30,10 @@ return new class extends Migration
         DB::statement('ALTER TABLE committed.home_presentation_settings DROP CONSTRAINT IF EXISTS home_presentation_settings_template_check');
         DB::statement("ALTER TABLE committed.home_presentation_settings ADD CONSTRAINT home_presentation_settings_template_check CHECK (template IN ('artwork', 'under_construction', 'custom'))");
 
-        // blog_settings is retained only as legacy data. Its old RESTRICT foreign key
-        // must not prevent the canonical publication snapshot from replacing site_sections.
+        // blog_settings is retained only as migration evidence until explicit
+        // legacy retirement. It is not runtime/publication authority. Its old
+        // RESTRICT foreign key must not couple that evidence table back to the
+        // canonical site_sections replacement path.
         DB::statement('ALTER TABLE public.blog_settings DROP CONSTRAINT IF EXISTS blog_settings_site_section_id_foreign');
     }
 
@@ -52,5 +54,10 @@ return new class extends Migration
         DB::statement('ALTER TABLE committed.home_presentation_settings DROP COLUMN IF EXISTS skip_home');
         DB::statement('ALTER TABLE committed.public_content_settings DROP COLUMN IF EXISTS public_content_padding');
         DB::statement('ALTER TABLE committed.public_content_settings DROP COLUMN IF EXISTS public_page_width');
+
+        // Intentionally do not restore blog_settings_site_section_id_foreign.
+        // The FK was a legacy coupling, not part of the canonical publication
+        // contract. Restoring it would reintroduce the blocker this repair removes.
+        // Legacy-evidence retirement itself remains a later forward migration.
     }
 };
