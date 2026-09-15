@@ -1,14 +1,16 @@
 <?php
 
-use App\Filament\Support\HomeSettingsDialog;
+use App\Domain\Content\HomePresentationResolver;
+use App\Filament\Support\HomeRoutingDialog;
 use App\Models\HomePresentationSetting;
 use App\Models\User;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 
-it('reuses the loaded Home settings while filling routing state', function (): void {
+it('reuses supplied Home settings while filling routing state', function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 
+    $settings = app(HomePresentationResolver::class)->settings();
     $settingsTable = (new HomePresentationSetting)->getTable();
     $settingsSelects = [];
 
@@ -19,12 +21,10 @@ it('reuses the loaded Home settings while filling routing state', function (): v
         }
     });
 
-    $state = app(HomeSettingsDialog::class)->fill();
+    $state = app(HomeRoutingDialog::class)->fill($settings);
 
     expect($state)->toHaveKeys([
-        'template',
-        'show_in_navigation',
         'skip_home',
         'skip_target_section_id',
-    ])->and($settingsSelects)->toHaveCount(1);
+    ])->and($settingsSelects)->toBe([]);
 });
