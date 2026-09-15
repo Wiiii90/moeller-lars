@@ -222,6 +222,24 @@ test('profiles representative warmed admin interactions', async ({ page }) => {
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
 
+    await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
+    await page.getByLabel('Name', { exact: true }).fill('Playwright profile page');
+    await page.getByLabel('Public slug', { exact: true }).fill('playwright-profile-page');
+
+    const createPage = await profiler.run(
+      'pages_create_custom_page',
+      async () => {
+        await page.getByRole('button', { name: 'Create page', exact: true }).click();
+      },
+      async () => {
+        await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
+        await expect(page.getByText('Playwright profile page', { exact: true }).first()).toBeVisible();
+      },
+    );
+    expect(createPage.full_navigation_count).toBe(0);
+    expectNoBrowserErrors(createPage);
+
     await page.goto('/admin/pages/home');
     await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
     await page.waitForLoadState('networkidle');
@@ -255,6 +273,19 @@ test('profiles representative warmed admin interactions', async ({ page }) => {
     );
     expect(commits.full_navigation_count).toBe(0);
     expectNoBrowserErrors(commits);
+
+    const areaFilter = await profiler.run(
+      'activity_filter_editorial_area',
+      async () => {
+        await page.getByLabel('Editorial area', { exact: true }).selectOption({ label: 'Website' });
+      },
+      async () => {
+        await expect(page).toHaveURL(/(?:\?|&)area=Website(?:&|$)/);
+        await expect(page.getByLabel('Editorial area', { exact: true })).toHaveValue('Website');
+      },
+    );
+    expect(areaFilter.full_navigation_count).toBe(1);
+    expectNoBrowserErrors(areaFilter);
 
     const idle = await profiler.run(
       'activity_idle_window',
