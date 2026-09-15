@@ -1,0 +1,167 @@
+name: Fix Larastan semantic findings
+
+on:
+  push:
+    branches: [fix/post-dialog-merge-gate]
+    paths:
+      - .github/workflows/fix-larastan-semantic.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply semantic static-analysis fixes
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace(path, old, new, count=1):
+              p = Path(path)
+              text = p.read_text()
+              actual = text.count(old)
+              if actual != count:
+                  raise SystemExit(f'{path}: expected {count} occurrence(s), found {actual}: {old[:100]!r}')
+              p.write_text(text.replace(old, new, count))
+
+          replace(
+              'app/Domain/Content/CanonicalMediaImageRenderer.php',
+              'public function render(Node $node, ChildNodeRendererInterface $childRenderer): \\Stringable|string|null',
+              'public function render(Node $node, ChildNodeRendererInterface $childRenderer): HtmlElement',
+          )
+
+          replace(
+              'app/Domain/Content/JournalMediaRenderer.php',
+              'use App\\Models\\JournalEntryMedia;\nuse Illuminate\\Support\\HtmlString;',
+              'use App\\Models\\JournalEntryMedia;\nuse App\\Models\\MediaAsset;\nuse Illuminate\\Support\\HtmlString;\nuse LogicException;',
+          )
+          replace(
+              'app/Domain/Content/JournalMediaRenderer.php',
+              '        $asset = $usage->mediaAsset;\n        $variant = $this->media->thumbnailVariantForAsset($asset);',
+              "        $asset = $usage->mediaAsset;\n        if (! $asset instanceof MediaAsset) {\n            throw new LogicException('Journal media usage requires a media asset.');\n        }\n\n        $variant = $this->media->thumbnailVariantForAsset($asset);",
+          )
+
+          replace(
+              'app/Domain/Content/PublicNavigationService.php',
+              "            $children = $childSections->map(fn (SiteSection $child): array => [\n                'label' => (string) $child->getAttribute('navigation_label'),",
+              "            /** @var list<array{label:string,url:?string,current:bool}> $children */\n            $children = $childSections->map(fn (SiteSection $child): array => [\n                'label' => (string) $child->getAttribute('navigation_label'),",
+          )
+
+          replace(
+              'app/Domain/Content/SiteSectionEditorialService.php',
+              '            if ($source === SiteNodeType::Home || $target === SiteNodeType::Home) {',
+              '            if ($source === SiteNodeType::Home) {',
+          )
+
+          replace(
+              'app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php',
+              '$section = $editorial->convertType($section, $targetType);',
+              '$section = $editorial->convertType($section, $targetType->value);',
+          )
+
+          replace(
+              'app/Filament/Pages/HomePresentation.php',
+              'use Filament\\Forms\\Components\\Hidden;\nuse Filament\\Forms\\Components\\Placeholder;',
+              'use Filament\\Forms\\Components\\Hidden;\nuse Filament\\Forms\\Components\\MarkdownEditor;\nuse Filament\\Forms\\Components\\Placeholder;',
+          )
+          replace(
+              'app/Filament/Pages/HomePresentation.php',
+              '            if ($required && $index === 0) {\n                $field->required(fn (callable $get): bool => $get($stateField) === $stateValue);\n            }',
+              '            if ($required && $index === 0 && $field instanceof MarkdownEditor) {\n                $field->required(fn (callable $get): bool => $get($stateField) === $stateValue);\n            }',
+          )
+
+          replace(
+              'app/Filament/Support/AdminBooleanControl.php',
+              '/** @return array<string, string> */',
+              '/** @return array<int, string> */',
+          )
+
+          replace(
+              'app/Domain/Admin/DashboardFeed.php',
+              '        return array_values($items);',
+              '        return $items;',
+          )
+          replace(
+              'app/Domain/Admin/DashboardFeed.php',
+              "    private function staticItems(): Collection\n    {\n        return collect(config('dashboard-feed.items', []))",
+              "    private function staticItems(): Collection\n    {\n        /** @var Collection<int, array<string, mixed>> $items */\n        $items = collect(config('dashboard-feed.items', []))",
+          )
+          replace(
+              'app/Domain/Admin/DashboardFeed.php',
+              '            ->filter()\n            ->values();\n    }\n\n    /** @return array<string, mixed> */\n    private function projectContact',
+              '            ->filter()\n            ->values();\n\n        return $items;\n    }\n\n    /** @return array<string, mixed> */\n    private function projectContact',
+          )
+
+          replace(
+              'app/Domain/Media/MediaStorageBreakdown.php',
+              '        $fileRows = [];',
+              "        /** @var list<array<string, mixed>> $fileRows */\n        $fileRows = [];",
+          )
+          replace(
+              'app/Domain/Media/MediaStorageBreakdown.php',
+              "                $area = (string) ($reference['area'] ?? 'referenced');\n                $areaLabel = (string) ($reference['area_label'] ?? self::AREA_LABELS['referenced']);",
+              "                $area = $reference['area'];\n                $areaLabel = $reference['area_label'];",
+          )
+          replace(
+              'app/Domain/Media/MediaStorageBreakdown.php',
+              "                $targetKey = (string) ($reference['target_key'] ?? '');",
+              "                $targetKey = $reference['target_key'];",
+          )
+          replace(
+              'app/Domain/Media/MediaStorageBreakdown.php',
+              "                    'label' => (string) ($reference['target_label'] ?? $reference['label'] ?? 'Reference'),\n                    'area' => (string) ($reference['area'] ?? 'referenced'),\n                    'area_label' => (string) ($reference['area_label'] ?? self::AREA_LABELS['referenced']),",
+              "                    'label' => $reference['target_label'],\n                    'area' => $reference['area'],\n                    'area_label' => $reference['area_label'],",
+          )
+          replace(
+              'app/Domain/Media/MediaStorageBreakdown.php',
+              "            if (! is_string($storageKey) || $storageKey === '' || ! is_numeric($bytes) || (int) $bytes < 0) {",
+              "            if ($storageKey === '' || $bytes < 0) {",
+          )
+          replace(
+              'app/Domain/Media/MediaStorageBreakdown.php',
+              '            $normalized[$storageKey] = (int) $bytes;',
+              '            $normalized[$storageKey] = $bytes;',
+          )
+
+          old = """        if (JournalEntryMedia::query()
+            ->where('media_asset_id', $asset->getKey())
+            ->where(function ($usage): void {
+                $usage->whereHas('blogPost', fn ($posts) => $posts
+                    ->publiclyVisible()
+                    ->whereHas('siteSection', fn ($section) => $section
+                        ->where('type', SiteNodeType::Journal->value)
+                        ->where('template', JournalTemplate::Blog->value)
+                        ->where('state', 'published')))
+"""
+          new = """        if (JournalEntryMedia::query()
+            ->where('media_asset_id', $asset->getKey())
+            ->where(function ($usage): void {
+                $usage->whereHas('blogPost', function ($posts): void {
+                    $now = now();
+                    $posts->where(function ($visibility) use ($now): void {
+                        $visibility->where(function ($published) use ($now): void {
+                            $published->where('state', 'published')->where('published_at', '<=', $now);
+                        })->orWhere(function ($scheduled) use ($now): void {
+                            $scheduled->where('state', 'scheduled')->where('scheduled_at', '<=', $now);
+                        });
+                    })->whereHas('siteSection', fn ($section) => $section
+                        ->where('type', SiteNodeType::Journal->value)
+                        ->where('template', JournalTemplate::Blog->value)
+                        ->where('state', 'published'));
+                })
+"""
+          replace('app/Domain/Media/PublicMedia.php', old, new)
+
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: resolve semantic Larastan findings"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
