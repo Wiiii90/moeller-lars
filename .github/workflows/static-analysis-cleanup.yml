@@ -31,21 +31,108 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      - name: Apply mechanically safe PHPStan fixes
+        run: |
+          php ./vendor/bin/phpstan analyse --memory-limit=1G --error-format=json --no-progress > /tmp/phpstan-before.json || true
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path('/tmp/phpstan-before.json').read_text())
+          changes = []
+
+          def relative_path(raw: str) -> Path:
+              marker = '/app/'
+              if marker in raw:
+                  return Path('app/' + raw.split(marker, 1)[1])
+              return Path(raw)
+
+          def remove_call_at_line(text: str, line: int, name: str) -> tuple[str, bool]:
+              lines = text.splitlines(keepends=True)
+              offset = sum(len(part) for part in lines[:max(0, line - 1)])
+              start = text.find(name + '(', offset)
+              if start < 0:
+                  return text, False
+              # Do not cross more than a small source window: the diagnostic points at this call.
+              if text.count('\n', offset, start) > 3:
+                  return text, False
+              open_paren = start + len(name)
+              depth = 0
+              quote = None
+              escape = False
+              end = None
+              for i in range(open_paren, len(text)):
+                  ch = text[i]
+                  if quote is not None:
+                      if escape:
+                          escape = False
+                      elif ch == '\\':
+                          escape = True
+                      elif ch == quote:
+                          quote = None
+                      continue
+                  if ch in "'\"":
+                      quote = ch
+                      continue
+                  if ch == '(':
+                      depth += 1
+                  elif ch == ')':
+                      depth -= 1
+                      if depth == 0:
+                          end = i
+                          break
+              if end is None:
+                  return text, False
+              inner = text[open_paren + 1:end]
+              return text[:start] + inner + text[end + 1:], True
+
+          files = report.get('files', {})
+          for raw_path, details in files.items():
+              path = relative_path(raw_path)
+              if not path.exists():
+                  continue
+              text = path.read_text()
+              original = text
+
+              messages = sorted(details.get('messages', []), key=lambda item: item.get('line', 0), reverse=True)
+              for item in messages:
+                  message = item.get('message', '')
+                  line = int(item.get('line') or 0)
+                  if 'of array_values is already a list, call has no effect.' in message:
+                      text, changed = remove_call_at_line(text, line, 'array_values')
+                      if changed:
+                          changes.append(f'{path}:{line}: removed redundant array_values()')
+                      continue
+
+                  if message.startswith('Using nullsafe property access ') or message.startswith('Using nullsafe method call on non-nullable type '):
+                      source_lines = text.splitlines(keepends=True)
+                      index = line - 1
+                      if 0 <= index < len(source_lines) and '?->' in source_lines[index]:
+                          source_lines[index] = source_lines[index].replace('?->', '->')
+                          text = ''.join(source_lines)
+                          changes.append(f'{path}:{line}: removed unnecessary nullsafe access')
+
+              if text != original:
+                  path.write_text(text)
+
+          print('\n'.join(changes) if changes else 'No mechanically safe fixes found.')
+          PY
+
       - name: Apply Pint formatting
         run: vendor/bin/pint
 
-      - name: Report PHPStan
+      - name: Report remaining PHPStan
         run: composer analyse || true
 
-      - name: Commit formatting changes
+      - name: Commit cleanup changes
         run: |
           set -euo pipefail
           if git diff --quiet -- app; then
-            echo 'No app formatting changes.'
+            echo 'No app cleanup changes.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add app
-          git commit -m 'style: normalize PHP formatting'
+          git commit -m 'refactor: remove redundant static-analysis constructs'
           git push origin HEAD:dev
