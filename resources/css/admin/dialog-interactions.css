@@ -1,0 +1,35 @@
+/* Shared hitbox/focus hardening for dialog header actions.
+ * Loaded after dialog-contract.css so Filament's higher-specificity footer width
+ * cannot leave a transparent full-width click shield across compact dialogs. */
+.admin-dialog--header-actions .fi-modal-footer {
+    box-sizing: border-box;
+    width: max-content !important;
+    min-width: 0 !important;
+    max-width: calc(
+        100%
+        - var(--admin-dialog-header-action-inset)
+        - var(--admin-dialog-header-action-inset)
+        - var(--admin-dialog-header-action-size)
+        - var(--admin-dialog-header-action-gap)
+    ) !important;
+    pointer-events: none;
+}
+
+.admin-dialog--header-actions .fi-modal-footer-actions,
+.admin-dialog--header-actions.admin-task-dialog .fi-modal-footer-actions {
+    pointer-events: auto;
+}
+
+.admin-dialog--header-actions .fi-modal-close-btn {
+    z-index: 12;
+}
+
+/* Programmatic focus restoration during modal morphs must stay keyboard-visible
+ * without looking like a phantom mouse hover when the pointer is elsewhere. */
+.admin-dialog--header-actions .fi-modal-close-btn:focus-visible {
+    border-color: var(--admin-text) !important;
+    background: var(--admin-surface) !important;
+    color: var(--admin-text) !important;
+    outline: 2px solid color-mix(in srgb, var(--admin-text) 34%, transparent);
+    outline-offset: 2px;
+}
