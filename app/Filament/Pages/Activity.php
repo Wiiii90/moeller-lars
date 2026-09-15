@@ -62,6 +62,9 @@ final class Activity extends Page
     /** @var array<int, array<string, mixed>|null> */
     private array $activityEventCache = [];
 
+    /** @var array<int, array<string, mixed>|null> */
+    private array $commitDetailsCache = [];
+
     public function mount(): void
     {
         $requestedView = request()->query('view', $this->viewMode);
@@ -656,10 +659,15 @@ final class Activity extends Page
     private function commitDetails(array $arguments): ?array
     {
         $checkpointId = is_numeric($arguments['id'] ?? null) ? (int) $arguments['id'] : 0;
+        if ($checkpointId <= 0) {
+            return null;
+        }
 
-        return $checkpointId > 0
-            ? app(AdminPublicationHistory::class)->checkpoint($checkpointId)
-            : null;
+        if (array_key_exists($checkpointId, $this->commitDetailsCache)) {
+            return $this->commitDetailsCache[$checkpointId];
+        }
+
+        return $this->commitDetailsCache[$checkpointId] = app(AdminPublicationHistory::class)->checkpoint($checkpointId);
     }
 
     /** @return array{summary:array{total:int,groups:list<array{area:string,entity:string,count:int}>},preflight:array{status:string,label:string,blockers:list<string>}} */
