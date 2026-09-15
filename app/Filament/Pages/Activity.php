@@ -38,6 +38,9 @@ final class Activity extends Page
 
     protected string $view = 'filament.pages.activity';
 
+    /** @var array<int, array<string, mixed>|null> */
+    private array $activityEventCache = [];
+
     public function undo(int $receiptId): void
     {
         try {
@@ -129,7 +132,7 @@ final class Activity extends Page
 
     public function openActivityDetails(int $eventId): void
     {
-        abort_unless($this->activityEvent($eventId) !== null, 404);
+        abort_unless($eventId > 0, 404);
 
         $this->mountAction('activityDetails', ['id' => $eventId]);
     }
@@ -480,7 +483,11 @@ final class Activity extends Page
             return null;
         }
 
-        return app(AdminActivityFeed::class)->event(
+        if (array_key_exists($eventId, $this->activityEventCache)) {
+            return $this->activityEventCache[$eventId];
+        }
+
+        return $this->activityEventCache[$eventId] = app(AdminActivityFeed::class)->event(
             $eventId,
             app(AdminAuditService::class)->requireActor(),
         );
