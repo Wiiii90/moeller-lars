@@ -16,7 +16,6 @@ use Filament\Schemas\Components\View;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use LogicException;
 use SensitiveParameter;
 
@@ -49,8 +48,7 @@ final class AccountMenuAction
                             ->email()
                             ->required()
                             ->maxLength(255)
-                            ->rule(fn () => Rule::unique('users', 'email')->ignore(self::user()->getKey()))
-                            ->live(debounce: 500),
+                            ->rule(fn () => Rule::unique('users', 'email')->ignore(self::user()->getKey())),
                     ])
                         ->columns(2)
                         ->columnSpanFull(),
@@ -58,33 +56,28 @@ final class AccountMenuAction
                         ->viewData(['label' => 'Security'])
                         ->columnSpanFull(),
                     Group::make([
-                        TextInput::make('password')
-                            ->label('New password')
-                            ->password()
-                            ->autocomplete('new-password')
-                            ->revealable(Filament::arePasswordsRevealable())
-                            ->rule(Password::default())
-                            ->showAllValidationMessages()
-                            ->same('passwordConfirmation')
+                        AdminPasswordField::password(
+                            TextInput::make('password')->label('New password'),
+                            'account',
+                        )
                             ->dehydrated(fn (#[SensitiveParameter] mixed $state): bool => filled($state))
-                            ->dehydrateStateUsing(fn (#[SensitiveParameter] string $state): string => Hash::make($state))
-                            ->live(debounce: 500),
-                        TextInput::make('passwordConfirmation')
-                            ->label('Confirm new password')
-                            ->password()
-                            ->autocomplete('new-password')
-                            ->revealable(Filament::arePasswordsRevealable())
-                            ->required()
-                            ->visible(fn (Get $get): bool => filled($get('password')))
+                            ->dehydrateStateUsing(fn (#[SensitiveParameter] string $state): string => Hash::make($state)),
+                        AdminPasswordField::confirmation(
+                            TextInput::make('passwordConfirmation')->label('Confirm new password'),
+                            'account',
+                        )
+                            ->required(fn (Get $get): bool => filled($get('password')))
                             ->dehydrated(false),
                         TextInput::make('currentPassword')
                             ->label('Current password')
                             ->password()
                             ->autocomplete('current-password')
-                            ->currentPassword(guard: Filament::getAuthGuard())
                             ->revealable(Filament::arePasswordsRevealable())
-                            ->required()
-                            ->visible(fn (Get $get): bool => filled($get('password')) || ($get('email') !== self::user()->getAttribute('email')))
+                            ->required(fn (Get $get): bool => self::requiresCurrentPassword($get))
+                            ->rule(
+                                'current_password:'.Filament::getAuthGuard(),
+                                fn (Get $get): bool => self::requiresCurrentPassword($get),
+                            )
                             ->dehydrated(false)
                             ->columnSpanFull(),
                     ])
@@ -129,6 +122,12 @@ final class AccountMenuAction
             'Save account',
             AdminDialogSize::Default,
         );
+    }
+
+    private static function requiresCurrentPassword(Get $get): bool
+    {
+        return filled($get('password'))
+            || ($get('email') !== self::user()->getAttribute('email'));
     }
 
     private static function user(): User
