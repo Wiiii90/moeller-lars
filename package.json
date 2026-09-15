@@ -9,6 +9,7 @@
         "test:js": "node --test tests/js/*.test.mjs"
     },
     "devDependencies": {
+        "@playwright/test": "^1.63.0",
         "concurrently": "^10.0.3",
         "echarts": "^6.1.0",
         "laravel-vite-plugin": "^3.1",
