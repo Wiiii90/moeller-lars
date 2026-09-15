@@ -359,11 +359,11 @@ a.activity-calendar__day:focus-visible {
 }
 
 .activity-publication {
-    display: grid;
+    display: flex;
     min-width: 0;
     min-height: 0;
-    align-content: start;
     padding-left: var(--admin-section-space);
+    flex-direction: column;
     border-left: 1px solid var(--admin-line);
     overflow: auto;
 }
@@ -457,167 +457,239 @@ a.activity-calendar__day:focus-visible {
     font-variant-numeric: tabular-nums;
 }
 
-.activity-workspace__table:not(.activity-commits-table) table {
-    min-width: 72rem;
+.activity-publication__actions {
+    margin-top: auto;
+    padding: .7rem 0 0;
+}
+
+.activity-publication__actions .admin-toolbar {
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+}
+
+/* Activity controls use the six-metric strip as an alignment reference.
+ * Twenty-four subtracks allow semantic controls to subdivide those six units
+ * without drawing visual column separators. */
+.activity-workspace__controls {
+    display: grid;
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    gap: .85rem;
+    align-items: end;
+}
+
+.activity-workspace__controls > .activity-control--search { grid-column: span 8; }
+.activity-workspace__controls > .activity-control--area { grid-column: span 3; }
+.activity-workspace__controls > .activity-control--type { grid-column: span 3; }
+.activity-workspace__controls > .activity-control--date { grid-column: span 2; }
+.activity-workspace__controls > .activity-control--time { grid-column: span 2; }
+.activity-workspace__controls > .activity-control--reset { grid-column: span 2; }
+.activity-workspace__controls > .activity-control--view { grid-column: span 4; }
+
+.activity-workspace__controls > :is(.admin-data-field, .admin-data-control-group) {
+    width: 100%;
+    min-width: 0;
+}
+
+.activity-control--view .admin-toolbar {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+}
+
+.activity-workspace__table table {
     table-layout: fixed;
 }
 
-.activity-workspace__table:not(.activity-commits-table) col {
+.activity-events-table table {
+    min-width: 72rem;
+}
+
+.activity-events-table .activity-col--change,
+.activity-events-table .activity-col--target,
+.activity-events-table .activity-col--publication,
+.activity-events-table .activity-col--actions {
     width: 16.6667%;
 }
 
-.activity-workspace__table:not(.activity-commits-table) th,
-.activity-workspace__table:not(.activity-commits-table) td {
+.activity-events-table .activity-col--area,
+.activity-events-table .activity-col--type,
+.activity-events-table .activity-col--who,
+.activity-events-table .activity-col--when {
+    width: 8.3333%;
+}
+
+.activity-workspace__table th,
+.activity-workspace__table td {
     box-sizing: border-box;
 }
 
-.activity-workspace__table:not(.activity-commits-table) th:first-child,
-.activity-workspace__table:not(.activity-commits-table) td:first-child {
+.activity-workspace__table th:first-child,
+.activity-workspace__table td:first-child {
     padding-left: 0;
 }
 
-.activity-workspace__table:not(.activity-commits-table) th:not(:first-child),
-.activity-workspace__table:not(.activity-commits-table) td:not(:first-child) {
-    padding-left: 1rem;
+.activity-workspace__table th:not(:first-child),
+.activity-workspace__table td:not(:first-child) {
+    padding-left: .7rem;
 }
 
-.activity-workspace__table:not(.activity-commits-table) th:not(:last-child),
-.activity-workspace__table:not(.activity-commits-table) td:not(:last-child) {
-    padding-right: 1rem;
+.activity-workspace__table th:not(:last-child),
+.activity-workspace__table td:not(:last-child) {
+    padding-right: .7rem;
 }
 
-.activity-workspace__table:not(.activity-commits-table) th:last-child,
-.activity-workspace__table:not(.activity-commits-table) td:last-child {
-    padding-right: 1rem;
+.activity-workspace__table th:last-child,
+.activity-workspace__table td:last-child {
+    padding-right: 0;
 }
 
-.activity-workspace__table:not(.activity-commits-table) :is(
-    .activity-change-cell,
-    .activity-target-cell,
-    .activity-context-cell,
-    .activity-publication-cell,
-    .activity-event-meta
-) {
+.activity-change-cell,
+.activity-target-cell,
+.activity-area-cell,
+.activity-type-cell,
+.activity-who-cell,
+.activity-when-cell,
+.activity-publication-cell,
+.activity-commit-cell,
+.activity-commit-summary {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
-.activity-workspace__table:not(.activity-commits-table) .activity-change-cell strong,
-.activity-workspace__table:not(.activity-commits-table) .activity-target-cell span,
-.activity-workspace__table:not(.activity-commits-table) .activity-context-cell span {
+.activity-change-cell strong,
+.activity-target-cell strong,
+.activity-who-cell strong,
+.activity-commit-summary strong {
     display: block;
-    min-width: 0;
+    max-width: 100%;
     overflow: hidden;
+    color: var(--admin-text);
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.activity-workspace__table:not(.activity-commits-table) .activity-change-cell strong {
-    color: var(--admin-text);
-    font-size: .76rem;
-    font-weight: 600;
+.activity-change-cell strong {
+    font-size: .74rem;
 }
 
-.activity-workspace__table:not(.activity-commits-table) .activity-target-cell span {
-    color: var(--admin-text);
-    font-size: .72rem;
+.activity-target-cell strong,
+.activity-who-cell strong,
+.activity-commit-summary strong {
+    font-size: .7rem;
 }
 
-.activity-workspace__table:not(.activity-commits-table) .activity-context-cell span {
-    color: var(--admin-muted);
-    font-size: .68rem;
-}
-
-.activity-workspace__table:not(.activity-commits-table) .activity-publication-cell__state {
-    display: inline-flex;
+.activity-area-cell span,
+.activity-type-cell span {
+    display: block;
     max-width: 100%;
-    min-width: 0;
-    gap: .35rem;
-    align-items: center;
     overflow: hidden;
-    vertical-align: middle;
+    color: var(--admin-muted);
+    font-size: .66rem;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.activity-workspace__table:not(.activity-commits-table) .activity-publication-cell__state code {
+.activity-publication-cell__stack {
+    display: grid;
     min-width: 0;
+    gap: .12rem;
+    justify-items: start;
+}
+
+.activity-publication-cell__stack code,
+.activity-commit-cell code {
+    max-width: 100%;
     overflow: hidden;
     color: var(--admin-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: .62rem;
     font-variant-numeric: tabular-nums;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-publication-cell__stack code {
+    margin-left: .82rem;
 }
 
 .activity-publication-cell__empty {
     color: var(--admin-faint);
 }
 
-.activity-workspace__table:not(.activity-commits-table) .activity-event-meta strong,
-.activity-workspace__table:not(.activity-commits-table) .activity-event-meta time,
-.activity-workspace__table:not(.activity-commits-table) .activity-event-meta > span {
-    display: inline;
-    font-size: .68rem;
-    line-height: 1.35;
-}
-
-.activity-workspace__table:not(.activity-commits-table) .activity-event-meta strong {
-    color: var(--admin-text);
-    font-weight: 600;
-}
-
-.activity-workspace__table:not(.activity-commits-table) .activity-event-meta time,
-.activity-workspace__table:not(.activity-commits-table) .activity-event-meta > span {
-    color: var(--admin-muted);
-}
-
-.activity-workspace__table:not(.activity-commits-table) .activity-event-meta > span {
-    margin-inline: .22rem;
-}
-
-.activity-workspace__table:not(.activity-commits-table) .admin-table__actions .admin-toolbar {
-    gap: .2rem;
-    justify-content: flex-end;
-    flex-wrap: nowrap;
-}
-
-/* Preserve the existing four-column Commits table geometry. */
-.activity-commits-table table {
-    min-width: 56rem;
-    table-layout: fixed;
-}
-
-.activity-commits-table th:nth-child(1),
-.activity-commits-table td:nth-child(1),
-.activity-commits-table th:nth-child(4),
-.activity-commits-table td:nth-child(4) {
-    width: 33.333%;
-}
-
-.activity-commits-table th:nth-child(2),
-.activity-commits-table td:nth-child(2),
-.activity-commits-table th:nth-child(3),
-.activity-commits-table td:nth-child(3) {
-    width: 16.667%;
-}
-
-.activity-commits-table .activity-event-meta > strong,
-.activity-commits-table .activity-event-meta > time {
-    display: block;
-}
-
-.activity-commits-table .activity-event-meta > time,
-.activity-commits-table .activity-publication-cell > small {
+.activity-publication-cell > small,
+.activity-commit-summary > small,
+.activity-when-cell > small {
     display: block;
     max-width: 100%;
-    margin-top: .18rem;
+    margin-top: .15rem;
     overflow: hidden;
     color: var(--admin-muted);
-    font-size: .64rem;
+    font-size: .62rem;
     line-height: 1.35;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.activity-when-cell time {
+    display: block;
+    overflow: hidden;
+    color: var(--admin-text);
+    font-size: .68rem;
+    font-weight: 560;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-actions-cell,
+.activity-workspace__table th.admin-table__actions {
+    text-align: left;
+}
+
+.activity-actions-cell .admin-toolbar {
+    gap: .2rem;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+}
+
+.activity-actions-cell .admin-action:first-child {
+    margin-left: 0;
+}
+
+.activity-commits-table table {
+    min-width: 66rem;
+}
+
+.activity-commits-table col {
+    width: 16.6667%;
+}
+
+.activity-commit-cell__heading {
+    display: flex;
+    min-width: 0;
+    gap: .4rem;
+    align-items: center;
+}
+
+.activity-commit-summary > small {
+    margin-top: .18rem;
+}
+
+@media (max-width: 1080px) {
+    .activity-workspace__controls {
+        display: flex;
+    }
+
+    .activity-workspace__controls > .activity-control--search {
+        flex: 1 1 16rem;
+        min-width: 12rem;
+    }
+
+    .activity-workspace__controls > :not(.activity-control--search) {
+        flex: 0 1 9rem;
+    }
+
+    .activity-workspace__controls > :is(.activity-control--reset, .activity-control--view) {
+        flex: 0 0 auto;
+    }
 }
 
 @media (max-width: 980px) {
@@ -633,16 +705,14 @@ a.activity-calendar__day:focus-visible {
     }
 
     .activity-publication {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0 1.25rem;
         padding: var(--admin-section-gap) 0 0;
         border-top: 1px solid var(--admin-line);
         border-left: 0;
         overflow: visible;
     }
 
-    .activity-publication__header {
-        grid-column: 1 / -1;
+    .activity-publication__actions {
+        padding-bottom: var(--admin-section-gap);
     }
 }
 
@@ -663,13 +733,5 @@ a.activity-calendar__day:focus-visible {
     .activity-calendar__cells,
     .activity-calendar__weekdays {
         gap: .07rem;
-    }
-
-    .activity-publication {
-        grid-template-columns: 1fr;
-    }
-
-    .activity-publication__header {
-        grid-column: 1;
     }
 }
