@@ -5,9 +5,7 @@ namespace App\Filament\Pages;
 use App\Domain\Analytics\AnalyticsReportAvailability;
 use App\Domain\Analytics\ArtworkAttentionReport;
 use App\Domain\Analytics\MatomoReportingClient;
-use App\Domain\Analytics\OperationalMetricsQuery;
 use App\Filament\Support\AdminIcon;
-use App\Models\DailyMetric;
 use BackedEnum;
 use Filament\Pages\Page;
 use UnitEnum;
@@ -66,9 +64,6 @@ final class Analytics extends Page
 
     /** @var array<int, array{label:string,value:string,detail:string}> */
     public array $audienceHighlights = [];
-
-    /** @var array<int, array{label:string,value:string,detail:string}> */
-    public array $applicationSignals = [];
 
     public function mount(): void
     {
@@ -233,23 +228,6 @@ final class Analytics extends Page
             $artworkEventsAvailable,
         );
         $this->audienceHighlights = $this->buildAudienceHighlights($this->matomo);
-
-        $days = match ($this->range) {
-            'today' => 1,
-            '7d' => 7,
-            '12m' => 365,
-            default => 30,
-        };
-
-        $botRows = app(OperationalMetricsQuery::class)->recent($days)
-            ->filter(static fn (DailyMetric $metric): bool => $metric->getAttribute('metric_name') === 'bot:request')
-            ->map(static fn (DailyMetric $metric): array => [
-                'name' => 'bot:request',
-                'value' => (float) $metric->getAttribute('value'),
-            ])
-            ->values()
-            ->all();
-        $this->applicationSignals = $this->buildApplicationSignals($botRows);
     }
 
     /**
@@ -829,35 +807,6 @@ final class Analytics extends Page
         usort($rankedRows, static fn (array $a, array $b): int => ((float) $b[$metric]) <=> ((float) $a[$metric]));
 
         return $rankedRows[0];
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $rows
-     * @return array<int, array{label:string,value:string,detail:string}>
-     */
-    private function buildApplicationSignals(array $rows): array
-    {
-        $botRequests = 0;
-        $measured = false;
-
-        foreach ($rows as $row) {
-            if (($row['name'] ?? null) !== 'bot:request' || ! is_numeric($row['value'] ?? null)) {
-                continue;
-            }
-
-            $measured = true;
-            $botRequests += (int) round((float) $row['value']);
-        }
-
-        if (! $measured) {
-            return [];
-        }
-
-        return [[
-            'label' => 'Bot requests',
-            'value' => number_format($botRequests),
-            'detail' => 'Application telemetry',
-        ]];
     }
 
     private function formatMetric(string $key, float $value): string
