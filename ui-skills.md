@@ -151,6 +151,10 @@ A single selected-items button may expose a capability matrix.
 Rules:
 
 - selected count is visible;
+- when Selection controls an ordinary table or table-like hierarchy, it remains the terminal toolbar group and its circular selected-count badge is centered on the **same horizontal axis** as the trailing select-all and row checkboxes below it;
+- the shared table contract reserves the terminal `--admin-table-selection-width` rail inside the Selection trigger for that badge; do not add page-local margins, padding nudges or duplicate trigger grids that move the badge off the checkbox axis;
+- the badge/checkbox axis is a desktop/table invariant until an intentional responsive breakpoint changes the composition; once controls or rows deliberately stack/reflow, exact cross-row pixel alignment may relax;
+- visual card/contact-sheet surfaces without one trailing table Selection column, such as Gallery, do not invent a fake column or axis merely to satisfy the table rule;
 - invalid actions remain visible but disabled when that makes capability/state clearer;
 - do not duplicate separate “selected parents” and “selected children” menus in the same toolbar;
 - mixed selections must not cause ambiguous mutations;
@@ -532,6 +536,7 @@ Important current shared/admin modules include:
 - `forms.css`;
 - `data-workspace.css`;
 - `task-surfaces.css`;
+- `table-contract.css`;
 - `stage.css`;
 - `typography.css`;
 - `dialogs.css`;
@@ -572,6 +577,7 @@ For every admin slice, inspect at least:
 - page/action label geometry;
 - metric strip alignment/height;
 - Search/filter/Selection baseline;
+- selected-count badge aligned with the trailing table/hierarchy checkbox axis where Selection is tabular;
 - table/grid header alignment;
 - selection + drag geometry;
 - Position where applicable;
