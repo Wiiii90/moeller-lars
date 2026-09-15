@@ -483,12 +483,25 @@ final class Dashboard extends Page
     /** @return array{has_selection:bool,all_mutable:bool} */
     private function selectionCapabilities(): array
     {
-        $keys = $this->validSelectedKeys();
+        $feed = app(DashboardFeed::class);
+        /** @var list<array<string, mixed>> $entries */
+        $entries = [];
+
+        foreach ($this->selectedFeedKeys as $key) {
+            if ($key === '') {
+                continue;
+            }
+
+            $entry = $feed->entry($key);
+            if (is_array($entry)) {
+                $entries[] = $entry;
+            }
+        }
 
         return [
-            'has_selection' => $keys !== [],
-            'all_mutable' => $keys !== [] && collect($keys)->every(
-                fn (string $key): bool => $this->mutableFeedEntry($key) !== null,
+            'has_selection' => $entries !== [],
+            'all_mutable' => $entries !== [] && collect($entries)->every(
+                fn (array $entry): bool => $this->isMutableFeedEntry($entry),
             ),
         ];
     }
