@@ -98,6 +98,21 @@ Rules:
 - if overflow is unavoidable, use the shared metric behavior rather than a page-local height patch;
 - do not use prose such as “Public behavior” or “Template status” as fake statistics.
 
+### Metric-unit alignment grid
+
+When a workspace has a six-column metric strip, those six columns may also act as the **reference alignment grid** for the controls and ordinary data table below it.
+
+This is an alignment rule, not a demand for six semantic columns everywhere:
+
+- one control/table region may span multiple metric units, for example Search may span two units;
+- one metric unit may be subdivided between compact semantic columns, for example `Area | Type` or `Who | When` may each occupy half of one unit;
+- several semantic columns may therefore occupy the same number of metric units as a smaller set of wider regions;
+- Actions commonly occupy the final one or two metric units according to actual action density; do not reserve two units when a task only needs one;
+- starts/ends should align to the metric-unit geometry where practical, but **do not draw vertical borders merely to expose that hidden grid**;
+- responsive composition may leave the reference grid at an intentional breakpoint rather than squeezing labels or actions beyond usability.
+
+The point is stable shared geometry while allowing the table schema to follow the task.
+
 Examples of useful facts:
 
 - counts by state/type;
@@ -124,7 +139,8 @@ Rules:
 - avoid chips or secondary mini-toolbars floating inside the search row;
 - avoid multiple visible selection groups for one table hierarchy;
 - reset filters explicitly to the neutral state;
-- search/filter state should not silently change persisted order.
+- search/filter state should not silently change persisted order;
+- where the metric-unit reference grid applies, a wide Search control may deliberately span two metric units while the remaining controls subdivide the remaining units; use semantic width rather than equal-width controls by habit.
 
 ## 6. Selection and multi-actions
 
@@ -154,7 +170,11 @@ Shared principles:
 - row identity/content should ellipsize rather than push action columns around;
 - normal desktop action bars should be `nowrap`; responsive wrapping belongs at an intentional breakpoint;
 - state indicators occupy a stable column;
-- do not conditionally remove a leading action if that makes every following action shift.
+- do not conditionally remove a leading action if that makes every following action shift;
+- use the metric-unit reference grid where it improves cross-surface alignment; semantic columns may span or subdivide those units rather than being forced to equal widths;
+- compact rows may use **one or two meaningful lines per cell** when the second line adds useful support information; do not force every field onto one line, but also do not stack four or five redundant fragments into a single cell;
+- status dots/markers in the same state column must keep a stable marker axis across rows, even when supporting text such as a commit hash sits on a second line;
+- do not add vertical cell borders solely to make column/metric alignment visible when accepted admin tables do not use them.
 
 ### Stable action order
 
@@ -165,6 +185,8 @@ View | Edit | state action(s) | ↑ | ↓ | Delete
 ```
 
 If View is unavailable for a draft/archived state and no protected preview exists, a disabled View slot is preferable to shifting every other action.
+
+For tables whose canonical leading action is Details rather than View, keep **Details first on every row** and append contextual actions such as Undo/Restore after it. Do not right-pack a lone Details action differently from rows that happen to have more actions.
 
 ## 8. Ranked tables and Position
 
