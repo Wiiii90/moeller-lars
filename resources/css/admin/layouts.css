@@ -17,8 +17,20 @@ html:not(.dark) .fi-sidebar-nav {
     background: #fff !important;
 }
 
-.fi-sidebar-header .fi-logo {
-    letter-spacing: .035em;
+/*
+ * The admin shell intentionally carries no brand/home link. Keep Filament's
+ * panel brand configuration available to auth and document-title surfaces, but
+ * remove the logo slot itself from desktop topbar and mobile sidebar chrome.
+ */
+.fi-sidebar-header-logo-ctn,
+.fi-topbar-start > a:has(.fi-logo),
+.fi-topbar-start > .fi-logo {
+    display: none !important;
+}
+
+.fi-body-has-topbar .fi-sidebar-header-ctn,
+.fi-topbar-start:not(:has(.fi-topbar-collapse-sidebar-btn-ctn)) {
+    display: none !important;
 }
 
 /*
