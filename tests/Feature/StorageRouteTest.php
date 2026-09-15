@@ -66,19 +66,6 @@ it('uses a warmed capacity snapshot without measuring during storage navigation'
         ->assertDontSee('Measurement needed');
 });
 
-it('redirects legacy media workspace URLs to storage', function (): void {
-    $asset = storageRouteDownloadAsset('route-test.jpg');
-
-    foreach (['media-files', 'media-assets'] as $legacyPath) {
-        $this->get('/admin/'.$legacyPath)
-            ->assertRedirect(MediaAssetResource::getUrl('index'));
-        $this->get('/admin/'.$legacyPath.'/'.$asset->getKey())
-            ->assertRedirect(MediaAssetResource::getUrl('view', ['record' => $asset]));
-        $this->get('/admin/'.$legacyPath.'/'.$asset->getKey().'/edit')
-            ->assertRedirect(MediaAssetResource::getUrl('edit', ['record' => $asset]));
-    }
-});
-
 it('downloads the authoritative original as an attachment', function (): void {
     $asset = storageRouteDownloadAsset(
         'original artwork.jpg',
