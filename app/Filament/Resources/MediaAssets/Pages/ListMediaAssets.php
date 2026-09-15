@@ -55,6 +55,9 @@ final class ListMediaAssets extends Page
 
     protected string $view = 'filament.resources.media-assets.pages.list-media-assets';
 
+    /** @var array<int, MediaAsset> */
+    private array $actionAssetCache = [];
+
     /** @var list<array<string, mixed>> */
     public array $assets = [];
 
@@ -698,11 +701,15 @@ final class ListMediaAssets extends Page
 
     private function assetById(int $assetId): MediaAsset
     {
+        if (isset($this->actionAssetCache[$assetId])) {
+            return $this->actionAssetCache[$assetId];
+        }
+
         /** @var MediaAsset|null $asset */
         $asset = MediaAsset::query()->find($assetId);
         abort_unless($asset instanceof MediaAsset, 404);
 
-        return $asset;
+        return $this->actionAssetCache[$assetId] = $asset;
     }
 
     private function removeSelection(int $assetId): void
