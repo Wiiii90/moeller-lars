@@ -30,7 +30,7 @@ final class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
-        if ($isPublicRequest && is_string($styleNonce)) {
+        if ($isPublicRequest) {
             $response->headers->set('Content-Security-Policy', $this->publicContentSecurityPolicy($styleNonce, $isArtistPreviewRequest));
         }
 

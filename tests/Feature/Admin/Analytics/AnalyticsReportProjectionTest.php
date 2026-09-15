@@ -71,19 +71,25 @@ it('searches only the active report and resets search when the report view chang
         ->and($analytics->detailReport)->toBe('geography');
 });
 
-it('only surfaces measured bot telemetry as an application signal', function (): void {
-    $method = new ReflectionMethod(Analytics::class, 'buildApplicationSignals');
-    $analytics = new Analytics;
+it('keeps geography context stable around the scrollable ranking without duplicate stage metrics', function (): void {
+    $view = file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
+    $css = file_get_contents(resource_path('css/admin/analytics.css'));
+    $page = file_get_contents(app_path('Filament/Pages/Analytics.php'));
 
-    expect($method->invoke($analytics, []))->toBe([])
-        ->and($method->invoke($analytics, [
-            ['name' => 'error:http_5xx', 'value' => 4.0],
-        ]))->toBe([])
-        ->and($method->invoke($analytics, [
-            ['name' => 'bot:request', 'value' => 0.0],
-        ]))->toBe([[
-            'label' => 'Bot requests',
-            'value' => '0',
-            'detail' => 'Application telemetry',
-        ]]);
+    expect($view)
+        ->toContain('analytics-stage-ranking__scroll')
+        ->toContain('analytics-stage-rail__context')
+        ->toContain('analytics-country-context__primary')
+        ->toContain('Selected country')
+        ->toContain('Actions')
+        ->not->toContain('analytics-stage-signals')
+        ->not->toContain('$stageHighlights')
+        ->and($css)
+        ->toContain('.analytics-stage-ranking__scroll')
+        ->toContain('overflow-y: auto;')
+        ->toContain('@keyframes analytics-marker-arrival')
+        ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->and($page)
+        ->not->toContain('OperationalMetricsQuery')
+        ->not->toContain('buildApplicationSignals');
 });
