@@ -38,6 +38,11 @@ final class Activity extends Page
 
     protected string $view = 'filament.pages.activity';
 
+    /** @var list<int> */
+    private const PAGE_SIZES = [25, 50, 100];
+
+    private const DEFAULT_PAGE_SIZE = 25;
+
     /** @var array<int, array<string, mixed>|null> */
     private array $activityEventCache = [];
 
@@ -211,6 +216,10 @@ final class Activity extends Page
         $area = is_string($area) && array_key_exists($area, AdminActionCatalog::areaOptions()) ? $area : null;
         $family = is_string($family) && array_key_exists($family, AdminActionCatalog::familyOptions()) ? $family : null;
         $search = is_string($search) ? trim($search) : '';
+        $requestedPerPage = request()->query('per_page');
+        $perPage = is_scalar($requestedPerPage) && in_array((int) $requestedPerPage, self::PAGE_SIZES, true)
+            ? (int) $requestedPerPage
+            : self::DEFAULT_PAGE_SIZE;
 
         $today = CarbonImmutable::today();
         $currentYear = (int) $today->format('Y');
@@ -242,6 +251,7 @@ final class Activity extends Page
             $feed = $activityFeed->page(
                 $area,
                 $family,
+                perPage: $perPage,
                 actor: $actor,
                 search: $search,
                 date: $activeDateValue,
@@ -283,6 +293,7 @@ final class Activity extends Page
                 search: $search,
                 date: $activeDateValue,
                 hour: $activeHour,
+                perPage: $perPage,
             );
             $overview = $historyService->overview(
                 area: $area,
@@ -331,6 +342,8 @@ final class Activity extends Page
             'area' => $area,
             'family' => $family,
             'search' => $search,
+            'perPage' => $perPage,
+            'pageSizes' => self::PAGE_SIZES,
             'areaOptions' => AdminActionCatalog::areaOptions(),
             'familyOptions' => AdminActionCatalog::familyOptions(),
             'activeDate' => $activeDateValue,

@@ -103,3 +103,15 @@ it('applies Activity filters to commit history and commit timeline data', functi
         ->and($ten['changes'])->toBe(2)
         ->and(collect($search['commits'])->pluck('id')->all())->toBe([(int) $mediaCommit->getKey()]);
 });
+
+it('uses the shared Activity page-size contract for activity and commit history', function (): void {
+    $actor = User::factory()->admin()->create();
+
+    $activity = app(AdminActivityFeed::class)->page(perPage: 25, actor: $actor);
+    $history = app(AdminPublicationHistory::class)->page(perPage: 100);
+    $clampedHistory = app(AdminPublicationHistory::class)->page(perPage: 500);
+
+    expect($activity['paginator']->perPage())->toBe(25)
+        ->and($history['paginator']->perPage())->toBe(100)
+        ->and($clampedHistory['paginator']->perPage())->toBe(100);
+});

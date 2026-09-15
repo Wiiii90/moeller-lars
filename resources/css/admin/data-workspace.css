@@ -355,6 +355,14 @@
     padding-bottom: calc(5.25rem + var(--admin-section-gap));
 }
 
+.admin-pager__leading {
+    display: inline-flex;
+    min-width: 0;
+    gap: .8rem;
+    align-items: center;
+    justify-self: start;
+}
+
 .admin-pager__meta {
     justify-self: start;
     color: var(--admin-muted);
@@ -481,6 +489,7 @@
     font-variant-numeric: tabular-nums;
     line-height: 1;
     text-align: center;
+    text-decoration: none;
     cursor: pointer;
 }
 

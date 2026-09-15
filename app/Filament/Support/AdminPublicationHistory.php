@@ -26,7 +26,7 @@ final class AdminPublicationHistory
         ?int $hour = null,
         int $perPage = 20,
     ): array {
-        $perPage = max(10, min(50, $perPage));
+        $perPage = max(10, min(100, $perPage));
         $currentSchemaHash = $this->versions->schemaHash();
         $liveId = $this->versions->currentLiveCheckpoint()?->getKey();
 

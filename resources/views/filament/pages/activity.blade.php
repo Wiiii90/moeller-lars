@@ -1,6 +1,7 @@
 <x-filament-panels::page>
     <x-admin.workspace title="Activity" class="activity-workspace">
         @php
+            $activityBaseUrl = \App\Filament\Pages\Activity::getUrl();
             $currentQuery = [
                 'view' => $viewMode === 'commits' ? 'commits' : null,
                 'search' => $search,
@@ -9,14 +10,15 @@
                 'calendar_year' => $calendarYear,
                 'calendar_date' => $activeDate,
                 'hour' => $activeHour,
+                'per_page' => $perPage,
             ];
-            $activityUrl = static function (array $values = []) use ($currentQuery): string {
+            $activityUrl = static function (array $values = []) use ($currentQuery, $activityBaseUrl): string {
                 $query = array_filter(
                     array_replace($currentQuery, $values),
                     static fn (mixed $value): bool => $value !== null && $value !== '',
                 );
 
-                return request()->url().($query === [] ? '' : '?'.http_build_query($query));
+                return $activityBaseUrl.($query === [] ? '' : '?'.http_build_query($query));
             };
             $liveCommit = $publicationContext['latest'];
             $calendarYearUrl = static fn (int $year): string => $activityUrl([
@@ -37,6 +39,14 @@
                     'calendar_year' => $calendarYear,
                     'calendar_date' => $selectedCalendarDate,
                     'hour' => $hour,
+                    'page' => null,
+                    'commits_page' => null,
+                ]);
+            }
+            $pageSizeUrls = [];
+            foreach ($pageSizes as $sizeOption) {
+                $pageSizeUrls[$sizeOption] = $activityUrl([
+                    'per_page' => $sizeOption,
                     'page' => null,
                     'commits_page' => null,
                 ]);
@@ -250,7 +260,7 @@
                 </aside>
             </div>
 
-            <form method="get" action="{{ request()->url() }}" class="admin-visual-stage-followup">
+            <form method="get" action="{{ $activityBaseUrl }}" class="admin-visual-stage-followup">
                 @if ($viewMode === 'commits')
                     <input type="hidden" name="view" value="commits">
                 @endif
@@ -327,12 +337,10 @@
                                 <a
                                     class="admin-action {{ $viewMode === 'activity' ? 'is-primary' : '' }}"
                                     href="{{ $activityUrl(['view' => null, 'page' => null, 'commits_page' => null]) }}"
-                                    wire:navigate
                                 >Activity</a>
                                 <a
                                     class="admin-action {{ $viewMode === 'commits' ? 'is-primary' : '' }}"
                                     href="{{ $activityUrl(['view' => 'commits', 'page' => null, 'commits_page' => null]) }}"
-                                    wire:navigate
                                 >Commits</a>
                             </div>
                         </div>
@@ -346,23 +354,23 @@
                 <table>
                     <colgroup>
                         <col class="activity-col--change">
+                        <col class="activity-col--who">
+                        <col class="activity-col--when">
                         <col class="activity-col--target">
                         <col class="activity-col--area">
                         <col class="activity-col--type">
                         <col class="activity-col--publication">
-                        <col class="activity-col--who">
-                        <col class="activity-col--when">
                         <col class="activity-col--actions">
                     </colgroup>
                     <thead>
                         <tr>
                             <th scope="col">Change</th>
+                            <th scope="col">Who</th>
+                            <th scope="col">When</th>
                             <th scope="col">Target</th>
                             <th scope="col">Area</th>
                             <th scope="col">Type</th>
                             <th scope="col">Publication</th>
-                            <th scope="col">Who</th>
-                            <th scope="col">When</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
                         </tr>
                     </thead>
@@ -371,6 +379,13 @@
                             <tr>
                                 <td class="activity-change-cell" title="{{ $event['action'] }}">
                                     <strong>{{ $event['action'] }}</strong>
+                                </td>
+                                <td class="activity-who-cell" title="{{ $event['actor'] }}">
+                                    <strong>{{ $event['actor'] }}</strong>
+                                </td>
+                                <td class="activity-when-cell">
+                                    <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
+                                    <small>{{ $event['timestamp'] }}</small>
                                 </td>
                                 <td class="activity-target-cell" title="{{ $event['target'] }}">
                                     <strong>{{ $event['target'] }}</strong>
@@ -394,13 +409,6 @@
                                     @else
                                         <span class="activity-publication-cell__empty" aria-label="No publication state">—</span>
                                     @endif
-                                </td>
-                                <td class="activity-who-cell" title="{{ $event['actor'] }}">
-                                    <strong>{{ $event['actor'] }}</strong>
-                                </td>
-                                <td class="activity-when-cell">
-                                    <time datetime="{{ str_replace(' ', 'T', $event['timestamp']) }}" title="{{ $event['timestamp'] }}">{{ $event['when'] }}</time>
-                                    <small>{{ $event['timestamp'] }}</small>
                                 </td>
                                 <td class="admin-table__actions activity-actions-cell">
                                     <x-admin.toolbar>
@@ -443,7 +451,10 @@
 
             @if ($paginator !== null)
                 <footer class="admin-pager" aria-label="Activity pagination">
-                    <span class="admin-pager__meta">Page {{ $paginator->currentPage() }} of {{ $paginator->lastPage() }}</span>
+                    <div class="admin-pager__leading">
+                        <span class="admin-pager__meta">Page {{ $paginator->currentPage() }} of {{ $paginator->lastPage() }}</span>
+                        <x-admin.page-size-picker :value="$perPage" :options="$pageSizes" :urls="$pageSizeUrls" />
+                    </div>
                     <span class="admin-pager__range">{{ $paginator->firstItem() ?? 0 }}–{{ $paginator->lastItem() ?? 0 }} of {{ $paginator->total() }}</span>
                     <div class="admin-pager__actions admin-toolbar">
                         @if ($paginator->previousPageUrl())
@@ -463,15 +474,20 @@
             <x-admin.table class="admin-table--data activity-workspace__table activity-commits-table">
                 <table>
                     <colgroup>
-                        <col><col><col><col><col><col>
+                        <col class="activity-commit-col--commit">
+                        <col class="activity-commit-col--who">
+                        <col class="activity-commit-col--when">
+                        <col class="activity-commit-col--summary">
+                        <col class="activity-commit-col--publication">
+                        <col class="activity-commit-col--actions">
                     </colgroup>
                     <thead>
                         <tr>
                             <th scope="col">Commit</th>
-                            <th scope="col">Summary</th>
-                            <th scope="col">Publication</th>
                             <th scope="col">Who</th>
                             <th scope="col">When</th>
+                            <th scope="col">Summary</th>
+                            <th scope="col">Publication</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
                         </tr>
                     </thead>
@@ -485,6 +501,13 @@
                                             <span class="admin-status is-published">LIVE</span>
                                         @endif
                                     </div>
+                                </td>
+                                <td class="activity-who-cell">
+                                    <strong>{{ $commit['actor'] }}</strong>
+                                </td>
+                                <td class="activity-when-cell">
+                                    <time datetime="{{ str_replace(' ', 'T', $commit['timestamp']) }}" title="{{ $commit['timestamp'] }}">{{ $commit['when'] }}</time>
+                                    <small>{{ $commit['timestamp'] }}</small>
                                 </td>
                                 <td class="activity-commit-summary">
                                     <strong>{{ $commit['message'] ?? 'No commit message' }}</strong>
@@ -500,13 +523,6 @@
                                         {{ $commit['restorable'] ? 'Restorable' : ($commit['legacy'] ? 'Metadata only' : 'Schema changed') }}
                                     </span>
                                     <small>{{ number_format($commit['change_count']) }} changes · {{ number_format($commit['event_count']) }} events</small>
-                                </td>
-                                <td class="activity-who-cell">
-                                    <strong>{{ $commit['actor'] }}</strong>
-                                </td>
-                                <td class="activity-when-cell">
-                                    <time datetime="{{ str_replace(' ', 'T', $commit['timestamp']) }}" title="{{ $commit['timestamp'] }}">{{ $commit['when'] }}</time>
-                                    <small>{{ $commit['timestamp'] }}</small>
                                 </td>
                                 <td class="admin-table__actions activity-actions-cell">
                                     <x-admin.toolbar>
@@ -554,7 +570,10 @@
 
             @if ($commitPaginator !== null)
                 <footer class="admin-pager" aria-label="Commit pagination">
-                    <span class="admin-pager__meta">Page {{ $commitPaginator->currentPage() }} of {{ $commitPaginator->lastPage() }}</span>
+                    <div class="admin-pager__leading">
+                        <span class="admin-pager__meta">Page {{ $commitPaginator->currentPage() }} of {{ $commitPaginator->lastPage() }}</span>
+                        <x-admin.page-size-picker :value="$perPage" :options="$pageSizes" :urls="$pageSizeUrls" />
+                    </div>
                     <span class="admin-pager__range">{{ $commitPaginator->firstItem() ?? 0 }}–{{ $commitPaginator->lastItem() ?? 0 }} of {{ $commitPaginator->total() }}</span>
                     <div class="admin-pager__actions admin-toolbar">
                         @if ($commitPaginator->previousPageUrl())

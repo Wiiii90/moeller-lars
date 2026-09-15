@@ -479,8 +479,8 @@ a.activity-calendar__day:focus-visible {
 
 .activity-workspace__controls > .activity-control--search { grid-column: span 8; }
 .activity-workspace__controls > .activity-control--area { grid-column: span 3; }
-.activity-workspace__controls > .activity-control--type { grid-column: span 3; }
-.activity-workspace__controls > .activity-control--date { grid-column: span 2; }
+.activity-workspace__controls > .activity-control--type { grid-column: span 2; }
+.activity-workspace__controls > .activity-control--date { grid-column: span 3; }
 .activity-workspace__controls > .activity-control--time { grid-column: span 2; }
 .activity-workspace__controls > .activity-control--reset { grid-column: span 2; }
 .activity-workspace__controls > .activity-control--view { grid-column: span 4; }
@@ -504,17 +504,29 @@ a.activity-calendar__day:focus-visible {
 }
 
 .activity-events-table .activity-col--change,
-.activity-events-table .activity-col--target,
 .activity-events-table .activity-col--publication,
 .activity-events-table .activity-col--actions {
     width: 16.6667%;
 }
 
-.activity-events-table .activity-col--area,
-.activity-events-table .activity-col--type,
-.activity-events-table .activity-col--who,
+.activity-events-table .activity-col--who {
+    width: 7.5%;
+}
+
 .activity-events-table .activity-col--when {
-    width: 8.3333%;
+    width: 9.1667%;
+}
+
+.activity-events-table .activity-col--target {
+    width: 15%;
+}
+
+.activity-events-table .activity-col--area {
+    width: 8%;
+}
+
+.activity-events-table .activity-col--type {
+    width: 10.3332%;
 }
 
 .activity-workspace__table th,
@@ -650,6 +662,10 @@ a.activity-calendar__day:focus-visible {
     flex-wrap: nowrap;
 }
 
+.activity-actions-cell .admin-action {
+    column-gap: .28rem;
+}
+
 .activity-actions-cell .admin-action:first-child {
     margin-left: 0;
 }
@@ -658,8 +674,22 @@ a.activity-calendar__day:focus-visible {
     min-width: 66rem;
 }
 
-.activity-commits-table col {
+.activity-commits-table .activity-commit-col--commit,
+.activity-commits-table .activity-commit-col--publication,
+.activity-commits-table .activity-commit-col--actions {
     width: 16.6667%;
+}
+
+.activity-commits-table .activity-commit-col--who {
+    width: 7.5%;
+}
+
+.activity-commits-table .activity-commit-col--when {
+    width: 9.1667%;
+}
+
+.activity-commits-table .activity-commit-col--summary {
+    width: 33.3332%;
 }
 
 .activity-commit-cell__heading {

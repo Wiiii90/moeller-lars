@@ -3,6 +3,7 @@
     'options' => [25, 50, 100],
     'wireModel' => null,
     'wireAction' => null,
+    'urls' => [],
     'label' => 'Per page',
     'ariaLabel' => 'Items per page',
 ])
@@ -49,21 +50,38 @@
             x-cloak
         >
             @foreach ($sizeOptions as $sizeOption)
-                <button
-                    class="admin-pager-size-picker__option {{ $currentValue === $sizeOption ? 'is-active' : '' }}"
-                    type="button"
-                    role="option"
-                    aria-selected="{{ $currentValue === $sizeOption ? 'true' : 'false' }}"
-                    @if ($wireAction)
-                        wire:click="{{ $wireAction }}({{ $sizeOption }})"
-                    @elseif ($wireModel)
-                        wire:click="$set('{{ $wireModel }}', {{ $sizeOption }})"
-                    @endif
-                    x-on:click="open = false"
-                >
-                    <span class="admin-pager-size-picker__check" aria-hidden="true">{{ $currentValue === $sizeOption ? '✓' : '' }}</span>
-                    <span>{{ $sizeOption }}</span>
-                </button>
+                @php
+                    $optionUrl = is_array($urls) && isset($urls[$sizeOption]) ? (string) $urls[$sizeOption] : null;
+                @endphp
+
+                @if (is_string($optionUrl) && $optionUrl !== '')
+                    <a
+                        class="admin-pager-size-picker__option {{ $currentValue === $sizeOption ? 'is-active' : '' }}"
+                        href="{{ $optionUrl }}"
+                        role="option"
+                        aria-selected="{{ $currentValue === $sizeOption ? 'true' : 'false' }}"
+                        x-on:click="open = false"
+                    >
+                        <span class="admin-pager-size-picker__check" aria-hidden="true">{{ $currentValue === $sizeOption ? '✓' : '' }}</span>
+                        <span>{{ $sizeOption }}</span>
+                    </a>
+                @else
+                    <button
+                        class="admin-pager-size-picker__option {{ $currentValue === $sizeOption ? 'is-active' : '' }}"
+                        type="button"
+                        role="option"
+                        aria-selected="{{ $currentValue === $sizeOption ? 'true' : 'false' }}"
+                        @if ($wireAction)
+                            wire:click="{{ $wireAction }}({{ $sizeOption }})"
+                        @elseif ($wireModel)
+                            wire:click="$set('{{ $wireModel }}', {{ $sizeOption }})"
+                        @endif
+                        x-on:click="open = false"
+                    >
+                        <span class="admin-pager-size-picker__check" aria-hidden="true">{{ $currentValue === $sizeOption ? '✓' : '' }}</span>
+                        <span>{{ $sizeOption }}</span>
+                    </button>
+                @endif
             @endforeach
         </div>
     </div>
