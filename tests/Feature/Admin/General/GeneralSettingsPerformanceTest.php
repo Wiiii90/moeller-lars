@@ -1,6 +1,8 @@
 <?php
 
+use App\Domain\Admin\AdminSettingsService;
 use App\Filament\Pages\General;
+use App\Models\PublicContentSetting;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Database\Events\QueryExecuted;
@@ -26,4 +28,18 @@ it('loads the General settings record once during the initial workspace render',
         ->assertOk();
 
     expect($settingsSelects)->toHaveCount(1);
+});
+
+it('refreshes the request cache after General settings are saved', function (): void {
+    $before = PublicContentSetting::general();
+
+    app(AdminSettingsService::class)->updatePublicContent($before, [
+        'public_email' => 'updated@example.test',
+    ]);
+
+    $after = PublicContentSetting::general();
+
+    expect($after)
+        ->not->toBe($before)
+        ->and($after->getAttribute('public_email'))->toBe('updated@example.test');
 });
