@@ -1,14 +1,10 @@
 name: Direct admin dialog migration
-
 on:
   push:
     branches: [dev]
-    paths:
-      - '.github/workflows/dialog-migration-direct.yml'
-
+    paths: ['.github/workflows/dialog-migration-direct.yml']
 permissions:
   contents: write
-
 jobs:
   migrate:
     runs-on: ubuntu-latest
@@ -19,36 +15,29 @@ jobs:
           POSTGRES_DB: moeller_lars_testing
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
+        ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U postgres -d moeller_lars_testing"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
+          --health-interval 5s --health-timeout 5s --health-retries 12
     steps:
       - uses: actions/checkout@v4
         with:
           ref: dev
           fetch-depth: 0
-
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           extensions: gd, intl, mbstring, pdo_pgsql, zip
           coverage: none
-
       - name: Rebase onto current dev
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git pull --rebase origin dev
-
       - name: Migrate edit dialogs to canonical autosave
         run: |
           set -euo pipefail
-
           cat > app/Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php <<'PHP'
           <?php
 
@@ -68,13 +57,11 @@ jobs:
               public function persistMountedAdminEdit(): void
               {
                   $action = $this->getMountedAction();
-
                   if (! $action instanceof Action) {
                       return;
                   }
 
                   $schema = $this->getMountedActionSchema(mountedAction: $action);
-
                   if ($schema === null) {
                       return;
                   }
@@ -89,22 +76,16 @@ jobs:
 
                       $key = $action->getName().':'.hash('sha256', serialize($action->getArguments()));
                       $fingerprint = hash('sha256', serialize($state));
-
                       if (($this->adminEditDialogPersistedFingerprints[$key] ?? null) === $fingerprint) {
                           $action->commitDatabaseTransaction();
-
                           return;
                       }
 
                       $action->callBefore();
-                      $action->call([
-                          'form' => $schema,
-                          'schema' => $schema,
-                      ]);
+                      $action->call(['form' => $schema, 'schema' => $schema]);
                       $action->callAfter();
                       $this->afterActionCalled($action);
                       $action->commitDatabaseTransaction();
-
                       $this->adminEditDialogPersistedFingerprints[$key] = $fingerprint;
                   } catch (Halt $exception) {
                       $exception->shouldRollbackDatabaseTransaction()
@@ -116,11 +97,9 @@ jobs:
                           : $action->commitDatabaseTransaction();
                   } catch (ValidationException $exception) {
                       $action->rollBackDatabaseTransaction();
-
                       throw $exception;
                   } catch (Throwable $exception) {
                       $action->rollBackDatabaseTransaction();
-
                       throw $exception;
                   }
               }
@@ -133,221 +112,159 @@ jobs:
 
           root = Path('.')
           needle = 'AdminDialog::editCommit('
+          pairs = {')': '(', ']': '[', '}': '{'}
 
-          def split_arguments(source: str):
-              args = []
-              start = 0
-              stack = []
+          def scan(text, start, stop_at_outer=False):
+              stack = ['('] if stop_at_outer else []
               quote = None
-              escape = False
-              line_comment = False
-              block_comment = False
-              i = 0
-              pairs = {')': '(', ']': '[', '}': '{'}
-              while i < len(source):
-                  ch = source[i]
-                  nxt = source[i + 1] if i + 1 < len(source) else ''
-                  if line_comment:
-                      if ch == '\n':
-                          line_comment = False
-                      i += 1
-                      continue
-                  if block_comment:
-                      if ch == '*' and nxt == '/':
-                          block_comment = False
-                          i += 2
-                      else:
-                          i += 1
-                      continue
-                  if quote is not None:
-                      if escape:
-                          escape = False
-                      elif ch == '\\':
-                          escape = True
-                      elif ch == quote:
-                          quote = None
-                      i += 1
-                      continue
-                  if ch in ('\'', '"'):
-                      quote = ch
-                      i += 1
-                      continue
-                  if ch == '/' and nxt == '/':
-                      line_comment = True
-                      i += 2
-                      continue
-                  if ch == '/' and nxt == '*':
-                      block_comment = True
-                      i += 2
-                      continue
-                  if ch in '([{':
-                      stack.append(ch)
-                  elif ch in ')]}':
-                      if not stack or stack[-1] != pairs[ch]:
-                          raise ValueError(f'unbalanced delimiter near {source[max(0, i-30):i+30]!r}')
-                      stack.pop()
-                  elif ch == ',' and not stack:
-                      args.append(source[start:i].strip())
-                      start = i + 1
-                  i += 1
-              args.append(source[start:].strip())
-              return args
-
-          def find_call_end(text: str, open_paren: int):
-              stack = ['(']
-              quote = None
-              escape = False
-              line_comment = False
-              block_comment = False
-              pairs = {')': '(', ']': '[', '}': '{'}
-              i = open_paren + 1
+              escape = line = block = False
+              commas = []
+              i = start
               while i < len(text):
                   ch = text[i]
                   nxt = text[i + 1] if i + 1 < len(text) else ''
-                  if line_comment:
-                      if ch == '\n':
-                          line_comment = False
-                      i += 1
+                  if line:
+                      if ch == '\n': line = False
+                      i += 1; continue
+                  if block:
+                      if ch == '*' and nxt == '/': block = False; i += 2
+                      else: i += 1
                       continue
-                  if block_comment:
-                      if ch == '*' and nxt == '/':
-                          block_comment = False
-                          i += 2
-                      else:
-                          i += 1
-                      continue
-                  if quote is not None:
-                      if escape:
-                          escape = False
-                      elif ch == '\\':
-                          escape = True
-                      elif ch == quote:
-                          quote = None
-                      i += 1
-                      continue
-                  if ch in ('\'', '"'):
-                      quote = ch
-                      i += 1
-                      continue
-                  if ch == '/' and nxt == '/':
-                      line_comment = True
-                      i += 2
-                      continue
-                  if ch == '/' and nxt == '*':
-                      block_comment = True
-                      i += 2
-                      continue
-                  if ch in '([{':
-                      stack.append(ch)
+                  if quote:
+                      if escape: escape = False
+                      elif ch == '\\': escape = True
+                      elif ch == quote: quote = None
+                      i += 1; continue
+                  if ch in ("'", '"'): quote = ch; i += 1; continue
+                  if ch == '/' and nxt == '/': line = True; i += 2; continue
+                  if ch == '/' and nxt == '*': block = True; i += 2; continue
+                  if ch in '([{': stack.append(ch)
                   elif ch in ')]}':
-                      if not stack or stack[-1] != pairs[ch]:
-                          raise ValueError('unbalanced editCommit call')
+                      if not stack or stack[-1] != pairs[ch]: raise ValueError('unbalanced delimiter')
                       stack.pop()
-                      if not stack:
-                          return i
+                      if stop_at_outer and not stack: return i, commas
+                  elif ch == ',' and not stack: commas.append(i)
+                  elif ch == ',' and stop_at_outer and len(stack) == 1: commas.append(i)
                   i += 1
-              raise ValueError('unterminated editCommit call')
+              raise ValueError('unterminated call') if stop_at_outer else ValueError('unterminated source')
 
-          def migrate_calls(text: str):
-              count = 0
-              search_from = 0
+          def split_args(source):
+              # Parse top-level commas in an argument substring. A final comma is legal PHP syntax.
+              stack=[]; quote=None; escape=line=block=False; cuts=[]; i=0
+              while i < len(source):
+                  ch=source[i]; nxt=source[i+1] if i+1 < len(source) else ''
+                  if line:
+                      if ch=='\n': line=False
+                      i+=1; continue
+                  if block:
+                      if ch=='*' and nxt=='/': block=False; i+=2
+                      else: i+=1
+                      continue
+                  if quote:
+                      if escape: escape=False
+                      elif ch=='\\': escape=True
+                      elif ch==quote: quote=None
+                      i+=1; continue
+                  if ch in ("'", '"'): quote=ch; i+=1; continue
+                  if ch=='/' and nxt=='/': line=True; i+=2; continue
+                  if ch=='/' and nxt=='*': block=True; i+=2; continue
+                  if ch in '([{': stack.append(ch)
+                  elif ch in ')]}':
+                      if not stack or stack[-1] != pairs[ch]: raise ValueError('unbalanced argument')
+                      stack.pop()
+                  elif ch==',' and not stack: cuts.append(i)
+                  i+=1
+              pieces=[]; start=0
+              for cut in cuts:
+                  pieces.append(source[start:cut].strip()); start=cut+1
+              pieces.append(source[start:].strip())
+              if pieces and pieces[-1] == '': pieces.pop()
+              return pieces
+
+          def migrate_calls(text):
+              count=0; cursor=0
               while True:
-                  start = text.find(needle, search_from)
-                  if start < 0:
-                      break
-                  open_paren = start + len(needle) - 1
-                  end = find_call_end(text, open_paren)
-                  args = split_arguments(text[open_paren + 1:end])
-                  if len(args) not in (2, 3):
-                      raise ValueError(f'editCommit expected 2/3 args, got {len(args)}: {args!r}')
-                  label = args[1].strip()
-                  if not (label.startswith("'") or label.startswith('"')):
-                      raise ValueError(f'editCommit submit label is not a literal: {label!r}')
-                  replacement = 'AdminDialog::edit(' + args[0]
-                  if len(args) == 3:
-                      replacement += ', ' + args[2]
-                  replacement += ')'
-                  text = text[:start] + replacement + text[end + 1:]
-                  search_from = start + len(replacement)
-                  count += 1
-              return text, count
+                  start=text.find(needle, cursor)
+                  if start < 0: break
+                  open_paren=start+len(needle)-1
+                  end,_=scan(text, open_paren+1, True)
+                  args=split_args(text[open_paren+1:end])
+                  if len(args) not in (2,3): raise ValueError(f'expected 2/3 args, got {len(args)}')
+                  if not args[1].lstrip().startswith(("'", '"')): raise ValueError('submit label must be literal')
+                  replacement='AdminDialog::edit('+args[0]+((', '+args[2]) if len(args)==3 else '')+')'
+                  text=text[:start]+replacement+text[end+1:]
+                  cursor=start+len(replacement); count+=1
+              return text,count
 
-          php_files = list((root / 'app' / 'Filament').rglob('*.php'))
-          changed = []
-          for path in php_files:
-              text = path.read_text()
-              expected = text.count(needle)
-              if expected == 0:
-                  continue
-              migrated, converted = migrate_calls(text)
-              if converted != expected or needle in migrated:
-                  raise SystemExit(f'Could not safely migrate every editCommit call in {path}: {converted}/{expected}')
-
-              import_line = 'use App\\Filament\\Support\\Dialogs\\InteractsWithAdminEditDialogAutosave;\n'
+          changed=[]
+          for path in (root/'app'/'Filament').rglob('*.php'):
+              text=path.read_text(); expected=text.count(needle)
+              if not expected: continue
+              migrated,count=migrate_calls(text)
+              if count != expected or needle in migrated:
+                  raise SystemExit(f'unsafe editCommit migration in {path}: {count}/{expected}')
+              marker='use App\\Filament\\Support\\Dialogs\\AdminDialog;\n'
+              import_line='use App\\Filament\\Support\\Dialogs\\InteractsWithAdminEditDialogAutosave;\n'
               if import_line not in migrated:
-                  marker = 'use App\\Filament\\Support\\Dialogs\\AdminDialog;\n'
-                  if marker not in migrated:
-                      raise SystemExit(f'Missing AdminDialog import in {path}')
-                  migrated = migrated.replace(marker, marker + import_line, 1)
-
+                  if marker not in migrated: raise SystemExit(f'missing AdminDialog import in {path}')
+                  migrated=migrated.replace(marker, marker+import_line, 1)
               if 'use InteractsWithAdminEditDialogAutosave;' not in migrated:
-                  declaration = re.search(r'(?m)^(?:final\s+|abstract\s+)?(?:class|trait)\s+[A-Za-z0-9_]+[^\n]*\n\{\n', migrated)
-                  if declaration is None:
-                      raise SystemExit(f'Could not find class/trait declaration in {path}')
-                  migrated = migrated[:declaration.end()] + '    use InteractsWithAdminEditDialogAutosave;\n\n' + migrated[declaration.end():]
+                  decl=re.search(r'(?m)^(?:final\s+|abstract\s+)?(?:class|trait)\s+[A-Za-z0-9_]+[^\n]*\n\{\n', migrated)
+                  if not decl: raise SystemExit(f'class/trait declaration not found in {path}')
+                  migrated=migrated[:decl.end()]+'    use InteractsWithAdminEditDialogAutosave;\n\n'+migrated[decl.end():]
+              path.write_text(migrated); changed.append((path,count))
 
-              path.write_text(migrated)
-              changed.append((str(path), converted))
+          if not changed: raise SystemExit('no editCommit flows found')
 
-          if not changed:
-              raise SystemExit('Expected editCommit flows, found none')
+          helper=root/'app/Filament/Support/Dialogs/AdminDialog.php'
+          text=helper.read_text()
+          text,count=re.subn(r"\n    /\*\*\n     \* Transitional helper for an edit that still has atomic persistence\.[\s\S]*?\n    public static function editCommit\([\s\S]*?\n    \}\n", '\n', text, count=1)
+          if count != 1: raise SystemExit('editCommit bridge removal failed')
+          old="""        if ($type === AdminDialogType::Confirm) {
+            $classes[] = 'admin-dialog--confirmation';
+        }
 
-          helper = root / 'app/Filament/Support/Dialogs/AdminDialog.php'
-          text = helper.read_text()
-          bridge_pattern = re.compile(
-              r"\n    /\*\*\n     \* Transitional helper for an edit that still has atomic persistence\.[\s\S]*?\n    public static function editCommit\([\s\S]*?\n    \}\n",
-              re.M,
-          )
-          text, count = bridge_pattern.subn('\n', text, count=1)
-          if count != 1:
-              raise SystemExit('Could not remove AdminDialog::editCommit bridge')
+        return $action
+            // Filament still owns modal state, focus, Escape and the native X.
+            // The shared CSS width modifier is the actual visual authority.
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes(['class' => implode(' ', $classes)]);"""
+          new="""        if ($type === AdminDialogType::Confirm) {
+            $classes[] = 'admin-dialog--confirmation';
+        }
 
-          old = "        if ($type === AdminDialogType::Confirm) {\n            $classes[] = 'admin-dialog--confirmation';\n        }\n\n        return $action\n            // Filament still owns modal state, focus, Escape and the native X.\n            // The shared CSS width modifier is the actual visual authority.\n            ->modalWidth(Width::Large)\n            ->extraModalWindowAttributes(['class' => implode(' ', $classes)]);"
-          new = "        if ($type === AdminDialogType::Confirm) {\n            $classes[] = 'admin-dialog--confirmation';\n        }\n\n        $attributes = ['class' => implode(' ', $classes)];\n\n        if ($type === AdminDialogType::Edit) {\n            // Native change events give text/textarea blur commits and immediate\n            // select/toggle commits without timer-driven persistence.\n            $attributes['wire:change'] = 'persistMountedAdminEdit';\n        }\n\n        return $action\n            // Filament still owns modal state, focus, Escape and the native X.\n            // The shared CSS width modifier is the actual visual authority.\n            ->modalWidth(Width::Large)\n            ->extraModalWindowAttributes($attributes);"
-          if old not in text:
-              raise SystemExit('AdminDialog base block changed unexpectedly')
-          helper.write_text(text.replace(old, new, 1))
+        $attributes = ['class' => implode(' ', $classes)];
 
-          doc = root / 'docs/ADMIN-DIALOG-CONTRACT.md'
-          text = doc.read_text()
-          paragraph = "\nThe framework helper `AdminDialog::editCommit()` exists only as a migration bridge for existing atomic edit workflows whose domain semantics cannot safely be converted in the same source pass. It must not be used for new dialogs and must be removed from each flow once that flow has canonical autosave/receipt coverage.\n"
-          if paragraph not in text:
-              raise SystemExit('Dialog migration-bridge paragraph changed unexpectedly')
-          doc.write_text(text.replace(paragraph, '\n'))
+        if ($type === AdminDialogType::Edit) {
+            // Native change events give text/textarea blur commits and immediate
+            // select/toggle commits without timer-driven persistence.
+            $attributes['wire:change'] = 'persistMountedAdminEdit';
+        }
 
-          print('Migrated edit dialog files:')
-          for path, count in changed:
-              print(f'  {path}: {count}')
+        return $action
+            // Filament still owns modal state, focus, Escape and the native X.
+            // The shared CSS width modifier is the actual visual authority.
+            ->modalWidth(Width::Large)
+            ->extraModalWindowAttributes($attributes);"""
+          if old not in text: raise SystemExit('AdminDialog base changed unexpectedly')
+          helper.write_text(text.replace(old,new,1))
+
+          doc=root/'docs/ADMIN-DIALOG-CONTRACT.md'; text=doc.read_text()
+          bridge="\nThe framework helper `AdminDialog::editCommit()` exists only as a migration bridge for existing atomic edit workflows whose domain semantics cannot safely be converted in the same source pass. It must not be used for new dialogs and must be removed from each flow once that flow has canonical autosave/receipt coverage.\n"
+          if bridge not in text: raise SystemExit('dialog contract bridge paragraph changed')
+          doc.write_text(text.replace(bridge,'\n'))
+          print('migrated', sum(c for _,c in changed), 'edit dialogs across', len(changed), 'files')
           PY
-
-          if rg -n 'AdminDialog::editCommit|function editCommit' app docs; then
-            echo 'editCommit bridge still exists' >&2
-            exit 1
-          fi
-
+          ! rg -n 'AdminDialog::editCommit|function editCommit' app docs
       - name: Install PHP dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
-
       - name: Format and verify changed PHP
         run: |
           set -euo pipefail
           changed_php="$(git diff --name-only -- 'app/Filament/**/*.php')"
           vendor/bin/pint app/Filament/Support/Dialogs/AdminDialog.php app/Filament/Support/Dialogs/InteractsWithAdminEditDialogAutosave.php $changed_php
           git diff --check
-          while IFS= read -r file; do
-            [[ -z "$file" ]] || php -l "$file" >/dev/null
-          done <<< "$changed_php"
-
+          while IFS= read -r file; do [[ -z "$file" ]] || php -l "$file" >/dev/null; done <<< "$changed_php"
       - name: Run focused dialog and admin tests
         env:
           APP_ENV: testing
@@ -364,7 +281,6 @@ jobs:
           set -euo pipefail
           export APP_KEY="$(php artisan key:generate --show)"
           composer test -- --filter='Dialog|HomePresentation|Dashboard|General|Journal|Gallery|CustomPage|SitePages|MediaAsset'
-
       - name: Commit migration and remove one-shot workflow
         run: |
           set -euo pipefail
