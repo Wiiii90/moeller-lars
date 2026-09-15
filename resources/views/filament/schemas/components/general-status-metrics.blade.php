@@ -1,5 +1,5 @@
 @php
-    $settings = \App\Models\PublicContentSetting::general();
+    $settings = $generalSettings ?? \App\Models\PublicContentSetting::general();
     $lastChanged = $settings->getAttribute('updated_at');
     $lastChangedValue = $lastChanged instanceof \DateTimeInterface
         ? $lastChanged->format('j M · H:i')
