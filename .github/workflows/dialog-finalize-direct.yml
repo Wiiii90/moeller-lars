@@ -26,7 +26,17 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git pull --rebase origin dev
-          python3 scripts/admin_dialog_finalize.py
+
+          if ! python3 scripts/admin_dialog_finalize.py > /tmp/dialog-finalize.log 2>&1; then
+            git reset --hard HEAD
+            git clean -fd
+            cp /tmp/dialog-finalize.log scripts/dialog-finalize-error.txt
+            git add scripts/dialog-finalize-error.txt
+            git commit -m 'chore: record dialog finalizer stop reason'
+            git push origin HEAD:dev
+            exit 1
+          fi
+
           rm .github/workflows/dialog-finalize-direct.yml scripts/admin_dialog_finalize.py
           git diff --check
           git add -A
