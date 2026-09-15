@@ -205,10 +205,6 @@ final class Activity extends Page
     protected function getViewData(): array
     {
         $viewMode = request()->query('view') === 'commits' ? 'commits' : 'activity';
-        if ($viewMode === 'commits') {
-            return $this->commitViewData();
-        }
-
         $area = request()->query('area');
         $family = request()->query('family');
         $search = request()->query('search');
@@ -219,7 +215,8 @@ final class Activity extends Page
         $today = CarbonImmutable::today();
         $currentYear = (int) $today->format('Y');
         $activeDate = $this->requestedActivityDate($today);
-        $activeHour = $activeDate !== null ? $this->requestedActivityHour() : null;
+        $activeHour = $this->requestedActivityHour();
+        $activeDateValue = $activeDate?->format('Y-m-d');
         $requestedYear = request()->query('calendar_year');
         $calendarYear = is_numeric($requestedYear)
             ? max(2000, min($currentYear, (int) $requestedYear))
@@ -228,38 +225,148 @@ final class Activity extends Page
             $calendarYear = $activeDate->year;
         }
 
-        $actor = app(AdminAuditService::class)->requireActor();
         $activityFeed = app(AdminActivityFeed::class);
-        $activeDateValue = $activeDate?->format('Y-m-d');
-        $feed = $activityFeed->page(
-            $area,
-            $family,
-            actor: $actor,
-            search: $search,
-            date: $activeDateValue,
-            hour: $activeHour,
-        );
-        $overview = $activityFeed->overview(
-            $area,
-            $family,
-            search: $search,
-            date: $activeDateValue,
-            hour: $activeHour,
-        );
+        $historyService = app(AdminPublicationHistory::class);
         $publicationContext = $this->decoratePublicationContext($activityFeed->publicationContext());
-
         $calendarStart = CarbonImmutable::create($calendarYear, 1, 1)->startOfDay();
         $calendarEnd = CarbonImmutable::create($calendarYear, 12, 31)->endOfDay();
-        $calendarQuery = $this->calendarQuery($area, $family, $search, $calendarStart, $calendarEnd);
+
+        $activity = [];
+        $paginator = null;
+        $commits = [];
+        $commitPaginator = null;
+        $sourceExists = false;
+
+        if ($viewMode === 'activity') {
+            $actor = app(AdminAuditService::class)->requireActor();
+            $feed = $activityFeed->page(
+                $area,
+                $family,
+                actor: $actor,
+                search: $search,
+                date: $activeDateValue,
+                hour: $activeHour,
+            );
+            $overview = $activityFeed->overview(
+                $area,
+                $family,
+                search: $search,
+                date: $activeDateValue,
+                hour: $activeHour,
+            );
+            $activity = $feed['activity'];
+            $paginator = $feed['paginator'];
+            $sourceExists = $activityFeed->exists();
+            $calendarQuery = $this->activityCalendarQuery(
+                $area,
+                $family,
+                $search,
+                $calendarStart,
+                $calendarEnd,
+            );
+            $timestampColumn = 'occurred_at';
+            $latestAt = $overview['latest_at'] !== null
+                ? CarbonImmutable::parse((string) $overview['latest_at'])
+                : null;
+            $workspaceMetrics = [
+                ['label' => 'Changes', 'value' => number_format($overview['total']), 'description' => 'Matching filters'],
+                ['label' => 'Active days', 'value' => number_format($overview['active_days']), 'description' => 'Days with matching activity'],
+                ['label' => 'Areas', 'value' => number_format($overview['areas']), 'description' => 'Matching editorial areas'],
+                ['label' => 'Change types', 'value' => number_format($overview['families']), 'description' => 'Matching change families'],
+                ['label' => 'Actors', 'value' => number_format($overview['actors']), 'description' => 'Matching admins'],
+                ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt?->format('Y-m-d H:i') ?? 'No matching activity'],
+            ];
+        } else {
+            $history = $historyService->page(
+                area: $area,
+                family: $family,
+                search: $search,
+                date: $activeDateValue,
+                hour: $activeHour,
+            );
+            $overview = $historyService->overview(
+                area: $area,
+                family: $family,
+                search: $search,
+                date: $activeDateValue,
+                hour: $activeHour,
+            );
+            $commits = $history['commits'];
+            $commitPaginator = $history['paginator'];
+            $sourceExists = PublicationCheckpoint::query()->exists();
+            $calendarQuery = $historyService->queryForFilters($area, $family, $search)
+                ->whereBetween('published_at', [$calendarStart, $calendarEnd]);
+            $timestampColumn = 'published_at';
+            $latestAt = $overview['latest_at'] !== null
+                ? CarbonImmutable::parse((string) $overview['latest_at'])
+                : null;
+            $workspaceMetrics = [
+                ['label' => 'Commits', 'value' => number_format($overview['total']), 'description' => 'Matching filters'],
+                ['label' => 'Active days', 'value' => number_format($overview['active_days']), 'description' => 'Days with matching commits'],
+                ['label' => 'Changes', 'value' => number_format($overview['changes']), 'description' => 'Rows in matching commits'],
+                ['label' => 'Events', 'value' => number_format($overview['events']), 'description' => 'Activity events in commits'],
+                ['label' => 'Actors', 'value' => number_format($overview['actors']), 'description' => 'Matching admins'],
+                ['label' => 'Latest', 'value' => $latestAt?->diffForHumans() ?? '—', 'description' => $latestAt?->format('Y-m-d H:i') ?? 'No matching commits'],
+            ];
+        }
+
+        $timeline = $this->timelinePresentation(
+            $calendarQuery,
+            $timestampColumn,
+            $calendarStart,
+            $calendarEnd,
+            $today,
+            $activeDate,
+            $calendarYear,
+            $currentYear,
+            $viewMode,
+        );
+
+        return [
+            'viewMode' => $viewMode,
+            'activity' => $activity,
+            'paginator' => $paginator,
+            'commits' => $commits,
+            'commitPaginator' => $commitPaginator,
+            'area' => $area,
+            'family' => $family,
+            'search' => $search,
+            'areaOptions' => AdminActionCatalog::areaOptions(),
+            'familyOptions' => AdminActionCatalog::familyOptions(),
+            'activeDate' => $activeDateValue,
+            'activeHour' => $activeHour,
+            'todayDate' => $today->format('Y-m-d'),
+            'activitySourceExists' => $sourceExists,
+            'workspaceMetrics' => $workspaceMetrics,
+            'publicationContext' => $publicationContext,
+            ...$timeline,
+        ];
+    }
+
+    /**
+     * @param  Builder<*>  $calendarQuery
+     * @return array<string, mixed>
+     */
+    private function timelinePresentation(
+        Builder $calendarQuery,
+        string $timestampColumn,
+        CarbonImmutable $calendarStart,
+        CarbonImmutable $calendarEnd,
+        CarbonImmutable $today,
+        ?CarbonImmutable $activeDate,
+        int $calendarYear,
+        int $currentYear,
+        string $viewMode,
+    ): array {
         $driver = $calendarQuery->getModel()->getConnection()->getDriverName();
         $dateExpression = match ($driver) {
-            'pgsql' => 'occurred_at::date',
-            default => 'DATE(occurred_at)',
+            'pgsql' => $timestampColumn.'::date',
+            default => 'DATE('.$timestampColumn.')',
         };
         $hourExpression = match ($driver) {
-            'sqlite' => "CAST(strftime('%H', occurred_at) AS INTEGER)",
-            'mysql', 'mariadb' => 'HOUR(occurred_at)',
-            default => 'EXTRACT(HOUR FROM occurred_at)::int',
+            'sqlite' => "CAST(strftime('%H', {$timestampColumn}) AS INTEGER)",
+            'mysql', 'mariadb' => 'HOUR('.$timestampColumn.')',
+            default => 'EXTRACT(HOUR FROM '.$timestampColumn.')::int',
         };
 
         $calendarDaily = [];
@@ -284,7 +391,7 @@ final class Activity extends Page
             }
         }
 
-        $selectedDayQuery = (clone $calendarQuery)->whereBetween('occurred_at', [
+        $selectedDayQuery = (clone $calendarQuery)->whereBetween($timestampColumn, [
             $selectedDate->startOfDay(),
             $selectedDate->endOfDay(),
         ]);
@@ -309,9 +416,10 @@ final class Activity extends Page
                 'count' => (int) $count,
             ];
         }
+
         $clockPeakCount = max($hourly);
         $clockPeakHour = $clockPeakCount > 0 ? (int) array_search($clockPeakCount, $hourly, true) : null;
-        $selectedLatestAt = (clone $selectedDayQuery)->max('occurred_at');
+        $selectedLatestAt = (clone $selectedDayQuery)->max($timestampColumn);
         $clockIsLive = $selectedDate->isSameDay($today);
         $clockAt = $clockIsLive
             ? CarbonImmutable::now()
@@ -352,40 +460,16 @@ final class Activity extends Page
         $calendarWeeks = array_chunk($calendarDays, 7);
         $calendarWeeksPerBand = max(1, (int) ceil(count($calendarWeeks) / 2));
         $calendarBands = array_chunk($calendarWeeks, $calendarWeeksPerBand);
-
-        $latestAt = $overview['latest_at'] !== null
-            ? CarbonImmutable::parse((string) $overview['latest_at'])
-            : null;
+        $hasTimelineActivity = $selectedLatestAt !== null;
+        $isCommitView = $viewMode === 'commits';
 
         return [
-            ...$feed,
-            'viewMode' => 'activity',
-            'commits' => [],
-            'commitPaginator' => null,
-            'area' => $area,
-            'family' => $family,
-            'search' => $search,
-            'areaOptions' => AdminActionCatalog::areaOptions(),
-            'familyOptions' => AdminActionCatalog::familyOptions(),
-            'activeDate' => $activeDateValue,
-            'activeHour' => $activeHour,
-            'todayDate' => $today->format('Y-m-d'),
-            'activitySourceExists' => $activityFeed->exists(),
-            'activityMetrics' => [
-                'changes' => $overview['total'],
-                'active_days' => $overview['active_days'],
-                'areas' => $overview['areas'],
-                'families' => $overview['families'],
-                'actors' => $overview['actors'],
-                'latest_when' => $latestAt?->diffForHumans() ?? '—',
-                'latest_at' => $latestAt?->format('Y-m-d H:i'),
-            ],
             'clockActivity' => $clockActivity,
             'clockPeakHour' => $clockPeakHour,
             'clockPeakCount' => $clockPeakCount,
             'clockAtIso' => $clockAt->toIso8601String(),
             'clockIsLive' => $clockIsLive,
-            'clockHasActivity' => $selectedLatestAt !== null || $clockIsLive,
+            'clockHasActivity' => $hasTimelineActivity || $clockIsLive,
             'calendarYear' => $calendarYear,
             'calendarPreviousYear' => $calendarYear > 2000 ? $calendarYear - 1 : null,
             'calendarNextYear' => $calendarYear < $currentYear ? $calendarYear + 1 : null,
@@ -397,23 +481,8 @@ final class Activity extends Page
             'selectedCalendarLabel' => $selectedDate->format('M j, Y'),
             'selectedClockLabel' => $clockIsLive
                 ? 'Live local time'
-                : ($selectedLatestAt !== null ? 'Latest activity' : 'No activity'),
-            'publicationContext' => $publicationContext,
-        ];
-    }
-
-    /** @return array<string,mixed> */
-    private function commitViewData(): array
-    {
-        $activityFeed = app(AdminActivityFeed::class);
-        $publicationContext = $this->decoratePublicationContext($activityFeed->publicationContext());
-        $history = app(AdminPublicationHistory::class)->page();
-
-        return [
-            'viewMode' => 'commits',
-            'publicationContext' => $publicationContext,
-            'commits' => $history['commits'],
-            'commitPaginator' => $history['paginator'],
+                : ($hasTimelineActivity ? ($isCommitView ? 'Latest commit' : 'Latest activity') : ($isCommitView ? 'No commits' : 'No activity')),
+            'timelineItemLabel' => $isCommitView ? 'commits' : 'changes',
         ];
     }
 
@@ -559,7 +628,8 @@ final class Activity extends Page
         );
     }
 
-    private function calendarQuery(
+    /** @return Builder<AuditEvent> */
+    private function activityCalendarQuery(
         ?string $area,
         ?string $family,
         string $search,
