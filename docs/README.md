@@ -14,6 +14,9 @@ These describe the durable application architecture/behavior that current accept
 - [ANALYTICS.md](ANALYTICS.md) — Matomo/reporting and operational-metrics boundary
 - [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md) — `/admin` access, required TOTP MFA/recovery codes, password reset and transactional-mail boundary
 - [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md) — admin performance budget and investigation rules
+- [ADMIN-CONTROL-CONTRACT.md](ADMIN-CONTROL-CONTRACT.md) — canonical admin form/control rendering and persistence semantics
+- [ADMIN-DIALOG-CONTRACT.md](ADMIN-DIALOG-CONTRACT.md) — shared native Filament dialog types, chrome, lifecycle and edit/command semantics
+- [ADMIN-TABLE-CONTRACT.md](ADMIN-TABLE-CONTRACT.md) — canonical ordinary-table role order, alignment, typography, actions and trailing Selection
 - [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md) — explicit Toast/Notification/Activity/Publication semantics, persistent inbox ownership and server-side delivery contract
 - [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) — append-only Activity, Working/LIVE state, SHA-256 Commit history, full snapshots and reset/restore/revert semantics
 - [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — direct/worker browser-reconciliation modes, shared Visual Stage ownership, icon semantics and local preview loop
@@ -46,7 +49,7 @@ Browser feedback from the exact current candidate overrides stale acceptance wor
 These remain relevant until the legacy site is explicitly retired:
 
 - [MIGRATION-PLAN.md](MIGRATION-PLAN.md) — remaining reconciliation, browser/editorial acceptance, Validation and cutover sequence
-- [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md) — source-to-target reconciliation guarantees and forward canonicalization rules
+- [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md) — source-to-target reconciliation guarantees, historical-migration self-containment and forward canonicalization rules
 - [SOURCE-INVENTORY.md](SOURCE-INVENTORY.md) — reviewed source systems/migration inputs
 - [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md) — detailed legacy behavior evidence for browser/cutover comparison
 
