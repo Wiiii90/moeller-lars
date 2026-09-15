@@ -113,9 +113,15 @@ When bulk selection exists:
 - the row checkbox is the far-right column;
 - the select-all checkbox is directly above it;
 - the control-bar multi-action trigger remains the corresponding bulk-action affordance;
+- the circular selected-count badge in that trigger is centered on the **same horizontal axis** as the trailing select-all and row checkboxes below it;
+- `x-admin.controls` keeps Selection as its terminal toolbar slot, and the shared table contract reserves `--admin-table-selection-width` at the end of the Selection trigger for the count badge; page/feature CSS must not recenter or offset that badge with local margin, padding or duplicate grid rules;
 - when sibling toolbar groups use visible role labels such as `TYPE`, `STATUS`, `FILTER` and `PAGES`, the bulk group uses the same `SELECTION` label so the toolbar hierarchy stays consistent;
 - the checkbox column itself does not receive redundant visible `Selection` text; an accessible label on the select-all checkbox is sufficient;
 - destructive bulk behavior retains the same domain safeguards as row actions.
+
+This count-to-checkbox axis applies to ordinary tables and table-like hierarchies, including views that preserve the same toolbar while switching between table modes. A contact-sheet/card surface such as Gallery, which has no single trailing table Selection column, does not invent a fake axis merely to satisfy this rule.
+
+At an intentional responsive breakpoint where controls or the table stack/reflow into a different composition, exact cross-row pixel alignment may relax. Before that breakpoint the desktop/table axis is invariant.
 
 ## Responsive direction
 
@@ -143,4 +149,4 @@ Shared implementation lives in:
 - `x-admin.add-row`
 - shared `.admin-position`, `.admin-drag-handle`, `.admin-row-actions`, `.admin-table__selection` primitives
 
-Feature CSS may size genuinely task-specific content columns, but it must not redefine the canonical role order, typography roles, Position/Add Row axis, action order, single control-to-table boundary or trailing Selection convention.
+Feature CSS may size genuinely task-specific content columns, but it must not redefine the canonical role order, typography roles, Position/Add Row axis, action order, single control-to-table boundary, trailing Selection convention or selected-count/checkbox axis.
