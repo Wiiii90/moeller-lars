@@ -39,6 +39,7 @@
         foreach ($countryRows as $row) {
             $label = trim((string) ($row['label'] ?? ''));
             $visits = is_numeric($row['nb_visits'] ?? null) ? (float) $row['nb_visits'] : null;
+            $actions = is_numeric($row['nb_actions'] ?? null) ? (float) $row['nb_actions'] : null;
             $rankLabel = '—';
             if ($visits !== null) {
                 $rank++;
@@ -54,6 +55,7 @@
                 'visits' => $visits === null ? '—' : number_format((int) round($visits)),
                 'share' => $share === null ? '—' : number_format($share, 1).'%',
                 'rank' => $rankLabel,
+                'actions' => $actions === null ? '—' : number_format((int) round($actions)),
             ];
 
             $coords = $centroids[$label] ?? null;
@@ -68,12 +70,12 @@
                 'visits' => (int) round($visits),
                 'x' => min(99, max(1, (($lon + 180.0) / 360.0) * 100.0)),
                 'y' => min(98, max(2, ((90.0 - $lat) / 180.0) * 100.0)),
-                'size' => 9.0 + (22.0 * sqrt($visits / $countryMax)),
+                'size' => min(20.0, max(8.0, 8.0 + (12.0 * sqrt($visits / $countryMax)))),
             ];
         }
 
-        $topCountries = array_slice($countryRows, 0, 6);
-        $initialCountry = $topCountries[0]['label'] ?? null;
+        $rankedCountries = array_slice($countryRows, 0, 30);
+        $initialCountry = $rankedCountries[0]['label'] ?? null;
         $mapViewExists = view()->exists('filament.generated.analytics-world-map');
         $stageMessage = match (true) {
             $status === 'disabled' => 'No reporting data for this environment.',
@@ -82,16 +84,6 @@
             $countryRows === [] => 'No country-level visits in this period.',
             default => null,
         };
-        $stageHighlights = collect($audienceHighlights)
-            ->filter(static fn (array $highlight): bool => in_array(
-                $highlight['label'] ?? null,
-                ['Leading source', 'Most viewed content', 'AI referrals'],
-                true,
-            ))
-            ->filter(static fn (array $highlight): bool => ($highlight['value'] ?? '—') !== '—')
-            ->take(2)
-            ->values()
-            ->all();
         $workspaceStatusTone = match ($status) {
             'available' => 'success',
             'stale' => 'warning',
@@ -154,7 +146,7 @@
                         <button
                             class="analytics-world__marker"
                             type="button"
-                            style="left: {{ number_format($point['x'], 3, '.', '') }}%; top: {{ number_format($point['y'], 3, '.', '') }}%; width: {{ number_format($point['size'], 2, '.', '') }}px; height: {{ number_format($point['size'], 2, '.', '') }}px;"
+                            style="left: {{ number_format($point['x'], 3, '.', '') }}%; top: {{ number_format($point['y'], 3, '.', '') }}%; width: {{ number_format($point['size'], 2, '.', '') }}px; height: {{ number_format($point['size'], 2, '.', '') }}px; --marker-delay: {{ min($loop->index, 8) * 45 }}ms;"
                             x-on:mouseenter="previewCountry(@js($point['label']))"
                             x-on:mouseleave="restoreCountry()"
                             x-on:focus="previewCountry(@js($point['label']))"
@@ -171,29 +163,44 @@
 
             <aside class="analytics-stage-rail admin-visual-stage__pane" aria-label="Geography context">
                 <div class="analytics-stage-rail__heading">
-                    <strong>Geography</strong>
-                    <small>Matomo</small>
+                    <div>
+                        <span>Audience</span>
+                        <strong>Geography</strong>
+                    </div>
+                    <small>{{ count($countryRows) }} countries</small>
                 </div>
 
-                @if ($countryContext !== [])
-                    <dl class="analytics-country-context">
-                        <div class="analytics-country-context__country">
-                            <dt>Country</dt>
-                            <dd x-text="activeCountry ?? '—'">{{ $initialCountry ?? '—' }}</dd>
+                @if ($rankedCountries !== [])
+                    <div class="analytics-stage-ranking">
+                        <div class="analytics-stage-ranking__head">
+                            <strong>Countries</strong>
+                            <span>Share · Visits</span>
                         </div>
-                        <div>
-                            <dt>Visits</dt>
-                            <dd x-text="activeCountry && countries[activeCountry] ? countries[activeCountry].visits : '—'">{{ $initialCountry ? $countryContext[$initialCountry]['visits'] : '—' }}</dd>
+
+                        <div class="analytics-stage-ranking__scroll" tabindex="0" aria-label="Country ranking">
+                            @foreach ($rankedCountries as $row)
+                                @php
+                                    $label = (string) $row['label'];
+                                    $visits = is_numeric($row['nb_visits'] ?? null) ? (int) round((float) $row['nb_visits']) : null;
+                                @endphp
+                                <button
+                                    type="button"
+                                    class="analytics-country-rank"
+                                    x-on:mouseenter="previewCountry(@js($label))"
+                                    x-on:mouseleave="restoreCountry()"
+                                    x-on:focus="previewCountry(@js($label))"
+                                    x-on:blur="restoreCountry()"
+                                    x-on:click="selectCountry(@js($label))"
+                                    x-bind:class="selectedCountry === @js($label) ? 'is-selected' : ''"
+                                    x-bind:aria-pressed="(selectedCountry === @js($label)).toString()"
+                                >
+                                    <span>{{ $label }}</span>
+                                    <small>{{ $countryContext[$label]['share'] ?? '—' }}</small>
+                                    <strong>{{ $visits === null ? '—' : number_format($visits) }}</strong>
+                                </button>
+                            @endforeach
                         </div>
-                        <div>
-                            <dt>Share</dt>
-                            <dd x-text="activeCountry && countries[activeCountry] ? countries[activeCountry].share : '—'">{{ $initialCountry ? $countryContext[$initialCountry]['share'] : '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt>Rank</dt>
-                            <dd x-text="activeCountry && countries[activeCountry] ? countries[activeCountry].rank : '—'">{{ $initialCountry ? $countryContext[$initialCountry]['rank'] : '—' }}</dd>
-                        </div>
-                    </dl>
+                    </div>
                 @else
                     <div class="analytics-stage-empty">
                         <strong>Geography</strong>
@@ -201,64 +208,31 @@
                     </div>
                 @endif
 
-                @if ($topCountries !== [])
-                    <div class="analytics-stage-ranking">
-                        <div class="analytics-stage-ranking__head">
-                            <strong>Top countries</strong>
-                            <span>Visits</span>
-                        </div>
-
-                        @foreach ($topCountries as $row)
-                            @php
-                                $label = (string) $row['label'];
-                                $visits = is_numeric($row['nb_visits'] ?? null) ? (int) round((float) $row['nb_visits']) : null;
-                            @endphp
-                            <button
-                                type="button"
-                                class="analytics-country-rank"
-                                x-on:mouseenter="previewCountry(@js($label))"
-                                x-on:mouseleave="restoreCountry()"
-                                x-on:focus="previewCountry(@js($label))"
-                                x-on:blur="restoreCountry()"
-                                x-on:click="selectCountry(@js($label))"
-                                x-bind:class="selectedCountry === @js($label) ? 'is-selected' : ''"
-                                x-bind:aria-pressed="(selectedCountry === @js($label)).toString()"
-                            >
-                                <span>{{ $label }}</span>
-                                <small>{{ $countryContext[$label]['share'] ?? '—' }}</small>
-                                <strong>{{ $visits === null ? '—' : number_format($visits) }}</strong>
-                            </button>
-                        @endforeach
-                    </div>
-                @endif
-
-                @if ($stageHighlights !== [] || $applicationSignals !== [])
-                    <div class="analytics-stage-signals">
-                        @if ($stageHighlights !== [])
-                            <div>
-                                <span class="analytics-stage-signals__source">Human analytics · Matomo</span>
-                                @foreach ($stageHighlights as $highlight)
-                                    <div class="analytics-stage-signal">
-                                        <span>{{ $highlight['label'] }}</span>
-                                        <strong>{{ $highlight['value'] }}</strong>
-                                        <small>{{ $highlight['detail'] }}</small>
-                                    </div>
-                                @endforeach
+                @if ($countryContext !== [])
+                    <div class="analytics-stage-rail__context">
+                        <dl class="analytics-country-context">
+                            <div class="analytics-country-context__primary">
+                                <dt>Selected country</dt>
+                                <dd x-text="activeCountry ?? '—'">{{ $initialCountry ?? '—' }}</dd>
                             </div>
-                        @endif
-
-                        @if ($applicationSignals !== [])
                             <div>
-                                <span class="analytics-stage-signals__source">Application signals</span>
-                                @foreach ($applicationSignals as $signal)
-                                    <div class="analytics-stage-signal">
-                                        <span>{{ $signal['label'] }}</span>
-                                        <strong>{{ $signal['value'] }}</strong>
-                                        <small>{{ $signal['detail'] }}</small>
-                                    </div>
-                                @endforeach
+                                <dt>Visits</dt>
+                                <dd x-text="activeCountry && countries[activeCountry] ? countries[activeCountry].visits : '—'">{{ $initialCountry ? $countryContext[$initialCountry]['visits'] : '—' }}</dd>
                             </div>
-                        @endif
+                            <div>
+                                <dt>Share</dt>
+                                <dd x-text="activeCountry && countries[activeCountry] ? countries[activeCountry].share : '—'">{{ $initialCountry ? $countryContext[$initialCountry]['share'] : '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt>Rank</dt>
+                                <dd x-text="activeCountry && countries[activeCountry] ? countries[activeCountry].rank : '—'">{{ $initialCountry ? $countryContext[$initialCountry]['rank'] : '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt>Actions</dt>
+                                <dd x-text="activeCountry && countries[activeCountry] ? countries[activeCountry].actions : '—'">{{ $initialCountry ? $countryContext[$initialCountry]['actions'] : '—' }}</dd>
+                            </div>
+                        </dl>
+                        <p class="analytics-stage-rail__footnote">{{ count($mapPoints) }} mapped markers · {{ count($countryRows) }} reported countries</p>
                     </div>
                 @endif
             </aside>
