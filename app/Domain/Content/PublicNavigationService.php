@@ -52,8 +52,9 @@ final class PublicNavigationService
         /** @var EloquentCollection<int, SiteSection> $sections */
         $sections = $query->get();
 
-        /** @var Collection<int, array{position:int,tie_breaker:int,label:string,url:?string,current:bool,active:bool,children:list<array{label:string,url:?string,current:bool}>}> $items */
-        $items = $sections->map(function (SiteSection $section): array {
+        /** @var list<array{position:int,tie_breaker:int,label:string,url:?string,current:bool,active:bool,children:list<array{label:string,url:?string,current:bool}>}> $items */
+        $items = [];
+        foreach ($sections as $section) {
             /** @var EloquentCollection<int, SiteSection> $childSections */
             $childSections = $section->getRelation('children');
             /** @var list<array{label:string,url:?string,current:bool}> $children */
@@ -65,7 +66,7 @@ final class PublicNavigationService
             $childCurrent = collect($children)->contains(static fn (array $child): bool => $child['current']);
             $current = $this->routes->isCurrent($section);
 
-            return [
+            $items[] = [
                 'position' => (int) $section->getAttribute('position'),
                 'tie_breaker' => (int) $section->getKey(),
                 'label' => (string) $section->getAttribute('navigation_label'),
@@ -74,9 +75,9 @@ final class PublicNavigationService
                 'active' => $current || $childCurrent,
                 'children' => $children,
             ];
-        })->values();
+        }
 
-        return $items;
+        return collect($items);
     }
 
     private function sectionUrl(SiteSection $section): ?string

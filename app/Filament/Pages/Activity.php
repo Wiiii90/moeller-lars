@@ -698,7 +698,9 @@ final class Activity extends Page
                     ->icon(AdminIcon::Refresh->value)
                     ->iconButton()
                     ->color('gray')
-                    ->action(fn (): mixed => $this->undo($receiptId)),
+                    ->action(function () use ($receiptId): void {
+                        $this->undo($receiptId);
+                    }),
                 heading: 'Undo change?',
                 description: (string) $event['undo']['confirmation'],
                 submitLabel: 'Undo',

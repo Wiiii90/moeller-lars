@@ -158,6 +158,7 @@ final class MediaStorageBreakdown
 
         usort($fileRows, static fn (array $left, array $right): int => ($right['bytes'] <=> $left['bytes']) ?: strcmp((string) $left['filename'], (string) $right['filename']));
 
+        /** @var list<array{key:string,label:string,bytes:int,files:int,percent:float}> $breakdown */
         $breakdown = [];
         foreach (self::AREA_LABELS as $key => $label) {
             if ($buckets[$key]['files'] === 0) {

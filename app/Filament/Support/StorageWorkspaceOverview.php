@@ -49,7 +49,7 @@ final class StorageWorkspaceOverview
         }, $this->analysisRows($analysis, 'breakdown'));
 
         $targets = array_map(function (array $row): array {
-            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
+            $row['display_bytes'] = MediaStorageUnits::formatBytes($row['bytes']);
 
             return $row;
         }, $this->analysisRows($analysis, 'target_breakdown'));

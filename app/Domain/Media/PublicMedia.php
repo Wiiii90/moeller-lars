@@ -18,6 +18,7 @@ use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\PublicContentSetting;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use LogicException;
 
@@ -64,12 +65,13 @@ class PublicMedia
         return JournalEntryMedia::query()
             ->where('media_asset_id', $asset->getKey())
             ->where(function ($usage): void {
-                $usage->whereHas('blogPost', fn ($posts) => $posts
-                    ->publiclyVisible()
-                    ->whereHas('siteSection', fn ($section) => $section
-                        ->where('type', SiteSectionType::Journal->value)
-                        ->where('template', JournalTemplate::Blog->value)
-                        ->where('state', 'published')))
+                $usage->whereHas('blogPost', function (Builder $posts): void {
+                    (new BlogPost)->scopePubliclyVisible($posts)
+                        ->whereHas('siteSection', fn ($section) => $section
+                            ->where('type', SiteSectionType::Journal->value)
+                            ->where('template', JournalTemplate::Blog->value)
+                            ->where('state', 'published'));
+                })
                     ->orWhere(function ($exhibitionUsage): void {
                         $exhibitionUsage
                             ->whereHas('exhibition', fn ($entries) => $entries
