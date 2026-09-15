@@ -53,7 +53,7 @@
         >Next</button>
     </nav>
 
-    <div class="media-file-dialog__details">
+    <div class="media-file-dialog__details media-file-dialog__metadata">
         <section aria-labelledby="media-dialog-metadata-{{ $asset['id'] }}">
             <h3 id="media-dialog-metadata-{{ $asset['id'] }}">Metadata</h3>
             <dl class="media-file-dialog__metadata-grid">
@@ -69,7 +69,9 @@
                 <div><dt>Copyright source</dt><dd>{{ $asset['copyright_source'] }}</dd></div>
             </dl>
         </section>
+    </div>
 
+    <div class="media-file-dialog__details media-file-dialog__usage">
         <section aria-labelledby="media-dialog-usage-{{ $asset['id'] }}">
             <h3 id="media-dialog-usage-{{ $asset['id'] }}">Used in</h3>
             @if ($asset['references'] === [])

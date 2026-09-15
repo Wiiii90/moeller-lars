@@ -34,6 +34,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -306,56 +307,64 @@ final class HomePresentation extends Page
                 'public_site_gate' => $this->publicSiteGate,
             ])
             ->schema([
-                Select::make('template')->label('Template')->options(HomeTemplate::options())->required()->live(),
-                Toggle::make('show_in_navigation')
-                    ->label('Show Home in navigation')
-                    ->helperText('Only the public Home link changes. The Home page remains available at /.'),
-                Select::make('group_source')
-                    ->label('Group source')
-                    ->options(['automatic' => 'Automatic', 'manual' => 'Manual'])
-                    ->required()->live()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                TextInput::make('group_size')->label('Group size')->numeric()->minValue(1)
-                    ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)->required()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                Select::make('newest_by')->label('Newest by')
-                    ->options(['artwork_date' => 'Artwork date', 'added' => 'Added'])->required()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                Select::make('pool_rule')->label('Candidate filter')
-                    ->options(['all' => 'All eligible', 'year' => 'Specific Year'])->required()->live()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                TextInput::make('pool_year')->label('Year')->numeric()->minValue(1000)->maxValue(3000)
-                    ->required(fn (callable $get): bool => $get('pool_rule') === 'year')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic' && $get('pool_rule') === 'year'),
-                $this->heroArtworkSelect('manual_include_ids', 'Additional includes', multiple: true)
-                    ->helperText('Adds eligible artworks outside a Specific Year filter before Group size is applied.')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
-                Select::make('display_strategy')->label('Display strategy')
-                    ->options(['ordered' => 'Ordered', 'random' => 'Random', 'sequential' => 'Sequential'])
-                    ->required()->live()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                TextInput::make('rotation_interval_count')->label('Rotation interval')->numeric()->minValue(1)->required()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
-                Select::make('rotation_interval_unit')->label('Interval unit')
-                    ->options(['days' => 'Days', 'weeks' => 'Weeks'])->required()
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
-                Toggle::make('show_details')->label('Show artwork information')
-                    ->helperText('Shows title, material, dimensions and other artwork label information.')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                Toggle::make('show_gallery_link')->label('Show Gallery link')
-                    ->helperText('Shows the Gallery context button independently from artwork information.')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
-                Toggle::make('public_site_gate')->label('Temporarily gate the public site')
-                    ->helperText('Normal public content URLs return to Home while Under Construction is active. Admin and protected Preview stay available.')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
-                Placeholder::make('skip_target')->label('Current redirect target')
-                    ->content(fn (): string => $this->skipTarget === null
-                        ? 'No published top-level page exists after Home. The public root safely remains on Home.'
-                        : $this->skipTarget['label'].' · '.$this->skipTarget['path'])
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::SkipHome->value),
-                Placeholder::make('custom_components')->label('Custom composition')
-                    ->content('Components are edited in the Home workspace.')
-                    ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value),
+                Grid::make()
+                    ->columns(['md' => 2])
+                    ->schema([
+                        Select::make('template')->label('Template')->options(HomeTemplate::options())->required()->live(),
+                        Toggle::make('show_in_navigation')
+                            ->label('Show Home in navigation')
+                            ->helperText('Only the public Home link changes. The Home page remains available at /.'),
+                        Select::make('group_source')
+                            ->label('Group source')
+                            ->options(['automatic' => 'Automatic', 'manual' => 'Manual'])
+                            ->required()->live()
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                        TextInput::make('group_size')->label('Group size')->numeric()->minValue(1)
+                            ->maxValue(HomeHeroConfigurationService::MAX_GROUP_SIZE)->required()
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
+                        Select::make('newest_by')->label('Newest by')
+                            ->options(['artwork_date' => 'Artwork date', 'added' => 'Added'])->required()
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
+                        Select::make('pool_rule')->label('Candidate filter')
+                            ->options(['all' => 'All eligible', 'year' => 'Specific Year'])->required()->live()
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic'),
+                        TextInput::make('pool_year')->label('Year')->numeric()->minValue(1000)->maxValue(3000)
+                            ->required(fn (callable $get): bool => $get('pool_rule') === 'year')
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic' && $get('pool_rule') === 'year'),
+                        $this->heroArtworkSelect('manual_include_ids', 'Additional includes', multiple: true)
+                            ->helperText('Adds eligible artworks outside a Specific Year filter before Group size is applied.')
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('group_source') === 'automatic')
+                            ->columnSpanFull(),
+                        Select::make('display_strategy')->label('Display strategy')
+                            ->options(['ordered' => 'Ordered', 'random' => 'Random', 'sequential' => 'Sequential'])
+                            ->required()->live()
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                        TextInput::make('rotation_interval_count')->label('Rotation interval')->numeric()->minValue(1)->required()
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
+                        Select::make('rotation_interval_unit')->label('Interval unit')
+                            ->options(['days' => 'Days', 'weeks' => 'Weeks'])->required()
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value && $get('display_strategy') === 'sequential'),
+                        Toggle::make('show_details')->label('Show artwork information')
+                            ->helperText('Shows title, material, dimensions and other artwork label information.')
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                        Toggle::make('show_gallery_link')->label('Show Gallery link')
+                            ->helperText('Shows the Gallery context button independently from artwork information.')
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Artwork->value),
+                        Toggle::make('public_site_gate')->label('Temporarily gate the public site')
+                            ->helperText('Normal public content URLs return to Home while Under Construction is active. Admin and protected Preview stay available.')
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::UnderConstruction->value),
+                        Placeholder::make('skip_target')->label('Current redirect target')
+                            ->content(fn (): string => $this->skipTarget === null
+                                ? 'No published top-level page exists after Home. The public root safely remains on Home.'
+                                : $this->skipTarget['label'].' · '.$this->skipTarget['path'])
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::SkipHome->value)
+                            ->columnSpanFull(),
+                        Placeholder::make('custom_components')->label('Custom composition')
+                            ->content('Components are edited in the Home workspace.')
+                            ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value)
+                            ->columnSpanFull(),
+                    ])
+                    ->columnSpanFull(),
             ])
             ->modalHeading('Home settings'), AdminDialogSize::Large)->action(function (array $data): void {
                 $template = HomeTemplate::from((string) $data['template']);

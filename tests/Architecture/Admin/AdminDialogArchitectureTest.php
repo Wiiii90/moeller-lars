@@ -31,10 +31,12 @@ it('routes migrated admin dialogs through the shared dialog adapter', function (
     }
 });
 
-it('keeps editorial dialog geometry and media details on the shared layout contract', function (): void {
+it('keeps editorial dialog geometry and storage preview details on the shared layout contract', function (): void {
     $root = dirname(__DIR__, 3);
     $adapter = file_get_contents($root.'/app/Filament/Support/Dialogs/AdminDialog.php');
     $contract = file_get_contents($root.'/resources/css/admin/dialog-contract.css');
+    $mediaCss = file_get_contents($root.'/resources/css/admin/media.css');
+    $homeWorkspace = file_get_contents($root.'/app/Filament/Pages/HomePresentation.php');
     $artworkPreview = file_get_contents($root.'/resources/views/filament/resources/artworks/partials/preview-dialog.blade.php');
     $mediaPreview = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/preview-dialog.blade.php');
 
@@ -47,6 +49,22 @@ it('keeps editorial dialog geometry and media details on the shared layout contr
         ->toContain('scrollbar-width: thin')
         ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
 
+    expect($homeWorkspace)
+        ->toContain('use Filament\\Schemas\\Components\\Grid;')
+        ->toContain("->columns(['md' => 2])")
+        ->toContain("->modalHeading('Home settings')");
+
     expect(substr_count($artworkPreview, 'class="media-file-dialog__details"'))->toBe(1);
-    expect(substr_count($mediaPreview, 'class="media-file-dialog__details"'))->toBe(1);
+    expect(substr_count($mediaPreview, 'class="media-file-dialog__details '))->toBe(2);
+    expect($mediaPreview)
+        ->toContain('class="media-file-dialog__details media-file-dialog__metadata"')
+        ->toContain('class="media-file-dialog__details media-file-dialog__usage"')
+        ->toContain('class="media-file-dialog__metadata-grid"')
+        ->toContain('class="media-file-dialog__references"');
+
+    expect($mediaCss)
+        ->toContain('.media-file-dialog .media-file-dialog__metadata-grid')
+        ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr));')
+        ->toContain('.media-file-dialog__references a,')
+        ->toContain('grid-template-columns: minmax(8rem, .55fr) minmax(0, 1fr);');
 });
