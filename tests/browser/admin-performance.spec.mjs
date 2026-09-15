@@ -165,13 +165,15 @@ function expectNoBrowserErrors(flow) {
   expect(flow.page_errors, `${flow.name} page errors`).toEqual([]);
 }
 
-test('profiles representative warmed admin interactions', async ({ page }) => {
+test('profiles representative warmed admin interactions', async ({ page }, testInfo) => {
   const email = process.env.PLAYWRIGHT_ADMIN_EMAIL;
   const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD;
   expect(email).toBeTruthy();
   expect(password).toBeTruthy();
 
   const profiler = new InteractionProfiler(page);
+  const profilePageName = `Playwright profile page ${testInfo.retry + 1}`;
+  const profilePageSlug = `playwright-profile-page-${testInfo.retry + 1}`;
 
   try {
     await page.goto('/admin/login');
@@ -224,8 +226,8 @@ test('profiles representative warmed admin interactions', async ({ page }) => {
 
     await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
-    await page.locator('[data-admin-control="name"] input').fill('Playwright profile page');
-    await page.locator('[data-admin-control="slug"] input').fill('playwright-profile-page');
+    await page.locator('[data-admin-control="name"] input').fill(profilePageName);
+    await page.locator('[data-admin-control="slug"] input').fill(profilePageSlug);
 
     const createPage = await profiler.run(
       'pages_create_custom_page',
@@ -234,7 +236,7 @@ test('profiles representative warmed admin interactions', async ({ page }) => {
       },
       async () => {
         await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
-        await expect(page.getByText('Playwright profile page', { exact: true }).first()).toBeVisible();
+        await expect(page.getByText(profilePageName, { exact: true }).first()).toBeVisible();
       },
     );
     expect(createPage.full_navigation_count).toBe(0);
@@ -277,11 +279,13 @@ test('profiles representative warmed admin interactions', async ({ page }) => {
     const areaFilter = await profiler.run(
       'activity_filter_editorial_area',
       async () => {
-        await page.getByLabel('Editorial area', { exact: true }).selectOption({ label: 'Website' });
+        const trigger = page.getByRole('combobox', { name: 'Editorial area' });
+        await trigger.click();
+        await page.getByRole('listbox', { name: 'Editorial area' }).getByText('Website', { exact: true }).click();
       },
       async () => {
         await expect(page).toHaveURL(/(?:\?|&)area=Website(?:&|$)/);
-        await expect(page.getByLabel('Editorial area', { exact: true })).toHaveValue('Website');
+        await expect(page.getByRole('combobox', { name: 'Editorial area' })).toContainText('Website');
       },
     );
     expect(areaFilter.full_navigation_count).toBe(1);
