@@ -53,7 +53,17 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "test:list": "@php vendor/bin/pest --list-tests",
+        "test:suites": "@php vendor/bin/pest --list-suites",
+        "test:groups": "@php vendor/bin/pest --list-groups",
+        "test:unit": "@php vendor/bin/pest --group=unit",
+        "test:integration": "@php vendor/bin/pest --group=integration",
+        "test:feature": "@php vendor/bin/pest --group=feature",
+        "test:architecture": "@php vendor/bin/pest --group=architecture",
+        "test:migration": "@php vendor/bin/pest --group=migration",
+        "test:coverage": "@php vendor/bin/pest --coverage",
         "format": "@php vendor/bin/pint",
+        "lint": "@php vendor/bin/pint --test",
         "analyse": "@php vendor/bin/phpstan analyse --memory-limit=1G",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

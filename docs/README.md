@@ -9,6 +9,7 @@ These describe the durable application architecture/behavior that current accept
 - [PROJECT-CHARTER.md](PROJECT-CHARTER.md) — product scope and public/admin principles
 - [ARCHITECTURE.md](ARCHITECTURE.md) — application boundaries, typed site structure and ownership
 - [DATA-MODEL.md](DATA-MODEL.md) — durable persistence/domain relationships
+- [TESTING.md](TESTING.md) — test layers, placement, discovery, naming, database safety and browser-testing direction
 - [PUBLIC-IMPLEMENTATION-CONTRACT.md](PUBLIC-IMPLEMENTATION-CONTRACT.md) — public routing/publication/Home/Journal/media behavior
 - [MEDIA.md](MEDIA.md) — image/video/audio ingest, Rich Text references, public/preview policy and guarded deletion
 - [ANALYTICS.md](ANALYTICS.md) — Matomo/reporting and operational-metrics boundary

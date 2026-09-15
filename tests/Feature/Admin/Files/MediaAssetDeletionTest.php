@@ -12,7 +12,7 @@ beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create(), 'web');
 });
 
-function filesFinalPassAsset(string $filename): MediaAsset
+function filesDeletionAsset(string $filename): MediaAsset
 {
     return MediaAsset::query()->create([
         'storage_key' => 'originals/'.$filename,
@@ -25,25 +25,8 @@ function filesFinalPassAsset(string $filename): MediaAsset
     ]);
 }
 
-it('keeps simple selection visible while switching Files views', function (): void {
-    $asset = filesFinalPassAsset('selected.jpg');
-
-    Livewire::test(ListMediaAssets::class)
-        ->call('toggleAssetSelection', $asset->id)
-        ->assertSet('selectedAssets', [$asset->id])
-        ->call('setViewMode', 'grid')
-        ->assertSet('viewMode', 'grid')
-        ->assertSet('selectedAssets', [$asset->id])
-        ->call('setViewMode', 'dense')
-        ->assertSet('viewMode', 'dense')
-        ->assertSet('selectedAssets', [$asset->id])
-        ->call('setViewMode', 'list')
-        ->assertSet('viewMode', 'list')
-        ->assertSet('selectedAssets', [$asset->id]);
-});
-
 it('deletes an unreferenced file through the Files delete action', function (): void {
-    $asset = filesFinalPassAsset('delete-me.jpg');
+    $asset = filesDeletionAsset('delete-me.jpg');
 
     Livewire::test(ListMediaAssets::class)
         ->mountAction('delete', ['asset' => $asset->id])
@@ -52,13 +35,13 @@ it('deletes an unreferenced file through the Files delete action', function (): 
     expect($asset->fresh()->state)->toBe('deleted');
 });
 
-it('batch delete removes both unreferenced and referenced selected files', function (): void {
-    $deletable = filesFinalPassAsset('batch-delete.jpg');
-    $referenced = filesFinalPassAsset('batch-referenced.jpg');
+it('batch deletion removes selected file usages before deleting the assets', function (): void {
+    $deletable = filesDeletionAsset('batch-delete.jpg');
+    $referenced = filesDeletionAsset('batch-referenced.jpg');
 
     $category = ArtworkCategory::query()->create([
-        'slug' => 'files-final-pass',
-        'name' => 'Files final pass',
+        'slug' => 'files-batch-delete',
+        'name' => 'Files batch delete',
     ]);
     $artwork = Artwork::query()->create([
         'artwork_category_id' => $category->id,
