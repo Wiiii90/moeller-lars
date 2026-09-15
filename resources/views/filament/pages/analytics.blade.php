@@ -128,53 +128,12 @@
             default => null,
         };
         $detailTable = $this->detailTable();
+        $detailLayout = $this->detailTableLayout();
         $detailReportOptions = $this->detailReportOptions();
         $detailReportLabel = $detailReportOptions[$detailReport] ?? 'Analytics';
         $detailEmptyTitle = trim($search) !== ''
             ? 'No matching '.$detailReportLabel.' rows'
             : ($detailTable['state'] === 'unavailable' ? $detailReportLabel.' unavailable' : 'No '.$detailReportLabel.' data');
-        $detailColumnOrder = match ($detailReport) {
-            'geography' => [0, 3, 1, 2, 4],
-            default => array_keys($detailTable['columns']),
-        };
-        $detailColumnClasses = match ($detailReport) {
-            'acquisition', 'technology' => [
-                'admin-table__col-one-unit',
-                'admin-table__col-two-units',
-                'admin-table__col-one-unit',
-                'admin-table__col-one-unit',
-                'admin-table__col-one-unit',
-            ],
-            'interactions' => [
-                'admin-table__col-two-units',
-                'admin-table__col-one-unit',
-                'admin-table__col-one-unit',
-                'admin-table__col-two-units',
-            ],
-            'artwork' => [
-                'admin-table__col-one-half-units',
-                'admin-table__col-one-unit',
-                'admin-table__col-three-quarter-unit',
-                'admin-table__col-half-unit',
-                'admin-table__col-half-unit',
-                'admin-table__col-three-quarter-unit',
-                'admin-table__col-one-unit',
-            ],
-            default => [
-                'admin-table__col-two-units',
-                'admin-table__col-one-unit',
-                'admin-table__col-one-unit',
-                'admin-table__col-one-unit',
-                'admin-table__col-one-unit',
-            ],
-        };
-        $detailNumericColumns = match ($detailReport) {
-            'acquisition', 'technology' => [3, 4, 5],
-            'interactions' => [2, 3, 4],
-            'artwork' => [3, 4, 5, 6, 7],
-            default => [2, 3, 4, 5],
-        };
-        $detailIdentityColumn = in_array($detailReport, ['acquisition', 'technology'], true) ? 2 : 1;
     @endphp
 
     <x-admin.workspace title="Analytics" class="analytics-dashboard">
@@ -322,52 +281,52 @@
                         </select>
                     </label>
                 </x-slot:filters>
-
-                <x-slot:reset>
-                    <div class="admin-data-control-group">
-                        <span class="admin-data-control-label">Filter</span>
-                        <button class="admin-action" type="button" wire:click="$set('search', '')" @disabled(trim($search) === '')>Reset</button>
-                    </div>
-                </x-slot:reset>
             </x-admin.controls>
 
             <x-admin.table class="admin-table--data analytics-detail-table">
                 <table class="admin-table--six-grid analytics-detail-table__table">
                     <colgroup>
-                        @foreach ($detailColumnClasses as $columnClass)
-                            <col class="{{ $columnClass }}">
-                        @endforeach
+                        @for ($column = 0; $column < 12; $column++)
+                            <col class="admin-table__col-half-unit">
+                        @endfor
                     </colgroup>
                     @if ($detailTable['partial'])
                         <caption>{{ $detailTable['partial'] }}</caption>
                     @endif
                     <thead>
                         <tr>
-                            @foreach ($detailColumnOrder as $columnIndex)
+                            @foreach ($detailLayout['columns'] as $column)
                                 <th
                                     scope="col"
-                                    class="{{ in_array($loop->iteration, $detailNumericColumns, true) ? 'analytics-detail-table__numeric' : '' }}"
-                                >{{ $detailTable['columns'][$columnIndex] }}</th>
+                                    colspan="{{ $column['span'] }}"
+                                    class="{{ $column['numeric'] ? 'analytics-detail-table__numeric' : '' }}"
+                                >{{ $detailTable['columns'][$column['index']] }}</th>
                             @endforeach
                         </tr>
                     </thead>
                     <tbody>
                         @if ($detailTable['state'] === 'unavailable')
                             <tr>
-                                <td class="admin-table__empty-cell" colspan="{{ max(1, count($detailTable['columns'])) }}">
+                                <td class="admin-table__empty-cell" colspan="12">
                                     {{ $detailTable['message'] ?? $detailReportLabel.' unavailable' }}
                                 </td>
                             </tr>
                         @else
                             @forelse ($detailTable['rows'] as $row)
                                 <tr>
-                                    @foreach ($detailColumnOrder as $columnIndex)
+                                    @foreach ($detailLayout['columns'] as $column)
                                         @php
+                                            $columnIndex = $column['index'];
                                             $cellValue = (string) ($row[$columnIndex] ?? '—');
-                                            $isIdentity = $loop->iteration === $detailIdentityColumn;
+                                            $isIdentity = $loop->first;
+                                            $metaIndex = $detailLayout['meta_index'];
+                                            $metaValue = $metaIndex === null ? null : (string) ($row[$metaIndex] ?? '');
                                         @endphp
-                                        <td class="{{ $isIdentity ? 'admin-table__identity ' : '' }}{{ in_array($loop->iteration, $detailNumericColumns, true) ? 'analytics-detail-table__numeric' : '' }}">
-                                            @if ($detailReport === 'geography' && $columnIndex === 0)
+                                        <td
+                                            colspan="{{ $column['span'] }}"
+                                            class="{{ $isIdentity ? 'admin-table__identity ' : '' }}{{ $column['numeric'] ? 'analytics-detail-table__numeric' : '' }}"
+                                        >
+                                            @if ($detailReport === 'geography' && $isIdentity)
                                                 @php
                                                     $presentation = $countryPresentation[$cellValue] ?? [];
                                                 @endphp
@@ -389,6 +348,9 @@
                                                 </span>
                                             @elseif ($isIdentity)
                                                 <strong title="{{ $cellValue }}">{{ $cellValue }}</strong>
+                                                @if ($metaValue !== null && trim($metaValue) !== '')
+                                                    <small title="{{ $metaValue }}">{{ $metaValue }}</small>
+                                                @endif
                                             @else
                                                 {{ $cellValue }}
                                             @endif
@@ -397,7 +359,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td class="admin-table__empty-cell" colspan="{{ max(1, count($detailTable['columns'])) }}">
+                                    <td class="admin-table__empty-cell" colspan="12">
                                         <x-admin.empty-state :title="$detailEmptyTitle" minimal>
                                             @if (trim($search) !== '')
                                                 <x-slot:actions>
