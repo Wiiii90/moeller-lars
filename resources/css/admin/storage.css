@@ -485,14 +485,10 @@
     width: 100%;
 }
 
-/* The selection count owns the same trailing 2.5rem axis as table checkboxes. */
+/* Storage owns only its compact label treatment; the shared table contract
+ * owns the terminal selected-count/checkbox axis. */
 .admin-storage .media-workspace__selection-trigger {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 2.5rem;
-    gap: 0;
-    padding-right: 0;
     padding-left: .35rem;
-    justify-content: stretch;
     text-align: left;
 }
 
@@ -501,11 +497,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.admin-storage .media-workspace__selection-count {
-    margin-left: 0;
-    justify-self: center;
 }
 
 /* Six-cell table contract: media owns the first two metric cells; Type + Size
