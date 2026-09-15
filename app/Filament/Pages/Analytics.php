@@ -29,6 +29,7 @@ final class Analytics extends Page
         'content' => 'Content',
         'geography' => 'Geography',
         'acquisition' => 'Acquisition',
+        'behavior' => 'Behavior',
         'interactions' => 'Interactions',
         'artwork' => 'Artwork',
         'technology' => 'Technology',
@@ -131,6 +132,89 @@ final class Analytics extends Page
     public function detailReportOptions(): array
     {
         return self::DETAIL_REPORTS;
+    }
+
+    /**
+     * The visible detail table uses twelve half-unit tracks, equivalent to the
+     * shared six-unit admin alignment grid. Repeated traffic metrics stay on a
+     * stable right edge while task-specific identity may consume more space.
+     *
+     * @return array{
+     *     columns:list<array{index:int,span:int,numeric:bool}>,
+     *     meta_index:int|null
+     * }
+     */
+    public function detailTableLayout(): array
+    {
+        return match ($this->detailReport) {
+            'geography' => [
+                'columns' => [
+                    ['index' => 0, 'span' => 4, 'numeric' => false],
+                    ['index' => 3, 'span' => 2, 'numeric' => true],
+                    ['index' => 4, 'span' => 2, 'numeric' => true],
+                    ['index' => 2, 'span' => 2, 'numeric' => true],
+                    ['index' => 1, 'span' => 2, 'numeric' => true],
+                ],
+                'meta_index' => null,
+            ],
+            'acquisition' => [
+                'columns' => [
+                    ['index' => 1, 'span' => 6, 'numeric' => false],
+                    ['index' => 4, 'span' => 2, 'numeric' => true],
+                    ['index' => 3, 'span' => 2, 'numeric' => true],
+                    ['index' => 2, 'span' => 2, 'numeric' => true],
+                ],
+                'meta_index' => 0,
+            ],
+            'behavior' => [
+                'columns' => [
+                    ['index' => 1, 'span' => 6, 'numeric' => false],
+                    ['index' => 4, 'span' => 2, 'numeric' => true],
+                    ['index' => 3, 'span' => 2, 'numeric' => true],
+                    ['index' => 2, 'span' => 2, 'numeric' => true],
+                ],
+                'meta_index' => 0,
+            ],
+            'interactions' => [
+                'columns' => [
+                    ['index' => 0, 'span' => 6, 'numeric' => false],
+                    ['index' => 1, 'span' => 2, 'numeric' => true],
+                    ['index' => 3, 'span' => 2, 'numeric' => true],
+                    ['index' => 2, 'span' => 2, 'numeric' => true],
+                ],
+                'meta_index' => null,
+            ],
+            'artwork' => [
+                'columns' => [
+                    ['index' => 0, 'span' => 4, 'numeric' => false],
+                    ['index' => 2, 'span' => 2, 'numeric' => true],
+                    ['index' => 3, 'span' => 1, 'numeric' => true],
+                    ['index' => 4, 'span' => 1, 'numeric' => true],
+                    ['index' => 5, 'span' => 2, 'numeric' => true],
+                    ['index' => 6, 'span' => 2, 'numeric' => true],
+                ],
+                'meta_index' => 1,
+            ],
+            'technology' => [
+                'columns' => [
+                    ['index' => 1, 'span' => 6, 'numeric' => false],
+                    ['index' => 4, 'span' => 2, 'numeric' => true],
+                    ['index' => 3, 'span' => 2, 'numeric' => true],
+                    ['index' => 2, 'span' => 2, 'numeric' => true],
+                ],
+                'meta_index' => 0,
+            ],
+            default => [
+                'columns' => [
+                    ['index' => 0, 'span' => 4, 'numeric' => false],
+                    ['index' => 3, 'span' => 2, 'numeric' => true],
+                    ['index' => 4, 'span' => 2, 'numeric' => true],
+                    ['index' => 1, 'span' => 2, 'numeric' => true],
+                    ['index' => 2, 'span' => 2, 'numeric' => true],
+                ],
+                'meta_index' => null,
+            ],
+        };
     }
 
     /**
@@ -251,6 +335,7 @@ final class Analytics extends Page
         return match ($report) {
             'geography' => $this->geographyDetail($columns),
             'acquisition' => $this->acquisitionDetail($columns),
+            'behavior' => $this->behaviorDetail($columns),
             'interactions' => $this->interactionDetail($columns),
             'artwork' => $this->artworkDetail($columns),
             'technology' => $this->technologyDetail($columns),
@@ -264,6 +349,7 @@ final class Analytics extends Page
         return match ($report) {
             'geography' => ['Country', 'Visits', 'Share', 'Rank', 'Tracked actions'],
             'acquisition' => ['Type', 'Source', 'Visits', 'Unique visitors', 'Tracked actions'],
+            'behavior' => ['Dimension', 'Behavior', 'Visits', 'Unique visitors', 'Share'],
             'interactions' => ['Event', 'Events', 'Visits', 'Unique visitors'],
             'artwork' => ['Artwork', 'Gallery', 'Detail views', 'Opens', 'Zooms', 'Active time', 'Average active'],
             'technology' => ['Type', 'Item', 'Visits', 'Unique visitors', 'Bounce rate'],
@@ -402,6 +488,91 @@ final class Analytics extends Page
             $rows,
             'No acquisition activity in this period.',
             $unavailableGroups > 0 ? 'Some acquisition reports are unavailable.' : null,
+        );
+    }
+
+    /**
+     * @param  list<string>  $columns
+     * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
+     */
+    private function behaviorDetail(array $columns): array
+    {
+        $availability = AnalyticsReportAvailability::fromReport($this->matomo);
+        $groups = [
+            'visit_duration' => 'Visit duration',
+            'pages_per_visit' => 'Pages per visit',
+            'local_time' => 'Local time',
+            'day_of_week' => 'Day of week',
+        ];
+        $totalVisits = is_numeric($this->matomo['metrics']['nb_visits'] ?? null)
+            ? (float) $this->matomo['metrics']['nb_visits']
+            : null;
+        $availableGroups = 0;
+        $unavailableGroups = 0;
+        $rows = [];
+
+        if ($availability->isAvailable('returning')) {
+            $availableGroups++;
+            $returningVisits = is_numeric($this->matomo['returning']['nb_visits_returning'] ?? null)
+                ? max(0.0, (float) $this->matomo['returning']['nb_visits_returning'])
+                : null;
+
+            if ($returningVisits !== null && $totalVisits !== null) {
+                $newVisits = max(0.0, $totalVisits - $returningVisits);
+                foreach ([
+                    'New visits' => $newVisits,
+                    'Returning visits' => $returningVisits,
+                ] as $label => $visits) {
+                    $rows[] = [
+                        'Visit type',
+                        $label,
+                        $this->formatNullableInteger($visits),
+                        '—',
+                        $this->formatNullablePercentage($totalVisits > 0 ? ($visits / $totalVisits) * 100 : 0.0),
+                    ];
+                }
+            }
+        } else {
+            $unavailableGroups++;
+        }
+
+        foreach ($groups as $report => $dimension) {
+            if (! $availability->isAvailable($report)) {
+                $unavailableGroups++;
+
+                continue;
+            }
+
+            $availableGroups++;
+            foreach ($this->matomo[$report] ?? [] as $row) {
+                if (! is_array($row) || ! is_string($row['label'] ?? null)) {
+                    continue;
+                }
+
+                $visits = is_numeric($row['nb_visits'] ?? null) ? (float) $row['nb_visits'] : null;
+                $share = $visits !== null && $totalVisits !== null
+                    ? ($totalVisits > 0 ? ($visits / $totalVisits) * 100 : 0.0)
+                    : null;
+
+                $rows[] = [
+                    $dimension,
+                    $this->behaviorValueLabel($report, $row['label']),
+                    $this->formatNullableInteger($visits),
+                    $this->formatNullableInteger($row['nb_uniq_visitors'] ?? null),
+                    $this->formatNullablePercentage($share),
+                ];
+            }
+        }
+
+        if ($availableGroups === 0) {
+            return $this->unavailableDetail($columns, 'Behavior reports are unavailable.');
+        }
+
+        return $this->availableDetail(
+            $columns,
+            $rows,
+            'No behavior distribution in this period.',
+            $unavailableGroups > 0 ? 'Some behavior reports are unavailable.' : null,
         );
     }
 
@@ -833,6 +1004,41 @@ final class Analytics extends Page
     private function formatNullableDuration(mixed $value): string
     {
         return is_numeric($value) ? $this->formatDuration((int) round((float) $value)) : '—';
+    }
+
+    private function behaviorValueLabel(string $report, string $label): string
+    {
+        $label = trim($label);
+        if ($label === '') {
+            return '—';
+        }
+
+        if ($report === 'local_time' && ctype_digit($label)) {
+            $hour = (int) $label;
+            if ($hour >= 0 && $hour <= 23) {
+                return sprintf('%02d:00–%02d:59', $hour, $hour);
+            }
+        }
+
+        if ($report === 'pages_per_visit' && ctype_digit($label)) {
+            return $label.' '.((int) $label === 1 ? 'page' : 'pages');
+        }
+
+        if ($report === 'day_of_week' && ctype_digit($label)) {
+            $days = [
+                1 => 'Monday',
+                2 => 'Tuesday',
+                3 => 'Wednesday',
+                4 => 'Thursday',
+                5 => 'Friday',
+                6 => 'Saturday',
+                7 => 'Sunday',
+            ];
+
+            return $days[(int) $label] ?? $label;
+        }
+
+        return $label;
     }
 
     private function humanizeLabel(string $label): string
