@@ -78,7 +78,7 @@ trait InteractsWithAdminEditDialogAutosave
 
     private function adminEditDialogFingerprintKey(Action $action): string
     {
-        $record = method_exists($action, 'getRecord') ? $action->getRecord() : null;
+        $record = $action->getRecord();
         $recordIdentity = $record instanceof Model
             ? $record::class.':'.(string) $record->getKey()
             : 'none';

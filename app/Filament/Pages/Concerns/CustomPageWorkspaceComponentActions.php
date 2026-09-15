@@ -39,7 +39,7 @@ trait CustomPageWorkspaceComponentActions
 
         $sequence = [];
         foreach ($targets as $target) {
-            if (! is_string($target) || ! str_contains($target, ':')) {
+            if (! str_contains($target, ':')) {
                 throw ValidationException::withMessages(['component' => 'The component sequence is invalid.']);
             }
 

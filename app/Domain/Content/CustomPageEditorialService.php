@@ -575,10 +575,6 @@ final class CustomPageEditorialService
     {
         $indices = [];
         foreach ($targets as $target) {
-            if (! is_array($target) || ! is_int($target['index'] ?? null) || ! is_string($target['type'] ?? null)) {
-                throw ValidationException::withMessages(['component' => 'The component sequence is invalid.']);
-            }
-
             $index = $target['index'];
             $type = $target['type'];
             $this->assertTarget($blocks, $index, $type);
@@ -633,7 +629,7 @@ final class CustomPageEditorialService
     /** @param list<array<string,mixed>> $items */
     private function assertListItem(array $items, int $itemIndex): void
     {
-        if ($itemIndex < 0 || ! array_key_exists($itemIndex, $items) || ! is_array($items[$itemIndex])) {
+        if ($itemIndex < 0 || ! array_key_exists($itemIndex, $items)) {
             throw ValidationException::withMessages(['component' => 'This list entry changed. Reload the workspace and try again.']);
         }
     }
@@ -653,7 +649,7 @@ final class CustomPageEditorialService
     private function contactChildIndex(array $children, string $childType): ?int
     {
         foreach ($children as $index => $child) {
-            if (is_array($child) && ($child['type'] ?? null) === $childType) {
+            if (($child['type'] ?? null) === $childType) {
                 return $index;
             }
         }
@@ -699,6 +695,7 @@ final class CustomPageEditorialService
                 ],
             ],
             'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
+            default => throw new InvalidArgumentException('Unsupported component type.'),
         };
     }
 
@@ -709,7 +706,7 @@ final class CustomPageEditorialService
             if ($exceptIndex !== null && $index === $exceptIndex) {
                 continue;
             }
-            if (is_array($block) && ($block['type'] ?? null) === $type) {
+            if (($block['type'] ?? null) === $type) {
                 return true;
             }
         }

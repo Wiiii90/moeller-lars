@@ -60,9 +60,9 @@ final class MediaStorageReferenceCatalog
         $rows = [];
 
         foreach ($this->catalog->references($asset) as $reference) {
-            $type = trim((string) ($reference['type'] ?? ''));
-            $label = trim((string) ($reference['label'] ?? ''));
-            $url = isset($reference['url']) && is_string($reference['url']) ? $reference['url'] : null;
+            $type = trim($reference['type']);
+            $label = trim($reference['label']);
+            $url = $reference['url'];
             [$area, $areaLabel, $targetLabel] = $this->context($type, $label);
 
             $rows[] = [

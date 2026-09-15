@@ -484,14 +484,6 @@ final class HomePresentationEditorialService
     {
         $indices = [];
         foreach ($targets as $target) {
-            if (! is_array($target)
-                || ! is_int($target['index'] ?? null)
-                || ! is_string($target['type'] ?? null)) {
-                throw ValidationException::withMessages([
-                    'component' => 'The selected Home component target is invalid.',
-                ]);
-            }
-
             $index = $target['index'];
             $this->assertTarget($components, $index, $target['type']);
             $indices[] = $index;

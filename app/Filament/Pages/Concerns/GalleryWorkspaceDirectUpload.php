@@ -29,10 +29,7 @@ trait GalleryWorkspaceDirectUpload
     /** @return array{summary:string,added:int,duplicates:int,failed:int} */
     public function processDirectPrimaryMedia(): array
     {
-        $uploads = array_values(array_filter(
-            $this->directPrimaryMedia,
-            static fn (mixed $upload): bool => $upload instanceof TemporaryUploadedFile,
-        ));
+        $uploads = $this->directPrimaryMedia;
         $this->resetErrorBag('directPrimaryMedia');
         $this->pendingPrimaryMediaAssetId = null;
         $this->pendingBatchArtworkMedia = [];

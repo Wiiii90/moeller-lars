@@ -213,8 +213,7 @@ final class HomePresentationResolver
     private function componentPresentation(HomeTemplate $template, array $components, bool $gateActive): array
     {
         $ids = collect($components)
-            ->filter(fn (mixed $component): bool => is_array($component)
-                && ($component['type'] ?? null) === 'image'
+            ->filter(fn (array $component): bool => ($component['type'] ?? null) === 'image'
                 && is_numeric($component['media_asset_id'] ?? null))
             ->map(fn (array $component): int => (int) $component['media_asset_id'])
             ->unique()

@@ -239,7 +239,7 @@ class PublicMedia
         $publishedCvListExists = false;
         foreach ($publishedCustomPages as $settings) {
             foreach ($settings->components() as $block) {
-                if (! is_array($block) || ! CustomPageSetting::componentPublished($block)) {
+                if (! CustomPageSetting::componentPublished($block)) {
                     continue;
                 }
 

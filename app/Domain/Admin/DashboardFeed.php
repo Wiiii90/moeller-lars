@@ -444,7 +444,8 @@ final class DashboardFeed
     /** @return Collection<int, array<string, mixed>> */
     private function staticItems(): Collection
     {
-        return collect(config('dashboard-feed.items', []))
+        /** @var Collection<int, array<string, mixed>> $items */
+        $items = collect(config('dashboard-feed.items', []))
             ->filter(static fn (mixed $item): bool => is_array($item))
             ->map(function (array $item): ?array {
                 $id = is_string($item['id'] ?? null) ? trim($item['id']) : '';
@@ -499,6 +500,8 @@ final class DashboardFeed
             })
             ->filter()
             ->values();
+
+        return $items;
     }
 
     /** @return array<string, mixed> */

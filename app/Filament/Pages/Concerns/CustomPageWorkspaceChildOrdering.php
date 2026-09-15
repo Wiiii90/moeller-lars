@@ -20,7 +20,7 @@ trait CustomPageWorkspaceChildOrdering
         }
 
         $parts = explode(':', $target);
-        $kind = $parts[0] ?? null;
+        $kind = $parts[0];
         if ($kind === 'cv' && isset($parts[1]) && ctype_digit($parts[1])) {
             /** @var CvEntry $entry */
             $entry = CvEntry::query()->findOrFail((int) $parts[1]);
@@ -227,9 +227,7 @@ trait CustomPageWorkspaceChildOrdering
                 $entries = array_reverse($entries);
             }
             foreach ($entries as $entry) {
-                if ($entry instanceof CvEntry) {
-                    $changed = app(EditorialRecordService::class)->move($entry, $direction) || $changed;
-                }
+                $changed = app(EditorialRecordService::class)->move($entry, $direction) || $changed;
             }
         }
 

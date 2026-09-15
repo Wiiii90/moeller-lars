@@ -52,8 +52,8 @@ trait GalleryWorkspaceMoveActions
         }
 
         if (
-            (! is_int($artworkId) && (! is_string($artworkId) || ! ctype_digit($artworkId)))
-            || (! is_int($position) && (! is_string($position) || ! ctype_digit($position)))
+            (! is_int($artworkId) && ! ctype_digit($artworkId))
+            || (! is_int($position) && ! ctype_digit($position))
         ) {
             return;
         }

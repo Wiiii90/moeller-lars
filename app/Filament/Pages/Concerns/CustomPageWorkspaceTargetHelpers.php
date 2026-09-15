@@ -13,7 +13,7 @@ trait CustomPageWorkspaceTargetHelpers
     {
         $targets = [];
         foreach (array_values(array_unique($this->selectedComponentTargets)) as $target) {
-            if (! is_string($target) || ! str_contains($target, ':')) {
+            if (! str_contains($target, ':')) {
                 continue;
             }
             [$index, $type] = explode(':', $target, 2);
@@ -31,15 +31,12 @@ trait CustomPageWorkspaceTargetHelpers
     {
         $targets = [];
         foreach (array_values(array_unique($this->selectedChildTargets)) as $target) {
-            if (! is_string($target)) {
-                continue;
-            }
             $parts = explode(':', $target);
-            if (($parts[0] ?? null) === 'cv' && isset($parts[1]) && ctype_digit($parts[1])) {
+            if ($parts[0] === 'cv' && isset($parts[1]) && ctype_digit($parts[1])) {
                 $targets[] = ['kind' => 'cv', 'entry_id' => (int) $parts[1]];
-            } elseif (($parts[0] ?? null) === 'list' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && ctype_digit($parts[2])) {
+            } elseif ($parts[0] === 'list' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && ctype_digit($parts[2])) {
                 $targets[] = ['kind' => 'list', 'component_index' => (int) $parts[1], 'item_index' => (int) $parts[2]];
-            } elseif (($parts[0] ?? null) === 'contact' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && array_key_exists($parts[2], self::CONTACT_CHILD_LABELS)) {
+            } elseif ($parts[0] === 'contact' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && array_key_exists($parts[2], self::CONTACT_CHILD_LABELS)) {
                 $targets[] = ['kind' => 'contact', 'component_index' => (int) $parts[1], 'child_type' => $parts[2]];
             }
         }
@@ -142,7 +139,7 @@ trait CustomPageWorkspaceTargetHelpers
         }
         $childType = $this->actionContactChildType($arguments);
         foreach ($this->settings()->contactChildren($block) as $child) {
-            if (is_array($child) && ($child['type'] ?? null) === $childType) {
+            if (($child['type'] ?? null) === $childType) {
                 return $child;
             }
         }

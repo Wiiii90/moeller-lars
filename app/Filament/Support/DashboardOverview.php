@@ -138,9 +138,9 @@ final class DashboardOverview
     private function storageOverview(): array
     {
         $snapshot = app(StorageWorkspaceOverview::class)->snapshot();
-        $capacity = is_array($snapshot['capacity'] ?? null) ? $snapshot['capacity'] : [];
-        $breakdown = is_array($snapshot['breakdown'] ?? null) ? $snapshot['breakdown'] : [];
-        $attention = is_array($snapshot['attention'] ?? null) ? $snapshot['attention'] : [];
+        $capacity = $snapshot['capacity'];
+        $breakdown = $snapshot['breakdown'];
+        $attention = $snapshot['attention'];
         $segments = is_array($attention['capacity_segments'] ?? null) ? $attention['capacity_segments'] : [];
 
         return [
@@ -157,7 +157,7 @@ final class DashboardOverview
     private function activityOverview(): array
     {
         $overview = app(AdminActivityFeed::class)->overview(null, null, days: 30, search: '');
-        $hourly = is_array($overview['hourly'] ?? null) ? $overview['hourly'] : [];
+        $hourly = $overview['hourly'];
         $clockActivity = [];
 
         foreach ($hourly as $hour => $count) {
@@ -174,7 +174,7 @@ final class DashboardOverview
         }
 
         return [
-            'recent_changes' => (int) ($overview['total'] ?? 0),
+            'recent_changes' => $overview['total'],
             'clock_activity' => $clockActivity,
             'clock_peak_hour' => $peakHour,
             'clock_peak_count' => $peakHour !== null ? (int) ($hourly[$peakHour] ?? 0) : 0,

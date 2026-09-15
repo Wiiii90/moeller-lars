@@ -10,6 +10,7 @@ use App\Models\PublicationCheckpointEvent;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 final class AdminPublicationHistory
 {
@@ -70,12 +71,11 @@ final class AdminPublicationHistory
         $driver = $query->getModel()->getConnection()->getDriverName();
         $dateExpression = $this->dateExpression($driver);
 
-        $activeDays = (clone $query)
+        $activeDaysQuery = (clone $query)
             ->toBase()
             ->selectRaw($dateExpression.' AS bucket')
-            ->groupByRaw($dateExpression)
-            ->get()
-            ->count();
+            ->groupByRaw($dateExpression);
+        $activeDays = DB::query()->fromSub($activeDaysQuery, 'active_days')->count();
 
         $checkpointIds = (clone $query)->select('publication_checkpoints.id');
 

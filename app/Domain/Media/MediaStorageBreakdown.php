@@ -75,6 +75,7 @@ final class MediaStorageBreakdown
 
         /** @var array<string, array{key:string,label:string,area:string,area_label:string,bytes:int,files:int}> $targets */
         $targets = [];
+        /** @var list<array<string, mixed>> $fileRows */
         $fileRows = [];
         $unreferencedBytes = 0;
         $unreferencedFiles = 0;
@@ -87,8 +88,8 @@ final class MediaStorageBreakdown
 
             $areas = [];
             foreach ($references as $reference) {
-                $area = (string) ($reference['area'] ?? 'referenced');
-                $areaLabel = (string) ($reference['area_label'] ?? self::AREA_LABELS['referenced']);
+                $area = $reference['area'];
+                $areaLabel = $reference['area_label'];
                 $areas[$area] = $areaLabel;
             }
 
@@ -103,16 +104,16 @@ final class MediaStorageBreakdown
 
             $targetsSeenForFile = [];
             foreach ($references as $reference) {
-                $targetKey = (string) ($reference['target_key'] ?? '');
+                $targetKey = $reference['target_key'];
                 if ($targetKey === '' || isset($targetsSeenForFile[$targetKey])) {
                     continue;
                 }
                 $targetsSeenForFile[$targetKey] = true;
                 $targets[$targetKey] ??= [
                     'key' => $targetKey,
-                    'label' => (string) ($reference['target_label'] ?? $reference['label'] ?? 'Reference'),
-                    'area' => (string) ($reference['area'] ?? 'referenced'),
-                    'area_label' => (string) ($reference['area_label'] ?? self::AREA_LABELS['referenced']),
+                    'label' => $reference['target_label'],
+                    'area' => $reference['area'],
+                    'area_label' => $reference['area_label'],
                     'bytes' => 0,
                     'files' => 0,
                 ];
@@ -212,11 +213,11 @@ final class MediaStorageBreakdown
     {
         $normalized = [];
         foreach ($authoritativeFiles as $storageKey => $bytes) {
-            if (! is_string($storageKey) || $storageKey === '' || ! is_numeric($bytes) || (int) $bytes < 0) {
+            if ($storageKey === '' || $bytes < 0) {
                 continue;
             }
 
-            $normalized[$storageKey] = (int) $bytes;
+            $normalized[$storageKey] = $bytes;
         }
 
         return $normalized;

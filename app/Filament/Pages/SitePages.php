@@ -277,7 +277,7 @@ final class SitePages extends Page
                         return;
                     }
 
-                    $parentId = isset($data['parent_id']) && $data['parent_id'] !== '' && $data['parent_id'] !== null
+                    $parentId = isset($data['parent_id']) && $data['parent_id'] !== ''
                         ? (int) $data['parent_id']
                         : null;
 

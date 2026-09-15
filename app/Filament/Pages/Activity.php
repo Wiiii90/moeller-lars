@@ -395,7 +395,7 @@ final class Activity extends Page
         $activityLatest = $overview['latest_at'] !== null
             ? CarbonImmutable::parse((string) $overview['latest_at'])
             : null;
-        $commitLatest = isset($commitSummary->latest_at) && $commitSummary->latest_at !== null
+        $commitLatest = isset($commitSummary->latest_at)
             ? CarbonImmutable::parse((string) $commitSummary->latest_at)
             : null;
         $latestAt = match (true) {

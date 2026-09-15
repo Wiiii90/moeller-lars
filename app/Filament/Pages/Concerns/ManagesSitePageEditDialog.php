@@ -34,10 +34,11 @@ trait ManagesSitePageEditDialog
             ->modalHeading('Edit page')
             ->fillForm(function (array $arguments): array {
                 $section = $this->dialogSection($arguments);
+                $template = $section->journalTemplate();
 
                 return [
                     'type' => $section->nodeType()->value,
-                    'template' => $section->journalTemplate()?->value ?? JournalTemplate::Blog->value,
+                    'template' => $template === null ? JournalTemplate::Blog->value : $template->value,
                     'name' => $this->sectionLabel($section),
                     'slug' => $section->getAttribute('slug'),
                     'parent_id' => $section->getAttribute('parent_id'),
@@ -207,7 +208,9 @@ trait ManagesSitePageEditDialog
                 ->iconButton()
                 ->color('gray')
                 ->extraAttributes(['class' => 'admin-dialog__header-action'])
-                ->action(fn (): mixed => $this->toggleSectionState($sectionId)),
+                ->action(function () use ($sectionId): void {
+                    $this->toggleSectionState($sectionId);
+                }),
         ];
     }
 

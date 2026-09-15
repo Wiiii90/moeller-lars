@@ -22,7 +22,7 @@ final class PublicationMediaCleanupService
     public function queue(int $mediaAssetId, array $storageKeys): void
     {
         $rows = collect($storageKeys)
-            ->filter(static fn (mixed $key): bool => is_string($key) && $key !== '')
+            ->filter(static fn (string $key): bool => $key !== '')
             ->unique()
             ->map(static fn (string $key): array => [
                 'media_asset_id' => $mediaAssetId,
@@ -86,7 +86,7 @@ final class PublicationMediaCleanupService
         $changed = false;
 
         foreach (array_values(array_unique($storageKeys)) as $key) {
-            if (! is_string($key) || $key === '') {
+            if ($key === '') {
                 continue;
             }
 
@@ -140,7 +140,7 @@ final class PublicationMediaCleanupService
     {
         $keys = array_values(array_unique(array_filter(
             $storageKeys,
-            static fn (mixed $key): bool => is_string($key) && $key !== '',
+            static fn (string $key): bool => $key !== '',
         )));
         if ($keys === []) {
             return null;

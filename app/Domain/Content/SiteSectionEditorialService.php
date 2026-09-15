@@ -273,7 +273,7 @@ final class SiteSectionEditorialService
             /** @var SiteSection $fresh */
             $fresh = SiteSection::query()->whereKey($section->getKey())->lockForUpdate()->firstOrFail();
             $source = $fresh->nodeType();
-            if ($source === SiteSectionType::Home || $target === SiteSectionType::Home) {
+            if ($source === SiteSectionType::Home) {
                 throw ValidationException::withMessages(['type' => 'Home cannot be converted to or from another page type.']);
             }
             if ($source === $target) {

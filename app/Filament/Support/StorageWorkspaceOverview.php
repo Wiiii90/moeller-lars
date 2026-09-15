@@ -42,7 +42,7 @@ final class StorageWorkspaceOverview
 
         $analysis = $this->analyze($this->authoritativeFiles($snapshot));
         $breakdown = array_map(function (array $row): array {
-            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
+            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) $row['bytes']);
             $row['usage_filter'] = $this->usageFilterForArea((string) ($row['key'] ?? ''));
 
             return $row;
@@ -74,7 +74,7 @@ final class StorageWorkspaceOverview
         );
         $attention['uncatalogued_files'] = is_array($uncatalogued) ? (int) ($uncatalogued['files'] ?? 0) : 0;
         $attention['uncatalogued_display_bytes'] = is_array($uncatalogued)
-            ? (string) ($uncatalogued['display_bytes'] ?? '0 B')
+            ? (string) $uncatalogued['display_bytes']
             : '0 B';
 
         return [

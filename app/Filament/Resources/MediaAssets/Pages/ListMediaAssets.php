@@ -165,10 +165,7 @@ final class ListMediaAssets extends Page
     /** @return array{summary:string,added:int,duplicates:int,failed:int} */
     public function processDirectMedia(): array
     {
-        $uploads = array_values(array_filter(
-            $this->directMedia,
-            static fn (mixed $upload): bool => $upload instanceof TemporaryUploadedFile,
-        ));
+        $uploads = $this->directMedia;
         $this->resetErrorBag('directMedia');
 
         if ($uploads === []) {
@@ -995,11 +992,6 @@ final class ListMediaAssets extends Page
     private function deleteDialogData(MediaAsset $asset): array
     {
         return ['references' => $this->assetReferences($asset)];
-    }
-
-    private function hasReferences(MediaAsset $asset): bool
-    {
-        return $this->assetReferences($asset) !== [];
     }
 
     /** @return list<array{type:string,label:string,url:?string}> */

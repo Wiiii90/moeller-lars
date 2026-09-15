@@ -179,8 +179,7 @@ trait GalleryWorkspaceArtworkActions
         $index = array_search((int) $artwork->getKey(), $visibleIds, true);
         $position = $index === false ? null : $index + 1;
         $row = $visibleRows->first(
-            static fn (mixed $candidate): bool => is_array($candidate)
-                && (int) ($candidate['id'] ?? 0) === (int) $artwork->getKey(),
+            static fn (array $candidate): bool => (int) ($candidate['id'] ?? 0) === (int) $artwork->getKey(),
         );
         $row = is_array($row) ? $row : [];
 
@@ -195,7 +194,7 @@ trait GalleryWorkspaceArtworkActions
 
         if ($asset instanceof MediaAsset && $asset->getAttribute('state') === 'available') {
             $mime = (string) $asset->getAttribute('mime_type');
-            $altOverride = trim((string) ($primary?->getAttribute('alt_text_override') ?? ''));
+            $altOverride = trim((string) ($primary->getAttribute('alt_text_override') ?? ''));
             $defaultAlt = trim((string) ($asset->getAttribute('alt_text') ?? ''));
             $primaryMedia = [
                 'id' => (int) $asset->getKey(),

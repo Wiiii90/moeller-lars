@@ -352,10 +352,6 @@ class MediaAssetEditorialService
             foreach ([HomeTemplate::UnderConstruction, HomeTemplate::Custom] as $mode) {
                 $components = $settings->components($mode);
                 foreach ($components as $index => $component) {
-                    if (! is_array($component)) {
-                        continue;
-                    }
-
                     $type = $component['type'] ?? null;
                     if ($type === 'image'
                         && is_numeric($component['media_asset_id'] ?? null)

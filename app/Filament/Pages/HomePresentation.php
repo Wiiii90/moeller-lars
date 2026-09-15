@@ -28,6 +28,7 @@ use App\Routing\SiteNodeRoute;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -1158,7 +1159,7 @@ final class HomePresentation extends Page
         $fields = AdminRichText::schema('body', 'Rich Text', 20000);
         foreach ($fields as $index => $field) {
             $field->visible(fn (callable $get): bool => $get($stateField) === $stateValue);
-            if ($required && $index === 0) {
+            if ($required && $index === 0 && $field instanceof MarkdownEditor) {
                 $field->required(fn (callable $get): bool => $get($stateField) === $stateValue);
             }
         }
@@ -1245,7 +1246,7 @@ final class HomePresentation extends Page
         $available = collect($this->componentDataset)->pluck('target')->filter(static fn ($target): bool => is_string($target))->flip();
         $targets = [];
         foreach (array_values(array_unique($this->selectedComponentTargets)) as $target) {
-            if (! is_string($target) || ! $available->has($target)) {
+            if (! $available->has($target)) {
                 throw ValidationException::withMessages(['component' => 'The selected Home components changed. Reload the workspace and try again.']);
             }
             $targets[] = $this->parseComponentTarget($target);

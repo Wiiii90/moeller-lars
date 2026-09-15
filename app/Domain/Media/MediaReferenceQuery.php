@@ -149,9 +149,7 @@ final class MediaReferenceQuery
     {
         $ids = [];
         foreach ($sections as $section) {
-            if ($section instanceof SiteSection) {
-                $ids = array_merge($ids, $this->mediaIdsForJournalSection($section));
-            }
+            $ids = array_merge($ids, $this->mediaIdsForJournalSection($section));
         }
 
         return array_values(array_unique($ids));

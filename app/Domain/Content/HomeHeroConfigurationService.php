@@ -195,7 +195,7 @@ final class HomeHeroConfigurationService
                 : ($displayStrategy === 'random' ? 'random' : 'automatic');
             $artwork['automatic_selection'] = $displayStrategy === 'random' ? 'random' : 'newest';
             $artwork['fixed_artwork_id'] = $groupSource === 'manual'
-                ? ($manualGroup[0]['artwork_id'] ?? null)
+                ? $manualGroup[0]['artwork_id']
                 : $current['hero_artwork_id'];
             $artwork['newest_by'] = $newestBy;
             $artwork['group_size'] = $groupSize;

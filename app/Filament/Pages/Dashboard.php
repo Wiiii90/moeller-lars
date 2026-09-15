@@ -343,7 +343,9 @@ final class Dashboard extends Page
             Action::make('deleteFeedEntry')
                 ->label('Delete')
                 ->color('danger')
-                ->action(fn (array $arguments): mixed => $this->deleteFeedEntry((string) ($arguments['key'] ?? ''))),
+                ->action(function (array $arguments): void {
+                    $this->deleteFeedEntry((string) ($arguments['key'] ?? ''));
+                }),
             'Delete message?',
             'This removes the stored dashboard message.',
         );
@@ -355,7 +357,9 @@ final class Dashboard extends Page
             Action::make('deleteSelected')
                 ->label('Delete selected')
                 ->color('danger')
-                ->action(fn (): mixed => $this->bulkDelete()),
+                ->action(function (): void {
+                    $this->bulkDelete();
+                }),
             'Delete selected messages?',
             'This removes the selected contact messages and notifications.',
         );
@@ -466,7 +470,7 @@ final class Dashboard extends Page
         $feed = app(DashboardFeed::class);
 
         return collect($this->selectedFeedKeys)
-            ->filter(static fn (mixed $key): bool => is_string($key) && $key !== '')
+            ->filter(static fn (string $key): bool => $key !== '')
             ->filter(fn (string $key): bool => is_array($feed->entry($key)))
             ->values()
             ->all();
@@ -552,7 +556,15 @@ final class Dashboard extends Page
             ->iconButton()
             ->color('gray')
             ->extraAttributes(['class' => 'admin-dialog__header-action'])
-            ->action(fn (): mixed => $isRead ? $this->markFeedUnread($key) : $this->markFeedRead($key));
+            ->action(function () use ($isRead, $key): void {
+                if ($isRead) {
+                    $this->markFeedUnread($key);
+
+                    return;
+                }
+
+                $this->markFeedRead($key);
+            });
 
         $deleteAction = Action::make('deleteDialogEntry')
             ->label('Delete')
@@ -563,10 +575,14 @@ final class Dashboard extends Page
 
         if (is_int($entry['contact_id'] ?? null)) {
             $contactId = $entry['contact_id'];
-            $deleteAction->action(fn (): mixed => $this->deleteContactMessage($contactId));
+            $deleteAction->action(function () use ($contactId): void {
+                $this->deleteContactMessage($contactId);
+            });
         } else {
             $notificationId = $entry['notification_id'];
-            $deleteAction->action(fn (): mixed => $this->deleteNotification($notificationId));
+            $deleteAction->action(function () use ($notificationId): void {
+                $this->deleteNotification($notificationId);
+            });
         }
 
         if (! $this->deleteWithoutConfirmation()) {

@@ -24,7 +24,7 @@ trait CustomPageWorkspaceChildProjection
         if ($type === 'cv_list') {
             $count = count($cvRecords);
 
-            return array_values(array_map(function (CvEntry $entry, int $index) use ($count, $parentPublished, $reorderEnabled): array {
+            return array_map(function (CvEntry $entry, int $index) use ($count, $parentPublished, $reorderEnabled): array {
                 $meta = array_values(array_filter([
                     $entry->getAttribute('organisation'),
                     $entry->getAttribute('location'),
@@ -57,7 +57,7 @@ trait CustomPageWorkspaceChildProjection
                         $status,
                     ], static fn (mixed $value): bool => is_string($value) && trim($value) !== '')),
                 ];
-            }, $cvRecords, array_keys($cvRecords)));
+            }, $cvRecords, array_keys($cvRecords));
         }
 
         if ($type === 'list') {
@@ -109,9 +109,6 @@ trait CustomPageWorkspaceChildProjection
             $contactChildren = $settings->contactChildren($block);
             $count = count($contactChildren);
             foreach ($contactChildren as $childIndex => $child) {
-                if (! is_array($child)) {
-                    continue;
-                }
                 $childType = is_string($child['type'] ?? null) ? $child['type'] : '';
                 if (! array_key_exists($childType, self::CONTACT_CHILD_LABELS)) {
                     continue;
@@ -123,7 +120,6 @@ trait CustomPageWorkspaceChildProjection
                     'contact_form' => ($child['form_state'] ?? 'enabled') === 'under_construction'
                         ? 'Under construction'
                         : 'Enabled',
-                    default => '',
                 };
                 $children[] = [
                     'kind' => 'contact',

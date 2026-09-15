@@ -31,7 +31,7 @@ final class RichTextMediaReference
             return null;
         }
 
-        $id = (int) ($matches[1] ?? 0);
+        $id = (int) $matches[1];
 
         return $id > 0 ? $id : null;
     }
@@ -47,12 +47,12 @@ final class RichTextMediaReference
         $references = [];
 
         foreach ($matches as $match) {
-            $id = (int) ($match[2] ?? 0);
+            $id = (int) $match[2];
             if ($id <= 0) {
                 continue;
             }
 
-            $alt = self::unescapeAlt((string) ($match[1] ?? ''));
+            $alt = self::unescapeAlt($match[1]);
             $references[] = [
                 'media_asset_id' => $id,
                 'alt_text_override' => $alt === '' ? null : $alt,
@@ -76,7 +76,7 @@ final class RichTextMediaReference
     {
         $clean = preg_replace_callback(
             self::MARKDOWN_PATTERN,
-            static fn (array $matches): string => (int) ($matches[2] ?? 0) === $mediaAssetId ? '' : (string) $matches[0],
+            static fn (array $matches): string => (int) $matches[2] === $mediaAssetId ? '' : (string) $matches[0],
             $source,
         );
         if (! is_string($clean)) {
@@ -100,10 +100,6 @@ final class RichTextMediaReference
         $ids = [];
 
         foreach ($blocks as $block) {
-            if (! is_array($block)) {
-                continue;
-            }
-
             if (($block['type'] ?? null) === 'text' && is_string($block['body'] ?? null)) {
                 $ids = array_merge($ids, self::ids($block['body']));
             }
