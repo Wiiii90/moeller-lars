@@ -82,7 +82,7 @@ final class AdminDialog
             ->requiresConfirmation($required)
             ->modalHeading($heading)
             ->modalDescription($description)
-            ->modalSubmitAction(fn (Action $submit): Action => $submit
+            ->modalSubmitAction(fn (Action $action): Action => $action
                 ->label($submitLabel)
                 ->icon($submitIcon->value)
                 ->iconButton()
@@ -98,7 +98,7 @@ final class AdminDialog
         AdminDialogSize $size,
     ): Action {
         return self::base($action, $type, $size)
-            ->modalSubmitAction(fn (Action $submit): Action => $submit
+            ->modalSubmitAction(fn (Action $action): Action => $action
                 ->label($submitLabel)
                 ->icon(AdminIcon::DialogSubmit->value)
                 ->iconButton()
