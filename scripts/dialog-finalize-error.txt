@@ -1,1 +1,7 @@
-Refusing to delete resources/css/admin/dialogs.css; references remain: ['resources/css/admin/media.css']
+Dialog finalizer stopped after CSS consolidation:
+Dialog migration acceptance failed:
+app/Filament/Pages/Activity.php: ->requiresConfirmation(
+app/Filament/Pages/Concerns/GalleryWorkspaceDirectUpload.php: ->modalWidth(
+app/Filament/Pages/Concerns/GalleryWorkspaceDirectUpload.php: ->modalSubmitActionLabel(
+app/Filament/Pages/Concerns/GalleryWorkspaceDirectUpload.php: ->modalCancelActionLabel(
+app/Filament/Resources/Artworks/Support/ArtworkMaterialSelect.php: ->modalSubmitActionLabel(
