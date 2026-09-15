@@ -1,6 +1,6 @@
 # Testing
 
-This document defines the durable test strategy for `moeller-lars`. The test suite protects product, domain, security, persistence and publication behavior; it is not a record of implementation rounds or browser-repair history.
+This document defines the durable test strategy for `moeller-lars`. The test suite protects product, domain, security, persistence, publication and selected browser-interaction behavior; it is not a record of implementation rounds or browser-repair history.
 
 ## Principles
 
@@ -23,14 +23,15 @@ This document defines the durable test strategy for `moeller-lars`. The test sui
 | Architecture | `tests/Architecture` | Small set of durable dependency/centralization/metadata rules that cannot be expressed more directly | No database by default |
 | Migration | `tests/Migration` | Temporary compatibility, reconciliation and cutover guarantees | Laravel application + disposable test database |
 | JavaScript | `tests/js` | Isolated frontend interaction/math/state logic | Node built-in test runner |
+| Browser profiling | `tests/browser` | Representative real-browser interaction chains, request fan-out, payload evidence, idle behavior and console/runtime failures | Playwright Chromium + disposable PostgreSQL application |
 
 `Feature` is split into `Admin` and `Public`. `Integration` is split by domain boundary rather than screen. `Migration/Legacy` is intentionally isolated so it can be retired as one deliberate cutover cleanup instead of leaking into permanent application tests.
 
-There is currently no real-browser test suite. When browser coverage is introduced, use Pest v4 Browser Testing with Playwright and keep it deliberately small: authentication, one representative admin edit/publish flow, one public publication flow, and interaction/visual behavior that cannot be proven below the browser. Do not recreate source-string UI tests as browser tests merely to preserve old coverage.
+The browser layer is deliberately small and evidence-oriented. Direct Playwright owns interaction tracing because the performance contract needs request classification, transfer sizes, traces and machine-readable per-flow metrics. Do not add Dusk, Cypress or a second browser framework for the same contract. Browser profiling complements, rather than duplicates, lower-level Pest coverage and manual browser/product acceptance.
 
 ## Choosing a layer
 
-Use **Unit** when the subject can be constructed and exercised without Laravel infrastructure. Use **Integration** when the contract belongs to a domain/service but correctness depends on the database, filesystem, mail or an external adapter. Use **Feature/Admin** for Filament/Livewire workflows and **Feature/Public** for public HTTP/application behavior. Use **Architecture** only for a durable structural rule. Use **Migration** only when the behavior exists to reconcile or retire legacy state.
+Use **Unit** when the subject can be constructed and exercised without Laravel infrastructure. Use **Integration** when the contract belongs to a domain/service but correctness depends on the database, filesystem, mail or an external adapter. Use **Feature/Admin** for Filament/Livewire workflows and **Feature/Public** for public HTTP/application behavior. Use **Architecture** only for a durable structural rule. Use **Migration** only when the behavior exists to reconcile or retire legacy state. Use **Browser profiling** only when the contract depends on a real browser/request chain or on evidence that lower layers cannot provide.
 
 A test that needs `RefreshDatabase` is not automatically a Feature test. A test that renders HTML is not automatically a browser test. Classification follows the contract being protected.
 
@@ -71,6 +72,7 @@ tests/
 │   └── Admin/
 ├── Migration/
 │   └── Legacy/
+├── browser/
 └── js/
 ```
 
@@ -78,7 +80,7 @@ Directories are allowed to grow with the application. Do not create a directory 
 
 ## Running and discovering tests
 
-The suite is self-describing through Pest rather than through a hand-maintained inventory of filenames:
+The PHP suite is self-describing through Pest rather than through a hand-maintained inventory of filenames:
 
 ```bash
 composer test              # all PHP tests
@@ -91,15 +93,16 @@ composer test:feature
 composer test:architecture
 composer test:migration
 npm run test:js
+npm run test:browser:profile
 composer analyse
 composer lint
 ```
 
 `composer test:coverage` is available when a coverage driver is enabled. Coverage is a diagnostic map for untested code, not a substitute for meaningful contracts; do not add an arbitrary repository-wide percentage gate until the cleaned suite has an intentional baseline.
 
-The directory groups are configured in `tests/Pest.php`, while PHPUnit suite discovery lives in `phpunit.xml`. Keep those two views aligned whenever a test layer is added or removed.
+The directory groups are configured in `tests/Pest.php`, while PHPUnit suite discovery lives in `phpunit.xml`. Keep those two views aligned whenever a PHP test layer is added or removed. Playwright has its own `playwright.config.mjs` and is intentionally not part of PHPUnit discovery.
 
-CI executes Unit, Integration, Feature, Architecture and Migration as separate Pest steps. This keeps a failure attached to its owning layer instead of burying every PHP test in one monolithic log. The same group commands are available locally through Composer.
+CI executes Unit, Integration, Feature, Architecture and Migration as separate Pest steps. JavaScript tests run separately. Browser interaction profiling runs in its own workflow with Chromium and its own disposable PostgreSQL database so browser evidence does not touch the persistent local preview database or Validation/Production data.
 
 ## Database safety
 
@@ -107,13 +110,15 @@ PHP tests that boot the Laravel application use `Tests\TestCase`, which calls `L
 
 `RefreshDatabase` is the default for Integration, Feature and Migration tests. A narrower test may opt out only when isolation is still explicit and safe.
 
+Browser profiling likewise creates only its explicit disposable CI database and synthetic admin fixture. Do not repoint it at the persistent local browser database, Validation or Production.
+
 ## What belongs in tests
 
 Good permanent tests protect examples such as publication snapshot integrity, append-only audit history, database constraints, guarded media deletion, public visibility, hierarchy rules, authentication, contact delivery semantics, bounded query behavior and canonical media references.
 
 Avoid permanent tests whose main assertion is that a particular CSS class, source filename, method call spelling or repair-era component still exists. If centralization itself is the durable contract, test the smallest architecture rule that proves it and keep that test under `Architecture`.
 
-For UI presentation, source review and browser/product acceptance remain distinct evidence. A unit or source-string test cannot establish visual correctness.
+For UI presentation, source review and browser/product acceptance remain distinct evidence. A unit or source-string test cannot establish visual correctness. A successful Playwright performance flow establishes the tested interaction/request contract; it does not establish visual/product acceptance of the complete admin.
 
 ## Regression policy
 
@@ -125,6 +130,8 @@ When fixing a defect:
 4. Do not encode the branch name, issue phase, worker name or repair round in the test name.
 5. Remove superseded scaffolding when the durable regression test replaces it.
 
+For performance regressions, prefer deterministic structural budgets such as request fan-out, navigation type, idle behavior, console errors, duplicate-query absence and stable payload bounds. Shared-runner wall-clock timings are diagnostic context unless a deliberately coarse, measured product ceiling has proven stable.
+
 ## Migration lifecycle
 
 Tests under `tests/Migration/Legacy` remain only while their source-to-target or compatibility guarantees are needed for cutover. After successful cutover and explicit legacy retirement, review that directory as a dedicated deletion candidate together with the migration docs. Do not silently move legacy assertions into permanent Integration or Feature suites just to keep test counts high.
@@ -133,7 +140,8 @@ Tests under `tests/Migration/Legacy` remain only while their source-to-target or
 
 The required state is:
 
-- all PHP and JavaScript tests green;
+- all required PHP and JavaScript tests green;
+- browser profiling structural gates green when that workflow is part of the change;
 - zero unexpected test warnings;
 - Pint clean;
 - PHPStan blocking with zero errors;
@@ -141,8 +149,14 @@ The required state is:
 
 Warnings and static-analysis failures are repaired at their source. CI does not mark PHPStan as optional and does not weaken warning visibility to obtain a green result.
 
-## Browser testing direction
+## Browser profiling contract
 
-Pest 4 has first-class Playwright-based browser testing through `pestphp/pest-plugin-browser`. The plugin is intentionally not installed merely to create an empty layer. Add it when the first real browser contract is implemented, then add a `Browser` suite and CI browser dependencies in the same change. Prefer this single stack over adding Dusk, Cypress or a parallel browser framework.
+`tests/browser/admin-performance.spec.mjs` is the initial representative admin interaction suite. It records machine-readable evidence under `artifacts/performance` and Playwright traces on failure. It exercises representative warmed navigation, local Filament/Livewire dialogs, Activity view switching and an idle window.
 
-References: [Pest CLI API](https://pestphp.com/docs/cli-api-reference), [Pest grouping](https://pestphp.com/docs/grouping-tests), [Pest browser testing](https://pestphp.com/docs/browser-testing).
+The initial blocking assertions are structural: a local action must not unexpectedly perform a full document navigation, deliberate interactions must work on the first click, browser console/page errors fail the flow, and an otherwise idle page must not create unexplained application polling. Request duration and transfer/payload sizes are recorded first; only stable measured baselines are promoted to blocking budgets.
+
+The browser workflow may finish an already running profiling job when `dev` advances. This prevents continuous integration activity from cancelling every expensive Chromium setup before it can produce evidence; newer pending runs still represent the more current candidate for final review.
+
+See `ADMIN-PROFILING.md` and `ADMIN-PERFORMANCE.md` for the diagnostic and performance contracts.
+
+References: [Playwright Test](https://playwright.dev/docs/intro), [Pest CLI API](https://pestphp.com/docs/cli-api-reference), [Pest grouping](https://pestphp.com/docs/grouping-tests).
