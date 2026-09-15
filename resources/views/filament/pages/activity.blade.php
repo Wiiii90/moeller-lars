@@ -12,11 +12,6 @@
             $liveCommit = $publicationContext['latest'];
         @endphp
 
-        <div class="activity-view-switch admin-toolbar" aria-label="Activity view">
-            <a class="admin-action {{ $viewMode === 'activity' ? 'is-primary' : '' }}" href="{{ $activityUrl([]) }}" wire:navigate>Activity</a>
-            <a class="admin-action {{ $viewMode === 'commits' ? 'is-primary' : '' }}" href="{{ $activityUrl(['view' => 'commits']) }}" wire:navigate>Commits</a>
-        </div>
-
         @if ($viewMode === 'activity')
             <x-admin.metrics :columns="6" aria-label="Activity statistics">
                 <x-admin.metric label="Changes" :value="number_format($activityMetrics['changes'])">Matching filters</x-admin.metric>
@@ -294,6 +289,16 @@
                                 <a class="admin-action" href="{{ $activityUrl(['calendar_year' => $calendarYear]) }}">Reset</a>
                             </div>
                         </x-slot:reset>
+
+                        <x-slot:actions>
+                            <div class="admin-data-control-group">
+                                <span class="admin-data-control-label">View</span>
+                                <div class="admin-toolbar" role="group" aria-label="Activity view">
+                                    <a class="admin-action is-primary" href="{{ $activityUrl([]) }}" wire:navigate>Activity</a>
+                                    <a class="admin-action" href="{{ $activityUrl(['view' => 'commits']) }}" wire:navigate>Commits</a>
+                                </div>
+                            </div>
+                        </x-slot:actions>
                     </x-admin.controls>
                 </form>
             </section>
@@ -349,9 +354,20 @@
                                 </td>
                                 <td class="admin-table__actions">
                                     <x-admin.toolbar>
-                                        <button class="admin-action" type="button" wire:click="mountAction('activityDetails', { id: {{ $event['id'] }} })">Details</button>
-                                        @if ($event['url'] !== null)
-                                            <a class="admin-action" href="{{ $event['url'] }}">Open record</a>
+                                        <button class="admin-action" type="button" wire:click="mountAction('activityDetails', { id: {{ $event['id'] }} })">
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
+                                            <span class="admin-action__label">Details</span>
+                                        </button>
+                                        @if (is_array($event['undo'] ?? null))
+                                            <button
+                                                class="admin-action"
+                                                type="button"
+                                                wire:click="undo({{ $event['undo']['id'] }})"
+                                                wire:confirm="{{ $event['undo']['confirmation'] }}"
+                                            >
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Undo</span>
+                                            </button>
                                         @endif
                                     </x-admin.toolbar>
                                 </td>
@@ -445,6 +461,18 @@
                 </div>
             </section>
 
+            <x-admin.controls class="activity-workspace__commit-controls" aria-label="Commit controls">
+                <x-slot:actions>
+                    <div class="admin-data-control-group">
+                        <span class="admin-data-control-label">View</span>
+                        <div class="admin-toolbar" role="group" aria-label="Activity view">
+                            <a class="admin-action" href="{{ $activityUrl([]) }}" wire:navigate>Activity</a>
+                            <a class="admin-action is-primary" href="{{ $activityUrl(['view' => 'commits']) }}" wire:navigate>Commits</a>
+                        </div>
+                    </div>
+                </x-slot:actions>
+            </x-admin.controls>
+
             <x-admin.table class="admin-table--data activity-workspace__table activity-commits-table">
                 <table>
                     <thead>
@@ -485,7 +513,10 @@
                                 </td>
                                 <td class="admin-table__actions">
                                     <x-admin.toolbar>
-                                        <button class="admin-action" type="button" wire:click="openCommitDetails({{ $commit['id'] }})">Details</button>
+                                        <button class="admin-action" type="button" wire:click="openCommitDetails({{ $commit['id'] }})">
+                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
+                                            <span class="admin-action__label">Details</span>
+                                        </button>
                                         @if ($commit['can_restore'])
                                             <button
                                                 class="admin-action"
