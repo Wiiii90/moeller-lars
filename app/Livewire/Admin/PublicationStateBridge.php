@@ -21,7 +21,13 @@ final class PublicationStateBridge extends Component
 
     public function refreshState(): void
     {
-        $this->hasPendingChanges = app(PublicationService::class)->hasPendingChanges();
+        $hasPendingChanges = app(PublicationService::class)->hasPendingChanges();
+
+        if ($hasPendingChanges === $this->hasPendingChanges) {
+            return;
+        }
+
+        $this->hasPendingChanges = $hasPendingChanges;
 
         $this->dispatch('publication-state-changed', pending: $this->hasPendingChanges);
     }
