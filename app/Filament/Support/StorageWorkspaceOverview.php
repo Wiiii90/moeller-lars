@@ -299,7 +299,7 @@ final class StorageWorkspaceOverview
         usort($rows, static fn (array $left, array $right): int => ($right['bytes'] <=> $left['bytes']) ?: strcmp((string) $left['label'], (string) $right['label']));
 
         return array_map(static function (array $row): array {
-            $row['display_bytes'] = MediaStorageUnits::formatBytes((int) ($row['bytes'] ?? 0));
+            $row['display_bytes'] = MediaStorageUnits::formatBytes($row['bytes']);
 
             return $row;
         }, $rows);

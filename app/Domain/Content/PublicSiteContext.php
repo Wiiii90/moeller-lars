@@ -27,7 +27,7 @@ final class PublicSiteContext
         }
 
         return [
-            'navigationItems' => $this->navigation->items()->values()->all(),
+            'navigationItems' => $this->navigation->items(),
             'faviconVariant' => $faviconVariant,
             'isPreview' => $this->preview->active(),
             'homeUrl' => $this->preview->homeUrl(),

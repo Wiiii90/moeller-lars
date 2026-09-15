@@ -99,6 +99,8 @@ composer lint
 
 The directory groups are configured in `tests/Pest.php`, while PHPUnit suite discovery lives in `phpunit.xml`. Keep those two views aligned whenever a test layer is added or removed.
 
+CI executes Unit, Integration, Feature, Architecture and Migration as separate Pest steps. This keeps a failure attached to its owning layer instead of burying every PHP test in one monolithic log. The same group commands are available locally through Composer.
+
 ## Database safety
 
 PHP tests that boot the Laravel application use `Tests\TestCase`, which calls `LocalPreviewDatabaseGuard::assertDisposableTestContext()`. Never bypass that guard or point Feature/Integration/Migration tests at the persistent local browser database. CI supplies an explicit disposable PostgreSQL context.
@@ -129,7 +131,7 @@ Tests under `tests/Migration/Legacy` remain only while their source-to-target or
 
 ## Static analysis, warnings and CI
 
-The target state is:
+The required state is:
 
 - all PHP and JavaScript tests green;
 - zero unexpected test warnings;
@@ -137,7 +139,7 @@ The target state is:
 - PHPStan blocking with zero errors;
 - no broad PHPStan baseline or ignore used to hide application debt.
 
-PHPStan is temporarily non-blocking while the current debt is removed. Test warnings and static-analysis failures are repaired after structural test work, not hidden by weakening the tools.
+Warnings and static-analysis failures are repaired at their source. CI does not mark PHPStan as optional and does not weaken warning visibility to obtain a green result.
 
 ## Browser testing direction
 

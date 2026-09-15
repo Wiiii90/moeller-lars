@@ -45,7 +45,7 @@ jobs:
       MATOMO_TRACKING_ENABLED: false
       MATOMO_REPORTING_ENABLED: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -53,7 +53,7 @@ jobs:
           extensions: gd, intl, mbstring, pdo_pgsql, zip
           coverage: none
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -81,11 +81,22 @@ jobs:
           set -euo pipefail
           grep -F '"resources/css/admin/auth.css"' public/build/manifest.json >/dev/null
 
-      - name: Run Pest
-        run: composer test
+      - name: Run Unit tests
+        run: composer test:unit
+
+      - name: Run Integration tests
+        run: composer test:integration
+
+      - name: Run Feature tests
+        run: composer test:feature
+
+      - name: Run Architecture tests
+        run: composer test:architecture
+
+      - name: Run Migration tests
+        run: composer test:migration
 
       - name: Run PHPStan
-        continue-on-error: true # Temporary: tracked by #189.
         run: composer analyse
 
       - name: Check PHP formatting
@@ -101,7 +112,7 @@ jobs:
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v3
 

@@ -7,7 +7,6 @@ use App\Routing\SiteNodeRoute;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Collection;
 
 final class PublicNavigationService
 {
@@ -17,7 +16,7 @@ final class PublicNavigationService
     ) {}
 
     /**
-     * @return Collection<int, array{
+     * @return list<array{
      *     position:int,
      *     tie_breaker:int,
      *     label:string,
@@ -27,7 +26,7 @@ final class PublicNavigationService
      *     children:list<array{label:string,url:?string,current:bool}>
      * }>
      */
-    public function items(): Collection
+    public function items(): array
     {
         /** @var Builder<SiteSection> $query */
         $query = SiteSection::query();
@@ -77,7 +76,7 @@ final class PublicNavigationService
             ];
         }
 
-        return collect($items);
+        return $items;
     }
 
     private function sectionUrl(SiteSection $section): ?string
