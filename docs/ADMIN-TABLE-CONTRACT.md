@@ -2,7 +2,7 @@
 
 This document is the canonical ordering, alignment and typography contract for ordinary editorial tables and table-like hierarchies in the authenticated admin.
 
-It complements `ui-skills.md`. Where older table examples in `ui-skills.md` still show Selection first or Drag before Position, this document and `resources/css/admin/table-contract.css` define the current contract.
+It complements `ui-skills.md`; both documents use the same current role order and action-order rules. `resources/css/admin/table-contract.css` is the shared implementation authority for that geometry.
 
 ## Scope
 
@@ -101,6 +101,8 @@ Rules:
 - desktop may use icon + label when space supports it;
 - compact responsive modes may hide action labels while retaining the same DOM/action order, icon, accessible label and keyboard order;
 - action labels are never made smaller on one feature to force them into their slots.
+
+Operational/history tables may have a different canonical leading action. When `Details` is that action, keep `Details` first on every row and append contextual actions such as Undo, Restore or Revert after it rather than shifting the leading slot.
 
 ## Selection
 
