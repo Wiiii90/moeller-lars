@@ -78,10 +78,6 @@
     min-width: 0;
 }
 
-.admin-workspace__status {
-    justify-self: end;
-}
-
 .admin-workspace-status {
     display: inline-flex;
     align-items: center;
@@ -570,10 +566,6 @@
         grid-template-columns: 1fr;
         gap: 1rem;
         align-items: start;
-    }
-
-    .admin-workspace__status {
-        justify-self: end;
     }
 
     .admin-workspace__summary,
