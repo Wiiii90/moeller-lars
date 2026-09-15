@@ -73,6 +73,11 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Verify Vite manifest contract
+        run: |
+          set -euo pipefail
+          grep -F '"resources/css/admin/auth.css"' public/build/manifest.json >/dev/null
+
       - name: Run Pest
         run: composer test
 
