@@ -1,0 +1,35 @@
+name: Finalize admin dialog retirement
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/dialog-finalize-direct.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Finalize dialog migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin dev
+          python3 scripts/admin_dialog_finalize.py
+          rm .github/workflows/dialog-finalize-direct.yml scripts/admin_dialog_finalize.py
+          git diff --check
+          git add -A
+          git commit -m 'refactor: finalize canonical admin dialogs'
+          git pull --rebase origin dev
+          git push origin HEAD:dev
