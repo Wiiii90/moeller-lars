@@ -7,7 +7,7 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class Login extends BaseLogin
 {
-    public function getHeading(): string | Htmlable | null
+    public function getHeading(): string|Htmlable|null
     {
         if (filled($this->userUndertakingMultiFactorAuthentication)) {
             return 'Two-factor authentication';
@@ -16,7 +16,7 @@ class Login extends BaseLogin
         return 'Administration';
     }
 
-    public function getSubheading(): string | Htmlable | null
+    public function getSubheading(): string|Htmlable|null
     {
         if (filled($this->userUndertakingMultiFactorAuthentication)) {
             return 'Enter the code from your authenticator app, or use a recovery code.';

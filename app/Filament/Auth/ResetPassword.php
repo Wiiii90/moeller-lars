@@ -7,7 +7,7 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class ResetPassword extends BaseResetPassword
 {
-    public function getHeading(): string | Htmlable | null
+    public function getHeading(): string|Htmlable|null
     {
         return 'Choose a new password';
     }
