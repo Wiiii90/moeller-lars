@@ -8,7 +8,7 @@
     };
 @endphp
 
-<div class="admin-detail-dialog">
+<div class="admin-detail-dialog admin-detail-dialog--activity">
     <dl class="admin-detail-dialog__meta">
         <div>
             <dt>Area</dt>
@@ -21,10 +21,6 @@
         <div>
             <dt>Actor</dt>
             <dd>{{ $event['actor'] }}</dd>
-        </div>
-        <div>
-            <dt>Date</dt>
-            <dd>{{ $event['timestamp'] }}</dd>
         </div>
     </dl>
 
@@ -72,12 +68,10 @@
     @endif
 
     <p class="admin-detail-dialog__context">
+        <span>{{ $event['timestamp'] }}</span>
+        <span aria-hidden="true">·</span>
         <span>{{ $event['entity_type'] }} #{{ $event['entity_id'] }}</span>
         <span aria-hidden="true">·</span>
         <span>{{ $event['action_key'] }}</span>
     </p>
-
-    @if ($event['url'] !== null)
-        <a class="admin-detail-dialog__link" href="{{ $event['url'] }}">Open record</a>
-    @endif
 </div>
