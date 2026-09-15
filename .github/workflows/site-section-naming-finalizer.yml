@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   finalize:
-    if: github.event.head_commit.message == 'chore: run site section naming finalizer'
+    if: "${{ github.event.head_commit.message == 'chore: run site section naming finalizer' }}"
     runs-on: ubuntu-latest
     steps:
       - name: Check out exact dev head
