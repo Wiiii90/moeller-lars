@@ -26,6 +26,7 @@ jobs:
           POSTGRES_DB: moeller_lars_testing
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          POSTGRES_INITDB_ARGS: --auth-local=trust --auth-host=scram-sha-256
         ports:
           - 5432:5432
         options: >-
