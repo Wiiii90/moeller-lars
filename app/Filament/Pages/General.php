@@ -62,6 +62,8 @@ final class General extends Page
 
     protected string $view = 'filament.pages.general';
 
+    private ?PublicContentSetting $settingsRecord = null;
+
     /** @var array<string, mixed>|null */
     public ?array $data = [];
 
@@ -69,7 +71,7 @@ final class General extends Page
 
     public function mount(): void
     {
-        $data = PublicContentSetting::general()->only(self::PERSISTED_FIELDS);
+        $data = $this->generalSettingsRecord()->only(self::PERSISTED_FIELDS);
         $mode = $data['background_mode'] ?? null;
         if ($mode === null || $mode === '' || $mode === PublicAppearance::MODE_DEFAULT) {
             $data['background_mode'] = PublicAppearance::MODE_SOLID;
@@ -84,6 +86,12 @@ final class General extends Page
     public function getBreadcrumbs(): array
     {
         return [];
+    }
+
+    /** @return array<string, mixed> */
+    protected function getViewData(): array
+    {
+        return ['generalSettings' => $this->generalSettingsRecord()];
     }
 
     public function setPreviewDevice(string $device): void
@@ -299,7 +307,7 @@ final class General extends Page
                     ->extraAttributes(['class' => 'general-two-column-settings general-legal-settings'])
                     ->columnSpanFull(),
             ])
-            ->record(PublicContentSetting::general())
+            ->record($this->generalSettingsRecord())
             ->statePath('data');
     }
 
@@ -558,6 +566,7 @@ final class General extends Page
 
         try {
             app(AdminSettingsService::class)->updatePublicContent($record, [$field => $candidate]);
+            $this->settingsRecord = null;
             if (in_array($field, ['background_color', 'background_gradient_start', 'background_gradient_end'], true)) {
                 $this->data[$field] = $candidate;
             }
@@ -726,6 +735,7 @@ final class General extends Page
                 PublicContentSetting::general(),
                 ['social_links' => $links],
             );
+            $this->settingsRecord = null;
         } catch (ValidationException $exception) {
             $mapped = [];
             foreach ($exception->errors() as $key => $messages) {
@@ -771,6 +781,11 @@ final class General extends Page
         }
 
         return (int) $index;
+    }
+
+    private function generalSettingsRecord(): PublicContentSetting
+    {
+        return $this->settingsRecord ??= PublicContentSetting::general();
     }
 
     /** @return array<string, string> */
