@@ -1,100 +1,8 @@
-.activity-commit-stage {
-    display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
-    align-items: stretch;
-}
-
-.activity-commit-stage__summary,
-.activity-commit-stage__actions {
-    display: grid;
-    min-width: 0;
-    align-content: start;
-}
-
-.activity-commit-stage__summary {
-    gap: .45rem;
-    padding-right: var(--admin-section-space);
-}
-
-.activity-commit-stage__actions {
-    gap: .55rem;
-    padding-left: var(--admin-section-space);
-    border-left: 1px solid var(--admin-line);
-}
-
-.activity-commit-stage__eyebrow {
-    color: var(--admin-muted);
-    font-size: .62rem;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-}
-
-.activity-commit-stage__summary > strong {
-    color: var(--admin-text);
-    font-size: 1.35rem;
-    font-weight: 560;
-}
-
-.activity-commit-stage__summary > p,
-.activity-commit-stage__actions > small {
-    margin: 0;
-    color: var(--admin-muted);
-    font-size: .7rem;
-    line-height: 1.45;
-}
-
-.activity-commit-stage__groups {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: .28rem 1rem;
-    padding-top: .25rem;
-}
-
-.activity-commit-stage__groups span {
-    min-width: 0;
-    color: var(--admin-muted);
-    font-size: .68rem;
-    line-height: 1.35;
-}
-
-.activity-commit-stage__groups strong {
-    color: var(--admin-text);
-    font-weight: 600;
-}
-
-.activity-commit-stage__actions .admin-toolbar {
-    margin-top: auto;
-    justify-content: flex-start;
-}
-
-.activity-commit-cell {
-    min-width: 19rem;
-}
-
-.activity-commit-cell__heading {
-    display: flex;
-    gap: .45rem;
-    align-items: center;
-}
-
-.activity-commit-cell__heading code,
 .activity-commit-dialog code {
     color: var(--admin-text);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: .7rem;
     font-variant-numeric: tabular-nums;
-}
-
-.activity-commit-cell > strong,
-.activity-commit-cell > small {
-    display: block;
-    margin-top: .2rem;
-}
-
-.activity-commit-cell > small {
-    color: var(--admin-muted);
-    font-size: .64rem;
 }
 
 .activity-commit-dialog__hashes {
@@ -163,27 +71,4 @@
 .activity-publication-review__groups small {
     color: var(--admin-muted);
     font-size: .66rem;
-}
-
-@media (max-width: 760px) {
-    .activity-commit-stage {
-        grid-template-columns: 1fr;
-    }
-
-    .activity-commit-stage__summary {
-        padding-right: 0;
-        padding-bottom: var(--admin-section-gap);
-    }
-
-    .activity-commit-stage__actions {
-        padding: var(--admin-section-gap) 0 0;
-        border-top: 1px solid var(--admin-line);
-        border-left: 0;
-    }
-}
-
-@media (max-width: 600px) {
-    .activity-commit-stage__groups {
-        grid-template-columns: 1fr;
-    }
 }
