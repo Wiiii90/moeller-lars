@@ -16,17 +16,7 @@ final class PublicNavigationService
         private readonly SiteNodeRoute $routes,
     ) {}
 
-    /**
-     * @return Collection<int, array{
-     *     position:int,
-     *     tie_breaker:int,
-     *     label:string,
-     *     url:?string,
-     *     current:bool,
-     *     active:bool,
-     *     children:list<array{label:string,url:?string,current:bool}>
-     * }>
-     */
+    /** @return Collection<int, array<string, mixed>> */
     public function items(): Collection
     {
         /** @var Builder<SiteSection> $query */
@@ -52,8 +42,8 @@ final class PublicNavigationService
         /** @var EloquentCollection<int, SiteSection> $sections */
         $sections = $query->get();
 
-        /** @var list<array{position:int,tie_breaker:int,label:string,url:?string,current:bool,active:bool,children:list<array{label:string,url:?string,current:bool}>}> $rows */
-        $rows = [];
+        /** @var list<array<string, mixed>> $items */
+        $items = [];
         foreach ($sections as $section) {
             /** @var EloquentCollection<int, SiteSection> $childSections */
             $childSections = $section->getRelation('children');
@@ -66,7 +56,7 @@ final class PublicNavigationService
             $childCurrent = collect($children)->contains(static fn (array $child): bool => $child['current']);
             $current = $this->routes->isCurrent($section);
 
-            $rows[] = [
+            $items[] = [
                 'position' => (int) $section->getAttribute('position'),
                 'tie_breaker' => (int) $section->getKey(),
                 'label' => (string) $section->getAttribute('navigation_label'),
@@ -77,10 +67,7 @@ final class PublicNavigationService
             ];
         }
 
-        /** @var Collection<int, array{position:int,tie_breaker:int,label:string,url:?string,current:bool,active:bool,children:list<array{label:string,url:?string,current:bool}>}> $items */
-        $items = collect($rows);
-
-        return $items;
+        return collect($items);
     }
 
     private function sectionUrl(SiteSection $section): ?string
