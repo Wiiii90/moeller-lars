@@ -12,6 +12,7 @@ use App\Domain\Content\SiteNodeType;
 use App\Domain\Media\PublicMedia;
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
@@ -42,6 +43,8 @@ use Throwable;
 
 final class JournalWorkspace extends Page
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     private const PAGE_SIZES = [25, 50, 100];
 
     private const DEFAULT_PAGE_SIZE = 50;
@@ -385,7 +388,7 @@ final class JournalWorkspace extends Page
                 Notification::make()->title('Journal settings saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save Journal settings');
+        return AdminDialog::edit($action);
     }
 
     public function addPostAction(): Action
@@ -435,7 +438,7 @@ final class JournalWorkspace extends Page
                 Notification::make()->title('Post saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save post', AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function schedulePostAction(): Action
@@ -506,7 +509,7 @@ final class JournalWorkspace extends Page
                 Notification::make()->title('Exhibition saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save exhibition', AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function deletePostAction(): Action

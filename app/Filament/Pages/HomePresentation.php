@@ -16,6 +16,7 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\Artwork;
@@ -41,6 +42,8 @@ use Illuminate\Validation\ValidationException;
 
 final class HomePresentation extends Page
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $title = 'Home';
@@ -284,8 +287,7 @@ final class HomePresentation extends Page
 
     public function settingsAction(): Action
     {
-        return AdminDialog::editCommit(
-            Action::make('settings')
+        return AdminDialog::edit(Action::make('settings')
                 ->label('Settings')
                 ->fillForm(fn (): array => [
                     'template' => $this->template,
@@ -355,10 +357,7 @@ final class HomePresentation extends Page
                         ->content('Components are edited in the Home workspace.')
                         ->visible(fn (callable $get): bool => $get('template') === HomeTemplate::Custom->value),
                 ])
-                ->modalHeading('Home settings'),
-            'Save changes',
-            AdminDialogSize::Large,
-        )->action(function (array $data): void {
+                ->modalHeading('Home settings'), AdminDialogSize::Large)->action(function (array $data): void {
             $template = HomeTemplate::from((string) $data['template']);
             if ($template === HomeTemplate::Artwork) {
                 $groupSource = (string) ($data['group_source'] ?? $this->heroGroupSource);
@@ -519,8 +518,7 @@ final class HomePresentation extends Page
 
     public function editComponentAction(): Action
     {
-        return AdminDialog::editCommit(
-            Action::make('editComponent')->label('Edit')
+        return AdminDialog::edit(Action::make('editComponent')->label('Edit')
                 ->fillForm(function (array $arguments): array {
                     $component = $this->componentFromArguments($arguments);
 
@@ -546,10 +544,7 @@ final class HomePresentation extends Page
                         ->helperText('Leave off for content images. Canonical ALT text is managed in Media Files.')
                         ->visible(fn (callable $get): bool => $get('type') === 'image'),
                 ])
-                ->modalHeading('Edit Home component'),
-            'Save component',
-            AdminDialogSize::Default,
-        )->action(function (array $data, array $arguments): void {
+                ->modalHeading('Edit Home component'), AdminDialogSize::Default)->action(function (array $data, array $arguments): void {
             $current = $this->componentFromArguments($arguments);
             $type = (string) $current['type'];
             $editorKind = $this->editorKind($current);

@@ -93,7 +93,6 @@ Edit autosave must follow `ADMIN-CONTROL-CONTRACT.md`: discrete semantic changes
 
 Undo must extend the existing Activity/Audit receipt architecture. Do not create an independent dialog snapshot/rollback system. An Undo action may only be shown for mutations that have safe current receipts; applying Undo creates inverse editorial actions through the canonical `AdminUndoService` path.
 
-The framework helper `AdminDialog::editCommit()` exists only as a migration bridge for existing atomic edit workflows whose domain semantics cannot safely be converted in the same source pass. It must not be used for new dialogs and must be removed from each flow once that flow has canonical autosave/receipt coverage.
 
 ## Controls
 

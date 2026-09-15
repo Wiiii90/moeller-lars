@@ -6,6 +6,7 @@ use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
@@ -16,6 +17,8 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 trait GalleryWorkspaceArtworkModals
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     public function addArtworkAction(): Action
     {
         $action = Action::make('addArtwork')
@@ -124,6 +127,6 @@ trait GalleryWorkspaceArtworkModals
                 Notification::make()->title('Artwork saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save artwork', AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 }

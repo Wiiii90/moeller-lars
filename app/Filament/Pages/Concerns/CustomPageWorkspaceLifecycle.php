@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\CustomPageSetting;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 trait CustomPageWorkspaceLifecycle
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     public function mount(int|string $section): void
     {
         /** @var SiteSection $siteSection */
@@ -183,6 +186,6 @@ trait CustomPageWorkspaceLifecycle
                 Notification::make()->title('Page settings saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save page settings');
+        return AdminDialog::edit($action);
     }
 }

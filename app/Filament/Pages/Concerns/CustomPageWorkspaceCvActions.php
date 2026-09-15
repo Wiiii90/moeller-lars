@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Admin\CvEntryEditorialService;
 use App\Domain\Admin\EditorialRecordService;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\CvEntry;
 use Filament\Actions\Action;
@@ -13,6 +14,8 @@ use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceCvActions
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     public function addCvEntryAction(): Action
     {
         $action = Action::make('addCvEntry')
@@ -55,7 +58,7 @@ trait CustomPageWorkspaceCvActions
                 Notification::make()->title('CV entry saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save CV entry', AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function deleteCvEntryAction(): Action

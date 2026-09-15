@@ -10,6 +10,7 @@ use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaReferenceCatalog;
 use App\Filament\Support\StorageWorkspaceOverview;
@@ -33,6 +34,8 @@ use Throwable;
 
 final class ListMediaAssets extends Page
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     use WithFileUploads;
 
     /** @var list<int> */
@@ -384,7 +387,7 @@ final class ListMediaAssets extends Page
                 $this->saveMetadata($this->actionAsset($arguments), $data);
             });
 
-        return AdminDialog::editCommit($action, 'Save file metadata', AdminDialogSize::Default);
+        return AdminDialog::edit($action, AdminDialogSize::Default);
     }
 
     public function deleteAction(): Action
@@ -914,7 +917,7 @@ final class ListMediaAssets extends Page
                     ->cancelParentActions('previewEdit'),
             ]);
 
-        return AdminDialog::editCommit($action, 'Save file metadata', AdminDialogSize::Default);
+        return AdminDialog::edit($action, AdminDialogSize::Default);
     }
 
     private function previewDeleteAction(int $assetId): Action

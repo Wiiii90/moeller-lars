@@ -9,6 +9,7 @@ use App\Domain\Admin\DashboardNotificationRetention;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\DashboardOverview;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\User;
 use Filament\Actions\Action;
@@ -19,6 +20,8 @@ use Illuminate\Contracts\View\View;
 
 final class Dashboard extends Page
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     private const PAGE_SIZES = [25, 50, 100];
 
     private const DEFAULT_PAGE_SIZE = 50;
@@ -288,8 +291,7 @@ final class Dashboard extends Page
 
     public function dashboardSettingsAction(): Action
     {
-        return AdminDialog::editCommit(
-            Action::make('dashboardSettings')
+        return AdminDialog::edit(Action::make('dashboardSettings')
                 ->label('Settings')
                 ->modalHeading('Dashboard settings')
                 ->fillForm(function (): array {
@@ -312,10 +314,7 @@ final class Dashboard extends Page
                         ->required(),
                     Checkbox::make('delete_without_confirmation')
                         ->label('Delete messages without confirmation'),
-                ]),
-            'Save settings',
-            AdminDialogSize::Small,
-        )->action(function (array $data): void {
+                ]), AdminDialogSize::Small)->action(function (array $data): void {
             $user = auth()->user();
             if (! $user instanceof User) {
                 return;

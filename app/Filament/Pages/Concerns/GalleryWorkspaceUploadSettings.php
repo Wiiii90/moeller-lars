@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMaterialPreset;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\DB;
 
 trait GalleryWorkspaceUploadSettings
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     public function gallerySettingsAction(): Action
     {
         $action = Action::make('gallerySettings')
@@ -70,7 +73,7 @@ trait GalleryWorkspaceUploadSettings
                 Notification::make()->title('Gallery settings saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save Gallery settings');
+        return AdminDialog::edit($action);
     }
 
     public function materialPresetsAction(): Action
@@ -98,6 +101,6 @@ trait GalleryWorkspaceUploadSettings
                 Notification::make()->title('Material presets saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save material presets', AdminDialogSize::Default);
+        return AdminDialog::edit($action, AdminDialogSize::Default);
     }
 }

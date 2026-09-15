@@ -31,18 +31,6 @@ final class AdminDialog
             ->modalCancelAction(false);
     }
 
-    /**
-     * Transitional helper for an edit that still has atomic persistence.
-     * New edit flows must prefer edit(); this exists so presentation can be
-     * centralized before a risky domain workflow is converted to autosave.
-     */
-    public static function editCommit(
-        Action $action,
-        string $submitLabel,
-        AdminDialogSize $size = AdminDialogSize::Small,
-    ): Action {
-        return self::committedTask($action, AdminDialogType::Edit, $submitLabel, $size);
-    }
 
     public static function command(
         Action $action,
@@ -115,10 +103,18 @@ final class AdminDialog
             $classes[] = 'admin-dialog--confirmation';
         }
 
+        $attributes = ['class' => implode(' ', $classes)];
+
+        if ($type === AdminDialogType::Edit) {
+            // Native change events give text/textarea blur commits and immediate
+            // select/toggle commits without timer-driven persistence.
+            $attributes['wire:change'] = 'persistMountedAdminEdit';
+        }
+
         return $action
             // Filament still owns modal state, focus, Escape and the native X.
             // The shared CSS width modifier is the actual visual authority.
             ->modalWidth(Width::Large)
-            ->extraModalWindowAttributes(['class' => implode(' ', $classes)]);
+            ->extraModalWindowAttributes($attributes);
     }
 }

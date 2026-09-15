@@ -9,6 +9,7 @@ use App\Filament\Support\AdminColorControl;
 use App\Filament\Support\AdminHelp;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
@@ -31,6 +32,8 @@ use UnitEnum;
  */
 final class General extends Page
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     private const PERSISTED_FIELDS = [
         'favicon_media_asset_id',
         'background_mode',
@@ -412,8 +415,7 @@ final class General extends Page
 
     public function editSocialLinkAction(): Action
     {
-        return AdminDialog::editCommit(
-            Action::make('editSocialLink')
+        return AdminDialog::edit(Action::make('editSocialLink')
                 ->label('Edit')
                 ->modalHeading('Edit social media profile')
                 ->fillForm(function (array $arguments): array {
@@ -443,10 +445,7 @@ final class General extends Page
                         ->integer()
                         ->minValue(1)
                         ->required(),
-                ]),
-            'Save social media profile',
-            AdminDialogSize::Small,
-        )->action(function (array $data, array $arguments): void {
+                ]), AdminDialogSize::Small)->action(function (array $data, array $arguments): void {
             $index = $this->socialLinkIndexForAction($arguments);
             if ($index === null) {
                 return;

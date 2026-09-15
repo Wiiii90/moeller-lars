@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\CustomPageSetting;
 use Filament\Actions\Action;
@@ -11,6 +12,8 @@ use Filament\Notifications\Notification;
 
 trait CustomPageWorkspaceListContactActions
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     public function addListEntryAction(): Action
     {
         $action = Action::make('addListEntry')
@@ -55,7 +58,7 @@ trait CustomPageWorkspaceListContactActions
                 Notification::make()->title('List entry saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save list entry', AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function setListEntryPublished(int $componentIndex, string $componentType, int $itemIndex, bool $published): void
@@ -162,7 +165,7 @@ trait CustomPageWorkspaceListContactActions
                 Notification::make()->title('Contact item saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save contact item');
+        return AdminDialog::edit($action);
     }
 
     public function setContactChildPublished(int $index, string $type, string $childType, bool $published): void

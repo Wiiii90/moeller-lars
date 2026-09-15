@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Concerns;
 
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -12,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 trait CustomPageWorkspaceComponentActions
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     public function moveComponent(int $index, string $type, string $direction): void
     {
         if (! $this->componentReorderEnabled()) {
@@ -202,7 +205,7 @@ trait CustomPageWorkspaceComponentActions
                 Notification::make()->title('Component saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save component', AdminDialogSize::Large);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function changeComponentTypeAction(): Action

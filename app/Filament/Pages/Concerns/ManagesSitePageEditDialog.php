@@ -9,6 +9,7 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionIdentityService;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
@@ -22,6 +23,8 @@ use Illuminate\Validation\ValidationException;
 
 trait ManagesSitePageEditDialog
 {
+    use InteractsWithAdminEditDialogAutosave;
+
     public function editPageAction(): Action
     {
         $action = Action::make('editPage')
@@ -89,7 +92,7 @@ trait ManagesSitePageEditDialog
             })
             ->extraModalFooterActions(fn (array $arguments): array => $this->pageDialogHeaderActions($arguments));
 
-        return AdminDialog::editCommit($action, 'Save page');
+        return AdminDialog::edit($action);
     }
 
     public function editHomeAction(): Action
@@ -106,7 +109,7 @@ trait ManagesSitePageEditDialog
                 Notification::make()->title('Home settings saved')->success()->send();
             });
 
-        return AdminDialog::editCommit($action, 'Save Home');
+        return AdminDialog::edit($action);
     }
 
     /** @param array<string, mixed> $data */
