@@ -262,6 +262,10 @@
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-text) 16%, transparent);
 }
 
+.analytics-country-rank__flag--square {
+    background: #dc251c;
+}
+
 .analytics-country-rank__flag-code {
     display: grid;
     place-items: center;
@@ -364,12 +368,73 @@
 }
 
 .analytics-controls {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0;
     padding-bottom: var(--admin-section-gap);
+    align-items: end;
 }
 
-.analytics-range-control .admin-toolbar {
+.analytics-controls__search {
+    grid-column: span 2;
+    padding-right: .85rem;
+}
+
+.analytics-controls__report,
+.analytics-controls__filter {
+    grid-column: span 1;
+    padding-right: .85rem;
+}
+
+.analytics-controls__range {
+    grid-column: span 2;
+}
+
+.analytics-range-selector.admin-toolbar {
+    display: grid;
+    width: 100%;
     min-height: var(--admin-control-height);
-    flex-wrap: nowrap;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    align-items: stretch;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.analytics-range-selector .analytics-range-selector__option {
+    min-width: 0;
+    min-height: var(--admin-control-height);
+    padding: .38rem .25rem;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: var(--admin-muted);
+    white-space: nowrap;
+}
+
+.analytics-range-selector .analytics-range-selector__option:hover,
+.analytics-range-selector .analytics-range-selector__option:focus-visible {
+    border-color: transparent;
+    border-bottom-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+}
+
+.analytics-range-selector .analytics-range-selector__option.is-primary,
+.dark .analytics-range-selector .analytics-range-selector__option.is-primary {
+    border-color: transparent;
+    border-bottom-color: var(--admin-accent);
+    background: transparent;
+    color: var(--admin-accent);
+}
+
+.analytics-detail-table__table {
+    table-layout: fixed;
+}
+
+.analytics-detail-table__numeric {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
 }
 
 .analytics-detail-table caption {
@@ -389,6 +454,22 @@
     .analytics-country-rank {
         grid-template-columns: minmax(6rem, 1fr) 3.35rem 3.35rem;
         gap: .4rem;
+    }
+
+    .analytics-controls {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: .85rem;
+    }
+
+    .analytics-controls__search,
+    .analytics-controls__range {
+        grid-column: span 2;
+        padding-right: 0;
+    }
+
+    .analytics-controls__report,
+    .analytics-controls__filter {
+        grid-column: span 1;
     }
 }
 
@@ -420,9 +501,8 @@
         max-height: 14rem;
     }
 
-    .analytics-range-control .admin-toolbar {
-        justify-content: flex-start;
-        flex-wrap: wrap;
+    .analytics-range-selector .analytics-range-selector__option {
+        font-size: var(--admin-font-size-table-compact);
     }
 }
 
