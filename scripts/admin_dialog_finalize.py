@@ -10,17 +10,8 @@ if not source_path.exists():
 
 # Consolidate the pre-contract dialog stylesheet before the stricter migration
 # retires it. Shared viewport/modal geometry belongs to dialog-contract.css;
-# Media-specific delete-dialog presentation belongs to media.css.
-admin_css_path = ROOT / 'resources/css/admin.css'
-admin_css = admin_css_path.read_text()
-dialog_contract_import = "@import './admin/dialog-contract.css';\n"
-if dialog_contract_import not in admin_css:
-    anchor = "@import './admin/forms.css';\n"
-    if admin_css.count(anchor) != 1:
-        raise SystemExit('admin.css forms import changed unexpectedly')
-    admin_css = admin_css.replace(anchor, anchor + dialog_contract_import, 1)
-    admin_css_path.write_text(admin_css)
-
+# Media-specific delete-dialog presentation belongs to media.css. The canonical
+# dialog contract is already a dedicated Vite entrypoint in admin-theme.blade.php.
 dialog_contract_path = ROOT / 'resources/css/admin/dialog-contract.css'
 dialog_contract = dialog_contract_path.read_text()
 shared_geometry = '''/* Shared Filament viewport/modal geometry. Filament still owns lifecycle,
