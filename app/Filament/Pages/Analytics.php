@@ -294,7 +294,7 @@ final class Analytics extends Page
     }
 
     /**
-     * @param list<string> $columns
+     * @param  list<string>  $columns
      * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
      */
     private function contentDetail(array $columns): array
@@ -323,7 +323,7 @@ final class Analytics extends Page
     }
 
     /**
-     * @param list<string> $columns
+     * @param  list<string>  $columns
      * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
      */
     private function geographyDetail(array $columns): array
@@ -375,7 +375,7 @@ final class Analytics extends Page
     }
 
     /**
-     * @param list<string> $columns
+     * @param  list<string>  $columns
      * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
      */
     private function acquisitionDetail(array $columns): array
@@ -395,6 +395,7 @@ final class Analytics extends Page
         foreach ($groups as $report => $label) {
             if (! $availability->isAvailable($report)) {
                 $unavailableGroups++;
+
                 continue;
             }
 
@@ -427,7 +428,7 @@ final class Analytics extends Page
     }
 
     /**
-     * @param list<string> $columns
+     * @param  list<string>  $columns
      * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
      */
     private function interactionDetail(array $columns): array
@@ -455,7 +456,7 @@ final class Analytics extends Page
     }
 
     /**
-     * @param list<string> $columns
+     * @param  list<string>  $columns
      * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
      */
     private function artworkDetail(array $columns): array
@@ -486,7 +487,7 @@ final class Analytics extends Page
     }
 
     /**
-     * @param list<string> $columns
+     * @param  list<string>  $columns
      * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
      */
     private function technologyDetail(array $columns): array
@@ -504,6 +505,7 @@ final class Analytics extends Page
         foreach ($groups as $report => $label) {
             if (! $availability->isAvailable($report)) {
                 $unavailableGroups++;
+
                 continue;
             }
 
@@ -536,8 +538,8 @@ final class Analytics extends Page
     }
 
     /**
-     * @param list<string> $columns
-     * @param list<list<string>> $rows
+     * @param  list<string>  $columns
+     * @param  list<list<string>>  $rows
      * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string|null,partial:string|null}
      */
     private function availableDetail(array $columns, array $rows, ?string $emptyMessage = null, ?string $partial = null): array
@@ -552,7 +554,7 @@ final class Analytics extends Page
     }
 
     /**
-     * @param list<string> $columns
+     * @param  list<string>  $columns
      * @return array{columns:list<string>,rows:list<list<string>>,state:string,message:string,partial:null}
      */
     private function unavailableDetail(array $columns, string $message): array
@@ -830,7 +832,7 @@ final class Analytics extends Page
     }
 
     /**
-     * @param array<int, array<string, mixed>> $rows
+     * @param  array<int, array<string, mixed>>  $rows
      * @return array<int, array{label:string,value:string,detail:string}>
      */
     private function buildApplicationSignals(array $rows): array

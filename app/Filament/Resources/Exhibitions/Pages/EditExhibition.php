@@ -25,6 +25,7 @@ class EditExhibition extends EditRecord
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $data['site_section_id'] = (int) $this->exhibition()->getAttribute('site_section_id');
+
         return $data;
     }
 
@@ -45,6 +46,7 @@ class EditExhibition extends EditRecord
     {
         /** @var Exhibition $record */
         $record = $this->getRecord();
+
         return $record;
     }
 }

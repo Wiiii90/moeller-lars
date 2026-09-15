@@ -8,7 +8,7 @@ use App\Models\CvEntry;
 trait CustomPageWorkspaceChildProjection
 {
     /**
-     * @param list<CvEntry> $cvRecords
+     * @param  list<CvEntry>  $cvRecords
      * @return list<array<string, mixed>>
      */
     private function componentChildren(

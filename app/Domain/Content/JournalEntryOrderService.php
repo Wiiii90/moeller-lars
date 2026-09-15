@@ -103,6 +103,7 @@ final class JournalEntryOrderService
                 return $index;
             }
         }
+
         return null;
     }
 
@@ -158,6 +159,7 @@ final class JournalEntryOrderService
         if (! is_numeric($sectionId) || (int) $sectionId <= 0) {
             throw new InvalidArgumentException('Journal entries must belong to a SiteSection.');
         }
+
         return (int) $sectionId;
     }
 }

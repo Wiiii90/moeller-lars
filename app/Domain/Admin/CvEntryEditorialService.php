@@ -68,7 +68,7 @@ final class CvEntryEditorialService
      * The form rows are transient editor state only; canonical data remains in
      * CvEntry records and their existing lifecycle/order services.
      *
-     * @param list<array<string, mixed>> $rows
+     * @param  list<array<string, mixed>>  $rows
      */
     public function syncOrdered(array $rows): void
     {
@@ -124,7 +124,7 @@ final class CvEntryEditorialService
      * Accept only fields from the current CV editorial contract while preserving
      * lifecycle and migration metadata outside normal editing.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function editableData(array $data): array
@@ -163,7 +163,7 @@ final class CvEntryEditorialService
     }
 
     /** @param array<string, mixed> $row
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     private function rowPayload(array $row): array
     {

@@ -41,6 +41,7 @@ final class ExhibitionGeocodingService
                 if (($cached['found'] ?? false) === true && is_array($cached['result'] ?? null)) {
                     /** @var array{label:string, latitude:float, longitude:float} $result */
                     $result = $cached['result'];
+
                     return $result;
                 }
 
@@ -115,7 +116,7 @@ final class ExhibitionGeocodingService
     }
 
     /** @param array<string, int|string> $query
-     *  @return array{label:string, latitude:float, longitude:float}|null
+     * @return array{label:string, latitude:float, longitude:float}|null
      */
     private function request(PendingRequest $request, string $endpoint, array $query): ?array
     {

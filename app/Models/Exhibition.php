@@ -121,6 +121,7 @@ class Exhibition extends Model
         }
 
         $legacy = trim((string) ($this->getAttribute('opening_text') ?? ''));
+
         return $legacy !== '' ? $legacy : null;
     }
 
@@ -167,6 +168,7 @@ class Exhibition extends Model
                 return false;
             }
             $seen[$key] = true;
+
             return true;
         });
 

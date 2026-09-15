@@ -126,6 +126,7 @@ final class SafeRichTextRenderer
                 $mediaAssetId = RichTextMediaReference::idFromUrl($url);
                 if ($mediaAssetId !== null) {
                     $parsedImageIds[] = $mediaAssetId;
+
                     continue;
                 }
 

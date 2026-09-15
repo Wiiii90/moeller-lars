@@ -10,6 +10,7 @@ final class PublicationEventStateService
 {
     /**
      * Audit entity -> snapshot rows whose current divergence gives that event generation publication meaning.
+     *
      * @var array<string, list<array{table:string,column:string}>>
      */
     private const ENTITY_ROWS = [
@@ -99,6 +100,7 @@ final class PublicationEventStateService
             $entityId = (int) $entity->entity_id;
             if (! $this->entityHasPendingChanges($entityType, $entityId)) {
                 $this->markGenerationNotPending($entityType, $entityId, now());
+
                 continue;
             }
 

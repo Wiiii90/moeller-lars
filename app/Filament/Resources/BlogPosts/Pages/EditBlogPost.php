@@ -30,6 +30,7 @@ final class EditBlogPost extends EditRecord
         $data['position'] = (int) $post->getAttribute('position');
         $data['published_at'] = $post->getAttribute('published_at');
         $data['scheduled_at'] = $post->getAttribute('scheduled_at');
+
         return $data;
     }
 
@@ -50,6 +51,7 @@ final class EditBlogPost extends EditRecord
     {
         /** @var BlogPost $record */
         $record = $this->getRecord();
+
         return $record;
     }
 }

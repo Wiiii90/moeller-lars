@@ -280,7 +280,7 @@ final class HomePresentationEditorialService
     }
 
     /**
-     * @param callable(list<array<string, mixed>>): list<array<string, mixed>> $mutator
+     * @param  callable(list<array<string, mixed>>): list<array<string, mixed>>  $mutator
      */
     private function mutateComponents(
         HomePresentationSetting $settings,
@@ -476,8 +476,8 @@ final class HomePresentationEditorialService
     }
 
     /**
-     * @param list<array<string, mixed>> $components
-     * @param list<array{index:int,type:string}> $targets
+     * @param  list<array<string, mixed>>  $components
+     * @param  list<array{index:int,type:string}>  $targets
      * @return list<int>
      */
     private function validatedIndices(array $components, array $targets): array

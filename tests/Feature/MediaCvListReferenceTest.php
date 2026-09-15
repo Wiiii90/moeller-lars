@@ -2,6 +2,7 @@
 
 use App\Domain\Content\SiteNodeType;
 use App\Filament\Support\MediaReferenceCatalog;
+use App\Filament\Support\SiteNodePresentation;
 use App\Models\CvEntry;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
@@ -62,7 +63,7 @@ it('uses rendered cv_list media as the canonical CV reference and ignores legacy
     expect($catalog->references($portrait))->toContainEqual([
         'type' => 'CV',
         'label' => 'Biography — Portrait',
-        'url' => app(\App\Filament\Support\SiteNodePresentation::class)->workspaceUrl($section->fresh('customPageSetting')),
+        'url' => app(SiteNodePresentation::class)->workspaceUrl($section->fresh('customPageSetting')),
     ])
         ->and($catalog->references($legacyImage))->toBe([])
         ->and($catalog->references($legacyBody))->toBe([]);

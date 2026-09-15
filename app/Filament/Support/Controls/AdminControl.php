@@ -87,8 +87,8 @@ final class AdminControl
     }
 
     /** @template T of \Filament\Forms\Components\Field
-     *  @param T $field
-     *  @return T
+     * @param  T  $field
+     * @return T
      */
     public static function decorate($field)
     {
@@ -99,8 +99,8 @@ final class AdminControl
     }
 
     /** @template T of \Filament\Forms\Components\Field
-     *  @param T $field
-     *  @return T
+     * @param  T  $field
+     * @return T
      */
     private static function label($field, ?string $label)
     {

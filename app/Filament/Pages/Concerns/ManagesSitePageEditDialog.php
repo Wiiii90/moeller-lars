@@ -178,7 +178,7 @@ trait ManagesSitePageEditDialog
     }
 
     /** @param array<string, mixed> $arguments
-     *  @return list<Action>
+     * @return list<Action>
      */
     private function pageDialogHeaderActions(array $arguments): array
     {

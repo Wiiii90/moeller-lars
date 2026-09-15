@@ -27,7 +27,7 @@ final class AdminNotification extends Model
 
     protected static function booted(): void
     {
-        static::created(static function (AdminNotification $notification): void {
+        self::created(static function (AdminNotification $notification): void {
             $userId = (int) $notification->getAttribute('user_id');
             if ($userId > 0) {
                 app(DashboardNotificationRetention::class)->pruneFor($userId);

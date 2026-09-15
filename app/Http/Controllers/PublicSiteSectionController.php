@@ -77,6 +77,7 @@ final class PublicSiteSectionController extends Controller
         abort_unless($journal instanceof SiteSection, 404);
         $post = $this->blogPostsQuery($journal)->where('slug', $slug)->with('mediaUsages.mediaAsset.variants')->first();
         abort_unless($post instanceof BlogPost, 404);
+
         return view('pages.blog.show', [
             'section' => $journal, 'post' => $post, 'richText' => $this->richText, 'media' => $this->media,
             'journalMedia' => $this->journalMedia, 'siteNodeRoute' => $this->siteNodeRoute,
@@ -86,7 +87,8 @@ final class PublicSiteSectionController extends Controller
     private function customPage(SiteSection $section): View
     {
         $section->load('customPageSetting');
-        $settings = $section->getRelation('customPageSetting'); abort_unless($settings instanceof CustomPageSetting, 404);
+        $settings = $section->getRelation('customPageSetting');
+        abort_unless($settings instanceof CustomPageSetting, 404);
         $blocks = $settings->components();
         $mediaIds = collect($blocks)
             ->filter(fn (array $block): bool => in_array($block['type'] ?? null, ['image', 'cv_list'], true))
@@ -106,6 +108,7 @@ final class PublicSiteSectionController extends Controller
                 ->when($this->preview->active(), fn (Builder $query) => $query->where('state', '<>', 'archived'), fn (Builder $query) => $query->where('state', 'published'))
                 ->orderBy('position')->orderBy('id')->get();
         }
+
         return view('pages.custom', [
             'section' => $section, 'settings' => $settings, 'blocks' => $blocks, 'assets' => $assets, 'cvEntries' => $cvEntries,
             'generalSettings' => PublicContentSetting::general(), 'richText' => $this->richText, 'media' => $this->media, 'siteNodeRoute' => $this->siteNodeRoute,
@@ -124,6 +127,7 @@ final class PublicSiteSectionController extends Controller
     private function blogJournal(SiteSection $section): View
     {
         $posts = $this->blogPostsQuery($section)->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get();
+
         return view('pages.blog.index', [
             'section' => $section, 'settings' => JournalSetting::forSection($section), 'posts' => $posts,
             'richText' => $this->richText, 'media' => $this->media, 'journalMedia' => $this->journalMedia, 'siteNodeRoute' => $this->siteNodeRoute,
@@ -135,6 +139,7 @@ final class PublicSiteSectionController extends Controller
         $exhibitions = Exhibition::query()->where('site_section_id', $section->getKey())
             ->when($this->preview->active(), fn (Builder $query) => $query->where('state', '<>', 'archived'), fn (Builder $query) => $query->where('state', 'published'))
             ->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get();
+
         return view('pages.exhibitions', [
             'section' => $section, 'settings' => JournalSetting::forSection($section), 'exhibitions' => $exhibitions,
             'richText' => $this->richText, 'media' => $this->media, 'journalMedia' => $this->journalMedia, 'siteNodeRoute' => $this->siteNodeRoute,
@@ -145,6 +150,7 @@ final class PublicSiteSectionController extends Controller
     private function blogPostsQuery(SiteSection $section): Builder
     {
         $query = $this->preview->active() ? BlogPost::query()->where('state', '<>', 'archived') : BlogEditorialService::publicQuery();
+
         return $query->where('site_section_id', $section->getKey());
     }
 }

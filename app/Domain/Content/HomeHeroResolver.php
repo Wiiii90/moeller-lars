@@ -66,7 +66,7 @@ final class HomeHeroResolver
     }
 
     /** @param array<string,mixed> $configuration
-     *  @return array{0:EloquentCollection<int,Artwork>,1:array<int,int>}
+     * @return array{0:EloquentCollection<int,Artwork>,1:array<int,int>}
      */
     private function manualGroup(array $configuration): array
     {
@@ -100,7 +100,7 @@ final class HomeHeroResolver
     }
 
     /** @param array<string,mixed> $configuration
-     *  @return array{0:EloquentCollection<int,Artwork>,1:array<int,int>}
+     * @return array{0:EloquentCollection<int,Artwork>,1:array<int,int>}
      */
     private function automaticGroup(array $configuration): array
     {
@@ -125,9 +125,9 @@ final class HomeHeroResolver
     }
 
     /** @param array<string,mixed> $configuration
-     *  @param EloquentCollection<int,Artwork> $group
-     *  @param array<int,int> $weights
-     *  @return array<string,mixed>
+     * @param  EloquentCollection<int,Artwork>  $group
+     * @param  array<int,int>  $weights
+     * @return array<string,mixed>
      */
     private function randomResolution(
         array $configuration,
@@ -163,9 +163,9 @@ final class HomeHeroResolver
     }
 
     /** @param array<string,mixed> $configuration
-     *  @param EloquentCollection<int,Artwork> $group
-     *  @param array<int,int> $weights
-     *  @return array<string,mixed>
+     * @param  EloquentCollection<int,Artwork>  $group
+     * @param  array<int,int>  $weights
+     * @return array<string,mixed>
      */
     private function sequentialResolution(
         HomePresentationSetting $settings,

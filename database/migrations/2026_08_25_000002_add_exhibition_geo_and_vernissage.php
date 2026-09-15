@@ -26,8 +26,8 @@ return new class extends Migration
 
         DB::statement('ALTER TABLE exhibitions DROP CONSTRAINT IF EXISTS exhibitions_published_content_check');
         DB::statement("ALTER TABLE exhibitions ADD CONSTRAINT exhibitions_published_content_check CHECK (state <> 'published' OR (btrim(title) <> '' AND ((date_text IS NOT NULL AND btrim(date_text) <> '') OR starts_on IS NOT NULL)))");
-        DB::statement("ALTER TABLE exhibitions ADD CONSTRAINT exhibitions_coordinates_check CHECK ((latitude IS NULL AND longitude IS NULL) OR (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180))");
-        DB::statement("ALTER TABLE exhibitions ADD CONSTRAINT exhibitions_coordinate_pair_check CHECK ((latitude IS NULL) = (longitude IS NULL))");
+        DB::statement('ALTER TABLE exhibitions ADD CONSTRAINT exhibitions_coordinates_check CHECK ((latitude IS NULL AND longitude IS NULL) OR (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180))');
+        DB::statement('ALTER TABLE exhibitions ADD CONSTRAINT exhibitions_coordinate_pair_check CHECK ((latitude IS NULL) = (longitude IS NULL))');
     }
 
     public function down(): void

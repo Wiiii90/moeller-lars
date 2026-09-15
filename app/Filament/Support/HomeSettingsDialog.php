@@ -262,7 +262,7 @@ final class HomeSettingsDialog
     }
 
     /** @param list<mixed> $values
-     *  @return array<int, string>
+     * @return array<int, string>
      */
     private function heroArtworkOptionLabels(array $values): array
     {

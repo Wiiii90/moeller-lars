@@ -20,9 +20,13 @@ use UnitEnum;
 class ExhibitionResource extends Resource
 {
     protected static ?string $model = Exhibition::class;
+
     protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = AdminIcon::Exhibition;
+
     protected static string|UnitEnum|null $navigationGroup = 'Website';
+
     protected static ?string $navigationLabel = 'Journal';
 
     public static function form(Schema $schema): Schema

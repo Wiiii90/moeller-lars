@@ -18,8 +18,11 @@ use Illuminate\Database\Eloquent\Model;
 final class ContactMessage extends Model
 {
     public const DELIVERY_PENDING = 'pending';
+
     public const DELIVERY_DELIVERED = 'delivered';
+
     public const DELIVERY_UNAVAILABLE = 'unavailable';
+
     public const DELIVERY_FAILED = 'failed';
 
     protected function casts(): array

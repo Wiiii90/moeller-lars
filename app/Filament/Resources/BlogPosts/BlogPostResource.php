@@ -20,11 +20,17 @@ use UnitEnum;
 final class BlogPostResource extends Resource
 {
     protected static ?string $model = BlogPost::class;
+
     protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = AdminIcon::BlogPost;
+
     protected static string|UnitEnum|null $navigationGroup = 'Website';
+
     protected static ?string $navigationLabel = 'Journal';
+
     protected static ?string $modelLabel = 'blog post';
+
     protected static ?string $pluralModelLabel = 'Blog Journal';
 
     public static function form(Schema $schema): Schema
@@ -39,6 +45,7 @@ final class BlogPostResource extends Resource
         if (! $section instanceof SiteSection || $section->nodeType() !== SiteNodeType::Journal || $section->journalTemplate() !== JournalTemplate::Blog) {
             throw new LogicException('Blog posts must belong to a Blog Journal.');
         }
+
         return route('journal.show', ['section' => $section->getAttribute('slug'), 'slug' => $post->getAttribute('slug')]);
     }
 
@@ -47,5 +54,8 @@ final class BlogPostResource extends Resource
         return ['index' => ListBlogPosts::route('/'), 'edit' => EditBlogPost::route('/{record}/edit')];
     }
 
-    public static function canDelete(Model $record): bool { return false; }
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
 }

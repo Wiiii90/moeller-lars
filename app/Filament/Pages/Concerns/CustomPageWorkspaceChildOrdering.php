@@ -237,8 +237,8 @@ trait CustomPageWorkspaceChildOrdering
     }
 
     /**
-     * @param list<array<string,mixed>> $children
-     * @param list<array{index:int,type:string}> $parents
+     * @param  list<array<string,mixed>>  $children
+     * @param  list<array{index:int,type:string}>  $parents
      */
     private function deleteSelectedChildTargets(array $children, array $parents): void
     {

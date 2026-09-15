@@ -7,6 +7,7 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
+use App\Filament\Pages\Concerns\ManagesSitePageDialogs;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\SiteNodePresentation;
 use App\Models\ArtworkCategory;
@@ -23,7 +24,7 @@ use UnitEnum;
 
 final class SitePages extends Page
 {
-    use \App\Filament\Pages\Concerns\ManagesSitePageDialogs;
+    use ManagesSitePageDialogs;
 
     protected static string|BackedEnum|null $navigationIcon = AdminIcon::Pages;
 
@@ -62,23 +63,41 @@ final class SitePages extends Page
     public array $parentOptions = [];
 
     public string $search = '';
+
     public string $typeFilter = '';
+
     public string $statusFilter = '';
+
     public bool $filtersActive = false;
+
     public bool $reorderEnabled = true;
+
     public bool $allVisibleSelected = false;
+
     public bool $selectionIndeterminate = false;
+
     public bool $addingPage = false;
+
     public string $newPageType = 'custom';
+
     public string $newPageTitle = '';
+
     public string $newPageSlug = '';
+
     public string $newJournalTemplate = 'blog';
+
     public string $newPageParent = '';
+
     public int $perPage = 25;
+
     public int $pageNumber = 1;
+
     public int $totalGroups = 0;
+
     public int $lastPage = 1;
+
     public int $rangeStart = 0;
+
     public int $rangeEnd = 0;
 
     private ?SiteSectionOrderService $orderService = null;
@@ -338,6 +357,7 @@ final class SitePages extends Page
         foreach ($sections as $section) {
             if (! $section->nodeType()->canDelete()) {
                 $blocked++;
+
                 continue;
             }
 
@@ -582,7 +602,7 @@ final class SitePages extends Page
     }
 
     /** @param list<array<string, mixed>> $groups
-     *  @return list<array<string, mixed>>
+     * @return list<array<string, mixed>>
      */
     private function filteredGroups(array $groups): array
     {
@@ -609,7 +629,7 @@ final class SitePages extends Page
     }
 
     /** @param list<array<string, mixed>> $groups
-     *  @return list<array<string, mixed>>
+     * @return list<array<string, mixed>>
      */
     private function flattenGroups(array $groups): array
     {
@@ -738,6 +758,7 @@ final class SitePages extends Page
         foreach ($sections as $section) {
             if ($state === 'hidden' && ! $section->nodeType()->canChangePublication()) {
                 $blocked++;
+
                 continue;
             }
             if ((string) $section->getAttribute('state') === $state) {

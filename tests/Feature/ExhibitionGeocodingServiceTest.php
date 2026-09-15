@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Http;
 function useFakeNominatimThrottle(int &$clock, array &$sleeps): NominatimRequestThrottle
 {
     $throttle = new NominatimRequestThrottle(
-        clock: static function () use (&$clock): int { return $clock; },
+        clock: static function () use (&$clock): int {
+            return $clock;
+        },
         sleep: static function (int $milliseconds) use (&$clock, &$sleeps): void {
             $sleeps[] = $milliseconds;
             $clock += $milliseconds;

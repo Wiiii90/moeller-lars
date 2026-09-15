@@ -342,7 +342,6 @@ final class HomeHeroConfigurationService
     }
 
     /**
-     * @param mixed $value
      * @return list<array{artwork_id:int,weight:int}>
      */
     public function normalizeManualGroup(mixed $value): array
@@ -384,7 +383,7 @@ final class HomeHeroConfigurationService
     }
 
     /** @param list<array{artwork_id:int,weight:int}> $group
-     *  @return list<int>
+     * @return list<int>
      */
     private function manualGroupIds(array $group): array
     {
@@ -392,7 +391,7 @@ final class HomeHeroConfigurationService
     }
 
     /** @param list<int> $left
-     *  @param list<int> $right
+     * @param  list<int>  $right
      */
     private function sameIdSet(array $left, array $right): bool
     {
@@ -440,7 +439,7 @@ final class HomeHeroConfigurationService
     }
 
     /** @param list<int> $weights
-     *  @return list<int>
+     * @return list<int>
      */
     private function allocateBudget(array $weights, int $budget): array
     {
@@ -517,8 +516,8 @@ final class HomeHeroConfigurationService
     }
 
     /** @param array<string, mixed> $input
-     *  @param array{count:int,unit:string} $current
-     *  @return array{count:int,unit:string}
+     * @param  array{count:int,unit:string}  $current
+     * @return array{count:int,unit:string}
      */
     private function requestedRotationInterval(array $input, array $current): array
     {

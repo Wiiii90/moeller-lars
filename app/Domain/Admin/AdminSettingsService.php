@@ -34,7 +34,7 @@ final class AdminSettingsService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function normalizePublicContent(array $data): array

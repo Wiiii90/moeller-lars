@@ -54,7 +54,7 @@ it('registers the shared admin control adapter panel wide', function (): void {
         ->toContain('AdminControl::register();');
 
     expect($adapter)
-        ->toContain("admin-control-field admin-form-controls")
+        ->toContain('admin-control-field admin-form-controls')
         ->toContain('TextInput::configureUsing')
         ->toContain('Select::configureUsing')
         ->toContain('Textarea::configureUsing')

@@ -112,7 +112,7 @@ class PublicArtworkQuery
      * Artwork date ordering uses the Artwork's work year/date; Added ordering uses Artwork created_at.
      * MediaAsset timestamps never participate in either ordering.
      *
-     * @param list<int> $manualIncludeIds
+     * @param  list<int>  $manualIncludeIds
      * @return Collection<int, Artwork>
      */
     public function configuredHomeCandidates(
@@ -161,7 +161,7 @@ class PublicArtworkQuery
     }
 
     /** @param list<int> $ids
-     *  @return Collection<int, Artwork>
+     * @return Collection<int, Artwork>
      */
     public function homeCandidatesByIds(array $ids): Collection
     {
@@ -209,7 +209,7 @@ class PublicArtworkQuery
      * `newest` includes the newest eligible year, `year` includes the chosen eligible year,
      * and manual IDs may add other Home-eligible artworks.
      *
-     * @param list<int> $manualIncludeIds
+     * @param  list<int>  $manualIncludeIds
      * @return Collection<int, Artwork>
      */
     public function homePoolCandidates(
@@ -262,8 +262,8 @@ class PublicArtworkQuery
      * Candidate previews for visible Gallery rows are selected from the same configured pool
      * in one bounded partitioned query instead of one query per Gallery.
      *
-     * @param list<int> $galleryIds
-     * @param list<int> $manualIncludeIds
+     * @param  list<int>  $galleryIds
+     * @param  list<int>  $manualIncludeIds
      * @return Collection<int, Artwork>
      */
     public function homePoolCandidatesForGalleries(
@@ -367,7 +367,7 @@ class PublicArtworkQuery
     }
 
     /**
-     * @param list<int> $manualIncludeIds
+     * @param  list<int>  $manualIncludeIds
      * @return Builder<Artwork>
      */
     private function configuredHomeCandidateQuery(string $filter, ?int $year, array $manualIncludeIds): Builder
@@ -412,7 +412,7 @@ class PublicArtworkQuery
     }
 
     /**
-     * @param list<int> $manualIncludeIds
+     * @param  list<int>  $manualIncludeIds
      * @return Builder<Artwork>
      */
     private function homePoolQuery(string $rule, ?int $year, array $manualIncludeIds): Builder
@@ -482,7 +482,7 @@ class PublicArtworkQuery
     }
 
     /** @param list<mixed> $ids
-     *  @return list<int>
+     * @return list<int>
      */
     private function normalizedIds(array $ids): array
     {

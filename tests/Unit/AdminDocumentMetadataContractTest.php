@@ -79,7 +79,7 @@ it('keeps admin document identity separate from the public site', function (): v
         ->toContain("->brandName('Admin Area')")
         ->toContain('->brandLogo(fn (): HtmlString => $this->adminGreeting())')
         ->toContain('private function adminGreeting(): HtmlString')
-        ->toContain("auth()->user()?->name")
+        ->toContain('auth()->user()?->name')
         ->toContain('Moin, {$name}!')
         ->toContain("->favicon(asset('admin-favicon.svg').'?v=aperture-1')")
         ->not->toContain("->brandName('Lars Möller')")
