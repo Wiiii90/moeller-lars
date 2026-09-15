@@ -3,14 +3,12 @@
 namespace App\Http\Middleware;
 
 use App\Domain\Analytics\MatomoConfiguration;
-use App\Domain\Analytics\MatomoReportingClient;
+use App\Jobs\RefreshMatomoReporting;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
-
-use function Illuminate\Support\defer;
 
 final class DeferMatomoReporting
 {
@@ -27,6 +25,8 @@ final class DeferMatomoReporting
     private const PRESETS = ['today', '7d', '30d', '12m'];
 
     private const DEFAULT_PRESET = '30d';
+
+    private const REFRESH_LOCK_SECONDS = 30;
 
     public function __construct(private readonly MatomoConfiguration $configuration) {}
 
@@ -69,10 +69,15 @@ final class DeferMatomoReporting
             throw $exception;
         }
 
-        defer(function () use ($freshKey, $preset): void {
-            Cache::forget($freshKey);
-            app(MatomoReportingClient::class)->report($preset);
-        }, "matomo-report-refresh:{$siteId}:{$preset}")->always();
+        $refreshKey = $this->cacheKey($siteId, $preset, 'refreshing');
+        if (Cache::add($refreshKey, true, self::REFRESH_LOCK_SECONDS)) {
+            try {
+                RefreshMatomoReporting::dispatch($siteId, $preset)
+                    ->onConnection('background');
+            } catch (Throwable) {
+                Cache::forget($refreshKey);
+            }
+        }
 
         return $response;
     }

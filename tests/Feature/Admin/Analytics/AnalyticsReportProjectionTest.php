@@ -113,22 +113,39 @@ it('keeps geography as one storage-style rail with local flags and secondary con
         ->not->toContain('buildApplicationSignals');
 });
 
-it('aligns analytics controls and report tables to the shared six-unit grid', function (): void {
+it('uses the shared admin controls table identity and pager contracts', function (): void {
     $view = file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
     $css = file_get_contents(resource_path('css/admin/analytics.css'));
 
     expect($view)
-        ->toContain('analytics-controls__search')
-        ->toContain('analytics-controls__report')
-        ->toContain('analytics-controls__filter')
-        ->toContain('analytics-controls__range')
+        ->toContain('<x-admin.controls aria-label="Analytics report controls">')
+        ->toContain('class="admin-data-field"')
+        ->toContain('wire:change="setRange($event.target.value)"')
         ->toContain("'geography' => [0, 3, 1, 2, 4]")
         ->toContain('admin-table--six-grid')
-        ->toContain("'7d' => '7 days'")
-        ->toContain("'30d' => '30 days'")
-        ->toContain("'12m' => '12 months'")
+        ->toContain('<strong title="{{ $cellValue }}">{{ $cellValue }}</strong>')
+        ->toContain('class="admin-pager__leading"')
+        ->toContain('<x-admin.page-size-picker')
+        ->toContain('class="admin-pager__actions admin-toolbar"')
+        ->not->toContain('analytics-controls')
+        ->not->toContain('analytics-range-selector')
         ->and($css)
-        ->toContain('grid-template-columns: repeat(6, minmax(0, 1fr));')
-        ->toContain('.analytics-range-selector.admin-toolbar')
-        ->toContain('.analytics-detail-table__numeric');
+        ->toContain('.analytics-detail-table__numeric')
+        ->not->toContain('.analytics-controls')
+        ->not->toContain('.analytics-range-selector');
+});
+
+it('moves live Matomo refresh work off the request worker', function (): void {
+    $middleware = file_get_contents(app_path('Http/Middleware/DeferMatomoReporting.php'));
+    $job = file_get_contents(app_path('Jobs/RefreshMatomoReporting.php'));
+
+    expect($middleware)
+        ->toContain('RefreshMatomoReporting::dispatch($siteId, $preset)')
+        ->toContain("->onConnection('background')")
+        ->toContain('Cache::add($refreshKey, true, self::REFRESH_LOCK_SECONDS)')
+        ->not->toContain('defer(')
+        ->and($job)
+        ->toContain('implements ShouldQueue')
+        ->toContain('$client->report($this->preset);')
+        ->toContain('Cache::forget($freshKey);');
 });

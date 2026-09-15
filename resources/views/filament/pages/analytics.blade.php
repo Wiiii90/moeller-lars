@@ -290,9 +290,9 @@
         </section>
 
         <section class="analytics-detail-surface admin-visual-stage-followup" aria-label="Analytics detail table">
-            <x-admin.controls class="analytics-controls" aria-label="Analytics report controls">
+            <x-admin.controls aria-label="Analytics report controls">
                 <x-slot:search>
-                    <label class="admin-data-field analytics-controls__search">
+                    <label class="admin-data-field">
                         <span>Search</span>
                         <input
                             type="search"
@@ -304,7 +304,7 @@
                 </x-slot:search>
 
                 <x-slot:filters>
-                    <label class="admin-data-field analytics-controls__report">
+                    <label class="admin-data-field">
                         <span>Report</span>
                         <select wire:model.live="detailReport">
                             @foreach ($detailReportOptions as $report => $label)
@@ -312,30 +312,23 @@
                             @endforeach
                         </select>
                     </label>
+
+                    <label class="admin-data-field">
+                        <span>Range</span>
+                        <select wire:change="setRange($event.target.value)" aria-label="Analytics date range">
+                            @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', '12m' => '12 months'] as $preset => $label)
+                                <option value="{{ $preset }}" @selected($range === $preset)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
                 </x-slot:filters>
 
                 <x-slot:reset>
-                    <div class="admin-data-control-group analytics-controls__filter">
+                    <div class="admin-data-control-group">
                         <span class="admin-data-control-label">Filter</span>
                         <button class="admin-action" type="button" wire:click="$set('search', '')" @disabled(trim($search) === '')>Reset</button>
                     </div>
                 </x-slot:reset>
-
-                <x-slot:actions>
-                    <div class="admin-data-control-group analytics-range-control analytics-controls__range">
-                        <span class="admin-data-control-label">Range</span>
-                        <x-admin.toolbar class="analytics-range-selector" aria-label="Analytics date range">
-                            @foreach (['today' => 'Today', '7d' => '7 days', '30d' => '30 days', '12m' => '12 months'] as $preset => $label)
-                                <button
-                                    type="button"
-                                    wire:click="setRange('{{ $preset }}')"
-                                    class="admin-action analytics-range-selector__option {{ $range === $preset ? 'is-primary' : '' }}"
-                                    aria-pressed="{{ $range === $preset ? 'true' : 'false' }}"
-                                >{{ $label }}</button>
-                            @endforeach
-                        </x-admin.toolbar>
-                    </div>
-                </x-slot:actions>
             </x-admin.controls>
 
             <x-admin.table class="admin-table--data analytics-detail-table">
@@ -369,11 +362,14 @@
                             @forelse ($detailTable['rows'] as $row)
                                 <tr>
                                     @foreach ($detailColumnOrder as $columnIndex)
-                                        <td class="{{ $loop->iteration === $detailIdentityColumn ? 'admin-table__identity ' : '' }}{{ in_array($loop->iteration, $detailNumericColumns, true) ? 'analytics-detail-table__numeric' : '' }}">
+                                        @php
+                                            $cellValue = (string) ($row[$columnIndex] ?? '—');
+                                            $isIdentity = $loop->iteration === $detailIdentityColumn;
+                                        @endphp
+                                        <td class="{{ $isIdentity ? 'admin-table__identity ' : '' }}{{ in_array($loop->iteration, $detailNumericColumns, true) ? 'analytics-detail-table__numeric' : '' }}">
                                             @if ($detailReport === 'geography' && $columnIndex === 0)
                                                 @php
-                                                    $countryLabel = (string) ($row[$columnIndex] ?? '—');
-                                                    $presentation = $countryPresentation[$countryLabel] ?? [];
+                                                    $presentation = $countryPresentation[$cellValue] ?? [];
                                                 @endphp
                                                 <span class="analytics-country-rank__identity">
                                                     @if (is_string($presentation['flag_url'] ?? null))
@@ -389,10 +385,12 @@
                                                     @elseif (is_string($presentation['code'] ?? null))
                                                         <span class="analytics-country-rank__flag-code" aria-hidden="true">{{ strtoupper($presentation['code']) }}</span>
                                                     @endif
-                                                    <span>{{ $countryLabel }}</span>
+                                                    <strong title="{{ $cellValue }}">{{ $cellValue }}</strong>
                                                 </span>
+                                            @elseif ($isIdentity)
+                                                <strong title="{{ $cellValue }}">{{ $cellValue }}</strong>
                                             @else
-                                                {{ $row[$columnIndex] ?? '—' }}
+                                                {{ $cellValue }}
                                             @endif
                                         </td>
                                     @endforeach
@@ -415,32 +413,23 @@
                 </table>
             </x-admin.table>
 
-            <footer class="admin-pager" aria-label="Analytics detail pagination">
-                <div class="admin-pager__range">
-                    @if ($detailTable['total'] > 0)
-                        <span>{{ $detailTable['start'] }}–{{ $detailTable['end'] }} of {{ $detailTable['total'] }}</span>
-                    @else
-                        <span>0 entries</span>
-                    @endif
-                </div>
-
-                <div class="admin-pager__controls">
-                    <x-admin.page-size-picker
-                        :value="$detailPageSize"
-                        wire-model="detailPageSize"
-                        aria-label="Rows per page"
-                    />
-                    <button class="admin-pager__button" type="button" wire:click="previousDetailPage" @disabled($detailTable['page'] <= 1)>
-                        <x-filament::icon icon="heroicon-m-chevron-left" class="w-4 h-4" />
-                        <span>Previous</span>
-                    </button>
-                    <span class="admin-pager__page">Page {{ $detailTable['page'] }} of {{ $detailTable['pages'] }}</span>
-                    <button class="admin-pager__button" type="button" wire:click="nextDetailPage" @disabled($detailTable['page'] >= $detailTable['pages'])>
-                        <span>Next</span>
-                        <x-filament::icon icon="heroicon-m-chevron-right" class="w-4 h-4" />
-                    </button>
-                </div>
-            </footer>
+            @if (($detailTable['total'] ?? 0) > 0)
+                <footer class="admin-pager" aria-label="Analytics detail pagination">
+                    <div class="admin-pager__leading">
+                        <span class="admin-pager__meta">Page {{ $detailTable['page'] }} of {{ max(1, $detailTable['pages']) }}</span>
+                        <x-admin.page-size-picker
+                            :value="$detailPageSize"
+                            wire-model="detailPageSize"
+                            aria-label="Analytics rows per page"
+                        />
+                    </div>
+                    <span class="admin-pager__range">{{ $detailTable['start'] }}–{{ $detailTable['end'] }} of {{ $detailTable['total'] }}</span>
+                    <div class="admin-pager__actions admin-toolbar">
+                        <button class="admin-action" type="button" wire:click="previousDetailPage" @disabled($detailTable['page'] <= 1)>Previous</button>
+                        <button class="admin-action" type="button" wire:click="nextDetailPage" @disabled($detailTable['page'] >= $detailTable['pages'])>Next</button>
+                    </div>
+                </footer>
+            @endif
         </section>
     </x-admin.workspace>
 </x-filament-panels::page>
