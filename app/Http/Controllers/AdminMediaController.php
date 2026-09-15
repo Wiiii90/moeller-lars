@@ -199,7 +199,7 @@ final class AdminMediaController extends Controller
     private function archiveResponse(array $files): Response
     {
         $temporaryPath = tempnam(sys_get_temp_dir(), 'media-download-');
-        abort_unless(is_string($temporaryPath) && $temporaryPath !== '', 500, 'The download archive could not be created.');
+        abort_unless(is_string($temporaryPath), 500, 'The download archive could not be created.');
 
         $zip = new ZipArchive;
         $opened = $zip->open($temporaryPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
