@@ -78,28 +78,6 @@
     min-width: 0;
 }
 
-.admin-workspace-status {
-    display: inline-flex;
-    align-items: center;
-    gap: .42rem;
-    color: var(--admin-muted);
-    font-size: .72rem;
-    font-weight: 650;
-}
-
-.admin-workspace-status::before {
-    width: .46rem;
-    height: .46rem;
-    flex: 0 0 auto;
-    border-radius: 50%;
-    background: var(--admin-status-neutral);
-    content: '';
-}
-
-.admin-workspace-status.is-success::before { background: var(--admin-status-success); }
-.admin-workspace-status.is-warning::before { background: var(--admin-status-warning); }
-.admin-workspace-status.is-danger::before { background: var(--admin-status-danger); }
-
 .admin-section__kicker,
 .admin-empty-state__kicker,
 .admin-list__eyebrow {
