@@ -156,6 +156,25 @@ Once reviewed data exists in protected Validation/Production:
 
 A failed forward migration is a release blocker, not permission to erase protected evidence.
 
+## Historical migration self-containment
+
+Historical migrations must preserve the schema/domain contract that existed when they were introduced.
+
+- do not import mutable runtime constants such as current publication tracked-table/entity lists into a historical migration;
+- freeze the migration's own table/entity set when that set determines `migrate:fresh` behavior;
+- evolve the current schema/domain contract through a later forward migration instead of changing history indirectly through runtime code;
+- comments may document deliberately asymmetric rollback behavior where restoring a superseded legacy constraint would recreate an invalid dependency.
+
+This rule keeps clean-database reconstruction deterministic without treating old migrations as runtime authority.
+
+## Legacy evidence and retirement
+
+A retained legacy table is migration evidence only unless a current domain contract explicitly says otherwise.
+
+`blog_settings` is currently retained for migration/cutover evidence. Its canonical values were normalized into the Journal/SiteSection model; runtime and Publication do not read it as a fallback or tracked source. The old `blog_settings -> site_sections` RESTRICT foreign key is intentionally removed so evidence cannot block canonical publication-state replacement.
+
+Physical removal of migration-only evidence is a separate forward migration after explicit legacy-retirement acceptance. Do not reattach runtime reads or compatibility foreign keys merely because the evidence table still exists before that gate.
+
 ## Redirect and public-route reconciliation
 
 Legacy PHP/query URLs are evidence, not blanket compatibility surface.
