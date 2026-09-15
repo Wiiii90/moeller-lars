@@ -73,6 +73,7 @@ Start with:
 
 - [AGENTS.md](AGENTS.md) — branch/reconciliation/worker workflow and central technology rules
 - [ui-skills.md](ui-skills.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
+- [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md) — `/admin` access, required TOTP MFA/recovery codes, password reset and mail boundary
 - [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md) — direct-vs-worker browser workflow, shared Visual Stage ownership and local preview loop
 - [followup-skill.md](followup-skill.md) — how to hand a long orchestration session to a new chat without losing exact Git/runtime/review state
 
@@ -90,7 +91,7 @@ Start with [docs/README.md](docs/README.md). It separates current application co
 
 ## Security
 
-Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. Report security-sensitive findings according to [SECURITY.md](SECURITY.md), not through public issues containing exploit details or secret material.
+Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. The admin authentication, MFA and password-recovery contract is documented in [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md). Report security-sensitive findings according to [SECURITY.md](SECURITY.md), not through public issues containing exploit details or secret material.
 
 ## License and contributions
 
