@@ -1,0 +1,62 @@
+name: Apply Pint after naming refactor
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pint-finalizer
+  cancel-in-progress: false
+
+jobs:
+  format:
+    if: "${{ github.event.head_commit.message == 'chore: run Pint finalizer' }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact dev head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, intl, mbstring, pdo_pgsql, zip
+          coverage: none
+
+      - name: Install formatter
+        run: composer install --no-interaction --no-progress --prefer-dist --no-scripts
+
+      - name: Apply canonical PHP formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          git reset --hard HEAD
+          vendor/bin/pint
+          rm .github/workflows/pint-finalizer.yml
+
+          while IFS= read -r path; do
+            [[ "$path" == *.php || "$path" == '.github/workflows/pint-finalizer.yml' ]] || {
+              echo "Unexpected formatted path: $path" >&2
+              exit 1
+            }
+          done < <(git diff --name-only)
+
+          git diff --check
+
+      - name: Commit formatting to dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --stat
+          git diff --cached --quiet && exit 0
+          git commit -m 'style: apply Pint after naming refactor'
+          git push origin HEAD:dev
