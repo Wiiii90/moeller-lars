@@ -13,6 +13,8 @@ use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -46,14 +48,20 @@ Artisan::command('admin:provision {--name=} {--email=}', function () {
     if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
         throw new RuntimeException('Admin email is invalid.');
     }
-    if (strlen($password) < 12) {
-        throw new RuntimeException('Admin password must contain at least 12 characters.');
-    }
     if ($password !== $confirmation) {
         throw new RuntimeException('Admin password confirmation does not match.');
     }
     if (User::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
         throw new RuntimeException('A user with this email already exists.');
+    }
+
+    $passwordValidator = Validator::make(
+        ['password' => $password],
+        ['password' => ['required', Password::default()]],
+    );
+
+    if ($passwordValidator->fails()) {
+        throw new RuntimeException($passwordValidator->errors()->first('password'));
     }
 
     DB::transaction(function () use ($name, $email, $password): void {
