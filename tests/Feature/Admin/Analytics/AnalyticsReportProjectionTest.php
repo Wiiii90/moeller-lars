@@ -115,6 +115,7 @@ it('keeps geography as one storage-style rail with local flags and secondary con
 
 it('uses the shared admin controls table identity and pager contracts', function (): void {
     $view = file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
+    $pager = file_get_contents(resource_path('views/components/admin/pager.blade.php'));
     $css = file_get_contents(resource_path('css/admin/analytics.css'));
 
     expect($view)
@@ -124,12 +125,17 @@ it('uses the shared admin controls table identity and pager contracts', function
         ->toContain("'geography' => [0, 3, 1, 2, 4]")
         ->toContain('admin-table--six-grid')
         ->toContain('<strong title="{{ $cellValue }}">{{ $cellValue }}</strong>')
-        ->toContain('<x-admin.page-size-picker')
-        ->toContain('class="admin-toolbar admin-pager__actions"')
+        ->toContain('<x-admin.pager')
+        ->toContain('page-size-wire-model="detailPageSize"')
+        ->toContain('previous-wire-action="previousDetailPage"')
+        ->toContain('next-wire-action="nextDetailPage"')
         ->not->toContain('class="admin-pager__leading"')
         ->not->toContain('admin-pager__meta')
         ->not->toContain('analytics-controls')
         ->not->toContain('analytics-range-selector')
+        ->and($pager)
+        ->toContain('<x-admin.page-size-picker')
+        ->toContain('admin-pager__actions admin-toolbar')
         ->and($css)
         ->toContain('.analytics-detail-table__numeric')
         ->not->toContain('.analytics-controls')
