@@ -218,6 +218,90 @@ if source.count(marker) != 1:
     raise SystemExit('Staged migration marker changed unexpectedly')
 suffix = marker + source.split(marker, 1)[1]
 
+acceptance_marker = '# 11. Source-level acceptance: no transitional/manual modal mechanics survive in admin PHP.'
+if suffix.count(acceptance_marker) != 1:
+    raise SystemExit('Staged migration acceptance marker changed unexpectedly')
+residual_cleanup = r'''# 10.5. Canonicalize residual dialog exceptions exposed by the acceptance scan.
+activity_path = ROOT / 'app/Filament/Pages/Activity.php'
+activity = activity_path.read_text()
+old_undo = """            $actions[] = Action::make('undoActivityEvent')
+                ->label('Undo')
+                ->icon(AdminIcon::Refresh->value)
+                ->iconButton()
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Undo change?')
+                ->modalDescription((string) $event['undo']['confirmation'])
+                ->action(fn (): mixed => $this->undo($receiptId));"""
+new_undo = """            $actions[] = AdminDialog::confirm(
+                Action::make('undoActivityEvent')
+                    ->label('Undo')
+                    ->icon(AdminIcon::Refresh->value)
+                    ->iconButton()
+                    ->color('gray')
+                    ->action(fn (): mixed => $this->undo($receiptId)),
+                heading: 'Undo change?',
+                description: (string) $event['undo']['confirmation'],
+                submitLabel: 'Undo',
+                danger: false,
+                size: AdminDialogSize::Mini,
+                icon: AdminIcon::Refresh,
+            );"""
+if activity.count(old_undo) != 1:
+    fail('Activity: residual Undo confirmation block changed unexpectedly')
+activity_path.write_text(activity.replace(old_undo, new_undo, 1))
+
+direct_upload_path = ROOT / 'app/Filament/Pages/Concerns/GalleryWorkspaceDirectUpload.php'
+direct_upload = direct_upload_path.read_text()
+import_anchor = 'use App\\Domain\\Media\\MediaTypePolicy;\n'
+imports = 'use App\\Filament\\Support\\Dialogs\\AdminDialog;\nuse App\\Filament\\Support\\Dialogs\\AdminDialogSize;\n'
+if imports not in direct_upload:
+    if direct_upload.count(import_anchor) != 1:
+        fail('GalleryWorkspaceDirectUpload: import anchor changed unexpectedly')
+    direct_upload = direct_upload.replace(import_anchor, import_anchor + imports, 1)
+direct_upload = direct_upload.replace('use Filament\\Support\\Enums\\Width;\n', '')
+old_start = "        return Action::make('batchAddArtworks')\n"
+new_start = "        return AdminDialog::create(\n            Action::make('batchAddArtworks')\n"
+if direct_upload.count(old_start) != 1:
+    fail('GalleryWorkspaceDirectUpload: batch action start changed unexpectedly')
+direct_upload = direct_upload.replace(old_start, new_start, 1)
+for raw_line in (
+    "            ->modalSubmitActionLabel(fn (): string => 'Add '.count($this->pendingBatchArtworkMedia).' artworks')\n",
+    "            ->modalCancelActionLabel('Cancel')\n",
+    '            ->modalWidth(Width::SevenExtraLarge)\n',
+):
+    if direct_upload.count(raw_line) != 1:
+        fail('GalleryWorkspaceDirectUpload: expected manual modal line changed unexpectedly')
+    direct_upload = direct_upload.replace(raw_line, '', 1)
+end_marker = "                    ->send();\n            });\n    }\n\n    private function isGalleryPrimaryVisual"
+end_replacement = "                    ->send();\n            }),\n            'Add artworks',\n            AdminDialogSize::Large,\n        );\n    }\n\n    private function isGalleryPrimaryVisual"
+if direct_upload.count(end_marker) != 1:
+    fail('GalleryWorkspaceDirectUpload: batch action end changed unexpectedly')
+direct_upload_path.write_text(direct_upload.replace(end_marker, end_replacement, 1))
+
+material_path = ROOT / 'app/Filament/Resources/Artworks/Support/ArtworkMaterialSelect.php'
+material = material_path.read_text()
+material_import_anchor = 'use App\\Domain\\Artwork\\ArtworkMaterialPresetService;\n'
+material_imports = 'use App\\Filament\\Support\\Dialogs\\AdminDialog;\nuse App\\Filament\\Support\\Dialogs\\AdminDialogSize;\n'
+if material_imports not in material:
+    if material.count(material_import_anchor) != 1:
+        fail('ArtworkMaterialSelect: import anchor changed unexpectedly')
+    material = material.replace(material_import_anchor, material_import_anchor + material_imports, 1)
+old_create_action = """            ->createOptionAction(fn (Action $action): Action => $action
+                ->label('Add material')
+                ->modalSubmitActionLabel('Add material'));"""
+new_create_action = """            ->createOptionAction(fn (Action $action): Action => AdminDialog::create(
+                $action->label('Add material'),
+                'Add material',
+                AdminDialogSize::Small,
+            ));"""
+if material.count(old_create_action) != 1:
+    fail('ArtworkMaterialSelect: create-option action changed unexpectedly')
+material_path.write_text(material.replace(old_create_action, new_create_action, 1))
+
+'''
+suffix = suffix.replace(acceptance_marker, residual_cleanup + acceptance_marker, 1)
+
 # Remove the now-superseded staged script before its own source-level acceptance
 # scan. The finalizer itself is excluded through __file__ in that scan.
 source_path.unlink()
