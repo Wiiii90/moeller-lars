@@ -11,6 +11,12 @@ return new class extends Migration
             return;
         }
 
+        // The committed schema was cloned on 2026-08-29. Any later change to a
+        // tracked working table must be mirrored so publication comparisons remain
+        // structurally meaningful instead of reporting synthetic staged changes.
+        DB::statement('ALTER TABLE committed.public_content_settings ADD COLUMN IF NOT EXISTS public_page_width smallint NOT NULL DEFAULT 800');
+        DB::statement('ALTER TABLE committed.public_content_settings ADD COLUMN IF NOT EXISTS public_content_padding smallint NOT NULL DEFAULT 75');
+
         DB::statement('ALTER TABLE committed.home_presentation_settings ADD COLUMN IF NOT EXISTS skip_home boolean NOT NULL DEFAULT false');
         DB::statement('ALTER TABLE committed.home_presentation_settings ADD COLUMN IF NOT EXISTS skip_target_section_id bigint NULL');
 
@@ -44,5 +50,7 @@ return new class extends Migration
 
         DB::statement('ALTER TABLE committed.home_presentation_settings DROP COLUMN IF EXISTS skip_target_section_id');
         DB::statement('ALTER TABLE committed.home_presentation_settings DROP COLUMN IF EXISTS skip_home');
+        DB::statement('ALTER TABLE committed.public_content_settings DROP COLUMN IF EXISTS public_content_padding');
+        DB::statement('ALTER TABLE committed.public_content_settings DROP COLUMN IF EXISTS public_page_width');
     }
 };
