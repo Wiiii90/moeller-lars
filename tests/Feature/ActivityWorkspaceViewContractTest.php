@@ -17,7 +17,9 @@ it('keeps the Activity workspace stable while only the table mode switches', fun
     expect($view)
         ->toContain('wire:click="setViewMode(\'activity\')"')
         ->toContain('wire:click="setViewMode(\'commits\')"')
+        ->toContain('wire:target="setViewMode"')
         ->toContain('aria-label="Activity statistics"')
         ->toContain('aria-label="Activity timeline"')
-        ->not->toContain("href=\"{{ \$activityUrl(['view' => 'commits'");
+        ->not->toContain('$viewUrls = [')
+        ->not->toContain('admin-view-switch__item');
 });
