@@ -6,6 +6,7 @@ on:
       - dev
     paths:
       - '.github/workflows/dialog-migration-direct.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write
