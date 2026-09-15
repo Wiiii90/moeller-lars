@@ -1,3 +1,6 @@
+import '../css/admin/selects.css';
+import './admin-selects.js';
+
 let storageRuntimePromise = null;
 let refreshFrame = null;
 let livewireHookRegistered = false;
