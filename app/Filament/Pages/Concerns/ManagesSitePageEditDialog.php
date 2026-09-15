@@ -27,6 +27,9 @@ trait ManagesSitePageEditDialog
 {
     use InteractsWithAdminEditDialogAutosave;
 
+    /** @var array<int, SiteSection> */
+    private array $dialogSectionCache = [];
+
     public function editPageAction(): Action
     {
         $action = Action::make('editPage')
@@ -217,10 +220,15 @@ trait ManagesSitePageEditDialog
     /** @param array<string, mixed> $arguments */
     private function dialogSection(array $arguments): SiteSection
     {
-        /** @var SiteSection $section */
-        $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
+        $sectionId = (int) ($arguments['section'] ?? 0);
+        if (isset($this->dialogSectionCache[$sectionId])) {
+            return $this->dialogSectionCache[$sectionId];
+        }
 
-        return $section;
+        /** @var SiteSection $section */
+        $section = SiteSection::query()->findOrFail($sectionId);
+
+        return $this->dialogSectionCache[$sectionId] = $section;
     }
 
     private function dialogParentId(mixed $value): ?int
