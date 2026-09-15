@@ -174,8 +174,6 @@ Canonical behavior:
 
 The current visualization renderer is an implementation detail beneath the existing admin theme/Visual Stage contract; browser acceptance may change its composition without changing the Storage domain contract above.
 
-Legacy `/admin/media-files` and `/admin/media-assets` URLs are compatibility redirects only; they are not separate workspaces.
-
 Do not resurrect the removed `StorageCapacity` Filament page, its duplicate table/filter model, stale Journal role constants, consumer-specific ad-hoc parsers, or a second storage/media table beside the canonical Storage library.
 
 ## Performance
