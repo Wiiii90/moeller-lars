@@ -19,7 +19,7 @@ Never include real production credentials, reset links, MFA secrets/recovery cod
 
 Security-sensitive application areas include:
 
-- `/admin` authentication, `is_admin` authorization, session behavior and required TOTP MFA/recovery;
+- `/admin` authentication, `is_admin` authorization, session behavior and optional TOTP MFA/recovery;
 - admin password-reset enumeration resistance, token handling and transactional mail;
 - preview/private media access;
 - Contact form abuse/delivery boundaries;

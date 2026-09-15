@@ -56,7 +56,7 @@ class AdminPanelProvider extends PanelProvider
                 AppAuthentication::make()
                     ->recoverable()
                     ->brandName('Lars Möller Administration'),
-            ], isRequired: true)
+            ], isRequired: false)
             ->authGuard('web')
             ->authPasswordBroker('users')
             ->revealablePasswords(false)

@@ -61,12 +61,12 @@ it('redirects admin users to the canonical dashboard', function (): void {
     $this->get('/admin/dashboard')->assertSuccessful();
 });
 
-it('requires authenticator setup for administrators who have not configured MFA', function (): void {
+it('allows administrators without MFA to use the dashboard', function (): void {
     $admin = User::factory()->create(['is_admin' => true]);
 
     $this->actingAs($admin, 'web')
         ->get('/admin/dashboard')
-        ->assertRedirect('/admin/multi-factor-authentication/set-up');
+        ->assertSuccessful();
 });
 
 it('uses encrypted app authentication with recovery support', function (): void {
