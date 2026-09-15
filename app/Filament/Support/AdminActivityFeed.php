@@ -269,13 +269,13 @@ final class AdminActivityFeed
 
         if (is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1) {
             $query->whereRaw($dateExpression.' = ?', [$date]);
-
-            if ($hour !== null && $hour >= 0 && $hour <= 23) {
-                $query->whereRaw($hourExpression.' = ?', [$hour]);
-            }
         } else {
             $days = in_array($days, self::FILTER_WINDOWS, true) ? $days : self::ACTIVITY_WINDOW_DAYS;
             $query->where('occurred_at', '>=', now()->subDays($days));
+        }
+
+        if ($hour !== null && $hour >= 0 && $hour <= 23) {
+            $query->whereRaw($hourExpression.' = ?', [$hour]);
         }
 
         $actionKeys = $this->filteredActionKeys($area, $family);
