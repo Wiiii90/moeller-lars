@@ -9,7 +9,7 @@ return [
     'path' => env('PULSE_PATH', 'pulse'),
 
     // Runtime telemetry is enabled deliberately by the deployment environment.
-    'enabled' => env('PULSE_ENABLED', false),
+    'enabled' => filter_var(env('PULSE_ENABLED', false), FILTER_VALIDATE_BOOL),
 
     'storage' => [
         'driver' => env('PULSE_STORAGE_DRIVER', 'database'),
