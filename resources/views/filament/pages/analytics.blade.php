@@ -415,16 +415,13 @@
 
             @if (($detailTable['total'] ?? 0) > 0)
                 <footer class="admin-pager" aria-label="Analytics detail pagination">
-                    <div class="admin-pager__leading">
-                        <span class="admin-pager__meta">Page {{ $detailTable['page'] }} of {{ max(1, $detailTable['pages']) }}</span>
-                        <x-admin.page-size-picker
-                            :value="$detailPageSize"
-                            wire-model="detailPageSize"
-                            aria-label="Analytics rows per page"
-                        />
-                    </div>
+                    <x-admin.page-size-picker
+                        :value="$detailPageSize"
+                        wire-model="detailPageSize"
+                        aria-label="Analytics rows per page"
+                    />
                     <span class="admin-pager__range">{{ $detailTable['start'] }}–{{ $detailTable['end'] }} of {{ $detailTable['total'] }}</span>
-                    <div class="admin-pager__actions admin-toolbar">
+                    <div class="admin-toolbar admin-pager__actions">
                         <button class="admin-action" type="button" wire:click="previousDetailPage" @disabled($detailTable['page'] <= 1)>Previous</button>
                         <button class="admin-action" type="button" wire:click="nextDetailPage" @disabled($detailTable['page'] >= $detailTable['pages'])>Next</button>
                     </div>
