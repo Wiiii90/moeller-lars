@@ -61,6 +61,6 @@ it('reuses the shared storage capacity component on the dashboard', function ():
     expect($dashboardView)
         ->toContain('<x-admin.storage-capacity-visual')
         ->toContain(':capacity="$storage"')
-        ->toContain(':breakdown="$storage['breakdown']"')
-        ->toContain(':segments="$storage['segments']"');
+        ->toContain(':breakdown="$storage[\'breakdown\']"')
+        ->toContain(':segments="$storage[\'segments\']"');
 });
