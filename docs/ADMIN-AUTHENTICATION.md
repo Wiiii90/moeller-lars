@@ -30,6 +30,19 @@ The project owns the restrained authentication presentation through the custom F
 
 Password fields are not configured as revealable in the panel.
 
+## Account and security surface
+
+Authenticated administrators manage their account from the `Account` action in the user badge. It opens the shared admin dialog system rather than a standalone Filament profile page.
+
+The account dialog owns:
+
+- administrator name and email;
+- password changes, with the current password required when changing the email or password;
+- optional TOTP setup and disable actions;
+- recovery-code regeneration for administrators who enabled TOTP.
+
+There is intentionally no `/admin/profile` account page. Dark/Night mode and Logout remain separate controls in the same Filament user menu and are not coupled to the Account dialog.
+
 ## Optional multi-factor authentication
 
 Administrator accounts may enable Filament app authentication (TOTP) with recovery codes, but MFA is not required to enter the administration.
@@ -38,14 +51,14 @@ The panel contract is:
 
 - TOTP/app authentication is available but optional;
 - recovery codes are enabled for administrators who enable TOTP;
-- the Filament profile surface is available for MFA setup and management;
+- the `Account` dialog in the user badge is the management surface for TOTP setup, disable and recovery-code actions;
 - an administrator without configured MFA can sign in and use the admin normally;
 - an administrator who has enabled MFA is challenged according to Filament's MFA flow;
 - email is not used as the second authentication factor.
 
 TOTP does not require a phone specifically. Any compatible authenticator can generate the codes, including desktop applications and password managers that support standard TOTP.
 
-`User` implements Filament's app-authentication and recovery contracts. The database stores nullable `app_authentication_secret` and `app_authentication_recovery_codes` fields required by that framework integration. Filament's own concerns remain responsible for the sensitive-value storage semantics; application code must not invent a second TOTP/recovery-code implementation.
+`User` implements Filament's app-authentication and recovery contracts. The database stores nullable `app_authentication_secret` and `app_authentication_recovery_codes` fields required by that framework integration. Filament's own concerns and management actions remain responsible for the sensitive-value storage and TOTP/recovery-code semantics; application code must not invent a second implementation.
 
 TOTP secrets and recovery codes are credentials. They must not be logged, copied into Activity/notifications or exposed through application diagnostics. If a setup secret is exposed, abandon that setup and generate a new secret before enabling MFA.
 
@@ -93,7 +106,7 @@ Initial/explicit administrator provisioning uses:
 php artisan admin:provision
 ```
 
-The command keeps password entry interactive/hidden rather than accepting a password as a command-line argument. A newly provisioned administrator can use the panel immediately and may enable TOTP later from the Filament profile/security surface.
+The command keeps password entry interactive/hidden rather than accepting a password as a command-line argument. A newly provisioned administrator can use the panel immediately and may enable TOTP later from the `Account` dialog in the user menu.
 
 ## Deployment expectations
 
@@ -103,7 +116,8 @@ At minimum, deployment/release review should establish:
 
 - the required forward migration for MFA columns has been applied;
 - the intended administrator account can reach `/admin` without being forced through MFA enrollment;
-- optional MFA can be enabled and challenged correctly when configured;
+- the user badge exposes the Account dialog while Dark/Night mode and Logout remain available;
+- optional MFA can be enabled, challenged and disabled correctly when configured;
 - SMTP/runtime mail configuration is injected outside Git;
 - the configured sender is accepted by the mail platform;
 - a password-reset message can be delivered in the target environment without exposing whether arbitrary addresses are administrator accounts.
@@ -112,6 +126,6 @@ Do not use a real password-reset email test as an excuse to place credentials or
 
 ## Verification ownership
 
-Durable application tests should protect the security contract rather than Filament markup. Current coverage includes private `/admin` access, rejection of authenticated non-admin users, access for administrators without MFA, the app-authentication/recovery contract and admin-only reset mail behavior.
+Durable application tests should protect the security contract rather than Filament markup. Current coverage includes private `/admin` access, rejection of authenticated non-admin users, access for administrators without MFA, the user-menu Account surface instead of a standalone profile route, the app-authentication/recovery contract and admin-only reset mail behavior.
 
 The canonical release verification remains defined in [RELEASE.md](RELEASE.md). Mail-server/runtime verification belongs to the platform/deployment layer, not to unit tests in this repository.

@@ -69,6 +69,17 @@ it('allows administrators without MFA to use the dashboard', function (): void {
         ->assertSuccessful();
 });
 
+it('uses the account dialog instead of a standalone profile page', function (): void {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin, 'web')
+        ->get('/admin/dashboard')
+        ->assertSuccessful()
+        ->assertSee('Account');
+
+    $this->get('/admin/profile')->assertNotFound();
+});
+
 it('uses encrypted app authentication with recovery support', function (): void {
     $admin = User::factory()->admin()->create();
 

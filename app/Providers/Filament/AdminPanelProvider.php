@@ -12,11 +12,13 @@ use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\General;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
+use App\Filament\Support\AccountMenuAction;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\SiteNavigation;
 use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
+use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -45,18 +47,22 @@ class AdminPanelProvider extends PanelProvider
 
     public function panel(Panel $panel): Panel
     {
+        $appAuthentication = AppAuthentication::make()
+            ->recoverable()
+            ->brandName('Lars Möller Administration');
+
         return $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->login(Login::class)
             ->passwordReset(RequestPasswordReset::class, ResetPassword::class)
-            ->profile(isSimple: false)
             ->multiFactorAuthentication([
-                AppAuthentication::make()
-                    ->recoverable()
-                    ->brandName('Lars Möller Administration'),
+                $appAuthentication,
             ], isRequired: false)
+            ->userMenuItems([
+                'profile' => fn (Action $action): Action => AccountMenuAction::configure($action, $appAuthentication),
+            ])
             ->authGuard('web')
             ->authPasswordBroker('users')
             ->revealablePasswords(false)
