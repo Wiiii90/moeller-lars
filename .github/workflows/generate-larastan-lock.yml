@@ -7,10 +7,11 @@ on:
       - .github/workflows/generate-larastan-lock.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,12 +24,25 @@ jobs:
       - name: Update locked static-analysis dependencies
         run: composer require --dev "larastan/larastan:^3.0" --no-interaction --no-progress
 
-      - name: Upload generated Composer files
-        uses: actions/upload-artifact@v4
-        with:
-          name: larastan-composer-files
-          path: |
-            composer.json
-            composer.lock
-          if-no-files-found: error
-          retention-days: 1
+      - name: Configure Laravel-aware PHPStan
+        run: |
+          cat > phpstan.neon <<'EOF'
+          includes:
+              - vendor/larastan/larastan/extension.neon
+              - vendor/nesbot/carbon/extension.neon
+
+          parameters:
+              level: 5
+              paths:
+                  - app
+              tmpDir: storage/framework/phpstan
+          EOF
+
+      - name: Commit generated Composer files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add composer.json composer.lock phpstan.neon
+          git diff --cached --quiet && exit 0
+          git commit -m "build: add Laravel-aware PHPStan analysis"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
