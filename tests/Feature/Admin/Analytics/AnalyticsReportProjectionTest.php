@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Analytics\MatomoReportingClient;
 use App\Filament\Pages\Analytics;
 
 it('projects disabled empty and missing analytics values without inventing zeroes', function (): void {
@@ -71,22 +72,50 @@ it('searches only the active report and resets search when the report view chang
         ->and($analytics->detailReport)->toBe('geography');
 });
 
-it('keeps geography context stable around the scrollable ranking without duplicate stage metrics', function (): void {
+it('preserves Matomo country presentation metadata without changing ordinary report rows', function (): void {
+    $client = (new ReflectionClass(MatomoReportingClient::class))->newInstanceWithoutConstructor();
+    $method = new ReflectionMethod(MatomoReportingClient::class, 'normalizeRows');
+    $payload = [[
+        'label' => 'Germany',
+        'nb_visits' => 8,
+        'metadata' => [
+            'code' => 'de',
+            'logo' => 'plugins/Morpheus/icons/dist/flags/de.png',
+        ],
+    ]];
+
+    expect($method->invoke($client, $payload, ['nb_visits'], 'generic', true)[0])
+        ->toMatchArray([
+            'label' => 'Germany',
+            'nb_visits' => 8.0,
+            'code' => 'de',
+            'logo' => 'plugins/Morpheus/icons/dist/flags/de.png',
+        ])
+        ->and($method->invoke($client, $payload, ['nb_visits'])[0])
+        ->not->toHaveKeys(['code', 'logo']);
+});
+
+it('keeps geography as one storage-style rail with local flags and secondary context', function (): void {
     $view = file_get_contents(resource_path('views/filament/pages/analytics.blade.php'));
     $css = file_get_contents(resource_path('css/admin/analytics.css'));
     $page = file_get_contents(app_path('Filament/Pages/Analytics.php'));
 
     expect($view)
         ->toContain('analytics-stage-ranking__scroll')
-        ->toContain('analytics-stage-rail__context')
-        ->toContain('analytics-country-context__primary')
-        ->toContain('Selected country')
-        ->toContain('Actions')
+        ->toContain('analytics-country-rank__flag')
+        ->toContain('analytics-stage-context__row')
+        ->toContain('Leading country')
+        ->toContain('Visits outside leader')
+        ->toContain('<strong>Geography</strong>')
+        ->not->toContain('<span>Audience</span>')
+        ->not->toContain('Selected country')
+        ->not->toContain('mapped markers')
+        ->not->toContain('reported countries')
         ->not->toContain('analytics-stage-signals')
-        ->not->toContain('$stageHighlights')
         ->and($css)
-        ->toContain('.analytics-stage-ranking__scroll')
-        ->toContain('overflow-y: auto;')
+        ->toContain('.analytics-stage-ranking__scroll::-webkit-scrollbar')
+        ->toContain('scrollbar-width: none;')
+        ->toContain('.analytics-country-rank.is-selected::before')
         ->toContain('@keyframes analytics-marker-arrival')
         ->toContain('@media (prefers-reduced-motion: reduce)')
         ->and($page)
