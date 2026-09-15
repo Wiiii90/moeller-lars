@@ -16,6 +16,7 @@ These describe the durable application architecture/behavior that current accept
 - [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and transactional-mail boundary
 - [ADMIN-PASSWORD-POLICY.md](ADMIN-PASSWORD-POLICY.md) — shared environment-aware password policy and browser-local generator contract
 - [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md) — admin performance budget and investigation rules
+- [ADMIN-PROFILING.md](ADMIN-PROFILING.md) — canonical local Debugbar/DevTools/request-classification and on-demand callgraph workflow
 - [ADMIN-CONTROL-CONTRACT.md](ADMIN-CONTROL-CONTRACT.md) — canonical admin form/control rendering and persistence semantics
 - [ADMIN-DIALOG-CONTRACT.md](ADMIN-DIALOG-CONTRACT.md) — shared native Filament dialog types, chrome, lifecycle and edit/command semantics
 - [ADMIN-TABLE-CONTRACT.md](ADMIN-TABLE-CONTRACT.md) — canonical ordinary-table role order, alignment, typography, actions and trailing Selection
