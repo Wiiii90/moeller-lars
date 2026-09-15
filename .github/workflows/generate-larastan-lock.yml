@@ -1,0 +1,34 @@
+name: Generate Larastan lock
+
+on:
+  push:
+    branches: [fix/post-dialog-merge-gate]
+    paths:
+      - .github/workflows/generate-larastan-lock.yml
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Update locked static-analysis dependencies
+        run: composer require --dev "larastan/larastan:^3.0" --with-all-dependencies --no-interaction --no-progress
+
+      - name: Upload generated Composer files
+        uses: actions/upload-artifact@v4
+        with:
+          name: larastan-composer-files
+          path: |
+            composer.json
+            composer.lock
+          if-no-files-found: error
+          retention-days: 1
