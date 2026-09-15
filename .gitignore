@@ -17,6 +17,11 @@ credentials.json
 /.cache
 /resources/views/filament/generated/analytics-world-map.blade.php
 
+# Browser profiling output
+/playwright-report/
+/test-results/
+/artifacts/performance/
+
 # Logs and local tooling
 *.log
 .DS_Store
