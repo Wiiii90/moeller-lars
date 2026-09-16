@@ -49,6 +49,8 @@ enum AdminIcon: string
     case MoveBetween = 'heroicon-o-arrows-right-left';
     case MoveUp = 'heroicon-o-arrow-up';
     case MoveDown = 'heroicon-o-arrow-down';
+    case Schedule = 'heroicon-o-calendar-days';
+    case Archive = 'heroicon-o-archive-box';
     case Download = 'heroicon-o-arrow-down-tray';
     case MarkRead = 'heroicon-o-envelope-open';
     case MarkUnread = 'heroicon-o-envelope';

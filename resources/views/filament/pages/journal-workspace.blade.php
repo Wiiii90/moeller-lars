@@ -121,7 +121,24 @@
             </x-admin.controls>
 
             <x-admin.table class="admin-table--data admin-table--ranked">
-                <table>
+                <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog' : 'journal-table--exhibitions' }}">
+                    <colgroup>
+                        <col class="admin-table__col-quarter-unit">
+                        <col class="admin-table__col-quarter-unit">
+                        @if ($isBlog)
+                            <col class="admin-table__col-half-unit">
+                            <col class="admin-table__col-one-unit">
+                            <col class="admin-table__col-half-unit">
+                            <col class="admin-table__col-one-unit">
+                            <col class="journal-table__actions--blog">
+                        @else
+                            <col class="admin-table__col-one-half-units">
+                            <col class="admin-table__col-half-unit">
+                            <col class="admin-table__col-one-half-units">
+                            <col class="admin-table__col-two-units-minus-selection">
+                        @endif
+                        <col class="admin-table__selection-col">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
@@ -129,8 +146,8 @@
                                 <th scope="col" class="journal-visual">Image</th>
                             @endif
                             <th scope="col">{{ $isBlog ? 'Post' : 'Exhibition' }}</th>
-                            <th scope="col">Status</th>
                             @if ($isBlog)
+                                <th scope="col">Status</th>
                                 <th scope="col">Publication</th>
                             @else
                                 <th scope="col">Timing</th>
@@ -188,8 +205,8 @@
                                         <small>{{ $entry['location'] }}</small>
                                     @endif
                                 </td>
-                                <td><span class="journal-state is-{{ $entry['state'] }}">{{ ucfirst($entry['state']) }}</span></td>
                                 @if ($isBlog)
+                                    <td><span class="journal-state is-{{ $entry['state'] }}">{{ ucfirst($entry['state']) }}</span></td>
                                     <td class="journal-publication">{{ $entry['publication'] }}</td>
                                 @else
                                     <td><span class="journal-timing is-{{ $entry['timing'] }}">{{ ucfirst($entry['timing']) }}</span></td>
@@ -199,45 +216,99 @@
                                     </td>
                                 @endif
                                 <td class="admin-table__actions">
-                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical">
+                                    <x-admin.toolbar class="admin-row-actions admin-row-actions--canonical journal-row-actions {{ $isBlog ? 'journal-row-actions--blog' : 'journal-row-actions--exhibitions' }}">
                                         @if ($isBlog)
-                                            <button class="admin-action admin-order-action" type="button" wire:click="movePost({{ $entry['id'] }}, 'up')" @disabled(! $entry['can_move_up']) aria-label="Move {{ $entry['title'] }} up">↑</button>
-                                            <button class="admin-action admin-order-action" type="button" wire:click="movePost({{ $entry['id'] }}, 'down')" @disabled(! $entry['can_move_down']) aria-label="Move {{ $entry['title'] }} down">↓</button>
-                                            <button class="admin-action" type="button" wire:click="mountAction('editPost', { post: {{ $entry['id'] }} })">Edit</button>
+                                            <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="movePost({{ $entry['id'] }}, 'up')" @disabled(! $entry['can_move_up']) aria-label="Move {{ $entry['title'] }} up">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Move up</span>
+                                            </button>
+                                            <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="movePost({{ $entry['id'] }}, 'down')" @disabled(! $entry['can_move_down']) aria-label="Move {{ $entry['title'] }} down">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Move down</span>
+                                            </button>
+                                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editPost', { post: {{ $entry['id'] }} })">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Edit</span>
+                                            </button>
 
                                             @if ($entry['state'] === 'published')
-                                                <button class="admin-action admin-action--state" type="button" wire:click="unpublishPost({{ $entry['id'] }})">Unpublish</button>
+                                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="unpublishPost({{ $entry['id'] }})">
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Unpublish</span>
+                                                </button>
                                             @elseif ($entry['state'] === 'scheduled')
-                                                <button class="admin-action admin-action--state" type="button" wire:click="restorePostDraft({{ $entry['id'] }})">Cancel schedule</button>
+                                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="restorePostDraft({{ $entry['id'] }})">
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Cancel schedule</span>
+                                                </button>
                                             @elseif ($entry['state'] === 'archived')
-                                                <button class="admin-action admin-action--state" type="button" wire:click="restorePostDraft({{ $entry['id'] }})">Restore</button>
+                                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="restorePostDraft({{ $entry['id'] }})">
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Restore</span>
+                                                </button>
                                             @else
-                                                <button class="admin-action admin-action--state" type="button" wire:click="publishPost({{ $entry['id'] }})">Publish</button>
+                                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="publishPost({{ $entry['id'] }})">
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Publish->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Publish</span>
+                                                </button>
                                             @endif
 
                                             @if (in_array($entry['state'], ['draft', 'unpublished'], true))
-                                                <button class="admin-action" type="button" wire:click="mountAction('schedulePost', { post: {{ $entry['id'] }} })">Schedule</button>
+                                                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('schedulePost', { post: {{ $entry['id'] }} })">
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Schedule->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Schedule</span>
+                                                </button>
                                             @else
-                                                <button class="admin-action" type="button" disabled>Schedule</button>
+                                                <button class="admin-action admin-action--with-icon" type="button" disabled>
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Schedule->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Schedule</span>
+                                                </button>
                                             @endif
 
                                             @if (in_array($entry['state'], ['draft', 'unpublished', 'published'], true))
-                                                <button class="admin-action" type="button" wire:click="archivePost({{ $entry['id'] }})">Archive</button>
+                                                <button class="admin-action admin-action--with-icon" type="button" wire:click="archivePost({{ $entry['id'] }})">
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Archive->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Archive</span>
+                                                </button>
                                             @else
-                                                <button class="admin-action" type="button" disabled>Archive</button>
+                                                <button class="admin-action admin-action--with-icon" type="button" disabled>
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Archive->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Archive</span>
+                                                </button>
                                             @endif
 
-                                            <button class="admin-action is-danger" type="button" wire:click="mountAction('deletePost', { post: {{ $entry['id'] }} })" @disabled(! $entry['can_delete']) title="{{ $entry['delete_help'] ?? 'Delete post' }}">Delete</button>
+                                            <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="mountAction('deletePost', { post: {{ $entry['id'] }} })" @disabled(! $entry['can_delete']) title="{{ $entry['delete_help'] ?? 'Delete post' }}">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Delete</span>
+                                            </button>
                                         @else
-                                            <button class="admin-action admin-order-action" type="button" wire:click="moveExhibition({{ $entry['id'] }}, 'up')" @disabled(! $entry['can_move_up']) aria-label="Move {{ $entry['title'] }} up">↑</button>
-                                            <button class="admin-action admin-order-action" type="button" wire:click="moveExhibition({{ $entry['id'] }}, 'down')" @disabled(! $entry['can_move_down']) aria-label="Move {{ $entry['title'] }} down">↓</button>
-                                            <button class="admin-action" type="button" wire:click="mountAction('editExhibition', { exhibition: {{ $entry['id'] }} })">Edit</button>
+                                            <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveExhibition({{ $entry['id'] }}, 'up')" @disabled(! $entry['can_move_up']) aria-label="Move {{ $entry['title'] }} up">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Move up</span>
+                                            </button>
+                                            <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveExhibition({{ $entry['id'] }}, 'down')" @disabled(! $entry['can_move_down']) aria-label="Move {{ $entry['title'] }} down">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Move down</span>
+                                            </button>
+                                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editExhibition', { exhibition: {{ $entry['id'] }} })">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Edit</span>
+                                            </button>
                                             @if ($entry['state'] === 'published')
-                                                <button class="admin-action admin-action--state" type="button" wire:click="unpublishExhibition({{ $entry['id'] }})">Unpublish</button>
+                                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="unpublishExhibition({{ $entry['id'] }})">
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Unpublish->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Unpublish</span>
+                                                </button>
                                             @else
-                                                <button class="admin-action admin-action--state" type="button" wire:click="publishExhibition({{ $entry['id'] }})">Publish</button>
+                                                <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="publishExhibition({{ $entry['id'] }})">
+                                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Publish->mini()" class="admin-action__icon" />
+                                                    <span class="admin-action__label">Publish</span>
+                                                </button>
                                             @endif
-                                            <button class="admin-action is-danger" type="button" wire:click="mountAction('deleteExhibition', { exhibition: {{ $entry['id'] }} })" @disabled(! $entry['can_delete']) title="{{ $entry['delete_help'] ?? 'Delete exhibition' }}">Delete</button>
+                                            <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="mountAction('deleteExhibition', { exhibition: {{ $entry['id'] }} })" @disabled(! $entry['can_delete']) title="{{ $entry['delete_help'] ?? 'Delete exhibition' }}">
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
+                                                <span class="admin-action__label">Delete</span>
+                                            </button>
                                         @endif
                                     </x-admin.toolbar>
                                 </td>
@@ -251,7 +322,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-table__empty-cell" colspan="8">
+                                <td class="admin-table__empty-cell" colspan="{{ $isBlog ? 8 : 7 }}">
                                     @if ($unfilteredEntryCount > 0)
                                         <x-admin.empty-state :title="'No matching '.$entryLabel" minimal>
                                             <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button></x-slot:actions>
