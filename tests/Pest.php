@@ -25,25 +25,6 @@ pest()->extend(TestCase::class)
     ->group('migration')
     ->in('Migration');
 
-/* These assertions exercised the retired CvEntry/cv_list runtime after its data
- * was migrated into canonical Custom Page list items. They no longer describe
- * an executable product contract and are kept out of the active suite while the
- * historical fixtures remain in the repository for migration archaeology. */
-beforeEach(function (): void {
-    $name = method_exists($this, 'nameWithDataSet') ? $this->nameWithDataSet() : $this->name();
-    $retiredCvContracts = [
-        'projects migrated CV media through the canonical Custom Page usage only',
-        'ignores legacy CV media pointers that the current Custom Page runtime does not render',
-        'edits the canonical CV collection directly in the CV List dialog without duplicating entries into component JSON',
-    ];
-
-    foreach ($retiredCvContracts as $contract) {
-        if (str_contains($name, $contract)) {
-            $this->markTestSkipped('Retired CvEntry/cv_list runtime contract.');
-        }
-    }
-});
-
 /** @param array<string, mixed> $overrides */
 function testGallerySection(ArtworkCategory $category, array $overrides = []): SiteSection
 {
