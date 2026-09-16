@@ -90,9 +90,6 @@ trait CustomPageWorkspaceSecondaryForms
                 ? $block['variant']
                 : 'thin';
         }
-        if (($block['type'] ?? null) === 'cv_list') {
-            $data['cv_entries'] = $this->cvEntryEditorRows();
-        }
 
         return $data;
     }
@@ -113,11 +110,6 @@ trait CustomPageWorkspaceSecondaryForms
                 'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                 'image_decorative' => (bool) ($data['image_decorative'] ?? false),
             ],
-            'cv_list' => [
-                'type' => 'cv_list',
-                'published' => $published,
-                'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
-            ],
             'text' => [
                 'type' => 'text',
                 'published' => $published,
@@ -128,6 +120,7 @@ trait CustomPageWorkspaceSecondaryForms
                 'type' => 'list',
                 'published' => $published,
                 'title' => $data['title'] ?? null,
+                'media_asset_id' => is_numeric($data['media_asset_id'] ?? null) ? (int) $data['media_asset_id'] : null,
                 'items' => is_array($existing['items'] ?? null) ? array_values($existing['items']) : [],
             ],
             'divider' => [
@@ -148,24 +141,6 @@ trait CustomPageWorkspaceSecondaryForms
             ],
             'legal_disclaimer' => ['type' => 'legal_disclaimer', 'published' => $published],
         };
-    }
-
-    /** @return array<string,mixed> */
-    private function cvEntryPayload(array $data): array
-    {
-        return [
-            'section' => $data['section'] ?? 'CV',
-            'title' => $data['title'] ?? null,
-            'year_text' => $data['year_text'] ?? null,
-            'date_precision' => $data['date_precision'] ?? 'unknown',
-            'starts_on' => $data['starts_on'] ?? null,
-            'ends_on' => $data['ends_on'] ?? null,
-            'organisation' => $data['organisation'] ?? null,
-            'location' => $data['location'] ?? null,
-            'body' => $data['body'] ?? null,
-            'image_media_asset_id' => $data['image_media_asset_id'] ?? null,
-            'external_url' => $data['external_url'] ?? null,
-        ];
     }
 
     /** @return array<string,mixed> */
