@@ -10,17 +10,6 @@ use InvalidArgumentException;
 
 final class CustomPageEditorialService
 {
-    /** @var list<string> */
-    private const COMPONENT_TYPES = [
-        'image',
-        'cv_list',
-        'text',
-        'list',
-        'divider',
-        'contact',
-        'legal_disclaimer',
-    ];
-
     public function __construct(private readonly AdminAuditService $audit) {}
 
     /** @param array<string, mixed> $block */
@@ -30,6 +19,7 @@ final class CustomPageEditorialService
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $type = $block['type'] ?? null;
+            $this->assertComponentType(is_string($type) ? $type : '');
             if ($type === 'legal_disclaimer' && $this->containsType($blocks, 'legal_disclaimer')) {
                 throw ValidationException::withMessages(['component' => 'This page already contains a Legal Disclaimer component.']);
             }
@@ -48,9 +38,7 @@ final class CustomPageEditorialService
             $this->assertTarget($blocks, $index, $expectedType);
 
             if (($block['type'] ?? null) !== $expectedType) {
-                throw ValidationException::withMessages([
-                    'component' => 'The component type changed while it was being edited.',
-                ]);
+                throw ValidationException::withMessages(['component' => 'The component type changed while it was being edited.']);
             }
 
             $blocks[$index] = $block;
@@ -62,59 +50,32 @@ final class CustomPageEditorialService
     /** @param array<string, mixed> $item */
     public function addListItem(CustomPageSetting $settings, int $index, string $expectedType, array $item): bool
     {
-        return DB::transaction(function () use ($settings, $index, $expectedType, $item): bool {
-            $fresh = $this->locked($settings);
-            $blocks = $fresh->components();
-            $this->assertListTarget($blocks, $index, $expectedType);
-
-            $items = $this->listItems($blocks[$index]);
+        return $this->mutateListItems($settings, $index, $expectedType, static function (array $items) use ($item): array {
             $items[] = $item;
-            $blocks[$index]['items'] = $items;
 
-            return $this->persist($fresh, $blocks);
+            return $items;
         });
     }
 
     /** @param array<string, mixed> $item */
     public function updateListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex, array $item): bool
     {
-        return DB::transaction(function () use ($settings, $index, $expectedType, $itemIndex, $item): bool {
-            $fresh = $this->locked($settings);
-            $blocks = $fresh->components();
-            $this->assertListTarget($blocks, $index, $expectedType);
-
-            $items = $this->listItems($blocks[$index]);
+        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $item): array {
             $this->assertListItem($items, $itemIndex);
             $items[$itemIndex] = $item;
-            $blocks[$index]['items'] = $items;
-
-            return $this->persist($fresh, $blocks);
-        });
-    }
-
-    public function setListItemPublished(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        int $itemIndex,
-        bool $published,
-    ): bool {
-        return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $published): array {
-            $this->assertListItem($items, $itemIndex);
-            $items[$itemIndex]['published'] = $published;
 
             return $items;
         });
     }
 
+    public function setListItemPublished(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex, bool $published): bool
+    {
+        return $this->setListItemsPublished($settings, $index, $expectedType, [$itemIndex], $published);
+    }
+
     /** @param list<int> $itemIndices */
-    public function setListItemsPublished(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        array $itemIndices,
-        bool $published,
-    ): bool {
+    public function setListItemsPublished(CustomPageSetting $settings, int $index, string $expectedType, array $itemIndices, bool $published): bool
+    {
         return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndices, $published): array {
             foreach (array_values(array_unique($itemIndices)) as $itemIndex) {
                 $this->assertListItem($items, $itemIndex);
@@ -125,13 +86,8 @@ final class CustomPageEditorialService
         });
     }
 
-    public function moveListItem(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        int $itemIndex,
-        string $direction,
-    ): bool {
+    public function moveListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex, string $direction): bool
+    {
         $this->assertDirection($direction);
 
         return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $direction): array {
@@ -146,13 +102,8 @@ final class CustomPageEditorialService
         });
     }
 
-    public function sortListItem(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        int $itemIndex,
-        int $position,
-    ): bool {
+    public function sortListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex, int $position): bool
+    {
         return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $position): array {
             $this->assertListItem($items, $itemIndex);
             $moved = $items[$itemIndex];
@@ -185,12 +136,8 @@ final class CustomPageEditorialService
     }
 
     /** @param array<string, mixed> $child */
-    public function addContactChild(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        array $child,
-    ): bool {
+    public function addContactChild(CustomPageSetting $settings, int $index, string $expectedType, array $child): bool
+    {
         return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($child): array {
             $type = $this->contactChildType($child);
             if ($this->contactChildIndex($children, $type) !== null) {
@@ -203,59 +150,37 @@ final class CustomPageEditorialService
     }
 
     /** @param array<string, mixed> $child */
-    public function updateContactChild(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        string $childType,
-        array $child,
-    ): bool {
+    public function updateContactChild(CustomPageSetting $settings, int $index, string $expectedType, string $childType, array $child): bool
+    {
         return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childType, $child): array {
             if ($this->contactChildType($child) !== $childType) {
                 throw ValidationException::withMessages(['component' => 'The Contact child type changed while it was being edited.']);
             }
-            $childIndex = $this->requiredContactChildIndex($children, $childType);
-            $children[$childIndex] = $child;
+            $children[$this->requiredContactChildIndex($children, $childType)] = $child;
 
             return $children;
         });
     }
 
-    public function setContactChildPublished(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        string $childType,
-        bool $published,
-    ): bool {
+    public function setContactChildPublished(CustomPageSetting $settings, int $index, string $expectedType, string $childType, bool $published): bool
+    {
         return $this->setContactChildrenPublished($settings, $index, $expectedType, [$childType], $published);
     }
 
     /** @param list<string> $childTypes */
-    public function setContactChildrenPublished(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        array $childTypes,
-        bool $published,
-    ): bool {
+    public function setContactChildrenPublished(CustomPageSetting $settings, int $index, string $expectedType, array $childTypes, bool $published): bool
+    {
         return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childTypes, $published): array {
             foreach (array_values(array_unique($childTypes)) as $childType) {
-                $childIndex = $this->requiredContactChildIndex($children, $childType);
-                $children[$childIndex]['published'] = $published;
+                $children[$this->requiredContactChildIndex($children, $childType)]['published'] = $published;
             }
 
             return $children;
         });
     }
 
-    public function moveContactChild(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        string $childType,
-        string $direction,
-    ): bool {
+    public function moveContactChild(CustomPageSetting $settings, int $index, string $expectedType, string $childType, string $direction): bool
+    {
         $this->assertDirection($direction);
 
         return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childType, $direction): array {
@@ -270,13 +195,8 @@ final class CustomPageEditorialService
         });
     }
 
-    public function sortContactChild(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        string $childType,
-        int $position,
-    ): bool {
+    public function sortContactChild(CustomPageSetting $settings, int $index, string $expectedType, string $childType, int $position): bool
+    {
         return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childType, $position): array {
             $childIndex = $this->requiredContactChildIndex($children, $childType);
             $moved = $children[$childIndex];
@@ -288,26 +208,17 @@ final class CustomPageEditorialService
         });
     }
 
-    public function deleteContactChild(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        string $childType,
-    ): bool {
+    public function deleteContactChild(CustomPageSetting $settings, int $index, string $expectedType, string $childType): bool
+    {
         return $this->deleteContactChildren($settings, $index, $expectedType, [$childType]);
     }
 
     /** @param list<string> $childTypes */
-    public function deleteContactChildren(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        array $childTypes,
-    ): bool {
+    public function deleteContactChildren(CustomPageSetting $settings, int $index, string $expectedType, array $childTypes): bool
+    {
         return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($childTypes): array {
             foreach (array_values(array_unique($childTypes)) as $childType) {
-                $childIndex = $this->requiredContactChildIndex($children, $childType);
-                unset($children[$childIndex]);
+                unset($children[$this->requiredContactChildIndex($children, $childType)]);
                 $children = array_values($children);
             }
 
@@ -323,14 +234,12 @@ final class CustomPageEditorialService
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertTarget($blocks, $index, $expectedType);
-
             if ($expectedType === $targetType) {
                 return false;
             }
             if ($targetType === 'legal_disclaimer' && $this->containsType($blocks, 'legal_disclaimer', exceptIndex: $index)) {
                 throw ValidationException::withMessages(['component' => 'This page already contains a Legal Disclaimer component.']);
             }
-
             $blocks[$index] = $this->convertedBlock($blocks[$index], $targetType);
 
             return $this->persist($fresh, $blocks);
@@ -348,7 +257,7 @@ final class CustomPageEditorialService
 
         $next = $this->convertedBlock($block, $targetType);
         foreach ($block as $key => $value) {
-            if ($key === 'type' || $key === 'published') {
+            if (in_array($key, ['type', 'published'], true)) {
                 continue;
             }
             if (array_key_exists($key, $next) && $next[$key] === $value) {
@@ -370,12 +279,10 @@ final class CustomPageEditorialService
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertTarget($blocks, $index, $expectedType);
-
             $target = $direction === 'up' ? $index - 1 : $index + 1;
             if (! array_key_exists($target, $blocks)) {
                 return false;
             }
-
             [$blocks[$index], $blocks[$target]] = [$blocks[$target], $blocks[$index]];
 
             return $this->persist($fresh, $blocks);
@@ -388,18 +295,13 @@ final class CustomPageEditorialService
         return DB::transaction(function () use ($settings, $targets): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
-
             if (count($targets) !== count($blocks)) {
-                throw ValidationException::withMessages([
-                    'component' => 'The component sequence changed. Reload the workspace and try again.',
-                ]);
+                throw ValidationException::withMessages(['component' => 'The component sequence changed. Reload the workspace and try again.']);
             }
-
             $indices = $this->validatedIndices($blocks, $targets);
             if (count($indices) !== count($blocks)) {
                 throw ValidationException::withMessages(['component' => 'The component sequence is incomplete.']);
             }
-
             $next = array_map(static fn (array $target): array => $blocks[$target['index']], $targets);
 
             return $this->persist($fresh, $next);
@@ -408,14 +310,7 @@ final class CustomPageEditorialService
 
     public function deleteBlock(CustomPageSetting $settings, int $index, string $expectedType): bool
     {
-        return DB::transaction(function () use ($settings, $index, $expectedType): bool {
-            $fresh = $this->locked($settings);
-            $blocks = $fresh->components();
-            $this->assertTarget($blocks, $index, $expectedType);
-            unset($blocks[$index]);
-
-            return $this->persist($fresh, array_values($blocks));
-        });
+        return $this->deleteBlocks($settings, [['index' => $index, 'type' => $expectedType]]);
     }
 
     /** @param list<array{index:int,type:string}> $targets */
@@ -428,7 +323,6 @@ final class CustomPageEditorialService
             if ($indices === []) {
                 return false;
             }
-
             rsort($indices);
             foreach ($indices as $index) {
                 unset($blocks[$index]);
@@ -471,21 +365,13 @@ final class CustomPageEditorialService
                 }
             }
 
-            $next = array_map(static fn (array $item): array => $item['block'], $sequence);
-
-            return $this->persist($fresh, $next);
+            return $this->persist($fresh, array_map(static fn (array $item): array => $item['block'], $sequence));
         });
     }
 
-    /**
-     * @param  callable(list<array<string,mixed>>): list<array<string,mixed>>  $mutator
-     */
-    private function mutateListItems(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        callable $mutator,
-    ): bool {
+    /** @param callable(list<array<string,mixed>>): list<array<string,mixed>> $mutator */
+    private function mutateListItems(CustomPageSetting $settings, int $index, string $expectedType, callable $mutator): bool
+    {
         return DB::transaction(function () use ($settings, $index, $expectedType, $mutator): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
@@ -496,24 +382,17 @@ final class CustomPageEditorialService
         });
     }
 
-    /**
-     * @param  callable(list<array<string,mixed>>): list<array<string,mixed>>  $mutator
-     */
-    private function mutateContactChildren(
-        CustomPageSetting $settings,
-        int $index,
-        string $expectedType,
-        callable $mutator,
-    ): bool {
+    /** @param callable(list<array<string,mixed>>): list<array<string,mixed>> $mutator */
+    private function mutateContactChildren(CustomPageSetting $settings, int $index, string $expectedType, callable $mutator): bool
+    {
         return DB::transaction(function () use ($settings, $index, $expectedType, $mutator): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertContactTarget($blocks, $index, $expectedType);
-            $children = $fresh->contactChildren($blocks[$index]);
             $blocks[$index] = [
                 'type' => 'contact',
                 'published' => CustomPageSetting::componentPublished($blocks[$index]),
-                'children' => $mutator($children),
+                'children' => $mutator($fresh->contactChildren($blocks[$index])),
             ];
 
             return $this->persist($fresh, $blocks);
@@ -528,8 +407,9 @@ final class CustomPageEditorialService
         return $fresh;
     }
 
-    /** @param list<array<string, mixed>> $blocks
-     * @param  list<array{index:int,type:string}>  $targets
+    /**
+     * @param list<array<string,mixed>> $blocks
+     * @param list<array{index:int,type:string}> $targets
      * @return list<int>
      */
     private function validatedIndices(array $blocks, array $targets): array
@@ -541,27 +421,26 @@ final class CustomPageEditorialService
             $this->assertTarget($blocks, $index, $type);
             $indices[] = $index;
         }
-
         $unique = array_values(array_unique($indices));
         if (count($unique) !== count($indices)) {
             throw ValidationException::withMessages(['component' => 'The component sequence contains duplicates.']);
         }
-
         sort($unique);
 
         return $unique;
     }
 
-    /** @param list<array<string, mixed>> $blocks */
+    /** @param list<array<string,mixed>> $blocks */
     private function assertTarget(array $blocks, int $index, string $expectedType): void
     {
+        $this->assertComponentType($expectedType);
         $block = $blocks[$index] ?? null;
         if (! is_array($block) || ($block['type'] ?? null) !== $expectedType) {
             throw ValidationException::withMessages(['component' => 'This component changed. Reload the workspace and try again.']);
         }
     }
 
-    /** @param list<array<string, mixed>> $blocks */
+    /** @param list<array<string,mixed>> $blocks */
     private function assertListTarget(array $blocks, int $index, string $expectedType): void
     {
         $this->assertTarget($blocks, $index, $expectedType);
@@ -570,7 +449,7 @@ final class CustomPageEditorialService
         }
     }
 
-    /** @param list<array<string, mixed>> $blocks */
+    /** @param list<array<string,mixed>> $blocks */
     private function assertContactTarget(array $blocks, int $index, string $expectedType): void
     {
         $this->assertTarget($blocks, $index, $expectedType);
@@ -579,7 +458,7 @@ final class CustomPageEditorialService
         }
     }
 
-    /** @param array<string, mixed> $block
+    /** @param array<string,mixed> $block
      * @return list<array<string,mixed>>
      */
     private function listItems(array $block): array
@@ -632,7 +511,7 @@ final class CustomPageEditorialService
         return $index;
     }
 
-    /** @param array<string, mixed> $block */
+    /** @param array<string,mixed> $block */
     private function convertedBlock(array $block, string $targetType): array
     {
         $title = in_array($block['type'] ?? null, ['text', 'list'], true) && is_string($block['title'] ?? null)
@@ -642,9 +521,8 @@ final class CustomPageEditorialService
 
         return match ($targetType) {
             'image' => ['type' => 'image', 'published' => $published, 'media_asset_id' => null, 'image_decorative' => false],
-            'cv_list' => ['type' => 'cv_list', 'published' => $published],
             'text' => ['type' => 'text', 'published' => $published, 'title' => $title, 'body' => null],
-            'list' => ['type' => 'list', 'published' => $published, 'title' => $title, 'items' => []],
+            'list' => ['type' => 'list', 'published' => $published, 'title' => $title, 'media_asset_id' => null, 'items' => []],
             'divider' => ['type' => 'divider', 'published' => $published, 'variant' => 'thin'],
             'contact' => [
                 'type' => 'contact',
@@ -698,12 +576,12 @@ final class CustomPageEditorialService
 
     private function assertComponentType(string $type): void
     {
-        if (! in_array($type, self::COMPONENT_TYPES, true)) {
+        if (! in_array($type, CustomPageSetting::COMPONENT_TYPES, true)) {
             throw ValidationException::withMessages(['component' => 'Choose a supported component type.']);
         }
     }
 
-    /** @param list<array<string, mixed>> $blocks */
+    /** @param list<array<string,mixed>> $blocks */
     private function persist(CustomPageSetting $settings, array $blocks): bool
     {
         $settings->fill(['blocks' => $blocks]);
