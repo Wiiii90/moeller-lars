@@ -7,12 +7,15 @@
 .analytics-world {
     min-width: 0;
     height: 100%;
-    grid-column: 1 / span 2;
     margin: 0;
     padding: 0;
 }
 
-.analytics-visual-stage .analytics-world__canvas {
+.analytics-visual-stage > .analytics-world {
+    grid-column: 1 / span 2;
+}
+
+.analytics-world__canvas {
     position: relative;
     box-sizing: border-box;
     width: 100%;
@@ -25,11 +28,23 @@
         linear-gradient(to bottom, transparent 24.9%, color-mix(in srgb, var(--admin-line) 68%, transparent) 25%, transparent 25.1%, transparent 49.9%, color-mix(in srgb, var(--admin-line) 68%, transparent) 50%, transparent 50.1%, transparent 74.9%, color-mix(in srgb, var(--admin-line) 68%, transparent) 75%, transparent 75.1%);
 }
 
-.analytics-world__svg {
+.analytics-world__svg,
+.analytics-world__marker-layer {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
+}
+
+.analytics-world__svg {
+    z-index: 1;
+    pointer-events: none;
+}
+
+.analytics-world__marker-layer {
+    z-index: 2;
+    overflow: visible;
+    pointer-events: none;
 }
 
 .analytics-world__country {
@@ -44,50 +59,48 @@
     stroke: rgba(255, 255, 255, .28);
 }
 
-.analytics-world__marker {
-    position: absolute;
-    min-width: 8px;
-    min-height: 8px;
-    padding: 0;
-    border: 1px solid color-mix(in srgb, var(--admin-surface) 88%, transparent);
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--admin-accent) 78%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-accent-strong) 24%, transparent);
-    transform: translate(-50%, -50%);
-    cursor: pointer;
-    isolation: isolate;
-    transition: box-shadow .14s ease, transform .14s ease, background .14s ease;
+.analytics-world__marker,
+.analytics-world__marker-pulse {
+    transform-box: fill-box;
+    transform-origin: center;
+    vector-effect: non-scaling-stroke;
 }
 
-.analytics-world__marker::after {
-    position: absolute;
-    inset: -1px;
-    z-index: -1;
-    border: 1px solid color-mix(in srgb, var(--admin-accent) 58%, transparent);
-    border-radius: inherit;
-    content: '';
-    pointer-events: none;
-    animation: analytics-marker-arrival .72s cubic-bezier(.16, 1, .3, 1) var(--marker-delay, 0ms) both;
+.analytics-world__marker {
+    fill: color-mix(in srgb, var(--admin-accent) 78%, transparent);
+    stroke: color-mix(in srgb, var(--admin-surface) 88%, transparent);
+    stroke-width: 1.5px;
+    cursor: pointer;
+    pointer-events: all;
+    transition: fill .14s ease, stroke .14s ease, stroke-width .14s ease, transform .14s ease;
 }
 
 .dark .analytics-world__marker {
-    border-color: rgba(20, 20, 20, .9);
+    stroke: rgba(20, 20, 20, .9);
 }
 
 .analytics-world__marker:hover,
 .analytics-world__marker:focus-visible {
-    z-index: 3;
-    background: var(--admin-accent);
-    box-shadow: 0 0 0 2px var(--admin-surface), 0 0 0 3px color-mix(in srgb, var(--admin-accent) 62%, transparent);
-    transform: translate(-50%, -50%) scale(1.06);
+    fill: var(--admin-accent);
+    stroke: color-mix(in srgb, var(--admin-accent-strong) 76%, var(--admin-surface));
+    stroke-width: 3px;
+    transform: scale(1.06);
     outline: 0;
 }
 
 .analytics-world__marker.is-selected {
-    z-index: 4;
-    background: color-mix(in srgb, var(--admin-accent) 82%, transparent);
-    box-shadow: 0 0 0 2px var(--admin-surface), 0 0 0 5px color-mix(in srgb, var(--admin-accent) 66%, transparent);
-    transform: translate(-50%, -50%);
+    fill: color-mix(in srgb, var(--admin-accent) 82%, transparent);
+    stroke: var(--admin-accent-strong);
+    stroke-width: 4px;
+    transform: scale(1);
+}
+
+.analytics-world__marker-pulse {
+    fill: none;
+    stroke: color-mix(in srgb, var(--admin-accent) 58%, transparent);
+    stroke-width: 1.5px;
+    pointer-events: none;
+    animation: analytics-marker-arrival .72s cubic-bezier(.16, 1, .3, 1) var(--marker-delay, 0ms) both;
 }
 
 @keyframes analytics-marker-arrival {
@@ -402,12 +415,12 @@
         overflow: visible;
     }
 
-    .analytics-world,
+    .analytics-visual-stage > .analytics-world,
     .analytics-stage-rail {
         grid-column: 1;
     }
 
-    .analytics-world {
+    .analytics-visual-stage > .analytics-world {
         min-height: 22rem;
     }
 
@@ -427,7 +440,7 @@
 
 @media (prefers-reduced-motion: reduce) {
     .analytics-world__marker,
-    .analytics-world__marker::after {
+    .analytics-world__marker-pulse {
         animation: none;
         transition: none;
     }
