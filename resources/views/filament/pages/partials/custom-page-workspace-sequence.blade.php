@@ -25,81 +25,80 @@
                 </x-admin.empty-state>
             @else
                 <div class="custom-page-component-sequence__rows" @if ($reorderEnabled) wire:sort="sortComponent" @endif>
-                    @foreach ($components as $component)
+                    @foreach ($components as $pageComponent)
                         <article
                             class="custom-page-component admin-hierarchy__group"
-                            wire:key="custom-component-{{ $component['target'] }}"
-                            @if ($reorderEnabled) wire:sort:item="{{ $component['target'] }}" @endif
+                            wire:key="custom-component-{{ $pageComponent['target'] }}"
+                            @if ($reorderEnabled) wire:sort:item="{{ $pageComponent['target'] }}" @endif
                         >
                             <div class="custom-page-component__header admin-hierarchy__row">
                                 <div class="admin-hierarchy__position-cell">
-                                    <span class="admin-position" aria-label="Position {{ $component['position'] }}">
-                                        {{ str_pad((string) $component['position'], 2, '0', STR_PAD_LEFT) }}
+                                    <span class="admin-position" aria-label="Position {{ $pageComponent['position'] }}">
+                                        {{ str_pad((string) $pageComponent['position'], 2, '0', STR_PAD_LEFT) }}
                                     </span>
                                 </div>
 
-                                <button class="admin-drag-handle custom-page-component__drag" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $component['type_label'] }}">⋮⋮</button>
+                                <button class="admin-drag-handle custom-page-component__drag" type="button" @if ($reorderEnabled) wire:sort:handle @else disabled @endif aria-label="Drag {{ $pageComponent['type_label'] }}">⋮⋮</button>
 
                                 <div class="custom-page-component__type">
                                     <select
                                         class="admin-inline-select custom-page-component__type-select"
                                         aria-label="Component type"
                                         @disabled(! $reorderEnabled)
-                                        wire:change="mountAction('changeComponentType', { componentIndex: {{ $component['index'] }}, componentType: '{{ $component['type'] }}', targetType: $event.target.value })"
+                                        wire:change="mountAction('changeComponentType', { componentIndex: {{ $pageComponent['index'] }}, componentType: '{{ $pageComponent['type'] }}', targetType: $event.target.value })"
                                     >
                                         @foreach ($componentTypeOptions as $value => $label)
-                                            <option value="{{ $value }}" @selected($value === $component['type'])>{{ $label }}</option>
+                                            <option value="{{ $value }}" @selected($value === $pageComponent['type'])>{{ $label }}</option>
                                         @endforeach
                                     </select>
                                 </div>
 
                                 <div class="custom-page-component__content admin-hierarchy__content">
-                                    <strong>{{ $component['content']['primary'] }}</strong>
-                                    @if ($component['content']['secondary'] !== '')
-                                        <span>{{ $component['content']['secondary'] }}</span>
+                                    <strong>{{ $pageComponent['content']['primary'] }}</strong>
+                                    @if ($pageComponent['content']['secondary'] !== '')
+                                        <span>{{ $pageComponent['content']['secondary'] }}</span>
                                     @endif
-                                    @if ($component['content']['meta'] !== '')
-                                        <small>{{ $component['content']['meta'] }}</small>
+                                    @if ($pageComponent['content']['meta'] !== '')
+                                        <small>{{ $pageComponent['content']['meta'] }}</small>
                                     @endif
                                 </div>
 
-                                @php
-                                    $componentStateIcon = $component['published']
-                                        ? \App\Filament\Support\AdminIcon::Unpublish->mini()
-                                        : \App\Filament\Support\AdminIcon::Publish->mini();
-                                @endphp
                                 <div class="admin-row-actions admin-row-actions--canonical custom-page-row-actions custom-page-component__actions admin-toolbar">
-                                    <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')" @disabled(! $reorderEnabled || ! $component['can_move_up']) aria-label="Move component up">
-                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
-                                        <span class="admin-action__label">Move up</span>
-                                    </button>
-                                    <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')" @disabled(! $reorderEnabled || ! $component['can_move_down']) aria-label="Move component down">
-                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
-                                        <span class="admin-action__label">Move down</span>
-                                    </button>
-                                    <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editComponent', { componentIndex: {{ $component['index'] }}, componentType: '{{ $component['type'] }}' })">
-                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
-                                        <span class="admin-action__label">Edit</span>
-                                    </button>
-                                    <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="setComponentPublished({{ $component['index'] }}, '{{ $component['type'] }}', {{ $component['published'] ? 'false' : 'true' }})">
-                                        <x-filament::icon :icon="$componentStateIcon" class="admin-action__icon" />
-                                        <span class="admin-action__label">{{ $component['published'] ? 'Unpublish' : 'Publish' }}</span>
-                                    </button>
-                                    <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="mountAction('deleteComponent', { componentIndex: {{ $component['index'] }}, componentType: '{{ $component['type'] }}' })">
-                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
-                                        <span class="admin-action__label">Delete</span>
-                                    </button>
+                                    <x-admin.row-action
+                                        :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                                        wire:click="moveComponent({{ $pageComponent['index'] }}, '{{ $pageComponent['type'] }}', 'up')"
+                                        @disabled(! $reorderEnabled || ! $pageComponent['can_move_up'])
+                                        aria-label="Move component up"
+                                    />
+                                    <x-admin.row-action
+                                        :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                                        wire:click="moveComponent({{ $pageComponent['index'] }}, '{{ $pageComponent['type'] }}', 'down')"
+                                        @disabled(! $reorderEnabled || ! $pageComponent['can_move_down'])
+                                        aria-label="Move component down"
+                                    />
+                                    <x-admin.row-action
+                                        :action="\App\Filament\Support\AdminRowAction::Edit"
+                                        wire:click="mountAction('editComponent', { componentIndex: {{ $pageComponent['index'] }}, componentType: '{{ $pageComponent['type'] }}' })"
+                                    />
+                                    <x-admin.row-action
+                                        :action="$pageComponent['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                                        wire:click="setComponentPublished({{ $pageComponent['index'] }}, '{{ $pageComponent['type'] }}', {{ $pageComponent['published'] ? 'false' : 'true' }})"
+                                    />
+                                    <x-admin.row-action
+                                        :action="\App\Filament\Support\AdminRowAction::Delete"
+                                        wire:click="mountAction('deleteComponent', { componentIndex: {{ $pageComponent['index'] }}, componentType: '{{ $pageComponent['type'] }}' })"
+                                    />
                                 </div>
 
-                                <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select {{ $component['type_label'] }}">
-                                    <input type="checkbox" value="{{ $component['target'] }}" wire:model.live="selectedComponentTargets">
+                                <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" aria-label="Select {{ $pageComponent['type_label'] }}">
+                                    <input type="checkbox" value="{{ $pageComponent['target'] }}" wire:model.live="selectedComponentTargets">
                                 </label>
                             </div>
 
-                            @if ($component['children'] !== [])
+                            @if ($pageComponent['children'] !== [])
                                 <div class="custom-page-component__children admin-hierarchy__children">
                                     <div class="custom-page-component__children-rows admin-hierarchy__children-rows" @if ($reorderEnabled) wire:sort="sortChild" @endif>
-                                        @foreach ($component['children'] as $child)
+                                        @foreach ($pageComponent['children'] as $child)
                                             @php
                                                 $childKindLabel = match ($child['kind']) {
                                                     'cv' => 'CV entry',
@@ -110,7 +109,7 @@
                                             @endphp
                                             <div
                                                 class="custom-page-child-row admin-hierarchy__row is-child {{ ($child['parent_published'] ?? true) ? '' : 'is-parent-unpublished' }}"
-                                                wire:key="child-{{ $component['target'] }}-{{ $child['key'] }}"
+                                                wire:key="child-{{ $pageComponent['target'] }}-{{ $child['key'] }}"
                                                 @if ($reorderEnabled) wire:sort:item="{{ $child['target'] }}" @endif
                                             >
                                                 <div class="admin-hierarchy__position-cell">
@@ -144,68 +143,80 @@
 
                                                 <div class="admin-row-actions admin-row-actions--canonical custom-page-row-actions custom-page-child-row__actions admin-toolbar">
                                                     @if ($child['kind'] === 'cv')
-                                                        <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveCvEntry({{ $child['entry_id'] }}, 'up')" @disabled(! $child['can_move_up']) aria-label="Move CV entry up">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Move up</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveCvEntry({{ $child['entry_id'] }}, 'down')" @disabled(! $child['can_move_down']) aria-label="Move CV entry down">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Move down</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editCvEntry', { entry: {{ $child['entry_id'] }} })">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Edit</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="transitionCvEntry({{ $child['entry_id'] }}, '{{ $child['published'] ? 'unpublish' : 'publish' }}')">
-                                                            <x-filament::icon :icon="$child['published'] ? \App\Filament\Support\AdminIcon::Unpublish->mini() : \App\Filament\Support\AdminIcon::Publish->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">{{ $child['published'] ? 'Unpublish' : 'Publish' }}</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="mountAction('deleteCvEntry', { entry: {{ $child['entry_id'] }} })">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Delete</span>
-                                                        </button>
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                                                            wire:click="moveCvEntry({{ $child['entry_id'] }}, 'up')"
+                                                            @disabled(! $child['can_move_up'])
+                                                            aria-label="Move CV entry up"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                                                            wire:click="moveCvEntry({{ $child['entry_id'] }}, 'down')"
+                                                            @disabled(! $child['can_move_down'])
+                                                            aria-label="Move CV entry down"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::Edit"
+                                                            wire:click="mountAction('editCvEntry', { entry: {{ $child['entry_id'] }} })"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="$child['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                                                            wire:click="transitionCvEntry({{ $child['entry_id'] }}, '{{ $child['published'] ? 'unpublish' : 'publish' }}')"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::Delete"
+                                                            wire:click="mountAction('deleteCvEntry', { entry: {{ $child['entry_id'] }} })"
+                                                        />
                                                     @elseif ($child['kind'] === 'list')
-                                                        <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveListEntry({{ $component['index'] }}, 'list', {{ $child['item_index'] }}, 'up')" @disabled(! $child['can_move_up']) aria-label="Move list entry up">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Move up</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveListEntry({{ $component['index'] }}, 'list', {{ $child['item_index'] }}, 'down')" @disabled(! $child['can_move_down']) aria-label="Move list entry down">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Move down</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editListEntry', { componentIndex: {{ $component['index'] }}, componentType: 'list', itemIndex: {{ $child['item_index'] }} })">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Edit</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="setListEntryPublished({{ $component['index'] }}, 'list', {{ $child['item_index'] }}, {{ $child['published'] ? 'false' : 'true' }})">
-                                                            <x-filament::icon :icon="$child['published'] ? \App\Filament\Support\AdminIcon::Unpublish->mini() : \App\Filament\Support\AdminIcon::Publish->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">{{ $child['published'] ? 'Unpublish' : 'Publish' }}</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="mountAction('deleteListEntry', { componentIndex: {{ $component['index'] }}, componentType: 'list', itemIndex: {{ $child['item_index'] }} })">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Delete</span>
-                                                        </button>
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                                                            wire:click="moveListEntry({{ $pageComponent['index'] }}, 'list', {{ $child['item_index'] }}, 'up')"
+                                                            @disabled(! $child['can_move_up'])
+                                                            aria-label="Move list entry up"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                                                            wire:click="moveListEntry({{ $pageComponent['index'] }}, 'list', {{ $child['item_index'] }}, 'down')"
+                                                            @disabled(! $child['can_move_down'])
+                                                            aria-label="Move list entry down"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::Edit"
+                                                            wire:click="mountAction('editListEntry', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'list', itemIndex: {{ $child['item_index'] }} })"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="$child['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                                                            wire:click="setListEntryPublished({{ $pageComponent['index'] }}, 'list', {{ $child['item_index'] }}, {{ $child['published'] ? 'false' : 'true' }})"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::Delete"
+                                                            wire:click="mountAction('deleteListEntry', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'list', itemIndex: {{ $child['item_index'] }} })"
+                                                        />
                                                     @elseif ($child['kind'] === 'contact')
-                                                        <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveContactChild({{ $component['index'] }}, 'contact', '{{ $child['child_type'] }}', 'up')" @disabled(! $child['can_move_up']) aria-label="Move Contact child up">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Move up</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveContactChild({{ $component['index'] }}, 'contact', '{{ $child['child_type'] }}', 'down')" @disabled(! $child['can_move_down']) aria-label="Move Contact child down">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Move down</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editContactChild', { componentIndex: {{ $component['index'] }}, componentType: 'contact', childType: '{{ $child['child_type'] }}' })">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Edit</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="setContactChildPublished({{ $component['index'] }}, 'contact', '{{ $child['child_type'] }}', {{ $child['published'] ? 'false' : 'true' }})">
-                                                            <x-filament::icon :icon="$child['published'] ? \App\Filament\Support\AdminIcon::Unpublish->mini() : \App\Filament\Support\AdminIcon::Publish->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">{{ $child['published'] ? 'Unpublish' : 'Publish' }}</span>
-                                                        </button>
-                                                        <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="mountAction('deleteContactChild', { componentIndex: {{ $component['index'] }}, componentType: 'contact', childType: '{{ $child['child_type'] }}' })">
-                                                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
-                                                            <span class="admin-action__label">Delete</span>
-                                                        </button>
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                                                            wire:click="moveContactChild({{ $pageComponent['index'] }}, 'contact', '{{ $child['child_type'] }}', 'up')"
+                                                            @disabled(! $child['can_move_up'])
+                                                            aria-label="Move Contact child up"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                                                            wire:click="moveContactChild({{ $pageComponent['index'] }}, 'contact', '{{ $child['child_type'] }}', 'down')"
+                                                            @disabled(! $child['can_move_down'])
+                                                            aria-label="Move Contact child down"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::Edit"
+                                                            wire:click="mountAction('editContactChild', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'contact', childType: '{{ $child['child_type'] }}' })"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="$child['published'] ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                                                            wire:click="setContactChildPublished({{ $pageComponent['index'] }}, 'contact', '{{ $child['child_type'] }}', {{ $child['published'] ? 'false' : 'true' }})"
+                                                        />
+                                                        <x-admin.row-action
+                                                            :action="\App\Filament\Support\AdminRowAction::Delete"
+                                                            wire:click="mountAction('deleteContactChild', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'contact', childType: '{{ $child['child_type'] }}' })"
+                                                        />
                                                     @endif
                                                 </div>
 
@@ -216,26 +227,26 @@
                                         @endforeach
                                     </div>
                                 </div>
-                            @elseif ($component['is_list'])
+                            @elseif ($pageComponent['is_list'])
                                 <div class="custom-page-component__children-empty">No list entries</div>
-                            @elseif ($component['is_cv_list'])
+                            @elseif ($pageComponent['is_cv_list'])
                                 <div class="custom-page-component__children-empty">No CV entries</div>
-                            @elseif ($component['is_contact'])
+                            @elseif ($pageComponent['is_contact'])
                                 <div class="custom-page-component__children-empty">No contact items</div>
                             @endif
 
-                            @if ($component['is_list'])
-                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addListEntry', { componentIndex: {{ $component['index'] }}, componentType: 'list' })">
+                            @if ($pageComponent['is_list'])
+                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addListEntry', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'list' })">
                                     <span aria-hidden="true">+</span>
                                     <strong>Add list item</strong>
                                 </button>
-                            @elseif ($component['is_cv_list'])
+                            @elseif ($pageComponent['is_cv_list'])
                                 <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addCvEntry')">
                                     <span aria-hidden="true">+</span>
                                     <strong>Add CV entry</strong>
                                 </button>
-                            @elseif ($component['is_contact'] && $component['contact_child_count'] < 3)
-                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addContactChild', { componentIndex: {{ $component['index'] }}, componentType: 'contact' })">
+                            @elseif ($pageComponent['is_contact'] && $pageComponent['contact_child_count'] < 3)
+                                <button class="custom-page-component-add-row custom-page-component-add-row--child" type="button" wire:click="mountAction('addContactChild', { componentIndex: {{ $pageComponent['index'] }}, componentType: 'contact' })">
                                     <span aria-hidden="true">+</span>
                                     <strong>Add contact item</strong>
                                 </button>

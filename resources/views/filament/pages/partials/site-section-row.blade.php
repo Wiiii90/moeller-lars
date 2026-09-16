@@ -105,57 +105,58 @@
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
                 @endif
 
-                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editHome')">
-                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
-                    <span class="admin-action__label">Edit</span>
-                </button>
+                <x-admin.row-action
+                    :action="\App\Filament\Support\AdminRowAction::Edit"
+                    wire:click="mountAction('editHome')"
+                />
 
-                <button
-                    class="admin-action admin-action--with-icon admin-action--state"
-                    type="button"
+                <x-admin.row-action
+                    :action="\App\Filament\Support\AdminRowAction::SkipHome"
                     wire:click="mountAction('skipHome')"
                     aria-label="{{ ($homeState['skip_home'] ?? false) ? 'Edit Skip Home' : 'Configure Skip Home' }}"
                     title="{{ ($homeState['skip_home'] ?? false) ? 'Edit Skip Home' : 'Configure Skip Home' }}"
-                >
-                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::SkipHome->mini()" class="admin-action__icon" />
-                    <span class="admin-action__label">Skip Home</span>
-                </button>
+                />
 
                 <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
             @else
                 @if ($section['can_reorder'])
-                    <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveSection({{ $section['id'] }}, 'up')" @disabled(! $reorderEnabled || ! $section['can_move_up']) aria-label="Move {{ $label }} up">
-                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
-                        <span class="admin-action__label">Move up</span>
-                    </button>
-                    <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveSection({{ $section['id'] }}, 'down')" @disabled(! $reorderEnabled || ! $section['can_move_down']) aria-label="Move {{ $label }} down">
-                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" class="admin-action__icon" />
-                        <span class="admin-action__label">Move down</span>
-                    </button>
+                    <x-admin.row-action
+                        :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                        wire:click="moveSection({{ $section['id'] }}, 'up')"
+                        @disabled(! $reorderEnabled || ! $section['can_move_up'])
+                        aria-label="Move {{ $label }} up"
+                    />
+                    <x-admin.row-action
+                        :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                        wire:click="moveSection({{ $section['id'] }}, 'down')"
+                        @disabled(! $reorderEnabled || ! $section['can_move_down'])
+                        aria-label="Move {{ $label }} down"
+                    />
                 @else
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
                 @endif
 
-                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('editPage', { section: {{ $section['id'] }} })">
-                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" class="admin-action__icon" />
-                    <span class="admin-action__label">Edit</span>
-                </button>
+                <x-admin.row-action
+                    :action="\App\Filament\Support\AdminRowAction::Edit"
+                    wire:click="mountAction('editPage', { section: {{ $section['id'] }} })"
+                />
 
                 @if ($section['can_change_publication'])
-                    <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="toggleSectionState({{ $section['id'] }})">
-                        <x-filament::icon :icon="($section['state'] === 'published' ? \App\Filament\Support\AdminIcon::Unpublish : \App\Filament\Support\AdminIcon::Publish)->mini()" class="admin-action__icon" />
-                        <span class="admin-action__label">{{ $section['state'] === 'published' ? 'Unpublish' : 'Publish' }}</span>
-                    </button>
+                    <x-admin.row-action
+                        :action="$section['state'] === 'published' ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                        wire:click="toggleSectionState({{ $section['id'] }})"
+                    />
                 @else
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
                 @endif
 
                 @if ($section['can_delete'])
-                    <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="deleteSection({{ $section['id'] }})" wire:confirm="Delete this page? Page-specific content, child pages, publication and navigation safety rules still apply.">
-                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Delete->mini()" class="admin-action__icon" />
-                        <span class="admin-action__label">Delete</span>
-                    </button>
+                    <x-admin.row-action
+                        :action="\App\Filament\Support\AdminRowAction::Delete"
+                        wire:click="deleteSection({{ $section['id'] }})"
+                        wire:confirm="Delete this page? Page-specific content, child pages, publication and navigation safety rules still apply."
+                    />
                 @else
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
                 @endif
