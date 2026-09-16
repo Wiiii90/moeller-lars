@@ -96,10 +96,12 @@ it('reads Contact publication decisions in a short committed transaction and wri
     $page->setAttribute('site_section_id', $section->getKey());
     $page->setAttribute('blocks', [[
         'type' => 'contact',
-        'show_form' => true,
-        'show_email' => false,
-        'social_platforms' => [],
-        'form_state' => 'enabled',
+        'published' => true,
+        'children' => [
+            ['type' => 'public_email', 'published' => false],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => []],
+            ['type' => 'contact_form', 'published' => true, 'form_state' => 'enabled', 'status_text' => null],
+        ],
     ]]);
     $page->save();
 
@@ -108,10 +110,12 @@ it('reads Contact publication decisions in a short committed transaction and wri
 
     $page->setAttribute('blocks', [[
         'type' => 'contact',
-        'show_form' => false,
-        'show_email' => false,
-        'social_platforms' => [],
-        'form_state' => 'enabled',
+        'published' => true,
+        'children' => [
+            ['type' => 'public_email', 'published' => false],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => []],
+            ['type' => 'contact_form', 'published' => false, 'form_state' => 'enabled', 'status_text' => null],
+        ],
     ]]);
     $page->save();
     PublicContentSetting::general()->update(['contact_recipient_email' => 'working@example.test']);
