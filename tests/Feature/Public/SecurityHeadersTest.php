@@ -15,7 +15,7 @@ it('uses a Pulse-specific CSP without weakening the public CSP', function (): vo
     $pulseCsp = $pulseResponse->headers->get('Content-Security-Policy');
 
     expect($pulseCsp)
-        ->toContain("script-src 'self' 'unsafe-inline'")
+        ->toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'")
         ->toContain("style-src 'self' 'unsafe-inline' https://fonts.bunny.net")
         ->toContain("font-src 'self' data: https://fonts.bunny.net")
         ->toContain("connect-src 'self'")
@@ -34,5 +34,6 @@ it('uses a Pulse-specific CSP without weakening the public CSP', function (): vo
         ->and($publicCsp)
         ->toContain("script-src 'self'")
         ->toContain("style-src 'self' 'nonce-{$nonce}'")
-        ->not->toContain("'unsafe-inline'");
+        ->not->toContain("'unsafe-inline'")
+        ->not->toContain("'unsafe-eval'");
 });
