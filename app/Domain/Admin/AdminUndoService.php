@@ -262,6 +262,7 @@ final class AdminUndoService
             if (ArtworkMedia::query()->where('artwork_id', $artwork->getKey())->where('media_asset_id', (int) $receipt->getAttribute('media_asset_id'))->exists()) {
                 throw new RuntimeException('The media inverse did not detach the expected asset.');
             }
+
             return;
         }
         if ($action === 'artwork.additional_media_detached') {
@@ -274,6 +275,7 @@ final class AdminUndoService
             if (! $restored || (int) $restored->getAttribute('position') !== (int) $receipt->getAttribute('before_position')) {
                 throw new RuntimeException('The media inverse did not restore the expected gallery position.');
             }
+
             return;
         }
 

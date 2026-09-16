@@ -408,8 +408,8 @@ final class CustomPageEditorialService
     }
 
     /**
-     * @param list<array<string,mixed>> $blocks
-     * @param list<array{index:int,type:string}> $targets
+     * @param  list<array<string,mixed>>  $blocks
+     * @param  list<array{index:int,type:string}>  $targets
      * @return list<int>
      */
     private function validatedIndices(array $blocks, array $targets): array
