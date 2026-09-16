@@ -14,6 +14,17 @@
     min-width: 80rem !important;
 }
 
+/* Blog has two extra data columns (image + status), so its Post column absorbs
+ * the half-unit that used to be stolen by Actions. The result is exactly four
+ * metric units before Actions, matching Exhibitions and Custom Page. */
+.journal-table--blog col:nth-child(4) {
+    width: var(--admin-table-one-half-units);
+}
+
+.journal-table col.journal-table__actions--blog {
+    width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
+}
+
 .journal-row-actions {
     display: grid !important;
     width: 100%;
