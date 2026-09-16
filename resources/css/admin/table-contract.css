@@ -380,24 +380,28 @@
     grid-column: span 2;
 }
 
+/* Custom Page hierarchy uses the same six metric units as the workspace above.
+ * Position + Drag consume half a unit, Component one unit and Content 2.5
+ * units. Actions start exactly on the 4/6 metric line and own the final two
+ * units together with the trailing Selection rail. */
 .custom-page-component-sequence {
-    --admin-hierarchy-position-column: 3rem;
+    --admin-hierarchy-position-column: var(--admin-table-quarter-unit);
+    --admin-hierarchy-drag-column: var(--admin-table-quarter-unit);
+    --admin-hierarchy-actions-column: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
+    --admin-hierarchy-row-gap: 0;
     --admin-hierarchy-columns:
         var(--admin-hierarchy-position-column)
         var(--admin-hierarchy-drag-column)
-        8.5rem
-        minmax(12rem, 1fr)
-        8.75rem
+        var(--admin-table-one-unit)
+        calc(var(--admin-table-two-units) + var(--admin-table-half-unit))
         var(--admin-hierarchy-actions-column)
-        var(--admin-hierarchy-select-column);
+        var(--admin-table-selection-width);
 }
 
 .custom-page-component-add-row {
     --admin-add-row-inset: calc(
         var(--admin-hierarchy-position-column)
         + var(--admin-hierarchy-drag-column)
-        + var(--admin-hierarchy-row-gap)
-        + var(--admin-hierarchy-row-gap)
     );
 }
 
@@ -405,8 +409,6 @@
     padding-left: calc(
         var(--admin-hierarchy-position-column)
         + var(--admin-hierarchy-drag-column)
-        + var(--admin-hierarchy-row-gap)
-        + var(--admin-hierarchy-row-gap)
     );
 }
 
@@ -417,17 +419,6 @@
 }
 
 @media (max-width: 1180px) {
-    .custom-page-component-sequence {
-        --admin-hierarchy-columns:
-            var(--admin-hierarchy-position-column)
-            var(--admin-hierarchy-drag-column)
-            8rem
-            minmax(12rem, 1fr)
-            8.25rem
-            var(--admin-hierarchy-actions-column)
-            var(--admin-hierarchy-select-column);
-    }
-
     .admin-pages__primary-grid {
         grid-template-columns: 3.1rem 1.8rem minmax(0, 1fr);
         gap: .3rem;
