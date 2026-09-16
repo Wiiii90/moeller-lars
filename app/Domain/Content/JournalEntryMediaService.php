@@ -47,11 +47,11 @@ final class JournalEntryMediaService
     {
         $changed = false;
 
-        if (array_key_exists('cover_media_asset_id', $data)) {
-            $changed = $this->syncCover($entry, $data['cover_media_asset_id']) || $changed;
+        if (array_key_exists('cover_media_asset_id', $data) && $this->syncCover($entry, $data['cover_media_asset_id'])) {
+            $changed = true;
         }
-        if (array_key_exists('gallery_images', $data)) {
-            $changed = $this->syncGallery($entry, $data['gallery_images']) || $changed;
+        if (array_key_exists('gallery_images', $data) && $this->syncGallery($entry, $data['gallery_images'])) {
+            $changed = true;
         }
 
         if ($changed) {
