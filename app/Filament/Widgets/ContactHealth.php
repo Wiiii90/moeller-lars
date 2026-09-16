@@ -51,20 +51,28 @@ final class ContactHealth extends Widget
             ->get(['blocks']);
 
         foreach ($settings as $pageSettings) {
-            $pageHasContact = false;
+            $pageHasPublishedContact = false;
+
             foreach ($pageSettings->components() as $block) {
-                if (($block['type'] ?? null) !== 'contact') {
+                if (($block['type'] ?? null) !== 'contact' || ! CustomPageSetting::componentPublished($block)) {
                     continue;
                 }
 
-                $pageHasContact = true;
-                if (($block['show_form'] ?? true) === true) {
+                $pageHasPublishedContact = true;
+
+                foreach ($pageSettings->contactChildren($block) as $child) {
+                    if (($child['type'] ?? null) !== 'contact_form' || ! CustomPageSetting::contactChildPublished($child)) {
+                        continue;
+                    }
+
                     $forms++;
-                    $states[] = is_string($block['form_state'] ?? null) ? $block['form_state'] : 'enabled';
+                    $states[] = ($child['form_state'] ?? 'enabled') === 'under_construction'
+                        ? 'under_construction'
+                        : 'enabled';
                 }
             }
 
-            if ($pageHasContact) {
+            if ($pageHasPublishedContact) {
                 $published++;
             }
         }

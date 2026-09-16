@@ -60,7 +60,7 @@ enum SiteSectionType: string
     public function compactLabel(): string
     {
         return match ($this) {
-            self::Home => 'Landing Page',
+            self::Home => 'Home',
             self::CustomPage => 'Custom',
             self::NavigationNode => 'Group',
             default => $this->label(),

@@ -1,6 +1,5 @@
 <?php
 
-use App\Filament\Pages\HomePresentation;
 use App\Http\Controllers\AdminMediaController;
 use App\Http\Controllers\PublicArtworkController;
 use App\Http\Controllers\PublicContactController;
@@ -34,8 +33,6 @@ Route::middleware(ProtectArtistPreview::class)
             ->where('section', '[a-z0-9]+(?:-[a-z0-9]+)*')
             ->name('site.section');
     });
-
-Route::get('/admin/home', fn () => redirect()->to(HomePresentation::getUrl(), 301));
 
 Route::get('/admin/media-preview/original/{mediaAsset}', [AdminMediaController::class, 'original'])
     ->name('admin.media.original');
