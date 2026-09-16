@@ -221,13 +221,13 @@
                                             <x-admin.row-action
                                                 :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                                 wire:click="movePost({{ $entry['id'] }}, 'up')"
-                                                @disabled(! $entry['can_move_up'])
+                                                :disabled="! $entry['can_move_up']"
                                                 aria-label="Move {{ $entry['title'] }} up"
                                             />
                                             <x-admin.row-action
                                                 :action="\App\Filament\Support\AdminRowAction::MoveDown"
                                                 wire:click="movePost({{ $entry['id'] }}, 'down')"
-                                                @disabled(! $entry['can_move_down'])
+                                                :disabled="! $entry['can_move_down']"
                                                 aria-label="Move {{ $entry['title'] }} down"
                                             />
                                             <x-admin.row-action
@@ -278,20 +278,20 @@
                                             <x-admin.row-action
                                                 :action="\App\Filament\Support\AdminRowAction::Delete"
                                                 wire:click="mountAction('deletePost', { post: {{ $entry['id'] }} })"
-                                                @disabled(! $entry['can_delete'])
+                                                :disabled="! $entry['can_delete']"
                                                 title="{{ $entry['delete_help'] ?? 'Delete post' }}"
                                             />
                                         @else
                                             <x-admin.row-action
                                                 :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                                 wire:click="moveExhibition({{ $entry['id'] }}, 'up')"
-                                                @disabled(! $entry['can_move_up'])
+                                                :disabled="! $entry['can_move_up']"
                                                 aria-label="Move {{ $entry['title'] }} up"
                                             />
                                             <x-admin.row-action
                                                 :action="\App\Filament\Support\AdminRowAction::MoveDown"
                                                 wire:click="moveExhibition({{ $entry['id'] }}, 'down')"
-                                                @disabled(! $entry['can_move_down'])
+                                                :disabled="! $entry['can_move_down']"
                                                 aria-label="Move {{ $entry['title'] }} down"
                                             />
                                             <x-admin.row-action
@@ -312,7 +312,7 @@
                                             <x-admin.row-action
                                                 :action="\App\Filament\Support\AdminRowAction::Delete"
                                                 wire:click="mountAction('deleteExhibition', { exhibition: {{ $entry['id'] }} })"
-                                                @disabled(! $entry['can_delete'])
+                                                :disabled="! $entry['can_delete']"
                                                 title="{{ $entry['delete_help'] ?? 'Delete exhibition' }}"
                                             />
                                         @endif
