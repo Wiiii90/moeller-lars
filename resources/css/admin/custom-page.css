@@ -10,10 +10,16 @@
     flex-wrap: nowrap;
 }
 
-/* Shared table-contract.css owns the six-unit hierarchy geometry. Keep a
- * desktop floor large enough for the full icon + label action set; narrower
- * viewports scroll the hierarchy instead of silently truncating labels. */
+/* The hierarchy itself is the scrollport and must stay constrained to the
+ * workspace. Its inner tracks own the desktop floor required by the complete
+ * icon + label action set. This keeps Actions/Selection reachable instead of
+ * letting the scroll container itself spill out of the page. */
 .custom-page-component-sequence {
+    min-width: 0;
+}
+
+.custom-page-component-sequence__header,
+.custom-page-component-sequence__rows {
     min-width: 76rem;
 }
 
