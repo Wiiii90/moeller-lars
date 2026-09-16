@@ -9,6 +9,8 @@ it('keeps shared admin action icons on the semantic icon catalog', function (): 
     expect($catalog)
         ->toContain("case DialogSubmit = 'heroicon-o-check';")
         ->toContain("case Commit = 'heroicon-o-check-circle';")
+        ->toContain("case Previous = 'heroicon-o-chevron-left';")
+        ->toContain("case Next = 'heroicon-o-chevron-right';")
         ->toContain("case Edit = 'heroicon-o-pencil-square';")
         ->toContain("case Delete = 'heroicon-o-trash';")
         ->toContain("case Remove = 'heroicon-o-x-mark';")
@@ -71,10 +73,11 @@ it('does not hard code heroicons outside the shared admin icon catalog', functio
     expect($violations)->toBe([]);
 });
 
-it('keeps Gallery icon action geometry in the shared admin action contract', function (): void {
+it('keeps Gallery icon action geometry and reorder semantics on shared contracts', function (): void {
     $root = dirname(__DIR__, 3);
     $shared = file_get_contents($root.'/resources/css/admin.css');
     $gallery = file_get_contents($root.'/resources/css/admin/gallery.css');
+    $galleryView = file_get_contents($root.'/resources/views/filament/resources/artworks/pages/manage-gallery-artworks.blade.php');
 
     expect($shared)
         ->toContain('Canonical compact icon-action grammar shared by cards and data rows')
@@ -88,4 +91,10 @@ it('keeps Gallery icon action geometry in the shared admin action contract', fun
         ->not->toContain('.gallery-workspace__icon-action:hover')
         ->not->toContain('.gallery-workspace__icon-action:focus-visible')
         ->not->toContain('.gallery-workspace__icon-action:disabled');
+
+    expect($galleryView)
+        ->toContain('AdminIcon::MoveUp->mini()')
+        ->toContain('AdminIcon::MoveDown->mini()')
+        ->not->toContain('>↑</button>')
+        ->not->toContain('>↓</button>');
 });

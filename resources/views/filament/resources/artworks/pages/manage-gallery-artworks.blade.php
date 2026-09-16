@@ -343,21 +343,25 @@
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Edit->mini()" />
                                     </button>
                                     <button
-                                        class="admin-action gallery-workspace__order-action"
+                                        class="gallery-workspace__icon-action gallery-workspace__order-action"
                                         type="button"
                                         wire:click="moveArtwork({{ $artwork['id'] }}, 'up')"
                                         title="{{ $reorderEnabled ? 'Move artwork earlier' : 'Clear filters to reorder' }}"
                                         aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' earlier' : 'Clear filters to reorder '.$artwork['title'] }}"
                                         @disabled(! $reorderEnabled || ! $artwork['can_move_up'])
-                                    >↑</button>
+                                    >
+                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" />
+                                    </button>
                                     <button
-                                        class="admin-action gallery-workspace__order-action"
+                                        class="gallery-workspace__icon-action gallery-workspace__order-action"
                                         type="button"
                                         wire:click="moveArtwork({{ $artwork['id'] }}, 'down')"
                                         title="{{ $reorderEnabled ? 'Move artwork later' : 'Clear filters to reorder' }}"
                                         aria-label="{{ $reorderEnabled ? 'Move '.$artwork['title'].' later' : 'Clear filters to reorder '.$artwork['title'] }}"
                                         @disabled(! $reorderEnabled || ! $artwork['can_move_down'])
-                                    >↓</button>
+                                    >
+                                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveDown->mini()" />
+                                    </button>
                                     @if ($moveTargets !== [])
                                         <button class="gallery-workspace__icon-action" type="button" wire:click="mountAction('moveArtworkToGallery', { artwork: {{ $artwork['id'] }} })" title="Move to Gallery" aria-label="Move {{ $artwork['title'] }} to another Gallery">
                                             <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveBetween->mini()" />

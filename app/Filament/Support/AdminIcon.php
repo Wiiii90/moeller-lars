@@ -32,6 +32,8 @@ enum AdminIcon: string
     case Copy = 'heroicon-o-clipboard-document';
 
     case Back = 'heroicon-o-arrow-left';
+    case Previous = 'heroicon-o-chevron-left';
+    case Next = 'heroicon-o-chevron-right';
     case OpenPublic = 'heroicon-o-arrow-top-right-on-square';
     case OpenEntry = 'heroicon-o-inbox-arrow-down';
     case Redirect = 'heroicon-o-arrow-right';

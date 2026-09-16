@@ -83,9 +83,9 @@
                                         wire:navigate
                                         aria-label="Previous year"
                                         title="Previous year"
-                                    ><x-filament::icon icon="heroicon-m-chevron-left" /></a>
+                                    ><x-filament::icon :icon="\App\Filament\Support\AdminIcon::Previous->mini()" /></a>
                                 @else
-                                    <span class="admin-icon-action is-disabled" aria-hidden="true"><x-filament::icon icon="heroicon-m-chevron-left" /></span>
+                                    <span class="admin-icon-action is-disabled" aria-hidden="true"><x-filament::icon :icon="\App\Filament\Support\AdminIcon::Previous->mini()" /></span>
                                 @endif
 
                                 <strong>{{ $calendarYear }}</strong>
@@ -97,9 +97,9 @@
                                         wire:navigate
                                         aria-label="Next year"
                                         title="Next year"
-                                    ><x-filament::icon icon="heroicon-m-chevron-right" /></a>
+                                    ><x-filament::icon :icon="\App\Filament\Support\AdminIcon::Next->mini()" /></a>
                                 @else
-                                    <span class="admin-icon-action is-disabled" aria-hidden="true"><x-filament::icon icon="heroicon-m-chevron-right" /></span>
+                                    <span class="admin-icon-action is-disabled" aria-hidden="true"><x-filament::icon :icon="\App\Filament\Support\AdminIcon::Next->mini()" /></span>
                                 @endif
                             </div>
                         </div>
