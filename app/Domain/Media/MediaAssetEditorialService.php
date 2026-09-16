@@ -3,7 +3,6 @@
 namespace App\Domain\Media;
 
 use App\Domain\Admin\AdminAuditService;
-use App\Domain\Admin\CvEntryEditorialService;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
@@ -15,7 +14,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
-use App\Models\CvEntry;
 use App\Models\ExhibitionMedia;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
@@ -32,7 +30,6 @@ class MediaAssetEditorialService
         private readonly MediaReferenceQuery $referenceQuery,
         private readonly JournalEntryMediaService $journalMedia,
         private readonly CustomPageEditorialService $customPages,
-        private readonly CvEntryEditorialService $cvEntries,
         private readonly HomePresentationEditorialService $homePresentation,
         private readonly PublicationMediaCleanupService $publicationMediaCleanup,
     ) {}
@@ -238,7 +235,6 @@ class MediaAssetEditorialService
         }
 
         $this->removeCustomPageReferences($assetId);
-        $this->removeCvReferences($assetId);
         $this->removeHomeReferences($assetId);
     }
 
@@ -305,33 +301,6 @@ class MediaAssetEditorialService
                     $block['items'] = $items;
                     $this->customPages->updateBlock($customPage, $index, 'list', $block);
                 }
-            }
-        }
-    }
-
-    private function removeCvReferences(int $assetId): void
-    {
-        /** @var EloquentCollection<int, CvEntry> $entries */
-        $entries = CvEntry::query()
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get();
-
-        foreach ($entries as $entry) {
-            $data = [];
-            $imageId = $entry->getAttribute('image_media_asset_id');
-            if (is_numeric($imageId) && (int) $imageId === $assetId) {
-                $data['image_media_asset_id'] = null;
-            }
-
-            $body = $entry->getAttribute('body');
-            $clean = $this->removeRichTextReference($body, $assetId);
-            if ($clean !== $body) {
-                $data['body'] = $clean;
-            }
-
-            if ($data !== []) {
-                $this->cvEntries->update($entry, $data);
             }
         }
     }
