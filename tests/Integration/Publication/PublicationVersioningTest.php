@@ -151,6 +151,7 @@ it('restores media parents before artwork media when reverting the current LIVE 
     $artworkId = (int) DB::table('artworks')->insertGetId([
         'artwork_category_id' => $categoryId,
         'slug' => 'revert-media-artwork',
+        'analytics_key' => '11111111-1111-4111-8111-111111111111',
         'title' => 'Revert media artwork',
         'state' => 'published',
         'position' => 0,
