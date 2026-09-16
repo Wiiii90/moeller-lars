@@ -1,19 +1,11 @@
 /* Canonical scrollport contract for admin tables.
  *
- * Tables may overflow horizontally, but the native scrollbar track stays
- * visually hidden at every breakpoint so it never reserves vertical layout
- * space between the final data row and following add-row/pager controls.
- * Horizontal scrolling itself remains available through the scroll container.
+ * Do not suppress horizontal scrollbars globally. Some admin tables genuinely
+ * overflow and their controls must remain discoverable and reachable. The
+ * no-gutter exception for a data table immediately followed by an add row is
+ * scoped in data-workspace.css, where it cannot affect unrelated tables.
  */
 .admin-table {
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none;
-}
-
-.admin-table::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
 }
