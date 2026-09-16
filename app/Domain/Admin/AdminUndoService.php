@@ -26,7 +26,7 @@ final class AdminUndoService
     public function __construct(
         private readonly AdminAuditService $audit,
         private readonly ArtworkEditorialService $artworkEditorial,
-        private readonly EditorialRecordService $editorialRecords,
+        private readonly AdminLifecycleRegistry $lifecycle,
         private readonly AdminSnapshotReceiptService $snapshots,
         private readonly AdminUndoContext $undoContext,
     ) {}
@@ -78,7 +78,7 @@ final class AdminUndoService
                     throw ValidationException::withMessages(['undo' => 'Undo is no longer available because this item changed afterwards.']);
                 }
 
-                $result = $this->executeLifecycleInverse($target, $inverseActionKey);
+                $result = $this->lifecycle->applyInverse($target, $inverseActionKey);
                 $expectedRestoredState = (string) $receipt->getAttribute('before_state');
                 if ((string) $result->getAttribute('state') !== $expectedRestoredState) {
                     throw new RuntimeException('The domain inverse did not restore the receipt state.');
@@ -114,32 +114,14 @@ final class AdminUndoService
 
     private function lockedTarget(AdminActionReceipt $receipt): Artwork|Exhibition
     {
-        $entityId = (int) $receipt->getAttribute('entity_id');
+        $target = $this->lifecycle->findTarget(
+            (string) $receipt->getAttribute('entity_type'),
+            (int) $receipt->getAttribute('entity_id'),
+            lockForUpdate: true,
+        );
 
-        return match ((string) $receipt->getAttribute('entity_type')) {
-            'artwork' => $this->lockedArtwork($entityId),
-            'exhibition' => $this->lockedExhibition($entityId),
-            default => throw ValidationException::withMessages(['undo' => 'The target of this change is no longer part of the active editorial model.']),
-        };
-    }
-
-    private function lockedArtwork(int $entityId): Artwork
-    {
-        /** @var Artwork|null $target */
-        $target = Artwork::query()->whereKey($entityId)->lockForUpdate()->first();
-        if (! $target) {
-            throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists.']);
-        }
-
-        return $target;
-    }
-
-    private function lockedExhibition(int $entityId): Exhibition
-    {
-        /** @var Exhibition|null $target */
-        $target = Exhibition::query()->whereKey($entityId)->lockForUpdate()->first();
-        if (! $target) {
-            throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists.']);
+        if ($target === null) {
+            throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists or is no longer part of the active editorial model.']);
         }
 
         return $target;
@@ -317,23 +299,6 @@ final class AdminUndoService
         $nextIndex = array_search($next, $ordered, true);
 
         return is_int($previousIndex) && is_int($nextIndex) && $nextIndex === $previousIndex + 1;
-    }
-
-    private function executeLifecycleInverse(Artwork|Exhibition $target, string $inverseActionKey): Artwork|Exhibition
-    {
-        if ($target instanceof Artwork) {
-            return match ($inverseActionKey) {
-                'artwork.published' => $this->artworkEditorial->publish($target),
-                'artwork.unpublished' => $this->artworkEditorial->unpublish($target),
-                default => throw ValidationException::withMessages(['undo' => 'This artwork change has no reversible contract.']),
-            };
-        }
-
-        return match ($inverseActionKey) {
-            'exhibition.published' => $this->editorialRecords->publish($target),
-            'exhibition.unpublished' => $this->editorialRecords->unpublish($target),
-            default => throw ValidationException::withMessages(['undo' => 'This editorial change has no reversible contract.']),
-        };
     }
 
     private function conflict(): never

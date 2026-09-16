@@ -6,10 +6,10 @@ use App\Models\AdminActionReceipt;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
-use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
@@ -27,18 +27,15 @@ final class AdminActionReceiptService
         'artwork.additional_media_reordered',
     ];
 
-    public function __construct(private readonly AdminSnapshotReceiptService $snapshots) {}
+    public function __construct(
+        private readonly AdminSnapshotReceiptService $snapshots,
+        private readonly AdminLifecycleRegistry $lifecycle,
+    ) {}
 
     public function recordForAuditEvent(AuditEvent $event, User $actor): ?AdminActionReceipt
     {
         $action = (string) $event->getAttribute('action');
-        $transition = match ($action) {
-            'artwork.published' => ['entity' => 'artwork', 'before' => 'draft', 'after' => 'published', 'inverse' => 'artwork.unpublished'],
-            'artwork.unpublished' => ['entity' => 'artwork', 'before' => 'published', 'after' => 'draft', 'inverse' => 'artwork.published'],
-            'exhibition.published' => ['entity' => 'exhibition', 'before' => 'draft', 'after' => 'published', 'inverse' => 'exhibition.unpublished'],
-            'exhibition.unpublished' => ['entity' => 'exhibition', 'before' => 'published', 'after' => 'draft', 'inverse' => 'exhibition.published'],
-            default => null,
-        };
+        $transition = $this->lifecycle->transitionForAction($action);
 
         if ($transition !== null) {
             $this->snapshots->discardForAuditEvent($event);
@@ -47,7 +44,7 @@ final class AdminActionReceiptService
                 return null;
             }
 
-            $target = $this->findTarget($transition['entity'], (int) $event->getAttribute('entity_id'));
+            $target = $this->lifecycle->findTarget($transition['entity'], (int) $event->getAttribute('entity_id'));
             if ($target === null || (string) $target->getAttribute('state') !== $transition['after']) {
                 return null;
             }
@@ -55,6 +52,7 @@ final class AdminActionReceiptService
             return $this->recordStateTransition(
                 $event,
                 $actor,
+                $transition['entity'],
                 $target,
                 $transition['before'],
                 $transition['after'],
@@ -147,7 +145,8 @@ final class AdminActionReceiptService
     private function recordStateTransition(
         AuditEvent $event,
         User $actor,
-        Artwork|Exhibition $target,
+        string $entityType,
+        Model $target,
         string $beforeState,
         string $afterState,
         string $inverseActionKey,
@@ -158,7 +157,7 @@ final class AdminActionReceiptService
 
         return $this->storeReceipt($event, $actor, [
             'inverse_action_key' => $inverseActionKey,
-            'entity_type' => $this->entityType($target),
+            'entity_type' => $entityType,
             'entity_id' => (int) $target->getKey(),
             'before_state' => $beforeState,
             'after_state' => $afterState,
@@ -524,42 +523,10 @@ final class AdminActionReceiptService
                 ->values()
                 ->all());
 
-        return [
-            'artwork' => $this->pluckStates(Artwork::class, $ids->get('artwork', [])),
-            'exhibition' => $this->pluckStates(Exhibition::class, $ids->get('exhibition', [])),
-        ];
-    }
+        /** @var array<string, array<int, int>> $idsByEntityType */
+        $idsByEntityType = $ids->all();
 
-    /**
-     * @param  class-string<Artwork|Exhibition>  $model
-     * @param  array<int, int>  $ids
-     * @return array<int, string>
-     */
-    private function pluckStates(string $model, array $ids): array
-    {
-        if ($ids === []) {
-            return [];
-        }
-
-        return $model::query()
-            ->whereKey($ids)
-            ->pluck('state', 'id')
-            ->map(static fn (mixed $state): string => (string) $state)
-            ->all();
-    }
-
-    private function findTarget(string $entityType, int $entityId): Artwork|Exhibition|null
-    {
-        return match ($entityType) {
-            'artwork' => Artwork::query()->find($entityId),
-            'exhibition' => Exhibition::query()->find($entityId),
-            default => null,
-        };
-    }
-
-    private function entityType(Artwork|Exhibition $target): string
-    {
-        return $target instanceof Artwork ? 'artwork' : 'exhibition';
+        return $this->lifecycle->loadStates($idsByEntityType);
     }
 
     private function positiveInt(mixed $value): ?int
