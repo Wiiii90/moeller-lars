@@ -2,10 +2,8 @@
 
 namespace App\Filament\Pages\Concerns;
 
-use App\Domain\Admin\EditorialRecordService;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Models\CustomPageSetting;
-use App\Models\CvEntry;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
@@ -21,16 +19,6 @@ trait CustomPageWorkspaceChildOrdering
 
         $parts = explode(':', $target);
         $kind = $parts[0];
-        if ($kind === 'cv' && isset($parts[1]) && ctype_digit($parts[1])) {
-            /** @var CvEntry $entry */
-            $entry = CvEntry::query()->findOrFail((int) $parts[1]);
-            app(EditorialRecordService::class)->sortCv($entry, $position);
-            $this->clearSelections();
-            $this->loadComponentProjection(refreshCvCount: true);
-
-            return;
-        }
-
         if ($kind === 'list' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && ctype_digit($parts[2])) {
             app(CustomPageEditorialService::class)->sortListItem(
                 $this->settings(),
@@ -40,7 +28,7 @@ trait CustomPageWorkspaceChildOrdering
                 $position,
             );
             $this->clearSelections();
-            $this->loadComponentProjection(refreshCvCount: false);
+            $this->loadComponentProjection();
 
             return;
         }
@@ -54,7 +42,7 @@ trait CustomPageWorkspaceChildOrdering
                 $position,
             );
             $this->clearSelections();
-            $this->loadComponentProjection(refreshCvCount: false);
+            $this->loadComponentProjection();
 
             return;
         }
@@ -118,15 +106,12 @@ trait CustomPageWorkspaceChildOrdering
     {
         $listGroups = [];
         $contactGroups = [];
-        $cvIds = [];
 
         foreach ($targets as $target) {
             if ($target['kind'] === 'list') {
                 $listGroups[$target['component_index']][] = $target['item_index'];
             } elseif ($target['kind'] === 'contact') {
                 $contactGroups[$target['component_index']][] = $target['child_type'];
-            } elseif ($target['kind'] === 'cv') {
-                $cvIds[] = $target['entry_id'];
             }
         }
 
@@ -136,26 +121,6 @@ trait CustomPageWorkspaceChildOrdering
         foreach ($contactGroups as $componentIndex => $types) {
             app(CustomPageEditorialService::class)->setContactChildrenPublished($this->settings(), (int) $componentIndex, 'contact', $types, $published);
         }
-
-        $records = app(EditorialRecordService::class);
-        foreach (array_values(array_unique($cvIds)) as $entryId) {
-            /** @var CvEntry|null $entry */
-            $entry = CvEntry::query()->find($entryId);
-            if (! $entry instanceof CvEntry) {
-                continue;
-            }
-            $state = (string) $entry->getAttribute('state');
-            if ($published && in_array($state, ['archived', 'hidden'], true)) {
-                /** @var CvEntry $entry */
-                $entry = $records->restoreDraft($entry);
-                $state = 'draft';
-            }
-            if ($published && $state === 'draft') {
-                $records->publish($entry);
-            } elseif (! $published && $state === 'published') {
-                $records->unpublish($entry);
-            }
-        }
     }
 
     /** @param list<array<string,mixed>> $targets */
@@ -164,15 +129,12 @@ trait CustomPageWorkspaceChildOrdering
         $changed = false;
         $listGroups = [];
         $contactGroups = [];
-        $cvIds = [];
 
         foreach ($targets as $target) {
             if ($target['kind'] === 'list') {
                 $listGroups[$target['component_index']][] = $target['item_index'];
             } elseif ($target['kind'] === 'contact') {
                 $contactGroups[$target['component_index']][] = $target['child_type'];
-            } elseif ($target['kind'] === 'cv') {
-                $cvIds[] = $target['entry_id'];
             }
         }
 
@@ -216,21 +178,6 @@ trait CustomPageWorkspaceChildOrdering
             }
         }
 
-        if ($cvIds !== []) {
-            $entries = CvEntry::query()
-                ->whereIn('id', array_values(array_unique($cvIds)))
-                ->orderBy('position')
-                ->orderBy('id')
-                ->get()
-                ->all();
-            if ($direction === 'down') {
-                $entries = array_reverse($entries);
-            }
-            foreach ($entries as $entry) {
-                $changed = app(EditorialRecordService::class)->move($entry, $direction) || $changed;
-            }
-        }
-
         return $changed;
     }
 
@@ -247,7 +194,6 @@ trait CustomPageWorkspaceChildOrdering
 
         $listGroups = [];
         $contactGroups = [];
-        $cvIds = [];
         foreach ($children as $target) {
             if ($target['kind'] === 'list') {
                 if (! isset($parentKeys[$target['component_index'].':list'])) {
@@ -257,8 +203,6 @@ trait CustomPageWorkspaceChildOrdering
                 if (! isset($parentKeys[$target['component_index'].':contact'])) {
                     $contactGroups[$target['component_index']][] = $target['child_type'];
                 }
-            } elseif ($target['kind'] === 'cv') {
-                $cvIds[] = $target['entry_id'];
             }
         }
 
@@ -267,13 +211,6 @@ trait CustomPageWorkspaceChildOrdering
         }
         foreach ($contactGroups as $componentIndex => $types) {
             app(CustomPageEditorialService::class)->deleteContactChildren($this->settings(), (int) $componentIndex, 'contact', $types);
-        }
-        foreach (array_values(array_unique($cvIds)) as $entryId) {
-            /** @var CvEntry|null $entry */
-            $entry = CvEntry::query()->find($entryId);
-            if ($entry instanceof CvEntry) {
-                app(EditorialRecordService::class)->deleteCv($entry);
-            }
         }
     }
 }
