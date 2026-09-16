@@ -6,7 +6,6 @@ use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SocialLinks;
 use App\Models\CustomPageSetting;
-use App\Models\CvEntry;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
@@ -43,35 +42,24 @@ trait CustomPageWorkspaceProjectionState
             : null;
         $this->previewUrl = app(SitePreviewContext::class)->previewUrlFor($section);
 
-        $this->loadComponentProjection(refreshCvCount: true);
+        $this->loadComponentProjection();
     }
 
-    private function refreshFromFirstPage(bool $refreshCvCount): void
+    private function refreshFromFirstPage(bool $refreshCvCount = false): void
     {
         $this->page = 1;
         $this->clearSelections();
-        $this->loadComponentProjection($refreshCvCount);
+        $this->loadComponentProjection();
     }
 
-    private function loadComponentProjection(bool $refreshCvCount): void
+    private function loadComponentProjection(bool $refreshCvCount = false): void
     {
         $settings = $this->settings();
         $blocks = $settings->components();
         $this->unfilteredComponentCount = count($blocks);
-        $this->hasCvList = collect($blocks)->contains(static fn (array $block): bool => ($block['type'] ?? null) === 'cv_list');
-
-        $cvRecords = collect();
-        if ($this->hasCvList) {
-            $cvRecords = CvEntry::query()->orderBy('position')->orderBy('id')->get();
-            if ($refreshCvCount || $this->cvEntryCount === 0) {
-                $this->cvEntryCount = $cvRecords->count();
-            }
-        } else {
-            $this->cvEntryCount = 0;
-        }
 
         $imageIds = collect($blocks)
-            ->filter(static fn (array $block): bool => in_array($block['type'] ?? null, ['image', 'cv_list'], true))
+            ->filter(static fn (array $block): bool => in_array($block['type'] ?? null, ['image', 'list'], true))
             ->pluck('media_asset_id')
             ->filter(static fn (mixed $id): bool => is_numeric($id))
             ->map(static fn (mixed $id): int => (int) $id)
@@ -111,7 +99,6 @@ trait CustomPageWorkspaceProjectionState
             $children = $this->componentChildren(
                 $settings,
                 $block,
-                $cvRecords->all(),
                 $index,
                 $published,
                 $reorderEnabled,
@@ -145,7 +132,6 @@ trait CustomPageWorkspaceProjectionState
                 'editable' => true,
                 'can_move_up' => $reorderEnabled && $index > 0,
                 'can_move_down' => $reorderEnabled && $index < count($blocks) - 1,
-                'is_cv_list' => $type === 'cv_list',
                 'is_list' => $type === 'list',
                 'is_contact' => $type === 'contact',
                 'contact_child_count' => $type === 'contact' ? count($settings->contactChildren($block)) : 0,
@@ -158,10 +144,9 @@ trait CustomPageWorkspaceProjectionState
         $this->components = array_slice($projected, $offset, $this->pageSize);
         $this->retainVisibleSelections();
 
-        $entries = $listEntryCount + ($this->hasCvList ? $this->cvEntryCount : 0);
         $this->metrics = [
             ['label' => 'Components', 'value' => number_format(count($blocks)), 'description' => 'Page sequence'],
-            ['label' => 'Entries', 'value' => number_format($entries), 'description' => 'CV + list entries'],
+            ['label' => 'Entries', 'value' => number_format($listEntryCount), 'description' => 'List entries'],
             ['label' => 'Images', 'value' => number_format($counts['image']), 'description' => 'Image components'],
             ['label' => 'Visits', 'value' => $this->metricValue($this->analytics['page']['visits'] ?? null), 'description' => 'This page · 30d'],
             ['label' => 'Views', 'value' => $this->metricValue($this->analytics['page']['views'] ?? null), 'description' => 'This page · 30d'],
