@@ -5,12 +5,14 @@ it('keeps shared admin action icons on the semantic icon catalog', function (): 
     $catalog = file_get_contents($root.'/app/Filament/Support/AdminIcon.php');
     $rowActions = file_get_contents($root.'/app/Filament/Support/AdminRowAction.php');
     $dialogs = file_get_contents($root.'/app/Filament/Support/Dialogs/AdminDialog.php');
+    $activityView = file_get_contents($root.'/resources/views/filament/pages/activity.blade.php');
 
     expect($catalog)
         ->toContain("case DialogSubmit = 'heroicon-o-check';")
         ->toContain("case Commit = 'heroicon-o-check-circle';")
         ->toContain("case Previous = 'heroicon-o-chevron-left';")
         ->toContain("case Next = 'heroicon-o-chevron-right';")
+        ->toContain("case Undo = 'heroicon-o-arrow-uturn-left';")
         ->toContain("case Edit = 'heroicon-o-pencil-square';")
         ->toContain("case Delete = 'heroicon-o-trash';")
         ->toContain("case Remove = 'heroicon-o-x-mark';")
@@ -33,6 +35,8 @@ it('keeps shared admin action icons on the semantic icon catalog', function (): 
     expect($dialogs)
         ->toContain('AdminIcon::DialogSubmit')
         ->toContain('AdminIcon::Delete');
+
+    expect($activityView)->toContain('AdminIcon::Undo->mini()');
 });
 
 it('does not hard code heroicons outside the shared admin icon catalog', function (): void {

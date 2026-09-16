@@ -47,6 +47,7 @@ enum AdminIcon: string
     case Inspect = 'heroicon-o-magnifying-glass-plus';
     case Upload = 'heroicon-o-arrow-up-tray';
     case Refresh = 'heroicon-o-arrow-path';
+    case Undo = 'heroicon-o-arrow-uturn-left';
     case AddFromLibrary = 'heroicon-o-plus-circle';
     case MoveBetween = 'heroicon-o-arrows-right-left';
     case MoveUp = 'heroicon-o-arrow-up';

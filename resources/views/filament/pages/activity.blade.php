@@ -422,7 +422,7 @@
                                                 wire:click="undo({{ $event['undo']['id'] }})"
                                                 wire:confirm="{{ $event['undo']['confirmation'] }}"
                                             >
-                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
+                                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
                                                 <span class="admin-action__label">Undo</span>
                                             </button>
                                         @endif
