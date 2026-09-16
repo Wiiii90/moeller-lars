@@ -122,14 +122,14 @@
                 @if ($section['can_reorder'])
                     <x-admin.row-action
                         :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                        :disabled="! $reorderEnabled || ! $section['can_move_up']"
                         wire:click="moveSection({{ $section['id'] }}, 'up')"
-                        @disabled(! $reorderEnabled || ! $section['can_move_up'])
                         aria-label="Move {{ $label }} up"
                     />
                     <x-admin.row-action
                         :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                        :disabled="! $reorderEnabled || ! $section['can_move_down']"
                         wire:click="moveSection({{ $section['id'] }}, 'down')"
-                        @disabled(! $reorderEnabled || ! $section['can_move_down'])
                         aria-label="Move {{ $label }} down"
                     />
                 @else

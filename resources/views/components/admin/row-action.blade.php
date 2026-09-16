@@ -2,6 +2,7 @@
     'action',
     'label' => null,
     'href' => null,
+    'disabled' => false,
 ])
 
 @php
@@ -25,7 +26,7 @@
         <span class="admin-action__label">{{ $resolvedLabel }}</span>
     </a>
 @else
-    <button type="button" {{ $attributes->class($classes) }}>
+    <button type="button" {{ $attributes->class($classes) }} @disabled($disabled)>
         <x-filament::icon :icon="$rowAction->icon()->mini()" class="admin-action__icon" />
         <span class="admin-action__label">{{ $resolvedLabel }}</span>
     </button>

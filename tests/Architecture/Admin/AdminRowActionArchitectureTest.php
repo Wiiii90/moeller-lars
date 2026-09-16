@@ -24,6 +24,8 @@ it('renders editorial row actions through one semantic admin primitive', functio
         ->toContain('AdminIcon::Delete');
 
     expect($component)
+        ->toContain("'disabled' => false")
+        ->toContain('@disabled($disabled)')
         ->toContain('$rowAction->icon()->mini()')
         ->toContain('$rowAction->label()')
         ->toContain("'admin-order-action' => \$rowAction->isOrderAction()")
@@ -46,5 +48,8 @@ it('renders editorial row actions through one semantic admin primitive', functio
         ->toContain('<x-admin.row-action')
         ->toContain('AdminRowAction::MoveUp')
         ->toContain('AdminRowAction::SkipHome')
+        ->toContain(':disabled="! $reorderEnabled || ! $section[\'can_move_up\']"')
+        ->toContain(':disabled="! $reorderEnabled || ! $section[\'can_move_down\']"')
+        ->not->toContain('@disabled(! $reorderEnabled')
         ->not->toContain('admin-action--with-icon');
 });
