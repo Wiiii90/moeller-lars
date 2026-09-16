@@ -15,12 +15,36 @@ final class JournalEntryOrderService
 {
     public function __construct(private readonly AdminAuditService $audit) {}
 
+    /**
+     * Reserve the first canonical position for a newly-created Journal entry.
+     *
+     * Journal lists are editorial timelines: new drafts/exhibitions should open
+     * at the top, while the explicit Move up/down controls remain the manual
+     * override afterwards. Shift from the tail towards the head so the unique
+     * (site_section_id, position) indexes are never violated mid-update.
+     */
     public function nextPosition(Model $model, int $siteSectionId): int
     {
-        SiteSection::query()->whereKey($siteSectionId)->lockForUpdate()->firstOrFail();
-        $maximum = $model->newQuery()->where('site_section_id', $siteSectionId)->max('position');
+        $this->assertSupported($model);
 
-        return $maximum === null ? 0 : ((int) $maximum) + 1;
+        return DB::transaction(function () use ($model, $siteSectionId): int {
+            SiteSection::query()->whereKey($siteSectionId)->lockForUpdate()->firstOrFail();
+
+            $records = $model->newQuery()
+                ->where('site_section_id', $siteSectionId)
+                ->orderByDesc('position')
+                ->orderByDesc('id')
+                ->lockForUpdate()
+                ->get(['id', 'position']);
+
+            foreach ($records as $record) {
+                DB::table($model->getTable())
+                    ->where('id', $record->getKey())
+                    ->update(['position' => ((int) $record->getAttribute('position')) + 1]);
+            }
+
+            return 0;
+        });
     }
 
     public function canMove(Model $record, string $direction): bool
