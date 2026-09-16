@@ -6,7 +6,6 @@ use App\Models\AdminActionReceipt;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
-use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\User;
@@ -36,8 +35,6 @@ final class AdminActionReceiptService
         $transition = match ($action) {
             'artwork.published' => ['entity' => 'artwork', 'before' => 'draft', 'after' => 'published', 'inverse' => 'artwork.unpublished'],
             'artwork.unpublished' => ['entity' => 'artwork', 'before' => 'published', 'after' => 'draft', 'inverse' => 'artwork.published'],
-            'cv_entry.published' => ['entity' => 'cv_entry', 'before' => 'draft', 'after' => 'published', 'inverse' => 'cv_entry.unpublished'],
-            'cv_entry.unpublished' => ['entity' => 'cv_entry', 'before' => 'published', 'after' => 'draft', 'inverse' => 'cv_entry.published'],
             'exhibition.published' => ['entity' => 'exhibition', 'before' => 'draft', 'after' => 'published', 'inverse' => 'exhibition.unpublished'],
             'exhibition.unpublished' => ['entity' => 'exhibition', 'before' => 'published', 'after' => 'draft', 'inverse' => 'exhibition.published'],
             default => null,
@@ -150,7 +147,7 @@ final class AdminActionReceiptService
     private function recordStateTransition(
         AuditEvent $event,
         User $actor,
-        Artwork|CvEntry|Exhibition $target,
+        Artwork|Exhibition $target,
         string $beforeState,
         string $afterState,
         string $inverseActionKey,
@@ -529,13 +526,12 @@ final class AdminActionReceiptService
 
         return [
             'artwork' => $this->pluckStates(Artwork::class, $ids->get('artwork', [])),
-            'cv_entry' => $this->pluckStates(CvEntry::class, $ids->get('cv_entry', [])),
             'exhibition' => $this->pluckStates(Exhibition::class, $ids->get('exhibition', [])),
         ];
     }
 
     /**
-     * @param  class-string<Artwork|CvEntry|Exhibition>  $model
+     * @param  class-string<Artwork|Exhibition>  $model
      * @param  array<int, int>  $ids
      * @return array<int, string>
      */
@@ -552,23 +548,18 @@ final class AdminActionReceiptService
             ->all();
     }
 
-    private function findTarget(string $entityType, int $entityId): Artwork|CvEntry|Exhibition|null
+    private function findTarget(string $entityType, int $entityId): Artwork|Exhibition|null
     {
         return match ($entityType) {
             'artwork' => Artwork::query()->find($entityId),
-            'cv_entry' => CvEntry::query()->find($entityId),
             'exhibition' => Exhibition::query()->find($entityId),
             default => null,
         };
     }
 
-    private function entityType(Artwork|CvEntry|Exhibition $target): string
+    private function entityType(Artwork|Exhibition $target): string
     {
-        return match (true) {
-            $target instanceof Artwork => 'artwork',
-            $target instanceof CvEntry => 'cv_entry',
-            $target instanceof Exhibition => 'exhibition',
-        };
+        return $target instanceof Artwork ? 'artwork' : 'exhibition';
     }
 
     private function positiveInt(mixed $value): ?int
