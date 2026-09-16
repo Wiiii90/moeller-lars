@@ -67,13 +67,13 @@
                                     <x-admin.row-action
                                         :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                         wire:click="moveComponent({{ $pageComponent['index'] }}, '{{ $pageComponent['type'] }}', 'up')"
-                                        @disabled(! $reorderEnabled || ! $pageComponent['can_move_up'])
+                                        :disabled="! $reorderEnabled || ! $pageComponent['can_move_up']"
                                         aria-label="Move component up"
                                     />
                                     <x-admin.row-action
                                         :action="\App\Filament\Support\AdminRowAction::MoveDown"
                                         wire:click="moveComponent({{ $pageComponent['index'] }}, '{{ $pageComponent['type'] }}', 'down')"
-                                        @disabled(! $reorderEnabled || ! $pageComponent['can_move_down'])
+                                        :disabled="! $reorderEnabled || ! $pageComponent['can_move_down']"
                                         aria-label="Move component down"
                                     />
                                     <x-admin.row-action
@@ -145,13 +145,13 @@
                                                         <x-admin.row-action
                                                             :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                                             wire:click="moveListEntry({{ $pageComponent['index'] }}, 'list', {{ $child['item_index'] }}, 'up')"
-                                                            @disabled(! $child['can_move_up'])
+                                                            :disabled="! $child['can_move_up']"
                                                             aria-label="Move list entry up"
                                                         />
                                                         <x-admin.row-action
                                                             :action="\App\Filament\Support\AdminRowAction::MoveDown"
                                                             wire:click="moveListEntry({{ $pageComponent['index'] }}, 'list', {{ $child['item_index'] }}, 'down')"
-                                                            @disabled(! $child['can_move_down'])
+                                                            :disabled="! $child['can_move_down']"
                                                             aria-label="Move list entry down"
                                                         />
                                                         <x-admin.row-action
@@ -170,13 +170,13 @@
                                                         <x-admin.row-action
                                                             :action="\App\Filament\Support\AdminRowAction::MoveUp"
                                                             wire:click="moveContactChild({{ $pageComponent['index'] }}, 'contact', '{{ $child['child_type'] }}', 'up')"
-                                                            @disabled(! $child['can_move_up'])
+                                                            :disabled="! $child['can_move_up']"
                                                             aria-label="Move Contact child up"
                                                         />
                                                         <x-admin.row-action
                                                             :action="\App\Filament\Support\AdminRowAction::MoveDown"
                                                             wire:click="moveContactChild({{ $pageComponent['index'] }}, 'contact', '{{ $child['child_type'] }}', 'down')"
-                                                            @disabled(! $child['can_move_down'])
+                                                            :disabled="! $child['can_move_down']"
                                                             aria-label="Move Contact child down"
                                                         />
                                                         <x-admin.row-action
