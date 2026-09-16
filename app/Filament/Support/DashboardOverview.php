@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Analytics\AnalyticsReportAvailability;
+use App\Domain\Analytics\AnalyticsWorldMap;
 use App\Domain\Analytics\MatomoReportingClient;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\Activity;
@@ -86,52 +87,11 @@ final class DashboardOverview
             'visitors_display' => $visitors === null ? '—' : number_format((int) round($visitors)),
             'visits_delta' => $visitsDelta === null ? null : sprintf('%+.1f%%', $visitsDelta),
             'country_state' => $countryState,
-            'map_points' => $countryState === 'available' ? $this->countryMapPoints($countryRows) : [],
+            'map_points' => $countryState === 'available'
+                ? app(AnalyticsWorldMap::class)->points($countryRows)
+                : [],
             'url' => Analytics::getUrl(),
         ];
-    }
-
-    /** @param list<array<string, mixed>> $countryRows
-     * @return list<array{label:string,visits:int,x:float,y:float,size:float}>
-     */
-    private function countryMapPoints(array $countryRows): array
-    {
-        $centroids = config('analytics-country-centroids', []);
-        if (! is_array($centroids)) {
-            return [];
-        }
-
-        $positiveVisits = array_values(array_filter(
-            array_map(
-                static fn (array $row): ?float => is_numeric($row['nb_visits'] ?? null) ? (float) $row['nb_visits'] : null,
-                $countryRows,
-            ),
-            static fn (?float $value): bool => $value !== null && $value > 0,
-        ));
-        $countryMax = $positiveVisits === [] ? 1.0 : max($positiveVisits);
-        $points = [];
-
-        foreach ($countryRows as $row) {
-            $label = trim((string) ($row['label'] ?? ''));
-            $visits = is_numeric($row['nb_visits'] ?? null) ? (float) $row['nb_visits'] : null;
-            $coords = $centroids[$label] ?? null;
-
-            if ($label === '' || $visits === null || $visits <= 0 || ! is_array($coords) || count($coords) < 2) {
-                continue;
-            }
-
-            $latitude = (float) $coords[0];
-            $longitude = (float) $coords[1];
-            $points[] = [
-                'label' => $label,
-                'visits' => (int) round($visits),
-                'x' => min(99.0, max(1.0, (($longitude + 180.0) / 360.0) * 100.0)),
-                'y' => min(98.0, max(2.0, ((90.0 - $latitude) / 180.0) * 100.0)),
-                'size' => 9.0 + (22.0 * sqrt($visits / $countryMax)),
-            ];
-        }
-
-        return $points;
     }
 
     /** @return array<string, mixed> */
