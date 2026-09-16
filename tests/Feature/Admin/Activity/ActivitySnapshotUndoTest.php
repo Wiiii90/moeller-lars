@@ -133,7 +133,6 @@ it('roundtrips a media-only Blog update as one atomic snapshot Undo', function (
         'role' => 'gallery',
         'position' => 1,
         'alt_text_override' => null,
-        'embed_key' => null,
     ]);
 
     $eventsBefore = AuditEvent::query()->count();
