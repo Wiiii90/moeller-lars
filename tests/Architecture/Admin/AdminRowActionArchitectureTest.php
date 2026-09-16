@@ -41,6 +41,10 @@ it('renders editorial row actions through one semantic admin primitive', functio
 
     expect($customPage)
         ->toContain('@foreach ($components as $pageComponent)')
+        ->toContain('AdminRowAction::Delete')
+        ->toContain('admin-hierarchy__selection admin-hierarchy__selection--trailing')
+        ->toContain('wire:model.live="selectedComponentTargets"')
+        ->toContain('wire:model.live="selectedChildTargets"')
         ->not->toContain('@foreach ($components as $component)')
         ->not->toContain('$componentStateIcon');
 
