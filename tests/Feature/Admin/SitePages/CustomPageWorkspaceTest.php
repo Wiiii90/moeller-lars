@@ -5,8 +5,6 @@ use App\Domain\Content\SiteSectionPathPolicy;
 use App\Filament\Pages\CustomPageWorkspace;
 use App\Http\Controllers\PublicSiteSectionController;
 use App\Models\CustomPageSetting;
-use App\Models\CvEntry;
-use App\Models\MediaAsset;
 use App\Models\Redirect;
 use App\Models\SiteSection;
 use App\Models\User;
@@ -70,21 +68,6 @@ function customPageWorkspaceBlocks(int $count): array
     }
 
     return $blocks;
-}
-
-function customPageWorkspaceAsset(string $suffix): MediaAsset
-{
-    return MediaAsset::query()->create([
-        'storage_key' => 'originals/custom-page-workspace-'.$suffix.'.jpg',
-        'original_filename' => 'custom-page-workspace-'.$suffix.'.jpg',
-        'mime_type' => 'image/jpeg',
-        'byte_size' => 4,
-        'sha256' => hash('sha256', 'custom-page-workspace-'.$suffix),
-        'state' => 'available',
-        'alt_text' => 'Custom Page workspace '.$suffix,
-        'width' => 2,
-        'height' => 2,
-    ]);
 }
 
 it('paginates parent components in 25 50 and 100 unit pages without splitting children or resetting global positions', function (): void {
@@ -203,112 +186,55 @@ it('allows canonical reorder only for a neutral complete parent sequence', funct
         ->and($sequenceSource)->not->toContain('dragstart');
 });
 
-it('edits the canonical CV collection directly in the CV List dialog without duplicating entries into component JSON', function (): void {
-    [$section, $settings] = customPageWorkspaceRecord('CV editor test', 'cv-editor-test');
-    $asset = customPageWorkspaceAsset('cv');
+it('edits canonical list entries directly in the Custom Page child dialog', function (): void {
+    [$section, $settings] = customPageWorkspaceRecord('List editor test', 'list-editor-test');
     $settings->update(['blocks' => [[
-        'type' => 'cv_list',
+        'type' => 'list',
         'published' => true,
+        'title' => 'CV',
         'media_asset_id' => null,
+        'items' => [[
+            'published' => true,
+            'date' => '2024',
+            'title' => 'First entry',
+            'meta' => 'Old context',
+            'location' => 'Berlin',
+            'url' => null,
+            'body' => 'First details',
+        ]],
     ]]]);
 
-    $first = CvEntry::query()->create([
-        'section' => 'CV',
-        'title' => 'First entry',
-        'state' => 'draft',
-        'position' => 0,
-        'year_text' => '2024',
-        'date_precision' => 'year',
-        'body' => 'First details',
-    ]);
-    $second = CvEntry::query()->create([
-        'section' => 'Exhibitions',
-        'title' => 'Second entry',
-        'state' => 'published',
-        'position' => 1,
-        'year_text' => '2025',
-        'date_precision' => 'year',
-        'body' => 'Second details',
-        'image_media_asset_id' => $asset->id,
-    ]);
-
     Livewire::test(CustomPageWorkspace::class, ['section' => $section->id])
-        ->mountAction('editComponent', ['componentIndex' => 0, 'componentType' => 'cv_list'])
+        ->mountAction('editListEntry', [
+            'componentIndex' => 0,
+            'componentType' => 'list',
+            'itemIndex' => 0,
+        ])
         ->assertMountedActionModalSee('First entry')
-        ->assertMountedActionModalSee('Second entry')
         ->fillForm([
-            'type' => 'cv_list',
-            'publication_state' => 'published',
-            'media_asset_id' => null,
-            'cv_entries' => [
-                [
-                    'id' => $second->id,
-                    'publication_state' => 'published',
-                    'section' => 'Exhibitions',
-                    'title' => 'Second entry updated',
-                    'year_text' => '2026',
-                    'date_precision' => 'year',
-                    'starts_on' => null,
-                    'ends_on' => null,
-                    'organisation' => 'Museum',
-                    'location' => 'Hamburg',
-                    'body' => 'Updated **canonical** details',
-                    'image_media_asset_id' => $asset->id,
-                    'external_url' => 'https://example.com/second',
-                ],
-                [
-                    'id' => null,
-                    'publication_state' => 'unpublished',
-                    'section' => 'CV',
-                    'title' => 'New entry',
-                    'year_text' => '2027',
-                    'date_precision' => 'year',
-                    'starts_on' => null,
-                    'ends_on' => null,
-                    'organisation' => null,
-                    'location' => null,
-                    'body' => 'New details',
-                    'image_media_asset_id' => null,
-                    'external_url' => null,
-                ],
-            ],
+            'publication_state' => 'unpublished',
+            'date' => '2026',
+            'title' => 'First entry updated',
+            'meta' => 'Museum',
+            'location' => 'Hamburg',
+            'url' => 'https://example.com/entry',
+            'body' => 'Updated details',
         ])
         ->callMountedAction()
         ->assertHasNoFormErrors();
 
-    $entries = CvEntry::query()->orderBy('position')->orderBy('id')->get();
-    expect($entries)->toHaveCount(2)
-        ->and((int) $entries[0]->id)->toBe((int) $second->id)
-        ->and($entries[0]->title)->toBe('Second entry updated')
-        ->and($entries[0]->year_text)->toBe('2026')
-        ->and($entries[0]->body)->toBe('Updated **canonical** details')
-        ->and((int) $entries[0]->image_media_asset_id)->toBe((int) $asset->id)
-        ->and($entries[0]->position)->toBe(0)
-        ->and($entries[1]->title)->toBe('New entry')
-        ->and($entries[1]->position)->toBe(1)
-        ->and(CvEntry::query()->whereKey($first->id)->exists())->toBeFalse();
-
-    $storedComponent = $settings->fresh()->components()[0];
-    expect($storedComponent)->not->toHaveKey('cv_entries');
+    $item = $settings->fresh()->components()[0]['items'][0];
+    expect($item['published'])->toBeFalse()
+        ->and($item['date'])->toBe('2026')
+        ->and($item['title'])->toBe('First entry updated')
+        ->and($item['meta'])->toBe('Museum')
+        ->and($item['location'])->toBe('Hamburg')
+        ->and($item['url'])->toBe('https://example.com/entry')
+        ->and($item['body'])->toBe('Updated details');
 
     $workspace = Livewire::test(CustomPageWorkspace::class, ['section' => $section->id]);
     $children = $workspace->get('components')[0]['children'];
-    expect(array_column($children, 'entry'))->toBe(['Second entry updated', 'New entry']);
-
-    $formsSource = file_get_contents(app_path('Filament/Pages/Concerns/CustomPageWorkspaceForms.php'));
-    $actionsSource = file_get_contents(app_path('Filament/Pages/Concerns/CustomPageWorkspaceComponentActions.php'));
-    $payloadSource = file_get_contents(app_path('Filament/Pages/Concerns/CustomPageWorkspaceSecondaryForms.php'));
-    preg_match('/private function componentPayload\(.*?private function cvEntryPayload/s', $payloadSource, $payloadMatch);
-
-    expect($formsSource)->toContain("Repeater::make('cv_entries')")
-        ->and($formsSource)->toContain("->addActionLabel('Add CV entry')")
-        ->and($formsSource)->toContain('->reorderableWithButtons()')
-        ->and($formsSource)->toContain("AdminRichText::schema('body', 'Details', 10000)")
-        ->and($formsSource)->toContain("MediaAssetSelect::makeId('image_media_asset_id'")
-        ->and($formsSource)->not->toContain('MarkdownEditor::make')
-        ->and($actionsSource)->toContain("syncCvEntryEditorRows(\$data['cv_entries'] ?? null)")
-        ->and($formsSource)->toContain('app(CvEntryEditorialService::class)->syncOrdered($rows)')
-        ->and($payloadMatch[0] ?? '')->not->toContain('cv_entries');
+    expect(array_column($children, 'entry'))->toBe(['First entry updated']);
 });
 
 it('updates Custom Page identity placement and flat public path through the canonical page settings action', function (): void {
