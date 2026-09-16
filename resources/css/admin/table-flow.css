@@ -1,0 +1,37 @@
+/* Canonical scrollport contract for admin tables.
+ *
+ * Desktop tables remain horizontally scrollable, but the native scrollbar
+ * track must never consume vertical layout space below the final row. That
+ * track reads as a phantom blank row between the table and the canonical
+ * add-row separator. Small viewports restore a visible thin scrollbar because
+ * horizontal discoverability matters more there.
+ */
+@media (min-width: 761px) {
+    .admin-table,
+    .media-workspace__table-wrap {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none;
+    }
+
+    .admin-table::-webkit-scrollbar,
+    .media-workspace__table-wrap::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+}
+
+@media (max-width: 760px) {
+    .admin-table,
+    .media-workspace__table-wrap {
+        scrollbar-width: thin !important;
+    }
+
+    .admin-table::-webkit-scrollbar,
+    .media-workspace__table-wrap::-webkit-scrollbar {
+        display: block !important;
+        height: .35rem !important;
+    }
+}
