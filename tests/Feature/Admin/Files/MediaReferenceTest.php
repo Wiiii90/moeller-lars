@@ -11,7 +11,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
-use App\Models\CvEntry;
 use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\SiteSection;
@@ -222,27 +221,25 @@ it('counts available images videos and audio in the six library metrics', functi
     ]);
 });
 
-it('projects migrated CV media through the canonical Custom Page usage only', function (): void {
-    $asset = workspaceReferenceAsset('cv-reference.jpg');
-    $legacyEntry = CvEntry::query()->create([
-        'section' => 'Biography',
-        'title' => 'Portrait',
-        'state' => 'draft',
-        'position' => 0,
-        'year_text' => '2026',
-        'image_media_asset_id' => $asset->id,
-    ]);
-
+it('projects canonical Custom Page list media through Usage and removes it on asset deletion', function (): void {
+    $asset = workspaceReferenceAsset('list-reference.jpg');
     $custom = workspaceReferenceNode(SiteSectionType::CustomPage->value, 'Biography');
     $custom->customPageSetting()->create([
-        'blocks' => [
-            [
-                'type' => 'image',
-                'media_asset_id' => $asset->id,
-                'image_decorative' => false,
-            ],
-            ['type' => 'cv_list'],
-        ],
+        'blocks' => [[
+            'type' => 'list',
+            'published' => true,
+            'title' => 'Biography',
+            'media_asset_id' => $asset->id,
+            'items' => [[
+                'published' => true,
+                'date' => '2026',
+                'title' => 'Current entry',
+                'meta' => null,
+                'location' => null,
+                'url' => null,
+                'body' => null,
+            ]],
+        ]],
     ]);
 
     $catalog = app(MediaReferenceCatalog::class);
@@ -250,79 +247,31 @@ it('projects migrated CV media through the canonical Custom Page usage only', fu
 
     expect($catalog->references($asset))->toBe([[
         'type' => 'Custom Page: Biography',
-        'label' => 'Image component',
+        'label' => 'List component image',
         'url' => app(SiteNodePresentation::class)->workspaceUrl($custom->fresh('customPageSetting')),
     ]]);
-
-    $referenced = MediaAsset::query();
-    $catalog->applyUsageFilter($referenced, 'in-use');
-    expect($referenced->pluck('id')->all())->toContain($asset->id);
-
-    $unreferenced = MediaAsset::query();
-    $catalog->applyUsageFilter($unreferenced, 'unreferenced');
-    expect($unreferenced->pluck('id')->all())->not->toContain($asset->id);
 
     $specificCustomPage = MediaAsset::query();
     $catalog->applyUsageFilter($specificCustomPage, 'node:'.$custom->id);
     expect($specificCustomPage->pluck('id')->all())->toContain($asset->id);
 
+    $anyCustomPage = MediaAsset::query();
+    $catalog->applyUsageFilter($anyCustomPage, 'kind:'.SiteSectionType::CustomPage->value);
+    expect($anyCustomPage->pluck('id')->all())->toContain($asset->id);
+
+    expect(app(MediaReferenceQuery::class)->isReferenced($asset))->toBeTrue();
     expect(app(MediaAssetEditorialService::class)->delete($asset))->toBeTrue();
 
     $deletedAsset = $asset->fresh();
     $settings = $custom->customPageSetting()->firstOrFail();
-    $remainingMediaIds = collect($settings->components())
-        ->pluck('media_asset_id')
-        ->filter(static fn (mixed $id): bool => is_numeric($id))
-        ->map(static fn (mixed $id): int => (int) $id)
-        ->all();
+    $component = $settings->components()[0];
     $afterDeleteCatalog = app(MediaReferenceCatalog::class);
     $afterDeleteCatalog->loadAssetReferences($deletedAsset);
 
     expect($deletedAsset->getAttribute('state'))->toBe('deleted')
-        ->and($remainingMediaIds)->not->toContain((int) $asset->getKey())
-        ->and($legacyEntry->fresh()->getAttribute('image_media_asset_id'))->toBeNull()
+        ->and($component['media_asset_id'])->toBeNull()
         ->and(app(MediaReferenceQuery::class)->isReferenced($deletedAsset))->toBeFalse()
         ->and($afterDeleteCatalog->references($deletedAsset))->toBe([]);
-});
-
-it('ignores legacy CV media pointers that the current Custom Page runtime does not render', function (): void {
-    $asset = workspaceReferenceAsset('cv-entry-only.jpg');
-    CvEntry::query()->create([
-        'section' => 'Biography',
-        'title' => 'Entry portrait',
-        'state' => 'draft',
-        'position' => 0,
-        'year_text' => '2026',
-        'image_media_asset_id' => $asset->id,
-    ]);
-
-    $custom = workspaceReferenceNode(SiteSectionType::CustomPage->value, 'CV records');
-    $custom->customPageSetting()->create(['blocks' => [['type' => 'cv_list']]]);
-
-    $catalog = app(MediaReferenceCatalog::class);
-    $catalog->loadAssetReferences($asset);
-
-    expect($catalog->references($asset))->toBe([])
-        ->and($catalog->libraryMetrics()['unreferenced'])->toBe(1);
-
-    $referenced = MediaAsset::query();
-    $catalog->applyUsageFilter($referenced, 'in-use');
-    expect($referenced->pluck('id')->all())->not->toContain($asset->id);
-
-    $unreferenced = MediaAsset::query();
-    $catalog->applyUsageFilter($unreferenced, 'unreferenced');
-    expect($unreferenced->pluck('id')->all())->toContain($asset->id);
-
-    $specificCustomPage = MediaAsset::query();
-    $catalog->applyUsageFilter($specificCustomPage, 'node:'.$custom->id);
-    expect($specificCustomPage->pluck('id')->all())->not->toContain($asset->id);
-
-    $anyCustomPage = MediaAsset::query();
-    $catalog->applyUsageFilter($anyCustomPage, 'kind:'.SiteSectionType::CustomPage->value);
-    expect($anyCustomPage->pluck('id')->all())->not->toContain($asset->id);
-
-    expect(app(MediaAssetEditorialService::class)->delete($asset))->toBeTrue();
-    expect($asset->fresh()->state)->toBe('deleted');
 });
 
 it('opens Preview and Edit as workspace actions and saves canonical metadata in place', function (): void {
