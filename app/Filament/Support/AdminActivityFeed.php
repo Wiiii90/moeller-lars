@@ -9,7 +9,6 @@ use App\Filament\Pages\Activity;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
@@ -17,7 +16,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
-use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\PublicationCheckpoint;
@@ -433,7 +431,7 @@ final class AdminActivityFeed
             'artwork_category' => $this->pluckLabels(ArtworkCategory::class, $ids->get('artwork_category', []), 'name'),
             'site_section' => $this->pluckLabels(SiteSection::class, $ids->get('site_section', []), 'title'),
             'media_asset' => $this->pluckLabels(MediaAsset::class, $ids->get('media_asset', []), 'original_filename'),
-            'cv_entry' => $this->pluckLabels(CvEntry::class, $ids->get('cv_entry', []), 'title'),
+            'cv_entry' => [],
             'exhibition' => $this->pluckLabels(Exhibition::class, $ids->get('exhibition', []), 'title'),
             'blog_post' => $this->pluckLabels(BlogPost::class, $ids->get('blog_post', []), 'title'),
             'blog_setting' => [1 => 'Blog settings'],
@@ -485,7 +483,7 @@ final class AdminActivityFeed
             'artwork_category' => 'Gallery no longer available',
             'site_section' => 'Public page no longer available',
             'media_asset' => 'Media no longer available',
-            'cv_entry' => 'Vita entry no longer available',
+            'cv_entry' => 'Custom Page list entry no longer available',
             'exhibition' => 'Exhibition no longer available',
             'blog_post' => 'Blog post no longer available',
             'blog_setting' => 'Blog settings',
@@ -497,7 +495,7 @@ final class AdminActivityFeed
 
     private function targetUrl(string $entityType, int $entityId, bool $exists): ?string
     {
-        if (! $exists && ! in_array($entityType, ['blog_setting', 'public_content_setting', 'publication_checkpoint'], true)) {
+        if (! $exists && ! in_array($entityType, ['cv_entry', 'blog_setting', 'public_content_setting', 'publication_checkpoint'], true)) {
             return null;
         }
 
@@ -506,7 +504,7 @@ final class AdminActivityFeed
             'artwork_category' => ArtworkResource::getUrl('gallery', ['gallery' => $entityId]),
             'site_section' => SitePages::getUrl(),
             'media_asset' => MediaAssetResource::getUrl('view', ['record' => $entityId]),
-            'cv_entry' => CvEntryResource::getUrl('edit', ['record' => $entityId]),
+            'cv_entry' => SitePages::getUrl(),
             'exhibition' => ExhibitionResource::getUrl('edit', ['record' => $entityId]),
             'blog_post' => BlogPostResource::getUrl('edit', ['record' => $entityId]),
             'blog_setting' => SitePages::getUrl(),
