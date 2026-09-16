@@ -22,14 +22,9 @@
     width: calc(50% - var(--admin-table-selection-width));
 }
 
-/* Exhibitions owns the final 2.5 metric units for Actions + Selection. */
-.journal-table--exhibitions col:nth-child(5) {
-    width: var(--admin-table-one-unit);
-}
-
-.journal-table--exhibitions col:nth-child(6) {
-    width: calc(41.666667% - var(--admin-table-selection-width));
-}
+/* Exhibitions keeps the colgroup's canonical four-content/two-utility split:
+ * Schedule ends exactly on the 4/6 metric line and Actions + Selection own the
+ * final two cells. Do not shift that boundary to a half-cell just to gain room. */
 
 .journal-row-actions {
     display: grid !important;
