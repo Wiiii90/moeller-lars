@@ -5,7 +5,7 @@ it('keeps admin table scrollbars out of vertical table flow at every breakpoint'
     $css = file_get_contents($root.'/resources/css/admin/table-flow.css');
     $theme = file_get_contents($root.'/resources/views/filament/partials/admin-theme.blade.php');
 
-    expect($theme)->toContain("resources/css/admin/table-flow.css");
+    expect($theme)->toContain('resources/css/admin/table-flow.css');
 
     expect($css)
         ->toContain('.admin-table {')
