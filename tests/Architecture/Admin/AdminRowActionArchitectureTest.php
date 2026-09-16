@@ -6,6 +6,7 @@ it('renders editorial row actions through one semantic admin primitive', functio
     $component = file_get_contents($root.'/resources/views/components/admin/row-action.blade.php');
     $journal = file_get_contents($root.'/resources/views/filament/pages/journal-workspace.blade.php');
     $customPage = file_get_contents($root.'/resources/views/filament/pages/partials/custom-page-workspace-sequence.blade.php');
+    $customPageCss = file_get_contents($root.'/resources/css/admin/custom-page.css');
     $pages = file_get_contents($root.'/resources/views/filament/pages/partials/site-section-row.blade.php');
     $dashboard = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed-row.blade.php');
 
@@ -68,6 +69,14 @@ it('renders editorial row actions through one semantic admin primitive', functio
         ->not->toContain('editCvEntry')
         ->not->toContain('transitionCvEntry')
         ->not->toContain('deleteCvEntry');
+
+    expect($customPageCss)
+        ->toContain(".custom-page-component-sequence {\n    width: 100%;\n    min-width: 0;\n    max-width: 100%;")
+        ->toContain(".custom-page-component-sequence__header,\n.custom-page-component-sequence__rows {\n    width: 100%;\n    min-width: 76rem;")
+        ->toContain(".custom-page-row-actions .admin-action__label {\n    white-space: nowrap;")
+        ->toContain('overflow: visible;')
+        ->not->toContain(".custom-page-row-actions .admin-action__label {\n    min-width: 0;\n    overflow: hidden;")
+        ->not->toContain(".custom-page-row-actions .admin-action__label {\n    min-width: 0;\n    text-overflow: ellipsis;");
 
     expect($pages)
         ->toContain('<x-admin.row-action')
