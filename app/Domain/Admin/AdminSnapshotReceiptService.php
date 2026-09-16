@@ -199,7 +199,7 @@ final class AdminSnapshotReceiptService
     }
 
     /**
-     * @param list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}> $snapshots
+     * @param  list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>  $snapshots
      */
     private function snapshotsMatchCurrentState(array $snapshots, bool $lock = false): bool
     {
@@ -228,7 +228,7 @@ final class AdminSnapshotReceiptService
     }
 
     /**
-     * @param list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}> $snapshots
+     * @param  list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>  $snapshots
      */
     private function snapshotsMatchBeforeState(array $snapshots): bool
     {
@@ -253,7 +253,7 @@ final class AdminSnapshotReceiptService
     }
 
     /**
-     * @param list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}> $snapshots
+     * @param  list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>  $snapshots
      */
     private function deleteRowsCreatedByAction(array $snapshots): void
     {
@@ -267,7 +267,7 @@ final class AdminSnapshotReceiptService
     }
 
     /**
-     * @param list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}> $snapshots
+     * @param  list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>  $snapshots
      */
     private function restoreRowsDeletedByAction(array $snapshots): void
     {
@@ -283,7 +283,7 @@ final class AdminSnapshotReceiptService
     }
 
     /**
-     * @param list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}> $snapshots
+     * @param  list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>  $snapshots
      */
     private function restoreRowsUpdatedByAction(array $snapshots): void
     {
@@ -303,7 +303,7 @@ final class AdminSnapshotReceiptService
     }
 
     /**
-     * @param list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}> $snapshots
+     * @param  list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>  $snapshots
      * @return list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>
      */
     private function orderedSnapshots(array $snapshots, bool $reverse = false): array
@@ -346,7 +346,8 @@ final class AdminSnapshotReceiptService
         }
     }
 
-    /** @param array<string,mixed> $payload
+    /**
+     * @param  array<string,mixed>  $payload
      * @return array<string,mixed>
      */
     private function comparablePayload(array $payload): array
