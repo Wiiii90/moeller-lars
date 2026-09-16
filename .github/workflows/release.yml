@@ -81,6 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           grep -F '"resources/css/admin/auth.css"' public/build/manifest.json >/dev/null
+          grep -F '"resources/css/admin/table-flow.css"' public/build/manifest.json >/dev/null
 
       - name: Run Unit tests
         run: composer test:unit

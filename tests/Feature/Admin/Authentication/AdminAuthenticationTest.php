@@ -47,6 +47,13 @@ it('keeps the admin surface private while exposing password recovery', function 
     $this->get('/admin/password-reset/request')->assertSuccessful();
 });
 
+it('renders the admin login surface for guests', function (): void {
+    $this->get('/admin/login')
+        ->assertSuccessful()
+        ->assertSee('Administration')
+        ->assertSee('Sign in to manage the website.');
+});
+
 it('denies the admin surface to authenticated non-admin users', function (): void {
     $this->actingAs(User::factory()->create(), 'web')
         ->get('/admin')
