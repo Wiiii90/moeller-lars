@@ -9,9 +9,6 @@ namespace App\Domain\Content;
  */
 final class HistoricalCustomPageBlockCanonicalizer
 {
-    /**
-     * @return mixed
-     */
     public static function canonicalize(mixed $blocks): mixed
     {
         if (! is_array($blocks) || ! array_is_list($blocks)) {
@@ -35,7 +32,6 @@ final class HistoricalCustomPageBlockCanonicalizer
         }, $blocks);
     }
 
-    /** @return mixed */
     private static function canonicalizeListItems(mixed $items): mixed
     {
         if (! is_array($items) || ! array_is_list($items)) {
@@ -56,7 +52,8 @@ final class HistoricalCustomPageBlockCanonicalizer
         }, $items);
     }
 
-    /** @param array<string, mixed> $block
+    /**
+     * @param  array<string, mixed>  $block
      * @return array<string, mixed>
      */
     private static function canonicalizeContact(array $block): array
