@@ -4,25 +4,32 @@
     border-bottom: 0;
 }
 
-/* Journal tables use the same six visual units as the workspace metrics.
- * The first four units belong to editorial data. Actions always begin on the
- * 4/6 boundary and, together with the trailing Selection rail, own units 5+6.
- * At the canonical desktop width this keeps the complete action vocabulary in
- * the visible table instead of inventing a page-specific action rail. */
-.journal-table--blog,
-.journal-table--exhibitions {
-    min-width: 80rem !important;
+/* Journal consumes the shared six-unit table grid. At full desktop width the
+ * complete action vocabulary stays visible: Blog owns the final three units,
+ * Exhibitions the final 2.5 units, both including the trailing Selection rail.
+ * Narrower viewports scroll instead of abbreviating the canonical labels. */
+.journal-table--blog {
+    min-width: 88rem !important;
 }
 
-/* Blog has two extra data columns (image + status), so its Post column absorbs
- * the half-unit that used to be stolen by Actions. The result is exactly four
- * metric units before Actions, matching Exhibitions and Custom Page. */
-.journal-table--blog col:nth-child(4) {
-    width: var(--admin-table-one-half-units);
+.journal-table--exhibitions {
+    min-width: 76rem !important;
+}
+
+.journal-table--blog col:nth-child(6) {
+    width: var(--admin-table-half-unit);
 }
 
 .journal-table col.journal-table__actions--blog {
-    width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
+    width: calc(50% - var(--admin-table-selection-width));
+}
+
+.journal-table--exhibitions col:nth-child(5) {
+    width: var(--admin-table-one-unit);
+}
+
+.journal-table--exhibitions col:nth-child(6) {
+    width: calc(41.666667% - var(--admin-table-selection-width));
 }
 
 .journal-row-actions {
@@ -55,9 +62,9 @@
 .journal-row-actions .admin-action {
     width: 100%;
     min-width: 0;
-    padding-inline: .22rem;
+    padding-inline: .28rem;
     justify-content: flex-start !important;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .journal-row-actions .admin-action--state {
@@ -66,8 +73,6 @@
 
 .journal-row-actions .admin-action__label {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
 

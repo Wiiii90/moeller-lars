@@ -10,19 +10,11 @@
     flex-wrap: nowrap;
 }
 
-/* The hierarchy itself is the scrollport and must stay constrained to the
- * workspace. Its inner tracks use the canonical 80rem six-unit canvas, so the
- * Actions rail starts on the same 4/6 boundary as the metrics and occupies
- * units 5+6 together with trailing Selection. */
+/* Shared table-contract.css owns the six-unit hierarchy geometry. Keep a
+ * desktop floor large enough for the full icon + label action set; narrower
+ * viewports scroll the hierarchy instead of silently truncating labels. */
 .custom-page-component-sequence {
-    width: 100%;
-    min-width: 0;
-}
-
-.custom-page-component-sequence__header,
-.custom-page-component-sequence__rows {
-    width: 100%;
-    min-width: 80rem;
+    min-width: 76rem;
 }
 
 .custom-page-component-sequence__header > span:not(:first-child),
@@ -53,7 +45,7 @@
     min-width: 0;
     padding-inline: .25rem;
     justify-content: flex-start !important;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .custom-page-component-sequence .custom-page-row-actions .admin-action--state {
@@ -61,9 +53,6 @@
 }
 
 .custom-page-row-actions .admin-action__label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
