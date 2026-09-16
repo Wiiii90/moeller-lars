@@ -200,9 +200,4 @@ final class SiteSection extends Model
     {
         return $this->nodeType()->hasPublicPage();
     }
-
-    public function canContainChildren(): bool
-    {
-        return true;
-    }
 }
