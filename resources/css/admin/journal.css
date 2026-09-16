@@ -4,12 +4,12 @@
     border-bottom: 0;
 }
 
-/* Journal consumes the shared six-unit table grid. At full desktop width the
- * complete action vocabulary stays visible: Blog owns the final three units,
- * Exhibitions the final 2.5 units, both including the trailing Selection rail.
- * Narrower viewports scroll instead of abbreviating the canonical labels. */
+/* Journal consumes the shared six-unit table grid. The Blog floor deliberately
+ * stays within the canonical 80rem desktop workspace so its action + Selection
+ * rail is visible without requiring a hidden horizontal scroll position.
+ * Narrower viewports can still use the shared table scrollport. */
 .journal-table--blog {
-    min-width: 88rem !important;
+    min-width: 80rem !important;
 }
 
 .journal-table--exhibitions {
