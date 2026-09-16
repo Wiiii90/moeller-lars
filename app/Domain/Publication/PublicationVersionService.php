@@ -3,6 +3,7 @@
 namespace App\Domain\Publication;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Content\HistoricalCustomPageBlockCanonicalizer;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -292,6 +293,30 @@ final class PublicationVersionService
             DB::statement(
                 "INSERT INTO public.{$table} SELECT (jsonb_populate_record(NULL::public.{$table}, version_row.payload)).* FROM publication_version_rows AS version_row WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = ? ORDER BY version_row.id",
                 [(int) $checkpoint->getKey(), $table],
+            );
+        }
+
+        $this->canonicalizeRestoredCustomPageSettings();
+    }
+
+    private function canonicalizeRestoredCustomPageSettings(): void
+    {
+        $rows = DB::select('SELECT id, blocks FROM public.custom_page_settings ORDER BY id');
+
+        foreach ($rows as $row) {
+            $blocks = $row->blocks ?? null;
+            if (is_string($blocks)) {
+                $blocks = json_decode($blocks, true, 512, JSON_THROW_ON_ERROR);
+            }
+
+            $canonical = HistoricalCustomPageBlockCanonicalizer::canonicalize($blocks);
+            if ($canonical === $blocks) {
+                continue;
+            }
+
+            DB::statement(
+                'UPDATE public.custom_page_settings SET blocks = ?::jsonb WHERE id = ?',
+                [json_encode($canonical, JSON_THROW_ON_ERROR), (int) $row->id],
             );
         }
     }

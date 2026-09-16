@@ -4,7 +4,6 @@ namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Models\CustomPageSetting;
-use App\Models\PublicContentSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -103,7 +102,6 @@ final class CustomPageEditorialService
         return $this->mutateListItems($settings, $index, $expectedType, function (array $items) use ($itemIndex, $published): array {
             $this->assertListItem($items, $itemIndex);
             $items[$itemIndex]['published'] = $published;
-            unset($items[$itemIndex]['visible']);
 
             return $items;
         });
@@ -121,7 +119,6 @@ final class CustomPageEditorialService
             foreach (array_values(array_unique($itemIndices)) as $itemIndex) {
                 $this->assertListItem($items, $itemIndex);
                 $items[$itemIndex]['published'] = $published;
-                unset($items[$itemIndex]['visible']);
             }
 
             return $items;
@@ -313,42 +310,6 @@ final class CustomPageEditorialService
                 unset($children[$childIndex]);
                 $children = array_values($children);
             }
-
-            return $children;
-        });
-    }
-
-    /** Legacy-compatible adapter for callers outside the workspace. */
-    public function setContactToggle(CustomPageSetting $settings, int $index, string $expectedType, string $field, bool $enabled): bool
-    {
-        $childType = match ($field) {
-            'show_email' => 'public_email',
-            'show_form' => 'contact_form',
-            default => throw new InvalidArgumentException('Unsupported Contact toggle.'),
-        };
-
-        return $this->setContactChildPublished($settings, $index, $expectedType, $childType, $enabled);
-    }
-
-    /** Legacy-compatible adapter for callers outside the workspace. */
-    public function setContactSocialPlatform(CustomPageSetting $settings, int $index, string $expectedType, string $platform, bool $enabled): bool
-    {
-        $this->assertAvailableSocialPlatform($platform);
-
-        return $this->mutateContactChildren($settings, $index, $expectedType, function (array $children) use ($platform, $enabled): array {
-            $childIndex = $this->requiredContactChildIndex($children, 'social_links');
-            $selected = array_values(array_filter(
-                is_array($children[$childIndex]['social_platforms'] ?? null) ? $children[$childIndex]['social_platforms'] : [],
-                static fn (mixed $value): bool => is_string($value),
-            ));
-
-            if ($enabled && ! in_array($platform, $selected, true)) {
-                $selected[] = $platform;
-            }
-            if (! $enabled) {
-                $selected = array_values(array_filter($selected, static fn (string $value): bool => $value !== $platform));
-            }
-            $children[$childIndex]['social_platforms'] = $selected;
 
             return $children;
         });
@@ -739,19 +700,6 @@ final class CustomPageEditorialService
     {
         if (! in_array($type, self::COMPONENT_TYPES, true)) {
             throw ValidationException::withMessages(['component' => 'Choose a supported component type.']);
-        }
-    }
-
-    private function assertAvailableSocialPlatform(string $platform): void
-    {
-        if (! SocialLinks::supports($platform)) {
-            throw ValidationException::withMessages(['component' => 'Choose a supported social platform.']);
-        }
-
-        $available = collect(SocialLinks::visible(PublicContentSetting::general()->getAttribute('social_links')))
-            ->contains(static fn (array $link): bool => ($link['platform'] ?? null) === $platform);
-        if (! $available) {
-            throw ValidationException::withMessages(['component' => 'This social platform is not available from General.']);
         }
     }
 

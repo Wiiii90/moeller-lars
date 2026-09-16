@@ -79,11 +79,7 @@ final class CustomPageSetting extends Model
 
     public static function listItemPublished(array $item): bool
     {
-        if (array_key_exists('published', $item)) {
-            return $item['published'] === true;
-        }
-
-        return ($item['visible'] ?? true) === true;
+        return ($item['published'] ?? true) === true;
     }
 
     public static function contactChildPublished(array $child): bool
@@ -325,7 +321,7 @@ final class CustomPageSetting extends Model
             if (! is_array($item)) {
                 throw ValidationException::withMessages(['blocks' => 'A list component entry is invalid.']);
             }
-            if (! is_bool($item['published'] ?? $item['visible'] ?? true)) {
+            if (! is_bool($item['published'] ?? true)) {
                 throw ValidationException::withMessages(['blocks' => 'List entry publication state must be boolean.']);
             }
 
@@ -422,68 +418,47 @@ final class CustomPageSetting extends Model
     private function normalizeContactChildren(array $block): array
     {
         $children = $block['children'] ?? null;
-        if (is_array($children) && array_is_list($children)) {
-            $normalized = [];
-            $seen = [];
-            foreach ($children as $child) {
-                if (! is_array($child)) {
-                    continue;
-                }
-                $type = $child['type'] ?? null;
-                if (! is_string($type) || ! in_array($type, self::CONTACT_CHILD_TYPES, true) || isset($seen[$type])) {
-                    continue;
-                }
-                $seen[$type] = true;
-                $published = self::contactChildPublished($child);
-                $normalized[] = match ($type) {
-                    'public_email' => [
-                        'type' => 'public_email',
-                        'published' => $published,
-                    ],
-                    'social_links' => [
-                        'type' => 'social_links',
-                        'published' => $published,
-                        'social_platforms' => array_values(array_unique(array_filter(
-                            is_array($child['social_platforms'] ?? null) ? $child['social_platforms'] : [],
-                            static fn (mixed $platform): bool => is_string($platform),
-                        ))),
-                    ],
-                    'contact_form' => [
-                        'type' => 'contact_form',
-                        'published' => $published,
-                        'form_state' => ($child['form_state'] ?? 'enabled') === 'under_construction'
-                            ? 'under_construction'
-                            : 'enabled',
-                        'status_text' => $this->nullableTrimmedString($child['status_text'] ?? null),
-                    ],
-                };
-            }
-
-            return $normalized;
+        if (! is_array($children) || ! array_is_list($children)) {
+            return [];
         }
 
-        $legacyFormState = is_string($block['form_state'] ?? null) ? $block['form_state'] : 'enabled';
+        $normalized = [];
+        $seen = [];
+        foreach ($children as $child) {
+            if (! is_array($child)) {
+                continue;
+            }
+            $type = $child['type'] ?? null;
+            if (! is_string($type) || ! in_array($type, self::CONTACT_CHILD_TYPES, true) || isset($seen[$type])) {
+                continue;
+            }
+            $seen[$type] = true;
+            $published = self::contactChildPublished($child);
+            $normalized[] = match ($type) {
+                'public_email' => [
+                    'type' => 'public_email',
+                    'published' => $published,
+                ],
+                'social_links' => [
+                    'type' => 'social_links',
+                    'published' => $published,
+                    'social_platforms' => array_values(array_unique(array_filter(
+                        is_array($child['social_platforms'] ?? null) ? $child['social_platforms'] : [],
+                        static fn (mixed $platform): bool => is_string($platform),
+                    ))),
+                ],
+                'contact_form' => [
+                    'type' => 'contact_form',
+                    'published' => $published,
+                    'form_state' => ($child['form_state'] ?? 'enabled') === 'under_construction'
+                        ? 'under_construction'
+                        : 'enabled',
+                    'status_text' => $this->nullableTrimmedString($child['status_text'] ?? null),
+                ],
+            };
+        }
 
-        return [
-            [
-                'type' => 'public_email',
-                'published' => (bool) ($block['show_email'] ?? true),
-            ],
-            [
-                'type' => 'social_links',
-                'published' => true,
-                'social_platforms' => array_values(array_unique(array_filter(
-                    is_array($block['social_platforms'] ?? null) ? $block['social_platforms'] : [],
-                    static fn (mixed $platform): bool => is_string($platform),
-                ))),
-            ],
-            [
-                'type' => 'contact_form',
-                'published' => (bool) ($block['show_form'] ?? true) && $legacyFormState !== 'hidden',
-                'form_state' => $legacyFormState === 'under_construction' ? 'under_construction' : 'enabled',
-                'status_text' => $this->nullableTrimmedString($block['status_text'] ?? null),
-            ],
-        ];
+        return $normalized;
     }
 
     private function nullableTrimmedString(mixed $value): ?string
