@@ -278,12 +278,18 @@ class MediaAssetEditorialService
                     continue;
                 }
 
-                if ($type !== 'list' || ! is_array($block['items'] ?? null)) {
+                if ($type !== 'list') {
                     continue;
                 }
 
-                $items = array_values($block['items']);
                 $changed = false;
+                if (is_numeric($block['media_asset_id'] ?? null)
+                    && (int) $block['media_asset_id'] === $assetId) {
+                    $block['media_asset_id'] = null;
+                    $changed = true;
+                }
+
+                $items = is_array($block['items'] ?? null) ? array_values($block['items']) : [];
                 foreach ($items as $itemIndex => $item) {
                     if (! is_array($item)) {
                         continue;
