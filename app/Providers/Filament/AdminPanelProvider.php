@@ -76,7 +76,7 @@ class AdminPanelProvider extends PanelProvider
             ->revealablePasswords(false)
             ->brandName('Admin Area')
             ->brandLogo(new HtmlString('Lars Möller'))
-            ->favicon(asset('admin-favicon.svg').'?v=aperture-1')
+            ->favicon($this->adminFaviconUrl())
             ->homeUrl(fn (): string => route('home'))
             ->breadcrumbs(false)
             ->globalSearch(false)
@@ -129,6 +129,15 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
                 DeferMatomoReporting::class,
             ], isPersistent: true);
+    }
+
+    private function adminFaviconUrl(): string
+    {
+        $faviconPath = public_path('admin-favicon.svg');
+        $faviconHash = is_file($faviconPath) ? hash_file('sha256', $faviconPath) : false;
+        $version = $faviconHash !== false ? substr($faviconHash, 0, 12) : 'missing';
+
+        return asset('admin-favicon.svg').'?v='.$version;
     }
 
     private function navigation(NavigationBuilder $builder): NavigationBuilder
