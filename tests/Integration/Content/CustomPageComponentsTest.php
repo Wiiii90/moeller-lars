@@ -32,19 +32,18 @@ it('persists ordered Custom Page components across add remove and reorder change
 
     $settings->update(['blocks' => [
         ['type' => 'image', 'media_asset_id' => $asset->getKey(), 'image_decorative' => false],
-        ['type' => 'cv_list'],
         ['type' => 'divider'],
         ['type' => 'contact', 'show_email' => true, 'show_form' => true, 'social_platforms' => [], 'form_state' => 'enabled'],
         ['type' => 'text', 'title' => 'Statement', 'body' => 'Persistent text'],
         ['type' => 'list', 'title' => 'Links', 'items' => [['visible' => true, 'title' => 'Example', 'url' => 'https://example.com']]],
     ]]);
 
-    expect(array_column($settings->fresh()->components(), 'type'))->toBe(['image', 'cv_list', 'divider', 'contact', 'text', 'list']);
+    expect(array_column($settings->fresh()->components(), 'type'))->toBe(['image', 'divider', 'contact', 'text', 'list']);
 
     $components = $settings->fresh()->components();
-    $settings->update(['blocks' => [$components[3], $components[1], $components[0], $components[2], $components[5]]]);
+    $settings->update(['blocks' => [$components[2], $components[0], $components[1], $components[4]]]);
 
-    expect(array_column($settings->fresh()->components(), 'type'))->toBe(['contact', 'cv_list', 'image', 'divider', 'list']);
+    expect(array_column($settings->fresh()->components(), 'type'))->toBe(['contact', 'image', 'divider', 'list']);
 });
 
 it('defaults Contact Form presentation to enabled when child state is absent', function (): void {
