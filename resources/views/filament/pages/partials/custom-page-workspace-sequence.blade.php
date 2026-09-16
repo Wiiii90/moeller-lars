@@ -63,6 +63,11 @@
                                     @endif
                                 </div>
 
+                                @php
+                                    $componentStateIcon = $component['published']
+                                        ? \App\Filament\Support\AdminIcon::Unpublish->mini()
+                                        : \App\Filament\Support\AdminIcon::Publish->mini();
+                                @endphp
                                 <div class="admin-row-actions admin-row-actions--canonical custom-page-row-actions custom-page-component__actions admin-toolbar">
                                     <button class="admin-action admin-action--with-icon admin-order-action admin-order-action--labeled" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')" @disabled(! $reorderEnabled || ! $component['can_move_up']) aria-label="Move component up">
                                         <x-filament::icon :icon="\App\Filament\Support\AdminIcon::MoveUp->mini()" class="admin-action__icon" />
@@ -77,7 +82,7 @@
                                         <span class="admin-action__label">Edit</span>
                                     </button>
                                     <button class="admin-action admin-action--with-icon admin-action--state" type="button" wire:click="setComponentPublished({{ $component['index'] }}, '{{ $component['type'] }}', {{ $component['published'] ? 'false' : 'true' }})">
-                                        <x-filament::icon :icon="$component['published'] ? \App\Filament\Support\AdminIcon::Unpublish->mini() : \App\Filament\Support\AdminIcon::Publish->mini()" class="admin-action__icon" />
+                                        <x-filament::icon :icon="$componentStateIcon" class="admin-action__icon" />
                                         <span class="admin-action__label">{{ $component['published'] ? 'Unpublish' : 'Publish' }}</span>
                                     </button>
                                     <button class="admin-action admin-action--with-icon is-danger" type="button" wire:click="mountAction('deleteComponent', { componentIndex: {{ $component['index'] }}, componentType: '{{ $component['type'] }}' })">
