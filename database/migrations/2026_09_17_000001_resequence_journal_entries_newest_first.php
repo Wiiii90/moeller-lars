@@ -155,16 +155,16 @@ return new class extends Migration
         }
 
         $scores = [];
-        if (preg_match_all('/\b(\d{1,2})\.(\d{1,2})\.(19\d{2}|20\d{2})\b/', $value, $matches, PREG_SET_ORDER) > 0) {
+        $hasExactDate = preg_match_all('/\b(\d{1,2})\.(\d{1,2})\.(19\d{2}|20\d{2})\b/', $value, $matches, PREG_SET_ORDER) > 0;
+
+        if ($hasExactDate) {
             foreach ($matches as $match) {
                 $timestamp = strtotime(sprintf('%04d-%02d-%02d', (int) $match[3], (int) $match[2], (int) $match[1]));
                 if ($timestamp !== false) {
                     $scores[] = $timestamp;
                 }
             }
-        }
-
-        if (preg_match_all('/\b(19\d{2}|20\d{2})\b/', $value, $years) > 0) {
+        } elseif (preg_match_all('/\b(19\d{2}|20\d{2})\b/', $value, $years) > 0) {
             foreach ($years[1] as $year) {
                 $timestamp = strtotime(((int) $year).'-12-31');
                 if ($timestamp !== false) {
