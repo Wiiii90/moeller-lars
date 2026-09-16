@@ -4,32 +4,22 @@
     border-bottom: 0;
 }
 
-/* Journal consumes the shared six-unit table grid. At full desktop width the
- * complete action vocabulary stays visible: Blog owns the final three units,
- * Exhibitions the final 2.5 units, both including the trailing Selection rail.
- * Narrower viewports scroll instead of abbreviating the canonical labels. */
-.journal-table--blog {
-    min-width: 88rem !important;
+/* Journal stays on the shared six-unit metric grid without forcing a desktop
+ * width larger than the workspace. The generic table contract still supplies
+ * the 60rem narrow-viewport floor, so only genuinely narrow screens scroll. */
+.journal-table {
+    width: 100%;
 }
 
-.journal-table--exhibitions {
-    min-width: 76rem !important;
-}
-
-.journal-table--blog col:nth-child(6) {
-    width: var(--admin-table-half-unit);
+/* Blog has two extra data columns (image + status), so Post owns 1.5 units.
+ * This makes all editorial data end exactly on the 4/6 metric line. Actions
+ * plus trailing Selection then own units 5+6, exactly like Exhibitions. */
+.journal-table--blog col:nth-child(4) {
+    width: var(--admin-table-one-half-units);
 }
 
 .journal-table col.journal-table__actions--blog {
-    width: calc(50% - var(--admin-table-selection-width));
-}
-
-.journal-table--exhibitions col:nth-child(5) {
-    width: var(--admin-table-one-unit);
-}
-
-.journal-table--exhibitions col:nth-child(6) {
-    width: calc(41.666667% - var(--admin-table-selection-width));
+    width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
 }
 
 .journal-row-actions {
@@ -62,9 +52,9 @@
 .journal-row-actions .admin-action {
     width: 100%;
     min-width: 0;
-    padding-inline: .28rem;
+    padding-inline: .22rem;
     justify-content: flex-start !important;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .journal-row-actions .admin-action--state {
@@ -73,6 +63,8 @@
 
 .journal-row-actions .admin-action__label {
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
