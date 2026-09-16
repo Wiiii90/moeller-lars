@@ -76,7 +76,6 @@ final class MediaReferenceCatalog
             'label' => 'Site',
             'options' => [
                 ['value' => 'home', 'label' => 'Home'],
-                ['value' => 'cv', 'label' => 'CV'],
                 ['value' => 'site-identity', 'label' => 'Site identity'],
             ],
         ];
@@ -120,12 +119,6 @@ final class MediaReferenceCatalog
         }
         if ($destination === 'home') {
             $this->applyHomeDestination($query);
-
-            return;
-        }
-        if ($destination === 'cv') {
-            $ids = $this->referenceQuery->mediaIdsForCv();
-            $ids === [] ? $query->whereRaw('1 = 0') : $query->whereIn('media_assets.id', $ids);
 
             return;
         }
@@ -496,10 +489,10 @@ final class MediaReferenceCatalog
                     ]);
                 }
 
-                if ($type === 'cv_list' && is_numeric($mediaId) && (int) $mediaId > 0) {
+                if ($type === 'list' && is_numeric($mediaId) && (int) $mediaId > 0) {
                     $this->appendReferenceRow($rows, (int) $mediaId, [
-                        'type' => 'CV',
-                        'label' => $this->nodeLabel($node).' — Portrait',
+                        'type' => 'Custom Page: '.$this->nodeLabel($node),
+                        'label' => 'List component image',
                         'url' => $this->presentation->workspaceUrl($node),
                     ]);
                 }
