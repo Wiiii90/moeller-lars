@@ -19,6 +19,19 @@ function commitContactWorkingState(): void
     app(PublicationService::class)->commit(User::factory()->admin()->create());
 }
 
+function contactComponentBlocks(bool $formPublished = true, bool $emailPublished = true): array
+{
+    return [[
+        'type' => 'contact',
+        'published' => true,
+        'children' => [
+            ['type' => 'public_email', 'published' => $emailPublished],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => []],
+            ['type' => 'contact_form', 'published' => $formPublished, 'form_state' => 'enabled', 'status_text' => null],
+        ],
+    ]];
+}
+
 function enablePublishedContactForm(): void
 {
     $position = ((int) (SiteSection::query()->whereNull('parent_id')->max('position') ?? 0)) + 10;
@@ -38,13 +51,7 @@ function enablePublishedContactForm(): void
 
     $settings = new CustomPageSetting;
     $settings->setAttribute('site_section_id', $section->id);
-    $settings->setAttribute('blocks', [[
-        'type' => 'contact',
-        'show_form' => true,
-        'show_email' => true,
-        'social_platforms' => [],
-        'form_state' => 'enabled',
-    ]]);
+    $settings->setAttribute('blocks', contactComponentBlocks());
     $settings->save();
     commitContactWorkingState();
 }
@@ -257,26 +264,14 @@ it('requires an enabled Contact component on a published Custom Page', function 
     ]);
     $settings = new CustomPageSetting;
     $settings->setAttribute('site_section_id', $section->id);
-    $settings->setAttribute('blocks', [[
-        'type' => 'contact',
-        'show_form' => true,
-        'show_email' => false,
-        'social_platforms' => [],
-        'form_state' => 'enabled',
-    ]]);
+    $settings->setAttribute('blocks', contactComponentBlocks(formPublished: true, emailPublished: false));
     $settings->save();
     commitContactWorkingState();
 
     $this->post('/contact', contactPayload())->assertNotFound();
 
     $section->update(['state' => 'published']);
-    $settings->update(['blocks' => [[
-        'type' => 'contact',
-        'show_form' => true,
-        'show_email' => false,
-        'social_platforms' => [],
-        'form_state' => 'hidden',
-    ]]]);
+    $settings->update(['blocks' => contactComponentBlocks(formPublished: false, emailPublished: false)]);
     commitContactWorkingState();
 
     $this->post('/contact', contactPayload())->assertNotFound();
