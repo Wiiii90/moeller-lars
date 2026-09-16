@@ -6,7 +6,6 @@ use App\Domain\Artwork\ArtworkEditorialService;
 use App\Models\AdminActionReceipt;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
-use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\User;
@@ -39,11 +38,7 @@ final class AdminUndoService
 
         return DB::transaction(function () use ($receiptId, $actor): array {
             /** @var AdminActionReceipt|null $receipt */
-            $receipt = AdminActionReceipt::query()
-                ->whereKey($receiptId)
-                ->lockForUpdate()
-                ->first();
-
+            $receipt = AdminActionReceipt::query()->whereKey($receiptId)->lockForUpdate()->first();
             if (! $receipt) {
                 throw ValidationException::withMessages(['undo' => 'This Undo receipt no longer exists.']);
             }
@@ -67,12 +62,10 @@ final class AdminUndoService
                 }
 
                 $target = $this->lockedTarget($receipt);
-
                 if (in_array($actionKey, self::MEDIA_ACTIONS, true)) {
                     if (! $target instanceof Artwork) {
                         throw ValidationException::withMessages(['undo' => 'This media change no longer has a valid artwork target.']);
                     }
-
                     $this->assertMediaPrecondition($receipt, $target);
                     $this->executeMediaInverse($receipt, $target);
                     $this->assertMediaRestored($receipt, $target);
@@ -82,14 +75,11 @@ final class AdminUndoService
 
                 $expectedState = (string) $receipt->getAttribute('after_state');
                 if ((string) $target->getAttribute('state') !== $expectedState) {
-                    throw ValidationException::withMessages([
-                        'undo' => 'Undo is no longer available because this item changed afterwards.',
-                    ]);
+                    throw ValidationException::withMessages(['undo' => 'Undo is no longer available because this item changed afterwards.']);
                 }
 
                 $result = $this->executeLifecycleInverse($target, $inverseActionKey);
                 $expectedRestoredState = (string) $receipt->getAttribute('before_state');
-
                 if ((string) $result->getAttribute('state') !== $expectedRestoredState) {
                     throw new RuntimeException('The domain inverse did not restore the receipt state.');
                 }
@@ -110,30 +100,26 @@ final class AdminUndoService
         if ((int) $receipt->getAttribute('admin_user_id') !== (int) $actor->getKey()) {
             throw new AuthorizationException('This Undo receipt belongs to another admin.');
         }
-
         if ((int) $receipt->getAttribute('receipt_version') !== AdminActionReceiptService::RECEIPT_VERSION) {
             throw ValidationException::withMessages(['undo' => 'This Undo receipt uses an unsupported version.']);
         }
-
         if ($receipt->getAttribute('undone_at') !== null) {
             throw ValidationException::withMessages(['undo' => 'This change has already been undone.']);
         }
-
         $expiresAt = $receipt->getAttribute('expires_at');
         if ($expiresAt === null || $expiresAt->isPast()) {
             throw ValidationException::withMessages(['undo' => 'This Undo receipt has expired.']);
         }
     }
 
-    private function lockedTarget(AdminActionReceipt $receipt): Artwork|CvEntry|Exhibition
+    private function lockedTarget(AdminActionReceipt $receipt): Artwork|Exhibition
     {
         $entityId = (int) $receipt->getAttribute('entity_id');
 
         return match ((string) $receipt->getAttribute('entity_type')) {
             'artwork' => $this->lockedArtwork($entityId),
-            'cv_entry' => $this->lockedCvEntry($entityId),
             'exhibition' => $this->lockedExhibition($entityId),
-            default => throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists.']),
+            default => throw ValidationException::withMessages(['undo' => 'The target of this change is no longer part of the active editorial model.']),
         };
     }
 
@@ -141,19 +127,6 @@ final class AdminUndoService
     {
         /** @var Artwork|null $target */
         $target = Artwork::query()->whereKey($entityId)->lockForUpdate()->first();
-
-        if (! $target) {
-            throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists.']);
-        }
-
-        return $target;
-    }
-
-    private function lockedCvEntry(int $entityId): CvEntry
-    {
-        /** @var CvEntry|null $target */
-        $target = CvEntry::query()->whereKey($entityId)->lockForUpdate()->first();
-
         if (! $target) {
             throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists.']);
         }
@@ -165,7 +138,6 @@ final class AdminUndoService
     {
         /** @var Exhibition|null $target */
         $target = Exhibition::query()->whereKey($entityId)->lockForUpdate()->first();
-
         if (! $target) {
             throw ValidationException::withMessages(['undo' => 'The target of this change no longer exists.']);
         }
@@ -192,12 +164,10 @@ final class AdminUndoService
             ->lockForUpdate()
             ->first();
 
-        if (
-            ! $usage
+        if (! $usage
             || $usage->getAttribute('role') !== 'additional'
             || (int) $usage->getAttribute('media_asset_id') !== (int) $receipt->getAttribute('media_asset_id')
-            || (int) $usage->getAttribute('position') !== (int) $receipt->getAttribute('after_position')
-        ) {
+            || (int) $usage->getAttribute('position') !== (int) $receipt->getAttribute('after_position')) {
             $this->conflict();
         }
     }
@@ -205,22 +175,14 @@ final class AdminUndoService
     private function assertDetachedPrecondition(AdminActionReceipt $receipt, Artwork $artwork): void
     {
         /** @var MediaAsset|null $asset */
-        $asset = MediaAsset::query()
-            ->whereKey((int) $receipt->getAttribute('media_asset_id'))
-            ->lockForUpdate()
-            ->first();
+        $asset = MediaAsset::query()->whereKey((int) $receipt->getAttribute('media_asset_id'))->lockForUpdate()->first();
         if (! $asset || $asset->getAttribute('state') !== 'available') {
             $this->conflict();
         }
-
         if (ArtworkMedia::query()->whereKey((int) $receipt->getAttribute('artwork_media_id'))->exists()) {
             $this->conflict();
         }
-
-        if (ArtworkMedia::query()
-            ->where('artwork_id', $artwork->getKey())
-            ->where('media_asset_id', $asset->getKey())
-            ->exists()) {
+        if (ArtworkMedia::query()->where('artwork_id', $artwork->getKey())->where('media_asset_id', $asset->getKey())->exists()) {
             $this->conflict();
         }
 
@@ -231,9 +193,7 @@ final class AdminUndoService
             ->orderBy('position')
             ->lockForUpdate()
             ->get();
-        $ordered = $additional->modelKeys();
-
-        if (! $this->neighborGapMatches($receipt, $ordered)) {
+        if (! $this->neighborGapMatches($receipt, $additional->modelKeys())) {
             $this->conflict();
         }
     }
@@ -242,10 +202,7 @@ final class AdminUndoService
     {
         /** @var EloquentCollection<int, ArtworkMedia> $usages */
         $usages = ArtworkMedia::query()
-            ->whereIn('id', [
-                (int) $receipt->getAttribute('artwork_media_id'),
-                (int) $receipt->getAttribute('neighbor_artwork_media_id'),
-            ])
+            ->whereIn('id', [(int) $receipt->getAttribute('artwork_media_id'), (int) $receipt->getAttribute('neighbor_artwork_media_id')])
             ->where('artwork_id', $artwork->getKey())
             ->where('role', 'additional')
             ->lockForUpdate()
@@ -255,13 +212,10 @@ final class AdminUndoService
         /** @var ArtworkMedia|null $neighbor */
         $neighbor = $usages->firstWhere('id', (int) $receipt->getAttribute('neighbor_artwork_media_id'));
 
-        if (
-            ! $moving
-            || ! $neighbor
+        if (! $moving || ! $neighbor
             || (int) $moving->getAttribute('position') !== (int) $receipt->getAttribute('after_position')
             || (int) $neighbor->getAttribute('position') !== (int) $receipt->getAttribute('before_position')
-            || abs((int) $moving->getAttribute('position') - (int) $neighbor->getAttribute('position')) !== 1
-        ) {
+            || abs((int) $moving->getAttribute('position') - (int) $neighbor->getAttribute('position')) !== 1) {
             $this->conflict();
         }
     }
@@ -287,11 +241,7 @@ final class AdminUndoService
     {
         /** @var MediaAsset $asset */
         $asset = MediaAsset::query()->findOrFail((int) $receipt->getAttribute('media_asset_id'));
-        $this->artworkEditorial->restoreAdditionalMedia(
-            $artwork,
-            $asset,
-            (int) $receipt->getAttribute('before_position'),
-        );
+        $this->artworkEditorial->restoreAdditionalMedia($artwork, $asset, (int) $receipt->getAttribute('before_position'));
     }
 
     private function undoMediaReorder(AdminActionReceipt $receipt, Artwork $artwork): void
@@ -302,26 +252,18 @@ final class AdminUndoService
         if (! in_array($direction, ['up', 'down'], true)) {
             throw ValidationException::withMessages(['undo' => 'This reorder receipt has no valid inverse direction.']);
         }
-
         $this->artworkEditorial->moveAdditionalMedia($artwork, $usage, $direction);
     }
 
     private function assertMediaRestored(AdminActionReceipt $receipt, Artwork $artwork): void
     {
         $action = (string) $receipt->getAttribute('action_key');
-
         if ($action === 'artwork.additional_media_attached') {
-            $stillAttached = ArtworkMedia::query()
-                ->where('artwork_id', $artwork->getKey())
-                ->where('media_asset_id', (int) $receipt->getAttribute('media_asset_id'))
-                ->exists();
-            if ($stillAttached) {
+            if (ArtworkMedia::query()->where('artwork_id', $artwork->getKey())->where('media_asset_id', (int) $receipt->getAttribute('media_asset_id'))->exists()) {
                 throw new RuntimeException('The media inverse did not detach the expected asset.');
             }
-
             return;
         }
-
         if ($action === 'artwork.additional_media_detached') {
             /** @var ArtworkMedia|null $restored */
             $restored = ArtworkMedia::query()
@@ -332,28 +274,20 @@ final class AdminUndoService
             if (! $restored || (int) $restored->getAttribute('position') !== (int) $receipt->getAttribute('before_position')) {
                 throw new RuntimeException('The media inverse did not restore the expected gallery position.');
             }
-
             return;
         }
 
         /** @var EloquentCollection<int, ArtworkMedia> $usages */
         $usages = ArtworkMedia::query()
-            ->whereIn('id', [
-                (int) $receipt->getAttribute('artwork_media_id'),
-                (int) $receipt->getAttribute('neighbor_artwork_media_id'),
-            ])
+            ->whereIn('id', [(int) $receipt->getAttribute('artwork_media_id'), (int) $receipt->getAttribute('neighbor_artwork_media_id')])
             ->get();
         /** @var ArtworkMedia|null $moving */
         $moving = $usages->firstWhere('id', (int) $receipt->getAttribute('artwork_media_id'));
         /** @var ArtworkMedia|null $neighbor */
         $neighbor = $usages->firstWhere('id', (int) $receipt->getAttribute('neighbor_artwork_media_id'));
-
-        if (
-            ! $moving
-            || ! $neighbor
+        if (! $moving || ! $neighbor
             || (int) $moving->getAttribute('position') !== (int) $receipt->getAttribute('before_position')
-            || (int) $neighbor->getAttribute('position') !== (int) $receipt->getAttribute('after_position')
-        ) {
+            || (int) $neighbor->getAttribute('position') !== (int) $receipt->getAttribute('after_position')) {
             throw new RuntimeException('The media inverse did not restore the expected order.');
         }
     }
@@ -370,11 +304,9 @@ final class AdminUndoService
         if ($previous === null && $next === null) {
             return $ordered === [];
         }
-
         if ($previous === null) {
             return ($ordered[0] ?? null) === $next;
         }
-
         if ($next === null) {
             return $ordered !== [] && $ordered[array_key_last($ordered)] === $previous;
         }
@@ -385,10 +317,8 @@ final class AdminUndoService
         return is_int($previousIndex) && is_int($nextIndex) && $nextIndex === $previousIndex + 1;
     }
 
-    private function executeLifecycleInverse(
-        Artwork|CvEntry|Exhibition $target,
-        string $inverseActionKey,
-    ): Artwork|CvEntry|Exhibition {
+    private function executeLifecycleInverse(Artwork|Exhibition $target, string $inverseActionKey): Artwork|Exhibition
+    {
         if ($target instanceof Artwork) {
             return match ($inverseActionKey) {
                 'artwork.published' => $this->artworkEditorial->publish($target),
@@ -398,8 +328,8 @@ final class AdminUndoService
         }
 
         return match ($inverseActionKey) {
-            'cv_entry.published', 'exhibition.published' => $this->editorialRecords->publish($target),
-            'cv_entry.unpublished', 'exhibition.unpublished' => $this->editorialRecords->unpublish($target),
+            'exhibition.published' => $this->editorialRecords->publish($target),
+            'exhibition.unpublished' => $this->editorialRecords->unpublish($target),
             default => throw ValidationException::withMessages(['undo' => 'This editorial change has no reversible contract.']),
         };
     }
