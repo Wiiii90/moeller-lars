@@ -20,8 +20,8 @@ it('keeps Journal ordering newest-first by default and shared by admin and publi
         ->toContain("'published' => 2")
         ->toContain('exhibitionDateScore')
         ->toContain('legacyDateScore')
-        ->toContain("$this->persistOrder('blog_posts'")
-        ->toContain("$this->persistOrder('exhibitions'");
+        ->toContain("\$this->persistOrder('blog_posts'")
+        ->toContain("\$this->persistOrder('exhibitions'");
 
     expect($workspace)
         ->toContain("->orderBy('position')->orderBy('id')->forPage")
