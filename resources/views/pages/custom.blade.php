@@ -29,72 +29,9 @@
 
                 @if ($asset !== null && $variant !== null)
                     <figure class="custom-page__component custom-page__media custom-page__image">
-                        <img
-                            src="{{ $media->variantUrl($variant) }}"
-                            alt="{{ $imageAlt }}"
-                            loading="{{ $loading }}"
-                            decoding="async"
-                        >
+                        <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
                     </figure>
                 @endif
-            @endif
-
-            @if ($type === 'cv_list')
-                @php
-                    $cvAssetId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
-                    $cvAsset = $cvAssetId !== null ? $assets->get($cvAssetId) : null;
-                    $cvVariant = $cvAsset !== null && $cvAsset->getAttribute('state') === 'available'
-                        ? $media->thumbnailVariantForAsset($cvAsset)
-                        : null;
-                @endphp
-                <section class="custom-page__component" aria-label="CV entries">
-                    @if ($cvVariant !== null && $cvAsset instanceof \App\Models\MediaAsset)
-                        <div class="cv-legacy-layout">
-                            <div class="cv-legacy-copy cv-biography">
-                                @foreach ($cvEntries as $entry)
-                                    <article class="cv-entry">
-                                        <div class="cv-entry__line">
-                                            @if (filled($entry->year_text))
-                                                <span class="cv-entry__date">{{ $entry->year_text }}</span>
-                                            @endif
-                                            <span>{{ $entry->title }}</span>
-                                        </div>
-                                        @if (filled($entry->organisation))<div>{{ $entry->organisation }}</div>@endif
-                                        @if (filled($entry->location))<div>{{ $entry->location }}</div>@endif
-                                        @if (filled($entry->external_url))
-                                            <p><a href="{{ $entry->external_url }}" rel="noopener noreferrer">More information</a></p>
-                                        @endif
-                                    </article>
-                                @endforeach
-                            </div>
-                            <img
-                                class="cv-portrait"
-                                src="{{ $media->variantUrl($cvVariant) }}"
-                                alt="{{ $media->altTextForAsset($cvAsset) }}"
-                                loading="lazy"
-                                decoding="async"
-                            >
-                        </div>
-                    @else
-                        <div class="cv-biography">
-                            @foreach ($cvEntries as $entry)
-                                <article class="cv-entry">
-                                    <div class="cv-entry__line">
-                                        @if (filled($entry->year_text))
-                                            <span class="cv-entry__date">{{ $entry->year_text }}</span>
-                                        @endif
-                                        <span>{{ $entry->title }}</span>
-                                    </div>
-                                    @if (filled($entry->organisation))<div>{{ $entry->organisation }}</div>@endif
-                                    @if (filled($entry->location))<div>{{ $entry->location }}</div>@endif
-                                    @if (filled($entry->external_url))
-                                        <p><a href="{{ $entry->external_url }}" rel="noopener noreferrer">More information</a></p>
-                                    @endif
-                                </article>
-                            @endforeach
-                        </div>
-                    @endif
-                </section>
             @endif
 
             @if ($type === 'text')
@@ -111,32 +48,50 @@
             @endif
 
             @if ($type === 'list')
+                @php
+                    $listAssetId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
+                    $listAsset = $listAssetId !== null ? $assets->get($listAssetId) : null;
+                    $listVariant = $listAsset !== null && $listAsset->getAttribute('state') === 'available'
+                        ? $media->thumbnailVariantForAsset($listAsset)
+                        : null;
+                @endphp
                 <section class="custom-page__component">
-                    <div class="custom-page__copy">
-                        @if (filled($block['title'] ?? null))
-                            <h3>{{ $block['title'] }}</h3>
-                        @endif
-                        <div class="custom-page__list">
-                            @foreach (($block['items'] ?? []) as $item)
-                                @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
-                                <article class="custom-page__list-item">
-                                    <div class="custom-page__list-line">
-                                        @if (filled($item['date'] ?? null))
-                                            <span class="custom-page__date">{{ $item['date'] }}</span>
+                    <div class="custom-page__list-layout{{ $listVariant !== null ? ' custom-page__list-layout--with-media' : '' }}">
+                        <div class="custom-page__copy">
+                            @if (filled($block['title'] ?? null))
+                                <h3>{{ $block['title'] }}</h3>
+                            @endif
+                            <div class="custom-page__list">
+                                @foreach (($block['items'] ?? []) as $item)
+                                    @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
+                                    <article class="custom-page__list-item">
+                                        <div class="custom-page__list-line">
+                                            @if (filled($item['date'] ?? null))
+                                                <span class="custom-page__date">{{ $item['date'] }}</span>
+                                            @endif
+                                            <strong>{{ $item['title'] ?? '' }}</strong>
+                                        </div>
+                                        @if (filled($item['meta'] ?? null))<div>{{ $item['meta'] }}</div>@endif
+                                        @if (filled($item['location'] ?? null))<div>{{ $item['location'] }}</div>@endif
+                                        @if (filled($item['body'] ?? null))
+                                            <div class="rich-text">{!! $richText->render((string) $item['body']) !!}</div>
                                         @endif
-                                        <strong>{{ $item['title'] ?? '' }}</strong>
-                                    </div>
-                                    @if (filled($item['meta'] ?? null))<div>{{ $item['meta'] }}</div>@endif
-                                    @if (filled($item['location'] ?? null))<div>{{ $item['location'] }}</div>@endif
-                                    @if (filled($item['body'] ?? null))
-                                        <div class="rich-text">{!! $richText->render((string) $item['body']) !!}</div>
-                                    @endif
-                                    @if (filled($item['url'] ?? null))
-                                        <p><a href="{{ $item['url'] }}" rel="noopener noreferrer">More information</a></p>
-                                    @endif
-                                </article>
-                            @endforeach
+                                        @if (filled($item['url'] ?? null))
+                                            <p><a href="{{ $item['url'] }}" rel="noopener noreferrer">More information</a></p>
+                                        @endif
+                                    </article>
+                                @endforeach
+                            </div>
                         </div>
+                        @if ($listVariant !== null && $listAsset instanceof \App\Models\MediaAsset)
+                            <img
+                                class="custom-page__list-media"
+                                src="{{ $media->variantUrl($listVariant) }}"
+                                alt="{{ $media->altTextForAsset($listAsset) }}"
+                                loading="lazy"
+                                decoding="async"
+                            >
+                        @endif
                     </div>
                 </section>
             @endif
@@ -153,10 +108,7 @@
 
             @if ($type === 'contact')
                 <div class="custom-page__component custom-page__contact">
-                    <x-contact
-                        :general-settings="$generalSettings"
-                        :children="$settings->contactChildren($block)"
-                    />
+                    <x-contact :general-settings="$generalSettings" :children="$settings->contactChildren($block)" />
                 </div>
             @endif
 
