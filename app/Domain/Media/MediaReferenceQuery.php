@@ -64,7 +64,7 @@ final class MediaReferenceQuery
     {
         $blocks = $settings->components();
         $mediaIds = collect($blocks)
-            ->filter(static fn (array $component): bool => in_array($component['type'] ?? null, ['image', 'cv_list'], true))
+            ->filter(static fn (array $component): bool => in_array($component['type'] ?? null, ['image', 'list'], true))
             ->pluck('media_asset_id')
             ->filter(static fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
             ->map(static fn (mixed $id): int => (int) $id)
@@ -79,26 +79,6 @@ final class MediaReferenceQuery
     public function customPageReferencesAsset(CustomPageSetting $settings, int $mediaAssetId): bool
     {
         return in_array($mediaAssetId, $this->mediaIdsForCustomPage($settings), true);
-    }
-
-    /** @return list<int> */
-    public function mediaIdsForCv(): array
-    {
-        $ids = [];
-        foreach (CustomPageSetting::query()->get(['id', 'blocks']) as $settings) {
-            foreach ($settings->components() as $component) {
-                if (($component['type'] ?? null) !== 'cv_list') {
-                    continue;
-                }
-
-                $mediaId = $component['media_asset_id'] ?? null;
-                if (is_numeric($mediaId) && (int) $mediaId > 0) {
-                    $ids[] = (int) $mediaId;
-                }
-            }
-        }
-
-        return array_values(array_unique($ids));
     }
 
     /** @return list<int> */
