@@ -82,20 +82,6 @@ enum SiteSectionType: string
         return in_array($this, [self::Gallery, self::Journal, self::CustomPage], true);
     }
 
-    /**
-     * Site-section type does not participate in hierarchy compatibility.
-     * Depth and cycle rules are enforced by SiteSection and SiteSectionOrderService.
-     */
-    public function canContainChildren(): bool
-    {
-        return true;
-    }
-
-    public function canHaveParent(): bool
-    {
-        return true;
-    }
-
     public function canDelete(): bool
     {
         return $this !== self::Home;
@@ -114,10 +100,5 @@ enum SiteSectionType: string
     public function canConvert(): bool
     {
         return $this !== self::Home;
-    }
-
-    public function canBeChildOf(self $parent): bool
-    {
-        return true;
     }
 }
