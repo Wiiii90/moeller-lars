@@ -59,10 +59,12 @@ final class AdminActionCatalog
         'blog_post.deleted' => ['label' => 'Deleted blog post', 'area' => 'Blog', 'family' => 'lifecycle'],
         'blog_post.reordered' => ['label' => 'Reordered blog posts', 'area' => 'Blog', 'family' => 'ordering'],
         'blog_setting.updated' => ['label' => 'Edited blog settings', 'area' => 'Blog', 'family' => 'settings'],
+        'journal_setting.updated' => ['label' => 'Edited Journal settings', 'area' => 'Journal', 'family' => 'settings'],
         'public_content_setting.updated' => ['label' => 'Edited website settings', 'area' => 'Website', 'family' => 'settings'],
         'publication.stage_reset' => ['label' => 'Reset staged changes', 'area' => 'Publication', 'family' => 'publish'],
         'publication.version_restored' => ['label' => 'Restored version to working state', 'area' => 'Publication', 'family' => 'publish'],
         'publication.commit_revert_staged' => ['label' => 'Staged commit revert', 'area' => 'Publication', 'family' => 'publish'],
+        'admin.undo_applied' => ['label' => 'Restored previous values', 'area' => 'Activity', 'family' => 'edit'],
     ];
 
     /** @return array<int, string> */

@@ -28,6 +28,8 @@ final class AdminUndoService
         private readonly AdminAuditService $audit,
         private readonly ArtworkEditorialService $artworkEditorial,
         private readonly EditorialRecordService $editorialRecords,
+        private readonly AdminSnapshotReceiptService $snapshots,
+        private readonly AdminUndoContext $undoContext,
     ) {}
 
     /** @return array{action:string,inverse:string} */
@@ -47,19 +49,37 @@ final class AdminUndoService
             }
 
             $this->assertAvailableReceipt($receipt, $actor);
-            $target = $this->lockedTarget($receipt);
             $actionKey = (string) $receipt->getAttribute('action_key');
             $inverseActionKey = (string) $receipt->getAttribute('inverse_action_key');
 
-            if (in_array($actionKey, self::MEDIA_ACTIONS, true)) {
-                if (! $target instanceof Artwork) {
-                    throw ValidationException::withMessages(['undo' => 'This media change no longer has a valid artwork target.']);
+            $this->undoContext->withoutReceipts(function () use ($receipt, $actor, $actionKey, $inverseActionKey): void {
+                if ($this->snapshots->isSnapshotReceipt($receipt)) {
+                    $this->snapshots->restore($receipt);
+                    $this->audit->record(
+                        $actor,
+                        'admin.undo_applied',
+                        (string) $receipt->getAttribute('entity_type'),
+                        (int) $receipt->getAttribute('entity_id'),
+                        ['source_audit_event_id' => (int) $receipt->getAttribute('audit_event_id')],
+                    );
+
+                    return;
                 }
 
-                $this->assertMediaPrecondition($receipt, $target);
-                $this->executeMediaInverse($receipt, $target);
-                $this->assertMediaRestored($receipt, $target);
-            } else {
+                $target = $this->lockedTarget($receipt);
+
+                if (in_array($actionKey, self::MEDIA_ACTIONS, true)) {
+                    if (! $target instanceof Artwork) {
+                        throw ValidationException::withMessages(['undo' => 'This media change no longer has a valid artwork target.']);
+                    }
+
+                    $this->assertMediaPrecondition($receipt, $target);
+                    $this->executeMediaInverse($receipt, $target);
+                    $this->assertMediaRestored($receipt, $target);
+
+                    return;
+                }
+
                 $expectedState = (string) $receipt->getAttribute('after_state');
                 if ((string) $target->getAttribute('state') !== $expectedState) {
                     throw ValidationException::withMessages([
@@ -73,7 +93,7 @@ final class AdminUndoService
                 if ((string) $result->getAttribute('state') !== $expectedRestoredState) {
                     throw new RuntimeException('The domain inverse did not restore the receipt state.');
                 }
-            }
+            });
 
             $receipt->setAttribute('undone_at', now());
             $receipt->save();

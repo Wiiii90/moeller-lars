@@ -28,6 +28,8 @@ final class AdminActionReceiptService
         'artwork.additional_media_reordered',
     ];
 
+    public function __construct(private readonly AdminSnapshotReceiptService $snapshots) {}
+
     public function recordForAuditEvent(AuditEvent $event, User $actor): ?AdminActionReceipt
     {
         $action = (string) $event->getAttribute('action');
@@ -42,6 +44,8 @@ final class AdminActionReceiptService
         };
 
         if ($transition !== null) {
+            $this->snapshots->discardForAuditEvent($event);
+
             if ((string) $event->getAttribute('entity_type') !== $transition['entity']) {
                 return null;
             }
@@ -62,10 +66,17 @@ final class AdminActionReceiptService
         }
 
         if (in_array($action, self::MEDIA_ACTIONS, true)) {
+            $this->snapshots->discardForAuditEvent($event);
+
             return $this->recordMediaReceipt($event, $actor);
         }
 
-        return null;
+        return $this->snapshots->recordForAuditEvent($event, $actor);
+    }
+
+    public function discardPendingSnapshotForEvent(AuditEvent $event): void
+    {
+        $this->snapshots->discardForAuditEvent($event);
     }
 
     /**
@@ -89,33 +100,32 @@ final class AdminActionReceiptService
             ->where('admin_user_id', $actor->getKey())
             ->whereIn('audit_event_id', $eventIds)
             ->where('receipt_version', self::RECEIPT_VERSION)
+            ->whereNull('snapshot_payload')
             ->whereNull('undone_at')
             ->where('expires_at', '>', now())
             ->get();
 
-        if ($receipts->isEmpty()) {
-            return [];
-        }
-
-        $targets = $this->loadTargetStates($receipts);
-        $media = $this->loadMediaContext($receipts);
         $available = [];
+        if ($receipts->isNotEmpty()) {
+            $targets = $this->loadTargetStates($receipts);
+            $media = $this->loadMediaContext($receipts);
 
-        foreach ($receipts as $receipt) {
-            if (! $this->receiptIsAvailable($receipt, $targets, $media)) {
-                continue;
+            foreach ($receipts as $receipt) {
+                if (! $this->receiptIsAvailable($receipt, $targets, $media)) {
+                    continue;
+                }
+
+                $inverseActionKey = (string) $receipt->getAttribute('inverse_action_key');
+                $available[(int) $receipt->getAttribute('audit_event_id')] = [
+                    'id' => (int) $receipt->getKey(),
+                    'action_key' => (string) $receipt->getAttribute('action_key'),
+                    'inverse_action_key' => $inverseActionKey,
+                    'inverse_label' => AdminActionCatalog::definition($inverseActionKey)['label'],
+                ];
             }
-
-            $inverseActionKey = (string) $receipt->getAttribute('inverse_action_key');
-            $available[(int) $receipt->getAttribute('audit_event_id')] = [
-                'id' => (int) $receipt->getKey(),
-                'action_key' => (string) $receipt->getAttribute('action_key'),
-                'inverse_action_key' => $inverseActionKey,
-                'inverse_label' => AdminActionCatalog::definition($inverseActionKey)['label'],
-            ];
         }
 
-        return $available;
+        return array_replace($available, $this->snapshots->availableForEvents($events, $actor));
     }
 
     public function prune(User $actor): void

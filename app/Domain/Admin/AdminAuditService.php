@@ -2,6 +2,7 @@
 
 namespace App\Domain\Admin;
 
+use App\Domain\Publication\PublicationSnapshot;
 use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -10,25 +11,15 @@ use InvalidArgumentException;
 
 class AdminAuditService
 {
-    private const ENTITY_TYPES = [
-        'artwork',
-        'media_asset',
-        'artwork_category',
-        'site_section',
-        'cv_entry',
-        'exhibition',
-        'blog_post',
-        'blog_setting',
-        'public_content_setting',
-        'publication_checkpoint',
-    ];
-
     private const REASONS = [
         'referenced_inline_media_deleted',
         'referenced_rich_text_media_deleted',
     ];
 
-    public function __construct(private readonly AdminActionReceiptService $receipts) {}
+    public function __construct(
+        private readonly AdminActionReceiptService $receipts,
+        private readonly AdminUndoContext $undoContext,
+    ) {}
 
     public function requireActor(): User
     {
@@ -45,7 +36,7 @@ class AdminAuditService
         if (! AdminActionCatalog::has($action)) {
             throw new InvalidArgumentException('Invalid audit action.');
         }
-        if (! in_array($entityType, self::ENTITY_TYPES, true)) {
+        if (! $this->validEntityType($action, $entityType)) {
             throw new InvalidArgumentException('Invalid audit entity type.');
         }
 
@@ -54,7 +45,7 @@ class AdminAuditService
             $validReference = in_array($key, [
                 'artwork_id', 'media_asset_id', 'artwork_media_id', 'neighbor_artwork_media_id',
                 'previous_artwork_media_id', 'next_artwork_media_id', 'site_section_id',
-                'source_publication_checkpoint_id',
+                'source_publication_checkpoint_id', 'source_audit_event_id',
             ], true) && is_int($value) && $value > 0;
             $validPosition = in_array($key, ['position', 'from_position', 'to_position'], true)
                 && is_int($value) && $value >= 0;
@@ -77,8 +68,20 @@ class AdminAuditService
             'metadata' => $metadata === [] ? null : $metadata,
         ]);
         $event->save();
-        $this->receipts->recordForAuditEvent($event, $actor);
+
+        if ($this->undoContext->receiptsSuppressed()) {
+            $this->receipts->discardPendingSnapshotForEvent($event);
+        } else {
+            $this->receipts->recordForAuditEvent($event, $actor);
+        }
 
         return $event;
+    }
+
+    private function validEntityType(string $action, string $entityType): bool
+    {
+        return PublicationSnapshot::tracksAuditEntityType($entityType)
+            || $entityType === 'publication_checkpoint'
+            || str_starts_with($action, $entityType.'.');
     }
 }
