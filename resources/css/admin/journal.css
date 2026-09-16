@@ -4,32 +4,14 @@
     border-bottom: 0;
 }
 
-/* Journal consumes the shared six-unit table grid. The Blog floor deliberately
- * stays within the canonical 80rem desktop workspace so its action + Selection
- * rail is visible without requiring a hidden horizontal scroll position.
- * Narrower viewports can still use the shared table scrollport. */
-.journal-table--blog {
-    min-width: 80rem !important;
-}
-
+/* Journal tables use the same six visual units as the workspace metrics.
+ * The first four units belong to editorial data. Actions always begin on the
+ * 4/6 boundary and, together with the trailing Selection rail, own units 5+6.
+ * At the canonical desktop width this keeps the complete action vocabulary in
+ * the visible table instead of inventing a page-specific action rail. */
+.journal-table--blog,
 .journal-table--exhibitions {
-    min-width: 76rem !important;
-}
-
-.journal-table--blog col:nth-child(6) {
-    width: var(--admin-table-half-unit);
-}
-
-.journal-table col.journal-table__actions--blog {
-    width: calc(50% - var(--admin-table-selection-width));
-}
-
-.journal-table--exhibitions col:nth-child(5) {
-    width: var(--admin-table-one-unit);
-}
-
-.journal-table--exhibitions col:nth-child(6) {
-    width: calc(41.666667% - var(--admin-table-selection-width));
+    min-width: 80rem !important;
 }
 
 .journal-row-actions {
@@ -62,9 +44,9 @@
 .journal-row-actions .admin-action {
     width: 100%;
     min-width: 0;
-    padding-inline: .28rem;
+    padding-inline: .22rem;
     justify-content: flex-start !important;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .journal-row-actions .admin-action--state {
@@ -73,6 +55,8 @@
 
 .journal-row-actions .admin-action__label {
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
