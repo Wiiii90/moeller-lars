@@ -39,12 +39,28 @@ it('renders editorial row actions through one semantic admin primitive', functio
             ->not->toContain('admin-action--with-icon');
     }
 
+    expect($journal)
+        ->toContain(':disabled="! $entry[\'can_move_up\']"')
+        ->toContain(':disabled="! $entry[\'can_move_down\']"')
+        ->toContain(':disabled="! $entry[\'can_delete\']"')
+        ->not->toContain('@disabled(! $entry[\'can_move_up\'])')
+        ->not->toContain('@disabled(! $entry[\'can_move_down\'])')
+        ->not->toContain('@disabled(! $entry[\'can_delete\'])');
+
     expect($customPage)
         ->toContain('@foreach ($components as $pageComponent)')
         ->toContain('AdminRowAction::Delete')
         ->toContain('admin-hierarchy__selection admin-hierarchy__selection--trailing')
         ->toContain('wire:model.live="selectedComponentTargets"')
         ->toContain('wire:model.live="selectedChildTargets"')
+        ->toContain(':disabled="! $reorderEnabled || ! $pageComponent[\'can_move_up\']"')
+        ->toContain(':disabled="! $reorderEnabled || ! $pageComponent[\'can_move_down\']"')
+        ->toContain(':disabled="! $child[\'can_move_up\']"')
+        ->toContain(':disabled="! $child[\'can_move_down\']"')
+        ->not->toContain('@disabled(! $reorderEnabled || ! $pageComponent[\'can_move_up\'])')
+        ->not->toContain('@disabled(! $reorderEnabled || ! $pageComponent[\'can_move_down\'])')
+        ->not->toContain('@disabled(! $child[\'can_move_up\'])')
+        ->not->toContain('@disabled(! $child[\'can_move_down\'])')
         ->not->toContain('@foreach ($components as $component)')
         ->not->toContain('$componentStateIcon')
         ->not->toContain('is_cv_list')
