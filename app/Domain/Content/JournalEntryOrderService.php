@@ -20,8 +20,9 @@ final class JournalEntryOrderService
      *
      * Journal lists are editorial timelines: new drafts/exhibitions should open
      * at the top, while the explicit Move up/down controls remain the manual
-     * override afterwards. Shift from the tail towards the head so the unique
-     * (site_section_id, position) indexes are never violated mid-update.
+     * override afterwards. Existing rows are normalized through temporary
+     * positions first so the unique (site_section_id, position) indexes are
+     * never violated and the sequence stays contiguous.
      */
     public function nextPosition(Model $model, int $siteSectionId): int
     {
@@ -32,15 +33,28 @@ final class JournalEntryOrderService
 
             $records = $model->newQuery()
                 ->where('site_section_id', $siteSectionId)
-                ->orderByDesc('position')
-                ->orderByDesc('id')
+                ->orderBy('position')
+                ->orderBy('id')
                 ->lockForUpdate()
                 ->get(['id', 'position']);
 
-            foreach ($records as $record) {
+            if ($records->isEmpty()) {
+                return 0;
+            }
+
+            $maximum = (int) ($records->max('position') ?? 0);
+            $temporaryBase = $maximum + $records->count() + 1;
+
+            foreach ($records as $offset => $record) {
                 DB::table($model->getTable())
                     ->where('id', $record->getKey())
-                    ->update(['position' => ((int) $record->getAttribute('position')) + 1]);
+                    ->update(['position' => $temporaryBase + $offset]);
+            }
+
+            foreach ($records as $offset => $record) {
+                DB::table($model->getTable())
+                    ->where('id', $record->getKey())
+                    ->update(['position' => $offset + 1]);
             }
 
             return 0;
