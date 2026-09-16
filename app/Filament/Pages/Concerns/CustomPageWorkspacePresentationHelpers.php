@@ -30,13 +30,10 @@ trait CustomPageWorkspacePresentationHelpers
             $title = is_string($block['title'] ?? null) ? trim($block['title']) : '';
             $items = is_array($block['items'] ?? null) ? array_values(array_filter($block['items'], 'is_array')) : [];
 
-            return ['primary' => $title, 'secondary' => '', 'meta' => count($items).' '.(count($items) === 1 ? 'entry' : 'entries')];
-        }
-        if ($type === 'cv_list') {
             return [
-                'primary' => 'Canonical CV entries',
+                'primary' => $title,
                 'secondary' => $imageName !== null ? 'Image: '.$imageName : '',
-                'meta' => $this->cvEntryCount.' '.($this->cvEntryCount === 1 ? 'entry' : 'entries'),
+                'meta' => count($items).' '.(count($items) === 1 ? 'entry' : 'entries'),
             ];
         }
         if ($type === 'divider') {
@@ -76,7 +73,7 @@ trait CustomPageWorkspacePresentationHelpers
     {
         $type = is_string($block['type'] ?? null) ? $block['type'] : '';
         $parts = [self::COMPONENT_LABELS[$type] ?? $type, CustomPageSetting::componentPublished($block) ? 'Published' : 'Unpublished'];
-        if (in_array($type, ['image', 'cv_list'], true)) {
+        if (in_array($type, ['image', 'list'], true)) {
             $parts[] = $imageName;
         }
         if ($type === 'text') {
@@ -183,15 +180,10 @@ trait CustomPageWorkspacePresentationHelpers
 
     private function retainVisibleSelections(): void
     {
-        $visibleParents = collect($this->components)
-            ->pluck('target')
-            ->filter(static fn (mixed $target): bool => is_string($target))
-            ->all();
+        $visibleParents = collect($this->components)->pluck('target')->filter(static fn (mixed $target): bool => is_string($target))->all();
         $visibleChildren = collect($this->components)
             ->flatMap(static fn (array $component): array => is_array($component['children'] ?? null) ? $component['children'] : [])
-            ->pluck('target')
-            ->filter(static fn (mixed $target): bool => is_string($target))
-            ->all();
+            ->pluck('target')->filter(static fn (mixed $target): bool => is_string($target))->all();
 
         $this->selectedComponentTargets = array_values(array_intersect($this->selectedComponentTargets, $visibleParents));
         $this->selectedChildTargets = array_values(array_intersect($this->selectedChildTargets, $visibleChildren));
@@ -216,10 +208,7 @@ trait CustomPageWorkspacePresentationHelpers
     private function section(): SiteSection
     {
         /** @var SiteSection $section */
-        $section = SiteSection::query()
-            ->whereKey($this->sectionId)
-            ->where('type', SiteSectionType::CustomPage->value)
-            ->firstOrFail();
+        $section = SiteSection::query()->whereKey($this->sectionId)->where('type', SiteSectionType::CustomPage->value)->firstOrFail();
 
         return $section;
     }
