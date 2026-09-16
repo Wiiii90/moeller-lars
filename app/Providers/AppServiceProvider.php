@@ -63,6 +63,24 @@ class AppServiceProvider extends ServiceProvider
                 app(AdminMutationSnapshotBuffer::class)->finish($model);
             }
         });
+        Event::listen('eloquent.created: *', static function (string $eventName, array $payload): void {
+            $model = $payload[0] ?? null;
+            if ($model instanceof Model) {
+                app(AdminMutationSnapshotBuffer::class)->created($model);
+            }
+        });
+        Event::listen('eloquent.deleting: *', static function (string $eventName, array $payload): void {
+            $model = $payload[0] ?? null;
+            if ($model instanceof Model) {
+                app(AdminMutationSnapshotBuffer::class)->beginDelete($model);
+            }
+        });
+        Event::listen('eloquent.deleted: *', static function (string $eventName, array $payload): void {
+            $model = $payload[0] ?? null;
+            if ($model instanceof Model) {
+                app(AdminMutationSnapshotBuffer::class)->finishDelete($model);
+            }
+        });
 
         Event::listen(CommandStarting::class, function (CommandStarting $event): void {
             if (in_array($event->command, [

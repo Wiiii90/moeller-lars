@@ -69,26 +69,23 @@ final class GalleryEditorialService
             $fresh->save();
 
             if ($nameChanged) {
-                SiteSection::query()
+                /** @var SiteSection|null $section */
+                $section = SiteSection::query()
                     ->where('type', SiteSectionType::Gallery->value)
                     ->where('artwork_category_id', $fresh->getKey())
-                    ->where(function (Builder $query) use ($oldName): void {
-                        $query->whereNull('navigation_label')->orWhere('navigation_label', $oldName);
-                    })
-                    ->update([
-                        'title' => (string) $fresh->getAttribute('name'),
-                        'navigation_label' => (string) $fresh->getAttribute('name'),
-                        'updated_at' => now(),
-                    ]);
+                    ->lockForUpdate()
+                    ->first();
 
-                SiteSection::query()
-                    ->where('type', SiteSectionType::Gallery->value)
-                    ->where('artwork_category_id', $fresh->getKey())
-                    ->where('navigation_label', '<>', (string) $fresh->getAttribute('name'))
-                    ->update([
-                        'title' => (string) $fresh->getAttribute('name'),
-                        'updated_at' => now(),
-                    ]);
+                if ($section instanceof SiteSection) {
+                    $section->setAttribute('title', (string) $fresh->getAttribute('name'));
+                    $navigationLabel = $section->getAttribute('navigation_label');
+                    if ($navigationLabel === null || $navigationLabel === $oldName) {
+                        $section->setAttribute('navigation_label', (string) $fresh->getAttribute('name'));
+                    }
+                    if ($section->isDirty()) {
+                        $section->save();
+                    }
+                }
             }
 
             $this->adminAuditService->record($actor, 'artwork_category.updated', 'artwork_category', $fresh->getKey());

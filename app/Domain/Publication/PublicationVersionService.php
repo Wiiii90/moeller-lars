@@ -289,7 +289,7 @@ final class PublicationVersionService
     {
         $this->truncateWorkingTables();
 
-        foreach (PublicationSnapshot::TABLES as $table) {
+        foreach (PublicationSnapshot::RESTORE_TABLES as $table) {
             DB::statement(
                 "INSERT INTO public.{$table} SELECT (jsonb_populate_record(NULL::public.{$table}, version_row.payload)).* FROM publication_version_rows AS version_row WHERE version_row.publication_checkpoint_id = ? AND version_row.table_name = ? ORDER BY version_row.id",
                 [(int) $checkpoint->getKey(), $table],
@@ -329,7 +329,7 @@ final class PublicationVersionService
 
         $this->truncateWorkingTables();
 
-        foreach (PublicationSnapshot::TABLES as $table) {
+        foreach (PublicationSnapshot::RESTORE_TABLES as $table) {
             DB::statement("INSERT INTO public.{$table} SELECT * FROM {$schema}.{$table}");
         }
     }

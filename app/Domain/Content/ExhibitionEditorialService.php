@@ -101,16 +101,19 @@ final class ExhibitionEditorialService
             }
 
             $fresh->fill([...$payload, 'site_section_id' => $sectionId]);
-            if ($this->hasStructuredMediaInput($data)) {
-                $this->media->syncStructuredMedia($fresh, $data);
-            }
+            $mediaChanged = $this->hasStructuredMediaInput($data)
+                ? $this->media->syncStructuredMedia($fresh, $data)
+                : false;
 
             if ($fresh->getAttribute('state') === 'published') {
                 $this->assertPublicReady($fresh);
             }
 
-            if ($fresh->isDirty()) {
+            $rowChanged = $fresh->isDirty();
+            if ($rowChanged) {
                 $fresh->save();
+            }
+            if ($rowChanged || $mediaChanged) {
                 $this->audit->record($actor, 'exhibition.updated', 'exhibition', $fresh->getKey());
             }
 

@@ -11,11 +11,14 @@ use Illuminate\Support\Str;
 
 final class AdminMutationSnapshotBuffer
 {
-    /** @var array<string, array{entity_type:string,table:string,row_id:int,before:array<string,mixed>,after:array<string,mixed>}> */
+    /** @var array<string, array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}> */
     private array $snapshots = [];
 
-    /** @var array<string, array{entity_type:string,table:string,row_id:int,before:array<string,mixed>}> */
-    private array $pending = [];
+    /** @var array<string, array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>}> */
+    private array $pendingUpdates = [];
+
+    /** @var array<string, array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>}> */
+    private array $pendingDeletes = [];
 
     public function begin(Model $model): void
     {
@@ -25,27 +28,13 @@ final class AdminMutationSnapshotBuffer
         }
 
         $key = $this->key($descriptor['table'], $descriptor['row_id']);
-        if (isset($this->pending[$key])) {
+        if (isset($this->pendingUpdates[$key])) {
             return;
         }
 
-        if (isset($this->snapshots[$key])) {
-            $this->pending[$key] = [
-                ...$descriptor,
-                'before' => $this->snapshots[$key]['before'],
-            ];
-
-            return;
-        }
-
-        $row = DB::table($descriptor['table'])->where('id', $descriptor['row_id'])->first();
-        if ($row === null) {
-            return;
-        }
-
-        $this->pending[$key] = [
+        $this->pendingUpdates[$key] = [
             ...$descriptor,
-            'before' => $this->meaningfulPayload((array) $row),
+            'before' => $this->snapshots[$key]['before'] ?? $this->rowPayload($descriptor['table'], $descriptor['row_id']),
         ];
     }
 
@@ -57,21 +46,108 @@ final class AdminMutationSnapshotBuffer
         }
 
         $key = $this->key($descriptor['table'], $descriptor['row_id']);
-        $pending = $this->pending[$key] ?? null;
+        $pending = $this->pendingUpdates[$key] ?? null;
         if (! is_array($pending)) {
             return;
         }
-        unset($this->pending[$key]);
+        unset($this->pendingUpdates[$key]);
 
-        $row = DB::table($descriptor['table'])->where('id', $descriptor['row_id'])->first();
-        if ($row === null) {
+        $this->storeSnapshot(
+            $descriptor,
+            $pending['before'],
+            $this->rowPayload($descriptor['table'], $descriptor['row_id']),
+        );
+    }
+
+    public function created(Model $model): void
+    {
+        $descriptor = $this->descriptor($model);
+        if ($descriptor === null) {
             return;
         }
 
-        $after = $this->meaningfulPayload((array) $row);
-        $before = $pending['before'];
+        $key = $this->key($descriptor['table'], $descriptor['row_id']);
+        $this->storeSnapshot(
+            $descriptor,
+            $this->snapshots[$key]['before'] ?? null,
+            $this->rowPayload($descriptor['table'], $descriptor['row_id']),
+        );
+    }
 
-        if ($before === $after) {
+    public function beginDelete(Model $model): void
+    {
+        $descriptor = $this->descriptor($model);
+        if ($descriptor === null) {
+            return;
+        }
+
+        $key = $this->key($descriptor['table'], $descriptor['row_id']);
+        if (isset($this->pendingDeletes[$key])) {
+            return;
+        }
+
+        $this->pendingDeletes[$key] = [
+            ...$descriptor,
+            'before' => $this->snapshots[$key]['before'] ?? $this->rowPayload($descriptor['table'], $descriptor['row_id']),
+        ];
+    }
+
+    public function finishDelete(Model $model): void
+    {
+        $descriptor = $this->descriptor($model);
+        if ($descriptor === null) {
+            return;
+        }
+
+        $key = $this->key($descriptor['table'], $descriptor['row_id']);
+        $pending = $this->pendingDeletes[$key] ?? null;
+        if (! is_array($pending)) {
+            return;
+        }
+        unset($this->pendingDeletes[$key]);
+
+        $this->storeSnapshot($descriptor, $pending['before'], null);
+    }
+
+    /**
+     * @return list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>|null
+     */
+    public function takeForAudit(string $entityType, int $entityId): ?array
+    {
+        $snapshots = array_values($this->snapshots);
+        $this->snapshots = [];
+        $this->pendingUpdates = [];
+        $this->pendingDeletes = [];
+
+        if ($snapshots === []) {
+            return null;
+        }
+
+        $matchesTarget = collect($snapshots)->contains(
+            fn (array $snapshot): bool => $this->matchesAuditTarget($snapshot, $entityType, $entityId),
+        );
+
+        return $matchesTarget ? $snapshots : null;
+    }
+
+    /**
+     * @param array{entity_type:string,table:string,row_id:int} $descriptor
+     * @param array<string,mixed>|null $before
+     * @param array<string,mixed>|null $after
+     */
+    private function storeSnapshot(array $descriptor, ?array $before, ?array $after): void
+    {
+        $key = $this->key($descriptor['table'], $descriptor['row_id']);
+        $before = $this->canonicalizePayload($before);
+        $after = $this->canonicalizePayload($after);
+
+        if ($before === null && $after === null) {
+            unset($this->snapshots[$key]);
+
+            return;
+        }
+
+        if ($before !== null && $after !== null && $this->comparablePayload($before) === $this->comparablePayload($after)) {
             unset($this->snapshots[$key]);
 
             return;
@@ -86,46 +162,28 @@ final class AdminMutationSnapshotBuffer
         ];
     }
 
-    /** @return array{entity_type:string,table:string,row_id:int,before:array<string,mixed>,after:array<string,mixed>}|null */
-    public function takeForAudit(string $entityType, int $entityId): ?array
+    /**
+     * @param array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>} $snapshot
+     */
+    private function matchesAuditTarget(array $snapshot, string $entityType, int $entityId): bool
     {
-        foreach ($this->snapshots as $key => $snapshot) {
-            if ($snapshot['entity_type'] === $entityType && $snapshot['row_id'] === $entityId) {
-                unset($this->snapshots[$key]);
-
-                return $snapshot;
-            }
+        if ($snapshot['entity_type'] === $entityType && $snapshot['row_id'] === $entityId) {
+            return true;
         }
 
-        if ($entityType !== 'site_section') {
-            return null;
-        }
-
-        $matches = [];
-        foreach ($this->snapshots as $key => $snapshot) {
-            if (! in_array($snapshot['entity_type'], ['custom_page_setting', 'home_presentation_setting'], true)) {
+        $foreignKey = $entityType.'_id';
+        foreach ([$snapshot['before'], $snapshot['after']] as $state) {
+            if (! is_array($state)) {
                 continue;
             }
 
-            $siteSectionId = $snapshot['after']['site_section_id'] ?? $snapshot['before']['site_section_id'] ?? null;
-            if ((int) $siteSectionId === $entityId) {
-                $matches[$key] = $snapshot;
+            $relatedId = $state[$foreignKey] ?? null;
+            if (is_numeric($relatedId) && (int) $relatedId === $entityId) {
+                return true;
             }
         }
 
-        if (count($matches) !== 1) {
-            return null;
-        }
-
-        $key = array_key_first($matches);
-        if (! is_string($key)) {
-            return null;
-        }
-
-        $snapshot = $matches[$key];
-        unset($this->snapshots[$key]);
-
-        return $snapshot;
+        return false;
     }
 
     /** @return array{entity_type:string,table:string,row_id:int}|null */
@@ -158,16 +216,51 @@ final class AdminMutationSnapshotBuffer
         ];
     }
 
-    /**
-     * @param  array<string, mixed>  $payload
-     * @return array<string, mixed>
-     */
-    private function meaningfulPayload(array $payload): array
+    /** @return array<string,mixed>|null */
+    private function rowPayload(string $table, int $rowId): ?array
     {
-        unset($payload['id'], $payload['created_at'], $payload['updated_at']);
-        ksort($payload);
+        $row = DB::table($table)->where('id', $rowId)->first();
 
-        return $payload;
+        return $row === null ? null : $this->canonicalizePayload((array) $row);
+    }
+
+    /** @param array<string,mixed>|null $payload
+     * @return array<string,mixed>|null
+     */
+    private function canonicalizePayload(?array $payload): ?array
+    {
+        if ($payload === null) {
+            return null;
+        }
+
+        return $this->canonicalize($payload);
+    }
+
+    /** @param array<string,mixed> $payload
+     * @return array<string,mixed>
+     */
+    private function comparablePayload(array $payload): array
+    {
+        unset($payload['created_at'], $payload['updated_at']);
+
+        return $this->canonicalize($payload);
+    }
+
+    private function canonicalize(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        foreach ($value as $key => $nested) {
+            $value[$key] = $this->canonicalize($nested);
+        }
+
+        return $value;
     }
 
     private function key(string $table, int $rowId): string

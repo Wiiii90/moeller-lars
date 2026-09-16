@@ -32,6 +32,31 @@ final class PublicationSnapshot
         'redirects',
     ];
 
+    /**
+     * Snapshot capture order is intentionally stable for hashing/history. Restores use
+     * dependency order so PostgreSQL foreign keys are satisfied while rows are rebuilt.
+     *
+     * @var list<string>
+     */
+    public const RESTORE_TABLES = [
+        'artwork_categories',
+        'media_assets',
+        'site_sections',
+        'artworks',
+        'media_variants',
+        'custom_page_settings',
+        'journal_settings',
+        'home_presentation_settings',
+        'cv_entries',
+        'exhibitions',
+        'blog_posts',
+        'artwork_media',
+        'journal_entry_media',
+        'exhibition_media',
+        'public_content_settings',
+        'redirects',
+    ];
+
     /** @var list<string> */
     public const AUDIT_ENTITY_TYPES = [
         'artwork_category',

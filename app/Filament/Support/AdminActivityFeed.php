@@ -51,7 +51,7 @@ final class AdminActivityFeed
         ?string $family = null,
         int $perPage = 30,
         ?User $actor = null,
-        int $days = self::ACTIVITY_WINDOW_DAYS,
+        ?int $days = null,
         ?string $search = null,
         ?string $date = null,
         ?int $hour = null,
@@ -105,7 +105,7 @@ final class AdminActivityFeed
     public function overview(
         ?string $area = null,
         ?string $family = null,
-        int $days = self::ACTIVITY_WINDOW_DAYS,
+        ?int $days = null,
         ?string $search = null,
         ?string $date = null,
         ?int $hour = null,
@@ -237,7 +237,7 @@ final class AdminActivityFeed
     public function recent(int $limit = 7): array
     {
         /** @var EloquentCollection<int, AuditEvent> $events */
-        $events = $this->filteredQuery(days: self::ACTIVITY_WINDOW_DAYS)
+        $events = $this->filteredQuery()
             ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState'])
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
@@ -250,7 +250,7 @@ final class AdminActivityFeed
     private function filteredQuery(
         ?string $area = null,
         ?string $family = null,
-        int $days = self::ACTIVITY_WINDOW_DAYS,
+        ?int $days = null,
         ?string $search = null,
         ?string $date = null,
         ?int $hour = null,
@@ -269,7 +269,7 @@ final class AdminActivityFeed
 
         if (is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1) {
             $query->whereRaw($dateExpression.' = ?', [$date]);
-        } else {
+        } elseif ($days !== null) {
             $days = in_array($days, self::FILTER_WINDOWS, true) ? $days : self::ACTIVITY_WINDOW_DAYS;
             $query->where('occurred_at', '>=', now()->subDays($days));
         }

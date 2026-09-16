@@ -43,14 +43,22 @@ final class JournalEntryMediaService
     }
 
     /** @param array<string,mixed> $data */
-    public function syncStructuredMedia(BlogPost|Exhibition $entry, array $data): void
+    public function syncStructuredMedia(BlogPost|Exhibition $entry, array $data): bool
     {
+        $changed = false;
+
         if (array_key_exists('cover_media_asset_id', $data)) {
-            $this->syncCover($entry, $data['cover_media_asset_id']);
+            $changed = $this->syncCover($entry, $data['cover_media_asset_id']) || $changed;
         }
         if (array_key_exists('gallery_images', $data)) {
-            $this->syncGallery($entry, $data['gallery_images']);
+            $changed = $this->syncGallery($entry, $data['gallery_images']) || $changed;
         }
+
+        if ($changed) {
+            $entry->unsetRelation('mediaUsages');
+        }
+
+        return $changed;
     }
 
     public function assertPublicReady(BlogPost|Exhibition $entry): void
@@ -139,34 +147,86 @@ final class JournalEntryMediaService
         }
     }
 
-    private function syncCover(BlogPost|Exhibition $entry, mixed $value): void
+    private function syncCover(BlogPost|Exhibition $entry, mixed $value): bool
     {
-        $entry->mediaUsages()->where('role', JournalEntryMedia::ROLE_COVER)->delete();
+        /** @var EloquentCollection<int, JournalEntryMedia> $current */
+        $current = $entry->mediaUsages()
+            ->where('role', JournalEntryMedia::ROLE_COVER)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
         if ($value === null || $value === '') {
-            return;
+            if ($current->isEmpty()) {
+                return false;
+            }
+
+            foreach ($current as $usage) {
+                $usage->delete();
+            }
+
+            return true;
         }
 
         $mediaAssetId = $this->mediaId($value, 'cover_media_asset_id');
         $this->assertMediaReady($mediaAssetId, 'cover_media_asset_id');
+        if ($current->count() === 1
+            && (int) $current->first()->getAttribute('media_asset_id') === $mediaAssetId
+            && (int) $current->first()->getAttribute('position') === 0) {
+            return false;
+        }
+
+        foreach ($current as $usage) {
+            $usage->delete();
+        }
         $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_COVER, 0);
+
+        return true;
     }
 
-    private function syncGallery(BlogPost|Exhibition $entry, mixed $value): void
+    private function syncGallery(BlogPost|Exhibition $entry, mixed $value): bool
     {
         if (! is_array($value)) {
             throw ValidationException::withMessages(['gallery_images' => 'Gallery images are invalid.']);
         }
 
-        $entry->mediaUsages()->where('role', JournalEntryMedia::ROLE_GALLERY)->delete();
-
-        foreach (array_values($value) as $index => $row) {
+        $desired = [];
+        foreach (array_values($value) as $row) {
             if (! is_array($row)) {
                 throw ValidationException::withMessages(['gallery_images' => 'Gallery images are invalid.']);
             }
             $mediaAssetId = $this->mediaId($row['media_asset_id'] ?? null, 'gallery_images');
             $this->assertMediaReady($mediaAssetId, 'gallery_images');
+            $desired[] = $mediaAssetId;
+        }
+
+        /** @var EloquentCollection<int, JournalEntryMedia> $current */
+        $current = $entry->mediaUsages()
+            ->where('role', JournalEntryMedia::ROLE_GALLERY)
+            ->orderBy('position')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+        $currentIds = $current
+            ->map(static fn (JournalEntryMedia $usage): int => (int) $usage->getAttribute('media_asset_id'))
+            ->values()
+            ->all();
+        $positionsAreCanonical = $current->values()->every(
+            static fn (JournalEntryMedia $usage, int $index): bool => (int) $usage->getAttribute('position') === $index + 1,
+        );
+
+        if ($currentIds === $desired && $positionsAreCanonical) {
+            return false;
+        }
+
+        foreach ($current as $usage) {
+            $usage->delete();
+        }
+        foreach ($desired as $index => $mediaAssetId) {
             $this->createUsage($entry, $mediaAssetId, JournalEntryMedia::ROLE_GALLERY, $index + 1);
         }
+
+        return true;
     }
 
     private function createUsage(BlogPost|Exhibition $entry, int $mediaAssetId, string $role, int $position): void

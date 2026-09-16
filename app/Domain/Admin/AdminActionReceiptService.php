@@ -18,9 +18,9 @@ final class AdminActionReceiptService
 {
     public const RECEIPT_VERSION = 1;
 
-    public const RETENTION_DAYS = 30;
+    public const RETENTION_DAYS = 365;
 
-    public const MAX_RECEIPTS_PER_USER = 100;
+    public const MAX_RECEIPTS_PER_USER = 5000;
 
     private const MEDIA_ACTIONS = [
         'artwork.additional_media_attached',

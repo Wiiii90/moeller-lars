@@ -66,12 +66,15 @@ final class BlogEditorialService
             }
 
             $fresh->fill($validated);
-            if ($this->hasStructuredMediaInput($data)) {
-                $this->media->syncStructuredMedia($fresh, $data);
-            }
+            $mediaChanged = $this->hasStructuredMediaInput($data)
+                ? $this->media->syncStructuredMedia($fresh, $data)
+                : false;
             $this->prepareLifecycle($fresh);
-            if ($fresh->isDirty()) {
+            $rowChanged = $fresh->isDirty();
+            if ($rowChanged) {
                 $fresh->save();
+            }
+            if ($rowChanged || $mediaChanged) {
                 $this->audit->record($actor, 'blog_post.updated', 'blog_post', $fresh->getKey());
             }
 
