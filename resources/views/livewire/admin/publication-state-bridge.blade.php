@@ -6,7 +6,10 @@
         window.__publicationStateInterceptorRegistered = true
 
         Livewire.interceptMessage(({ message, onSuccess, onFinish }) => {
-            if (message.component.name === 'admin.publication-state-bridge') {
+            if (
+                message.component.name === 'admin.publication-state-bridge'
+                || message.component.name === 'Filament\\Livewire\\Notifications'
+            ) {
                 return
             }
 
