@@ -13,7 +13,10 @@ final class SecurityHeaders
 
     public function handle(Request $request, Closure $next): Response
     {
-        $isPublicRequest = $request->is('admin', 'admin/*') === false;
+        $pulsePath = trim((string) config('pulse.path', 'pulse'), '/');
+        $isAdminRequest = $request->is('admin', 'admin/*');
+        $isPulseRequest = $pulsePath !== '' && $request->is($pulsePath, $pulsePath.'/*');
+        $isPublicRequest = $isAdminRequest === false && $isPulseRequest === false;
         $isArtistPreviewRequest = $request->is('preview', 'preview/*');
         $styleNonce = null;
 
@@ -30,11 +33,29 @@ final class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
-        if ($isPublicRequest) {
+        if ($isPulseRequest) {
+            $response->headers->set('Content-Security-Policy', $this->pulseContentSecurityPolicy());
+        } elseif ($isPublicRequest) {
             $response->headers->set('Content-Security-Policy', $this->publicContentSecurityPolicy($styleNonce, $isArtistPreviewRequest));
         }
 
         return $response;
+    }
+
+    private function pulseContentSecurityPolicy(): string
+    {
+        return implode('; ', [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net",
+            "img-src 'self' data:",
+            "font-src 'self' data: https://fonts.bunny.net",
+            "connect-src 'self'",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "frame-ancestors 'none'",
+            "form-action 'self'",
+        ]).';';
     }
 
     private function publicContentSecurityPolicy(string $styleNonce, bool $allowSameOriginFraming): string
