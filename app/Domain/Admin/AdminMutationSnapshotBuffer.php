@@ -131,9 +131,9 @@ final class AdminMutationSnapshotBuffer
     }
 
     /**
-     * @param array{entity_type:string,table:string,row_id:int} $descriptor
-     * @param array<string,mixed>|null $before
-     * @param array<string,mixed>|null $after
+     * @param  array{entity_type:string,table:string,row_id:int}  $descriptor
+     * @param  array<string,mixed>|null  $before
+     * @param  array<string,mixed>|null  $after
      */
     private function storeSnapshot(array $descriptor, ?array $before, ?array $after): void
     {
@@ -163,7 +163,7 @@ final class AdminMutationSnapshotBuffer
     }
 
     /**
-     * @param array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>} $snapshot
+     * @param  array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}  $snapshot
      */
     private function matchesAuditTarget(array $snapshot, string $entityType, int $entityId): bool
     {
@@ -224,7 +224,8 @@ final class AdminMutationSnapshotBuffer
         return $row === null ? null : $this->canonicalizePayload((array) $row);
     }
 
-    /** @param array<string,mixed>|null $payload
+    /**
+     * @param  array<string,mixed>|null  $payload
      * @return array<string,mixed>|null
      */
     private function canonicalizePayload(?array $payload): ?array
@@ -236,7 +237,8 @@ final class AdminMutationSnapshotBuffer
         return $this->canonicalize($payload);
     }
 
-    /** @param array<string,mixed> $payload
+    /**
+     * @param  array<string,mixed>  $payload
      * @return array<string,mixed>
      */
     private function comparablePayload(array $payload): array
