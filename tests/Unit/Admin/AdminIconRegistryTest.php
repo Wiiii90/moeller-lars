@@ -8,7 +8,6 @@ use App\Filament\Pages\General;
 use App\Filament\Pages\SitePages;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
-use App\Filament\Resources\CvEntries\CvEntryResource;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminIcon;
@@ -44,7 +43,6 @@ it('keeps static admin navigation icons in the central registry', function (): v
         Activity::class => AdminIcon::Activity,
         ArtworkResource::class => AdminIcon::Artwork,
         BlogPostResource::class => AdminIcon::BlogPost,
-        CvEntryResource::class => AdminIcon::CvEntry,
         ExhibitionResource::class => AdminIcon::Exhibition,
         MediaAssetResource::class => AdminIcon::Storage,
     ];
