@@ -15,11 +15,17 @@ it('keeps Journal tables on the shared metric alignment grid with labeled canoni
         ->toContain('AdminRowAction::Publish')
         ->toContain('AdminRowAction::Unpublish')
         ->toContain('AdminRowAction::Delete')
+        ->toContain('admin-table__selection admin-table__selection--trailing')
+        ->toContain('wire:click.prevent="toggleVisibleSelection"')
+        ->toContain('wire:model.live="selectedPostIds"')
+        ->toContain('wire:model.live="selectedExhibitionIds"')
         ->not->toContain('<x-filament::icon')
         ->not->toContain('>↑</button>')
         ->not->toContain('>↓</button>');
 
     expect($css)
+        ->toContain('min-width: 80rem !important;')
+        ->not->toContain('min-width: 88rem !important;')
         ->toContain('41.666667% - var(--admin-table-selection-width)')
         ->toContain('.journal-row-actions--blog')
         ->toContain('.journal-row-actions--exhibitions');
