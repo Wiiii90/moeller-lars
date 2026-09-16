@@ -53,43 +53,13 @@
 
                 <figure class="admin-dashboard__analytics-visual">
                     <div
-                        class="admin-dashboard__analytics-map analytics-visual-stage"
+                        class="admin-dashboard__analytics-map"
                         x-data="{
                             selectedCountry: @js($analytics['map_points'][0]['label'] ?? null),
-                            activeCountry: @js($analytics['map_points'][0]['label'] ?? null),
-                            previewCountry(country) { this.activeCountry = country },
-                            restoreCountry() { this.activeCountry = this.selectedCountry },
-                            selectCountry(country) { this.selectedCountry = country; this.activeCountry = country },
+                            selectCountry(country) { this.selectedCountry = country },
                         }"
                     >
-                        <figure class="analytics-world" aria-label="World visitor map">
-                            <div class="analytics-world__canvas">
-                                @if (view()->exists('filament.generated.analytics-world-map'))
-                                    @include('filament.generated.analytics-world-map')
-                                @else
-                                    <div class="analytics-map-build-warning" role="status">
-                                        Map geometry unavailable in this build.
-                                    </div>
-                                @endif
-
-                                @foreach ($analytics['map_points'] as $point)
-                                    <button
-                                        class="analytics-world__marker"
-                                        type="button"
-                                        style="left: {{ number_format($point['x'], 3, '.', '') }}%; top: {{ number_format($point['y'], 3, '.', '') }}%; width: {{ number_format($point['size'], 2, '.', '') }}px; height: {{ number_format($point['size'], 2, '.', '') }}px;"
-                                        x-on:mouseenter="previewCountry(@js($point['label']))"
-                                        x-on:mouseleave="restoreCountry()"
-                                        x-on:focus="previewCountry(@js($point['label']))"
-                                        x-on:blur="restoreCountry()"
-                                        x-on:click="selectCountry(@js($point['label']))"
-                                        x-bind:class="selectedCountry === @js($point['label']) ? 'is-selected' : ''"
-                                        x-bind:aria-pressed="(selectedCountry === @js($point['label'])).toString()"
-                                        aria-label="{{ $point['label'] }}: {{ number_format($point['visits']) }} visits"
-                                        title="{{ $point['label'] }} · {{ number_format($point['visits']) }} visits"
-                                    ></button>
-                                @endforeach
-                            </div>
-                        </figure>
+                        <x-admin.analytics-world-map :points="$analytics['map_points']" />
                     </div>
                     <figcaption class="admin-dashboard__analytics-caption">
                         @if ($analytics['status'] === 'disabled')
