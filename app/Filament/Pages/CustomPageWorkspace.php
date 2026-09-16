@@ -5,7 +5,6 @@ namespace App\Filament\Pages;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceChildOrdering;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceChildProjection;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceComponentActions;
-use App\Filament\Pages\Concerns\CustomPageWorkspaceCvActions;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceForms;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceLifecycle;
 use App\Filament\Pages\Concerns\CustomPageWorkspaceListContactActions;
@@ -20,7 +19,6 @@ final class CustomPageWorkspace extends Page
     use CustomPageWorkspaceChildOrdering;
     use CustomPageWorkspaceChildProjection;
     use CustomPageWorkspaceComponentActions;
-    use CustomPageWorkspaceCvActions;
     use CustomPageWorkspaceForms;
     use CustomPageWorkspaceLifecycle;
     use CustomPageWorkspaceListContactActions;
@@ -36,7 +34,6 @@ final class CustomPageWorkspace extends Page
     /** @var array<string, string> */
     private const COMPONENT_LABELS = [
         'image' => 'Image',
-        'cv_list' => 'CV List',
         'text' => 'Rich Text',
         'list' => 'List',
         'divider' => 'Divider',
@@ -106,10 +103,6 @@ final class CustomPageWorkspace extends Page
 
     /** @var list<string> */
     public array $selectedChildTargets = [];
-
-    public bool $hasCvList = false;
-
-    public int $cvEntryCount = 0;
 
     public int $page = 1;
 
