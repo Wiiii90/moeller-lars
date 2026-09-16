@@ -1,0 +1,101 @@
+/* Canonical six-cell alignment contract for metric-backed admin toolbars.
+ *
+ * The metric row is the visual ruler for the workspace below it. Search and
+ * filters own the first four cells; reset, page-specific tools and Selection
+ * share the final two cells. Selection always terminates on the same right-hand
+ * rail as the table/hierarchy checkbox column.
+ */
+
+.admin-data-controls--six-cell {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0;
+    align-items: end;
+}
+
+.admin-data-controls--six-cell > * {
+    min-width: 0;
+}
+
+.admin-data-controls--six-cell-filters-0 > :first-child { grid-column: span 4; }
+.admin-data-controls--six-cell-filters-1 > :first-child { grid-column: span 3; }
+.admin-data-controls--six-cell-filters-2 > :first-child { grid-column: span 2; }
+
+.admin-data-controls--six-cell-filters-1 > :nth-child(2),
+.admin-data-controls--six-cell-filters-2 > :nth-child(2),
+.admin-data-controls--six-cell-filters-2 > :nth-child(3) {
+    grid-column: span 1;
+}
+
+.admin-data-controls--six-cell > :not(.admin-data-controls__utility) {
+    box-sizing: border-box;
+    width: 100%;
+    padding-right: .7rem;
+}
+
+.admin-data-controls__utility {
+    display: grid;
+    min-width: 0;
+    grid-column: span 2;
+    grid-template-columns: max-content minmax(0, 1fr) minmax(9.5rem, auto);
+    gap: .35rem;
+    align-items: end;
+}
+
+.admin-data-controls__utility > * {
+    min-width: 0;
+}
+
+.admin-data-controls__utility > :last-child {
+    width: 100%;
+    justify-self: stretch;
+}
+
+.admin-data-controls__utility > :last-child .admin-selection__anchor,
+.admin-data-controls__utility > :last-child .media-workspace__selection-anchor {
+    width: 100%;
+}
+
+.admin-data-controls__utility > :last-child .admin-selection__trigger,
+.admin-data-controls__utility > :last-child .media-workspace__selection-trigger {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    gap: 0;
+    padding-right: 0;
+    justify-content: stretch;
+}
+
+.admin-data-controls__utility > :last-child .admin-selection__count,
+.admin-data-controls__utility > :last-child .media-workspace__selection-count {
+    margin-left: 0;
+    justify-self: center;
+}
+
+@media (max-width: 1000px) {
+    .admin-data-controls--six-cell {
+        display: flex;
+        gap: .85rem;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .admin-data-controls--six-cell > :not(.admin-data-controls__utility) {
+        width: auto;
+        padding-right: 0;
+    }
+
+    .admin-data-controls--six-cell > :first-child {
+        min-width: 12rem;
+        flex: 1 1 16rem;
+    }
+
+    .admin-data-controls__utility {
+        display: contents;
+    }
+
+    .admin-data-controls__utility > * {
+        flex: 0 0 auto;
+    }
+}
