@@ -137,6 +137,68 @@ it('reverts only the current LIVE commit by staging its parent and publishing a 
         ->and(PublicationCheckpoint::query()->whereKey($live->getKey())->exists())->toBeTrue();
 });
 
+it('restores media parents before artwork media when reverting the current LIVE commit', function (): void {
+    $actor = User::factory()->admin()->create();
+    $publication = app(PublicationService::class);
+    $versions = app(PublicationVersionService::class);
+
+    $categoryId = (int) DB::table('artwork_categories')->insertGetId([
+        'slug' => 'revert-media-gallery',
+        'name' => 'Revert media gallery',
+        'state' => 'visible',
+        'position' => 0,
+    ]);
+    $artworkId = (int) DB::table('artworks')->insertGetId([
+        'artwork_category_id' => $categoryId,
+        'slug' => 'revert-media-artwork',
+        'title' => 'Revert media artwork',
+        'state' => 'published',
+        'position' => 0,
+        'date_precision' => 'unknown',
+    ]);
+    $asset = MediaAsset::query()->create([
+        'storage_key' => 'media/revert-parent.jpg',
+        'original_filename' => 'revert-parent.jpg',
+        'mime_type' => 'image/jpeg',
+        'byte_size' => 4,
+        'sha256' => hash('sha256', 'revert-parent'),
+        'state' => 'available',
+        'copyright_notice_mode' => MediaAsset::COPYRIGHT_INHERIT,
+    ]);
+    $usageId = (int) DB::table('artwork_media')->insertGetId([
+        'artwork_id' => $artworkId,
+        'media_asset_id' => $asset->getKey(),
+        'role' => 'primary',
+        'position' => 0,
+    ]);
+
+    $parent = $publication->commit($actor, 'Parent with artwork media');
+
+    DB::table('artwork_media')->where('id', $usageId)->delete();
+    DB::table('media_assets')->where('id', $asset->getKey())->delete();
+    $live = $publication->commit($actor, 'Current live without artwork media');
+
+    expect(DB::table('committed.media_assets')->where('id', $asset->getKey())->exists())->toBeFalse()
+        ->and(DB::table('committed.artwork_media')->where('id', $usageId)->exists())->toBeFalse();
+
+    $staged = $versions->stageRevertOfCurrent($actor);
+
+    expect((int) $staged['reverted']->getKey())->toBe((int) $live->getKey())
+        ->and((int) $staged['checkpoint']->getKey())->toBe((int) $parent->getKey())
+        ->and(DB::table('media_assets')->where('id', $asset->getKey())->exists())->toBeTrue()
+        ->and(DB::table('artwork_media')->where('id', $usageId)->value('media_asset_id'))->toBe((int) $asset->getKey())
+        ->and(DB::table('committed.media_assets')->where('id', $asset->getKey())->exists())->toBeFalse()
+        ->and(DB::table('committed.artwork_media')->where('id', $usageId)->exists())->toBeFalse();
+
+    $revert = $publication->commit($actor, 'Revert '.$live->shortHash());
+
+    expect((string) $revert->getAttribute('operation'))->toBe('revert')
+        ->and(DB::table('committed.media_assets')->where('id', $asset->getKey())->exists())->toBeTrue()
+        ->and(DB::table('committed.artwork_media')->where('id', $usageId)->value('media_asset_id'))->toBe((int) $asset->getKey())
+        ->and(PublicationCheckpoint::query()->whereKey($parent->getKey())->exists())->toBeTrue()
+        ->and(PublicationCheckpoint::query()->whereKey($live->getKey())->exists())->toBeTrue();
+});
+
 it('keeps physical media while any retained publication version still references the asset', function (): void {
     config()->set('media.disk', 'publication-version-test');
     Storage::fake('publication-version-test');
