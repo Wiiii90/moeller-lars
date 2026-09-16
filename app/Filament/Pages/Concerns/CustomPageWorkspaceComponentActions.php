@@ -131,7 +131,7 @@ trait CustomPageWorkspaceComponentActions
         $block = $this->componentAt($index, $type);
         $block['published'] = $published;
         app(CustomPageEditorialService::class)->updateBlock($this->settings(), $index, $type, $block);
-        $this->loadComponentProjection(refreshCvCount: false);
+        $this->loadComponentProjection();
     }
 
     public function publishSelected(): void
@@ -158,12 +158,7 @@ trait CustomPageWorkspaceComponentActions
             ->schema($this->componentEditorSchema(includeTypeSelect: true))
             ->modalHeading('Add component')
             ->action(function (array $data): void {
-                DB::transaction(function () use ($data): void {
-                    app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
-                    if (($data['type'] ?? null) === 'cv_list') {
-                        $this->syncCvEntryEditorRows($data['cv_entries'] ?? null);
-                    }
-                });
+                app(CustomPageEditorialService::class)->addBlock($this->settings(), $this->componentPayload($data));
 
                 $this->clearSelections();
                 $this->reloadWorkspace();
@@ -188,17 +183,12 @@ trait CustomPageWorkspaceComponentActions
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $existing = $this->actionComponent($arguments);
 
-                DB::transaction(function () use ($data, $index, $type, $existing): void {
-                    app(CustomPageEditorialService::class)->updateBlock(
-                        $this->settings(),
-                        $index,
-                        $type,
-                        $this->componentPayload($data, $existing),
-                    );
-                    if ($type === 'cv_list') {
-                        $this->syncCvEntryEditorRows($data['cv_entries'] ?? null);
-                    }
-                });
+                app(CustomPageEditorialService::class)->updateBlock(
+                    $this->settings(),
+                    $index,
+                    $type,
+                    $this->componentPayload($data, $existing),
+                );
 
                 $this->clearSelections();
                 $this->reloadWorkspace();
