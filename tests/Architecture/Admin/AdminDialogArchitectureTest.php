@@ -51,9 +51,8 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
 
     expect($layouts)
-        ->toContain("html.fi {\n    scrollbar-gutter: stable !important;\n}")
-        ->toContain(".fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
-        ->not->toContain("html.fi,\n.fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}");
+        ->toContain("html.fi,\n.fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
+        ->not->toContain('scrollbar-gutter: stable');
 
     expect($homeWorkspace)
         ->toContain('use Filament\\Schemas\\Components\\Grid;')
