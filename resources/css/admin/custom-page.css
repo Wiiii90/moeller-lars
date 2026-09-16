@@ -11,16 +11,18 @@
 }
 
 /* The hierarchy itself is the scrollport and must stay constrained to the
- * workspace. Its inner tracks own the desktop floor required by the complete
- * icon + label action set. This keeps Actions/Selection reachable instead of
- * letting the scroll container itself spill out of the page. */
+ * workspace. Its inner tracks use the canonical 80rem six-unit canvas, so the
+ * Actions rail starts on the same 4/6 boundary as the metrics and occupies
+ * units 5+6 together with trailing Selection. */
 .custom-page-component-sequence {
+    width: 100%;
     min-width: 0;
 }
 
 .custom-page-component-sequence__header,
 .custom-page-component-sequence__rows {
-    min-width: 76rem;
+    width: 100%;
+    min-width: 80rem;
 }
 
 .custom-page-component-sequence__header > span:not(:first-child),
@@ -51,7 +53,7 @@
     min-width: 0;
     padding-inline: .25rem;
     justify-content: flex-start !important;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .custom-page-component-sequence .custom-page-row-actions .admin-action--state {
@@ -59,6 +61,9 @@
 }
 
 .custom-page-row-actions .admin-action__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
