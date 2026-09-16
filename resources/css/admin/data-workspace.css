@@ -325,10 +325,14 @@
  * an add row keep horizontal scrolling, but do not reserve a visible gutter on
  * desktop. Narrow layouts restore a discoverable thin scrollbar below. */
 :is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row) {
+    overflow-y: hidden;
+    scrollbar-gutter: auto;
     scrollbar-width: none;
 }
 
 :is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row)::-webkit-scrollbar {
+    display: none;
+    width: 0;
     height: 0;
 }
 
@@ -555,6 +559,7 @@
     }
 
     :is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row)::-webkit-scrollbar {
+        display: block;
         height: .35rem;
     }
 
