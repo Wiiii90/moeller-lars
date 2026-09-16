@@ -130,6 +130,7 @@ jobs:
             playwright-report/
             test-results/
             storage/logs/playwright-server.log
+            storage/logs/laravel.log
 
       - name: Stop profiling application
         if: always()
