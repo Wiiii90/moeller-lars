@@ -4,7 +4,6 @@
         $reportingAvailable = in_array($status, ['available', 'stale'], true);
         $reportAvailability = \App\Domain\Analytics\AnalyticsReportAvailability::fromReport($matomo);
         $countriesAvailable = $reportingAvailable && $reportAvailability->isAvailable('countries');
-        $centroids = config('analytics-country-centroids', []);
         $countryRows = $countriesAvailable
             ? array_values(array_filter(
                 $matomo['countries'] ?? [],
@@ -24,14 +23,7 @@
         $totalVisits = is_numeric($matomo['metrics']['nb_visits'] ?? null)
             ? (float) $matomo['metrics']['nb_visits']
             : null;
-        $positiveVisits = array_values(array_filter(
-            array_map(
-                static fn (array $row): ?float => is_numeric($row['nb_visits'] ?? null) ? (float) $row['nb_visits'] : null,
-                $countryRows,
-            ),
-            static fn (?float $value): bool => $value !== null && $value > 0,
-        ));
-        $countryMax = $positiveVisits === [] ? 1.0 : max($positiveVisits);
+        $mapPoints = app(\App\Domain\Analytics\AnalyticsWorldMap::class)->points($countryRows);
         $previewCountryCodes = [
             'Germany' => 'de',
             'Netherlands' => 'nl',
@@ -46,7 +38,6 @@
             'Spain' => 'es',
             'Italy' => 'it',
         ];
-        $mapPoints = [];
         $countryPresentation = [];
         $rank = 0;
 
@@ -76,21 +67,6 @@
                 'flag_url' => $flagUrl,
                 'code' => $code,
             ];
-
-            $coords = $centroids[$label] ?? null;
-            if (! is_array($coords) || count($coords) < 2 || $visits === null || $visits <= 0) {
-                continue;
-            }
-
-            $lat = (float) $coords[0];
-            $lon = (float) $coords[1];
-            $mapPoints[] = [
-                'label' => $label,
-                'visits' => (int) round($visits),
-                'x' => min(99, max(1, (($lon + 180.0) / 360.0) * 100.0)),
-                'y' => min(98, max(2, ((90.0 - $lat) / 180.0) * 100.0)),
-                'size' => min(20.0, max(8.0, 8.0 + (12.0 * sqrt($visits / $countryMax)))),
-            ];
         }
 
         $rankedCountries = array_slice($countryRows, 0, 30);
@@ -119,7 +95,6 @@
                     : number_format((int) round($outsideLeaderVisits)).($outsideLeaderShare === null ? '' : ' ('.number_format($outsideLeaderShare, 1).'%)'),
             ],
         ];
-        $mapViewExists = view()->exists('filament.generated.analytics-world-map');
         $stageMessage = match (true) {
             $status === 'disabled' => 'No reporting data for this environment.',
             $status === 'unavailable' => 'Reporting data is currently unavailable.',
@@ -156,30 +131,11 @@
                 selectCountry(country) { this.selectedCountry = country },
             }"
         >
-            <figure class="analytics-world admin-visual-stage__pane" aria-label="World visitor map">
-                <div class="analytics-world__canvas">
-                    @if ($mapViewExists)
-                        @include('filament.generated.analytics-world-map')
-                    @else
-                        <div class="analytics-map-build-warning" role="status">
-                            Map geometry unavailable in this build.
-                        </div>
-                    @endif
-
-                    @foreach ($mapPoints as $point)
-                        <button
-                            class="analytics-world__marker"
-                            type="button"
-                            style="left: {{ number_format($point['x'], 3, '.', '') }}%; top: {{ number_format($point['y'], 3, '.', '') }}%; width: {{ number_format($point['size'], 2, '.', '') }}px; height: {{ number_format($point['size'], 2, '.', '') }}px; --marker-delay: {{ min($loop->index, 8) * 45 }}ms;"
-                            x-on:click="selectCountry(@js($point['label']))"
-                            x-bind:class="selectedCountry === @js($point['label']) ? 'is-selected' : ''"
-                            x-bind:aria-pressed="(selectedCountry === @js($point['label'])).toString()"
-                            aria-label="{{ $point['label'] }}: {{ number_format($point['visits']) }} visits"
-                            title="{{ $point['label'] }}, {{ number_format($point['visits']) }} visits"
-                        ></button>
-                    @endforeach
-                </div>
-            </figure>
+            <x-admin.analytics-world-map
+                class="admin-visual-stage__pane"
+                :points="$mapPoints"
+                :animate-arrival="true"
+            />
 
             <aside class="analytics-stage-rail admin-visual-stage__pane" aria-label="Geography">
                 <div class="analytics-stage-rail__heading">
