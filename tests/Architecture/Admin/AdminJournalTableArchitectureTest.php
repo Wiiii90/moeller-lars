@@ -17,8 +17,8 @@ it('keeps Journal tables on the shared metric alignment grid with labeled canoni
         ->toContain('AdminRowAction::Delete')
         ->toContain('admin-table__selection admin-table__selection--trailing')
         ->toContain('wire:click.prevent="toggleVisibleSelection"')
-        ->toContain('wire:model.live="selectedPostIds"')
-        ->toContain('wire:model.live="selectedExhibitionIds"')
+        ->toContain('wire:click="togglePostSelection')
+        ->toContain('wire:click="toggleExhibitionSelection')
         ->not->toContain('<x-filament::icon')
         ->not->toContain('>↑</button>')
         ->not->toContain('>↓</button>');
