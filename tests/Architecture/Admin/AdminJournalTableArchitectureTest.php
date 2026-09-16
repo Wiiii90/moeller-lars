@@ -26,12 +26,17 @@ it('keeps Journal tables on the shared metric alignment grid with the complete c
         ->not->toContain('>↓</button>');
 
     expect($css)
-        ->toContain('.journal-table--blog col:nth-child(4)')
-        ->toContain('width: var(--admin-table-one-half-units);')
-        ->toContain('width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));')
+        ->toContain(".journal-table--blog,\n.journal-table--exhibitions {\n    min-width: 76rem !important;")
+        ->toContain('.journal-table--blog col:nth-child(6)')
+        ->toContain('width: var(--admin-table-half-unit);')
+        ->toContain('width: calc(50% - var(--admin-table-selection-width));')
+        ->toContain('.journal-table--exhibitions col:nth-child(5)')
+        ->toContain('width: var(--admin-table-one-unit);')
+        ->toContain('width: calc(41.666667% - var(--admin-table-selection-width));')
         ->toContain('.journal-row-actions--blog')
         ->toContain('.journal-row-actions--exhibitions')
-        ->not->toContain('min-width: 80rem !important;')
-        ->not->toContain('min-width: 88rem !important;')
-        ->not->toContain('41.666667% - var(--admin-table-selection-width)');
+        ->toContain(".journal-row-actions .admin-action__label {\n    min-width: 0;\n    white-space: nowrap;")
+        ->toContain('overflow: visible;')
+        ->not->toContain(".journal-row-actions .admin-action__label {\n    min-width: 0;\n    overflow: hidden;")
+        ->not->toContain(".journal-row-actions .admin-action__label {\n    min-width: 0;\n    text-overflow: ellipsis;");
 });
