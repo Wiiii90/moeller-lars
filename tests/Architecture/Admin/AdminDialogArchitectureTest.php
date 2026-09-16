@@ -11,7 +11,6 @@ it('routes migrated admin dialogs through the shared dialog adapter', function (
         'app/Filament/Pages/Concerns/ManagesSitePageCreateDialog.php',
         'app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php',
         'app/Filament/Pages/Concerns/CustomPageWorkspaceComponentActions.php',
-        'app/Filament/Pages/Concerns/CustomPageWorkspaceCvActions.php',
         'app/Filament/Pages/Concerns/CustomPageWorkspaceLifecycle.php',
         'app/Filament/Pages/Concerns/CustomPageWorkspaceListContactActions.php',
         'app/Filament/Pages/Concerns/GalleryWorkspaceArtworkActions.php',
@@ -22,8 +21,12 @@ it('routes migrated admin dialogs through the shared dialog adapter', function (
     ];
 
     foreach ($files as $file) {
-        $source = file_get_contents($root.'/'.$file);
+        $path = $root.'/'.$file;
 
+        expect(is_file($path), $file)->toBeTrue();
+
+        $source = file_get_contents($path);
+        expect($source, $file)->toBeString();
         expect($source, $file)
             ->toContain('AdminDialog::')
             ->not->toContain('->modalWidth(')
