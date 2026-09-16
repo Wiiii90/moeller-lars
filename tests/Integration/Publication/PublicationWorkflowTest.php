@@ -331,7 +331,6 @@ it('tracks the publication-owned tables copied into committed snapshots', functi
         'journal_settings',
         'journal_entry_media',
         'home_presentation_settings',
-        'cv_entries',
         'exhibitions',
         'exhibition_media',
         'blog_posts',
