@@ -32,15 +32,14 @@ FROM php-base AS dependencies
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY composer.json composer.lock ./
-COPY artisan ./artisan
-COPY app ./app
-COPY bootstrap ./bootstrap
-COPY config ./config
-COPY database ./database
-COPY routes ./routes
-COPY resources/views ./resources/views
+RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-scripts --no-autoloader
+
+# Composer scripts boot the Laravel application. Run them only after the complete
+# candidate source exists so service providers may safely reference project resources.
+FROM dependencies AS application
+COPY . .
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/private bootstrap/cache \
-    && composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader
+    && composer dump-autoload --no-dev --no-interaction --optimize
 
 FROM php-base AS runtime
 ARG APP_GIT_SHA=unknown
@@ -51,7 +50,8 @@ LABEL org.opencontainers.image.title="moeller-lars" \
 
 WORKDIR /var/www/html
 COPY . .
-COPY --from=dependencies /var/www/html/vendor ./vendor
+COPY --from=application /var/www/html/vendor ./vendor
+COPY --from=application /var/www/html/bootstrap/cache ./bootstrap/cache
 COPY --from=frontend /build/public/build ./public/build
 COPY --from=frontend /build/resources/views/filament/generated/analytics-world-map.blade.php ./resources/views/filament/generated/analytics-world-map.blade.php
 COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf

@@ -1,0 +1,53 @@
+name: Runtime image smoke
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - Dockerfile
+      - docker/**
+      - composer.json
+      - composer.lock
+      - bootstrap/providers.php
+      - app/Providers/**
+      - config/**
+      - resources/svg/**
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - Dockerfile
+      - docker/**
+      - composer.json
+      - composer.lock
+      - bootstrap/providers.php
+      - app/Providers/**
+      - config/**
+      - resources/svg/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-image-smoke-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/dev' }}
+
+jobs:
+  image-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build runtime image
+        run: |
+          docker build \
+            --target runtime \
+            --build-arg "APP_GIT_SHA=${GITHUB_SHA}" \
+            -t moeller-lars-local-runtime \
+            .
+
+      - name: Build local preview image
+        run: docker build -f docker/Dockerfile.local-preview -t moeller-lars-local-preview .
+
+      - name: Boot Laravel CLI from local preview image
+        run: docker run --rm --entrypoint php moeller-lars-local-preview artisan --version
