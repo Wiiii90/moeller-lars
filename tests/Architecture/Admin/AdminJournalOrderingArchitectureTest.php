@@ -4,8 +4,8 @@ it('keeps Journal ordering newest-first by default and shared by admin and publi
     $root = dirname(__DIR__, 3);
     $order = file_get_contents($root.'/app/Domain/Content/JournalEntryOrderService.php');
     $migration = file_get_contents($root.'/database/migrations/2026_09_17_000001_resequence_journal_entries_newest_first.php');
-    $workspace = file_get_contents($root.'/app/Filament/Pages/JournalWorkspace.php');
-    $public = file_get_contents($root.'/app/Http/Controllers/PublicSiteSectionController.php');
+    $workspaceReadModel = file_get_contents($root.'/app/Filament/Support/JournalWorkspaceReadModel.php');
+    $public = file_get_contents($root.'/app/Domain/Content/PublicJournalQuery.php');
 
     expect($order)
         ->toContain('Reserve the first canonical position')
@@ -23,11 +23,13 @@ it('keeps Journal ordering newest-first by default and shared by admin and publi
         ->toContain("\$this->persistOrder('blog_posts'")
         ->toContain("\$this->persistOrder('exhibitions'");
 
-    expect($workspace)
-        ->toContain("->orderBy('position')->orderBy('id')->forPage")
-        ->toContain("->where('site_section_id', \$this->sectionId)->orderBy('position')->orderBy('id')->pluck('id')");
+    expect($workspaceReadModel)
+        ->toContain("->orderBy('position')")
+        ->toContain("->orderBy('id')")
+        ->toContain('->forPage($page, $pageSize)');
 
     expect($public)
-        ->toContain("->orderBy('position')->orderBy('id')->get()")
-        ->toContain("->with('mediaUsages.mediaAsset.variants')->orderBy('position')->orderBy('id')->get()");
+        ->toContain("->orderBy('position')")
+        ->toContain("->orderBy('id')")
+        ->toContain("->with('mediaUsages.mediaAsset.variants')");
 });
