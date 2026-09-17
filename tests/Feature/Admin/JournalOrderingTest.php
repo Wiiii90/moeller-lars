@@ -11,7 +11,7 @@ it('reserves position one for a new Journal entry and keeps existing order conti
         'title' => 'Blog',
         'navigation_label' => 'Blog',
         'slug' => 'blog-ordering-test',
-        'state' => 'draft',
+        'state' => 'hidden',
         'position' => 100,
         'show_in_navigation' => false,
         'parent_id' => null,
