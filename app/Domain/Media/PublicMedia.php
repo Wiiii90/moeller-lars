@@ -11,7 +11,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
-use App\Models\CvEntry;
 use App\Models\Exhibition;
 use App\Models\HomePresentationSetting;
 use App\Models\JournalEntryMedia;
@@ -238,7 +237,6 @@ class PublicMedia
                 ->where('state', 'published'))
             ->get(['id', 'blocks']);
 
-        $publishedCvListExists = false;
         foreach ($publishedCustomPages as $settings) {
             foreach ($settings->components() as $block) {
                 if (! CustomPageSetting::componentPublished($block)) {
@@ -269,27 +267,6 @@ class PublicMedia
                         }
                     }
                 }
-
-                if ($type === 'cv_list') {
-                    $publishedCvListExists = true;
-                }
-            }
-        }
-
-        if (! $publishedCvListExists) {
-            return false;
-        }
-
-        if (CvEntry::query()
-            ->where('state', 'published')
-            ->where('image_media_asset_id', $mediaAssetId)
-            ->exists()) {
-            return true;
-        }
-
-        foreach (CvEntry::query()->where('state', 'published')->whereNotNull('body')->pluck('body') as $body) {
-            if (is_string($body) && in_array($mediaAssetId, RichTextMediaReference::ids($body), true)) {
-                return true;
             }
         }
 
