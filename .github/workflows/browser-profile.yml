@@ -10,10 +10,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: browser-profile-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   admin-interactions:
     runs-on: ubuntu-latest
