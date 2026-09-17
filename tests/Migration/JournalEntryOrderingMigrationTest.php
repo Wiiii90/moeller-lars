@@ -84,6 +84,10 @@ it('re-sequences existing Blog and Exhibition journals to newest-first defaults'
 
     expect(BlogPost::query()->where('site_section_id', $blog->getKey())->orderBy('position')->pluck('title')->all())
         ->toBe(['Draft first', 'Newer published', 'Older published'])
+        ->and(BlogPost::query()->where('site_section_id', $blog->getKey())->orderBy('position')->pluck('position')->all())
+        ->toBe([1, 2, 3])
         ->and(Exhibition::query()->where('site_section_id', $exhibitions->getKey())->orderBy('position')->pluck('title')->all())
-        ->toBe(['Event 2015', 'Event 2014', 'Event 2012']);
+        ->toBe(['Event 2015', 'Event 2014', 'Event 2012'])
+        ->and(Exhibition::query()->where('site_section_id', $exhibitions->getKey())->orderBy('position')->pluck('position')->all())
+        ->toBe([1, 2, 3]);
 });

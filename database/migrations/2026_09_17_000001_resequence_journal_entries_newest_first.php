@@ -206,9 +206,9 @@ return new class extends Migration
             ]);
         }
 
-        foreach ($ordered as $position => $record) {
+        foreach ($ordered as $index => $record) {
             DB::table($table)->where('id', $record->id)->update([
-                'position' => $position,
+                'position' => $index + 1,
             ]);
         }
     }

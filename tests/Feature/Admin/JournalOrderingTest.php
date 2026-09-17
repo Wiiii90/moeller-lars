@@ -4,7 +4,7 @@ use App\Domain\Content\JournalEntryOrderService;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
 
-it('reserves position zero for a new Journal entry and keeps existing order contiguous', function (): void {
+it('reserves position one for a new Journal entry and keeps existing order contiguous', function (): void {
     $section = SiteSection::query()->create([
         'type' => SiteSection::TYPE_JOURNAL,
         'template' => SiteSection::JOURNAL_TEMPLATE_BLOG,
@@ -43,9 +43,9 @@ it('reserves position zero for a new Journal entry and keeps existing order cont
 
     $position = app(JournalEntryOrderService::class)->nextPosition(new BlogPost, (int) $section->getKey());
 
-    expect($position)->toBe(0)
+    expect($position)->toBe(1)
         ->and(BlogPost::query()->where('site_section_id', $section->getKey())->orderBy('position')->pluck('id')->all())
         ->toBe([(int) $first->getKey(), (int) $second->getKey()])
         ->and(BlogPost::query()->where('site_section_id', $section->getKey())->orderBy('position')->pluck('position')->all())
-        ->toBe([1, 2]);
+        ->toBe([2, 3]);
 });

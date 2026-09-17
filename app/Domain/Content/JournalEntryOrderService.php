@@ -39,7 +39,7 @@ final class JournalEntryOrderService
                 ->get(['id', 'position']);
 
             if ($records->isEmpty()) {
-                return 0;
+                return 1;
             }
 
             $maximum = (int) ($records->max('position') ?? 0);
@@ -54,10 +54,10 @@ final class JournalEntryOrderService
             foreach ($records as $offset => $record) {
                 DB::table($model->getTable())
                     ->where('id', $record->getKey())
-                    ->update(['position' => $offset + 1]);
+                    ->update(['position' => $offset + 2]);
             }
 
-            return 0;
+            return 1;
         });
     }
 
@@ -149,7 +149,8 @@ final class JournalEntryOrderService
     private function persistOrder(Model $record, Collection $records, array $ordered, int $sectionId, $actor): bool
     {
         $changes = [];
-        foreach ($ordered as $position => $candidate) {
+        foreach ($ordered as $index => $candidate) {
+            $position = $index + 1;
             if ((int) $candidate->getAttribute('position') !== $position) {
                 $changes[] = [$candidate, $position];
             }
