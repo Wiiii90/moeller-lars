@@ -3,6 +3,7 @@
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\MediaCapacityService;
+use App\Domain\Storage\SiteStorageDatabaseUsageService;
 use App\Filament\Support\StorageWorkspaceOverview;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
@@ -103,8 +104,7 @@ function storageBehaviorJournal(string $title): SiteSection
     ]);
 }
 
-it('keeps generated derivatives outside the authoritative allowance', function (): void {
-    config()->set('media.quota_bytes', 100);
+it('counts generated derivatives and database storage against the site allowance', function (): void {
     $asset = storageBehaviorAsset('allowance.jpg', 80);
     Storage::disk(config('media.disk'))->put('variants/allowance.webp', str_repeat('v', 300));
 
@@ -119,12 +119,22 @@ it('keeps generated derivatives outside the authoritative allowance', function (
         'state' => 'available',
     ]);
 
+    $database = app(SiteStorageDatabaseUsageService::class)->snapshot();
+
+    expect($database['measurement_available'])->toBeTrue();
+
+    $databaseBytes = (int) $database['logical_bytes'];
+    config()->set('media.quota_bytes', $databaseBytes + 400);
+
     $snapshot = app(MediaCapacityService::class)->snapshot();
 
     expect($snapshot['authoritative_bytes'])->toBe(80)
         ->and($snapshot['generated_bytes'])->toBe(300)
+        ->and($snapshot['database_bytes'])->toBe($databaseBytes)
+        ->and($snapshot['site_used_bytes'])->toBe($databaseBytes + 380)
+        ->and($snapshot['reclaimable_bytes'])->toBe(300)
         ->and($snapshot['remaining_bytes'])->toBe(20)
-        ->and($snapshot['status'])->toBe('healthy');
+        ->and($snapshot['status'])->toBe('near_capacity');
 });
 
 it('projects concrete gallery destinations without double-counting authoritative bytes', function (): void {
