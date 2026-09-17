@@ -88,6 +88,17 @@ final class AdminActionReceipt extends Model
 
                 return self::$resolvedSnapshotPayloads[$payloadId];
             },
+            set: function (mixed $value): ?string {
+                if ($value === null) {
+                    return null;
+                }
+
+                if (is_string($value)) {
+                    return $value;
+                }
+
+                return json_encode($value, JSON_THROW_ON_ERROR);
+            },
         );
     }
 
