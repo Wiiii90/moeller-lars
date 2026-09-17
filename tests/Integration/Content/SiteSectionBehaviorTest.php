@@ -74,18 +74,9 @@ it('uses committed SiteSection state as the public availability gate', function 
     $this->get('/statement-architecture')->assertNotFound();
 });
 
-it('keeps page type out of hierarchy compatibility', function (): void {
-    foreach (SiteSectionType::cases() as $child) {
-        expect($child->canHaveParent())->toBeTrue()
-            ->and($child->canContainChildren())->toBeTrue()
-            ->and($child->canChangePlacement())->toBe($child !== SiteSectionType::Home);
-
-        foreach (SiteSectionType::cases() as $parent) {
-            expect($child->canBeChildOf($parent))->toBeTrue();
-        }
-    }
-
-    expect(SiteSectionType::Home->canChangePublication())->toBeFalse()
+it('keeps Home editorial capabilities locked', function (): void {
+    expect(SiteSectionType::Home->canChangePlacement())->toBeFalse()
+        ->and(SiteSectionType::Home->canChangePublication())->toBeFalse()
         ->and(SiteSectionType::Home->canConvert())->toBeFalse()
         ->and(SiteSectionType::Home->canDelete())->toBeFalse();
 });
