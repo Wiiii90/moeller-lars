@@ -156,7 +156,6 @@ trait CustomPageWorkspacePresentationHelpers
             ->orderBy('position')
             ->orderBy('id')
             ->get()
-            ->filter(static fn (SiteSection $section): bool => $section->canContainChildren())
             ->mapWithKeys(static fn (SiteSection $section): array => [
                 (int) $section->getKey() => (string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')),
             ])
