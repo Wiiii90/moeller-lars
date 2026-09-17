@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AttachPublicationState;
 use App\Http\Middleware\RecordOperationalMetrics;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\UseCommittedPublicState;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(
             append: [
                 SecurityHeaders::class,
+                AttachPublicationState::class,
             ],
         );
     })
