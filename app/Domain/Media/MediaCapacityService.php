@@ -55,7 +55,7 @@ final class MediaCapacityService
         }
 
         $database = $this->databaseUsage->snapshot();
-        if (($database['measurement_available'] ?? false) !== true) {
+        if ($database['measurement_available'] !== true) {
             return $this->unavailableSnapshot($quotaConfiguration['configured'], true, $quota);
         }
 
@@ -157,7 +157,7 @@ final class MediaCapacityService
         }
 
         $database = $this->databaseUsage->snapshot();
-        if (($database['measurement_available'] ?? false) !== true) {
+        if ($database['measurement_available'] !== true) {
             throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
         }
 
