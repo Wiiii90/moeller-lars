@@ -147,25 +147,20 @@ it('keeps the real public layout on committed appearance until one idempotent Co
         ->and($committedActivity['checkpoint_id'])->toBe((int) $checkpoint->getKey());
 });
 
-it('refreshes Commit state centrally for a Working mutation and a net-zero revert', function (): void {
+it('keeps Commit truth exact for a Working mutation and a net-zero revert', function (): void {
     publicationWorkflowSetGradientBaseline();
 
-    $control = Livewire::test(PublicationStateBridge::class)
-        ->assertSet('hasPendingChanges', false);
+    expect(app(PublicationService::class)->hasPendingChanges())->toBeFalse();
 
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'background_gradient_end' => '#0F19FA',
     ]);
 
-    $control->call('refreshState')
-        ->assertSet('hasPendingChanges', true);
+    expect(app(PublicationService::class)->hasPendingChanges())->toBeTrue();
 
     app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
         'background_gradient_end' => '#C9C3C3',
     ]);
-
-    $control->call('refreshState')
-        ->assertSet('hasPendingChanges', false);
 
     expect(app(PublicationService::class)->hasPendingChanges())->toBeFalse();
 });
@@ -179,9 +174,7 @@ it('commits current Pending state in one component action and repeated clicks st
 
     $initialCheckpointCount = PublicationCheckpoint::query()->count();
     $control = Livewire::test(PublicationStateBridge::class)
-        ->assertSet('hasPendingChanges', true)
-        ->call('commitPublication')
-        ->assertSet('hasPendingChanges', false);
+        ->call('commitPublication');
 
     expect(PublicationCheckpoint::query()->count())->toBe($initialCheckpointCount + 1)
         ->and(app(PublicationService::class)->hasPendingChanges())->toBeFalse()

@@ -12,33 +12,13 @@ use Livewire\Component;
 
 final class PublicationStateBridge extends Component
 {
-    public bool $hasPendingChanges = false;
-
-    public function mount(): void
-    {
-        $this->hasPendingChanges = app(PublicationService::class)->hasPendingChanges();
-    }
-
-    public function refreshState(): void
-    {
-        $hasPendingChanges = app(PublicationService::class)->hasPendingChanges();
-
-        if ($hasPendingChanges === $this->hasPendingChanges) {
-            return;
-        }
-
-        $this->hasPendingChanges = $hasPendingChanges;
-
-        $this->dispatch('publication-state-changed', pending: $this->hasPendingChanges);
-    }
-
     public function commitPublication(): void
     {
         $actor = app(AdminAuditService::class)->requireActor();
         $publication = app(PublicationService::class);
 
         if (! $publication->hasPendingChanges()) {
-            $this->refreshState();
+            $this->dispatch('publication-state-changed', pending: false);
 
             return;
         }
@@ -66,7 +46,7 @@ final class PublicationStateBridge extends Component
             throw $exception;
         }
 
-        $this->refreshState();
+        $this->dispatch('publication-state-changed', pending: $publication->hasPendingChanges());
 
         if ($checkpoint === null) {
             return;

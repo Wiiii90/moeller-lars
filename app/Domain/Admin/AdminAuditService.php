@@ -18,6 +18,7 @@ class AdminAuditService
 
     public function __construct(
         private readonly AdminActionReceiptService $receipts,
+        private readonly AdminMutationSnapshotBuffer $mutationSnapshots,
         private readonly AdminUndoContext $undoContext,
     ) {}
 
@@ -68,6 +69,10 @@ class AdminAuditService
             'metadata' => $metadata === [] ? null : $metadata,
         ]);
         $event->save();
+
+        if (PublicationSnapshot::tracksAuditEntityType($entityType) || $entityType === 'publication_checkpoint') {
+            $this->mutationSnapshots->markPublicationStateMayHaveChanged();
+        }
 
         if ($this->undoContext->receiptsSuppressed()) {
             $this->receipts->discardPendingSnapshotForEvent($event);
