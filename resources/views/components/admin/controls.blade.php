@@ -5,18 +5,18 @@
 ])
 
 @php
-    $hasCompleteDataToolbar = isset($search) && isset($filters) && isset($reset) && isset($actions) && isset($selection);
-    $usesMetricGrid = (bool) $metricGrid || $hasCompleteDataToolbar;
     $detectedFilterCount = isset($filters) ? substr_count($filters->toHtml(), '<select') : 0;
-    $normalizedFilterCount = min(max((int) ($filterCount ?? $detectedFilterCount), 0), 2);
+    $normalizedFilterCount = max((int) ($filterCount ?? $detectedFilterCount), 0);
+    $hasUtility = isset($reset) || isset($actions) || isset($selection);
 @endphp
 
 <div
     {{ $attributes->class([
         'admin-data-controls',
         'admin-data-controls--has-search' => isset($search),
-        'admin-data-controls--six-cell' => $usesMetricGrid,
-        'admin-data-controls--six-cell-filters-'.$normalizedFilterCount => $usesMetricGrid,
+        'admin-data-controls--filters-'.$normalizedFilterCount,
+        'admin-data-controls--six-cell' => $metricGrid,
+        'admin-data-controls--six-cell-filters-'.$normalizedFilterCount => $metricGrid,
     ]) }}
     @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
 >
@@ -28,7 +28,7 @@
         {{ $filters }}
     @endisset
 
-    @if ($usesMetricGrid)
+    @if ($hasUtility)
         <div class="admin-data-controls__utility">
             @isset($reset)
                 {{ $reset }}
@@ -42,17 +42,5 @@
                 {{ $selection }}
             @endisset
         </div>
-    @else
-        @isset($reset)
-            {{ $reset }}
-        @endisset
-
-        @isset($actions)
-            {{ $actions }}
-        @endisset
-
-        @isset($selection)
-            {{ $selection }}
-        @endisset
     @endif
 </div>

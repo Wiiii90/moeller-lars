@@ -4,21 +4,17 @@
     border-bottom: 0;
 }
 
-/* Journal keeps the complete icon + label action vocabulary visible. Blog has
- * seven canonical row actions, so it keeps the wider historical desktop floor;
- * genuinely narrower viewports scroll instead of abbreviating action labels. */
-.journal-table--blog {
-    min-width: 88rem !important;
-}
-
+/* Journal keeps the complete icon + label action vocabulary visible. Both
+ * variants keep the shared desktop floor; the Blog rail now uses its available
+ * two-unit width instead of pushing the trailing actions off-canvas. */
+.journal-table--blog,
 .journal-table--exhibitions {
     min-width: 76rem !important;
 }
 
 /* Blog follows the same six-unit contract as the other editorial tables. The
  * first six columns consume exactly four units; Actions + trailing Selection
- * own the final two units. The wider Post column absorbs the space that used to
- * be borrowed by the action rail. */
+ * own the final two units. */
 .journal-table--blog col:nth-child(4) {
     width: var(--admin-table-one-half-units);
 }
@@ -42,17 +38,14 @@
     gap: .06rem !important;
 }
 
-/* Give Move down the room it actually needs. That also advances Edit onto a
- * stable slot instead of letting the two labels collide around one boundary. */
+/* Blog has seven actions inside the fixed two-unit rail. Give each action its
+ * real intrinsic width and distribute the remaining space between slots. This
+ * prevents labels from painting across neighboring tracks while keeping every
+ * canonical icon + label visible. */
 .journal-row-actions--blog {
-    grid-template-columns:
-        minmax(0, .82fr)
-        minmax(0, 1.08fr)
-        minmax(0, .62fr)
-        minmax(0, 1.12fr)
-        minmax(0, .98fr)
-        minmax(0, .9fr)
-        minmax(0, .78fr);
+    grid-template-columns: repeat(7, max-content);
+    gap: .1rem !important;
+    justify-content: space-between;
 }
 
 .journal-row-actions--exhibitions {
@@ -84,6 +77,15 @@
 .journal-row-actions .admin-action__label {
     min-width: 0;
     white-space: nowrap;
+}
+
+.journal-row-actions.journal-row-actions--blog .admin-action {
+    width: auto;
+    padding-inline: 0;
+}
+
+.journal-row-actions.journal-row-actions--blog .admin-action--with-icon {
+    gap: .12rem;
 }
 
 /* Keep Blog rows on the same vertical rhythm as Exhibition rows. */

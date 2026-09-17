@@ -16,6 +16,13 @@
     max-width: 100%;
 }
 
+/* Filament form controls are full-width fields. Keep the generated controlled
+ * select on the same width as the input wrapper instead of collapsing to its
+ * current label's intrinsic width. */
+.admin-control-field .admin-select {
+    width: 100%;
+}
+
 /* Field-label rules intentionally target direct spans. The runtime control is
  * also a span, so reset that inherited label presentation at the shared layer. */
 .admin-field > .admin-select,
@@ -170,6 +177,7 @@
     width: 100%;
     min-height: 2rem;
     padding: .42rem 1.75rem .42rem .5rem;
+    overflow: hidden;
     border: 0;
     background: transparent;
     color: inherit;
@@ -179,7 +187,9 @@
     letter-spacing: normal;
     line-height: 1.25;
     text-align: left;
+    text-overflow: ellipsis;
     text-transform: none;
+    white-space: nowrap;
     cursor: pointer;
 }
 
