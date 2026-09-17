@@ -124,6 +124,21 @@ final class PublicationEventStateService
         return $ids;
     }
 
+    public function hasUncheckpointedPendingEvents(): bool
+    {
+        return DB::table('publication_event_states')
+            ->where('publication_event_states.status', PublicationEventState::STATUS_PENDING)
+            ->whereNotExists(function ($query): void {
+                $query->selectRaw('1')
+                    ->from('publication_checkpoint_events')
+                    ->whereColumn(
+                        'publication_checkpoint_events.audit_event_id',
+                        'publication_event_states.audit_event_id',
+                    );
+            })
+            ->exists();
+    }
+
     public function entityHasPendingChanges(string $entityType, int $entityId): bool
     {
         if ($entityType === 'publication_checkpoint') {

@@ -18,19 +18,7 @@ final class PublicationService
 
     public function hasPendingChanges(): bool
     {
-        $parts = array_map(
-            static fn (string $table): string => sprintf(
-                'SELECT 1 AS changed FROM public.%1$s AS working FULL OUTER JOIN committed.%1$s AS committed USING (id) WHERE '.PublicationSnapshot::ROW_DIFFERENCE_SQL,
-                $table,
-            ),
-            PublicationSnapshot::TABLES,
-        );
-
-        $row = DB::selectOne(
-            'SELECT EXISTS (SELECT 1 FROM ('.implode(' UNION ALL ', $parts).') AS publication_changes LIMIT 1) AS pending',
-        );
-
-        return in_array($row->pending ?? false, [true, 1, '1', 't'], true);
+        return $this->eventStates->hasUncheckpointedPendingEvents();
     }
 
     /**
