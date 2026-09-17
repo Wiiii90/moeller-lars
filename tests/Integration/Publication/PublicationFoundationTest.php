@@ -191,4 +191,3 @@ it('ignores historical pending event states once they belong to a checkpoint', f
         ->and(PublicationCheckpointEvent::query()->where('audit_event_id', $event->getKey())->exists())->toBeTrue()
         ->and(app(PublicationService::class)->hasPendingChanges())->toBeFalse();
 });
-

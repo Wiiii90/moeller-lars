@@ -38,8 +38,7 @@ it('reads current publication state from uncheckpointed event state instead of s
     $eventStates = file_get_contents($root.'/app/Domain/Publication/PublicationEventStateService.php');
     expect($eventStates)
         ->toContain('function hasUncheckpointedPendingEvents(): bool')
-        ->toContain("where('publication_event_states.status', PublicationEventState::STATUS_PENDING)")
-        ->toContain("->from('publication_checkpoint_events')")
-        ->toContain("->whereColumn(");
+        ->toContain('where(\'publication_event_states.status\', PublicationEventState::STATUS_PENDING)')
+        ->toContain('->from(\'publication_checkpoint_events\')')
+        ->toContain('->whereColumn(');
 });
-
