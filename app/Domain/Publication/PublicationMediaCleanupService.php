@@ -166,7 +166,7 @@ final class PublicationMediaCleanupService
             return false;
         }
 
-        if (Schema::hasTable('publication_version_rows')) {
+        if (Schema::hasTable('publication_version_rows') || Schema::hasView('publication_version_rows')) {
             $historicalVersionRequiresAsset = DB::table('publication_version_rows')
                 ->where('table_name', 'media_assets')
                 ->where('row_key', (string) $mediaAssetId)
