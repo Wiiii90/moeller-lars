@@ -34,8 +34,8 @@
 }
 
 /* A controls row immediately followed by a table/hierarchy does not draw a
- * second separator. The table header owns that boundary. */
-.admin-task-controls:has(+ .admin-table) {
+ * second separator. The table or hierarchy header owns that boundary. */
+.admin-data-controls:has(+ :is(.admin-table, .admin-hierarchy)) {
     border-bottom: 0 !important;
 }
 

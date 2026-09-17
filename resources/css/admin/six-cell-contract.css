@@ -77,16 +77,12 @@
     padding-right: .7rem;
 }
 
-/* Generic complete toolbars keep their utility controls as one content-sized
- * flex group. This is the default used by dense surfaces such as Dashboard and
- * Storage; it must not imply metric-grid geometry. */
+/* The utility wrapper is semantic only for ordinary toolbars. Its children
+ * remain direct layout participants of the toolbar so accepted page geometry
+ * is not collapsed into an extra flex group. Metric-grid toolbars override
+ * this below and deliberately make the wrapper a two-cell grid item. */
 .admin-data-controls__utility {
-    display: flex;
-    min-width: 0;
-    gap: .85rem;
-    align-items: end;
-    flex: 0 0 auto;
-    flex-wrap: nowrap;
+    display: contents;
 }
 
 :is(

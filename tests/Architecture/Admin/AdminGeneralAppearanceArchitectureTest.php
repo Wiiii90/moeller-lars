@@ -11,10 +11,10 @@ it('keeps General background modes and controlled select semantics canonical', f
         ->toContain("self::MODE_GRADIENT => 'Linear gradient'");
 
     expect($general)
-        ->toContain("$data['background_mode'] = PublicAppearance::MODE_DEFAULT;")
+        ->toContain("\$data['background_mode'] = PublicAppearance::MODE_DEFAULT;")
         ->toContain('->options(PublicAppearance::modeOptions())')
         ->toContain('->placeholder(null)')
         ->toContain('->selectablePlaceholder(false)')
-        ->toContain("->disabled(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_DEFAULT)")
-        ->not->toContain("$data['background_mode'] = PublicAppearance::MODE_SOLID;");
+        ->toContain("->disabled(fn (callable \$get): bool => \$get('background_mode') === PublicAppearance::MODE_DEFAULT)")
+        ->not->toContain("\$data['background_mode'] = PublicAppearance::MODE_SOLID;");
 });

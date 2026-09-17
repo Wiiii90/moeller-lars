@@ -23,7 +23,7 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain('grid-template-columns: repeat(6, minmax(0, 1fr));')
         ->toContain('.custom-page-workspace__controls')
         ->toContain('.journal-workspace__entries > .admin-data-controls')
-        ->toContain(".admin-data-controls__utility {\n    display: flex;")
+        ->toContain(".admin-data-controls__utility {\n    display: contents;")
         ->toContain('grid-template-columns: max-content minmax(max-content, 1fr) minmax(9.5rem, auto);')
         ->toContain(".admin-data-controls__utility .admin-action {\n    white-space: nowrap;")
         ->toContain('var(--admin-table-selection-width)')

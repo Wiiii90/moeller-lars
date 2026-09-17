@@ -16,11 +16,17 @@
     max-width: 100%;
 }
 
-/* Filament form controls are full-width fields. Keep the generated controlled
- * select on the same width as the input wrapper instead of collapsing to its
- * current label's intrinsic width. */
+/* Filament form controls are full-width fields. The enhanced select trigger is
+ * the one visible control baseline; the hidden native wrapper must not draw a
+ * second, longer underline behind it. */
 .admin-control-field .admin-select {
     width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+}
+
+.admin-control-field .fi-input-wrp:has(.admin-select) {
+    border-bottom: 0 !important;
 }
 
 /* Field-label rules intentionally target direct spans. The runtime control is

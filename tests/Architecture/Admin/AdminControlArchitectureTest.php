@@ -16,7 +16,9 @@ it('registers the shared admin control adapter panel wide', function (): void {
         ->toContain('Toggle::configureUsing');
 
     expect($selectCss)
-        ->toContain(".admin-control-field .admin-select {\n    width: 100%;")
+        ->toContain(".admin-control-field .admin-select {\n    width: 100%;\n    min-width: 0;\n    flex: 1 1 100%;")
+        ->toContain('.admin-control-field .fi-input-wrp:has(.admin-select)')
+        ->toContain('border-bottom: 0 !important;')
         ->toContain(".admin-select__option {\n    position: relative;")
         ->toContain('text-overflow: ellipsis;')
         ->toContain('white-space: nowrap;');
