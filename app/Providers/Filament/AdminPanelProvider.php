@@ -16,7 +16,6 @@ use App\Filament\Support\AccountMenuAction;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\SiteNavigation;
-use App\Filament\Widgets\ContactHealth;
 use App\Http\Middleware\DeferMatomoReporting;
 use BladeUI\Icons\Factory as BladeIconFactory;
 use Filament\Actions\Action;
@@ -110,9 +109,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([])
-            ->widgets([
-                ContactHealth::class,
-            ])
             ->navigation(fn (NavigationBuilder $builder): NavigationBuilder => $this->navigation($builder))
             ->middleware([
                 EncryptCookies::class,
