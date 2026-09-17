@@ -4,7 +4,6 @@ namespace App\Support;
 
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterval;
-use Illuminate\Support\Collection;
 use JsonException;
 use Laravel\Pulse\Facades\Pulse;
 use Laravel\Pulse\Recorders\CacheInteractions;
