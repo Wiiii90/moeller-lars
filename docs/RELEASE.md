@@ -232,3 +232,9 @@ The application never rewrites the legacy application or automatically reruns so
 CI success, local preview success, image publication and Validation success do **not** authorize Production mutation.
 
 Production deployment/cutover remains an explicit operator/project action under [MIGRATION-PLAN.md](MIGRATION-PLAN.md).
+
+## Agent CI ownership
+
+The CI workflow remains the technical verification authority; chat/worker ownership of a run is governed by [`AGENTS.md`](../AGENTS.md), section **CI ownership and log handoff**.
+
+On shared `dev`, an agent either ignores CI for its scope or owns only the exact verification run caused by its own push. Shared-`dev` agents must not ingest Actions job logs themselves; red-run diagnosis uses the compact report supplied by the user for that exact run. A worker on an exclusively owned feature/fix/chore branch may operate its own branch CI end to end. `dev` becomes exclusive only when the user says so explicitly.
