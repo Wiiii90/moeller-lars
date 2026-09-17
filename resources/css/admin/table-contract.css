@@ -355,6 +355,29 @@
 .admin-task-controls--pages > :not(:first-child) { grid-column: span 1; }
 .admin-task-controls--pages > :last-child { padding-right: 0; }
 
+/* x-admin.controls groups Filter, Pages and Selection in one utility wrapper.
+ * That wrapper owns the final three tenth-cells; each child keeps one cell.
+ * Without this, all three controls overflow the single cell assigned to the
+ * wrapper and Selection can overlap/intercept the Add page control. */
+.admin-task-controls--pages > .admin-data-controls__utility {
+    display: grid;
+    min-width: 0;
+    grid-column: span 3;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    padding-right: 0;
+}
+
+.admin-task-controls--pages .admin-data-controls__utility > * {
+    min-width: 0;
+    width: 100%;
+    padding-right: .45rem;
+}
+
+.admin-task-controls--pages .admin-data-controls__utility > :last-child {
+    padding-right: 0;
+}
+
 .admin-task-controls--pages .admin-task-control-group,
 .admin-task-controls--pages .admin-selection__anchor,
 .admin-task-controls--pages .admin-task-control-actions {
