@@ -2,29 +2,23 @@
 
 namespace App\Filament\Pages;
 
-use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\ExhibitionEditorialService;
 use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalSettingsService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionType;
-use App\Domain\Media\PublicMedia;
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\JournalEntryEditorSchema;
 use App\Filament\Support\JournalEntryEditorState;
+use App\Filament\Support\JournalWorkspaceReadModel;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
-use App\Models\JournalEntryMedia;
-use App\Models\MediaAsset;
-use App\Models\MediaVariant;
 use App\Models\SiteSection;
 use App\Routing\SiteNodeRoute;
-use Carbon\CarbonInterface;
-use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DateTimePicker;
@@ -34,9 +28,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Throwable;
@@ -609,231 +601,55 @@ final class JournalWorkspace extends Page
 
     private function loadPosts(bool $refreshMetrics = true): void
     {
-        if ($refreshMetrics) {
-            $this->loadPostMetrics();
-        }
-        $query = BlogPost::query()->where('site_section_id', $this->sectionId);
-        if ($this->statusFilter !== 'any') {
-            $query->where('state', $this->statusFilter);
-        }
-        $term = trim($this->search);
-        if ($term !== '') {
-            $query->where(fn (Builder $search) => $search->where('title', 'ilike', '%'.$term.'%')->orWhere('excerpt', 'ilike', '%'.$term.'%'));
-        }
-        $this->total = (clone $query)->count();
-        $this->setPagination($this->total);
+        $snapshot = app(JournalWorkspaceReadModel::class)->posts(
+            sectionId: $this->sectionId,
+            statusFilter: $this->statusFilter,
+            search: $this->search,
+            page: $this->page,
+            pageSize: $this->pageSize,
+            journalPublicUrl: $this->journalPublicUrl,
+            journalSlug: $this->journalSlug,
+            includeMetrics: $refreshMetrics,
+        );
 
-        $canonicalIds = BlogPost::query()->where('site_section_id', $this->sectionId)->orderBy('position')->orderBy('id')->pluck('id')->map(fn ($id): int => (int) $id)->values();
-        $ranks = $canonicalIds->flip();
-        $query->with(['mediaUsages' => function ($usages): void {
-            $usages->where('role', JournalEntryMedia::ROLE_COVER)->with('mediaAsset.variants');
-        }]);
-        /** @var EloquentCollection<int, BlogPost> $records */
-        $records = $query->orderBy('position')->orderBy('id')->forPage($this->page, $this->pageSize)->get();
-        $now = now();
-        $count = $canonicalIds->count();
-        $this->posts = $records->map(function (BlogPost $post) use ($ranks, $count, $now): array {
-            $state = (string) $post->getAttribute('state');
-            $published = $post->getAttribute('published_at');
-            $scheduled = $post->getAttribute('scheduled_at');
-            $publication = match (true) {
-                $state === 'scheduled' && $scheduled instanceof DateTimeInterface => 'Scheduled '.$scheduled->format('M j, Y').' · '.$scheduled->format('H:i'),
-                $published instanceof DateTimeInterface => $published->format('M j, Y'),
-                default => 'Not published',
-            };
-            $rank = ((int) ($ranks[(int) $post->getKey()] ?? 0)) + 1;
-
-            return [
-                'id' => (int) $post->getKey(), 'rank' => $rank, 'title' => (string) $post->getAttribute('title'),
-                'excerpt' => filled($post->getAttribute('excerpt')) ? Str::limit(trim((string) $post->getAttribute('excerpt')), 140) : null,
-                'publication' => $publication, 'state' => $state, 'thumbnail_url' => $this->coverThumbnailUrl($post),
-                'public_url' => $this->journalPublicUrl !== null && $this->postIsPublic($post, $now) ? route('journal.show', ['section' => $this->journalSlug, 'slug' => $post->getAttribute('slug')]) : null,
-                'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count,
-                'can_delete' => ! in_array($state, ['published', 'scheduled'], true),
-                'delete_help' => in_array($state, ['published', 'scheduled'], true) ? 'Unpublish or cancel schedule before deleting' : null,
-            ];
-        })->all();
+        $this->posts = $snapshot['rows'];
+        $this->total = $snapshot['total'];
+        $this->page = $snapshot['page'];
+        $this->pages = $snapshot['pages'];
+        $this->pageSize = $snapshot['page_size'];
+        if ($snapshot['metrics'] !== null && $snapshot['unfiltered_entry_count'] !== null) {
+            $this->metrics = $snapshot['metrics'];
+            $this->unfilteredEntryCount = $snapshot['unfiltered_entry_count'];
+        }
     }
 
     private function loadExhibitions(bool $refreshMetrics = true): void
     {
-        if ($refreshMetrics) {
-            $this->loadExhibitionMetrics();
+        $snapshot = app(JournalWorkspaceReadModel::class)->exhibitions(
+            sectionId: $this->sectionId,
+            statusFilter: $this->statusFilter,
+            timingFilter: $this->timingFilter,
+            search: $this->search,
+            page: $this->page,
+            pageSize: $this->pageSize,
+            journalPublicUrl: $this->journalPublicUrl,
+            includeMetrics: $refreshMetrics,
+        );
+
+        $this->exhibitions = $snapshot['rows'];
+        $this->total = $snapshot['total'];
+        $this->page = $snapshot['page'];
+        $this->pages = $snapshot['pages'];
+        $this->pageSize = $snapshot['page_size'];
+        if ($snapshot['metrics'] !== null && $snapshot['unfiltered_entry_count'] !== null) {
+            $this->metrics = $snapshot['metrics'];
+            $this->unfilteredEntryCount = $snapshot['unfiltered_entry_count'];
         }
-        $query = Exhibition::query()->where('site_section_id', $this->sectionId);
-        if ($this->statusFilter === 'published') {
-            $query->where('state', 'published');
-        } elseif ($this->statusFilter === 'unpublished') {
-            $query->where('state', '!=', 'published');
-        }
-        $this->applyTimingFilter($query);
-        $term = trim($this->search);
-        if ($term !== '') {
-            $query->where(function (Builder $search) use ($term): void {
-                $search->where('title', 'ilike', '%'.$term.'%')->orWhere('venue', 'ilike', '%'.$term.'%')
-                    ->orWhere('location_text', 'ilike', '%'.$term.'%')->orWhere('city', 'ilike', '%'.$term.'%')
-                    ->orWhere('country', 'ilike', '%'.$term.'%')->orWhere('date_text', 'ilike', '%'.$term.'%');
-            });
-        }
-        $this->total = (clone $query)->count();
-        $this->setPagination($this->total);
-        $canonicalIds = Exhibition::query()->where('site_section_id', $this->sectionId)->orderBy('position')->orderBy('id')->pluck('id')->map(fn ($id): int => (int) $id)->values();
-        $ranks = $canonicalIds->flip();
-        $count = $canonicalIds->count();
-        $query->with(['mediaUsages' => function ($usages): void {
-            $usages->where('role', JournalEntryMedia::ROLE_COVER)->with('mediaAsset.variants');
-        }]);
-        /** @var EloquentCollection<int, Exhibition> $records */
-        $records = $query->orderBy('position')->orderBy('id')->forPage($this->page, $this->pageSize)->get();
-        $now = now();
-        $this->exhibitions = $records->map(function (Exhibition $entry) use ($ranks, $count, $now): array {
-            $internalState = (string) $entry->getAttribute('state');
-            $state = $internalState === 'published' ? 'published' : 'unpublished';
-            $rank = ((int) ($ranks[(int) $entry->getKey()] ?? 0)) + 1;
-            $location = collect([$entry->getAttribute('venue'), $entry->getAttribute('city')])->filter(fn (mixed $value): bool => is_string($value) && trim($value) !== '')->map(fn (string $value): string => trim($value))->unique()->implode(' · ');
-
-            return [
-                'id' => (int) $entry->getKey(), 'rank' => $rank, 'title' => (string) $entry->getAttribute('title'), 'location' => $location !== '' ? $location : null,
-                'state' => $state, 'timing' => $entry->temporalState($now), 'vernissage' => $entry->vernissageDisplay(), 'date_text' => $entry->displayDate() ?? '',
-                'thumbnail_url' => $this->coverThumbnailUrl($entry),
-                'public_url' => $this->journalPublicUrl !== null && $internalState === 'published' ? $this->journalPublicUrl : null,
-                'can_move_up' => $rank > 1, 'can_move_down' => $rank < $count, 'can_delete' => $internalState !== 'published',
-                'delete_help' => $internalState === 'published' ? 'Unpublish this exhibition before deleting' : null,
-            ];
-        })->all();
-    }
-
-    private function loadPostMetrics(): void
-    {
-        $records = BlogPost::query()->where('site_section_id', $this->sectionId)->get(['id', 'state', 'published_at', 'scheduled_at']);
-        $this->unfilteredEntryCount = $records->count();
-        $analytics = app(ArtistReportingService::class)->blog(null, '30d');
-        $this->metrics = [
-            ['label' => 'Reads · 30d', 'value' => $this->analyticsValue($analytics['reads'] ?? null), 'description' => $this->analyticsDescription($analytics, 'Posts opened')],
-            ['label' => 'Published', 'value' => $records->where('state', 'published')->count(), 'description' => 'Live posts'],
-            ['label' => 'Scheduled', 'value' => $records->where('state', 'scheduled')->count(), 'description' => 'Queued posts'],
-            ['label' => 'Draft', 'value' => $records->where('state', 'draft')->count(), 'description' => 'Work in progress'],
-            ['label' => 'Unpublished', 'value' => $records->where('state', 'unpublished')->count(), 'description' => 'Offline posts'],
-            ['label' => 'Archived', 'value' => $records->where('state', 'archived')->count(), 'description' => 'Retained posts'],
-        ];
-    }
-
-    private function loadExhibitionMetrics(): void
-    {
-        $records = Exhibition::query()->where('site_section_id', $this->sectionId)->get(['id', 'state', 'starts_on', 'ends_on']);
-        $this->unfilteredEntryCount = $records->count();
-        $now = now();
-        $timing = $records->map(fn (Exhibition $entry): string => $entry->temporalState($now));
-        $analytics = app(ArtistReportingService::class)->exhibitions('30d');
-        $this->metrics = [
-            ['label' => 'Visits · 30d', 'value' => $this->analyticsValue($analytics['page']['visits'] ?? null), 'description' => $this->analyticsDescription($analytics, 'Journal page')],
-            ['label' => 'Views · 30d', 'value' => $this->analyticsValue($analytics['page']['views'] ?? null), 'description' => $this->analyticsDescription($analytics, 'Journal page')],
-            ['label' => 'Published', 'value' => $records->where('state', 'published')->count(), 'description' => 'Public exhibitions'],
-            ['label' => 'Current', 'value' => $timing->filter(fn (string $value): bool => $value === 'current')->count(), 'description' => 'Happening now'],
-            ['label' => 'Upcoming', 'value' => $timing->filter(fn (string $value): bool => $value === 'upcoming')->count(), 'description' => 'Coming next'],
-            ['label' => 'Interactions · 30d', 'value' => $this->analyticsSum($analytics['external_clicks'] ?? null, $analytics['directions_clicks'] ?? null), 'description' => $this->analyticsDescription($analytics, 'External + map')],
-        ];
-    }
-
-    private function analyticsValue(mixed $metric): int|string
-    {
-        if (! is_array($metric) || ($metric['state'] ?? null) !== 'available' || ! is_numeric($metric['value'] ?? null)) {
-            return '—';
-        }
-
-        return (int) round((float) $metric['value']);
-    }
-
-    private function analyticsSum(mixed ...$metrics): int|string
-    {
-        $sum = 0.0;
-        foreach ($metrics as $metric) {
-            if (! is_array($metric) || ($metric['state'] ?? null) !== 'available' || ! is_numeric($metric['value'] ?? null)) {
-                return '—';
-            }
-            $sum += (float) $metric['value'];
-        }
-
-        return (int) round($sum);
-    }
-
-    private function analyticsDescription(array $report, string $base): string
-    {
-        return match ((string) ($report['status'] ?? 'unavailable')) {
-            'stale' => $base.' · stale',
-            'loading' => $base.' · loading',
-            'unavailable' => $base.' · unavailable',
-            default => $base,
-        };
-    }
-
-    private function applyTimingFilter(Builder $query): void
-    {
-        $today = now()->toDateString();
-        if ($this->timingFilter === 'upcoming') {
-            $query->whereDate('starts_on', '>', $today);
-
-            return;
-        }
-        if ($this->timingFilter === 'unknown') {
-            $query->whereNull('starts_on');
-
-            return;
-        }
-        if ($this->timingFilter === 'current') {
-            $query->whereNotNull('starts_on')->whereDate('starts_on', '<=', $today)->where(function (Builder $current) use ($today): void {
-                $current->where(fn (Builder $range) => $range->whereNotNull('ends_on')->whereDate('ends_on', '>=', $today))
-                    ->orWhere(fn (Builder $single) => $single->whereNull('ends_on')->whereDate('starts_on', '=', $today));
-            });
-
-            return;
-        }
-        if ($this->timingFilter === 'past') {
-            $query->whereNotNull('starts_on')->where(function (Builder $past) use ($today): void {
-                $past->where(fn (Builder $range) => $range->whereNotNull('ends_on')->whereDate('ends_on', '<', $today))
-                    ->orWhere(fn (Builder $single) => $single->whereNull('ends_on')->whereDate('starts_on', '<', $today));
-            });
-        }
-    }
-
-    private function coverThumbnailUrl(BlogPost|Exhibition $entry): ?string
-    {
-        $usage = $entry->getRelationValue('mediaUsages')->first();
-        if (! $usage instanceof JournalEntryMedia) {
-            return null;
-        }
-        $asset = $usage->getRelationValue('mediaAsset');
-        if (! $asset instanceof MediaAsset) {
-            return null;
-        }
-        $variant = $asset->getRelationValue('variants')->first(fn (MediaVariant $candidate): bool => $candidate->getAttribute('variant_kind') === PublicMedia::THUMBNAIL_KIND && $candidate->getAttribute('transform_profile') === PublicMedia::PUBLIC_TRANSFORM_PROFILE && $candidate->getAttribute('state') === 'available');
-
-        return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
-    }
-
-    private function postIsPublic(BlogPost $post, CarbonInterface $now): bool
-    {
-        $state = (string) $post->getAttribute('state');
-        $published = $post->getAttribute('published_at');
-        if ($state === 'published' && $published instanceof CarbonInterface) {
-            return $published->lessThanOrEqualTo($now);
-        }
-        $scheduled = $post->getAttribute('scheduled_at');
-
-        return $state === 'scheduled' && $scheduled instanceof CarbonInterface && $scheduled->lessThanOrEqualTo($now);
     }
 
     private function reloadEntries(bool $refreshMetrics = true): void
     {
         $this->journalTemplate() === JournalTemplate::Blog ? $this->loadPosts($refreshMetrics) : $this->loadExhibitions($refreshMetrics);
-    }
-
-    private function setPagination(int $total): void
-    {
-        $this->pageSize = $this->normalizePageSize($this->pageSize);
-        $this->total = $total;
-        $this->pages = max(1, (int) ceil($total / $this->pageSize));
-        $this->page = min(max(1, $this->page), $this->pages);
     }
 
     private function normalizePageSize(mixed $value): int
