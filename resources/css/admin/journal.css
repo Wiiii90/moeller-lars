@@ -4,22 +4,27 @@
     border-bottom: 0;
 }
 
-/* Journal keeps the complete icon + label action vocabulary visible. Both
- * templates use a desktop floor that still fits ordinary workspace widths;
+/* Journal keeps the complete icon + label action vocabulary visible. Blog has
+ * seven canonical row actions, so it keeps the wider historical desktop floor;
  * genuinely narrower viewports scroll instead of abbreviating action labels. */
-.journal-table--blog,
+.journal-table--blog {
+    min-width: 88rem !important;
+}
+
 .journal-table--exhibitions {
     min-width: 76rem !important;
 }
 
-/* Blog owns three final metric units for Actions + Selection. Publication stays
- * compact so the seven canonical actions have enough room for full labels. */
-.journal-table--blog col:nth-child(6) {
-    width: var(--admin-table-half-unit);
+/* Blog follows the same six-unit contract as the other editorial tables. The
+ * first six columns consume exactly four units; Actions + trailing Selection
+ * own the final two units. The wider Post column absorbs the space that used to
+ * be borrowed by the action rail. */
+.journal-table--blog col:nth-child(4) {
+    width: var(--admin-table-one-half-units);
 }
 
 .journal-table col.journal-table__actions--blog {
-    width: calc(50% - var(--admin-table-selection-width));
+    width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
 }
 
 /* Exhibitions keeps the colgroup's canonical four-content/two-utility split:
