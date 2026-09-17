@@ -93,6 +93,8 @@ npm run test:js
 npm run build
 ```
 
+Any agent or worker that changes PHP must treat Pint as a pre-push gate, not as a CI-only check. Before committing/pushing the final PHP diff, run `vendor/bin/pint --test`. If it fails, run Pint to fix the affected PHP formatting, inspect that formatting diff, and rerun `vendor/bin/pint --test` before pushing. Do not use the remote CI run as the first place where PHP formatting is discovered.
+
 `composer test` remains available for running all PHP tests together when a disposable test database context is already established. The durable layer ownership, placement rules and browser-testing direction are defined in [TESTING.md](TESTING.md).
 
 Browser/product acceptance remains separate evidence.
