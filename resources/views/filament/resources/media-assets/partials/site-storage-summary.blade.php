@@ -25,8 +25,8 @@
             <strong>{{ $formatStorage($siteSnapshot['site_used_bytes'] ?? null) }} of {{ $formatStorage($siteSnapshot['quota_bytes'] ?? null) }}</strong>
         </div>
         <div class="admin-storage__attention-row">
-            <span>Reclaimable</span>
-            <strong>{{ $formatStorage($siteSnapshot['reclaimable_bytes'] ?? null) }} · generated variants</strong>
+            <span>Generated variants</span>
+            <strong>{{ $formatStorage($siteSnapshot['generated_bytes'] ?? null) }} · retained for delivery</strong>
         </div>
         <div class="admin-storage__attention-row">
             <span>Live database</span>
@@ -57,5 +57,6 @@
             <span>Physical database footprint</span>
             <strong>{{ $formatStorage($databaseStorage['physical_database_bytes'] ?? null) }} · operational, not billed directly</strong>
         </div>
+        <livewire:admin.site-storage-reclaim-control />
     </section>
 @endif

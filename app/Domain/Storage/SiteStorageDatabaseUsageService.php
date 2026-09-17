@@ -19,8 +19,11 @@ final class SiteStorageDatabaseUsageService
 
     /** @var list<string> */
     private const PUBLICATION_TABLES = [
+        'publication_checkpoint_events',
         'publication_checkpoints',
         'publication_event_states',
+        'publication_media_cleanups',
+        'publication_working_context',
         'publication_version_payloads',
         'publication_version_row_manifests',
     ];

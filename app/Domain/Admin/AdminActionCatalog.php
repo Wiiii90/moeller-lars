@@ -64,6 +64,7 @@ final class AdminActionCatalog
         'publication.stage_reset' => ['label' => 'Reset staged changes', 'area' => 'Publication', 'family' => 'publish'],
         'publication.version_restored' => ['label' => 'Restored version to working state', 'area' => 'Publication', 'family' => 'publish'],
         'publication.commit_revert_staged' => ['label' => 'Staged commit revert', 'area' => 'Publication', 'family' => 'publish'],
+        'storage.reclaimed' => ['label' => 'Freed recovery storage', 'area' => 'Storage', 'family' => 'lifecycle'],
         'admin.undo_applied' => ['label' => 'Restored previous values', 'area' => 'Activity', 'family' => 'edit'],
     ];
 

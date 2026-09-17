@@ -70,12 +70,13 @@ it('counts media variants and logical database data against the site allowance',
     $this->get('/admin/storage')
         ->assertOk()
         ->assertSee('Site used')
-        ->assertSee('Reclaimable')
+        ->assertSee('Generated variants')
         ->assertSee('Live database')
         ->assertSee('Activity history')
         ->assertSee('Undo history')
         ->assertSee('Publication history')
-        ->assertSee('Physical database footprint');
+        ->assertSee('Physical database footprint')
+        ->assertSee('Free storage now');
 });
 
 it('uses total site usage when admitting a new original', function (): void {
