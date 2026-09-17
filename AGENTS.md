@@ -430,10 +430,11 @@ When using exact-run ownership on shared `dev`:
 
 - compact workflow/run/job/step metadata may be read to identify the exact run and its status;
 - never call `fetch_workflow_job_logs`, download Actions logs, inspect full workflow logs, or ingest large CI reports directly into the chat;
-- do not poll or wait inside the chat; hand off the exact run ID and stop the turn. The ready-to-paste user command itself may wait for that exact run to reach a terminal state;
-- the user-facing handoff must be a ready-to-paste PowerShell command with the concrete run ID already substituted — never a SHA, run ID or placeholder the user must fill in manually;
-- status semantics are exact: `queued`, `pending` and `in_progress` mean wait; `success` means green and must produce no report; only the literal conclusion `failure` is red and may produce a local `--log-failed` report; `cancelled` is neutral/no verdict and must produce no failure report. Other non-success terminal conclusions are not to be silently treated as `failure`;
-- if a run is cancelled, do not repair it as though tests failed. If verification is still required, prefer an already-running or completed later descendant run that contains the same commit; otherwise start a new exact verification run only when no suitable run exists and CI ownership permits it;
+- once the worker has taken ownership of an exact run for the current task, stay attached to that run and keep checking it instead of handing `queued`, `pending` or `in_progress` back to the user;
+- only the literal conclusion `failure` is a red stop condition for CI troubleshooting. `queued`, `pending` and `in_progress` mean keep checking. `success` is not a stop condition: continue immediately to the next required workflow/release/Validation gate. `cancelled` is also not a completion condition: determine whether an equivalent owned run is already active or start a replacement exact run when verification is still required, then continue;
+- never end a task merely because the owned run became green or cancelled when downstream work is still required. A green verification run advances the workflow; it does not finish the user's broader task by itself;
+- when a literal `failure` occurs, stop the CI progression there and give the user a ready-to-paste PowerShell command with the concrete run ID already substituted to create the compact local `--log-failed` report. Never require the user to fill in a SHA, run ID or placeholder manually;
+- other non-success terminal conclusions must not be silently treated as `failure`; handle their actual semantics and continue the required workflow unless a real blocker exists;
 - after a red handoff, the user-provided compact report is the sole log source for that failure. Do not independently fetch the same Actions log again;
 - analyze only the failure blocks and final summary needed to repair the run. Do not read a multi-thousand-line raw report end-to-end;
 - before repairing a reported failure, re-check current `dev`. If a later worker already fixed the same root cause, do not duplicate the repair;
