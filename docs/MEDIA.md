@@ -60,8 +60,7 @@ Structured consumers include:
 
 - Artwork primary/additional media;
 - Blog/Exhibition Cover and Gallery through `JournalEntryMedia`;
-- CV direct image;
-- Custom Page Image components;
+- Custom Page Image/List component media;
 - Home Image components;
 - site identity/favicon.
 
@@ -73,7 +72,7 @@ Rich Text consumers reference media through canonical Markdown:
 
 `RichTextMediaReference` owns parsing/formatting. There is no alternate Journal inline-image runtime syntax, alternate Rich Text image model or arbitrary external-image reference system.
 
-Current Rich Text consumers include Blog body, Exhibition description, Custom Page Text/List rich text, CV body and Home rich text.
+Current Rich Text consumers include Blog body, Exhibition description, Custom Page Text/List rich text and Home rich text.
 
 ## Reference versus publication
 
@@ -138,7 +137,7 @@ Normal media deletion is conservative and reference-aware.
 
 - any supported canonical reference blocks destructive deletion;
 - removing one usage does not delete a shared asset;
-- canonical Rich Text/direct-image references in Custom/CV/Home/Journal are part of deletion accounting;
+- canonical Rich Text/direct-image references in Custom Page/Home/Journal are part of deletion accounting;
 - deleting a MediaAsset through an explicitly authorized cleanup path removes/updates all supported canonical references symmetrically before physical cleanup where the current domain contract allows it;
 - physical cleanup failure may leave repairable private orphan bytes but must not reactivate a logically deleted record;
 - variants follow their original lifecycle and remain rebuildable.
@@ -178,35 +177,4 @@ Do not resurrect the removed `StorageCapacity` Filament page, its duplicate tabl
 
 ## Performance
 
-Storage list/reference rendering must remain bounded.
-
-`MediaReferenceCatalog` may aggregate references across structured/Rich Text consumers, but expensive global content scans should be treated as a real performance concern if browser measurements show they slow normal Storage navigation. Request-local caching can reduce repetition but is not evidence that a broad scan is cheap.
-
-Normal Storage navigation, library filtering, visualization selection and destination drilldown must not trigger an authoritative recursive filesystem walk. Production/local-preview startup warms the durable display snapshot; successful file ingest and physical cleanup refresh it at their mutation boundaries; the explicit `Refresh` action is the manual authoritative rescan/recovery path. A display-refresh failure must not roll back an otherwise successful file mutation; the stale display snapshot is discarded instead.
-
-Do not dismiss source-side media-reference/preload latency merely because local Docker amplifies it. See [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md).
-
-## Public delivery
-
-Public routes expose media only through an allowed public content context. Raw storage paths are never public route parameters.
-
-A MediaAsset being accepted into Storage does not mean every public consumer supports it. Each public surface explicitly defines supported media kinds and publication conditions.
-
-## Verification
-
-Durable verification covers:
-
-- allowlisted MIME/content classification;
-- byte/pixel/container limits;
-- checksum/storage-key integrity;
-- quota admission;
-- derivative integrity where required;
-- canonical reference detection;
-- public/preview policy separation;
-- reference-aware deletion;
-- cleanup failure semantics;
-- uncatalogued authoritative-original detection;
-- exclusive area accounting and non-exclusive concrete destination drilldown;
-- bounded Storage reference projection.
-
-`php artisan media:verify` is the release/recovery integrity check. See [RELEASE.md](RELEASE.md).
+Media-heavy admin views must avoid unbounded filesystem walks, eager full-library selection loads and per-row reference fanout. Capacity display reads the warmed snapshot; reference/destination analysis remains explicit and bounded to the Storage surface. Public rendering resolves only media referenced by the requested public content.
