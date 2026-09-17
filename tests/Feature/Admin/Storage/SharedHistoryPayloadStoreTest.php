@@ -17,9 +17,9 @@ it('shares history payloads across Undo and Publication roots and collects them 
         'rows' => [[
             'entity_type' => 'public_content_setting',
             'table' => 'public_content_settings',
-            'row_id' => 99101,
-            'before' => ['id' => 99101, 'public_email' => 'before@example.test'],
-            'after' => ['id' => 99101, 'public_email' => 'after@example.test'],
+            'row_id' => 1,
+            'before' => ['id' => 1, 'public_email' => 'before@example.test'],
+            'after' => ['id' => 1, 'public_email' => 'after@example.test'],
         ]],
     ];
 
@@ -94,7 +94,7 @@ function sharedHistoryReceipt(User $actor, int $sequence, array $payload): Admin
         'admin_user_id' => $actor->getKey(),
         'action' => 'public_content_setting.updated',
         'entity_type' => 'public_content_setting',
-        'entity_id' => 99000 + $sequence,
+        'entity_id' => 1,
         'occurred_at' => now()->addSeconds($sequence),
         'request_id' => null,
         'metadata' => null,
@@ -106,7 +106,7 @@ function sharedHistoryReceipt(User $actor, int $sequence, array $payload): Admin
         'action_key' => 'public_content_setting.updated',
         'inverse_action_key' => 'admin.undo_applied',
         'entity_type' => 'public_content_setting',
-        'entity_id' => 99000 + $sequence,
+        'entity_id' => 1,
         'before_state' => 'snapshot',
         'after_state' => 'snapshot',
         'snapshot_payload' => $payload,
