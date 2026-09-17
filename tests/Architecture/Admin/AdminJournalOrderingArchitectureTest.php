@@ -11,8 +11,8 @@ it('keeps Journal ordering newest-first by default and shared by admin and publi
         ->toContain('Reserve the first canonical position')
         ->toContain("->orderBy('position')")
         ->toContain('$temporaryBase = $maximum + $records->count() + 1;')
-        ->toContain("->update(['position' => \$offset + 1]);")
-        ->toContain('return 0;');
+        ->toContain("->update(['position' => \$offset + 2]);")
+        ->toContain('return 1;');
 
     expect($migration)
         ->toContain("'draft' => 0")
