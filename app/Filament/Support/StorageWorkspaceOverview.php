@@ -87,9 +87,8 @@ final class StorageWorkspaceOverview
     /** @param array<string,mixed> $snapshot @return array<string,mixed> */
     private function capacity(array $snapshot): array
     {
-        $ratio = is_numeric($snapshot['authoritative_ratio'] ?? null)
-            ? (float) $snapshot['authoritative_ratio']
-            : null;
+        $ratioValue = $snapshot['site_used_ratio'] ?? $snapshot['authoritative_ratio'] ?? null;
+        $ratio = is_numeric($ratioValue) ? (float) $ratioValue : null;
         $configurationValid = (bool) ($snapshot['configuration_valid'] ?? false);
         $configured = (bool) ($snapshot['configured'] ?? false);
         $measurementAvailable = (bool) ($snapshot['measurement_available'] ?? false);
@@ -122,6 +121,7 @@ final class StorageWorkspaceOverview
             'percent' => $configured && $measurementAvailable && $ratio !== null
                 ? round(min(1, max(0, $ratio)) * 100, 1)
                 : null,
+            'site_used' => MediaStorageUnits::formatBytes($snapshot['site_used_bytes'] ?? $snapshot['authoritative_bytes'] ?? null),
             'authoritative' => MediaStorageUnits::formatBytes($snapshot['authoritative_bytes'] ?? null),
             'generated' => MediaStorageUnits::formatBytes($snapshot['generated_bytes'] ?? null),
             'remaining' => $remaining,
@@ -147,6 +147,7 @@ final class StorageWorkspaceOverview
             'status_tone' => 'neutral',
             'status_label' => 'Measurement needed',
             'percent' => null,
+            'site_used' => '—',
             'authoritative' => '—',
             'generated' => '—',
             'remaining' => '—',

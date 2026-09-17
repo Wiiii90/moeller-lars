@@ -19,13 +19,14 @@
         is_array($segments) ? $segments : [],
         static fn (mixed $row): bool => is_array($row) && (int) ($row['bytes'] ?? 0) > 0,
     ));
+    $siteUsed = (string) ($capacity['site_used'] ?? $capacity['authoritative'] ?? '—');
     $vizConfig = [
         'kind' => 'storage-capacity',
         'configured' => $configured,
         'measurement_available' => $measurementAvailable,
         'percent' => $capacityPercent,
         'allowance' => (string) ($capacity['allowance'] ?? '—'),
-        'authoritative' => (string) ($capacity['authoritative'] ?? '—'),
+        'authoritative' => $siteUsed,
         'remaining' => (string) ($capacity['remaining'] ?? '—'),
         'breakdown' => array_map(
             static fn (array $row): array => [
@@ -57,12 +58,12 @@
     {{ $attributes->class(['admin-storage-capacity', 'is-compact' => $compact]) }}
     data-admin-viz="storage-capacity"
     role="img"
-    aria-label="@if ($configured && $measurementAvailable && $capacityPercent !== null) {{ number_format($capacityPercent, 1) }} percent of {{ $capacity['allowance'] ?? 'the storage allowance' }} is used @elseif ($measurementAvailable) Authoritative storage measured without a configured allowance @else Storage measurement unavailable @endif"
+    aria-label="@if ($configured && $measurementAvailable && $capacityPercent !== null) {{ number_format($capacityPercent, 1) }} percent of {{ $capacity['allowance'] ?? 'the site storage allowance' }} is used @elseif ($measurementAvailable) Site storage measured without a configured allowance @else Storage measurement unavailable @endif"
 >
     <div class="admin-storage-capacity__surface" data-admin-viz-surface wire:ignore></div>
     @unless ($compact)
         <div class="admin-storage-capacity__inspector" data-admin-viz-inspector aria-hidden="true">
-            <strong data-admin-viz-inspector-title>{{ $capacity['authoritative'] ?? '—' }}</strong>
+            <strong data-admin-viz-inspector-title>{{ $siteUsed }}</strong>
             <span data-admin-viz-inspector-meta>@if ($capacityPercent !== null) {{ number_format($capacityPercent, 1) }}% used · {{ $capacity['remaining'] ?? '—' }} free @endif</span>
         </div>
     @endunless
