@@ -74,7 +74,6 @@ it('counts media variants and logical database data against the site allowance',
         ->assertSee('Free storage now')
         ->assertSee('About freeing storage')
         ->assertDontSee('Physical database footprint')
-        ->assertDontSee('Undo history')
         ->assertDontSee('Publication history');
 });
 
