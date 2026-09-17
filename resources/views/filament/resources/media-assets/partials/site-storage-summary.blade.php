@@ -26,7 +26,7 @@
         </div>
         <div class="admin-storage__attention-row">
             <span>Generated variants</span>
-            <strong>{{ $formatStorage($siteSnapshot['generated_bytes'] ?? null) }} · retained for delivery</strong>
+            <strong>{{ $formatStorage($siteSnapshot['generated_bytes'] ?? null) }} · rebuildable</strong>
         </div>
         <div class="admin-storage__attention-row">
             <span>Live database</span>

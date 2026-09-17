@@ -5,6 +5,7 @@ namespace App\Domain\Storage;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminUndoContext;
 use App\Domain\Media\MediaCapacityService;
+use App\Domain\Media\MediaVariantRegenerationService;
 use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationSnapshot;
 use App\Models\AdminActionReceipt;
@@ -16,10 +17,11 @@ final class SiteStorageReclaimService
         private readonly AdminAuditService $audit,
         private readonly AdminUndoContext $undoContext,
         private readonly PublicationMediaCleanupService $mediaCleanup,
+        private readonly MediaVariantRegenerationService $variantRegeneration,
         private readonly MediaCapacityService $capacity,
     ) {}
 
-    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int} */
+    /** @return array{undo_receipts:int,publication_snapshots:int,publication_rows:int,protected_snapshots:int,generated_files:int,generated_bytes:int} */
     public function reclaim(): array
     {
         $actor = $this->audit->requireActor();
@@ -78,9 +80,14 @@ final class SiteStorageReclaimService
         }, attempts: 1);
 
         $this->mediaCleanup->drain();
+        $generated = $this->variantRegeneration->reclaimRebuildableFiles();
         $this->capacity->refreshCachedSnapshot();
 
-        return $result;
+        return [
+            ...$result,
+            'generated_files' => $generated['files'],
+            'generated_bytes' => $generated['bytes'],
+        ];
     }
 
     /** @return list<int> */

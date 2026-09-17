@@ -31,9 +31,10 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
                 Notification::make()
                     ->title('Storage reclaimed')
                     ->body(sprintf(
-                        'Cleared %d Undo entries and released %d older publication restore snapshots. Activity remains available.',
+                        'Cleared %d Undo entries, released %d older publication restore snapshots, and removed %d rebuildable generated files. Activity remains available.',
                         $result['undo_receipts'],
                         $result['publication_snapshots'],
+                        $result['generated_files'],
                     ))
                     ->success()
                     ->send();
@@ -44,7 +45,7 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
         return AdminDialog::confirm(
             $action,
             'Free recovery storage?',
-            'This permanently clears Undo history and releases restore data for older publication checkpoints. Activity remains. The current live restore snapshot and any restore or revert source currently in use stay protected. Logical site usage updates immediately; the physical PostgreSQL file may shrink later during routine maintenance.',
+            'This permanently clears Undo history, releases restore data for older publication checkpoints, and removes rebuildable generated thumbnails. Activity remains. The current live restore snapshot and any restore or revert source currently in use stay protected. Generated thumbnails are recreated from their canonical originals when next needed. Logical site usage updates immediately; the physical PostgreSQL file may shrink later during routine maintenance.',
             submitLabel: 'Free storage',
             danger: true,
             size: AdminDialogSize::Default,
