@@ -166,3 +166,29 @@ it('fails closed before snapshot promotion when committed schema parity drifts',
         ->and(PublicationCheckpoint::query()->count())->toBe($checkpointCount)
         ->and(app(PublicationService::class)->hasPendingChanges())->toBeTrue();
 });
+
+it('ignores historical pending event states once they belong to a checkpoint', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor, 'web');
+
+    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
+        'legal_disclaimer' => 'Checkpoint state '.fake()->uuid(),
+    ]);
+    $event = AuditEvent::query()
+        ->where('action', 'public_content_setting.updated')
+        ->latest('id')
+        ->firstOrFail();
+
+    expect(PublicationEventState::query()->where('audit_event_id', $event->getKey())->value('status'))
+        ->toBe(PublicationEventState::STATUS_PENDING)
+        ->and(app(PublicationService::class)->hasPendingChanges())->toBeTrue();
+
+    $checkpoint = app(PublicationService::class)->commit($actor, 'Checkpoint current pending state');
+
+    expect($checkpoint)->toBeInstanceOf(PublicationCheckpoint::class)
+        ->and(PublicationEventState::query()->where('audit_event_id', $event->getKey())->value('status'))
+        ->toBe(PublicationEventState::STATUS_PENDING)
+        ->and(PublicationCheckpointEvent::query()->where('audit_event_id', $event->getKey())->exists())->toBeTrue()
+        ->and(app(PublicationService::class)->hasPendingChanges())->toBeFalse();
+});
+
