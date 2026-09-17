@@ -188,8 +188,8 @@ return new class extends Migration
     }
 
     /**
-     * @param Collection<int, object> $records
-     * @param Collection<int, object> $ordered
+     * @param  Collection<int, object>  $records
+     * @param  Collection<int, object>  $ordered
      */
     private function persistOrder(string $table, Collection $records, Collection $ordered): void
     {
