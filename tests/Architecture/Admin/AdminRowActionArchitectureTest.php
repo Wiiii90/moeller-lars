@@ -73,7 +73,7 @@ it('renders editorial row actions through one semantic admin primitive', functio
     expect($customPageCss)
         ->toContain(".custom-page-component-sequence {\n    width: 100%;\n    min-width: 0;\n    max-width: 100%;")
         ->toContain(".custom-page-component-sequence__header,\n.custom-page-component-sequence__rows {\n    width: 100%;\n    min-width: 76rem;")
-        ->toContain(".custom-page-row-actions .admin-action__label {\n    white-space: nowrap;")
+        ->toContain(".custom-page-row-actions .admin-action__label {\n    min-width: 0;\n    white-space: nowrap;")
         ->toContain('overflow: visible;')
         ->not->toContain(".custom-page-row-actions .admin-action__label {\n    min-width: 0;\n    overflow: hidden;")
         ->not->toContain(".custom-page-row-actions .admin-action__label {\n    min-width: 0;\n    text-overflow: ellipsis;");
