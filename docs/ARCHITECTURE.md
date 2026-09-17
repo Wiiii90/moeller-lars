@@ -38,7 +38,7 @@ The persisted site/navigation tree is represented by `SiteSection`; application 
 
 Journal template switching is non-destructive: changing a Journal from Blog to Exhibitions or back changes the active presentation/editorial projection but does not convert or delete the inactive template's retained entry rows.
 
-`ArtworkCategory` remains the persistence model behind the product concept **Gallery**. Contact is a reusable Custom Page component. CV/Vita content is composed through the current Custom Page/CV content model rather than a runtime Site Node type.
+`ArtworkCategory` remains the persistence model behind the product concept **Gallery**. Contact is a reusable Custom Page component. Historical CV/Vita content is migration input and is represented in the current runtime through generic Custom Page List content rather than a dedicated page type, component type or public/admin domain.
 
 ## Public routing
 
@@ -64,10 +64,10 @@ Canonical workspaces:
 - Home — Home presentation/editorial state;
 - Gallery — visual Artwork workspace;
 - Journal — Blog or Exhibitions collection workspace;
-- Custom Page — structured component editor including CV/Contact composition;
-- Files — canonical reusable MediaAsset library;
+- Custom Page — structured component editor including List and Contact composition;
+- Storage — canonical reusable MediaAsset library and capacity workspace;
 - General — site identity/contact/social/legal settings;
-- Analytics, Activity and Storage — specialist insight/operations surfaces.
+- Analytics and Activity — specialist insight/operations surfaces.
 
 Navigation-only nodes do not get fake editors. Persistence Resource/model names must not become artist-facing IA.
 
@@ -109,13 +109,13 @@ Canonical embedded Media Files images use:
 
 `RichTextMediaReference` owns parsing/formatting. `SafeRichTextRenderer` owns safe public rendering. `CanonicalMediaImageRenderer` resolves canonical media images. Arbitrary external image URLs are not a second supported embedded-media system.
 
-This stack is used by Blog body, Exhibition description, Custom Page Text/List rich text, CV body and Home rich text. The legacy Journal TipTap/RichEditor/custom-block runtime is not part of the architecture.
+This stack is used by Blog body, Exhibition description, Custom Page Text/List rich text and Home rich text. The legacy Journal TipTap/RichEditor/custom-block runtime is not part of the architecture.
 
 ## Media architecture
 
 `MediaAsset` is the canonical reusable original; `MediaVariant` is a rebuildable derivative.
 
-Structured consumers include Artwork media, Journal Cover/Gallery, CV direct images, Custom Image components, Home Image components and site identity. Rich Text references use `media:<id>`.
+Structured consumers include Artwork media, Journal Cover/Gallery, Custom Page Image/List media, Home Image components and site identity. Rich Text references use `media:<id>`.
 
 Two central questions are intentionally separate:
 
@@ -173,7 +173,7 @@ Filtered/search projections do not silently become canonical reorder sequences. 
 
 ## Custom Pages and Contact
 
-A Custom Page owns an ordered structured component list. Supported components include normal content, List, CV List and reusable Contact composition.
+A Custom Page owns an ordered structured component list. Supported components include normal content, generic List and reusable Contact composition.
 
 Parent and child mutations use canonical workspace/domain state; UI hierarchy does not imply a second persistence model. Contact child types remain structured and bounded rather than free-form duplicated components.
 
