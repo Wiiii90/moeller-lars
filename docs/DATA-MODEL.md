@@ -30,7 +30,7 @@ Supported runtime node types:
 - **Custom Page** — structured component page;
 - **Navigation Node** — navigation-only grouping.
 
-Contact is not a Site Node type. CV/Vita is composed through Custom Page content.
+Contact is not a Site Node type. Historical CV/Vita data is represented in the current runtime through generic Custom Page List content rather than a dedicated SiteSection type.
 
 ### `home_presentation_settings`
 
@@ -51,7 +51,7 @@ Heading and Rich Text intentionally share persisted component type `text`; edito
 
 One-to-one with a Custom Page Site Node.
 
-`blocks` is an ordered JSON list of supported structured components. Component and child ordering is explicit. Direct Image components reference `MediaAsset`; Text/List rich text uses canonical `media:<id>` references.
+`blocks` is an ordered JSON list of supported structured components. Component and child ordering is explicit. Direct Image/List components may reference `MediaAsset`; Text/List rich text uses canonical `media:<id>` references.
 
 ### `journal_settings`
 
@@ -81,7 +81,7 @@ Explicit usage relation between Artwork and canonical `MediaAsset` originals.
 
 It stores role, position and where supported an Artwork usage-specific ALT override. Removing/replacing a usage does not implicitly delete the MediaAsset.
 
-Gallery primary visual media is image/video-aware. Files audio support does not automatically create an Artwork primary-audio contract.
+Gallery primary visual media is image/video-aware. Storage audio support does not automatically create an Artwork primary-audio contract.
 
 ## Journals
 
@@ -89,7 +89,7 @@ Gallery primary visual media is image/video-aware. Files audio support does not 
 
 Every Blog Post belongs to a Journal SiteSection. Important concepts include slug/title/body/excerpt, lifecycle, explicit position, publication/schedule timestamps and provenance.
 
-Body is canonical Markdown and may reference Media Files through `media:<id>`.
+Body is canonical Markdown and may reference MediaAssets through `media:<id>`.
 
 Structured Cover/Gallery usage lives in `journal_entry_media`.
 
@@ -128,11 +128,11 @@ Disabling an Exhibition Gallery does not delete its Gallery rows. They remain ca
 
 Legacy inline Journal Rich Text media rows/token identifiers are not a runtime content system. Forward canonicalization converted legacy embedded occurrences to central Markdown `media:<id>` references.
 
-## Custom Page / CV / Contact
+## Custom Page / Contact
 
 CV/Vita and Contact are not fixed runtime SiteSection types.
 
-`CvEntry` remains first-class editorial/migration data used by CV List composition. It may reference a direct image MediaAsset and canonical Rich Text body media.
+Custom Pages own generic structured components including List and reusable Contact composition. Historical CV/Vita rows are migration/provenance evidence only; they do not recreate a `CvEntry` editorial surface, CV-specific public renderer or CV-specific component contract.
 
 Contact is a reusable structured component with bounded child kinds such as public email, social links and Contact form. Global identity/recipient values remain owned by General/runtime contracts rather than duplicated per child row.
 
@@ -158,7 +158,7 @@ Generated derivative of one canonical original. Variants are rebuildable and nev
 
 ### Canonical reference model
 
-Structured references include Artwork, Journal Cover/Gallery, CV direct image, Custom/Home direct Image and site identity.
+Structured references include Artwork, Journal Cover/Gallery, Custom Page Image/List media, Home direct Image and site identity.
 
 Rich Text references use Markdown `media:<id>` and are discovered by `RichTextMediaReference`/`MediaReferenceQuery`.
 
@@ -207,6 +207,6 @@ Laravel user/session/cache/job tables support authenticated administration/runti
 
 ## Migration boundary
 
-Legacy artwork/Vita/Journal/media structures are migration inputs only.
+Legacy artwork/Vita/Journal/media structures are migration inputs only. Historical `cv_entries` persistence and importer/validator code may remain where required to verify migration provenance; neither is runtime authority.
 
 Existing protected canonical state evolves through forward Laravel migrations. Source import is not rerun destructively against non-empty canonical data. Current forward canonicalization includes Journal Rich Text media normalization and Exhibition presentation/restore normalization; see [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
