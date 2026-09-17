@@ -20,6 +20,8 @@ final class AdminMutationSnapshotBuffer
     /** @var array<string, array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>}> */
     private array $pendingDeletes = [];
 
+    private bool $publicationStateMayHaveChanged = false;
+
     public function begin(Model $model): void
     {
         $descriptor = $this->descriptor($model);
@@ -130,6 +132,16 @@ final class AdminMutationSnapshotBuffer
         return $matchesTarget ? $snapshots : null;
     }
 
+    public function markPublicationStateMayHaveChanged(): void
+    {
+        $this->publicationStateMayHaveChanged = true;
+    }
+
+    public function publicationStateMayHaveChanged(): bool
+    {
+        return $this->publicationStateMayHaveChanged;
+    }
+
     /**
      * @param  array{entity_type:string,table:string,row_id:int}  $descriptor
      * @param  array<string,mixed>|null  $before
@@ -153,6 +165,7 @@ final class AdminMutationSnapshotBuffer
             return;
         }
 
+        $this->publicationStateMayHaveChanged = true;
         $this->snapshots[$key] = [
             'entity_type' => $descriptor['entity_type'],
             'table' => $descriptor['table'],

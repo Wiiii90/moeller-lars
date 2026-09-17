@@ -157,7 +157,7 @@ it('keeps background mode geometry stable and maps shared color slots to existin
         ->and($fresh->getAttribute('background_gradient_end'))->toBe('#DDEEFF');
 });
 
-it('keeps a legacy null background in default mode without writing on mount', function (): void {
+it('treats legacy default background as solid 777777 without writing on mount', function (): void {
     $settings = PublicContentSetting::general();
     app(AdminSettingsService::class)->updatePublicContent($settings, [
         'background_mode' => null,
@@ -166,8 +166,8 @@ it('keeps a legacy null background in default mode without writing on mount', fu
     $auditBefore = generalSettingsAuditCount();
 
     Livewire::test(General::class)
-        ->assertSet('data.background_mode', 'default')
-        ->assertSet('data.background_primary_color', '#123456');
+        ->assertSet('data.background_mode', 'solid')
+        ->assertSet('data.background_primary_color', '#777777');
 
     $fresh = PublicContentSetting::general();
     expect($fresh->getAttribute('background_mode'))->toBeNull()

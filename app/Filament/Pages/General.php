@@ -73,8 +73,9 @@ final class General extends Page
     {
         $data = $this->generalSettingsRecord()->only(self::PERSISTED_FIELDS);
         $mode = $data['background_mode'] ?? null;
-        if ($mode === null || $mode === '') {
-            $data['background_mode'] = PublicAppearance::MODE_DEFAULT;
+        if ($mode === null || $mode === '' || $mode === PublicAppearance::MODE_DEFAULT) {
+            $data['background_mode'] = PublicAppearance::MODE_SOLID;
+            $data['background_color'] = PublicAppearance::DEFAULT_PAGE_COLOR;
         }
 
         $this->data = $data;
@@ -147,9 +148,10 @@ final class General extends Page
                             Group::make([
                                 Select::make('background_mode')
                                     ->label('Background')
-                                    ->options(PublicAppearance::modeOptions())
-                                    ->placeholder(null)
-                                    ->selectablePlaceholder(false)
+                                    ->options([
+                                        PublicAppearance::MODE_SOLID => 'Solid',
+                                        PublicAppearance::MODE_GRADIENT => 'Linear gradient',
+                                    ])
                                     ->native()
                                     ->required()
                                     ->live()
@@ -165,7 +167,6 @@ final class General extends Page
                                     }),
 
                                 AdminColorControl::make('background_primary_color', 'Primary color')
-                                    ->disabled(fn (callable $get): bool => $get('background_mode') === PublicAppearance::MODE_DEFAULT)
                                     ->extraFieldWrapperAttributes(['class' => 'general-color-control general-primary-color-control'])
                                     ->lazy()
                                     ->extraInputAttributes(self::commitOnEnterAttributes())
@@ -326,15 +327,19 @@ final class General extends Page
             return;
         }
 
-        $mode = $this->data['background_mode'] ?? PublicAppearance::MODE_DEFAULT;
+        $mode = $this->data['background_mode'] ?? PublicAppearance::MODE_SOLID;
         $field = match ($slot) {
             'primary' => $mode === PublicAppearance::MODE_GRADIENT ? 'background_gradient_start' : 'background_color',
             'secondary' => $mode === PublicAppearance::MODE_GRADIENT ? 'background_gradient_end' : null,
             default => null,
         };
 
-        if ($field === null || $mode === PublicAppearance::MODE_DEFAULT) {
+        if ($field === null) {
             return;
+        }
+
+        if ($mode === PublicAppearance::MODE_SOLID) {
+            $this->persistChangedField('background_mode');
         }
 
         $alias = $slot === 'primary' ? 'background_primary_color' : 'background_secondary_color';
@@ -355,7 +360,7 @@ final class General extends Page
             return;
         }
 
-        $mode = $this->data['background_mode'] ?? PublicAppearance::MODE_DEFAULT;
+        $mode = $this->data['background_mode'] ?? PublicAppearance::MODE_SOLID;
         $this->data['background_primary_color'] = $mode === PublicAppearance::MODE_GRADIENT
             ? ($this->data['background_gradient_start'] ?? null)
             : ($this->data['background_color'] ?? PublicAppearance::DEFAULT_PAGE_COLOR);

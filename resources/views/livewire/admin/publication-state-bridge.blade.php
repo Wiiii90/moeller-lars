@@ -5,26 +5,17 @@
     if (! window.__publicationStateInterceptorRegistered) {
         window.__publicationStateInterceptorRegistered = true
 
-        Livewire.interceptMessage(({ message, onSuccess, onFinish }) => {
-            if (
-                message.component.name === 'admin.publication-state-bridge'
-                || message.component.name === 'Filament\\Livewire\\Notifications'
-            ) {
-                return
-            }
+        Livewire.interceptRequest(({ onResponse }) => {
+            onResponse(({ response }) => {
+                const pending = response.headers.get('X-Publication-Pending')
 
-            let succeeded = false
-
-            onSuccess(() => {
-                succeeded = true
-            })
-
-            onFinish(() => {
-                if (! succeeded) {
+                if (pending !== '0' && pending !== '1') {
                     return
                 }
 
-                Livewire.getByName('admin.publication-state-bridge')[0]?.refreshState()
+                window.dispatchEvent(new CustomEvent('publication-state-changed', {
+                    detail: { pending: pending === '1' },
+                }))
             })
         })
     }
