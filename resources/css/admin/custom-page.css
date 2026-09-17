@@ -29,10 +29,20 @@
 .custom-page-component__type,
 .custom-page-child-row__kind,
 .custom-page-component__content,
-.custom-page-child-row__content,
+.custom-page-child-row__content {
+    padding-left: .65rem;
+}
+
+/* Actions own the complete fifth visual cell plus the space up to the trailing
+ * selection rail. Keep header and rows on the same inset so the rail reads as
+ * one aligned table region rather than a loose toolbar. */
+.custom-page-component-sequence__header > span:nth-last-child(2),
 .custom-page-component__actions,
 .custom-page-child-row__actions {
-    padding-left: .65rem;
+    box-sizing: border-box;
+    min-width: 0;
+    padding-left: .35rem;
+    padding-right: .1rem;
 }
 
 .custom-page-row-actions {
@@ -40,20 +50,25 @@
     width: 100%;
     min-width: 0;
     grid-template-columns:
-        minmax(0, .95fr)
-        minmax(0, 1.05fr)
-        minmax(0, .7fr)
-        minmax(0, 1.2fr)
-        minmax(0, .8fr);
-    gap: .18rem !important;
+        minmax(0, .92fr)
+        minmax(0, 1.12fr)
+        minmax(0, .68fr)
+        minmax(0, 1.22fr)
+        minmax(0, .78fr);
+    gap: .06rem !important;
 }
 
 .custom-page-component-sequence .custom-page-row-actions .admin-action {
+    box-sizing: border-box;
     width: 100%;
     min-width: 0;
-    padding-inline: .25rem;
+    padding-inline: .08rem;
     justify-content: flex-start !important;
     overflow: visible;
+}
+
+.custom-page-component-sequence .custom-page-row-actions .admin-action--with-icon {
+    gap: .18rem;
 }
 
 .custom-page-component-sequence .custom-page-row-actions .admin-action--state {
@@ -61,6 +76,7 @@
 }
 
 .custom-page-row-actions .admin-action__label {
+    min-width: 0;
     white-space: nowrap;
 }
 

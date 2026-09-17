@@ -334,13 +334,13 @@
     opacity: 1;
 }
 
-/* Pages toolbar uses the same six-unit reference as the metrics: Search owns
- * three units; Type, Status, Filter, Pages and Selection divide the other
- * three. The shared Selection-axis contract owns the final count/checkbox
- * alignment instead of a Pages-local copy. */
+/* Pages toolbar uses the same six-unit reference as metrics and rows. Search
+ * owns two cells, Type and Status one each, and the utility wrapper owns the
+ * final two cells. Filter, Pages and Selection divide those last two cells
+ * without introducing a second toolbar row. */
 .admin-task-controls--pages {
     display: grid;
-    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 0;
     align-items: end;
 }
@@ -351,18 +351,18 @@
     padding-right: .45rem;
 }
 
-.admin-task-controls--pages > :first-child { grid-column: span 5; }
-.admin-task-controls--pages > :not(:first-child) { grid-column: span 1; }
-.admin-task-controls--pages > :last-child { padding-right: 0; }
+.admin-task-controls--pages > :first-child {
+    grid-column: span 2;
+}
 
-/* x-admin.controls groups Filter, Pages and Selection in one utility wrapper.
- * That wrapper owns the final three tenth-cells; each child keeps one cell.
- * Without this, all three controls overflow the single cell assigned to the
- * wrapper and Selection can overlap/intercept the Add page control. */
+.admin-task-controls--pages > .admin-task-field:not(:first-child) {
+    grid-column: span 1;
+}
+
 .admin-task-controls--pages > .admin-data-controls__utility {
     display: grid;
     min-width: 0;
-    grid-column: span 3;
+    grid-column: span 2;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
     padding-right: 0;

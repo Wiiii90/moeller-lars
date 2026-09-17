@@ -31,39 +31,50 @@
  * Schedule ends exactly on the 4/6 metric line and Actions + Selection own the
  * final two cells. Do not shift that boundary to a half-cell just to gain room. */
 
+.journal-table .admin-table__actions {
+    padding-left: .35rem !important;
+}
+
 .journal-row-actions {
     display: grid !important;
     width: 100%;
     min-width: 0;
-    gap: .18rem !important;
+    gap: .06rem !important;
 }
 
+/* Give Move down the room it actually needs. That also advances Edit onto a
+ * stable slot instead of letting the two labels collide around one boundary. */
 .journal-row-actions--blog {
     grid-template-columns:
+        minmax(0, .82fr)
+        minmax(0, 1.08fr)
+        minmax(0, .62fr)
+        minmax(0, 1.12fr)
+        minmax(0, .98fr)
         minmax(0, .9fr)
-        minmax(0, .9fr)
-        minmax(0, .75fr)
-        minmax(0, 1.25fr)
-        minmax(0, 1fr)
-        minmax(0, .9fr)
-        minmax(0, .85fr);
+        minmax(0, .78fr);
 }
 
 .journal-row-actions--exhibitions {
     grid-template-columns:
-        minmax(0, .9fr)
-        minmax(0, .9fr)
-        minmax(0, .8fr)
-        minmax(0, 1.15fr)
-        minmax(0, .85fr);
+        minmax(0, .88fr)
+        minmax(0, 1.08fr)
+        minmax(0, .7fr)
+        minmax(0, 1.18fr)
+        minmax(0, .76fr);
 }
 
 .journal-row-actions .admin-action {
+    box-sizing: border-box;
     width: 100%;
     min-width: 0;
-    padding-inline: .28rem;
+    padding-inline: .08rem;
     justify-content: flex-start !important;
     overflow: visible;
+}
+
+.journal-row-actions .admin-action--with-icon {
+    gap: .16rem;
 }
 
 .journal-row-actions .admin-action--state {
