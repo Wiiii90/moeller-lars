@@ -430,9 +430,10 @@ When using exact-run ownership on shared `dev`:
 
 - compact workflow/run/job/step metadata may be read to identify the exact run and its status;
 - never call `fetch_workflow_job_logs`, download Actions logs, inspect full workflow logs, or ingest large CI reports directly into the chat;
-- do not poll or wait inside the chat for a running workflow; hand off the exact run ID and stop the turn;
+- do not poll or wait inside the chat; hand off the exact run ID and stop the turn. The ready-to-paste user command itself may wait for that exact run to reach a terminal state;
 - the user-facing handoff must be a ready-to-paste PowerShell command with the concrete run ID already substituted — never a SHA, run ID or placeholder the user must fill in manually;
-- that command must check the exact run status first: if queued/in progress, print a running/not-finished message and produce no report; if successful, print `CI GREEN` and produce no report; only if the run failed may it request `--log-failed` locally and write a compact failure report for the user to upload/paste;
+- status semantics are exact: `queued`, `pending` and `in_progress` mean wait; `success` means green and must produce no report; only the literal conclusion `failure` is red and may produce a local `--log-failed` report; `cancelled` is neutral/no verdict and must produce no failure report. Other non-success terminal conclusions are not to be silently treated as `failure`;
+- if a run is cancelled, do not repair it as though tests failed. If verification is still required, prefer an already-running or completed later descendant run that contains the same commit; otherwise start a new exact verification run only when no suitable run exists and CI ownership permits it;
 - after a red handoff, the user-provided compact report is the sole log source for that failure. Do not independently fetch the same Actions log again;
 - analyze only the failure blocks and final summary needed to repair the run. Do not read a multi-thousand-line raw report end-to-end;
 - before repairing a reported failure, re-check current `dev`. If a later worker already fixed the same root cause, do not duplicate the repair;
