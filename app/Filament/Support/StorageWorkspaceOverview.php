@@ -67,7 +67,7 @@ final class StorageWorkspaceOverview
             (int) ($attention['unreferenced_bytes'] ?? 0),
         );
         $attention['targets'] = $targets;
-        $attention['capacity_segments'] = $this->capacitySegments($analysis);
+        $attention['capacity_segments'] = $this->capacitySegments($snapshot);
 
         $uncatalogued = collect($breakdown)->first(
             static fn (array $row): bool => ($row['key'] ?? null) === 'uncatalogued',
@@ -210,94 +210,40 @@ final class StorageWorkspaceOverview
         return array_values(array_filter($value, 'is_array'));
     }
 
-    /** @param array<string,mixed> $analysis @return list<array<string,mixed>> */
-    private function capacitySegments(array $analysis): array
+    /** @param array<string,mixed> $snapshot @return list<array<string,mixed>> */
+    private function capacitySegments(array $snapshot): array
     {
-        /** @var array<string,array{key:string,label:string,area:string,area_label:string,bytes:int,files:int}> $segments */
-        $segments = [];
-
-        foreach ($this->analysisRows($analysis, 'file_rows') as $row) {
-            $bytes = max(0, (int) ($row['bytes'] ?? 0));
-            if ($bytes === 0) {
-                continue;
-            }
-
-            $state = (string) ($row['state'] ?? 'referenced');
-            $descriptor = match ($state) {
-                'uncatalogued' => [
-                    'key' => 'uncatalogued',
-                    'label' => 'Uncatalogued originals',
-                    'area' => 'uncatalogued',
-                    'area_label' => 'Uncatalogued originals',
-                ],
-                'unreferenced' => [
-                    'key' => 'unassigned',
-                    'label' => 'Unassigned library media',
-                    'area' => 'unassigned',
-                    'area_label' => 'Unassigned library media',
-                ],
-                default => null,
-            };
-
-            if ($descriptor === null) {
-                /** @var array<string,array{label:string,area:string,area_label:string}> $targets */
-                $targets = [];
-                $references = is_array($row['references'] ?? null) ? $row['references'] : [];
-                foreach ($references as $reference) {
-                    if (! is_array($reference)) {
-                        continue;
-                    }
-
-                    $targetKey = trim((string) ($reference['target_key'] ?? ''));
-                    if ($targetKey === '') {
-                        continue;
-                    }
-
-                    $targets[$targetKey] = [
-                        'label' => (string) ($reference['target_label'] ?? $reference['label'] ?? 'Reference'),
-                        'area' => (string) ($reference['area'] ?? 'referenced'),
-                        'area_label' => (string) ($reference['area_label'] ?? 'Referenced'),
-                    ];
-                }
-
-                if (count($targets) === 1) {
-                    $targetKey = array_key_first($targets);
-                    $target = $targets[$targetKey];
-                    $descriptor = [
-                        'key' => 'target:'.$targetKey,
-                        'label' => $target['label'],
-                        'area' => $target['area'],
-                        'area_label' => $target['area_label'],
-                    ];
-                } elseif (count($targets) > 1) {
-                    $descriptor = [
-                        'key' => 'shared',
-                        'label' => 'Shared across targets',
-                        'area' => 'shared',
-                        'area_label' => 'Shared across areas',
-                    ];
-                } else {
-                    $descriptor = [
-                        'key' => 'referenced',
-                        'label' => 'Referenced',
-                        'area' => 'referenced',
-                        'area_label' => 'Referenced',
-                    ];
-                }
-            }
-
-            $key = $descriptor['key'];
-            $segments[$key] ??= [
-                ...$descriptor,
-                'bytes' => 0,
+        $rows = [
+            [
+                'key' => 'originals',
+                'label' => 'Original media',
+                'area' => 'originals',
+                'area_label' => 'Original media',
+                'bytes' => max(0, (int) ($snapshot['authoritative_bytes'] ?? 0)),
+                'files' => max(0, (int) ($snapshot['original_files'] ?? 0)),
+            ],
+            [
+                'key' => 'generated',
+                'label' => 'Generated variants',
+                'area' => 'generated',
+                'area_label' => 'Generated variants',
+                'bytes' => max(0, (int) ($snapshot['generated_bytes'] ?? 0)),
+                'files' => max(0, (int) ($snapshot['generated_files'] ?? 0)),
+            ],
+            [
+                'key' => 'application',
+                'label' => 'Application data',
+                'area' => 'application',
+                'area_label' => 'Application data',
+                'bytes' => max(0, (int) ($snapshot['database_bytes'] ?? 0)),
                 'files' => 0,
-            ];
-            $segments[$key]['bytes'] += $bytes;
-            $segments[$key]['files']++;
-        }
+            ],
+        ];
 
-        $rows = array_values($segments);
-        usort($rows, static fn (array $left, array $right): int => ($right['bytes'] <=> $left['bytes']) ?: strcmp((string) $left['label'], (string) $right['label']));
+        $rows = array_values(array_filter(
+            $rows,
+            static fn (array $row): bool => $row['bytes'] > 0,
+        ));
 
         return array_map(static function (array $row): array {
             $row['display_bytes'] = MediaStorageUnits::formatBytes($row['bytes']);

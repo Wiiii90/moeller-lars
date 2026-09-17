@@ -95,7 +95,7 @@
 
 .admin-storage__distribution {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
     gap: .55rem;
     align-content: stretch;
 }
@@ -335,6 +335,28 @@
     color: var(--admin-accent-strong);
 }
 
+.admin-storage__reclaim-footer {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .55rem;
+    padding-top: .4rem;
+    align-items: center;
+    border-top: 1px solid var(--admin-line);
+}
+
+.admin-storage__reclaim-control {
+    min-width: 0;
+}
+
+.admin-storage__reclaim-control .admin-action {
+    justify-self: start;
+}
+
+.admin-storage__reclaim-footer .admin-help {
+    justify-self: end;
+}
+
 /* Shared Storage/Dashboard visualization container. ECharts owns the Canvas;
  * the existing Admin Stage continues to own pane size and alignment. */
 .admin-storage-capacity[data-admin-viz="storage-capacity"] {
@@ -454,9 +476,14 @@
 .admin-storage .media-workspace__controls > :nth-child(3) { grid-column: span 4; }
 .admin-storage .media-workspace__controls > :nth-child(4) { grid-column: span 5; }
 .admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 6; }
-.admin-storage .media-workspace__controls > :nth-child(6) { grid-column: span 3; }
-.admin-storage .media-workspace__controls > :nth-child(7) { grid-column: span 4; }
-.admin-storage .media-workspace__controls > :nth-child(8) { grid-column: span 5; }
+
+.admin-storage .media-workspace__controls > .admin-data-controls__utility {
+    display: contents;
+}
+
+.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(1) { grid-column: span 3; }
+.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(2) { grid-column: span 4; }
+.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(3) { grid-column: span 5; }
 
 .admin-storage .media-workspace__controls .admin-data-field select,
 .admin-storage .media-workspace__controls .admin-data-field input {
@@ -569,7 +596,13 @@
     }
 
     .admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 2; }
-    .admin-storage .media-workspace__controls > :nth-child(n + 2) { grid-column: span 1; }
+    .admin-storage .media-workspace__controls > :nth-child(n + 2):not(.admin-data-controls__utility) { grid-column: span 1; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__utility {
+        display: contents;
+    }
+    .admin-storage .media-workspace__controls > .admin-data-controls__utility > * {
+        grid-column: span 1;
+    }
 
     .admin-storage__distribution-columns,
     .admin-storage__target-row {
@@ -619,7 +652,8 @@
         grid-template-columns: 1fr;
     }
 
-    .admin-storage .media-workspace__controls > :nth-child(n) {
+    .admin-storage .media-workspace__controls > :nth-child(n):not(.admin-data-controls__utility),
+    .admin-storage .media-workspace__controls > .admin-data-controls__utility > * {
         grid-column: 1;
     }
 }

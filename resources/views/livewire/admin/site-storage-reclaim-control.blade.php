@@ -1,5 +1,4 @@
-<div class="admin-storage__attention-row">
-    <span>Recovery storage</span>
+<div class="admin-storage__reclaim-control">
     <button
         class="admin-action is-danger"
         type="button"

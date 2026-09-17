@@ -276,5 +276,13 @@
                 </div>
             @endif
         </div>
+
+        <div class="admin-storage__reclaim-footer">
+            <livewire:admin.site-storage-reclaim-control />
+            <x-admin.help
+                label="About freeing storage"
+                text="Permanently clears Undo history, releases older publication restore snapshots, and removes rebuildable generated thumbnails. Activity remains available. The current LIVE restore snapshot and any restore or revert source currently in use stay protected."
+            />
+        </div>
     </div>
 </section>

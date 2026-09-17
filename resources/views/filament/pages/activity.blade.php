@@ -62,6 +62,29 @@
                 'page' => null,
                 'commits_page' => null,
             ]);
+
+            $visibleActivityIds = array_values(array_map(
+                static fn (array $event): int => (int) $event['id'],
+                $activity,
+            ));
+            $visibleCommitIds = array_values(array_map(
+                static fn (array $commit): int => (int) $commit['id'],
+                $commits,
+            ));
+            $selectedIds = $viewMode === 'commits' ? $selectedCommitIds : $selectedActivityIds;
+            $selectedCount = count($selectedIds);
+            $selectedActivityUndoCount = count(array_filter(
+                $activity,
+                static fn (array $event): bool => in_array((int) $event['id'], $selectedActivityIds, true)
+                    && is_array($event['undo'] ?? null),
+            ));
+            $selectedCommit = $selectedCount === 1 && $viewMode === 'commits'
+                ? collect($commits)->first(
+                    static fn (array $commit): bool => (int) $commit['id'] === (int) $selectedCommitIds[0],
+                )
+                : null;
+            $selectedCommitCanRestore = is_array($selectedCommit) && ($selectedCommit['can_restore'] ?? false) === true;
+            $selectedCommitCanRevert = is_array($selectedCommit) && ($selectedCommit['can_revert'] ?? false) === true;
         @endphp
 
         <x-admin.metrics :columns="6" aria-label="Activity statistics">
@@ -354,6 +377,68 @@
                             </div>
                         </div>
                     </x-slot:actions>
+
+                    <x-slot:selection>
+                        <div
+                            class="admin-data-control-group admin-selection activity-control--selection"
+                            x-data="{ open: false }"
+                            x-on:click.outside="open = false"
+                            x-on:keydown.escape.window="open = false"
+                        >
+                            <span class="admin-data-control-label">Selection</span>
+                            <div class="admin-selection__anchor">
+                                <button
+                                    class="admin-action admin-selection__trigger"
+                                    type="button"
+                                    x-on:click="open = ! open"
+                                    x-bind:aria-expanded="open.toString()"
+                                    aria-haspopup="menu"
+                                    aria-label="Selected {{ $viewMode === 'commits' ? 'commits' : 'activity events' }}: {{ $selectedCount }}"
+                                    @disabled($selectedCount === 0)
+                                >
+                                    <span>Selected</span>
+                                    <span class="admin-selection__count">{{ $selectedCount }}</span>
+                                </button>
+
+                                <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="openSelectedDetails" x-on:click="open = false" @disabled($selectedCount !== 1)>Details selected</button>
+
+                                    @if ($viewMode === 'activity')
+                                        <button
+                                            class="admin-action"
+                                            type="button"
+                                            role="menuitem"
+                                            wire:click="undoSelectedActivity"
+                                            wire:confirm="Undo all selected changes that are still safely reversible? Newer selected changes are undone first. Activity history remains available."
+                                            x-on:click="open = false"
+                                            @disabled($selectedActivityUndoCount === 0)
+                                        >Undo selected</button>
+                                    @else
+                                        <button
+                                            class="admin-action"
+                                            type="button"
+                                            role="menuitem"
+                                            wire:click="restoreSelectedCommit"
+                                            wire:confirm="Restore the selected version to the working state? This replaces all current staged work. The LIVE site will not change until you commit."
+                                            x-on:click="open = false"
+                                            @disabled(! $selectedCommitCanRestore)
+                                        >Restore selected</button>
+                                        <button
+                                            class="admin-action"
+                                            type="button"
+                                            role="menuitem"
+                                            wire:click="revertSelectedCommit"
+                                            wire:confirm="Revert the selected LIVE commit? Its parent version will be loaded into the working state for review. Nothing is published until you commit."
+                                            x-on:click="open = false"
+                                            @disabled(! $selectedCommitCanRevert)
+                                        >Revert selected</button>
+                                    @endif
+
+                                    <button class="admin-action" type="button" role="menuitem" wire:click="clearSelection" x-on:click="open = false" @disabled($selectedCount === 0)>Clear selection</button>
+                                </div>
+                            </div>
+                        </div>
+                    </x-slot:selection>
                 </x-admin.controls>
             </form>
         </section>
@@ -370,6 +455,7 @@
                         <col class="activity-col--type">
                         <col class="activity-col--publication">
                         <col class="activity-col--actions">
+                        <col class="activity-col--selection">
                     </colgroup>
                     <thead>
                         <tr>
@@ -381,11 +467,28 @@
                             <th scope="col">Type</th>
                             <th scope="col">Publication</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__selection admin-table__selection--trailing">
+                                <input
+                                    type="checkbox"
+                                    x-data="{}"
+                                    wire:click.prevent='toggleVisibleActivitySelection(@json($visibleActivityIds))'
+                                    x-effect="
+                                        const visibleIds = @js($visibleActivityIds);
+                                        const selectedIds = $wire.selectedActivityIds.map(Number);
+                                        const selectedVisible = visibleIds.filter((id) => selectedIds.includes(id)).length;
+                                        $el.checked = visibleIds.length > 0 && selectedVisible === visibleIds.length;
+                                        $el.indeterminate = selectedVisible > 0 && selectedVisible < visibleIds.length;
+                                        $el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));
+                                    "
+                                    @disabled($visibleActivityIds === [])
+                                    aria-label="Toggle selection for visible activity events"
+                                >
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($activity as $event)
-                            <tr>
+                            <tr class="{{ in_array((int) $event['id'], $selectedActivityIds, true) ? 'is-selected' : '' }}">
                                 <td class="activity-change-cell" title="{{ $event['action'] }}"><strong>{{ $event['action'] }}</strong></td>
                                 <td class="activity-who-cell" title="{{ $event['actor'] }}"><strong>{{ $event['actor'] }}</strong></td>
                                 <td class="activity-when-cell">
@@ -428,10 +531,18 @@
                                         @endif
                                     </x-admin.toolbar>
                                 </td>
+                                <td class="admin-table__selection admin-table__selection--trailing">
+                                    <input
+                                        type="checkbox"
+                                        wire:click="toggleActivitySelection({{ $event['id'] }})"
+                                        x-bind:checked="$wire.selectedActivityIds.map(Number).includes({{ (int) $event['id'] }})"
+                                        aria-label="Toggle selection for activity event {{ $event['id'] }}"
+                                    >
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-table__empty-cell" colspan="8">
+                                <td class="admin-table__empty-cell" colspan="9">
                                     @if ($activitySourceExists)
                                         <x-admin.empty-state title="No matching activity" minimal>
                                             <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}">Clear filters</a></x-slot:actions>
@@ -471,6 +582,7 @@
                         <col class="activity-commit-col--summary">
                         <col class="activity-commit-col--publication">
                         <col class="activity-commit-col--actions">
+                        <col class="activity-commit-col--selection">
                     </colgroup>
                     <thead>
                         <tr>
@@ -480,11 +592,28 @@
                             <th scope="col">Summary</th>
                             <th scope="col">Publication</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
+                            <th scope="col" class="admin-table__selection admin-table__selection--trailing">
+                                <input
+                                    type="checkbox"
+                                    x-data="{}"
+                                    wire:click.prevent='toggleVisibleCommitSelection(@json($visibleCommitIds))'
+                                    x-effect="
+                                        const visibleIds = @js($visibleCommitIds);
+                                        const selectedIds = $wire.selectedCommitIds.map(Number);
+                                        const selectedVisible = visibleIds.filter((id) => selectedIds.includes(id)).length;
+                                        $el.checked = visibleIds.length > 0 && selectedVisible === visibleIds.length;
+                                        $el.indeterminate = selectedVisible > 0 && selectedVisible < visibleIds.length;
+                                        $el.setAttribute('aria-checked', $el.indeterminate ? 'mixed' : ($el.checked ? 'true' : 'false'));
+                                    "
+                                    @disabled($visibleCommitIds === [])
+                                    aria-label="Toggle selection for visible commits"
+                                >
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($commits as $commit)
-                            <tr>
+                            <tr class="{{ in_array((int) $commit['id'], $selectedCommitIds, true) ? 'is-selected' : '' }}">
                                 <td class="activity-commit-cell">
                                     <div class="activity-commit-cell__heading">
                                         <code>{{ $commit['short_hash'] }}</code>
@@ -533,10 +662,18 @@
                                         @endif
                                     </x-admin.toolbar>
                                 </td>
+                                <td class="admin-table__selection admin-table__selection--trailing">
+                                    <input
+                                        type="checkbox"
+                                        wire:click="toggleCommitSelection({{ $commit['id'] }})"
+                                        x-bind:checked="$wire.selectedCommitIds.map(Number).includes({{ (int) $commit['id'] }})"
+                                        aria-label="Toggle selection for commit {{ $commit['short_hash'] }}"
+                                    >
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td class="admin-table__empty-cell" colspan="6">
+                                <td class="admin-table__empty-cell" colspan="7">
                                     @if ($activitySourceExists)
                                         <x-admin.empty-state title="No matching commits" minimal>
                                             <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}">Clear filters</a></x-slot:actions>

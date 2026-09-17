@@ -15,7 +15,6 @@
 
     <x-admin.workspace title="Storage" class="media-workspace admin-storage">
         @include('filament.resources.media-assets.partials.storage-overview')
-        @include('filament.resources.media-assets.partials.site-storage-summary')
         @include('filament.resources.media-assets.partials.storage-library')
     </x-admin.workspace>
 </x-filament-panels::page>

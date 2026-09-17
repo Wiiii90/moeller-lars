@@ -53,6 +53,12 @@ final class Activity extends Page
     #[Url(as: 'view', except: self::VIEW_ACTIVITY, history: true)]
     public string $viewMode = self::VIEW_ACTIVITY;
 
+    /** @var list<int> */
+    public array $selectedActivityIds = [];
+
+    /** @var list<int> */
+    public array $selectedCommitIds = [];
+
     /** @var array<string, mixed> */
     public array $activityState = [];
 
@@ -77,9 +83,153 @@ final class Activity extends Page
 
     public function setViewMode(string $viewMode): void
     {
-        $this->viewMode = $viewMode === self::VIEW_COMMITS
+        $next = $viewMode === self::VIEW_COMMITS
             ? self::VIEW_COMMITS
             : self::VIEW_ACTIVITY;
+
+        if ($this->viewMode === $next) {
+            return;
+        }
+
+        $this->viewMode = $next;
+        $this->clearSelection();
+    }
+
+    public function toggleActivitySelection(int $eventId): void
+    {
+        $this->selectedActivityIds = $this->toggleSelectionId($this->selectedActivityIds, $eventId);
+    }
+
+    public function toggleCommitSelection(int $checkpointId): void
+    {
+        $this->selectedCommitIds = $this->toggleSelectionId($this->selectedCommitIds, $checkpointId);
+    }
+
+    /** @param array<int, int|string> $eventIds */
+    public function toggleVisibleActivitySelection(array $eventIds): void
+    {
+        $this->selectedActivityIds = $this->toggleVisibleSelection($this->selectedActivityIds, $eventIds);
+    }
+
+    /** @param array<int, int|string> $checkpointIds */
+    public function toggleVisibleCommitSelection(array $checkpointIds): void
+    {
+        $this->selectedCommitIds = $this->toggleVisibleSelection($this->selectedCommitIds, $checkpointIds);
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedActivityIds = [];
+        $this->selectedCommitIds = [];
+    }
+
+    public function openSelectedDetails(): void
+    {
+        $id = $this->viewMode === self::VIEW_COMMITS
+            ? $this->singleSelectedId($this->selectedCommitIds)
+            : $this->singleSelectedId($this->selectedActivityIds);
+
+        if ($id === null) {
+            $this->selectionWarning('Select exactly one row to open its details.');
+
+            return;
+        }
+
+        if ($this->viewMode === self::VIEW_COMMITS) {
+            $this->openCommitDetails($id);
+
+            return;
+        }
+
+        $this->openActivityDetails($id);
+    }
+
+    public function undoSelectedActivity(): void
+    {
+        $eventIds = $this->normalizeSelectionIds($this->selectedActivityIds);
+        rsort($eventIds, SORT_NUMERIC);
+
+        if ($eventIds === []) {
+            $this->selectionWarning('Select at least one activity event first.');
+
+            return;
+        }
+
+        $actor = app(AdminAuditService::class)->requireActor();
+        $feed = app(AdminActivityFeed::class);
+        $undo = app(AdminUndoService::class);
+        $undone = 0;
+        $skipped = 0;
+
+        foreach ($eventIds as $eventId) {
+            $event = $feed->event($eventId, $actor);
+            $receiptId = is_array($event['undo'] ?? null) && is_numeric($event['undo']['id'] ?? null)
+                ? (int) $event['undo']['id']
+                : 0;
+
+            if ($receiptId <= 0) {
+                $skipped++;
+
+                continue;
+            }
+
+            try {
+                $undo->undo($receiptId);
+                $undone++;
+            } catch (ValidationException) {
+                $skipped++;
+            }
+        }
+
+        $this->selectedActivityIds = [];
+        $this->refreshWorkspaceSnapshot();
+
+        app(AdminNotifier::class)->toast(
+            title: $undone > 0 ? 'Selected changes undone' : 'Undo unavailable',
+            body: number_format($undone).' change'.($undone === 1 ? '' : 's').' undone'
+                .($skipped > 0 ? ' · '.number_format($skipped).' skipped because Undo was unavailable.' : '.'),
+            status: $undone > 0 ? 'success' : 'warning',
+        );
+    }
+
+    public function restoreSelectedCommit(): void
+    {
+        $checkpointId = $this->singleSelectedId($this->selectedCommitIds);
+        if ($checkpointId === null) {
+            $this->selectionWarning('Select exactly one commit to restore.');
+
+            return;
+        }
+
+        $commit = app(AdminPublicationHistory::class)->checkpoint($checkpointId);
+        if (! is_array($commit) || ($commit['can_restore'] ?? false) !== true) {
+            $this->selectionWarning('The selected commit is not available for restore.');
+
+            return;
+        }
+
+        $this->restoreVersion($checkpointId);
+        $this->selectedCommitIds = [];
+    }
+
+    public function revertSelectedCommit(): void
+    {
+        $checkpointId = $this->singleSelectedId($this->selectedCommitIds);
+        if ($checkpointId === null) {
+            $this->selectionWarning('Select exactly one commit to revert.');
+
+            return;
+        }
+
+        $commit = app(AdminPublicationHistory::class)->checkpoint($checkpointId);
+        if (! is_array($commit) || ($commit['can_revert'] ?? false) !== true) {
+            $this->selectionWarning('Only the current LIVE commit with a restorable parent can be reverted.');
+
+            return;
+        }
+
+        $this->revertCurrentCommit();
+        $this->selectedCommitIds = [];
     }
 
     #[On('publication-state-changed')]
@@ -300,6 +450,8 @@ final class Activity extends Page
             'paginator' => $paginator,
             'commits' => $commits,
             'commitPaginator' => $commitPaginator,
+            'selectedActivityIds' => $this->selectedActivityIds,
+            'selectedCommitIds' => $this->selectedCommitIds,
             'area' => $area,
             'family' => $family,
             'search' => $search,
@@ -720,6 +872,65 @@ final class Activity extends Page
         }
 
         return $actions;
+    }
+
+    /** @param array<int, int|string> $ids @return list<int> */
+    private function normalizeSelectionIds(array $ids): array
+    {
+        return array_values(array_unique(array_filter(
+            array_map(static fn (int|string $id): int => (int) $id, $ids),
+            static fn (int $id): bool => $id > 0,
+        )));
+    }
+
+    /** @param array<int, int|string> $ids @return list<int> */
+    private function toggleSelectionId(array $ids, int $id): array
+    {
+        $selected = $this->normalizeSelectionIds($ids);
+        if ($id <= 0) {
+            return $selected;
+        }
+
+        if (in_array($id, $selected, true)) {
+            return array_values(array_diff($selected, [$id]));
+        }
+
+        $selected[] = $id;
+
+        return array_values(array_unique($selected));
+    }
+
+    /** @param array<int, int|string> $selectedIds @param array<int, int|string> $visibleIds @return list<int> */
+    private function toggleVisibleSelection(array $selectedIds, array $visibleIds): array
+    {
+        $selected = $this->normalizeSelectionIds($selectedIds);
+        $visible = $this->normalizeSelectionIds($visibleIds);
+        if ($visible === []) {
+            return $selected;
+        }
+
+        if (array_diff($visible, $selected) === []) {
+            return array_values(array_diff($selected, $visible));
+        }
+
+        return array_values(array_unique([...$selected, ...$visible]));
+    }
+
+    /** @param array<int, int|string> $ids */
+    private function singleSelectedId(array $ids): ?int
+    {
+        $selected = $this->normalizeSelectionIds($ids);
+
+        return count($selected) === 1 ? $selected[0] : null;
+    }
+
+    private function selectionWarning(string $message): void
+    {
+        app(AdminNotifier::class)->toast(
+            title: 'Selection action unavailable',
+            body: $message,
+            status: 'warning',
+        );
     }
 
     private function publicationWarning(ValidationException $exception, string $fallback): void

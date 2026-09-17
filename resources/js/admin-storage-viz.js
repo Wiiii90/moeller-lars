@@ -132,13 +132,14 @@ function inspectSlice(element, config, datum) {
 
     const files = Number(datum.files) || 0;
     const share = Number(datum.capacityShare) || 0;
+    const fileDetail = files > 0 ? ` · ${files} ${files === 1 ? 'file' : 'files'}` : '';
     const members = Array.isArray(datum.members) && datum.members.length > 0
         ? ` · ${datum.members.join(' · ')}`
         : '';
 
     setInspector(element, {
         title: datum.name || 'Storage',
-        meta: `${datum.displayBytes || '—'} · ${files} ${files === 1 ? 'file' : 'files'} · ${share.toFixed(share < 0.1 ? 2 : 1)}% of capacity${members}`,
+        meta: `${datum.displayBytes || '—'}${fileDetail} · ${share.toFixed(share < 0.1 ? 2 : 1)}% of capacity${members}`,
     });
 }
 
