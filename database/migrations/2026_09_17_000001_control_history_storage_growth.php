@@ -73,7 +73,7 @@ ALTER TABLE publication_version_row_manifests
 ADD CONSTRAINT publication_version_row_manifests_payload_id_foreign
 FOREIGN KEY (payload_id)
 REFERENCES publication_version_payloads(id)
-RESTRICT
+ON DELETE RESTRICT
 SQL);
         DB::statement('CREATE INDEX publication_version_row_manifests_payload_id_index ON publication_version_row_manifests (payload_id)');
         DB::statement('ALTER TABLE publication_version_row_manifests DROP COLUMN payload');
