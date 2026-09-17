@@ -80,7 +80,7 @@ final class MediaVariantRegenerationService
             ->orderBy('id')
             ->chunkById(100, function ($variants) use ($disk, &$reclaimedFiles, &$reclaimedBytes): void {
                 foreach ($variants as $variant) {
-                    if (! $variant instanceof MediaVariant || ! $this->isRebuildable($variant)) {
+                    if (! $this->isRebuildable($variant)) {
                         continue;
                     }
 
@@ -267,6 +267,7 @@ final class MediaVariantRegenerationService
         $image = null;
     }
 
+    /** @phpstan-impure */
     private function usableFile(mixed $disk, string $storageKey): bool
     {
         if ($storageKey === '' || ! $disk->exists($storageKey)) {
