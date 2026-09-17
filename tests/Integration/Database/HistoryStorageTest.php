@@ -22,7 +22,7 @@ it('deduplicates unchanged publication payloads while retaining complete commit 
     $firstManifestCount = DB::table('publication_version_rows')
         ->where('publication_checkpoint_id', $first->getKey())
         ->count();
-    $firstPayloadCount = DB::table('publication_version_payloads')->count();
+    $firstPayloadCount = DB::table('history_payloads')->count();
 
     $unchanged = DB::table('publication_version_row_manifests')
         ->where('publication_checkpoint_id', $first->getKey())
@@ -48,7 +48,7 @@ it('deduplicates unchanged publication payloads while retaining complete commit 
     $secondManifestCount = DB::table('publication_version_rows')
         ->where('publication_checkpoint_id', $second->getKey())
         ->count();
-    $secondPayloadCount = DB::table('publication_version_payloads')->count();
+    $secondPayloadCount = DB::table('history_payloads')->count();
 
     $secondUnchangedPayloadId = (int) DB::table('publication_version_row_manifests')
         ->where('publication_checkpoint_id', $second->getKey())
