@@ -35,7 +35,7 @@ return [
         ],
     ],
 
-    'cache' => env('PULSE_CACHE_DRIVER'),
+    'cache' => env('PULSE_CACHE_DRIVER', 'array'),
 
     'middleware' => [
         'web',
