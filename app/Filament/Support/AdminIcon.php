@@ -25,7 +25,6 @@ enum AdminIcon: string
     case DialogSubmit = 'heroicon-o-check';
     case Artwork = 'heroicon-o-paint-brush';
     case BlogPost = 'heroicon-o-document';
-    case CvEntry = 'heroicon-o-document-text';
     case Exhibition = 'heroicon-o-calendar';
     case Account = 'heroicon-o-user-circle';
     case GeneratePassword = 'heroicon-o-sparkles';
