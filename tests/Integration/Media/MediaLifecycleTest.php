@@ -7,6 +7,7 @@ use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Media\MediaTypePolicy;
+use App\Domain\Storage\SiteStorageDatabaseUsageService;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
@@ -166,15 +167,23 @@ it('fails closed when the operator quota is invalid', function (): void {
         ->toThrow(ValidationException::class);
 });
 
-it('allows an exact-fit original and blocks the first byte beyond quota', function (): void {
+it('allows an exact-fit site storage write and blocks the first byte beyond quota', function (): void {
     Storage::fake('media-capacity');
-    config(['media.disk' => 'media-capacity', 'media.quota_bytes' => 100]);
+    config(['media.disk' => 'media-capacity']);
     Storage::disk('media-capacity')->put('originals/one.jpg', str_repeat('a', 40));
 
-    app(MediaCapacityService::class)->assertCanStoreOriginal(60);
+    $database = app(SiteStorageDatabaseUsageService::class)->snapshot();
 
-    expect(fn () => app(MediaCapacityService::class)->assertCanStoreOriginal(61))
-        ->toThrow(ValidationException::class);
+    expect($database['measurement_available'])->toBeTrue();
+
+    $databaseBytes = (int) $database['logical_bytes'];
+    config()->set('media.quota_bytes', $databaseBytes + 100);
+
+    $capacity = app(MediaCapacityService::class);
+    $capacity->assertCanStoreOriginal(60);
+
+    expect(fn () => $capacity->assertCanStoreOriginal(61))
+        ->toThrow(ValidationException::class, 'site storage allowance is full');
 });
 
 it('blocks exhausted-quota ingest before the first write', function (): void {
