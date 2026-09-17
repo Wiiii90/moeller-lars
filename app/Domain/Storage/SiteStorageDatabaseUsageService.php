@@ -24,8 +24,12 @@ final class SiteStorageDatabaseUsageService
         'publication_event_states',
         'publication_media_cleanups',
         'publication_working_context',
-        'publication_version_payloads',
         'publication_version_row_manifests',
+    ];
+
+    /** @var list<string> */
+    private const SHARED_HISTORY_TABLES = [
+        'history_payloads',
     ];
 
     /** @var list<string> */
@@ -51,7 +55,9 @@ final class SiteStorageDatabaseUsageService
      *   live_content_bytes:int|null,
      *   activity_bytes:int|null,
      *   undo_bytes:int|null,
+     *   undo_logical_bytes:int|null,
      *   publication_bytes:int|null,
+     *   shared_history_bytes:int|null,
      *   other_bytes:int|null,
      *   physical_database_bytes:int|null,
      *   publication_logical_payload_bytes:int|null,
@@ -91,21 +97,31 @@ SQL),
             $activity = $this->sumTables($bytesByTable, self::ACTIVITY_TABLES);
             $undo = $this->sumTables($bytesByTable, self::UNDO_TABLES);
             $publication = $this->sumTables($bytesByTable, self::PUBLICATION_TABLES);
+            $sharedHistory = $this->sumTables($bytesByTable, self::SHARED_HISTORY_TABLES);
             $other = $this->sumTables($bytesByTable, self::OTHER_TABLES)
                 + $this->sumPrefixedTables($bytesByTable, 'pulse_');
             $total = array_sum($bytesByTable);
-            $live = max(0, $total - $activity - $undo - $publication - $other);
+            $live = max(0, $total - $activity - $undo - $publication - $sharedHistory - $other);
 
             $physical = DB::selectOne(
                 'SELECT pg_database_size(current_database())::bigint AS bytes',
             );
+            $logicalUndo = DB::selectOne(<<<'SQL'
+SELECT COALESCE(SUM(logical_bytes), 0)::bigint AS bytes
+FROM admin_action_receipts
+SQL);
             $logicalPublicationPayloads = DB::selectOne(<<<'SQL'
 SELECT COALESCE(SUM(pg_column_size(payload)), 0)::bigint AS bytes
 FROM publication_version_rows
 SQL);
             $uniquePublicationPayloads = DB::selectOne(<<<'SQL'
-SELECT COALESCE(SUM(pg_column_size(payload)), 0)::bigint AS bytes
-FROM publication_version_payloads
+SELECT COALESCE(SUM(pg_column_size(payload.payload)), 0)::bigint AS bytes
+FROM history_payloads AS payload
+WHERE EXISTS (
+    SELECT 1
+    FROM publication_version_row_manifests AS manifest
+    WHERE manifest.payload_id = payload.id
+)
 SQL);
             $logicalPayloadBytes = max(0, (int) ($logicalPublicationPayloads->bytes ?? 0));
             $uniquePayloadBytes = max(0, (int) ($uniquePublicationPayloads->bytes ?? 0));
@@ -119,7 +135,9 @@ SQL);
                 'live_content_bytes' => $live,
                 'activity_bytes' => $activity,
                 'undo_bytes' => $undo,
+                'undo_logical_bytes' => max(0, (int) ($logicalUndo->bytes ?? 0)),
                 'publication_bytes' => $publication,
+                'shared_history_bytes' => $sharedHistory,
                 'other_bytes' => $other,
                 'physical_database_bytes' => max(0, (int) ($physical->bytes ?? 0)),
                 'publication_logical_payload_bytes' => $logicalPayloadBytes,
@@ -166,7 +184,9 @@ SQL);
      *   live_content_bytes:null,
      *   activity_bytes:null,
      *   undo_bytes:null,
+     *   undo_logical_bytes:null,
      *   publication_bytes:null,
+     *   shared_history_bytes:null,
      *   other_bytes:null,
      *   physical_database_bytes:null,
      *   publication_logical_payload_bytes:null,
@@ -182,7 +202,9 @@ SQL);
             'live_content_bytes' => null,
             'activity_bytes' => null,
             'undo_bytes' => null,
+            'undo_logical_bytes' => null,
             'publication_bytes' => null,
+            'shared_history_bytes' => null,
             'other_bytes' => null,
             'physical_database_bytes' => null,
             'publication_logical_payload_bytes' => null,

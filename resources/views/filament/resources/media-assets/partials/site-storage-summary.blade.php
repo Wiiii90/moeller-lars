@@ -38,16 +38,20 @@
         </div>
         <div class="admin-storage__attention-row">
             <span>Undo history</span>
-            <strong>{{ $formatStorage($databaseStorage['undo_bytes'] ?? null) }} of {{ $formatStorage($undoBudget) }} budget</strong>
+            <strong>{{ $formatStorage($databaseStorage['undo_logical_bytes'] ?? null) }} logical · {{ $formatStorage($undoBudget) }}/admin budget</strong>
         </div>
         <div class="admin-storage__attention-row">
             <span>Publication history</span>
             <strong>
-                {{ $formatStorage($databaseStorage['publication_bytes'] ?? null) }}
+                {{ $formatStorage($databaseStorage['publication_bytes'] ?? null) }} metadata
                 @if (is_numeric($publicationLogical) && (int) $publicationLogical > 0 && is_numeric($publicationDeduplication))
                     · {{ number_format((float) $publicationDeduplication, 1) }}% payload deduplication
                 @endif
             </strong>
+        </div>
+        <div class="admin-storage__attention-row">
+            <span>Shared history payloads</span>
+            <strong>{{ $formatStorage($databaseStorage['shared_history_bytes'] ?? null) }} · Undo + Publication</strong>
         </div>
         <div class="admin-storage__attention-row">
             <span>Other application data</span>
