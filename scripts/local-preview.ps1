@@ -34,6 +34,17 @@ if ($ExistingPreview) {
 docker compose up -d --no-build --wait preview
 if ($LASTEXITCODE) { throw 'Lokaler Preview-Container konnte nicht gestartet werden.' }
 
+$AnalyticsDemo = 'storage\app\analytics-demo.php'
+if (-not (Test-Path $AnalyticsDemo)) {
+    throw 'Lokale Analytics-Demo fehlt: storage\app\analytics-demo.php'
+}
+
+docker cp $AnalyticsDemo moeller-lars-local-web:/var/www/html/storage/app/analytics-demo.php
+if ($LASTEXITCODE) { throw 'Lokale Analytics-Demo konnte nicht in den Preview-Container kopiert werden.' }
+
+docker exec moeller-lars-local-web php artisan tinker --execute="require storage_path('app/analytics-demo.php');"
+if ($LASTEXITCODE) { throw 'Lokale Analytics-Demo konnte nicht geladen werden.' }
+
 Write-Host ''
 Write-Host "Git:     $($env:APP_GIT_SHA.Substring(0, 7))"
 Write-Host 'Preview: http://127.0.0.1:8001'
