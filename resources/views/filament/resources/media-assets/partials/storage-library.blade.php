@@ -272,8 +272,8 @@
                         <col class="media-workspace__col-media">
                         <col class="media-workspace__col-type">
                         <col class="media-workspace__col-size">
-                        <col class="media-workspace__col-status">
                         <col class="media-workspace__col-usage">
+                        <col class="media-workspace__col-status">
                         <col class="media-workspace__col-actions">
                         <col class="media-workspace__col-selection">
                     </colgroup>
@@ -285,8 +285,8 @@
                             <th scope="col">Media</th>
                             <th scope="col">Type</th>
                             <th scope="col">Size</th>
-                            <th scope="col">Status</th>
                             <th scope="col">Used in</th>
+                            <th scope="col">Status</th>
                             <th scope="col">Actions</th>
                             <th scope="col" class="media-workspace__selection-head media-workspace__selection-head--trailing">
                                 <input
@@ -349,9 +349,6 @@
                                 </td>
                                 <td class="media-workspace__size">{{ $asset['size'] }}</td>
                                 <td>
-                                    <span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span>
-                                </td>
-                                <td>
                                     @if ($asset['references'] === [])
                                         <span class="media-workspace__unreferenced">Unreferenced</span>
                                     @else
@@ -367,6 +364,9 @@
                                             @endif
                                         </div>
                                     @endif
+                                </td>
+                                <td>
+                                    <span class="media-workspace__state is-{{ $asset['state'] }}">{{ ucfirst($asset['state']) }}</span>
                                 </td>
                                 <td class="media-workspace__actions">
                                     <div class="admin-row-actions admin-row-actions--canonical admin-toolbar media-workspace__row-actions">
