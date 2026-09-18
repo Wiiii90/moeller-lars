@@ -2,11 +2,15 @@
     'ariaLabel' => null,
     'metricGrid' => false,
     'filterCount' => null,
+    'searchSpan' => null,
 ])
 
 @php
     $detectedFilterCount = isset($filters) ? substr_count($filters->toHtml(), '<select') : 0;
     $normalizedFilterCount = max((int) ($filterCount ?? $detectedFilterCount), 0);
+    $normalizedSearchSpan = $searchSpan === null
+        ? null
+        : min(max((int) $searchSpan, 1), 6);
     $hasUtility = isset($reset) || isset($actions) || isset($selection);
 @endphp
 
@@ -17,6 +21,7 @@
         'admin-data-controls--filters-'.$normalizedFilterCount,
         'admin-data-controls--six-cell' => $metricGrid,
         'admin-data-controls--six-cell-filters-'.$normalizedFilterCount => $metricGrid,
+        'admin-data-controls--six-cell-search-'.$normalizedSearchSpan => $metricGrid && $normalizedSearchSpan !== null,
     ]) }}
     @if ($ariaLabel) aria-label="{{ $ariaLabel }}" @endif
 >

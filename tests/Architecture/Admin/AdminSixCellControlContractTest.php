@@ -14,6 +14,7 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain("'admin-data-controls--filters-'.\$normalizedFilterCount")
         ->toContain("'admin-data-controls--six-cell' => \$metricGrid")
         ->toContain("'admin-data-controls--six-cell-filters-'.\$normalizedFilterCount => \$metricGrid")
+        ->toContain("'admin-data-controls--six-cell-search-'.\$normalizedSearchSpan => \$metricGrid && \$normalizedSearchSpan !== null")
         ->toContain('@if ($hasUtility)')
         ->toContain('class="admin-data-controls__utility"')
         ->not->toContain('$hasCompleteDataToolbar')

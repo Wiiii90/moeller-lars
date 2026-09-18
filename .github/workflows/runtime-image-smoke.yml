@@ -38,16 +38,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Build runtime image
+      - name: Build local preview image
         run: |
           docker build \
-            --target runtime \
+            --target local-preview \
             --build-arg "APP_GIT_SHA=${GITHUB_SHA}" \
-            -t moeller-lars-local-runtime \
+            -t moeller-lars-local-preview \
             .
-
-      - name: Build local preview image
-        run: docker build -f docker/Dockerfile.local-preview -t moeller-lars-local-preview .
 
       - name: Boot Laravel CLI from local preview image
         run: docker run --rm --entrypoint php moeller-lars-local-preview artisan --version

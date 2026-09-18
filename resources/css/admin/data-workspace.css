@@ -130,6 +130,24 @@
     text-transform: uppercase;
 }
 
+/* Toolbar/control headings are one-line anchors. If a layout cannot preserve
+ * the label, ellipsis exposes the width problem without changing row height. */
+:is(.admin-data-controls, .admin-task-controls, .gallery-workspace__controls) :is(
+    .admin-field__label,
+    .admin-control-group__label,
+    .admin-data-field > span,
+    .admin-data-control-label,
+    .admin-task-field > span,
+    .admin-task-control-label,
+    .gallery-workspace__field > span,
+    .gallery-workspace__control-label
+) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .admin-field input,
 .admin-field select,
 .admin-data-field input,

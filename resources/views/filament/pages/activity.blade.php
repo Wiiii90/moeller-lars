@@ -308,7 +308,7 @@
 
                     <x-slot:filters>
                         <label class="admin-data-field activity-control--area">
-                            <span>Editorial area</span>
+                            <span>Area</span>
                             <select name="area" x-on:change="$el.form.requestSubmit()">
                                 <option value="">All areas</option>
                                 @foreach ($areaOptions as $value => $label)
@@ -317,7 +317,7 @@
                             </select>
                         </label>
                         <label class="admin-data-field activity-control--type">
-                            <span>Change type</span>
+                            <span>Type</span>
                             <select name="family" x-on:change="$el.form.requestSubmit()">
                                 <option value="">All changes</option>
                                 @foreach ($familyOptions as $value => $label)

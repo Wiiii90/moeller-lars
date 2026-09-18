@@ -182,19 +182,19 @@
     margin-top: var(--admin-section-gap);
 }
 
-.general-form-controls .admin-form-label-with-help .admin-help {
-    height: 1em;
-    align-self: center;
-}
-
 .general-separator {
     width: 100%;
     border: 0;
     border-top: 1px solid var(--admin-line);
 }
 
+.admin-favicon-control .fi-input-wrp,
 .admin-favicon-control .fi-select-input-btn {
     min-height: 4.5rem;
+}
+
+.admin-favicon-control .fi-select-input-btn {
+    height: 4.5rem;
     padding-inline-end: .75rem !important;
     align-items: center;
     background-image: none !important;
@@ -203,6 +203,7 @@
 .admin-favicon-control .fi-select-input-value-label {
     display: flex;
     min-width: 0;
+    min-height: 3.25rem;
     gap: .7rem;
     align-items: center;
 }
@@ -349,8 +350,18 @@
 
 .admin-form-label-with-help {
     display: inline-flex;
-    gap: .08rem;
-    align-items: center;
+    gap: .2rem;
+    align-items: baseline;
+    line-height: 1.25;
+}
+
+.admin-form-label-with-help .admin-help {
+    align-self: baseline;
+}
+
+.admin-form-label-with-help .admin-help__trigger {
+    position: relative;
+    top: .12em;
 }
 
 .admin-form-controls .fi-input,
@@ -390,14 +401,16 @@
     position: relative;
     z-index: 120;
     display: inline-flex;
-    margin-inline-start: .2rem;
+    width: 1rem;
+    height: 1rem;
+    margin-inline-start: 0;
     align-items: center;
 }
 
 .admin-help__trigger {
     display: inline-grid;
-    width: 1.45rem;
-    height: 1.45rem;
+    width: 1rem;
+    height: 1rem;
     padding: 0;
     place-items: center;
     border: 0;
@@ -408,8 +421,8 @@
 }
 
 .admin-help__trigger svg {
-    width: .95rem;
-    height: .95rem;
+    width: .78rem;
+    height: .78rem;
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
@@ -436,7 +449,7 @@
     width: min(18rem, 72vw);
     padding: .55rem .65rem;
     border: 1px solid var(--admin-line-strong);
-    background: var(--admin-surface);
+    background: var(--admin-control-popover-surface, var(--admin-surface));
     color: var(--admin-text);
     box-shadow: 0 .4rem 1.2rem rgb(0 0 0 / .12);
     font-size: .72rem;

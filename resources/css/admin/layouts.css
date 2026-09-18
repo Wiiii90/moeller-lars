@@ -34,10 +34,9 @@ html:not(.dark) .fi-sidebar-nav {
 }
 
 /*
- * Do not reserve a permanent document or sidebar scrollbar gutter. The desktop
- * shell below is tied to the layout viewport and clips the deliberate classic-
- * scrollbar overhang horizontally, so navigation and modal scroll-lock do not
- * need an empty strip at the right edge.
+ * Do not reserve a permanent document or sidebar scrollbar gutter. Shared admin
+ * task dialogs use a layout-neutral soft scroll lock in admin-modal-scroll.js,
+ * so opening a dialog never mutates <html> overflow, padding or gutter geometry.
  */
 html.fi,
 .fi-sidebar-nav {

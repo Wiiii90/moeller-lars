@@ -68,13 +68,15 @@
                     <div class="admin-task-control-group">
                         <span class="admin-task-control-label">PAGES</span>
                         <div class="admin-task-control-actions">
+                            <button class="admin-action" type="button" wire:click="mountAction('pagesSettings')">Settings</button>
                             <button class="admin-action" type="button" wire:click="mountAction('addPage')">Add page</button>
                         </div>
                     </div>
                 </x-slot:actions>
 
                 <x-slot:selection>
-                    <div class="admin-task-control-group admin-selection admin-selection--unlabeled" x-data="{ open: false }">
+                    <div class="admin-task-control-group admin-selection" x-data="{ open: false }">
+                        <span class="admin-task-control-label">Selection</span>
                         <div class="admin-selection__anchor">
                             <button
                                 class="admin-action admin-selection__trigger"
@@ -185,13 +187,13 @@
                                         'journalTemplateOptions' => $journalTemplateOptions,
                                     ])
 
-                                    @if ($section['children'] !== [] || $reorderEnabled)
+                                    @if ($section['children'] !== [] || ($reorderEnabled && $nestedNavigationEnabled))
                                         <div class="admin-hierarchy__children">
                                             <div
                                                 class="admin-hierarchy__children-rows"
                                                 role="rowgroup"
                                                 aria-label="Child pages under {{ $section['title'] }}"
-                                                @if ($reorderEnabled)
+                                                @if ($reorderEnabled && $nestedNavigationEnabled)
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
                                                     wire:sort:group="site-pages"

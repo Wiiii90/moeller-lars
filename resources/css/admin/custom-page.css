@@ -4,10 +4,28 @@
     display: none;
 }
 
+/* Custom Page needs three page actions beside the fixed terminal Selection
+ * anchor. Keep that local density inside the shared two-cell utility region
+ * instead of letting Preview overflow into Selection. */
+.custom-page-workspace__controls > .admin-data-controls__utility {
+    grid-template-columns: 4rem minmax(0, 1fr) 7.25rem;
+}
+
 .custom-page-workspace__page-actions {
+    display: grid;
+    min-width: 0;
     min-height: var(--admin-control-height);
-    justify-content: flex-start;
-    flex-wrap: nowrap;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: .12rem;
+    align-items: center;
+}
+
+.custom-page-workspace__page-actions .admin-action {
+    min-width: 0;
+    padding-inline: .2rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* The hierarchy remains the scrollport and never grows beyond the workspace.

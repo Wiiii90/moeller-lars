@@ -13,6 +13,7 @@ use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\SiteNodePresentation;
 use App\Models\ArtworkCategory;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -73,6 +74,8 @@ final class SitePages extends Page
     public bool $filtersActive = false;
 
     public bool $reorderEnabled = true;
+
+    public bool $nestedNavigationEnabled = true;
 
     public bool $allVisibleSelected = false;
 
@@ -268,7 +271,8 @@ final class SitePages extends Page
                         ->options(fn (): array => $this->parentOptions)
                         ->placeholder('Top level')
                         ->native()
-                        ->nullable(),
+                        ->nullable()
+                        ->visible(fn (): bool => $this->nestedNavigationEnabled),
                 ])
                 ->action(function (array $data, array $arguments): void {
                     /** @var SiteSection $section */
@@ -502,6 +506,11 @@ final class SitePages extends Page
         if ($this->newPageParent === '') {
             return null;
         }
+        if (! $this->nestedNavigationEnabled) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'Nested pages are disabled in Pages settings.',
+            ]);
+        }
         if (! ctype_digit($this->newPageParent)) {
             throw ValidationException::withMessages(['parent_id' => 'Choose a valid top-level parent page.']);
         }
@@ -517,6 +526,7 @@ final class SitePages extends Page
     private function loadSections(): void
     {
         $this->orderService = app(SiteSectionOrderService::class);
+        $this->nestedNavigationEnabled = PublicContentSetting::navigationNestingEnabled();
 
         /** @var EloquentCollection<int, SiteSection> $topLevel */
         $topLevel = SiteSection::query()

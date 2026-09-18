@@ -34,11 +34,6 @@
     overflow: hidden;
 }
 
-.admin-dashboard__storage-visual {
-    display: grid;
-    place-items: center;
-}
-
 .admin-dashboard__analytics-visual {
     min-height: 0;
     height: 100%;

@@ -248,9 +248,14 @@ Current durable local interface assumptions:
 - application URL: `http://127.0.0.1:8001`;
 - application container: `moeller-lars-local-web`;
 - preview image: `moeller-lars-local-preview`;
+- Compose service: `preview`;
 - PostgreSQL container commonly used by the preview: `moeller-lars-postgres-1`;
 - image runtime listens internally on port `8080`;
-- preview Dockerfile: `docker/Dockerfile.local-preview`;
+- preview build target: `local-preview` in the root `Dockerfile`;
+- canonical Windows helper: `scripts/local-preview.ps1`;
+- canonical copy/paste command from any PowerShell location: `& 'P:\moeller-lars\scripts\local-preview.ps1'`;
+- when the user asks to rebuild/run the local preview, give that exact command; do not invent a new helper, launcher, inline build recipe or alternative local build path unless the user explicitly asks for one;
+- the helper reloads the existing local `storage/app/analytics-demo.php` fixture after the preview container is healthy; do not fold the old large analytics-normalization block back into the Docker build;
 - canonical private media mount destination: `/var/www/html/storage/app/private`.
 
 The local browser database is the one persistent local development database. Do not run

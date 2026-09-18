@@ -35,7 +35,7 @@ const structuralBudgets = Object.freeze({
     max_xhr_fetch_count: 2,
     max_response_bytes: 640 * KiB,
   },
-  activity_filter_editorial_area: {
+  activity_filter_area: {
     completed_on_first_click: true,
     full_navigation_count: 1,
     max_xhr_fetch_count: 0,
@@ -209,6 +209,71 @@ function expectNoBrowserErrors(flow) {
   expect(flow.page_errors, `${flow.name} page errors`).toEqual([]);
 }
 
+async function shellGeometry(page) {
+  return page.evaluate(() => {
+    const root = document.documentElement;
+    const layout = document.querySelector('.fi-layout');
+    const main = document.querySelector('.fi-main');
+    const rootStyle = getComputedStyle(root);
+
+    return {
+      inner_width: window.innerWidth,
+      client_width: root.clientWidth,
+      layout_left: layout?.getBoundingClientRect().left ?? null,
+      layout_width: layout?.getBoundingClientRect().width ?? null,
+      main_left: main?.getBoundingClientRect().left ?? null,
+      main_width: main?.getBoundingClientRect().width ?? null,
+      scroll_y: window.scrollY,
+      has_vertical_overflow: root.scrollHeight > root.clientHeight,
+      inline_overflow: root.style.overflow,
+      inline_padding_right: root.style.paddingRight,
+      overflow_y: rootStyle.overflowY,
+      padding_right: rootStyle.paddingRight,
+      scrollbar_gutter: rootStyle.scrollbarGutter,
+    };
+  });
+}
+
+function expectStableShellGeometry(before, during, context) {
+  expect(during.client_width, `${context}: document client width shifted`).toBe(before.client_width);
+  expect(during.layout_left, `${context}: layout left edge shifted`).toBeCloseTo(before.layout_left, 1);
+  expect(during.layout_width, `${context}: layout width shifted`).toBeCloseTo(before.layout_width, 1);
+  expect(during.main_left, `${context}: main left edge shifted`).toBeCloseTo(before.main_left, 1);
+  expect(during.main_width, `${context}: main width shifted`).toBeCloseTo(before.main_width, 1);
+}
+
+function expectModalRootUntouched(before, during, context) {
+  expect(during.inline_overflow, `${context}: modal mutated root inline overflow`).toBe(before.inline_overflow);
+  expect(during.inline_padding_right, `${context}: modal mutated root inline padding-right`).toBe(before.inline_padding_right);
+  expect(during.overflow_y, `${context}: modal changed computed root overflow-y`).toBe(before.overflow_y);
+  expect(during.padding_right, `${context}: modal changed computed root padding-right`).toBe(before.padding_right);
+  expect(during.scrollbar_gutter, `${context}: modal changed root scrollbar gutter`).toBe(before.scrollbar_gutter);
+}
+
+async function visualGeometry(page, selector) {
+  return page.locator(selector).evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      center_x: rect.left + (rect.width / 2),
+      center_y: rect.top + (rect.height / 2),
+    };
+  });
+}
+
+function expectGeometryNear(actual, expected, fields, context, tolerance = 0.1) {
+  for (const field of fields) {
+    expect(
+      Math.abs(actual[field] - expected[field]),
+      `${context}: ${field} differs by more than ${tolerance}px (actual ${actual[field]}px, expected ${expected[field]}px)`,
+    ).toBeLessThanOrEqual(tolerance);
+  }
+}
+
 function expectStructuralBudget(flow) {
   const budget = structuralBudgets[flow.name];
   expect(budget, `${flow.name} must have a structural performance budget`).toBeDefined();
@@ -267,6 +332,15 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     );
     expectNoBrowserErrors(login);
 
+    const dashboardClockGeometry = await visualGeometry(
+      page,
+      '.admin-dashboard__activity-visual .activity-clock__dial',
+    );
+    const dashboardStorageGeometry = await visualGeometry(
+      page,
+      '.admin-dashboard__storage-visual .admin-storage-capacity',
+    );
+
     // Prime Pages once so the measured transition represents a warmed admin navigation.
     await page.goto('/admin/pages');
     await expect(page.getByRole('heading', { name: 'Pages', exact: true })).toBeVisible();
@@ -286,6 +360,8 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectStructuralBudget(pagesNavigation);
     expectNoBrowserErrors(pagesNavigation);
 
+    const pagesBeforeDialogGeometry = await shellGeometry(page);
+
     const addPage = await profiler.run(
       'pages_add_page_dialog',
       async () => {
@@ -297,8 +373,46 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     );
     expectStructuralBudget(addPage);
     expectNoBrowserErrors(addPage);
+    const pagesDuringDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(pagesBeforeDialogGeometry, pagesDuringDialogGeometry, 'Pages Add page open');
+    expectModalRootUntouched(pagesBeforeDialogGeometry, pagesDuringDialogGeometry, 'Pages Add page open');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
+    const pagesAfterDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(pagesBeforeDialogGeometry, pagesAfterDialogGeometry, 'Pages Add page close');
+
+    // Explicitly cover a document that already needs vertical scrolling.
+    // CI Chromium may use overlay scrollbars, so vertical overflow rather than
+    // innerWidth/clientWidth is the portable trigger for the production path.
+    await page.evaluate(() => {
+      const spacer = document.createElement('div');
+      spacer.dataset.modalScrollbarTestSpacer = 'true';
+      spacer.style.height = '200vh';
+      spacer.style.pointerEvents = 'none';
+      document.querySelector('.fi-main')?.append(spacer);
+    });
+    const longPageBeforeDialogGeometry = await shellGeometry(page);
+    expect(longPageBeforeDialogGeometry.has_vertical_overflow, 'Long-page fixture must overflow vertically').toBe(true);
+
+    await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
+    const longPageDuringDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(longPageBeforeDialogGeometry, longPageDuringDialogGeometry, 'Pages long-page Add page open');
+    expectModalRootUntouched(longPageBeforeDialogGeometry, longPageDuringDialogGeometry, 'Pages long-page Add page open');
+
+    await page.evaluate(() => window.scrollTo(0, 320));
+    await page.waitForTimeout(50);
+    const longPageLockedGeometry = await shellGeometry(page);
+    expect(
+      longPageLockedGeometry.scroll_y,
+      'Pages long-page Add page open: background window scroll was not softly locked',
+    ).toBe(longPageBeforeDialogGeometry.scroll_y);
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
+    const longPageAfterDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(longPageBeforeDialogGeometry, longPageAfterDialogGeometry, 'Pages long-page Add page close');
+    await page.evaluate(() => document.querySelector('[data-modal-scrollbar-test-spacer]')?.remove());
 
     await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
@@ -322,6 +436,8 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
     await page.waitForLoadState('networkidle');
 
+    const homeBeforeDialogGeometry = await shellGeometry(page);
+
     const homeSettings = await profiler.run(
       'home_settings_dialog',
       async () => {
@@ -333,12 +449,28 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     );
     expectStructuralBudget(homeSettings);
     expectNoBrowserErrors(homeSettings);
+    const homeDuringDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(homeBeforeDialogGeometry, homeDuringDialogGeometry, 'Home settings open');
+    expectModalRootUntouched(homeBeforeDialogGeometry, homeDuringDialogGeometry, 'Home settings open');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Home settings', exact: true })).toBeHidden();
+    const homeAfterDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(homeBeforeDialogGeometry, homeAfterDialogGeometry, 'Home settings close');
 
     await page.goto('/admin/activity');
     await expect(page.getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();
     await page.waitForLoadState('networkidle');
+
+    const activityClockGeometry = await visualGeometry(
+      page,
+      '.activity-atlas__view.activity-clock .activity-clock__dial',
+    );
+    expectGeometryNear(
+      activityClockGeometry,
+      dashboardClockGeometry,
+      ['left', 'top', 'width', 'height', 'center_x', 'center_y'],
+      'Dashboard clock must exactly reuse Activity clock geometry',
+    );
 
     const commits = await profiler.run(
       'activity_to_commits',
@@ -353,15 +485,15 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectNoBrowserErrors(commits);
 
     const areaFilter = await profiler.run(
-      'activity_filter_editorial_area',
+      'activity_filter_area',
       async () => {
-        const trigger = page.getByRole('combobox', { name: 'Editorial area' });
+        const trigger = page.getByRole('combobox', { name: 'Area' });
         await trigger.click();
-        await page.getByRole('listbox', { name: 'Editorial area' }).getByText('Website', { exact: true }).click();
+        await page.getByRole('listbox', { name: 'Area' }).getByText('Website', { exact: true }).click();
       },
       async () => {
         await expect(page).toHaveURL(/(?:\?|&)area=Website(?:&|$)/);
-        await expect(page.getByRole('combobox', { name: 'Editorial area' })).toContainText('Website');
+        await expect(page.getByRole('combobox', { name: 'Area' })).toContainText('Website');
       },
     );
     expectStructuralBudget(areaFilter);
@@ -377,6 +509,27 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     );
     expectStructuralBudget(idle);
     expectNoBrowserErrors(idle);
+
+    await page.goto('/admin/storage');
+    await expect(page.getByRole('heading', { name: 'Storage', exact: true })).toBeVisible();
+    await page.waitForLoadState('networkidle');
+
+    const storageSourceGeometry = await visualGeometry(
+      page,
+      '.admin-storage__capacity-group .admin-storage-capacity',
+    );
+    expectGeometryNear(
+      storageSourceGeometry,
+      dashboardStorageGeometry,
+      ['width', 'height', 'center_y'],
+      'Dashboard storage ring must preserve source Storage geometry',
+    );
+    expectGeometryNear(
+      storageSourceGeometry,
+      activityClockGeometry,
+      ['width', 'height', 'center_y'],
+      'Storage ring and Activity clock must share one orbit size and vertical axis',
+    );
   } finally {
     profiler.write(process.env.GITHUB_SHA ?? 'local');
   }

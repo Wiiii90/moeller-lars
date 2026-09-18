@@ -135,12 +135,16 @@ Rules:
 
 - search is usually live with a bounded debounce such as `wire:model.live.debounce.300ms`;
 - use one control height across inputs/selects/buttons;
+- keep control headings on one line; they must never increase the toolbar height by wrapping, and should ellipsize when a width mistake would otherwise force a second line;
+- prefer one-word headings whenever the meaning stays clear: use `Search`, `Area`, `Type`, `Date`, `Time`; do not repeat the current object or row noun in headings such as `Search exhibitions`, `Editorial area` or `Change type` when the surrounding workspace already supplies that context;
+- keep object-specific search context in the placeholder/accessible description rather than the visible `Search` heading;
 - `Filter`/Reset occupies a stable control group;
 - avoid chips or secondary mini-toolbars floating inside the search row;
 - avoid multiple visible selection groups for one table hierarchy;
 - reset filters explicitly to the neutral state;
 - search/filter state should not silently change persisted order;
-- where the metric-unit reference grid applies, a wide Search control may deliberately span two metric units while the remaining controls subdivide the remaining units; use semantic width rather than equal-width controls by habit.
+- where the metric-unit reference grid applies, a wide Search control may deliberately span two metric units while the remaining controls subdivide the remaining units; use semantic width rather than equal-width controls by habit;
+- the metric ruler defines shared anchors, not an equal-width mandate for every middle control: when Search and trailing Selection are stable anchors, distribute the space between them by usability, let peer filters share the flexible room fairly, and keep compact utilities such as Reset/View only as wide as their content requires.
 
 ## 6. Selection and multi-actions
 

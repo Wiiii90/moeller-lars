@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -76,6 +77,11 @@ final class SiteSectionOrderService
     {
         if ($position < 0) {
             throw new InvalidArgumentException('Site-section position must be zero or greater.');
+        }
+        if ($parentSectionId !== null && ! PublicContentSetting::navigationNestingEnabled()) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'Nested pages are disabled in Pages settings.',
+            ]);
         }
 
         $actor = $this->audit->requireActor();
@@ -179,6 +185,61 @@ final class SiteSectionOrderService
             );
 
             return true;
+        });
+    }
+
+    public function flattenHierarchy(): int
+    {
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($actor): int {
+            /** @var Collection<int, SiteSection> $roots */
+            $roots = SiteSection::query()
+                ->whereNull('parent_id')
+                ->orderBy('position')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            $flatIds = [];
+            $movedIds = [];
+
+            foreach ($roots as $root) {
+                $flatIds[] = (int) $root->getKey();
+
+                /** @var Collection<int, SiteSection> $children */
+                $children = SiteSection::query()
+                    ->where('parent_id', $root->getKey())
+                    ->orderBy('position')
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($children as $child) {
+                    $childId = (int) $child->getKey();
+                    $flatIds[] = $childId;
+                    $movedIds[] = $childId;
+                }
+            }
+
+            if ($movedIds === []) {
+                return 0;
+            }
+
+            $this->rewriteGroups([[null, $flatIds]]);
+            $positions = array_flip($flatIds);
+
+            foreach ($movedIds as $sectionId) {
+                $this->audit->record(
+                    $actor,
+                    'site_section.reordered',
+                    'site_section',
+                    $sectionId,
+                    ['position' => ((int) $positions[$sectionId]) + 1],
+                );
+            }
+
+            return count($movedIds);
         });
     }
 
