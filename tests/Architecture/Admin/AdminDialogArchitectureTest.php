@@ -55,6 +55,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
 
     expect($layouts)
         ->toContain("html.fi,\n.fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
+        ->toContain("html.fi:has(.fi-modal.fi-modal-open) {\n    overflow-y: scroll !important;\n    padding-right: 0 !important;\n}")
         ->not->toContain('scrollbar-gutter: stable');
 
     expect($homeWorkspace)
