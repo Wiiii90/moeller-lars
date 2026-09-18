@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'nominatim' => [
+        'endpoint' => env('NOMINATIM_ENDPOINT', 'https://nominatim.openstreetmap.org/search'),
+        'user_agent' => env('NOMINATIM_USER_AGENT', 'moeller-lars admin geocoder'),
+        'email' => env('NOMINATIM_EMAIL'),
+    ],
+
 ];

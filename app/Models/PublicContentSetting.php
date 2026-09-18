@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Content\PublicAppearance;
 use App\Domain\Content\SocialLinks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Guarded;
@@ -21,6 +22,13 @@ use LogicException;
     'legal_disclaimer',
     'favicon_media_asset_id',
     'default_media_copyright_notice',
+    'background_mode',
+    'background_color',
+    'background_gradient_start',
+    'background_gradient_end',
+    'background_gradient_angle',
+    'public_page_width',
+    'public_content_padding',
 ])]
 #[Guarded(['id', 'scope'])]
 class PublicContentSetting extends Model
@@ -28,6 +36,8 @@ class PublicContentSetting extends Model
     public const SCOPE_GENERAL = 'general';
 
     public const SCOPES = [self::SCOPE_GENERAL];
+
+    private const REQUEST_CACHE_KEY = 'public_content_setting.general';
 
     protected $table = 'public_content_settings';
 
@@ -39,6 +49,9 @@ class PublicContentSetting extends Model
             'show_public_email' => 'boolean',
             'show_instagram' => 'boolean',
             'social_links' => 'array',
+            'background_gradient_angle' => 'integer',
+            'public_page_width' => 'integer',
+            'public_content_padding' => 'integer',
         ];
     }
 
@@ -56,7 +69,17 @@ class PublicContentSetting extends Model
 
     public static function general(): self
     {
-        return self::forScope(self::SCOPE_GENERAL);
+        if (app()->bound('request')) {
+            $cached = request()->attributes->get(self::REQUEST_CACHE_KEY);
+            if ($cached instanceof self) {
+                return $cached;
+            }
+        }
+
+        $setting = self::forScope(self::SCOPE_GENERAL);
+        self::cacheGeneralForRequest($setting);
+
+        return $setting;
     }
 
     /** @return BelongsTo<MediaAsset, $this> */
@@ -75,13 +98,34 @@ class PublicContentSetting extends Model
             self::validateGeneral($setting);
         });
 
+        static::saved(function (self $setting): void {
+            self::cacheGeneralForRequest($setting);
+        });
+
         static::deleting(function (): never {
             throw new LogicException('Global public content settings cannot be deleted.');
         });
     }
 
+    private static function cacheGeneralForRequest(self $setting): void
+    {
+        if (! app()->bound('request')) {
+            return;
+        }
+
+        request()->attributes->set(self::REQUEST_CACHE_KEY, $setting);
+    }
+
     private static function validateGeneral(self $setting): void
     {
+        $setting->setAttribute('background_mode', PublicAppearance::normalizeMode($setting->getAttribute('background_mode')));
+        $setting->setAttribute('background_color', PublicAppearance::normalizeColor($setting->getAttribute('background_color'), 'background_color'));
+        $setting->setAttribute('background_gradient_start', PublicAppearance::normalizeColor($setting->getAttribute('background_gradient_start'), 'background_gradient_start'));
+        $setting->setAttribute('background_gradient_end', PublicAppearance::normalizeColor($setting->getAttribute('background_gradient_end'), 'background_gradient_end'));
+        $setting->setAttribute('background_gradient_angle', PublicAppearance::normalizeAngle($setting->getAttribute('background_gradient_angle')));
+        $setting->setAttribute('public_page_width', PublicAppearance::normalizePageWidth($setting->getAttribute('public_page_width')));
+        $setting->setAttribute('public_content_padding', PublicAppearance::normalizeContentPadding($setting->getAttribute('public_content_padding')));
+
         $publicEmail = $setting->getAttribute('public_email');
         if ($publicEmail !== null && (! is_string($publicEmail) || filter_var($publicEmail, FILTER_VALIDATE_EMAIL) === false)) {
             throw ValidationException::withMessages([

@@ -1,71 +1,199 @@
 @php
-    $path = $section['public_url'] !== null ? (parse_url($section['public_url'], PHP_URL_PATH) ?: '/') : null;
-    $workspaceUrl = $section['workspace_url'];
     $label = $section['navigation_label'] ?: $section['title'];
-    $validParents = collect($parentCandidates)->filter(
-        fn (array $candidate): bool => in_array($candidate['id'], $section['valid_parent_ids'], true),
-    );
+    $selected = in_array((int) $section['id'], array_map('intval', $selectedSectionIds), true);
+    $isChild = (int) $section['depth'] === 1;
+    $isHome = $section['type'] === \App\Domain\Content\SiteSectionType::Home->value;
+    $homeState = $isHome ? app(\App\Filament\Support\HomeSettingsDialog::class)->tableState() : null;
+    $homeTemplateOptions = $isHome ? \App\Domain\Content\HomeTemplate::options() : [];
 @endphp
 
-<article class="admin-site-node" data-depth="{{ $section['depth'] }}" wire:key="site-section-{{ $section['id'] }}">
-    <div class="admin-site-node__identity">
-        <span class="admin-list__eyebrow">{{ $section['type_label'] }}</span>
-        @if ($workspaceUrl)
-            <a class="admin-site-node__title" href="{{ $workspaceUrl }}">{{ $label }}</a>
-        @else
-            <strong class="admin-site-node__title">{{ $label }}</strong>
-        @endif
-        <span class="admin-site-node__path">{{ $path ?? 'Navigation only' }}</span>
+<div
+    class="admin-hierarchy__row admin-pages__row {{ $isChild ? 'is-child' : '' }}"
+    role="row"
+    data-depth="{{ $section['depth'] }}"
+    data-section-id="{{ $section['id'] }}"
+    data-parent-id="{{ $section['parent_id'] ?? '' }}"
+    data-has-children="{{ $section['has_children'] ? 'true' : 'false' }}"
+>
+    <div class="admin-pages__primary-grid" role="presentation">
+        <div class="admin-hierarchy__position-cell" role="cell" data-cell="position">
+            <span class="admin-position">{{ $section['position_label'] }}</span>
+        </div>
+
+        <div class="admin-pages__drag-cell" role="cell" data-cell="drag">
+            @if ($section['can_reorder'])
+                <button
+                    class="admin-drag-handle"
+                    type="button"
+                    @if ($reorderEnabled) wire:sort:handle @else disabled @endif
+                    aria-label="Drag {{ $label }} to a new position"
+                    title="Drag to reorder"
+                >⋮⋮</button>
+            @else
+                <span class="admin-pages__drag-placeholder" aria-hidden="true"></span>
+            @endif
+        </div>
+
+        <div class="admin-hierarchy__content admin-pages__page" role="cell" data-cell="page">
+            @if ($section['workspace_url'])
+                <a class="admin-pages__page-link" href="{{ $section['workspace_url'] }}"><strong>{{ $label }}</strong></a>
+            @else
+                <strong>{{ $label }}</strong>
+            @endif
+        </div>
     </div>
 
-    <div class="admin-site-node__placement" aria-label="Placement for {{ $label }}">
-        @if ($section['fixed_placement'])
-            <span class="admin-site-node__fixed-state">Published · in menu</span>
+    <div class="admin-pages__type" role="cell" data-cell="page-type">
+        @if ($isHome)
+            <span>Landing Page</span>
+        @elseif ($section['can_convert'])
+            <select
+                class="admin-inline-select"
+                aria-label="Page type for {{ $label }}"
+                wire:change="convertSectionType({{ $section['id'] }}, $event.target.value)"
+            >
+                @foreach ($editableTypeOptions as $value => $typeLabel)
+                    <option value="{{ $value }}" @selected($section['type'] === $value)>{{ $typeLabel }}</option>
+                @endforeach
+            </select>
         @else
-            <x-admin.toolbar>
-                <button
-                    class="admin-action {{ $section['state'] === 'published' ? 'is-primary' : '' }}"
-                    type="button"
-                    wire:click="toggleSectionState({{ $section['id'] }})"
-                    aria-pressed="{{ $section['state'] === 'published' ? 'true' : 'false' }}"
-                >{{ $section['state'] === 'published' ? 'Published' : 'Hidden' }}</button>
-                <button
-                    class="admin-action {{ $section['visible'] ? 'is-primary' : '' }}"
-                    type="button"
-                    wire:click="toggleSectionNavigation({{ $section['id'] }})"
-                    aria-pressed="{{ $section['visible'] ? 'true' : 'false' }}"
-                >{{ $section['visible'] ? 'In menu' : 'Off menu' }}</button>
-            </x-admin.toolbar>
-        @endif
-
-        @if ($section['can_choose_parent'])
-            <label class="admin-site-node__parent">
-                <span>Parent</span>
-                <select
-                    aria-label="Parent section for {{ $label }}"
-                    wire:change="moveSectionParent({{ $section['id'] }}, $event.target.value)"
-                >
-                    <option value="" @selected($section['parent_id'] === null)>Top level</option>
-                    @foreach ($validParents as $parent)
-                        <option value="{{ $parent['id'] }}" @selected($section['parent_id'] === $parent['id'])>{{ $parent['label'] }}</option>
-                    @endforeach
-                </select>
-            </label>
+            <span>{{ $section['type_label'] }}</span>
         @endif
     </div>
 
-    <x-admin.toolbar class="admin-site-node__actions">
-        @if ($section['can_delete'])
-            <button
-                class="admin-action"
-                type="button"
-                wire:click="deleteSection({{ $section['id'] }})"
-                wire:confirm="Delete this page or navigation node? Published pages, menu entries, parents with children and Journals with entries must be emptied or hidden first."
-            >Delete</button>
+    <div class="admin-pages__template" role="cell" data-cell="template">
+        @if ($isHome)
+            <select
+                class="admin-inline-select"
+                aria-label="Home template"
+                wire:change="changeHomeTemplate({{ $section['id'] }}, $event.target.value)"
+            >
+                @foreach ($homeTemplateOptions as $value => $templateLabel)
+                    <option value="{{ $value }}" @selected(($homeState['template'] ?? null) === $value)>{{ $templateLabel }}</option>
+                @endforeach
+            </select>
+        @elseif ($section['type'] === \App\Domain\Content\SiteSectionType::Journal->value)
+            <select
+                class="admin-inline-select"
+                aria-label="Journal template for {{ $label }}"
+                wire:change="changeJournalTemplate({{ $section['id'] }}, $event.target.value)"
+            >
+                @foreach ($journalTemplateOptions as $value => $templateLabel)
+                    <option value="{{ $value }}" @selected($section['template'] === $value)>{{ $templateLabel }}</option>
+                @endforeach
+            </select>
         @endif
-        <span class="admin-toolbar" aria-label="Reorder {{ $label }}">
-            <button class="admin-action" type="button" wire:click="moveSection({{ $section['id'] }}, 'up')" aria-label="Move {{ $label }} earlier" @disabled(! $section['can_move_up'])>↑</button>
-            <button class="admin-action" type="button" wire:click="moveSection({{ $section['id'] }}, 'down')" aria-label="Move {{ $label }} later" @disabled(! $section['can_move_down'])>↓</button>
-        </span>
-    </x-admin.toolbar>
-</article>
+    </div>
+
+    <div class="admin-pages__utility-grid" role="presentation">
+        <div class="admin-row-actions admin-row-actions--canonical admin-toolbar admin-pages__row-actions" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
+            @if ($isHome)
+                @if ($homeState['skip_home'] ?? false)
+                    <span class="admin-pages__redirect-marker" aria-label="Skip Home">
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Redirect->mini()" class="admin-action__icon" />
+                    </span>
+                    <button
+                        class="admin-action admin-pages__redirect-target"
+                        type="button"
+                        wire:click="mountAction('skipHome')"
+                        title="Change Skip Home target"
+                    >
+                        <span class="admin-action__label">{{ $homeState['skip_target_label'] ?: 'Set target' }}</span>
+                    </button>
+                @else
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                @endif
+
+                <x-admin.row-action
+                    :action="\App\Filament\Support\AdminRowAction::Edit"
+                    wire:click="mountAction('editHome')"
+                />
+
+                <x-admin.row-action
+                    :action="\App\Filament\Support\AdminRowAction::SkipHome"
+                    wire:click="mountAction('skipHome')"
+                    aria-label="{{ ($homeState['skip_home'] ?? false) ? 'Edit Skip Home' : 'Configure Skip Home' }}"
+                    title="{{ ($homeState['skip_home'] ?? false) ? 'Edit Skip Home' : 'Configure Skip Home' }}"
+                />
+
+                <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+            @else
+                @if ($section['can_reorder'])
+                    <x-admin.row-action
+                        :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                        :disabled="! $reorderEnabled || ! $section['can_move_up']"
+                        wire:click="moveSection({{ $section['id'] }}, 'up')"
+                        aria-label="Move {{ $label }} up"
+                    />
+                    <x-admin.row-action
+                        :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                        :disabled="! $reorderEnabled || ! $section['can_move_down']"
+                        wire:click="moveSection({{ $section['id'] }}, 'down')"
+                        aria-label="Move {{ $label }} down"
+                    />
+                @else
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                @endif
+
+                <x-admin.row-action
+                    :action="\App\Filament\Support\AdminRowAction::Edit"
+                    wire:click="mountAction('editPage', { section: {{ $section['id'] }} })"
+                />
+
+                @if ($section['can_change_publication'])
+                    <x-admin.row-action
+                        :action="$section['state'] === 'published' ? \App\Filament\Support\AdminRowAction::Unpublish : \App\Filament\Support\AdminRowAction::Publish"
+                        wire:click="toggleSectionState({{ $section['id'] }})"
+                    />
+                @else
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                @endif
+
+                @if ($section['can_delete'])
+                    <x-admin.row-action
+                        :action="\App\Filament\Support\AdminRowAction::Delete"
+                        wire:click="deleteSection({{ $section['id'] }})"
+                        wire:confirm="Delete this page? Page-specific content, child pages, publication and navigation safety rules still apply."
+                    />
+                @else
+                    <span class="admin-pages__action-placeholder" aria-hidden="true"></span>
+                @endif
+            @endif
+        </div>
+
+        <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="cell" data-cell="selection">
+            <input type="checkbox" aria-label="Select {{ $label }}" value="{{ $section['id'] }}" wire:model.live="selectedSectionIds" @checked($selected)>
+        </label>
+    </div>
+
+    @if (! $isChild && $reorderEnabled)
+        <div
+            class="admin-pages__nest-target"
+            x-cloak
+            x-show="dragging && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}"
+            x-bind:class="{ 'is-hovered': hoverParent === {{ $section['id'] }} }"
+            x-on:pointerenter="if (dragging) hoverParent = {{ $section['id'] }}"
+            x-on:pointerleave="if (hoverParent === {{ $section['id'] }}) hoverParent = null"
+            x-on:dragenter.stop.prevent="hoverParent = {{ $section['id'] }}"
+            x-on:dragover.stop.prevent="hoverParent = {{ $section['id'] }}"
+            x-on:dragleave.stop="if (!$el.contains($event.relatedTarget) && hoverParent === {{ $section['id'] }}) hoverParent = null"
+            x-on:pointerup.stop.prevent="
+                if (dragging && draggedId !== null && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) {
+                    $wire.sortSection(draggedId, 999999, {{ $section['id'] }});
+                }
+                resetDrag();
+            "
+            x-on:drop.stop.prevent="
+                if (dragging && draggedId !== null && !draggedHasChildren && draggedId !== {{ $section['id'] }} && draggedParentId !== {{ $section['id'] }}) {
+                    $wire.sortSection(draggedId, 999999, {{ $section['id'] }});
+                }
+                resetDrag();
+            "
+            aria-hidden="true"
+        >
+            <span>Drop as child of {{ $label }}</span>
+        </div>
+    @endif
+</div>

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Artwork\PublicArtworkQuery;
-use App\Domain\Content\SiteNodeType;
 use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionPathPolicy;
+use App\Domain\Content\SiteSectionType;
 use App\Domain\Media\PublicMedia;
 use App\Models\ArtworkCategory;
 use App\Models\Redirect;
@@ -21,18 +21,10 @@ class PublicArtworkController extends Controller
         private readonly SitePreviewContext $preview,
     ) {}
 
-    public function home(): View
-    {
-        return view('pages.home', [
-            'artwork' => $this->artworks->latestForHome(),
-            'media' => $this->media,
-        ]);
-    }
-
     public function category(string $category): View|RedirectResponse
     {
         $sectionQuery = SiteSection::query()
-            ->where('type', SiteNodeType::Gallery->value)
+            ->where('type', SiteSectionType::Gallery->value)
             ->where('slug', $category)
             ->with('artworkCategory');
         $this->preview->constrainSectionQuery($sectionQuery);
@@ -74,7 +66,7 @@ class PublicArtworkController extends Controller
         /** @var ArtworkCategory $categoryRecord */
         $categoryRecord = $artwork->getRelationValue('category');
         $sectionQuery = SiteSection::query()
-            ->where('type', SiteNodeType::Gallery->value)
+            ->where('type', SiteSectionType::Gallery->value)
             ->where('artwork_category_id', $categoryRecord->getKey());
         $this->preview->constrainSectionQuery($sectionQuery);
         abort_unless($sectionQuery->exists(), 404);

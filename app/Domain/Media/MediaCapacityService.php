@@ -2,6 +2,7 @@
 
 namespace App\Domain\Media;
 
+use App\Domain\Storage\SiteStorageDatabaseUsageService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -11,10 +12,31 @@ final class MediaCapacityService
 {
     private const WARNING_RATIO = 0.85;
 
-    private const DISPLAY_CACHE_SECONDS = 300;
+    public function __construct(
+        private readonly SiteStorageDatabaseUsageService $databaseUsage,
+    ) {}
 
     /**
-     * @return array{configured:bool,configuration_valid:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null}
+     * @return array{
+     *   configured:bool,
+     *   configuration_valid:bool,
+     *   measurement_available:bool,
+     *   status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',
+     *   quota_bytes:int|null,
+     *   authoritative_bytes:int|null,
+     *   generated_bytes:int|null,
+     *   managed_bytes:int|null,
+     *   database_bytes:int|null,
+     *   site_used_bytes:int|null,
+     *   reclaimable_bytes:int|null,
+     *   remaining_bytes:int|null,
+     *   site_used_ratio:float|null,
+     *   authoritative_ratio:float|null,
+     *   original_files:int|null,
+     *   generated_files:int|null,
+     *   authoritative_file_bytes:array<string,int>|null,
+     *   database:array<string,mixed>|null
+     * }
      */
     public function snapshot(): array
     {
@@ -32,12 +54,20 @@ final class MediaCapacityService
             return $this->unavailableSnapshot($quotaConfiguration['configured'], true, $quota);
         }
 
-        $remaining = $quota === null ? null : max(0, $quota - $authoritativeBytes);
-        $ratio = $quota === null ? null : $authoritativeBytes / $quota;
+        $database = $this->databaseUsage->snapshot();
+        if ($database['measurement_available'] !== true) {
+            return $this->unavailableSnapshot($quotaConfiguration['configured'], true, $quota);
+        }
+
+        $databaseBytes = max(0, (int) ($database['logical_bytes'] ?? 0));
+        $siteUsedBytes = $authoritativeBytes + $generatedBytes + $databaseBytes;
+        $remaining = $quota === null ? null : max(0, $quota - $siteUsedBytes);
+        $ratio = $quota === null ? null : $siteUsedBytes / $quota;
         $status = 'healthy';
+
         if ($quota === null) {
             $status = 'unconfigured';
-        } elseif ($authoritativeBytes >= $quota) {
+        } elseif ($siteUsedBytes >= $quota) {
             $status = 'full';
         } elseif ($ratio >= self::WARNING_RATIO) {
             $status = 'near_capacity';
@@ -52,25 +82,39 @@ final class MediaCapacityService
             'authoritative_bytes' => $authoritativeBytes,
             'generated_bytes' => $generatedBytes,
             'managed_bytes' => $authoritativeBytes + $generatedBytes,
+            'database_bytes' => $databaseBytes,
+            'site_used_bytes' => $siteUsedBytes,
+            'reclaimable_bytes' => $generatedBytes,
             'remaining_bytes' => $remaining,
+            'site_used_ratio' => $ratio,
             'authoritative_ratio' => $ratio,
             'original_files' => $originalFiles,
             'generated_files' => $generatedFiles,
             'authoritative_file_bytes' => $authoritativeFiles,
+            'database' => $database,
         ];
     }
 
-    /** @return array{configured:bool,configuration_valid:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null} */
+    /** @return array<string,mixed> */
     public function cachedSnapshot(): array
     {
-        return Cache::remember($this->displayCacheKey(), self::DISPLAY_CACHE_SECONDS, fn (): array => $this->snapshot());
+        return Cache::rememberForever($this->displayCacheKey(), fn (): array => $this->snapshot());
+    }
+
+    /** @return array<string,mixed> */
+    public function refreshCachedSnapshot(): array
+    {
+        $this->forgetCachedSnapshot();
+
+        return $this->cachedSnapshot();
     }
 
     /**
-     * Return the presentation snapshot only when another surface has already measured it.
-     * Dashboard callers must never trigger a filesystem walk on a cache miss.
+     * Return the presentation snapshot only when another boundary has already
+     * measured it. Normal admin navigation must never trigger a filesystem or
+     * database-wide storage measurement on a cache miss.
      *
-     * @return array{configured:bool,configuration_valid:bool,measurement_available:bool,status:'unconfigured'|'healthy'|'near_capacity'|'full'|'unavailable',quota_bytes:int|null,authoritative_bytes:int|null,generated_bytes:int|null,managed_bytes:int|null,remaining_bytes:int|null,authoritative_ratio:float|null,original_files:int|null,generated_files:int|null,authoritative_file_bytes:array<string,int>|null}|null
+     * @return array<string,mixed>|null
      */
     public function cachedSnapshotIfAvailable(): ?array
     {
@@ -107,12 +151,22 @@ final class MediaCapacityService
 
         try {
             [$authoritativeBytes] = $this->measurePrefix('originals');
+            [$generatedBytes] = $this->measurePrefix('variants');
         } catch (Throwable) {
             throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
         }
 
-        if ($authoritativeBytes >= $quota || $bytes > ($quota - $authoritativeBytes)) {
-            throw ValidationException::withMessages(['media' => 'The media storage allowance is full. Remove unused original media or ask the operator to increase the allowance before uploading.']);
+        $database = $this->databaseUsage->snapshot();
+        if ($database['measurement_available'] !== true) {
+            throw ValidationException::withMessages(['media' => 'Storage capacity could not be verified. Try the upload again later.']);
+        }
+
+        $siteUsedBytes = $authoritativeBytes
+            + $generatedBytes
+            + max(0, (int) ($database['logical_bytes'] ?? 0));
+
+        if ($siteUsedBytes >= $quota || $bytes > ($quota - $siteUsedBytes)) {
+            throw ValidationException::withMessages(['media' => 'The site storage allowance is full. Remove reclaimable storage or ask the operator to increase the allowance before uploading.']);
         }
     }
 
@@ -140,9 +194,7 @@ final class MediaCapacityService
         return ['configured' => true, 'valid' => false, 'bytes' => null];
     }
 
-    /**
-     * @return array{configured:bool,configuration_valid:bool,measurement_available:false,status:'unavailable',quota_bytes:int|null,authoritative_bytes:null,generated_bytes:null,managed_bytes:null,remaining_bytes:null,authoritative_ratio:null,original_files:null,generated_files:null,authoritative_file_bytes:null}
-     */
+    /** @return array<string,mixed> */
     private function unavailableSnapshot(bool $configured, bool $configurationValid, ?int $quota): array
     {
         return [
@@ -154,11 +206,16 @@ final class MediaCapacityService
             'authoritative_bytes' => null,
             'generated_bytes' => null,
             'managed_bytes' => null,
+            'database_bytes' => null,
+            'site_used_bytes' => null,
+            'reclaimable_bytes' => null,
             'remaining_bytes' => null,
+            'site_used_ratio' => null,
             'authoritative_ratio' => null,
             'original_files' => null,
             'generated_files' => null,
             'authoritative_file_bytes' => null,
+            'database' => null,
         ];
     }
 

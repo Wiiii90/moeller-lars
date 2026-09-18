@@ -1,139 +1,201 @@
 # Migration and cutover plan
 
-The application is no longer in an early build phase. Remaining migration work is protected-state reconciliation, browser/editorial acceptance, production-readiness gating, cutover and eventual legacy retirement.
+The application is no longer in an early build phase. The current v0.3 admin/browser product-composition gate is accepted; remaining release work is exact-candidate promotion to `main`, isolated Validation/release-candidate qualification, production-readiness gating, cutover and eventual legacy retirement.
 
 Production/Validation placement, backups, deployment and rollback are owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
 
 ## 1. Source boundary
 
 Migration inputs are read-only legacy evidence:
+
 - legacy Artwork/category tables and ordering;
 - reviewed Vita/CV source + portrait;
 - legacy public media required by the artist-site target;
 - legacy route/presentation evidence used for comparison.
 
-The legacy `/workshop` application/database is outside the artist-site content target. It remains a platform rollback/retirement concern until explicitly retired.
-
-Never commit source DB dumps, Production media, credentials or secret-bearing configuration.
+The legacy `/workshop` application/database remains outside the artist-site content target. Never commit source DB dumps, Production media, credentials or secret-bearing configuration.
 
 ## 2. Canonical target
 
-The target is the current Laravel/PostgreSQL application model, not the legacy schema.
-
 Normalization:
+
 - legacy artwork categories → **Gallery** persistence + Gallery Site Nodes;
-- legacy Home → **Home**;
-- legacy Blog → **Journal / Blog**;
+- legacy Home → **Home** presentation state;
+- application-owned Blog editorial model → **Journal / Blog**; this is target-schema evolution, not a legacy-source mapping;
 - legacy Exhibitions → **Journal / Exhibitions**;
-- legacy CV/Vita placement/content → **Custom Page** composition + retained migration provenance;
-- legacy Contact content/placement → reusable **Contact component** inside Custom Page composition; no standalone Contact runtime node;
+- legacy CV/Vita placement/content → **Custom Page/CV composition** + retained provenance;
+- legacy Contact content/placement → reusable **Contact component**;
 - original media → canonical `MediaAsset` originals with checksum/provenance.
 
 Historical persistence names are not restored as runtime compatibility aliases.
 
-## 3. Vita/CV/Exhibitions reconciliation
+## 3. Vita/CV/Exhibitions source accounting
 
-The reviewed Vita source contains 31 normalized rows. The accepted target accounting is:
-- 2 Biography rows;
-- 29 first-class Exhibition rows;
-- total source accounting remains 31/31;
-- portrait/profile media provenance remains explicit;
-- Exhibition content must not remain duplicated in CV after normalization.
+Reviewed Vita source contains 31 normalized rows:
 
-Existing protected Validation data is transformed through forward migrations/reconciliation. Do not rerun the source importer into canonical non-empty data merely to apply later schema/domain changes.
+- 2 Biography/CV rows;
+- 29 Exhibition rows;
+- total accounting 31/31;
+- portrait/profile provenance explicit;
+- Exhibition content not duplicated in CV after normalization.
 
-See [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
+Existing protected canonical data is transformed through forward migrations/reconciliation. Do not rerun source import into non-empty canonical data to apply later domain/schema changes.
 
-## 4. Protected Validation data
+## 4. Forward canonicalization after initial import
 
-A reviewed protected Validation database/media set is canonical non-production application state.
+Current protected-state evolution includes deliberate forward migrations beyond the original import.
 
-Validation remains isolated from Production writable state:
-- separate PostgreSQL data;
-- separate authoritative media;
-- separate application secrets;
-- authenticated/non-public ingress.
+### Journal Rich Text media canonicalization
 
-Validation may use a restricted read-only Matomo reporting identity while browser tracking stays disabled. This does not permit application DB/media sharing.
+Legacy Journal embedded-image/runtime usage was converted to the central Markdown `media:<id>` contract. The migration is forward-only and rejects unresolved/ambiguous/orphaned legacy evidence rather than silently dropping it.
 
-## 5. Release-candidate validation
+After canonicalization:
+
+- Blog body and Exhibition description use central Markdown/Rich Text media references;
+- structured Journal media roles are Cover/Gallery only;
+- legacy inline role/token runtime is gone.
+
+### Exhibition presentation/restore canonicalization
+
+A later forward migration establishes the explicit Exhibition presentation contract:
+
+- `gallery_enabled`;
+- `map_enabled`;
+- `map_shape` (`wide`/`square`);
+- deterministic handling of historical archived rows missing `archived_from_state`;
+- conservative normalization of address values where `location_text` only duplicated structured city/country information.
+
+Historical archived rows with missing previous state infer:
+
+- `published_at` present → previous state `published`;
+- otherwise → `draft`.
+
+Runtime restore still validates current publication readiness and safely falls back to Draft when a historical record cannot currently satisfy Published readiness.
+
+### Publication migration stabilization
+
+The Publication bootstrap migration freezes the tracked tables and audit entity types that existed when that migration was introduced. It does not import today's mutable `PublicationSnapshot` constants. Later changes to tracked schema/state are expressed by later forward migrations.
+
+`blog_settings` was not legacy-site evidence. It was an application-owned table from the original dedicated Blog settings model. Its canonical Blog/Journal values were already normalized into `site_sections` / `journal_settings`, it was removed from runtime/Publication authority, and its obsolete `RESTRICT` foreign key was detached before a forward migration retired the table. Historical migrations still mention it only to reconstruct that schema evolution.
+
+The detailed rules are in [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
+
+## 5. Journal template retention
+
+The active Journal template is presentation/editorial state, not a destructive data conversion.
+
+Switching Blog ↔ Exhibitions:
+
+- retains BlogPost rows;
+- retains Exhibition rows;
+- does not convert entries between models;
+- does not delete inactive-template content;
+- reactivates retained content when switched back.
+
+Media reference/deletion accounting therefore includes both retained entry worlds for a Journal SiteSection even while only one template is public/active.
+
+## 6. Protected Validation data
+
+Reviewed protected Validation DB/media is canonical non-production application state.
+
+Validation remains isolated from Production writable state: separate PostgreSQL, authoritative media, application secrets and authenticated/non-public ingress.
+
+Validation may use restricted read-only Matomo Reporting while tracking stays disabled.
+
+## 7. Application acceptance and candidate promotion
+
+The current v0.3 admin/browser composition has completed its product-acceptance pass. Historical issue comments describing older rejected browser candidates are evidence of those earlier states, not instructions to recreate defects that are no longer present in the accepted current candidate.
+
+For the release-candidate line:
+
+1. keep the accepted candidate on the exact current `dev` integration line while durable documentation and issue bookkeeping are completed;
+2. promote that exact accepted `dev` head to protected `main`;
+3. let the canonical `main` release workflow verify and publish the immutable image for the exact promoted SHA;
+4. deploy isolated Validation from that same `main` SHA/image digest through the platform contract;
+5. perform the remaining release-candidate/environment checks there.
+
+Further local/protected browser-reconciliation cycles remain valid when a concrete regression or later milestone changes presentation, but they are not a standing blocker once the accepted milestone composition is complete. A technically running candidate still does not establish future browser/product acceptance by itself.
+
+Detailed admin UI expectations are in [`../ui-skills.md`](../ui-skills.md).
+
+## 8. Release-candidate validation
 
 For an exact candidate SHA:
 
-1. complete repository CI;
-2. produce/verify the immutable GHCR image for that exact SHA;
-3. update isolated Validation through the platform contract;
-4. verify `/app-release.json` release identity;
+1. complete appropriate repository verification;
+2. produce/verify exact immutable image;
+3. update isolated Validation through platform contract;
+4. verify `/app-release.json` identity;
 5. apply required forward migrations;
 6. run `php artisan media:verify`;
-7. run `legacy:validate` when the frozen migration dataset is part of the gate;
-8. run application smoke checks;
+7. run `legacy:validate` when frozen migration dataset is part of the gate;
+8. run smoke checks;
 9. perform required public/admin browser acceptance;
-10. classify blocking findings before the candidate is considered for cutover.
+10. classify blockers before cutover consideration.
 
-A green validator or CI run is not browser/editorial acceptance.
+A green validator/CI run is not browser/editorial acceptance.
 
-## 6. Current browser/editorial gate
-
-Representative acceptance must cover the current product, not old implementation shapes:
+## 9. Representative browser acceptance
 
 ### Public
+
 - Home, Galleries, Artwork detail/viewer;
-- Custom Pages including CV/contact composition;
+- Custom Pages including CV/Contact composition;
 - Blog/Exhibitions Journals;
 - responsive navigation and representative migrated content;
 - media delivery/variants and viewer interaction.
 
 ### Admin
-- Dashboard as real site/admin overview rather than Pages/Gallery duplicate;
+
+- Dashboard;
 - Pages typed tree/navigation;
-- Gallery Contact Sheet and repaired Add/Existing-Media/batch/dialog flows;
-- Files search/upload/preview/reference behavior across supported media kinds;
-- General settings under the canonical event-driven no-timer persistence contract;
-- Analytics real-data/degraded behavior;
-- Storage with real operator-configured allowance;
-- Activity and any persistent Preview/Commit/Settings shell utilities that are part of the accepted candidate;
-- shared dialog/overlay behavior across representative editor flows.
+- Home presentation modes/editorial controls;
+- Gallery/Artwork contact sheet/editing/ordering/dialog flows;
+- Journal Blog/Exhibitions including template switch, restore, ordering, Exhibition Gallery/Map/editor flow;
+- Custom/CV/Contact hierarchy and bulk/ordering flows;
+- Files search/upload/preview/reference behavior;
+- General settings persistence;
+- Analytics degraded/real data behavior;
+- Storage/Activity and shared dialog behavior.
 
-Detailed legacy public evidence remains in [LEGACY-PUBLIC-CONTRACT.md](LEGACY-PUBLIC-CONTRACT.md) until retirement.
-
-## 7. Pre-cutover gate
+## 10. Pre-cutover gate
 
 Before Production traffic changes:
-- final application SHA/image/digest recorded;
-- application CI + protected Validation acceptance green enough for the explicitly approved release scope;
+
+- final SHA/image/digest recorded;
+- canonical application verification and browser/editorial acceptance complete for approved scope;
 - migration/media reconciliation green;
-- artist/editorial acceptance complete;
 - fresh recoverable Production backup exists;
 - restore/rollback procedure proven/current;
 - intended Production DB/media state confirmed;
 - monitoring/health checks green;
 - required mail/Matomo/DNS/TLS dependencies ready;
-- no unresolved high-severity application/platform blocker.
+- no unresolved high-severity blocker.
 
-Cutover is an explicit platform/operator action and is never triggered by merging application code.
+Cutover is explicit platform/operator action and never triggered merely by merging application code.
 
-## 8. Cutover
+## 11. Cutover
 
 At application-contract level:
 
-1. preserve a pre-change recoverable state;
-2. deploy the exact approved immutable image;
-3. run required migrations exactly once under the platform gate;
+1. preserve pre-change recoverable state;
+2. deploy exact approved immutable image;
+3. run required migrations once under platform gate;
 4. attach authoritative Production DB/media;
 5. verify release identity + `/up`;
 6. run media/application smoke checks;
 7. switch/confirm public traffic only after checks succeed;
 8. retain rollback capability through stabilization.
 
-The application container never mutates the legacy application automatically and never runs a legacy import on startup.
+The application never mutates/reimports the legacy application automatically.
 
-## 9. Post-cutover and retirement
+## 12. Post-cutover and retirement
 
 After cutover:
+
 - monitor public/admin/contact/analytics health;
 - verify backups include new authoritative PostgreSQL/media state;
-- resolve Production-only findings through normal releases;
-- retire legacy runtime/data only after explicit retirement acceptance and retained recovery requirements are satisfied.
+- resolve Production findings through normal releases;
+- retire legacy runtime/data only after explicit retirement acceptance and recovery requirements are satisfied.
 
-After legacy retirement, migration-only evidence such as `LEGACY-PUBLIC-CONTRACT.md` and `SOURCE-INVENTORY.md` may be archived/removed in a dedicated cleanup rather than remaining active architecture documentation.
+After explicit legacy retirement, true migration-only legacy evidence may be archived/removed in a dedicated cleanup once its recovery/reconciliation purpose has ended. Superseded application-owned schema such as the former `blog_settings` table is retired independently through normal forward migrations and is not gated on legacy-site retirement.

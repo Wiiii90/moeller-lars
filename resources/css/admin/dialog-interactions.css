@@ -1,0 +1,62 @@
+/* Shared hitbox/focus hardening for dialog header actions.
+ * Loaded after dialog-contract.css so Filament's higher-specificity footer width
+ * cannot leave a transparent full-width click shield across compact dialogs. */
+.admin-dialog--header-actions .fi-modal-footer {
+    box-sizing: border-box;
+    width: max-content !important;
+    min-width: 0 !important;
+    max-width: calc(
+        100%
+        - var(--admin-dialog-header-action-inset)
+        - var(--admin-dialog-header-action-inset)
+        - var(--admin-dialog-header-action-size)
+        - var(--admin-dialog-header-action-gap)
+    ) !important;
+    pointer-events: none;
+}
+
+.admin-dialog--header-actions .fi-modal-footer-actions,
+.admin-dialog--header-actions.admin-task-dialog .fi-modal-footer-actions {
+    pointer-events: auto;
+}
+
+/* Filament icon buttons carry their own size and negative-margin rules. Repeat
+ * the canonical rail geometry here, after Filament, so compact confirmation
+ * actions cannot grow back into the native hitbox and overlap the close X. */
+.admin-dialog--header-actions .fi-modal-footer-actions > .fi-icon-btn,
+.admin-dialog--header-actions .fi-modal-close-btn {
+    box-sizing: border-box;
+    width: var(--admin-dialog-header-action-size) !important;
+    min-width: var(--admin-dialog-header-action-size) !important;
+    max-width: var(--admin-dialog-header-action-size) !important;
+    height: var(--admin-dialog-header-action-size) !important;
+    min-height: var(--admin-dialog-header-action-size) !important;
+    max-height: var(--admin-dialog-header-action-size) !important;
+    margin: 0 !important;
+}
+
+.admin-dialog--confirmation {
+    --admin-dialog-header-action-gap: .625rem;
+}
+
+.admin-dialog--header-actions .fi-modal-close-btn {
+    z-index: 12;
+}
+
+/* Activity record navigation was retired. Keep a possible Undo button in the
+ * shared rail, but do not surface the stale URL action that older feed events
+ * can still project. */
+.admin-dialog--header-actions:has(.admin-detail-dialog--activity)
+    .fi-modal-footer-actions > a.fi-icon-btn {
+    display: none !important;
+}
+
+/* Programmatic focus restoration during modal morphs must stay keyboard-visible
+ * without looking like a phantom mouse hover when the pointer is elsewhere. */
+.admin-dialog--header-actions .fi-modal-close-btn:focus-visible {
+    border-color: var(--admin-text) !important;
+    background: var(--admin-surface) !important;
+    color: var(--admin-text) !important;
+    outline: 2px solid color-mix(in srgb, var(--admin-text) 34%, transparent);
+    outline-offset: 2px;
+}

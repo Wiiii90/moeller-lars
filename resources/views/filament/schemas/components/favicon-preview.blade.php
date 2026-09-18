@@ -23,9 +23,12 @@
         @endif
     </div>
     <div class="admin-favicon-preview__copy">
-        <strong>Selected favicon</strong>
+        <strong>Site icon</strong>
         @if ($asset instanceof \App\Models\MediaAsset)
             <span>{{ $asset->getAttribute('original_filename') }}</span>
+            <div class="admin-toolbar">
+                <button class="admin-action is-danger" type="button" wire:click="removeFavicon">Remove</button>
+            </div>
         @else
             <span>No favicon selected</span>
         @endif

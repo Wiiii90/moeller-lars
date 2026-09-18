@@ -60,4 +60,9 @@ done
 # avoiding route/config/view discovery on every web request.
 php artisan optimize --no-interaction
 
+# Warm the authoritative Storage display snapshot once at container startup.
+# Normal admin navigation only reads this snapshot and never walks the media
+# filesystem; uploads/deletes refresh it at their existing mutation boundary.
+php artisan media:measure-capacity --no-interaction
+
 exec "$@"

@@ -52,10 +52,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $BeforeIds = @()
-if (-not [string]::IsNullOrWhiteSpace($BeforeJson)) {
+if (-not [string]::IsNullOrWhiteSpace(($BeforeJson | Out-String))) {
+    $ParsedBeforeRuns = ConvertFrom-Json -InputObject (($BeforeJson | Out-String).Trim())
+    $BeforeRuns = @($ParsedBeforeRuns)
     $BeforeIds = @(
-        ($BeforeJson | ConvertFrom-Json) |
-            ForEach-Object { [int64] $_.databaseId }
+        $BeforeRuns |
+            ForEach-Object { [string] $_.databaseId }
     )
 }
 
@@ -86,11 +88,12 @@ for ($Attempt = 0; $Attempt -lt 60 -and $null -eq $Run; $Attempt++) {
         throw 'Could not query preview workflow runs after dispatch.'
     }
 
-    $Runs = @($RunsJson | ConvertFrom-Json)
+    $ParsedRuns = ConvertFrom-Json -InputObject (($RunsJson | Out-String).Trim())
+    $Runs = @($ParsedRuns)
     $Run = $Runs |
         Where-Object {
             $_.displayTitle -eq $ExpectedTitle -and
-            ([int64] $_.databaseId -notin $BeforeIds)
+            ([string] $_.databaseId -notin $BeforeIds)
         } |
         Sort-Object createdAt -Descending |
         Select-Object -First 1

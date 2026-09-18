@@ -6,6 +6,9 @@ use App\Domain\Artwork\ArtworkEditorialService;
 use App\Domain\Media\MediaIngestService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
+use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
@@ -14,7 +17,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -53,50 +55,58 @@ class GalleryImagesRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->headerActions([
-                Action::make('uploadImage')
-                    ->label('Upload image')
-                    ->icon(Heroicon::OutlinedArrowUpTray)
-                    ->schema([
-                        FileUpload::make('upload')
-                            ->label('Image')
-                            ->image()
-                            ->storeFiles(false)
-                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                            ->maxSize((int) ceil(MediaTypePolicy::imageMaxBytes() / 1024))
-                            ->required(),
-                    ])
-                    ->action(function (array $data): void {
-                        /** @var Artwork $artwork */
-                        $artwork = $this->getOwnerRecord();
-                        app(ArtworkEditorialService::class)->ingestAdditionalMedia($artwork, $data['upload']);
-                    }),
-                Action::make('addFromLibrary')
-                    ->label('Add from library')
-                    ->icon(Heroicon::OutlinedPhoto)
-                    ->schema([
-                        Select::make('media_asset_id')
-                            ->label('Available media')
-                            ->options(fn (): array => $this->availableMediaOptions())
-                            ->searchable()
-                            ->required(),
-                    ])
-                    ->action(function (array $data): void {
-                        /** @var Artwork $artwork */
-                        $artwork = $this->getOwnerRecord();
-                        /** @var MediaAsset $asset */
-                        $asset = MediaAsset::query()->findOrFail((int) $data['media_asset_id']);
-                        app(ArtworkEditorialService::class)->attachAdditionalMedia($artwork, $asset);
-                    }),
+                AdminDialog::create(
+                    Action::make('uploadImage')
+                        ->label('Upload image')
+                        ->icon(AdminIcon::Upload)
+                        ->schema([
+                            FileUpload::make('upload')
+                                ->label('Image')
+                                ->image()
+                                ->storeFiles(false)
+                                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                                ->maxSize((int) ceil(MediaTypePolicy::imageMaxBytes() / 1024))
+                                ->required(),
+                        ])
+                        ->action(function (array $data): void {
+                            /** @var Artwork $artwork */
+                            $artwork = $this->getOwnerRecord();
+                            app(ArtworkEditorialService::class)->ingestAdditionalMedia($artwork, $data['upload']);
+                        }),
+                    'Upload image',
+                    AdminDialogSize::Default,
+                ),
+                AdminDialog::command(
+                    Action::make('addFromLibrary')
+                        ->label('Add from library')
+                        ->icon(AdminIcon::AddFromLibrary)
+                        ->schema([
+                            Select::make('media_asset_id')
+                                ->label('Available media')
+                                ->options(fn (): array => $this->availableMediaOptions())
+                                ->searchable()
+                                ->required(),
+                        ])
+                        ->action(function (array $data): void {
+                            /** @var Artwork $artwork */
+                            $artwork = $this->getOwnerRecord();
+                            /** @var MediaAsset $asset */
+                            $asset = MediaAsset::query()->findOrFail((int) $data['media_asset_id']);
+                            app(ArtworkEditorialService::class)->attachAdditionalMedia($artwork, $asset);
+                        }),
+                    'Add to gallery',
+                    AdminDialogSize::Default,
+                ),
             ])
             ->recordActions([
                 Action::make('preview')
                     ->label('Inspect')
-                    ->icon(Heroicon::OutlinedArrowsPointingOut)
+                    ->icon(AdminIcon::Inspect)
                     ->url(fn (ArtworkMedia $record): string => $this->viewerUrl($record))
                     ->visible(fn (ArtworkMedia $record): bool => $this->asset($record)?->getAttribute('state') === 'available'),
                 Action::make('moveUp')
                     ->label('Move up')
-                    ->icon(Heroicon::OutlinedArrowUp)
+                    ->icon(AdminIcon::MoveUp)
                     ->action(function (ArtworkMedia $record): void {
                         /** @var Artwork $artwork */
                         $artwork = $this->getOwnerRecord();
@@ -104,23 +114,29 @@ class GalleryImagesRelationManager extends RelationManager
                     }),
                 Action::make('moveDown')
                     ->label('Move down')
-                    ->icon(Heroicon::OutlinedArrowDown)
+                    ->icon(AdminIcon::MoveDown)
                     ->action(function (ArtworkMedia $record): void {
                         /** @var Artwork $artwork */
                         $artwork = $this->getOwnerRecord();
                         app(ArtworkEditorialService::class)->moveAdditionalMedia($artwork, $record, 'down');
                     }),
-                Action::make('detach')
-                    ->label('Detach')
-                    ->icon(Heroicon::OutlinedLinkSlash)
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalDescription('Remove this image from the artwork gallery. The media asset stays in the library and is not deleted.')
-                    ->action(function (ArtworkMedia $record): void {
-                        /** @var Artwork $artwork */
-                        $artwork = $this->getOwnerRecord();
-                        app(ArtworkEditorialService::class)->detachAdditionalMedia($artwork, $record);
-                    }),
+                AdminDialog::confirm(
+                    Action::make('detach')
+                        ->label('Detach')
+                        ->icon(AdminIcon::Detach)
+                        ->color('danger')
+                        ->action(function (ArtworkMedia $record): void {
+                            /** @var Artwork $artwork */
+                            $artwork = $this->getOwnerRecord();
+                            app(ArtworkEditorialService::class)->detachAdditionalMedia($artwork, $record);
+                        }),
+                    heading: 'Detach image',
+                    description: 'Remove this image from the artwork gallery. The media asset stays in the library and is not deleted.',
+                    submitLabel: 'Detach',
+                    danger: true,
+                    size: AdminDialogSize::Mini,
+                    icon: AdminIcon::Detach,
+                ),
             ])
             ->paginated(false)
             ->emptyStateHeading('No additional gallery images')

@@ -9,6 +9,38 @@ use Illuminate\Validation\ValidationException;
 
 final class ArtworkMaterialPresetService
 {
+    public function add(string $name): ArtworkMaterialPreset
+    {
+        $value = trim($name);
+        if ($value === '') {
+            throw ValidationException::withMessages([
+                'name' => 'Material is required.',
+            ]);
+        }
+        if (mb_strlen($value) > 240) {
+            throw ValidationException::withMessages([
+                'name' => 'Material may not exceed 240 characters.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($value): ArtworkMaterialPreset {
+            /** @var EloquentCollection<int, ArtworkMaterialPreset> $presets */
+            $presets = ArtworkMaterialPreset::query()
+                ->lockForUpdate()
+                ->get();
+            $key = mb_strtolower($value);
+            $existing = $presets->first(
+                static fn (ArtworkMaterialPreset $preset): bool => mb_strtolower(trim((string) $preset->getAttribute('name'))) === $key,
+            );
+
+            if ($existing instanceof ArtworkMaterialPreset) {
+                return $existing;
+            }
+
+            return ArtworkMaterialPreset::query()->create(['name' => $value]);
+        });
+    }
+
     /** @param array<int, mixed> $names */
     public function sync(array $names): void
     {

@@ -22,11 +22,7 @@ class MediaAsset extends Model
 
     public const COPYRIGHT_NONE = 'none';
 
-    public const COPYRIGHT_MODES = [
-        self::COPYRIGHT_INHERIT,
-        self::COPYRIGHT_OVERRIDE,
-        self::COPYRIGHT_NONE,
-    ];
+    public const COPYRIGHT_MODES = [self::COPYRIGHT_INHERIT, self::COPYRIGHT_OVERRIDE, self::COPYRIGHT_NONE];
 
     protected function casts(): array
     {
@@ -76,23 +72,28 @@ class MediaAsset extends Model
         return $this->hasMany(PublicContentSetting::class, 'favicon_media_asset_id');
     }
 
+    public function journalEntryMedia(): HasMany
+    {
+        return $this->hasMany(JournalEntryMedia::class);
+    }
+
     public function artworks(): BelongsToMany
     {
         return $this->belongsToMany(Artwork::class, 'artwork_media')
-            ->withPivot(['role', 'position', 'alt_text_override'])
-            ->withTimestamps();
+            ->withPivot(['role', 'position', 'alt_text_override'])->withTimestamps();
     }
 
+    /** Legacy compatibility only. */
     public function exhibitionMedia(): HasMany
     {
         return $this->hasMany(ExhibitionMedia::class);
     }
 
+    /** Legacy compatibility only. */
     public function exhibitions(): BelongsToMany
     {
         return $this->belongsToMany(Exhibition::class, 'exhibition_media')
-            ->withPivot(['role', 'position', 'alt_text_override'])
-            ->withTimestamps();
+            ->withPivot(['role', 'position', 'alt_text_override'])->withTimestamps();
     }
 
     protected static function booted(): void
@@ -101,31 +102,21 @@ class MediaAsset extends Model
             $mode = $asset->getAttribute('copyright_notice_mode');
             if ($mode === null) {
                 $notice = $asset->getAttribute('copyright_notice');
-                $mode = is_string($notice) && trim($notice) !== ''
-                    ? self::COPYRIGHT_OVERRIDE
-                    : self::COPYRIGHT_INHERIT;
+                $mode = is_string($notice) && trim($notice) !== '' ? self::COPYRIGHT_OVERRIDE : self::COPYRIGHT_INHERIT;
                 $asset->setAttribute('copyright_notice_mode', $mode);
             }
-
             if (! is_string($mode) || ! in_array($mode, self::COPYRIGHT_MODES, true)) {
-                throw ValidationException::withMessages([
-                    'copyright_notice_mode' => 'Choose whether copyright is inherited, overridden, or omitted.',
-                ]);
+                throw ValidationException::withMessages(['copyright_notice_mode' => 'Choose whether copyright is inherited, overridden, or omitted.']);
             }
-
             if ($mode !== self::COPYRIGHT_OVERRIDE) {
                 $asset->setAttribute('copyright_notice', null);
 
                 return;
             }
-
             $notice = $asset->getAttribute('copyright_notice');
             if (! is_string($notice) || trim($notice) === '' || mb_strlen($notice) > 500) {
-                throw ValidationException::withMessages([
-                    'copyright_notice' => 'An asset copyright override must contain no more than 500 characters.',
-                ]);
+                throw ValidationException::withMessages(['copyright_notice' => 'An asset copyright override must contain no more than 500 characters.']);
             }
-
             $asset->setAttribute('copyright_notice', trim($notice));
         });
     }
@@ -135,7 +126,6 @@ class MediaAsset extends Model
         if (! is_string($value)) {
             return null;
         }
-
         $value = trim($value);
 
         return $value === '' ? null : $value;

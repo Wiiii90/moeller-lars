@@ -1,0 +1,136 @@
+name: Browser interaction profiling
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  admin-interactions:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: moeller_lars_browser_testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_INITDB_ARGS: --auth-local=trust --auth-host=scram-sha-256
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moeller_lars_browser_testing"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      APP_ENV: testing
+      APP_URL: http://127.0.0.1:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: moeller_lars_browser_testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      MOELLER_LARS_DISPOSABLE_TEST_DATABASE: '1'
+      MOELLER_LARS_BROWSER_PROFILE: '1'
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:8000
+      PLAYWRIGHT_ADMIN_EMAIL: playwright-admin@example.test
+      PLAYWRIGHT_ADMIN_PASSWORD: Playwright-Only-Password-2026!
+      MATOMO_TRACKING_ENABLED: false
+      MATOMO_REPORTING_ENABLED: false
+      DEBUGBAR_ENABLED: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, intl, mbstring, pdo_pgsql, zip
+          coverage: none
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare browser test environment
+        run: cp .env.example .env
+
+      - name: Generate browser test application key
+        run: echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
+
+      - name: Install frontend dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Prepare disposable browser database
+        run: |
+          php artisan migrate:fresh --force
+          php artisan db:seed --class='Database\Seeders\BrowserProfilingSeeder' --force
+
+      - name: Start profiling application
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > storage/logs/playwright-server.log 2>&1 &
+          echo $! > /tmp/moeller-lars-playwright-server.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/up >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat storage/logs/playwright-server.log
+          exit 1
+
+      - name: Run admin interaction profiling
+        run: npm run test:browser:profile
+
+      - name: Summarize interaction metrics
+        if: always()
+        run: |
+          if [[ ! -f artifacts/performance/admin-interactions.json ]]; then
+            echo 'No interaction metrics were produced.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            echo '### Admin interaction profiling'
+            echo
+            echo '| Flow | Full nav | Fetch/XHR | Request bytes | Response bytes | Duration ms |'
+            echo '| --- | ---: | ---: | ---: | ---: | ---: |'
+            jq -r '.flows[] | "| \(.name) | \(.full_navigation_count // "n/a") | \(.xhr_fetch_count // "n/a") | \(.request_bytes // "n/a") | \(.response_bytes // "n/a") | \(.duration_ms // "n/a") |"' artifacts/performance/admin-interactions.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload browser profiling evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: admin-interaction-profile-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            artifacts/performance/
+            playwright-report/
+            test-results/
+            storage/logs/playwright-server.log
+            storage/logs/laravel.log
+
+      - name: Stop profiling application
+        if: always()
+        run: |
+          if [[ -f /tmp/moeller-lars-playwright-server.pid ]]; then
+            kill "$(cat /tmp/moeller-lars-playwright-server.pid)" 2>/dev/null || true
+          fi

@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Blog\BlogEditorialService;
+use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\CanonicalUrl;
+use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
+use App\Domain\Content\SiteSectionType;
 use App\Models\Artwork;
 use App\Models\BlogPost;
 use App\Models\SiteSection;
@@ -19,10 +20,15 @@ final class PublicSeoController extends Controller
     public function __construct(
         private readonly CanonicalUrl $canonical,
         private readonly SiteNodeRoute $siteNodeRoute,
+        private readonly HomePresentationResolver $home,
     ) {}
 
     public function sitemap(): Response
     {
+        if ($this->home->publicGateActive()) {
+            return $this->sitemapResponse([$this->canonical->forPath('/')]);
+        }
+
         /** @var Collection<int, SiteSection> $sections */
         $sections = SiteSection::query()
             ->where('state', 'published')
@@ -49,7 +55,7 @@ final class PublicSeoController extends Controller
 
         /** @var Collection<int, SiteSection> $blogJournals */
         $blogJournals = $sections
-            ->where('type', SiteNodeType::Journal->value)
+            ->where('type', SiteSectionType::Journal->value)
             ->where('template', JournalTemplate::Blog->value)
             ->values();
 
@@ -65,9 +71,7 @@ final class PublicSeoController extends Controller
             }
         }
 
-        return response()
-            ->view('pages.sitemap', ['urls' => array_values(array_unique($urls))])
-            ->header('Content-Type', 'application/xml; charset=UTF-8');
+        return $this->sitemapResponse(array_values(array_unique($urls)));
     }
 
     public function robots(): Response
@@ -81,5 +85,13 @@ final class PublicSeoController extends Controller
         ]);
 
         return response($body)->header('Content-Type', 'text/plain; charset=UTF-8');
+    }
+
+    /** @param list<string> $urls */
+    private function sitemapResponse(array $urls): Response
+    {
+        return response()
+            ->view('pages.sitemap', ['urls' => $urls])
+            ->header('Content-Type', 'application/xml; charset=UTF-8');
     }
 }

@@ -6,11 +6,10 @@ use App\Models\AdminActionReceipt;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
-use App\Models\CvEntry;
-use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
@@ -18,9 +17,9 @@ final class AdminActionReceiptService
 {
     public const RECEIPT_VERSION = 1;
 
-    public const RETENTION_DAYS = 30;
+    public const RETENTION_DAYS = 365;
 
-    public const MAX_RECEIPTS_PER_USER = 100;
+    public const MAX_RECEIPTS_PER_USER = 5000;
 
     private const MEDIA_ACTIONS = [
         'artwork.additional_media_attached',
@@ -28,25 +27,24 @@ final class AdminActionReceiptService
         'artwork.additional_media_reordered',
     ];
 
+    public function __construct(
+        private readonly AdminSnapshotReceiptService $snapshots,
+        private readonly AdminLifecycleRegistry $lifecycle,
+    ) {}
+
     public function recordForAuditEvent(AuditEvent $event, User $actor): ?AdminActionReceipt
     {
         $action = (string) $event->getAttribute('action');
-        $transition = match ($action) {
-            'artwork.published' => ['entity' => 'artwork', 'before' => 'draft', 'after' => 'published', 'inverse' => 'artwork.unpublished'],
-            'artwork.unpublished' => ['entity' => 'artwork', 'before' => 'published', 'after' => 'draft', 'inverse' => 'artwork.published'],
-            'cv_entry.published' => ['entity' => 'cv_entry', 'before' => 'draft', 'after' => 'published', 'inverse' => 'cv_entry.unpublished'],
-            'cv_entry.unpublished' => ['entity' => 'cv_entry', 'before' => 'published', 'after' => 'draft', 'inverse' => 'cv_entry.published'],
-            'exhibition.published' => ['entity' => 'exhibition', 'before' => 'draft', 'after' => 'published', 'inverse' => 'exhibition.unpublished'],
-            'exhibition.unpublished' => ['entity' => 'exhibition', 'before' => 'published', 'after' => 'draft', 'inverse' => 'exhibition.published'],
-            default => null,
-        };
+        $transition = $this->lifecycle->transitionForAction($action);
 
         if ($transition !== null) {
+            $this->snapshots->discardForAuditEvent($event);
+
             if ((string) $event->getAttribute('entity_type') !== $transition['entity']) {
                 return null;
             }
 
-            $target = $this->findTarget($transition['entity'], (int) $event->getAttribute('entity_id'));
+            $target = $this->lifecycle->findTarget($transition['entity'], (int) $event->getAttribute('entity_id'));
             if ($target === null || (string) $target->getAttribute('state') !== $transition['after']) {
                 return null;
             }
@@ -54,6 +52,7 @@ final class AdminActionReceiptService
             return $this->recordStateTransition(
                 $event,
                 $actor,
+                $transition['entity'],
                 $target,
                 $transition['before'],
                 $transition['after'],
@@ -62,10 +61,17 @@ final class AdminActionReceiptService
         }
 
         if (in_array($action, self::MEDIA_ACTIONS, true)) {
+            $this->snapshots->discardForAuditEvent($event);
+
             return $this->recordMediaReceipt($event, $actor);
         }
 
-        return null;
+        return $this->snapshots->recordForAuditEvent($event, $actor);
+    }
+
+    public function discardPendingSnapshotForEvent(AuditEvent $event): void
+    {
+        $this->snapshots->discardForAuditEvent($event);
     }
 
     /**
@@ -89,33 +95,32 @@ final class AdminActionReceiptService
             ->where('admin_user_id', $actor->getKey())
             ->whereIn('audit_event_id', $eventIds)
             ->where('receipt_version', self::RECEIPT_VERSION)
+            ->whereNull('snapshot_payload')
             ->whereNull('undone_at')
             ->where('expires_at', '>', now())
             ->get();
 
-        if ($receipts->isEmpty()) {
-            return [];
-        }
-
-        $targets = $this->loadTargetStates($receipts);
-        $media = $this->loadMediaContext($receipts);
         $available = [];
+        if ($receipts->isNotEmpty()) {
+            $targets = $this->loadTargetStates($receipts);
+            $media = $this->loadMediaContext($receipts);
 
-        foreach ($receipts as $receipt) {
-            if (! $this->receiptIsAvailable($receipt, $targets, $media)) {
-                continue;
+            foreach ($receipts as $receipt) {
+                if (! $this->receiptIsAvailable($receipt, $targets, $media)) {
+                    continue;
+                }
+
+                $inverseActionKey = (string) $receipt->getAttribute('inverse_action_key');
+                $available[(int) $receipt->getAttribute('audit_event_id')] = [
+                    'id' => (int) $receipt->getKey(),
+                    'action_key' => (string) $receipt->getAttribute('action_key'),
+                    'inverse_action_key' => $inverseActionKey,
+                    'inverse_label' => AdminActionCatalog::definition($inverseActionKey)['label'],
+                ];
             }
-
-            $inverseActionKey = (string) $receipt->getAttribute('inverse_action_key');
-            $available[(int) $receipt->getAttribute('audit_event_id')] = [
-                'id' => (int) $receipt->getKey(),
-                'action_key' => (string) $receipt->getAttribute('action_key'),
-                'inverse_action_key' => $inverseActionKey,
-                'inverse_label' => AdminActionCatalog::definition($inverseActionKey)['label'],
-            ];
         }
 
-        return $available;
+        return array_replace($available, $this->snapshots->availableForEvents($events, $actor));
     }
 
     public function prune(User $actor): void
@@ -140,7 +145,8 @@ final class AdminActionReceiptService
     private function recordStateTransition(
         AuditEvent $event,
         User $actor,
-        Artwork|CvEntry|Exhibition $target,
+        string $entityType,
+        Model $target,
         string $beforeState,
         string $afterState,
         string $inverseActionKey,
@@ -151,7 +157,7 @@ final class AdminActionReceiptService
 
         return $this->storeReceipt($event, $actor, [
             'inverse_action_key' => $inverseActionKey,
-            'entity_type' => $this->entityType($target),
+            'entity_type' => $entityType,
             'entity_id' => (int) $target->getKey(),
             'before_state' => $beforeState,
             'after_state' => $afterState,
@@ -517,48 +523,10 @@ final class AdminActionReceiptService
                 ->values()
                 ->all());
 
-        return [
-            'artwork' => $this->pluckStates(Artwork::class, $ids->get('artwork', [])),
-            'cv_entry' => $this->pluckStates(CvEntry::class, $ids->get('cv_entry', [])),
-            'exhibition' => $this->pluckStates(Exhibition::class, $ids->get('exhibition', [])),
-        ];
-    }
+        /** @var array<string, array<int, int>> $idsByEntityType */
+        $idsByEntityType = $ids->all();
 
-    /**
-     * @param  class-string<Artwork|CvEntry|Exhibition>  $model
-     * @param  array<int, int>  $ids
-     * @return array<int, string>
-     */
-    private function pluckStates(string $model, array $ids): array
-    {
-        if ($ids === []) {
-            return [];
-        }
-
-        return $model::query()
-            ->whereKey($ids)
-            ->pluck('state', 'id')
-            ->map(static fn (mixed $state): string => (string) $state)
-            ->all();
-    }
-
-    private function findTarget(string $entityType, int $entityId): Artwork|CvEntry|Exhibition|null
-    {
-        return match ($entityType) {
-            'artwork' => Artwork::query()->find($entityId),
-            'cv_entry' => CvEntry::query()->find($entityId),
-            'exhibition' => Exhibition::query()->find($entityId),
-            default => null,
-        };
-    }
-
-    private function entityType(Artwork|CvEntry|Exhibition $target): string
-    {
-        return match (true) {
-            $target instanceof Artwork => 'artwork',
-            $target instanceof CvEntry => 'cv_entry',
-            $target instanceof Exhibition => 'exhibition',
-        };
+        return $this->lifecycle->loadStates($idsByEntityType);
     }
 
     private function positiveInt(mixed $value): ?int

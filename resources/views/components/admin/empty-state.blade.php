@@ -1,12 +1,19 @@
 @props([
-    'kicker' => 'Empty',
+    'kicker' => null,
     'title',
+    'minimal' => false,
 ])
 
+@php($hasBody = trim((string) $slot) !== '')
+
 <div {{ $attributes->class(['admin-empty-state']) }}>
-    <p class="admin-empty-state__kicker">{{ $kicker }}</p>
+    @if (! $minimal && filled($kicker))
+        <p class="admin-empty-state__kicker">{{ $kicker }}</p>
+    @endif
     <h3 class="admin-empty-state__title">{{ $title }}</h3>
-    <div class="admin-empty-state__body">{{ $slot }}</div>
+    @if (! $minimal && $hasBody)
+        <div class="admin-empty-state__body">{{ $slot }}</div>
+    @endif
     @isset($actions)
         <div class="admin-toolbar admin-empty-state__actions">{{ $actions }}</div>
     @endisset

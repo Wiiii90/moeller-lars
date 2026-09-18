@@ -2,9 +2,9 @@ name: Verify and build release image
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
@@ -12,20 +12,17 @@ permissions:
   packages: write
   statuses: write
 
-concurrency:
-  group: release-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   verify:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17-alpine
+        image: postgres:17
         env:
           POSTGRES_DB: moeller_lars_testing
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          POSTGRES_INITDB_ARGS: --auth-local=trust --auth-host=scram-sha-256
         ports:
           - 5432:5432
         options: >-
@@ -34,16 +31,18 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     env:
+      APP_ENV: testing
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
       DB_PORT: 5432
       DB_DATABASE: moeller_lars_testing
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
+      MOELLER_LARS_DISPOSABLE_TEST_DATABASE: '1'
       MATOMO_TRACKING_ENABLED: false
       MATOMO_REPORTING_ENABLED: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -51,7 +50,7 @@ jobs:
           extensions: gd, intl, mbstring, pdo_pgsql, zip
           coverage: none
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -62,6 +61,9 @@ jobs:
       - name: Audit locked PHP dependencies
         run: composer audit --locked --no-interaction
 
+      - name: Prepare test environment
+        run: cp .env.example .env
+
       - name: Generate test application key
         run: echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
 
@@ -71,8 +73,26 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Run Pest
-        run: composer test
+      - name: Verify Vite manifest contract
+        run: |
+          set -euo pipefail
+          grep -F '"resources/css/admin/auth.css"' public/build/manifest.json >/dev/null
+          grep -F '"resources/css/admin/table-flow.css"' public/build/manifest.json >/dev/null
+
+      - name: Run Unit tests
+        run: composer test:unit
+
+      - name: Run Integration tests
+        run: composer test:integration
+
+      - name: Run Feature tests
+        run: composer test:feature
+
+      - name: Run Architecture tests
+        run: composer test:architecture
+
+      - name: Run Migration tests
+        run: composer test:migration
 
       - name: Run PHPStan
         run: composer analyse
@@ -84,13 +104,13 @@ jobs:
         run: npm run test:js
 
   release-image:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: verify
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v3
 

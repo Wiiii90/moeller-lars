@@ -1,0 +1,675 @@
+/* Storage-specific content inside the shared Visual Stage geometry. */
+
+.admin-storage,
+.admin-storage-capacity {
+    --storage-color-galleries: #b45309;
+    --storage-color-journal: #8e6040;
+    --storage-color-cv: #a95a20;
+    --storage-color-home: #b9783a;
+    --storage-color-custom-pages: #c47a28;
+    --storage-color-site-identity: #965028;
+    --storage-color-referenced: #755442;
+    --storage-color-shared: #9b6544;
+    --storage-color-unassigned: #9b7650;
+    --storage-color-uncatalogued: var(--admin-danger);
+    --storage-color-remaining: color-mix(in srgb, var(--admin-line) 42%, var(--admin-subtle));
+    --storage-target-1: #b45309;
+    --storage-target-2: #bd6712;
+    --storage-target-3: #a95a20;
+    --storage-target-4: #c47a28;
+    --storage-target-5: #965028;
+    --storage-target-6: #b9783a;
+    --storage-target-7: #8e6040;
+    --storage-target-8: #755442;
+}
+
+.dark .admin-storage,
+.dark .admin-storage-capacity {
+    --storage-color-galleries: #d68a2f;
+    --storage-color-journal: #aa7758;
+    --storage-color-cv: #c97b42;
+    --storage-color-home: #d19454;
+    --storage-color-custom-pages: #e0a45a;
+    --storage-color-site-identity: #bd6f3c;
+    --storage-color-referenced: #8f6d5b;
+    --storage-color-shared: #b37d5c;
+    --storage-color-unassigned: #b2906c;
+    --storage-color-uncatalogued: var(--admin-danger);
+    --storage-color-remaining: color-mix(in srgb, var(--admin-line) 56%, transparent);
+    --storage-target-1: #d68a2f;
+    --storage-target-2: #dda04b;
+    --storage-target-3: #c97b42;
+    --storage-target-4: #e0a45a;
+    --storage-target-5: #bd6f3c;
+    --storage-target-6: #d19454;
+    --storage-target-7: #aa7758;
+    --storage-target-8: #8f6d5b;
+}
+
+.admin-storage__visual-main,
+.admin-storage__capacity-group,
+.admin-storage__distribution,
+.admin-storage__upload {
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 0;
+}
+
+.admin-storage__visual-main {
+    display: grid;
+    height: 100%;
+    align-items: stretch;
+}
+
+.admin-storage__capacity-group,
+.admin-storage__distribution,
+.admin-storage__upload {
+    height: 100%;
+    padding-top: var(--admin-stage-divider-inset);
+    padding-bottom: var(--admin-stage-divider-inset);
+    overflow: hidden;
+}
+
+.admin-storage__upload,
+.admin-storage__capacity-group {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: .55rem;
+}
+
+/* Storage is Upload | Capacity | Distribution. Internal pane breathing belongs
+ * here; the shared Stage owns only the outer thirds and divider axes. */
+.admin-storage__upload {
+    padding-right: var(--admin-stage-pane-space);
+}
+
+.admin-storage__visual-main > .admin-storage__capacity-group {
+    padding-right: var(--admin-stage-pane-space);
+    padding-left: var(--admin-stage-pane-space);
+}
+
+.admin-storage__visual-stage > .admin-storage__distribution {
+    padding-right: 0;
+    padding-left: var(--admin-stage-pane-space);
+}
+
+.admin-storage__distribution {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    gap: .55rem;
+    align-content: stretch;
+    overflow: visible;
+}
+
+.admin-storage__visual-heading {
+    display: flex;
+    min-width: 0;
+    min-height: 1.15rem;
+    gap: .75rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.admin-storage__eyebrow {
+    margin: 0;
+    color: var(--admin-accent);
+    font-size: .64rem;
+    font-weight: 750;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+}
+
+.admin-storage__dropzone.media-workspace__dropzone {
+    height: 100%;
+    min-height: 0;
+    padding: 1.4rem;
+    align-content: center;
+    justify-items: center;
+    background: color-mix(in srgb, var(--admin-subtle) 42%, transparent);
+    text-align: center;
+}
+
+.admin-storage__dropzone .media-workspace__dropzone-copy {
+    max-width: 18rem;
+    justify-items: center;
+}
+
+/* Distribution remains wheel/keyboard scrollable, but its short in-stage list
+ * does not advertise a permanent native scrollbar rail. */
+.admin-storage__target-plot {
+    display: grid;
+    min-height: 0;
+    align-content: start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+}
+
+.admin-storage__target-plot::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.admin-storage__distribution-columns,
+.admin-storage__target-row {
+    grid-template-columns: minmax(8rem, 1fr) 2.7rem minmax(4.4rem, .72fr) 4.6rem;
+}
+
+.admin-storage__distribution-columns {
+    display: grid;
+    gap: .55rem;
+    padding: .08rem 0 .22rem;
+    border-bottom: 1px solid var(--admin-line);
+    color: var(--admin-muted);
+    font-size: .55rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.admin-storage__distribution-columns span:nth-child(2) {
+    text-align: right;
+}
+
+.admin-storage__distribution-columns span:nth-child(3) {
+    grid-column: 3 / 5;
+}
+
+.admin-storage__target-row {
+    --storage-row-color: var(--storage-target-1);
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    gap: .55rem;
+    padding: .34rem 0;
+    align-items: center;
+    appearance: none;
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--admin-line) 72%, transparent);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+}
+
+.admin-storage__target-row:last-of-type {
+    border-bottom-color: transparent;
+}
+
+.admin-storage__target-row:disabled,
+.admin-storage__target-row.is-static {
+    opacity: 1;
+    cursor: default;
+}
+
+.admin-storage__target-row:focus-visible {
+    outline: 1px solid var(--storage-row-color);
+    outline-offset: 2px;
+}
+
+.admin-storage__target-label {
+    display: grid;
+    min-width: 0;
+    gap: .04rem;
+}
+
+.admin-storage__target-label strong,
+.admin-storage__target-label small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-storage__target-label strong {
+    color: var(--admin-text);
+    font-size: .7rem;
+    font-weight: 590;
+}
+
+.admin-storage__target-label small,
+.admin-storage__target-files,
+.admin-storage__target-value {
+    color: var(--admin-muted);
+    font-size: .6rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-storage__target-files {
+    text-align: right;
+}
+
+.admin-storage__target-track {
+    height: 3px;
+    overflow: hidden;
+    background: var(--admin-line);
+}
+
+.admin-storage__target-track i {
+    display: block;
+    height: 100%;
+    background: var(--storage-row-color);
+    transition: opacity .12s ease;
+}
+
+.admin-storage__target-value {
+    color: var(--admin-text);
+    font-weight: 570;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.admin-storage__target-row:not(:disabled):hover .admin-storage__target-track i {
+    opacity: .72;
+}
+
+.admin-storage__target-row.is-active .admin-storage__target-label strong,
+.admin-storage__target-row.is-active .admin-storage__target-files,
+.admin-storage__target-row.is-active .admin-storage__target-value {
+    color: var(--storage-row-color);
+}
+
+.admin-storage__target-row.is-context .admin-storage__target-track i {
+    opacity: .82;
+}
+
+.admin-storage__target-empty {
+    display: grid;
+    min-height: 100%;
+    padding: .75rem 0;
+    place-content: center start;
+    gap: .35rem;
+}
+
+.admin-storage__target-empty p {
+    max-width: 26rem;
+    margin: 0;
+    color: var(--admin-muted);
+    font-size: .68rem;
+    line-height: 1.45;
+}
+
+.admin-storage__target-empty strong {
+    color: var(--admin-text);
+    font-size: .72rem;
+    font-weight: 580;
+}
+
+.admin-storage__attention {
+    display: grid;
+    border-top: 1px solid var(--admin-line);
+}
+
+.admin-storage__attention-row {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .65rem;
+    padding: .32rem 0;
+    align-items: baseline;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-storage__attention-row:last-child {
+    border-bottom: 0;
+}
+
+.admin-storage__attention-row span {
+    color: var(--admin-muted);
+    font-size: .61rem;
+}
+
+.admin-storage__attention-row strong {
+    min-width: 0;
+    max-width: 15rem;
+    overflow: hidden;
+    color: var(--admin-text);
+    font-size: .64rem;
+    font-weight: 580;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-storage__attention-row.is-warning strong {
+    color: var(--admin-accent-strong);
+}
+
+.admin-storage__reclaim-footer {
+    display: flex;
+    min-width: 0;
+    gap: .12rem;
+    padding-top: .4rem;
+    align-items: center;
+    justify-content: flex-start;
+    border-top: 1px solid var(--admin-line);
+}
+
+.admin-storage__reclaim-control {
+    display: inline-flex;
+    min-width: 0;
+    flex: 0 1 auto;
+}
+
+.admin-storage__reclaim-control .admin-action {
+    justify-self: start;
+}
+
+.admin-storage__reclaim-footer .admin-help {
+    margin-inline-start: 0;
+    flex: 0 0 auto;
+}
+
+/* Shared Storage/Dashboard visualization container. ECharts owns the Canvas;
+ * the existing Admin Stage continues to own pane size and alignment. */
+.admin-storage-capacity[data-admin-viz="storage-capacity"] {
+    --storage-fallback-ring-width: 2.45rem;
+    position: relative;
+    display: block;
+    width: min(100%, 17.5rem);
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    margin: 0 auto;
+    overflow: visible;
+}
+
+.admin-storage-capacity[data-admin-viz="storage-capacity"]::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 0;
+    box-sizing: border-box;
+    width: 84%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border: var(--storage-fallback-ring-width) solid var(--storage-color-remaining);
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+}
+
+.admin-storage-capacity.is-ready[data-admin-viz="storage-capacity"]::before {
+    display: none;
+}
+
+.admin-storage-capacity__surface[data-admin-viz-surface] {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+}
+
+.admin-storage-capacity__inspector {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    display: grid;
+    width: 62%;
+    gap: .22rem;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    text-align: center;
+}
+
+.admin-storage-capacity__inspector strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-storage-capacity__inspector span {
+    overflow: visible;
+    text-overflow: clip;
+    text-wrap: balance;
+    white-space: normal;
+}
+
+.admin-storage-capacity__inspector strong {
+    color: var(--admin-text);
+    font-size: 1.42rem;
+    font-weight: 620;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+}
+
+.admin-storage-capacity__inspector span {
+    color: var(--admin-muted);
+    font-size: .6rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.35;
+}
+
+.admin-storage-capacity[data-admin-viz="storage-capacity"] > script {
+    display: none;
+}
+
+.admin-storage-capacity.is-compact[data-admin-viz="storage-capacity"] {
+    --storage-fallback-ring-width: 1.15rem;
+    width: min(100%, 9.5rem);
+}
+
+.admin-storage .media-workspace__library {
+    --media-task-surface-header-height: 2.25rem;
+}
+
+.admin-storage .media-workspace__table .admin-action {
+    gap: .28rem;
+}
+
+/* Search owns the first three metric cells. The remaining half keeps the
+ * compact storage filters/actions on stable axes without changing the shared
+ * controls primitive. */
+.admin-storage .media-workspace__controls {
+    display: grid;
+    grid-template-columns: repeat(64, minmax(0, 1fr));
+    gap: .35rem;
+    padding-top: 0;
+    padding-bottom: var(--admin-section-gap);
+    align-items: end;
+    border-bottom: 0;
+}
+
+.admin-storage .media-workspace__controls > * {
+    width: 100%;
+    min-width: 0 !important;
+}
+
+.admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 32; }
+.admin-storage .media-workspace__controls > :nth-child(2) { grid-column: span 5; }
+.admin-storage .media-workspace__controls > :nth-child(3) { grid-column: span 4; }
+.admin-storage .media-workspace__controls > :nth-child(4) { grid-column: span 5; }
+.admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 6; }
+
+.admin-storage .media-workspace__controls > .admin-data-controls__utility {
+    display: contents;
+}
+
+.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(1) { grid-column: span 3; }
+.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(2) { grid-column: span 4; }
+.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(3) { grid-column: span 5; }
+
+.admin-storage .media-workspace__controls .admin-data-field select,
+.admin-storage .media-workspace__controls .admin-data-field input {
+    padding-inline: .35rem;
+}
+
+.admin-storage .media-workspace__controls .admin-data-field select {
+    white-space: nowrap;
+}
+
+.admin-storage .media-workspace__controls .admin-data-control-group > .admin-action,
+.admin-storage .media-workspace__multi-action-anchor,
+.admin-storage .media-workspace__selection-trigger,
+.admin-storage .media-workspace__view-options {
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-storage .media-workspace__view-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .12rem;
+}
+
+.admin-storage .media-workspace__view-option {
+    width: 100%;
+}
+
+/* Storage owns only its compact label treatment; the shared table contract
+ * owns the terminal selected-count/checkbox axis. */
+.admin-storage .media-workspace__selection-trigger {
+    padding-left: .35rem;
+    text-align: left;
+}
+
+.admin-storage .media-workspace__selection-trigger .admin-action__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Six-cell table contract: media owns the first two metric cells; Type + Size
+ * share cell three, Status + Used in share cell four, and the action rail plus
+ * trailing selection occupy cells five and six. */
+.admin-storage .media-workspace__table {
+    min-width: 70rem;
+    table-layout: fixed;
+}
+
+.admin-storage .media-workspace__col-preview { width: 4.75rem; }
+.admin-storage .media-workspace__col-media { width: calc(33.333% - 4.75rem); }
+.admin-storage .media-workspace__table-wrap.is-dense .media-workspace__col-media { width: 33.333%; }
+.admin-storage .media-workspace__col-type { width: 10.5%; }
+.admin-storage .media-workspace__col-size { width: 6.167%; }
+.admin-storage .media-workspace__col-status { width: 7.5%; }
+.admin-storage .media-workspace__col-usage { width: 9.167%; }
+.admin-storage .media-workspace__col-actions { width: calc(33.333% - 2.5rem); }
+.admin-storage .media-workspace__col-selection { width: 2.5rem; }
+
+.admin-storage .media-workspace__identity,
+.admin-storage .media-workspace__references {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.admin-storage .media-workspace__actions {
+    width: auto;
+    padding-inline: .2rem !important;
+}
+
+.admin-storage .media-workspace__row-actions {
+    display: grid !important;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    align-items: center;
+}
+
+.admin-storage .media-workspace__row-actions .admin-action {
+    display: inline-flex;
+    width: auto;
+    min-width: 0;
+    padding-inline: .35rem;
+    gap: .28rem;
+    align-items: center;
+    justify-self: center;
+    justify-content: center;
+    overflow: hidden;
+    text-align: center;
+}
+
+.admin-storage .media-workspace__row-actions .admin-action__icon {
+    width: 1rem;
+    min-width: 1rem;
+}
+
+.admin-storage .media-workspace__row-actions .admin-action__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+    .admin-storage .media-workspace__controls {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .65rem;
+    }
+
+    .admin-storage .media-workspace__controls > :nth-child(1) { grid-column: span 2; }
+    .admin-storage .media-workspace__controls > :nth-child(n + 2):not(.admin-data-controls__utility) { grid-column: span 1; }
+    .admin-storage .media-workspace__controls > .admin-data-controls__utility {
+        display: contents;
+    }
+    .admin-storage .media-workspace__controls > .admin-data-controls__utility > * {
+        grid-column: span 1;
+    }
+
+    .admin-storage__distribution-columns,
+    .admin-storage__target-row {
+        grid-template-columns: minmax(7rem, 1fr) 2.35rem minmax(3rem, .62fr) 4.2rem;
+        gap: .4rem;
+    }
+
+    .admin-storage .media-workspace__row-actions .admin-action__label {
+        display: none;
+    }
+
+    .admin-storage .media-workspace__row-actions .admin-action {
+        justify-self: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 760px) {
+    .admin-storage__visual-stage > .admin-storage__visual-main {
+        height: auto !important;
+    }
+
+    .admin-storage__capacity-group,
+    .admin-storage__distribution,
+    .admin-storage__upload {
+        height: var(--admin-visual-stage-height);
+        padding-top: var(--admin-section-gap);
+        padding-bottom: var(--admin-section-gap);
+    }
+
+    .admin-storage__capacity-group,
+    .admin-storage__distribution,
+    .admin-storage__upload {
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    .admin-storage-capacity[data-admin-viz="storage-capacity"] {
+        width: min(100%, 17.5rem);
+    }
+
+    .admin-storage__dropzone.media-workspace__dropzone {
+        min-height: 12rem;
+    }
+
+    .admin-storage .media-workspace__controls {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-storage .media-workspace__controls > :nth-child(n):not(.admin-data-controls__utility),
+    .admin-storage .media-workspace__controls > .admin-data-controls__utility > * {
+        grid-column: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-storage__target-track i {
+        transition: none;
+    }
+}

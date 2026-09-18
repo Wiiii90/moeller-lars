@@ -1,0 +1,98 @@
+/* Dashboard stage refinements that build on the shared visual primitives. */
+
+.admin-dashboard__overview-head {
+    margin-bottom: .45rem;
+}
+
+.admin-dashboard__overview-head > .admin-section__kicker {
+    color: var(--admin-accent);
+    font-size: .66rem;
+    font-weight: 750;
+    letter-spacing: .12em;
+}
+
+.admin-dashboard__overview-column:first-child .admin-dashboard__overview-head {
+    margin-right: -.4rem;
+}
+
+.admin-dashboard__overview-column:nth-child(2) .admin-dashboard__overview-head {
+    margin-right: -.4rem;
+    margin-left: -.4rem;
+}
+
+.admin-dashboard__overview-column:last-child .admin-dashboard__overview-head {
+    margin-left: -.4rem;
+}
+
+/* Storage and Activity keep their canonical source-page sizing. Dashboard only
+ * supplies the pane box; it does not carry a compact or bespoke scale. */
+.admin-dashboard__storage-visual,
+.admin-dashboard__activity-visual {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.admin-dashboard__storage-visual {
+    display: grid;
+    place-items: center;
+}
+
+.admin-dashboard__analytics-visual {
+    min-height: 0;
+    height: 100%;
+}
+
+.admin-dashboard__analytics-map.analytics-visual-stage {
+    display: block !important;
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+    overflow: hidden;
+    background: none;
+}
+
+.admin-dashboard__analytics-map.analytics-visual-stage::before,
+.admin-dashboard__analytics-map.analytics-visual-stage::after {
+    display: none !important;
+}
+
+.admin-dashboard__analytics-map.analytics-visual-stage > .analytics-world {
+    display: block !important;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    grid-column: auto !important;
+    margin: 0;
+    padding: .45rem .15rem !important;
+}
+
+.admin-dashboard__analytics-map .analytics-world__canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.admin-dashboard__analytics-map svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Facts occupy only their actual text height below the canonical stage. */
+.admin-dashboard__facts {
+    min-height: 0;
+    align-content: end;
+}
+
+@media (max-width: 760px) {
+    .admin-dashboard__overview-head {
+        margin-inline: 0 !important;
+    }
+}

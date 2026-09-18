@@ -1,19 +1,250 @@
-<x-filament-panels::page>
-    <x-admin.workspace kicker="Site structure" title="Pages">
-        @if ($sections !== [])
-            <x-admin.list class="admin-site-tree" aria-label="Public site structure">
-                @foreach ($sections as $section)
-                    @include('filament.pages.partials.site-section-row', ['section' => $section])
+@php
+    use App\Domain\Content\JournalTemplate;
+    use App\Domain\Content\SiteSectionType;
 
-                    @foreach ($section['children'] as $child)
-                        @include('filament.pages.partials.site-section-row', ['section' => $child])
-                    @endforeach
-                @endforeach
-            </x-admin.list>
-        @else
-            <x-admin.empty-state kicker="Empty structure" title="No site nodes exist">
-                <p>Add a Gallery, Journal, Custom Page or Navigation Node from the page action.</p>
-            </x-admin.empty-state>
-        @endif
+    $typeOptions = collect(SiteSectionType::cases())->mapWithKeys(fn (SiteSectionType $type): array => [$type->value => $type->compactLabel()])->all();
+    $editableTypeOptions = SiteSectionType::compactOptions();
+    $journalTemplateOptions = JournalTemplate::options();
+    $selectedCount = count($selectedSectionIds);
+@endphp
+
+<x-filament-panels::page>
+    <x-admin.workspace title="Pages">
+        <x-admin.metrics :columns="6">
+            <x-admin.metric label="Total pages" :value="$metrics['total']">All site sections</x-admin.metric>
+            <x-admin.metric label="Published" :value="$metrics['published']">Public now</x-admin.metric>
+            <x-admin.metric label="Unpublished" :value="$metrics['unpublished']">Not public</x-admin.metric>
+            <x-admin.metric label="Top level" :value="$metrics['top_level']">Root pages</x-admin.metric>
+            <x-admin.metric label="Child pages" :value="$metrics['children']">Nested pages</x-admin.metric>
+            <x-admin.metric label="In navigation" :value="$metrics['navigation']">Menu visible</x-admin.metric>
+        </x-admin.metrics>
+
+        <section aria-label="Pages editor">
+            <x-admin.controls class="admin-task-controls admin-task-controls--pages" aria-label="Page controls">
+                <x-slot:search>
+                    <label class="admin-task-field">
+                        <span>SEARCH</span>
+                        <input
+                            type="search"
+                            value="{{ $search }}"
+                            placeholder="Search pages"
+                            wire:model.blur="search"
+                            x-on:keydown.enter.prevent="$el.blur()"
+                        >
+                    </label>
+                </x-slot:search>
+
+                <x-slot:filters>
+                    <label class="admin-task-field">
+                        <span>TYPE</span>
+                        <select wire:model.live="typeFilter" aria-label="Filter by page type">
+                            <option value="">All types</option>
+                            @foreach ($typeOptions as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+
+                    <label class="admin-task-field">
+                        <span>STATUS</span>
+                        <select wire:model.live="statusFilter" aria-label="Filter by page status">
+                            <option value="">All statuses</option>
+                            <option value="published">Published</option>
+                            <option value="hidden">Unpublished</option>
+                        </select>
+                    </label>
+                </x-slot:filters>
+
+                <x-slot:reset>
+                    <div class="admin-task-control-group">
+                        <span class="admin-task-control-label">FILTER</span>
+                        <div class="admin-task-control-actions">
+                            <button class="admin-action" type="button" wire:click="resetFilters" @disabled(! $filtersActive)>Reset</button>
+                        </div>
+                    </div>
+                </x-slot:reset>
+
+                <x-slot:actions>
+                    <div class="admin-task-control-group">
+                        <span class="admin-task-control-label">PAGES</span>
+                        <div class="admin-task-control-actions">
+                            <button class="admin-action" type="button" wire:click="mountAction('addPage')">Add page</button>
+                        </div>
+                    </div>
+                </x-slot:actions>
+
+                <x-slot:selection>
+                    <div class="admin-task-control-group admin-selection admin-selection--unlabeled" x-data="{ open: false }">
+                        <div class="admin-selection__anchor">
+                            <button
+                                class="admin-action admin-selection__trigger"
+                                type="button"
+                                x-on:click="open = ! open"
+                                x-bind:aria-expanded="open"
+                                aria-haspopup="menu"
+                                aria-label="Selected pages: {{ $selectedCount }}"
+                                @disabled($selectedCount === 0)
+                            >
+                                <span>Selected</span>
+                                <span class="admin-selection__count">{{ $selectedCount }}</span>
+                            </button>
+                            <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
+                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkPublish" @disabled($selectedCount === 0)>Publish selected</button>
+                                <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpublish" @disabled($selectedCount === 0)>Unpublish selected</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="bulkDelete" wire:confirm="Delete the selected pages that satisfy their safety rules?" @disabled($selectedCount === 0)>Delete selected</button>
+                            </div>
+                        </div>
+                    </div>
+                </x-slot:selection>
+            </x-admin.controls>
+
+            <x-admin.table>
+                <div
+                    class="admin-hierarchy admin-hierarchy--pages"
+                    role="table"
+                    aria-label="Pages"
+                    x-data="{
+                        dragging: false,
+                        dragArmed: false,
+                        dragStartX: 0,
+                        dragStartY: 0,
+                        draggedId: null,
+                        draggedParentId: null,
+                        draggedHasChildren: false,
+                        hoverParent: null,
+                        resetDrag() {
+                            this.dragging = false;
+                            this.dragArmed = false;
+                            this.draggedId = null;
+                            this.draggedParentId = null;
+                            this.draggedHasChildren = false;
+                            this.hoverParent = null;
+                        },
+                    }"
+                    x-on:pointerdown.capture="
+                        const handle = $event.target.closest('.admin-drag-handle:not(:disabled)');
+                        if (!handle) return;
+                        const row = handle.closest('.admin-pages__row');
+                        if (!row) return;
+                        dragArmed = true;
+                        dragStartX = $event.clientX;
+                        dragStartY = $event.clientY;
+                        draggedId = Number(row.dataset.sectionId);
+                        draggedParentId = row.dataset.parentId === '' ? null : Number(row.dataset.parentId);
+                        draggedHasChildren = row.dataset.hasChildren === 'true';
+                    "
+                    x-on:pointermove.window="
+                        if (!dragArmed || dragging || ($event.buttons & 1) !== 1) return;
+                        if (Math.hypot($event.clientX - dragStartX, $event.clientY - dragStartY) >= 4) dragging = true;
+                    "
+                    x-on:dragstart.capture="if (dragArmed) dragging = true"
+                    x-on:pointerup.window="resetDrag()"
+                    x-on:pointercancel.window="resetDrag()"
+                    x-on:dragend.window="resetDrag()"
+                    x-on:drop.window="resetDrag()"
+                >
+                    <div class="admin-hierarchy__header admin-pages__header" role="row">
+                        <div class="admin-pages__primary-grid" role="presentation">
+                            <span class="admin-hierarchy__ordering-heading" role="columnheader" data-column="position">Position</span>
+                            <span role="columnheader" data-column="page">Name</span>
+                        </div>
+                        <span class="admin-pages__type" role="columnheader" data-column="page-type">Page type</span>
+                        <span class="admin-pages__template" role="columnheader" data-column="template">Template</span>
+                        <div class="admin-pages__utility-grid" role="presentation">
+                            <span role="columnheader" data-column="actions">Actions</span>
+                            <label class="admin-hierarchy__selection admin-hierarchy__selection--trailing" role="columnheader" data-column="selection">
+                                <input
+                                    type="checkbox"
+                                    aria-label="Select all visible pages"
+                                    aria-checked="{{ $selectionIndeterminate ? 'mixed' : ($allVisibleSelected ? 'true' : 'false') }}"
+                                    wire:click="toggleSelectAll"
+                                    @checked($allVisibleSelected)
+                                    x-data
+                                    x-effect="$el.indeterminate = {{ $selectionIndeterminate ? 'true' : 'false' }}"
+                                >
+                            </label>
+                        </div>
+                    </div>
+
+                    @if ($sections !== [])
+                        <div
+                            class="admin-pages__root-rows"
+                            role="rowgroup"
+                            @if ($reorderEnabled)
+                                wire:sort="sortSection"
+                                wire:sort:group="site-pages"
+                                wire:sort:group-id="root"
+                            @endif
+                        >
+                            @foreach ($sections as $section)
+                                <div class="admin-hierarchy__group" wire:key="site-page-root-{{ $section['id'] }}" @if ($reorderEnabled) wire:sort:item="{{ $section['id'] }}" @endif>
+                                    @include('filament.pages.partials.site-section-row', [
+                                        'section' => $section,
+                                        'reorderEnabled' => $reorderEnabled,
+                                        'editableTypeOptions' => $editableTypeOptions,
+                                        'journalTemplateOptions' => $journalTemplateOptions,
+                                    ])
+
+                                    @if ($section['children'] !== [] || $reorderEnabled)
+                                        <div class="admin-hierarchy__children">
+                                            <div
+                                                class="admin-hierarchy__children-rows"
+                                                role="rowgroup"
+                                                aria-label="Child pages under {{ $section['title'] }}"
+                                                @if ($reorderEnabled)
+                                                    data-drop-target="true"
+                                                    wire:sort="sortSection"
+                                                    wire:sort:group="site-pages"
+                                                    wire:sort:group-id="{{ $section['id'] }}"
+                                                @endif
+                                            >
+                                                @foreach ($section['children'] as $child)
+                                                    <div wire:key="site-page-child-{{ $child['id'] }}" @if ($reorderEnabled) wire:sort:item="{{ $child['id'] }}" @endif>
+                                                        @include('filament.pages.partials.site-section-row', [
+                                                            'section' => $child,
+                                                            'reorderEnabled' => $reorderEnabled,
+                                                            'editableTypeOptions' => $editableTypeOptions,
+                                                            'journalTemplateOptions' => $journalTemplateOptions,
+                                                        ])
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="admin-hierarchy__empty" role="row">
+                            @if ($metrics['total'] > 0)
+                                <x-admin.empty-state title="No matching pages" minimal>
+                                    <x-slot:actions><button class="admin-action" type="button" wire:click="resetFilters">Clear filters</button></x-slot:actions>
+                                </x-admin.empty-state>
+                            @else
+                                <x-admin.empty-state title="No pages yet" minimal>
+                                    <x-slot:actions><button class="admin-action" type="button" wire:click="mountAction('addPage')">Add page</button></x-slot:actions>
+                                </x-admin.empty-state>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            </x-admin.table>
+
+            <x-admin.add-row wire:click="mountAction('addPage')">Add page</x-admin.add-row>
+
+            <footer class="admin-pager" aria-label="Pages pagination">
+                <x-admin.page-size-picker
+                    :value="$perPage"
+                    :options="[25, 50, 100]"
+                    wire-model="perPage"
+                    aria-label="Pages per page"
+                />
+                <span class="admin-pager__range">{{ $rangeStart }}–{{ $rangeEnd }} of {{ $totalGroups }}</span>
+                <div class="admin-toolbar admin-pager__actions">
+                    <button class="admin-action" type="button" wire:click="previousPage" @disabled($pageNumber <= 1)>Previous</button>
+                    <button class="admin-action" type="button" wire:click="nextPage" @disabled($pageNumber >= $lastPage)>Next</button>
+                </div>
+            </footer>
+        </section>
     </x-admin.workspace>
 </x-filament-panels::page>

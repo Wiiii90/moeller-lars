@@ -27,6 +27,8 @@ final class AdminActionCatalog
         'site_section.created' => ['label' => 'Created website page', 'area' => 'Website', 'family' => 'create'],
         'site_section.updated' => ['label' => 'Edited public page placement', 'area' => 'Website', 'family' => 'settings'],
         'site_section.reordered' => ['label' => 'Reordered public navigation', 'area' => 'Website', 'family' => 'ordering'],
+        'site_section.type_converted' => ['label' => 'Changed website page type', 'area' => 'Website', 'family' => 'settings'],
+        'site_section.journal_template_updated' => ['label' => 'Changed Journal template', 'area' => 'Website', 'family' => 'settings'],
         'site_section.deleted' => ['label' => 'Deleted website page', 'area' => 'Website', 'family' => 'lifecycle'],
         'media.ingested' => ['label' => 'Uploaded media', 'area' => 'Media', 'family' => 'media'],
         'media.metadata_updated' => ['label' => 'Edited media details', 'area' => 'Media', 'family' => 'edit'],
@@ -57,7 +59,13 @@ final class AdminActionCatalog
         'blog_post.deleted' => ['label' => 'Deleted blog post', 'area' => 'Blog', 'family' => 'lifecycle'],
         'blog_post.reordered' => ['label' => 'Reordered blog posts', 'area' => 'Blog', 'family' => 'ordering'],
         'blog_setting.updated' => ['label' => 'Edited blog settings', 'area' => 'Blog', 'family' => 'settings'],
+        'journal_setting.updated' => ['label' => 'Edited Journal settings', 'area' => 'Journal', 'family' => 'settings'],
         'public_content_setting.updated' => ['label' => 'Edited website settings', 'area' => 'Website', 'family' => 'settings'],
+        'publication.stage_reset' => ['label' => 'Reset staged changes', 'area' => 'Publication', 'family' => 'publish'],
+        'publication.version_restored' => ['label' => 'Restored version to working state', 'area' => 'Publication', 'family' => 'publish'],
+        'publication.commit_revert_staged' => ['label' => 'Staged commit revert', 'area' => 'Publication', 'family' => 'publish'],
+        'storage.reclaimed' => ['label' => 'Freed recovery storage', 'area' => 'Storage', 'family' => 'lifecycle'],
+        'admin.undo_applied' => ['label' => 'Restored previous values', 'area' => 'Activity', 'family' => 'edit'],
     ];
 
     /** @return array<int, string> */

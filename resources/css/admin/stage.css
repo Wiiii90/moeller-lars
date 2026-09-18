@@ -1,0 +1,448 @@
+/* Canonical Visual Stage geometry.
+ * Six metric columns resolve into three stage thirds. Divider axes match the
+ * 2/6 and 4/6 metric boundaries. Shared dividers use the same inset at both
+ * ends as the stage content: no extension and no page-local compensation.
+ */
+
+:root {
+    --admin-stage-divider-inset: .25rem;
+    --admin-stage-pane-space: var(--admin-section-gap);
+}
+
+.admin-visual-stage,
+.admin-dashboard__overview {
+    position: relative;
+    box-sizing: border-box;
+    height: var(--admin-visual-stage-height);
+    min-height: 0;
+    margin-top: var(--admin-section-space);
+}
+
+:is(
+    .admin-visual-stage--rail:not(.general-appearance-stage),
+    .analytics-visual-stage,
+    .admin-storage__visual-stage,
+    .home-hero-surface
+) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    overflow: visible;
+}
+
+/* Shared divider drawing. General intentionally owns its custom matrix divider
+ * in general.css and is therefore excluded from this shared rule. */
+:is(
+    .admin-visual-stage--rail:not(.general-appearance-stage),
+    .analytics-visual-stage,
+    .admin-storage__visual-stage,
+    .home-hero-surface
+)::after,
+.admin-visual-stage--triptych::before,
+.admin-visual-stage--triptych::after,
+.activity-atlas__grid::after,
+.admin-dashboard__overview::before,
+.admin-dashboard__overview::after {
+    position: absolute;
+    z-index: 8;
+    top: var(--admin-stage-divider-inset);
+    bottom: var(--admin-stage-divider-inset);
+    width: 1px;
+    background: var(--admin-line);
+    content: "";
+    pointer-events: none;
+}
+
+:is(
+    .admin-visual-stage--rail:not(.general-appearance-stage),
+    .analytics-visual-stage,
+    .admin-storage__visual-stage,
+    .home-hero-surface
+)::after,
+.admin-visual-stage--triptych::after,
+.activity-atlas__grid::after,
+.admin-dashboard__overview::after {
+    left: 66.666666%;
+}
+
+.admin-visual-stage--triptych::before,
+.admin-dashboard__overview::before {
+    left: 33.333333%;
+}
+
+/* Activity keeps the Calendar/Clock boundary as an invisible alignment axis. */
+.activity-atlas__grid::before {
+    display: none !important;
+    content: none !important;
+}
+
+/* Rail-style pages own pane breathing room. Analytics and Home deliberately do
+ * not use this first-pane inset because their visuals must reach the exact 2/3
+ * axis. */
+:is(
+    .admin-visual-stage--rail:not(.general-appearance-stage):not(.analytics-visual-stage):not(.home-hero-surface),
+    .admin-storage__visual-stage
+) > :first-child {
+    grid-column: 1 / span 2;
+    min-width: 0;
+    padding-right: var(--admin-stage-pane-space) !important;
+}
+
+:is(
+    .admin-visual-stage--rail:not(.general-appearance-stage):not(.analytics-visual-stage):not(.home-hero-surface),
+    .admin-storage__visual-stage
+) > :last-child {
+    grid-column: 3;
+    min-width: 0;
+    padding-left: var(--admin-stage-pane-space) !important;
+    border-left: 0 !important;
+}
+
+/* Home and Analytics intentionally reach the exact 2/3 axis. The Analytics
+ * canvas midpoint then lands exactly on the metric boundary after column two. */
+.home-hero-surface > .home-hero-surface__visual,
+.analytics-visual-stage > .analytics-world {
+    box-sizing: border-box;
+    grid-column: 1 / span 2;
+    width: 100%;
+    margin: 0 !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+}
+
+.analytics-visual-stage > .analytics-stage-rail,
+.home-hero-surface > .home-hero-rail {
+    grid-column: 3;
+    min-width: 0;
+}
+
+.home-hero-surface__visual {
+    overflow: hidden;
+}
+
+.home-hero-surface__visual img {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.analytics-visual-stage > .analytics-world {
+    padding-top: var(--admin-stage-divider-inset) !important;
+    padding-bottom: var(--admin-stage-divider-inset) !important;
+}
+
+.analytics-visual-stage .analytics-world__canvas {
+    box-sizing: border-box;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+/* Storage uses the first 2/3 rail for Upload | Capacity and the final third for
+ * Destinations. The shared primitive owns only the metric-aligned outer axes;
+ * storage.css owns the internal pair's breathing room. */
+.admin-storage__visual-stage > .admin-storage__visual-main {
+    padding-right: 0 !important;
+}
+
+.admin-storage__visual-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+}
+
+/* Analytics and Home own content, not divider geometry. */
+.analytics-stage-rail,
+.home-hero-rail {
+    border-left: 0 !important;
+}
+
+.home-hero-surface__visual,
+.home-hero-rail {
+    border: 0 !important;
+}
+
+.home-hero-surface__visual img,
+.home-hero-candidate__visual img {
+    object-fit: contain;
+}
+
+/* Dashboard is the canonical visible three-pane special case. */
+.admin-dashboard__overview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    border-bottom: 0 !important;
+    overflow: visible;
+}
+
+.admin-dashboard__overview-column,
+.admin-dashboard__overview-column + .admin-dashboard__overview-column,
+.admin-dashboard__overview-column:last-child {
+    min-width: 0;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    padding-top: 0 !important;
+    padding-bottom: var(--admin-stage-divider-inset) !important;
+    border: 0 !important;
+}
+
+.admin-dashboard__overview-column:first-child {
+    padding-right: var(--admin-stage-pane-space) !important;
+    padding-left: 0 !important;
+}
+
+.admin-dashboard__overview-column:nth-child(2) {
+    position: relative;
+    padding-right: var(--admin-stage-pane-space) !important;
+    padding-left: var(--admin-stage-pane-space) !important;
+}
+
+.admin-dashboard__overview-column:nth-child(2) > :is(.admin-dashboard__overview-head, .admin-dashboard__facts) {
+    position: relative;
+    z-index: 2;
+}
+
+.admin-dashboard__overview-column:nth-child(2) > .admin-dashboard__activity-visual {
+    position: absolute;
+    z-index: 1;
+    top: var(--admin-stage-divider-inset);
+    right: var(--admin-stage-pane-space);
+    bottom: var(--admin-stage-divider-inset);
+    left: var(--admin-stage-pane-space);
+    width: auto;
+    height: auto !important;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) var(--activity-clock-caption-reserve) !important;
+    gap: .35rem;
+    place-items: center;
+}
+
+.admin-dashboard__overview-column:nth-child(2) > .admin-dashboard__activity-visual::after {
+    display: block;
+    min-height: var(--activity-clock-caption-reserve);
+    content: "";
+}
+
+.admin-dashboard__overview-column:last-child {
+    padding-right: 0 !important;
+    padding-left: var(--admin-stage-pane-space) !important;
+}
+
+.admin-dashboard__overview + .admin-dashboard__feed-section {
+    margin-top: var(--admin-section-space);
+    padding-top: var(--admin-section-gap);
+    border-top: 1px solid var(--admin-line-strong);
+}
+
+/* Activity is Calendar | Clock | Publication, one exact metric-third each. */
+.activity-atlas__grid {
+    position: relative;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    overflow: visible;
+}
+
+.activity-atlas__visual {
+    display: grid !important;
+    grid-column: 1 / span 2;
+    grid-row: 1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr) !important;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    padding: 0 !important;
+}
+
+.activity-atlas__visual-header,
+.activity-calendar__summary {
+    display: none !important;
+}
+
+.activity-atlas__view.activity-calendar,
+.activity-atlas__view.activity-calendar[style*="display: none"] {
+    box-sizing: border-box;
+    display: grid !important;
+    grid-column: 1;
+    grid-row: 1;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: .55rem;
+    margin: 0 !important;
+    padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) var(--admin-stage-divider-inset) 0 !important;
+    overflow: hidden;
+}
+
+.activity-atlas__view.activity-clock,
+.activity-atlas__view.activity-clock[style*="display: none"] {
+    position: relative;
+    box-sizing: border-box;
+    display: grid !important;
+    grid-column: 2;
+    grid-row: 1;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) auto !important;
+    gap: .35rem;
+    margin: 0 !important;
+    padding: var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
+    overflow: hidden;
+    place-items: center;
+}
+
+.activity-calendar__plot,
+.activity-calendar__cells {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.activity-calendar__legend {
+    display: flex !important;
+    align-self: end;
+}
+
+.activity-clock__figure {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 !important;
+    place-items: center;
+}
+
+.activity-clock__dial {
+    width: min(100%, 17.5rem) !important;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.activity-publication {
+    grid-column: 3;
+    grid-row: 1 !important;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    padding: var(--admin-stage-divider-inset) 0 var(--admin-stage-divider-inset) var(--admin-stage-pane-space) !important;
+    align-self: stretch !important;
+    align-content: start !important;
+    border-left: 0 !important;
+    overflow: hidden;
+}
+
+/* Keep the stage focused on state rather than checkpoint prose. */
+.activity-publication__latest > small,
+.activity-publication__latest > p,
+.activity-publication__recent {
+    display: none !important;
+}
+
+@media (max-width: 760px) {
+    :is(
+        .admin-visual-stage--rail,
+        .admin-visual-stage--triptych,
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .general-appearance-stage,
+        .activity-atlas__grid,
+        .admin-dashboard__overview
+    ) {
+        height: auto;
+        overflow: visible;
+    }
+
+    :is(
+        .admin-visual-stage--rail,
+        .admin-visual-stage--triptych,
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .activity-atlas__grid,
+        .admin-dashboard__overview
+    )::before,
+    :is(
+        .admin-visual-stage--rail,
+        .admin-visual-stage--triptych,
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface,
+        .activity-atlas__grid,
+        .admin-dashboard__overview
+    )::after {
+        display: none;
+    }
+
+    :is(
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface
+    ) > :first-child,
+    :is(
+        .analytics-visual-stage,
+        .admin-storage__visual-stage,
+        .home-hero-surface
+    ) > :last-child,
+    .activity-publication {
+        grid-column: 1;
+        height: var(--admin-visual-stage-height) !important;
+        padding: var(--admin-section-gap) 0 !important;
+        border: 0 !important;
+    }
+
+    .admin-storage__visual-main {
+        grid-template-columns: 1fr !important;
+    }
+
+    .admin-storage__capacity-group,
+    .admin-storage__distribution,
+    .admin-storage__upload {
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    .activity-atlas__visual {
+        grid-column: 1;
+        grid-template-columns: 1fr;
+        height: auto !important;
+        padding: 0 !important;
+    }
+
+    .activity-atlas__view.activity-calendar,
+    .activity-atlas__view.activity-clock,
+    .activity-atlas__view.activity-calendar[style*="display: none"],
+    .activity-atlas__view.activity-clock[style*="display: none"] {
+        grid-column: 1;
+        height: var(--admin-visual-stage-height) !important;
+        padding: var(--admin-section-gap) 0 !important;
+    }
+
+    .general-appearance-stage__controls,
+    .general-appearance-stage__preview,
+    .general-appearance-stage__geometry {
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+        border: 0 !important;
+    }
+
+    .admin-dashboard__overview {
+        grid-template-columns: 1fr !important;
+    }
+
+    .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column:last-child {
+        min-height: var(--admin-visual-stage-height);
+        padding: var(--admin-section-gap) 0 !important;
+        border-bottom: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard__overview-column:last-child {
+        border-bottom: 0 !important;
+    }
+}

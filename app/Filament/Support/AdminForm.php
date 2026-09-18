@@ -2,13 +2,13 @@
 
 namespace App\Filament\Support;
 
-use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Section;
 
 final class AdminForm
 {
-    public static function section(string $label, string ...$classes): Fieldset
+    public static function section(string $label, string ...$classes): Section
     {
-        return Fieldset::make($label)
+        return Section::make($label)
             ->contained(false)
             ->extraAttributes([
                 'class' => implode(' ', ['admin-form-section', ...$classes]),

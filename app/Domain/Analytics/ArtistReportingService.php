@@ -82,6 +82,28 @@ final class ArtistReportingService
     }
 
     /**
+     * Canonical Custom Page snippet. Page visits/views are path-scoped. Contact success
+     * events currently come from the site-wide event dataset, so callers must not present
+     * them as attributable to this page.
+     *
+     * @return array<string, mixed>
+     */
+    public function customPage(string $publicPath, string $range = '30d'): array
+    {
+        $report = $this->report($range);
+
+        return [
+            ...$this->base($report),
+            'page' => [
+                'visits' => $this->pathMetric($report, $publicPath, 'nb_visits'),
+                'views' => $this->pathMetric($report, $publicPath, 'nb_hits'),
+            ],
+            'contact_messages' => $this->eventMetric($report, 'contact_submit_success'),
+            'contact_messages_scope' => 'site-wide',
+        ];
+    }
+
+    /**
      * Canonical Blog snippet. With a public post path it returns that post's Matomo page
      * metrics; without one it returns the ranked `/blog/…` content dataset.
      *

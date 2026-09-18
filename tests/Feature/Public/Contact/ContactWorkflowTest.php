@@ -1,0 +1,280 @@
+<?php
+
+use App\Domain\Publication\PublicationService;
+use App\Mail\WebsiteContactMessage;
+use App\Models\ContactMessage;
+use App\Models\CustomPageSetting;
+use App\Models\PublicContentSetting;
+use App\Models\SiteSection;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\PendingMail;
+use Illuminate\Support\Facades\Mail;
+
+uses(RefreshDatabase::class);
+
+function commitContactWorkingState(): void
+{
+    app(PublicationService::class)->commit(User::factory()->admin()->create());
+}
+
+function contactComponentBlocks(bool $formPublished = true, bool $emailPublished = true): array
+{
+    return [[
+        'type' => 'contact',
+        'published' => true,
+        'children' => [
+            ['type' => 'public_email', 'published' => $emailPublished],
+            ['type' => 'social_links', 'published' => true, 'social_platforms' => []],
+            ['type' => 'contact_form', 'published' => $formPublished, 'form_state' => 'enabled', 'status_text' => null],
+        ],
+    ]];
+}
+
+function enablePublishedContactForm(): void
+{
+    $position = ((int) (SiteSection::query()->whereNull('parent_id')->max('position') ?? 0)) + 10;
+
+    $section = SiteSection::query()->create([
+        'type' => SiteSection::TYPE_CUSTOM,
+        'template' => null,
+        'title' => 'Contact test page',
+        'navigation_label' => 'Contact test page',
+        'slug' => 'contact-test-page',
+        'state' => 'published',
+        'position' => $position,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
+    ]);
+
+    $settings = new CustomPageSetting;
+    $settings->setAttribute('site_section_id', $section->id);
+    $settings->setAttribute('blocks', contactComponentBlocks());
+    $settings->save();
+    commitContactWorkingState();
+}
+
+function contactPayload(array $overrides = []): array
+{
+    return array_merge([
+        'name' => 'Visitor',
+        'email' => 'visitor@example.test',
+        'message' => 'Hello Lars',
+        'company' => '',
+    ], $overrides);
+}
+
+it('persists contact before the mail attempt', function (): void {
+    config([
+        'contact.recipient' => 'fallback@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+        'mail.from.name' => 'Lars Möller Website',
+    ]);
+    enablePublishedContactForm();
+
+    $pendingMail = Mockery::mock(PendingMail::class);
+    $pendingMail->shouldReceive('send')
+        ->once()
+        ->with(Mockery::type(WebsiteContactMessage::class))
+        ->andReturnUsing(function (): void {
+            $message = ContactMessage::query()->sole();
+
+            expect($message->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_PENDING)
+                ->and($message->getAttribute('read_at'))->toBeNull();
+        });
+
+    Mail::shouldReceive('to')
+        ->once()
+        ->with('fallback@example.test')
+        ->andReturn($pendingMail);
+
+    $this->post('/contact', contactPayload())
+        ->assertRedirect()
+        ->assertSessionHas('contact_success', 'Your message was received.');
+
+    expect(ContactMessage::query()->sole()->getAttribute('mail_delivery_status'))
+        ->toBe(ContactMessage::DELIVERY_DELIVERED);
+});
+
+it('delivers to the private General recipient with the configured sender and visitor Reply-To', function (): void {
+    config([
+        'contact.recipient' => 'fallback@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+        'mail.from.name' => 'Lars Möller Website',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+    PublicContentSetting::general()->update([
+        'contact_recipient_email' => 'private@example.test',
+    ]);
+    commitContactWorkingState();
+
+    $this->post('/contact', contactPayload())
+        ->assertRedirect()
+        ->assertSessionHas('contact_success', 'Your message was received.');
+
+    Mail::assertSent(WebsiteContactMessage::class, function (WebsiteContactMessage $mail): bool {
+        $envelope = $mail->envelope();
+        $from = $envelope->from;
+        $replyTo = $envelope->replyTo[0] ?? null;
+
+        return $mail->hasTo('private@example.test')
+            && $from instanceof Address
+            && $from->address === 'website@moeller-lars.de'
+            && $replyTo instanceof Address
+            && $replyTo->address === 'visitor@example.test';
+    });
+
+    $message = ContactMessage::query()->sole();
+    expect($message->getAttribute('sender_name'))->toBe('Visitor')
+        ->and($message->getAttribute('sender_email'))->toBe('visitor@example.test')
+        ->and($message->getAttribute('message'))->toBe('Hello Lars')
+        ->and($message->getAttribute('read_at'))->toBeNull()
+        ->and($message->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_DELIVERED)
+        ->and($message->getAttribute('mail_delivered_at'))->not->toBeNull();
+});
+
+it('falls back to the runtime recipient when General has no private recipient', function (): void {
+    config([
+        'contact.recipient' => 'fallback@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+        'mail.from.name' => 'Website',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+    PublicContentSetting::general()->update(['contact_recipient_email' => null]);
+    commitContactWorkingState();
+
+    $this->post('/contact', contactPayload())->assertSessionHas('contact_success');
+
+    Mail::assertSent(WebsiteContactMessage::class, fn (WebsiteContactMessage $mail): bool => $mail->hasTo('fallback@example.test'));
+    expect(ContactMessage::query()->sole()->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_DELIVERED);
+});
+
+it('keeps a locally received contact when mail delivery is unavailable', function (): void {
+    config([
+        'contact.recipient' => null,
+        'mail.from.address' => null,
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+    PublicContentSetting::general()->update(['contact_recipient_email' => null]);
+    commitContactWorkingState();
+
+    $this->post('/contact', contactPayload())
+        ->assertRedirect()
+        ->assertSessionHas('contact_success', 'Your message was received.')
+        ->assertSessionDoesntHaveErrors('contact');
+
+    Mail::assertNothingSent();
+
+    $message = ContactMessage::query()->sole();
+    expect($message->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_UNAVAILABLE)
+        ->and($message->getAttribute('mail_delivered_at'))->toBeNull()
+        ->and($message->getAttribute('read_at'))->toBeNull();
+});
+
+it('keeps a locally received contact when mail delivery fails', function (): void {
+    config([
+        'contact.recipient' => 'fallback@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+        'mail.from.name' => 'Website',
+    ]);
+    enablePublishedContactForm();
+
+    $pendingMail = Mockery::mock(PendingMail::class);
+    $pendingMail->shouldReceive('send')
+        ->once()
+        ->andThrow(new RuntimeException('secret SMTP diagnostic'));
+
+    Mail::shouldReceive('to')
+        ->once()
+        ->with('fallback@example.test')
+        ->andReturn($pendingMail);
+
+    $this->post('/contact', contactPayload())
+        ->assertRedirect()
+        ->assertSessionHas('contact_success', 'Your message was received.')
+        ->assertSessionDoesntHaveErrors('contact');
+
+    $message = ContactMessage::query()->sole();
+    expect($message->getAttribute('mail_delivery_status'))->toBe(ContactMessage::DELIVERY_FAILED)
+        ->and($message->getAttribute('mail_delivered_at'))->toBeNull()
+        ->and($message->getAttribute('message'))->toBe('Hello Lars');
+});
+
+it('validates required fields and rejects the honeypot without persisting', function (): void {
+    config(['contact.recipient' => 'artist@example.test']);
+    enablePublishedContactForm();
+
+    $this->post('/contact', contactPayload([
+        'name' => '',
+        'email' => 'not-an-email',
+        'message' => '',
+    ]))->assertSessionHasErrors(['name', 'email', 'message']);
+
+    $this->post('/contact', contactPayload(['company' => 'spam']))
+        ->assertSessionHasErrors('company');
+
+    expect(ContactMessage::query()->count())->toBe(0);
+});
+
+it('rate limits repeated contact submissions', function (): void {
+    config([
+        'contact.recipient' => 'artist@example.test',
+        'mail.default' => 'smtp',
+        'mail.from.address' => 'website@moeller-lars.de',
+    ]);
+    Mail::fake();
+    enablePublishedContactForm();
+
+    foreach (range(1, 5) as $attempt) {
+        $this->post('/contact', contactPayload(['message' => "Attempt {$attempt}"]))
+            ->assertRedirect();
+    }
+
+    $this->post('/contact', contactPayload(['message' => 'Attempt 6']))
+        ->assertTooManyRequests();
+
+    expect(ContactMessage::query()->count())->toBe(5);
+});
+
+it('requires an enabled Contact component on a published Custom Page', function (): void {
+    Mail::fake();
+
+    $this->post('/contact', contactPayload())->assertNotFound();
+
+    $section = SiteSection::query()->create([
+        'type' => SiteSection::TYPE_CUSTOM,
+        'template' => null,
+        'title' => 'Private Contact',
+        'navigation_label' => 'Private Contact',
+        'slug' => 'private-contact',
+        'state' => 'hidden',
+        'position' => 901,
+        'show_in_navigation' => false,
+        'parent_id' => null,
+        'artwork_category_id' => null,
+    ]);
+    $settings = new CustomPageSetting;
+    $settings->setAttribute('site_section_id', $section->id);
+    $settings->setAttribute('blocks', contactComponentBlocks(formPublished: true, emailPublished: false));
+    $settings->save();
+    commitContactWorkingState();
+
+    $this->post('/contact', contactPayload())->assertNotFound();
+
+    $section->update(['state' => 'published']);
+    $settings->update(['blocks' => contactComponentBlocks(formPublished: false, emailPublished: false)]);
+    commitContactWorkingState();
+
+    $this->post('/contact', contactPayload())->assertNotFound();
+
+    expect(ContactMessage::query()->count())->toBe(0);
+});

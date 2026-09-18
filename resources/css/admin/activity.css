@@ -1,0 +1,844 @@
+@import './activity-commits.css';
+
+.activity-atlas {
+    min-width: 0;
+}
+
+.activity-atlas__grid {
+    display: grid;
+    min-width: 0;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.activity-atlas__visual,
+.activity-atlas__view {
+    min-width: 0;
+    min-height: 0;
+}
+
+.activity-clock {
+    --activity-clock-caption-reserve: 2.1rem;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.activity-clock__figure {
+    display: grid;
+    min-height: 0;
+    padding: 0;
+    place-items: center;
+}
+
+.activity-clock__dial {
+    display: block;
+    width: min(100%, 19rem);
+    max-height: 100%;
+    aspect-ratio: 1;
+    overflow: visible;
+}
+
+.activity-clock__dial a {
+    cursor: pointer;
+}
+
+.activity-clock__activity-track,
+.activity-clock__face {
+    fill: none;
+    stroke: var(--admin-line);
+}
+
+.activity-clock__activity-track {
+    stroke-width: 1;
+}
+
+.activity-clock__face {
+    stroke: var(--admin-line-strong);
+    stroke-width: 1.15;
+}
+
+.activity-clock__activity-tick {
+    stroke: var(--admin-accent);
+    stroke-width: 3;
+    stroke-linecap: round;
+}
+
+.activity-clock__activity-tick.is-peak {
+    stroke: var(--admin-accent-strong);
+    stroke-width: 4.5;
+    opacity: 1;
+}
+
+.activity-clock__activity-tick.is-selected {
+    stroke: var(--admin-text);
+    stroke-width: 5.5;
+    opacity: 1;
+}
+
+.activity-clock__tick {
+    stroke: var(--admin-line-strong);
+    stroke-width: 1;
+}
+
+.activity-clock__tick.is-hour {
+    stroke: var(--admin-text);
+    stroke-width: 1.8;
+}
+
+.activity-clock__number {
+    fill: var(--admin-text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 580;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    font-variant-numeric: tabular-nums;
+}
+
+.activity-clock__hand {
+    stroke-linecap: round;
+}
+
+.activity-clock__hand--hour {
+    stroke: var(--admin-text);
+    stroke-width: 5;
+}
+
+.activity-clock__hand--minute {
+    stroke: var(--admin-text);
+    stroke-width: 3;
+}
+
+.activity-clock__hand--second {
+    stroke: var(--admin-accent);
+    stroke-width: 1.4;
+}
+
+.activity-clock__pin {
+    fill: var(--admin-surface);
+    stroke: var(--admin-text);
+    stroke-width: 2;
+}
+
+.dark .activity-clock__pin {
+    fill: rgb(24, 24, 27);
+}
+
+.activity-clock__caption {
+    box-sizing: border-box;
+    display: grid;
+    min-width: 0;
+    min-height: var(--activity-clock-caption-reserve);
+    gap: .08rem;
+    padding: 0 0 .2rem;
+    justify-items: center;
+    text-align: center;
+}
+
+.activity-clock__caption strong {
+    color: var(--admin-text);
+    font-size: .76rem;
+    font-weight: 620;
+    font-variant-numeric: tabular-nums;
+}
+
+.activity-clock__caption span {
+    color: var(--admin-muted);
+    font-size: .64rem;
+    line-height: 1.35;
+}
+
+.activity-publication__staged > span,
+.activity-publication__latest > span,
+.activity-publication__recent > span,
+.activity-publication__readiness > span {
+    color: var(--admin-muted);
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.activity-calendar {
+    --activity-calendar-cell-size: clamp(.68rem, .88vw, .84rem);
+    display: grid;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: .45rem;
+    padding-top: 0;
+}
+
+.activity-calendar__header {
+    display: flex;
+    min-width: 0;
+    min-height: 1.75rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.activity-calendar__year-nav {
+    display: inline-flex;
+    gap: .3rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.activity-calendar__year-nav strong {
+    min-width: 3.6rem;
+    color: var(--admin-text);
+    font-size: .8rem;
+    font-weight: 650;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.activity-calendar__year-nav .admin-icon-action {
+    width: 1.45rem;
+    height: 1.45rem;
+    min-height: 1.45rem;
+}
+
+.activity-calendar__year-nav .admin-icon-action svg {
+    width: .82rem;
+    height: .82rem;
+}
+
+.activity-calendar__year-nav .admin-icon-action.is-disabled {
+    opacity: .28;
+    pointer-events: none;
+}
+
+.activity-calendar__bands {
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: .55rem;
+    align-content: stretch;
+}
+
+.activity-calendar__band {
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    grid-template-rows: .8rem minmax(0, 1fr);
+    gap: .14rem .45rem;
+    align-items: center;
+}
+
+.activity-calendar__month-spacer {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.activity-calendar__months {
+    display: grid;
+    min-width: 0;
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: repeat(var(--activity-calendar-weeks), minmax(0, 1fr));
+    align-items: end;
+    color: var(--admin-muted);
+    font-size: .5rem;
+    font-weight: 650;
+    letter-spacing: .03em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.activity-calendar__months span {
+    overflow: visible;
+    white-space: nowrap;
+}
+
+.activity-calendar__weekdays {
+    display: grid;
+    grid-column: 1;
+    grid-row: 2;
+    grid-template-rows: repeat(7, var(--activity-calendar-cell-size));
+    gap: .11rem;
+    align-content: center;
+}
+
+.activity-calendar__weekdays span {
+    display: flex;
+    height: var(--activity-calendar-cell-size);
+    align-items: center;
+    color: var(--admin-muted);
+    font-size: .48rem;
+    font-weight: 650;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.activity-calendar__cells {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-column: 2;
+    grid-row: 2;
+    grid-auto-flow: column;
+    grid-template-columns: repeat(var(--activity-calendar-weeks), minmax(0, 1fr));
+    grid-template-rows: repeat(7, var(--activity-calendar-cell-size));
+    gap: .11rem;
+    overflow: hidden;
+    align-content: center;
+    align-items: center;
+    justify-content: stretch;
+}
+
+.activity-calendar__day {
+    box-sizing: border-box;
+    display: block;
+    width: min(100%, var(--activity-calendar-cell-size));
+    height: var(--activity-calendar-cell-size);
+    justify-self: center;
+    border: 1px solid color-mix(in srgb, var(--admin-line-strong) 88%, transparent);
+    border-radius: 1px;
+    background: color-mix(in srgb, var(--admin-surface) 94%, var(--admin-subtle));
+    text-decoration: none;
+}
+
+.activity-calendar__day.is-outside {
+    border-color: transparent;
+    background: transparent;
+}
+
+.activity-calendar__day.is-future {
+    opacity: .24;
+}
+
+.activity-calendar__day.is-level-1 {
+    background: color-mix(in srgb, var(--admin-accent) 18%, var(--admin-surface));
+}
+
+.activity-calendar__day.is-level-2 {
+    background: color-mix(in srgb, var(--admin-accent) 36%, var(--admin-surface));
+}
+
+.activity-calendar__day.is-level-3 {
+    background: color-mix(in srgb, var(--admin-accent) 60%, var(--admin-surface));
+}
+
+.activity-calendar__day.is-level-4 {
+    border-color: var(--admin-accent);
+    background: var(--admin-accent);
+}
+
+a.activity-calendar__day:hover,
+a.activity-calendar__day:focus-visible {
+    border-color: var(--admin-text);
+    outline: 0;
+}
+
+.activity-calendar__day.is-selected {
+    outline: 1px solid var(--admin-text);
+    outline-offset: 1px;
+}
+
+.activity-calendar__day.is-filtered {
+    outline: 2px solid var(--admin-accent-strong);
+    outline-offset: 1px;
+}
+
+.activity-calendar__day.is-today {
+    box-shadow: inset 0 0 0 1px var(--admin-accent-strong);
+}
+
+.activity-calendar__legend {
+    display: flex;
+    gap: .28rem;
+    padding-left: 0;
+    align-items: center;
+    justify-content: center;
+    color: var(--admin-muted);
+    font-size: .6rem;
+}
+
+.activity-calendar__legend .activity-calendar__day {
+    width: .7rem;
+    height: .7rem;
+}
+
+.activity-publication {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    padding-left: var(--admin-section-space);
+    flex-direction: column;
+    border-left: 1px solid var(--admin-line);
+    overflow: auto;
+}
+
+.activity-publication__header {
+    display: flex;
+    min-height: 2.4rem;
+    padding-bottom: .45rem;
+    align-items: center;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.activity-publication__header strong {
+    color: var(--admin-text);
+    font-size: .9rem;
+    font-weight: 620;
+}
+
+.activity-publication__staged,
+.activity-publication__readiness,
+.activity-publication__latest,
+.activity-publication__recent {
+    display: grid;
+    gap: .2rem;
+    padding: .6rem 0;
+    border-bottom: 1px solid var(--admin-line);
+}
+
+.activity-publication__staged > strong {
+    color: var(--admin-text);
+    font-size: 1.7rem;
+    font-weight: 520;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.activity-publication__staged > small,
+.activity-publication__latest > small,
+.activity-publication__recent small,
+.activity-publication__readiness > small {
+    color: var(--admin-muted);
+    font-size: .66rem;
+    line-height: 1.35;
+}
+
+.activity-publication__readiness > strong,
+.activity-publication__latest > strong,
+.activity-publication__recent article strong {
+    color: var(--admin-text);
+    font-size: .76rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.activity-publication__readiness.is-ready > strong {
+    color: var(--admin-accent-strong);
+}
+
+.activity-publication__readiness.is-blocked > strong {
+    color: var(--admin-danger, var(--admin-text));
+}
+
+.activity-publication__latest > p {
+    display: none;
+}
+
+.activity-publication__latest.is-empty {
+    color: var(--admin-muted);
+}
+
+.activity-publication__recent article {
+    display: grid;
+    gap: .08rem;
+}
+
+.activity-publication__recent article + article {
+    padding-top: .35rem;
+    border-top: 1px solid color-mix(in srgb, var(--admin-line) 70%, transparent);
+}
+
+.activity-publication__recent article > div {
+    display: flex;
+    gap: .5rem;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.activity-publication__recent article span {
+    color: var(--admin-muted);
+    font-size: .64rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.activity-publication__actions {
+    margin-top: auto;
+    padding: .7rem 0 0;
+}
+
+.activity-publication__actions .admin-toolbar {
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+}
+
+/* Activity controls use the six-metric strip as an alignment reference.
+ * Twenty-four subtracks allow the filters and the final Filter/View/Selection
+ * utility trio to stay on one canonical row. */
+.activity-workspace__controls {
+    display: grid;
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    gap: 0;
+    align-items: end;
+}
+
+.activity-workspace__controls > :not(.admin-data-controls__utility) {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0 !important;
+    padding-right: .7rem;
+}
+
+.activity-workspace__controls > .activity-control--search { grid-column: span 8; }
+.activity-workspace__controls > .activity-control--area { grid-column: span 2; }
+.activity-workspace__controls > .activity-control--type { grid-column: span 2; }
+.activity-workspace__controls > .activity-control--date { grid-column: span 2; }
+.activity-workspace__controls > .activity-control--time { grid-column: span 2; }
+
+.activity-workspace__controls > .admin-data-controls__utility {
+    display: grid;
+    min-width: 0;
+    grid-column: span 8;
+    grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;
+    gap: .2rem;
+    align-items: end;
+}
+
+.activity-workspace__controls > .admin-data-controls__utility > * {
+    width: 100%;
+    min-width: 0;
+}
+
+.activity-control--reset > .admin-action,
+.activity-control--view .admin-toolbar,
+.activity-control--selection .admin-selection__anchor,
+.activity-control--selection .admin-selection__trigger {
+    width: 100%;
+    min-width: 0;
+}
+
+.activity-control--reset > .admin-action {
+    justify-content: center;
+}
+
+.activity-control--view .admin-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .3rem;
+}
+
+.activity-control--view .admin-action {
+    width: 100%;
+    min-width: 0;
+    padding-inline: .45rem;
+    justify-content: center;
+}
+
+.activity-control--selection .admin-selection__trigger {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    gap: 0;
+    padding-right: 0;
+    justify-content: stretch;
+}
+
+.activity-control--selection .admin-selection__count {
+    margin-left: 0;
+    justify-self: center;
+}
+
+.activity-events-table table {
+    min-width: 72rem;
+}
+
+.activity-events-table .activity-col--change,
+.activity-events-table .activity-col--publication {
+    width: 16.6667%;
+}
+
+.activity-events-table .activity-col--actions {
+    width: calc(16.6667% - var(--admin-table-selection-width));
+}
+
+.activity-events-table .activity-col--who {
+    width: 7.5%;
+}
+
+.activity-events-table .activity-col--when {
+    width: 9.1667%;
+}
+
+.activity-events-table .activity-col--target {
+    width: 15%;
+}
+
+.activity-events-table .activity-col--area {
+    width: 8%;
+}
+
+.activity-events-table .activity-col--type {
+    width: 10.3332%;
+}
+
+.activity-workspace__table th,
+.activity-workspace__table td {
+    box-sizing: border-box;
+}
+
+.activity-workspace__table th:first-child,
+.activity-workspace__table td:first-child {
+    padding-left: 0;
+}
+
+.activity-workspace__table th:not(:first-child),
+.activity-workspace__table td:not(:first-child) {
+    padding-left: .7rem;
+}
+
+.activity-workspace__table th:not(:last-child),
+.activity-workspace__table td:not(:last-child) {
+    padding-right: .7rem;
+}
+
+.activity-workspace__table th:last-child,
+.activity-workspace__table td:last-child {
+    padding-right: 0;
+}
+
+.activity-change-cell,
+.activity-target-cell,
+.activity-area-cell,
+.activity-type-cell,
+.activity-who-cell,
+.activity-when-cell,
+.activity-publication-cell,
+.activity-commit-cell,
+.activity-commit-summary {
+    min-width: 0;
+}
+
+.activity-change-cell strong,
+.activity-target-cell strong,
+.activity-who-cell strong,
+.activity-commit-summary strong {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--admin-text);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-change-cell strong {
+    font-size: .74rem;
+}
+
+.activity-target-cell strong,
+.activity-who-cell strong,
+.activity-commit-summary strong {
+    font-size: .7rem;
+}
+
+.activity-area-cell span,
+.activity-type-cell span {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--admin-muted);
+    font-size: .66rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-publication-cell__stack {
+    display: grid;
+    min-width: 0;
+    gap: .12rem;
+    justify-items: start;
+}
+
+.activity-publication-cell__stack code,
+.activity-commit-cell code {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--admin-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: .62rem;
+    font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-publication-cell__stack code {
+    margin-left: .82rem;
+}
+
+.activity-publication-cell__empty {
+    color: var(--admin-faint);
+}
+
+.activity-publication-cell > small,
+.activity-commit-summary > small,
+.activity-when-cell > small {
+    display: block;
+    max-width: 100%;
+    margin-top: .15rem;
+    overflow: hidden;
+    color: var(--admin-muted);
+    font-size: .62rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-when-cell time {
+    display: block;
+    overflow: hidden;
+    color: var(--admin-text);
+    font-size: .68rem;
+    font-weight: 560;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-actions-cell,
+.activity-workspace__table th.admin-table__actions {
+    text-align: left;
+}
+
+.activity-actions-cell .admin-toolbar {
+    gap: .2rem;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+}
+
+.activity-actions-cell .admin-action {
+    column-gap: .28rem;
+}
+
+.activity-actions-cell .admin-action:first-child {
+    margin-left: 0;
+}
+
+.activity-commits-table table {
+    min-width: 66rem;
+}
+
+.activity-commits-table .activity-commit-col--commit,
+.activity-commits-table .activity-commit-col--publication {
+    width: 16.6667%;
+}
+
+.activity-commits-table .activity-commit-col--actions {
+    width: calc(16.6667% - var(--admin-table-selection-width));
+}
+
+.activity-commits-table .activity-commit-col--who {
+    width: 7.5%;
+}
+
+.activity-commits-table .activity-commit-col--when {
+    width: 9.1667%;
+}
+
+.activity-commits-table .activity-commit-col--summary {
+    width: 33.3332%;
+}
+
+.activity-commit-cell__heading {
+    display: flex;
+    min-width: 0;
+    gap: .4rem;
+    align-items: center;
+}
+
+.activity-commit-summary > small {
+    margin-top: .18rem;
+}
+
+@media (max-width: 1080px) {
+    .activity-workspace__controls {
+        display: flex;
+        gap: .85rem;
+        flex-wrap: wrap;
+    }
+
+    .activity-workspace__controls > :not(.admin-data-controls__utility) {
+        width: auto;
+        padding-right: 0;
+    }
+
+    .activity-workspace__controls > .activity-control--search {
+        min-width: 12rem;
+        flex: 1 1 16rem;
+    }
+
+    .activity-workspace__controls > :is(.activity-control--area, .activity-control--type, .activity-control--date, .activity-control--time) {
+        flex: 0 1 9rem;
+    }
+
+    .activity-workspace__controls > .admin-data-controls__utility {
+        display: flex;
+        min-width: 18rem;
+        flex: 1 1 24rem;
+        gap: .65rem;
+    }
+
+    .activity-workspace__controls > .admin-data-controls__utility > * {
+        flex: 1 1 8rem;
+    }
+}
+
+@media (max-width: 980px) {
+    .activity-calendar {
+        --activity-calendar-cell-size: .64rem;
+    }
+}
+
+@media (max-width: 760px) {
+    .activity-workspace__controls > .admin-data-controls__utility {
+        min-width: 100%;
+        flex: 1 1 100%;
+        flex-wrap: wrap;
+    }
+
+    .activity-workspace__controls > .admin-data-controls__utility > * {
+        min-width: 8rem;
+        flex: 1 1 8rem;
+    }
+
+    .activity-atlas__grid {
+        grid-template-columns: 1fr;
+        overflow: visible;
+    }
+
+    .activity-publication {
+        padding: var(--admin-section-gap) 0 0;
+        border-top: 1px solid var(--admin-line);
+        border-left: 0;
+        overflow: visible;
+    }
+
+    .activity-publication__actions {
+        padding-bottom: var(--admin-section-gap);
+    }
+}
+
+@media (max-width: 600px) {
+    .activity-clock__dial {
+        width: min(100%, 18rem);
+    }
+
+    .activity-calendar {
+        --activity-calendar-cell-size: .56rem;
+    }
+
+    .activity-calendar__band {
+        grid-template-columns: 1.75rem minmax(0, 1fr);
+        gap: .1rem .35rem;
+    }
+
+    .activity-calendar__cells,
+    .activity-calendar__weekdays {
+        gap: .07rem;
+    }
+}

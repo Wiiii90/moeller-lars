@@ -13,6 +13,9 @@ final class SiteSectionPathPolicy
      */
     public const GALLERY_SLUG_REDIRECT_REASON = 'artwork_category_slug_change';
 
+    /** Persisted reason for configurable page slug redirects. */
+    public const CUSTOM_PAGE_SLUG_REDIRECT_REASON = 'site_section_slug_change';
+
     private const RESERVED_SLUGS = [
         'admin',
         'api',
@@ -30,13 +33,17 @@ final class SiteSectionPathPolicy
         return in_array($slug, self::RESERVED_SLUGS, true);
     }
 
-    public function available(string $slug): bool
+    public function available(string $slug, ?int $ignoreSiteSectionId = null): bool
     {
         if ($this->isReserved($slug)) {
             return false;
         }
 
-        if (SiteSection::query()->where('slug', $slug)->exists()) {
+        $sections = SiteSection::query()->where('slug', $slug);
+        if ($ignoreSiteSectionId !== null) {
+            $sections->whereKeyNot($ignoreSiteSectionId);
+        }
+        if ($sections->exists()) {
             return false;
         }
 

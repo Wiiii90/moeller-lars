@@ -26,7 +26,7 @@ No production credentials, database dumps or authoritative production media belo
 
 ## Local development
 
-The development Compose stack provides the application container and PostgreSQL 17.
+The normal local Compose stack provides the CLI/development application container and the one persistent PostgreSQL database reused by local browser preview work.
 
 ```sh
 docker compose up -d --build
@@ -34,43 +34,56 @@ docker compose exec app composer install --no-interaction
 docker compose exec app npm ci --ignore-scripts
 ```
 
-Run the same core verification used by CI:
+Run only relevant non-destructive local checks:
 
 ```sh
-docker compose exec app composer test
 docker compose exec app composer analyse
 docker compose exec app vendor/bin/pint --test
 docker compose exec app npm run test:js
 docker compose exec app npm run build
 ```
 
-Stop the stack with:
+Local Feature/Pest runs and destructive database reset/rollback commands are intentionally fail-closed before database destruction. The full Pest suite runs in the disposable GitHub Actions database context defined by [docs/RELEASE.md](docs/RELEASE.md).
+
+Stop the local stack without discarding its database container:
 
 ```sh
-docker compose down
+docker compose stop
 ```
+
+Browser-polish/reconciliation uses the canonical local preview image recipe at [`docker/Dockerfile.local-preview`](docker/Dockerfile.local-preview). That image contains the built frontend assets, so a source pull alone does not update the running CSS/JavaScript; rebuild the preview image before judging frontend changes in the browser. Branch/review rules are owned by [AGENTS.md](AGENTS.md); the browser-reconciliation loop is summarized in [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md); CI, release-image and Validation contracts are owned by [docs/RELEASE.md](docs/RELEASE.md).
 
 ## Site structure
 
 The editable public site is modeled as typed site nodes:
 
-- **Home** — singleton root presentation
+- **Home** — singleton root presentation with Artwork, Under Construction, Skip Home or Custom presentation modes
 - **Gallery** — artwork collection, optionally nested
-- **Journal** — Blog or Exhibitions
-- **Custom Page** — structured content/components
+- **Journal** — Blog or Exhibitions; switching the active Journal template does not destructively convert/delete the inactive template's entries
+- **Custom Page** — structured content/components, including CV and reusable Contact composition
 - **Navigation Node** — navigation-only grouping
 
 The domain types, public routing, admin destinations and navigation projection have separate owners; persistence details do not define application behavior.
 
+## Admin development and review
+
+The artist admin is browser-reviewed as an editorial product, not accepted merely because a page boots or CI is green.
+
+Start with:
+
+- [AGENTS.md](AGENTS.md) — branch/reconciliation/worker workflow and central technology rules
+- [ui-skills.md](ui-skills.md) — shared admin UI grammar for headings, metrics, control rows, tables, grids, selection, ordering and dialogs
+- [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and mail boundary
+- [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md) — direct-vs-worker browser workflow, shared Visual Stage ownership and local preview loop
+- [followup-skill.md](followup-skill.md) — how to hand a long orchestration session to a new chat without losing exact Git/runtime/review state
+
+Small browser defects may be fixed directly on `dev` when the user explicitly chooses that mode. Larger independent source passes may use workers. The active collaboration mode is part of the review state; do not silently switch modes during a continuation handoff.
+
 ## Releases
 
-`.github/workflows/release.yml` is the canonical GitHub Actions workflow. It verifies pull requests and, for non-PR runs such as `main`, publishes an immutable image tagged with the exact Git SHA:
+Daily integration happens on `dev`. Once a coherent browser/product milestone is accepted, the exact accepted `dev` head is promoted to protected `main` through the normal integration/release gates. `main` is the canonical source for release-image publication and release-candidate Validation; branch/SHA preview images remain pre-release evidence only. See [docs/RELEASE.md](docs/RELEASE.md) for the canonical CI, image publication and Validation contract.
 
-```text
-ghcr.io/wiiii90/moeller-lars:<git-sha>
-```
-
-A green CI run or published image does not itself authorize a Production deployment.
+A green CI run, a local browser candidate, a published preview image or a successful Validation deployment does not itself authorize a Production deployment.
 
 ## Documentation
 
@@ -78,7 +91,7 @@ Start with [docs/README.md](docs/README.md). It separates current application co
 
 ## Security
 
-Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. Report security-sensitive findings according to [SECURITY.md](SECURITY.md), not through public issues containing exploit details or secret material.
+Never commit secrets or private production data. Use environment/platform secret storage for credentials and tokens. The admin authentication, MFA and password-recovery contract is documented in [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md). Report security-sensitive findings according to [SECURITY.md](SECURITY.md), not through public issues containing exploit details or secret material.
 
 ## License and contributions
 

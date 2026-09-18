@@ -1,0 +1,231 @@
+/* Canonical six-cell alignment contract for metric-backed admin toolbars.
+ *
+ * Six-cell geometry is scoped, never inferred from a toolbar merely being
+ * complete. Generic/dense toolbars keep the flexible data-control contract.
+ * Journal and Custom Page deliberately follow their six-metric ruler; Pages
+ * owns the equivalent scoped geometry in table-contract.css.
+ */
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0;
+    align-items: end;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > * {
+    min-width: 0;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+).admin-data-controls--filters-0 > :first-child {
+    grid-column: span 4;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+).admin-data-controls--filters-1 > :first-child {
+    grid-column: span 3;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+).admin-data-controls--filters-2 > :first-child {
+    grid-column: span 2;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+).admin-data-controls--filters-1 > :nth-child(2),
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+).admin-data-controls--filters-2 > :nth-child(2),
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+).admin-data-controls--filters-2 > :nth-child(3) {
+    grid-column: span 1;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > :not(.admin-data-controls__utility) {
+    box-sizing: border-box;
+    width: 100%;
+    padding-right: .7rem;
+}
+
+/* The utility wrapper is semantic only for ordinary toolbars. Its children
+ * remain direct layout participants of the toolbar so accepted page geometry
+ * is not collapsed into an extra flex group. Metric-grid toolbars override
+ * this below and deliberately make the wrapper a two-cell grid item. */
+.admin-data-controls__utility {
+    display: contents;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility {
+    display: grid;
+    min-width: 0;
+    grid-column: span 2;
+    grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;
+    gap: .2rem;
+    align-items: end;
+}
+
+.admin-data-controls__utility > * {
+    min-width: 0;
+}
+
+.admin-data-controls__utility .admin-action {
+    white-space: nowrap;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility .admin-control-group__actions {
+    gap: .15rem;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility :is(
+    .admin-control-group__actions > .admin-action,
+    .admin-selection__trigger
+) {
+    padding-inline: .2rem;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility .admin-selection__trigger > :first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility > :last-child {
+    width: 100%;
+    justify-self: stretch;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility > :last-child .admin-selection__anchor,
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility > :last-child .media-workspace__selection-anchor {
+    width: 100%;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility > :last-child .admin-selection__trigger,
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility > :last-child .media-workspace__selection-trigger {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    gap: 0;
+    padding-right: 0;
+    justify-content: stretch;
+}
+
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility > :last-child .admin-selection__count,
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__utility > :last-child .media-workspace__selection-count {
+    margin-left: 0;
+    justify-self: center;
+}
+
+@media (max-width: 1000px) {
+    :is(
+        .admin-data-controls--six-cell,
+        .custom-page-workspace__controls,
+        .journal-workspace__entries > .admin-data-controls
+    ) {
+        display: flex;
+        gap: .85rem;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    :is(
+        .admin-data-controls--six-cell,
+        .custom-page-workspace__controls,
+        .journal-workspace__entries > .admin-data-controls
+    ) > :not(.admin-data-controls__utility) {
+        width: auto;
+        padding-right: 0;
+    }
+
+    :is(
+        .admin-data-controls--six-cell,
+        .custom-page-workspace__controls,
+        .journal-workspace__entries > .admin-data-controls
+    ) > :first-child {
+        min-width: 12rem;
+        flex: 1 1 16rem;
+    }
+
+    :is(
+        .admin-data-controls--six-cell,
+        .custom-page-workspace__controls,
+        .journal-workspace__entries > .admin-data-controls
+    ) > .admin-data-controls__utility {
+        display: flex;
+    }
+}

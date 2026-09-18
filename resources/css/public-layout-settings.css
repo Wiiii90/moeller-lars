@@ -1,0 +1,15 @@
+/* Runtime-configurable public geometry from General settings. */
+
+:root {
+    --public-content-padding: 75px;
+}
+
+.site-content {
+    padding-inline: clamp(var(--public-mobile-inset), var(--public-content-padding), 20vw);
+}
+
+/* Keep the preview marker clear of the persistent right-hand scroll track. */
+.public-preview-badge {
+    right: auto;
+    left: .75rem;
+}

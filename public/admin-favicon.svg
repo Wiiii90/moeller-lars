@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Admin Area">
+    <style>
+        .mark { fill: #24292f; }
+        @media (prefers-color-scheme: dark) {
+            .mark { fill: #f0f3f6; }
+        }
+    </style>
+
+    <path class="mark" d="M14 10h36L39 21H25L14 10Z" />
+    <path class="mark" d="M54 14v36L43 39V25L54 14Z" />
+    <path class="mark" d="M50 54H14l11-11h14l11 11Z" />
+    <path class="mark" d="M10 50V14l11 11v14L10 50Z" />
+</svg>

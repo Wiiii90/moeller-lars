@@ -1,0 +1,475 @@
+/* Canonical admin table ordering, alignment, typography and row-action contract.
+ *
+ * Role order for ordinary editorial tables/hierarchies:
+ * Position + Drag -> primary identity -> secondary data -> Actions -> Selection.
+ * Omit roles that do not exist for the task; do not invent placeholder columns.
+ */
+
+:root {
+    --admin-table-alignment-columns: 6;
+    --admin-table-quarter-unit: 4.166667%;
+    --admin-table-half-unit: 8.333333%;
+    --admin-table-three-quarter-unit: 12.5%;
+    --admin-table-one-unit: 16.666667%;
+    --admin-table-five-quarter-units: 20.833333%;
+    --admin-table-one-half-units: 25%;
+    --admin-table-two-units: 33.333333%;
+    --admin-table-edge-inset: .5rem;
+    --admin-table-leading-square: 1.65rem;
+    --admin-table-selection-width: 2.5rem;
+
+    /* Shared semantic typography for ordinary table/control surfaces. Feature
+     * layouts consume these tokens instead of shrinking text to make it fit. */
+    --admin-font-size-control-label: .68rem;
+    --admin-font-size-control-value: .78rem;
+    --admin-font-size-table-header: .64rem;
+    --admin-font-size-table-body: .76rem;
+    --admin-font-size-table-identity: .8rem;
+    --admin-font-size-table-meta: .66rem;
+    --admin-font-size-table-compact: .68rem;
+    --admin-font-size-table-support: .72rem;
+    --admin-font-size-table-empty: .74rem;
+    --admin-font-size-table-add-row: .73rem;
+    --admin-font-size-selection-count: .55rem;
+}
+
+/* A controls row immediately followed by a table/hierarchy does not draw a
+ * second separator. The table or hierarchy header owns that boundary. */
+.admin-data-controls:has(+ :is(.admin-table, .admin-hierarchy)) {
+    border-bottom: 0 !important;
+}
+
+.admin-position {
+    min-width: var(--admin-table-leading-square);
+    min-height: var(--admin-table-leading-square);
+    padding-inline: .28rem;
+}
+
+.admin-add-row__mark,
+.custom-page-component-add-row > span {
+    width: var(--admin-table-leading-square);
+    height: var(--admin-table-leading-square);
+    flex-basis: var(--admin-table-leading-square);
+}
+
+.admin-table--ranked tr > :first-child {
+    padding-left: var(--admin-table-edge-inset) !important;
+}
+
+.admin-table__ordering-heading {
+    text-align: left !important;
+}
+
+.admin-table--six-grid {
+    table-layout: fixed;
+}
+
+.admin-table--six-grid .admin-table__actions {
+    width: auto;
+}
+
+.admin-table__col-quarter-unit { width: var(--admin-table-quarter-unit); }
+.admin-table__col-half-unit { width: var(--admin-table-half-unit); }
+.admin-table__col-three-quarter-unit { width: var(--admin-table-three-quarter-unit); }
+.admin-table__col-one-unit { width: var(--admin-table-one-unit); }
+.admin-table__col-five-quarter-units { width: var(--admin-table-five-quarter-units); }
+.admin-table__col-one-half-units { width: var(--admin-table-one-half-units); }
+.admin-table__col-two-units { width: var(--admin-table-two-units); }
+.admin-table__col-two-units-minus-selection { width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)); }
+.admin-table__selection-col { width: var(--admin-table-selection-width); }
+
+.admin-action--with-icon {
+    gap: .3rem;
+}
+
+.admin-action__icon {
+    width: .9rem;
+    height: .9rem;
+    flex: 0 0 .9rem;
+}
+
+.admin-order-action--labeled {
+    width: auto;
+    min-width: 0;
+    padding-inline: .5rem;
+}
+
+.admin-row-actions--canonical {
+    justify-content: flex-start !important;
+}
+
+.admin-row-actions--three,
+.admin-row-actions--four {
+    display: grid !important;
+    width: 100%;
+    gap: .25rem;
+}
+
+.admin-row-actions--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.admin-row-actions--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.admin-row-actions--three .admin-action,
+.admin-row-actions--four .admin-action {
+    min-width: 0;
+    justify-content: center;
+}
+
+.admin-table__selection--trailing,
+.admin-hierarchy__selection--trailing,
+.media-workspace__selection-head--trailing,
+.media-workspace__selection-cell--trailing {
+    padding-right: var(--admin-table-edge-inset) !important;
+}
+
+/* Selection-axis contract: x-admin.controls renders Selection last. For
+ * table/hierarchy toolbars, reserve the same terminal rail for the circular
+ * selected-count badge that the table reserves for its trailing checkboxes. */
+.admin-data-controls > :last-child .admin-selection__trigger,
+.admin-data-controls > :last-child .media-workspace__selection-trigger {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    gap: 0;
+    padding-right: 0;
+    justify-content: stretch;
+}
+
+.admin-data-controls > :last-child .admin-selection__count,
+.admin-data-controls > :last-child .media-workspace__selection-count {
+    margin-left: 0;
+    justify-self: center;
+}
+
+.admin-hierarchy {
+    --admin-hierarchy-position-column: max(3rem, calc((var(--admin-hierarchy-position-digits, 2) * .72rem) + 1rem));
+}
+
+.admin-hierarchy__ordering-heading {
+    grid-column: 1 / span 2;
+    padding-left: var(--admin-table-edge-inset);
+}
+
+.admin-hierarchy__position-cell {
+    padding-left: var(--admin-table-edge-inset);
+}
+
+/* Pages uses the same six visual units as its metrics. The first two units
+ * contain Position/Drag + Name, Page Type and Template each own one full unit,
+ * and Actions + trailing Selection own the final two units. */
+.admin-hierarchy--pages .admin-pages__header,
+.admin-hierarchy--pages .admin-pages__row {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    column-gap: 0;
+}
+
+.admin-pages__row {
+    position: relative;
+    min-height: 3rem;
+}
+
+.admin-pages__primary-grid {
+    display: grid;
+    min-width: 0;
+    grid-column: span 2;
+    grid-template-columns: 3.25rem 2rem minmax(0, 1fr);
+    gap: .45rem;
+    align-items: center;
+}
+
+.admin-pages__utility-grid {
+    display: grid;
+    min-width: 0;
+    grid-column: span 2;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    gap: 0;
+    align-items: center;
+}
+
+.admin-pages__header > .admin-pages__type,
+.admin-pages__header > .admin-pages__template,
+.admin-pages__row > .admin-pages__type,
+.admin-pages__row > .admin-pages__template {
+    box-sizing: border-box;
+    min-width: 0;
+    padding-inline: .65rem;
+}
+
+.admin-pages__header .admin-pages__utility-grid > :first-child {
+    padding-left: .65rem;
+}
+
+/* Stable semantic slots keep every icon on one horizontal axis. Geometry,
+ * padding and slot weights absorb label length; typography never changes to
+ * squeeze an action into the fixed two-unit rail. */
+.admin-pages__row-actions {
+    display: grid !important;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1.18fr)
+        minmax(0, .64fr)
+        minmax(0, 1.2fr)
+        minmax(0, .72fr);
+    gap: 0 !important;
+    padding-left: 0;
+}
+
+.admin-pages__row-actions .admin-action {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 0;
+    justify-content: flex-start !important;
+    overflow: hidden;
+}
+
+.admin-pages__row-actions .admin-action--state {
+    min-width: 0;
+}
+
+.admin-pages__row-actions .admin-action__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-pages__redirect-marker {
+    display: flex;
+    min-width: 0;
+    min-height: 2rem;
+    align-items: center;
+    color: var(--admin-muted);
+}
+
+.admin-pages__redirect-target {
+    min-width: 0;
+    color: var(--admin-text);
+    text-decoration: none;
+}
+
+.admin-pages__redirect-target:hover,
+.admin-pages__redirect-target:focus-visible {
+    color: var(--admin-accent-strong);
+}
+
+.admin-pages__redirect-target--missing {
+    display: flex;
+    min-height: 2rem;
+    align-items: center;
+    overflow: hidden;
+    color: var(--admin-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-pages__action-placeholder {
+    display: block;
+    min-width: 0;
+    min-height: 2rem;
+}
+
+.admin-pages__drag-placeholder {
+    display: block;
+    width: 1.75rem;
+    height: 2rem;
+    margin-inline: auto;
+}
+
+.admin-pages__page-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.admin-pages__page-link:hover strong,
+.admin-pages__page-link:focus-visible strong {
+    color: var(--admin-accent-strong);
+}
+
+.admin-hierarchy--pages .admin-hierarchy__row.is-child .admin-hierarchy__content {
+    padding-left: 0;
+}
+
+/* Nesting is an overlay on the target row, never an inserted/expanded row.
+ * This keeps every table coordinate fixed from drag start through drop. The
+ * center overlay makes the gesture explicit: drop on a page to nest; drop in
+ * the ordinary sortable gaps to reorder on the current level. */
+.admin-pages__nest-target {
+    position: absolute;
+    z-index: 8;
+    top: .32rem;
+    right: 33.333333%;
+    bottom: .32rem;
+    left: 10%;
+    display: flex;
+    min-width: 0;
+    padding-inline: .55rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed color-mix(in srgb, var(--admin-accent) 52%, var(--admin-line-strong));
+    background: color-mix(in srgb, var(--admin-accent) 7%, var(--admin-surface));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-surface) 84%, transparent);
+    color: var(--admin-accent-strong);
+    font-size: var(--admin-font-size-table-meta);
+    font-weight: 650;
+    letter-spacing: .015em;
+    line-height: 1;
+    opacity: .84;
+    pointer-events: auto;
+    transition: opacity .1s ease, background-color .1s ease, border-color .1s ease, box-shadow .1s ease;
+}
+
+.admin-pages__nest-target span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.admin-pages__nest-target.is-hovered {
+    border-style: solid;
+    border-color: var(--admin-accent);
+    background: color-mix(in srgb, var(--admin-accent) 15%, var(--admin-surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--admin-accent) 22%, transparent);
+    opacity: 1;
+}
+
+/* Pages toolbar uses the same six-unit reference as metrics and rows. Search
+ * owns two cells, Type and Status one each, and the utility wrapper owns the
+ * final two cells. Filter, Pages and Selection divide those last two cells
+ * without introducing a second toolbar row. */
+.admin-task-controls--pages {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0;
+    align-items: end;
+}
+
+.admin-task-controls--pages > * {
+    min-width: 0 !important;
+    width: 100%;
+    padding-right: .45rem;
+}
+
+.admin-task-controls--pages > :first-child {
+    grid-column: span 2;
+}
+
+.admin-task-controls--pages > .admin-task-field:not(:first-child) {
+    grid-column: span 1;
+}
+
+.admin-task-controls--pages > .admin-data-controls__utility {
+    display: grid;
+    min-width: 0;
+    grid-column: span 2;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    padding-right: 0;
+}
+
+.admin-task-controls--pages .admin-data-controls__utility > * {
+    min-width: 0;
+    width: 100%;
+    padding-right: .45rem;
+}
+
+.admin-task-controls--pages .admin-data-controls__utility > :last-child {
+    padding-right: 0;
+}
+
+.admin-task-controls--pages .admin-task-control-group,
+.admin-task-controls--pages .admin-selection__anchor,
+.admin-task-controls--pages .admin-task-control-actions {
+    width: 100%;
+}
+
+.admin-task-controls--pages .admin-task-control-actions > .admin-action,
+.admin-task-controls--pages .admin-selection__trigger {
+    width: 100%;
+    min-width: 0;
+    padding-inline: .3rem;
+}
+
+.admin-selection--unlabeled {
+    align-self: end;
+}
+
+.admin-task-form--pages {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.admin-task-form--pages__title {
+    grid-column: span 2;
+}
+
+/* Custom Page hierarchy uses the same six metric units as the workspace above.
+ * Position + Drag consume half a unit, Component one unit and Content 2.5
+ * units. Actions start exactly on the 4/6 metric line and own the final two
+ * units together with the trailing Selection rail. */
+.custom-page-component-sequence {
+    --admin-hierarchy-position-column: var(--admin-table-quarter-unit);
+    --admin-hierarchy-drag-column: var(--admin-table-quarter-unit);
+    --admin-hierarchy-actions-column: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
+    --admin-hierarchy-row-gap: 0;
+    --admin-hierarchy-columns:
+        var(--admin-hierarchy-position-column)
+        var(--admin-hierarchy-drag-column)
+        var(--admin-table-one-unit)
+        calc(var(--admin-table-two-units) + var(--admin-table-half-unit))
+        var(--admin-hierarchy-actions-column)
+        var(--admin-table-selection-width);
+}
+
+.custom-page-component-add-row {
+    --admin-add-row-inset: calc(
+        var(--admin-hierarchy-position-column)
+        + var(--admin-hierarchy-drag-column)
+    );
+}
+
+.custom-page-component__children-empty {
+    padding-left: calc(
+        var(--admin-hierarchy-position-column)
+        + var(--admin-hierarchy-drag-column)
+    );
+}
+
+@media (min-width: 821px) {
+    .admin-hierarchy--pages {
+        overflow-x: auto;
+        overflow-y: visible;
+        scrollbar-width: none;
+    }
+
+    .admin-hierarchy--pages::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+}
+
+@media (max-width: 1180px) {
+    .admin-pages__primary-grid {
+        grid-template-columns: 3.1rem 1.8rem minmax(0, 1fr);
+        gap: .3rem;
+    }
+
+    .admin-pages__row-actions .admin-action {
+        padding-inline: 0;
+    }
+}
+
+@media (max-width: 900px) {
+    .admin-task-controls--pages {
+        display: flex;
+    }
+
+    .admin-task-controls--pages > * {
+        padding-right: 0;
+    }
+
+    .admin-task-form--pages {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

@@ -9,6 +9,9 @@ storage/logs/*
 storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
+storage/framework/testing/*
+storage/framework/phpstan/*
+storage/local-validation-snapshot/
 storage/app/private/*
 bootstrap/cache/*.php
 tests
@@ -16,4 +19,5 @@ phpstan.neon
 phpunit.xml
 Pest.php
 compose*.yml
+compose*.yaml
 README.md

@@ -1,0 +1,64 @@
+FROM node:22-bookworm-slim AS frontend
+WORKDIR /build
+
+COPY package.json package-lock.json vite.config.js ./
+RUN npm ci --ignore-scripts
+
+COPY resources ./resources
+RUN npm run build
+
+FROM moeller-lars-local-runtime
+WORKDIR /var/www/html
+
+ENV APP_ENV=local \
+    MOELLER_LARS_PERSISTENT_PREVIEW=1 \
+    MEDIA_STORAGE_QUOTA_BYTES=5000000000
+
+# Preserve the dependency identity from the runtime image before candidate source
+# overlays composer.lock. A stale runtime image must never provide vendor/ silently.
+RUN test -f composer.lock \
+    && sha256sum composer.lock | cut -d ' ' -f1 > /tmp/moeller-lars-runtime-composer-lock.sha256
+
+# Candidate-owned runtime source must come from the candidate checkout.
+# Remove directories first so deleted/stale files from the base image
+# cannot survive into the browser candidate.
+RUN rm -rf \
+    /var/www/html/app \
+    /var/www/html/bootstrap \
+    /var/www/html/config \
+    /var/www/html/database \
+    /var/www/html/routes \
+    /var/www/html/resources \
+    /var/www/html/public
+
+# .dockerignore excludes env files, vendor, private media, runtime caches,
+# tests and other local-only material.
+COPY . .
+
+RUN candidate_lock_sha="$(sha256sum composer.lock | cut -d ' ' -f1)" \
+    && runtime_lock_sha="$(cat /tmp/moeller-lars-runtime-composer-lock.sha256)" \
+    && if [ "$candidate_lock_sha" != "$runtime_lock_sha" ]; then \
+        echo >&2 "Runtime image dependencies do not match candidate composer.lock. Rebuild moeller-lars-local-runtime first."; \
+        exit 1; \
+    fi \
+    && rm /tmp/moeller-lars-runtime-composer-lock.sha256
+
+# Keep the runtime dependencies from the base image, but use the frontend
+# assets built from this exact candidate.
+COPY --from=frontend /build/public/build ./public/build
+
+RUN mkdir -p \
+        /var/www/html/bootstrap/cache \
+        /var/www/html/storage/framework/cache \
+        /var/www/html/storage/framework/sessions \
+        /var/www/html/storage/framework/views \
+        /var/www/html/storage/logs \
+    && chown -R www-data:www-data \
+        /var/www/html/bootstrap/cache \
+        /var/www/html/storage/framework/cache \
+        /var/www/html/storage/framework/sessions \
+        /var/www/html/storage/framework/views \
+    && chown www-data:www-data \
+        /var/www/html/storage/logs
+ENTRYPOINT ["docker-php-entrypoint"]
+CMD ["sh", "-lc", "php artisan migrate --force --no-interaction && php artisan optimize:clear && php artisan media:measure-capacity --no-interaction && exec apache2-foreground"]

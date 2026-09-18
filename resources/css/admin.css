@@ -1,8 +1,12 @@
 @import './admin/base.css';
 @import './admin/layouts.css';
 @import './admin/forms.css';
+@import './admin/data-workspace.css';
 @import './admin/analytics.css';
+@import './admin/activity.css';
 @import './admin/media.css';
+@import './admin/storage.css';
+@import './admin/dashboard.css';
 
 :root {
     --admin-text: #181818;
@@ -25,7 +29,16 @@
     --admin-workspace-gutter: 2rem;
     --admin-sidebar-width: 18rem;
     --admin-sidebar-half-width: 9rem;
-    --admin-header-action-reserve: 10.5rem;
+    --admin-status-neutral: var(--admin-faint);
+    --admin-status-success: var(--admin-success);
+    --admin-status-warning: var(--admin-accent);
+    --admin-status-danger: var(--admin-danger);
+    /*
+     * Visual Stage: outer height of a large admin visualization surface on
+     * desktop. Page-specific panes fill this stage; responsive stacking stays
+     * in the shared Visual Stage primitive rather than page-local height rules.
+     */
+    --admin-visual-stage-height: 23.5rem;
     --admin-workspace-visual-shift: clamp(
         0rem,
         calc(50vw - var(--admin-sidebar-half-width) - var(--admin-workspace-half-width) - var(--admin-workspace-gutter)),
@@ -55,18 +68,16 @@
 .admin-workspace__header {
     display: grid;
     min-height: var(--admin-control-height);
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 1.25rem;
     padding: 0 0 var(--admin-section-gap);
     align-items: center;
-    border-bottom: 1px solid var(--admin-line-strong);
 }
 
 .admin-workspace__heading {
     min-width: 0;
 }
 
-.admin-workspace__kicker,
 .admin-section__kicker,
 .admin-empty-state__kicker,
 .admin-list__eyebrow {
@@ -107,6 +118,12 @@
     font-weight: 580;
     line-height: 1;
     font-variant-numeric: tabular-nums;
+}
+
+.admin-metric__value {
+    line-height: 1.2;
+    padding-bottom: .08em;
+    margin-bottom: -.08em;
 }
 
 .admin-workspace__summary span,
@@ -209,6 +226,132 @@
     background: rgba(255, 255, 255, .045);
 }
 
+/* Canonical compact icon-action grammar shared by cards and data rows. */
+.admin-icon-action,
+.gallery-workspace__icon-action,
+.gallery-workspace__order-action {
+    box-sizing: border-box;
+    display: grid;
+    width: 1.78rem;
+    height: 1.78rem;
+    min-width: 1.78rem;
+    min-height: 1.78rem;
+    flex: 0 0 1.78rem;
+    padding: 0;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: .2rem;
+    background: transparent;
+    color: var(--admin-muted);
+    font: inherit;
+    font-size: .78rem;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.admin-icon-action svg,
+.gallery-workspace__icon-action svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.admin-icon-action:hover,
+.admin-icon-action:focus-visible,
+.gallery-workspace__icon-action:hover,
+.gallery-workspace__icon-action:focus-visible,
+.gallery-workspace__order-action:hover,
+.gallery-workspace__order-action:focus-visible {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+    outline: none;
+}
+
+.admin-icon-action:focus-visible,
+.gallery-workspace__icon-action:focus-visible,
+.gallery-workspace__order-action:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+}
+
+.admin-icon-action:disabled,
+.gallery-workspace__icon-action:disabled,
+.gallery-workspace__order-action:disabled {
+    opacity: .38;
+    cursor: default;
+}
+
+.admin-icon-action.is-danger:hover,
+.admin-icon-action.is-danger:focus-visible {
+    border-color: color-mix(in srgb, var(--admin-status-danger) 42%, transparent);
+    background: color-mix(in srgb, var(--admin-status-danger) 8%, transparent);
+    color: var(--admin-status-danger);
+}
+
+/* Surface is contextual: useful over imagery, intentionally absent in tables. */
+.admin-icon-action--surface,
+.gallery-workspace__primary-action,
+.gallery-workspace__primary-actions > .admin-drag-handle {
+    border: 1px solid var(--admin-line-strong);
+    background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
+}
+
+.dark .admin-icon-action--surface,
+.dark .gallery-workspace__primary-action,
+.dark .gallery-workspace__primary-actions > .admin-drag-handle {
+    background: rgba(20, 20, 20, .78);
+}
+
+.gallery-workspace__primary-actions > .admin-drag-handle {
+    width: 1.78rem;
+    height: 1.78rem;
+    min-width: 1.78rem;
+    min-height: 1.78rem;
+    border-radius: .2rem;
+    color: var(--admin-muted);
+}
+
+.gallery-workspace__primary-actions > .admin-drag-handle:hover,
+.gallery-workspace__primary-actions > .admin-drag-handle:focus-visible {
+    border-color: var(--admin-line-strong);
+    background: var(--admin-subtle);
+    color: var(--admin-text);
+}
+
+/* Canonical semantic dot colors. Page-local status classes alias this grammar. */
+.admin-status,
+.admin-gallery-grid__state {
+    --admin-status-dot: var(--admin-status-neutral);
+}
+
+.admin-status::before,
+.admin-gallery-grid__state::before {
+    border-color: var(--admin-status-dot) !important;
+    background: var(--admin-status-dot) !important;
+}
+
+.admin-status.is-published,
+.admin-status.is-success,
+.admin-status.is-ready,
+.admin-gallery-grid__state.is-published {
+    --admin-status-dot: var(--admin-status-success);
+}
+
+.admin-status.is-warning,
+.admin-status.is-draft,
+.admin-status.is-scheduled {
+    --admin-status-dot: var(--admin-status-warning);
+}
+
+.admin-status.is-unpublished,
+.admin-status.is-danger,
+.admin-status.is-error,
+.admin-status.is-missing,
+.admin-gallery-grid__state:not(.is-published) {
+    --admin-status-dot: var(--admin-status-danger);
+}
+
 .admin-empty-state {
     padding: 2rem 0;
     border-block: 1px solid var(--admin-line);
@@ -226,7 +369,7 @@
 
 .admin-metrics {
     gap: 0;
-    border-bottom: 1px solid var(--admin-line-strong);
+    border-block: 1px solid var(--admin-line-strong);
 }
 
 .admin-metric {
@@ -242,10 +385,28 @@
     border-right: 0;
 }
 
+.admin-metric__label,
+.admin-metric__value,
 .admin-metric__detail {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-metric__detail {
+    display: block;
     margin-top: .35rem;
     color: var(--admin-muted);
     font-size: .72rem;
+}
+
+.admin-metric.is-up .admin-metric__detail {
+    color: var(--admin-success);
+}
+
+.admin-metric.is-down .admin-metric__detail {
+    color: var(--admin-danger);
 }
 
 .admin-list {
@@ -313,7 +474,6 @@
 .admin-table {
     width: 100%;
     overflow-x: auto;
-    border-block: 1px solid var(--admin-line);
 }
 
 .admin-table table {
@@ -329,32 +489,21 @@
     vertical-align: middle;
 }
 
+.admin-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
 .fi-page-header-main-ctn {
     gap: var(--admin-section-gap);
 }
 
-/*
- * Workspace pages own the visible heading while Filament owns native header
- * actions. Collapse the empty duplicate header band and place those actions in
- * the same visual row as the canonical workspace title.
- */
+/* Workspace pages render their canonical heading inside x-admin.workspace. */
 .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-page-header-main-ctn {
-    position: relative;
     gap: 0;
     padding-top: 0;
 }
 
 .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-header:not(.fi-header-has-breadcrumbs) {
-    position: absolute;
-    inset-block-start: 0;
-    inset-inline-end: 0;
-    z-index: 5;
-    width: auto;
-    min-height: var(--admin-control-height);
-    align-items: center;
-}
-
-.fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-header:not(.fi-header-has-breadcrumbs) > div:first-child {
     display: none;
 }
 
@@ -371,9 +520,6 @@
     line-height: 1.05;
 }
 
-.fi-header-actions-ctn .fi-btn,
-.admin-topbar-sign-out .fi-btn,
-.fi-global-search .fi-input-wrp,
 .fi-topbar .fi-icon-btn,
 .fi-sidebar-item-btn {
     min-height: var(--admin-control-height) !important;
@@ -387,204 +533,9 @@
     margin-top: 0;
 }
 
-/* Media Files final interaction polish. */
-.media-workspace__library {
-    border-bottom: 0;
-}
-
-.media-workspace__thumb button,
-.media-workspace__visual,
-.media-workspace__filename-button {
-    border: 0;
-    padding: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    cursor: pointer;
-}
-
-.media-workspace__thumb button {
-    display: grid;
-    width: 3.6rem;
-    height: 3rem;
-    place-items: center;
-    overflow: hidden;
-    background: var(--admin-subtle);
-}
-
-.media-workspace__visual {
-    width: 100%;
-    text-align: inherit;
-}
-
-.media-workspace__filename-button {
-    display: block;
-    max-width: 100%;
-    text-align: left;
-}
-
-.media-workspace__thumb button:focus-visible,
-.media-workspace__visual:focus-visible,
-.media-workspace__filename-button:focus-visible {
-    outline: 2px solid var(--admin-accent);
-    outline-offset: 2px;
-}
-
-.media-workspace__state.is-available::before {
-    border-color: var(--admin-success);
-    background: var(--admin-success);
-}
-
-.media-workspace__state.is-quarantined::before {
-    border-color: var(--admin-accent);
-    background: var(--admin-accent);
-}
-
-.media-workspace__state.is-deleted::before {
-    border-color: var(--admin-danger);
-    background: var(--admin-danger);
-}
-
-.media-file-dialog__content {
-    display: grid;
-    gap: 1rem;
-    min-width: 0;
-}
-
-.media-file-dialog__preview {
-    display: grid;
-    min-height: 26rem;
-    max-height: 62vh;
-    place-items: center;
-    overflow: hidden;
-    border: 1px solid var(--admin-line);
-    background: var(--admin-subtle);
-}
-
-.media-file-dialog__preview img,
-.media-file-dialog__preview video {
-    display: block;
-    width: 100%;
-    height: 100%;
-    max-height: 62vh;
-    object-fit: contain;
-}
-
-.media-file-dialog__preview p,
-.media-file-dialog__empty {
-    margin: 0;
-    color: var(--admin-muted);
-    font-size: .75rem;
-}
-
-.media-file-dialog__sequence {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 1rem;
-    padding-bottom: .85rem;
-    align-items: center;
-    border-bottom: 1px solid var(--admin-line);
-    color: var(--admin-muted);
-    font-size: .72rem;
-}
-
-.media-file-dialog__sequence > span {
-    text-align: center;
-}
-
-.media-file-dialog__details {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-
-.media-file-dialog__details > section {
-    min-width: 0;
-    padding-right: 1.2rem;
-}
-
-.media-file-dialog__details > section + section {
-    padding-right: 0;
-    padding-left: 1.2rem;
-    border-left: 1px solid var(--admin-line);
-}
-
-.media-file-dialog__details h3 {
-    margin: 0 0 .55rem;
-    color: var(--admin-muted);
-    font-size: .68rem;
-    font-weight: 700;
-    letter-spacing: .09em;
-    text-transform: uppercase;
-}
-
-.media-file-dialog__details dl {
-    display: grid;
-    margin: 0;
-}
-
-.media-file-dialog__details dl > div {
-    display: grid;
-    grid-template-columns: minmax(6.5rem, .4fr) minmax(0, 1fr);
-    gap: .8rem;
-    padding: .46rem 0;
-    border-bottom: 1px solid var(--admin-line);
-}
-
-.media-file-dialog__details dt,
-.media-file-dialog__details dd,
-.media-file-dialog__references strong,
-.media-file-dialog__references span {
-    font-size: .73rem;
-}
-
-.media-file-dialog__details dt,
-.media-file-dialog__references span {
-    color: var(--admin-muted);
-}
-
-.media-file-dialog__details dd {
-    min-width: 0;
-    margin: 0;
-    color: var(--admin-text);
-}
-
-.media-file-dialog__checksum {
-    overflow-wrap: anywhere;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: .67rem !important;
-}
-
-.media-file-dialog__references {
-    display: grid;
-    border-top: 1px solid var(--admin-line);
-}
-
-.media-file-dialog__references a,
-.media-file-dialog__references > div {
-    display: grid;
-    grid-template-columns: minmax(8rem, .55fr) minmax(0, 1fr);
-    gap: .8rem;
-    padding: .6rem 0;
-    border-bottom: 1px solid var(--admin-line);
-    color: inherit;
-    text-decoration: none;
-}
-
-.media-file-dialog__references strong {
-    color: var(--admin-text);
-    font-weight: 600;
-}
-
-.media-file-dialog__references span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-@media (min-width: 901px) {
-    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .admin-workspace__header {
-        padding-inline-end: var(--admin-header-action-reserve);
+@media (max-width: 1050px) {
+    :root {
+        --admin-visual-stage-height: min(23.5rem, 50vw);
     }
 }
 
@@ -600,7 +551,6 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .admin-workspace__actions,
     .admin-toolbar {
         justify-content: flex-start;
     }
@@ -610,61 +560,10 @@
         grid-template-columns: 1fr;
         gap: .7rem;
     }
-
-    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .fi-header:not(.fi-header-has-breadcrumbs) {
-        inset-inline: 0;
-        width: 100%;
-        justify-content: flex-end;
-    }
-
-    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .fi-header-actions-ctn {
-        margin-inline-start: auto;
-    }
-
-    .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace):has(.fi-header-actions-ctn) .admin-workspace__header {
-        padding-top: calc(var(--admin-control-height) + var(--admin-section-gap));
-    }
 }
 
-@media (max-width: 760px) {
-    .media-file-dialog {
-        width: calc(100vw - 1rem) !important;
-        max-width: none !important;
-        max-height: calc(100dvh - 1rem);
-    }
-
-    .media-file-dialog__preview {
-        min-height: min(48vh, 24rem);
-        max-height: 52vh;
-    }
-
-    .media-file-dialog__preview img,
-    .media-file-dialog__preview video {
-        max-height: 52vh;
-    }
-
-    .media-file-dialog__details {
-        grid-template-columns: 1fr;
-    }
-
-    .media-file-dialog__details > section,
-    .media-file-dialog__details > section + section {
-        padding-inline: 0;
-    }
-
-    .media-file-dialog__details > section + section {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--admin-line);
-        border-left: 0;
-    }
-
-    .media-file-dialog__sequence {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .media-file-dialog__sequence > span {
-        grid-column: 1 / -1;
-        grid-row: 1;
+@media (max-width: 720px) {
+    :root {
+        --admin-visual-stage-height: min(23.5rem, 58.8235vw);
     }
 }

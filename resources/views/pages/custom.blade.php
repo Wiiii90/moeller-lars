@@ -10,90 +10,60 @@
     @endphp
 
     <div class="custom-page" aria-label="{{ $section->title }}">
-        <h2 class="category-heading">{{ $section->title }}</h2>
+        @foreach ($blocks as $blockIndex => $block)
+            @php
+                $type = is_array($block) ? ($block['type'] ?? null) : null;
+                $componentPublished = is_array($block) ? \App\Models\CustomPageSetting::componentPublished($block) : false;
+            @endphp
+            @continue(! $isPreview && ! $componentPublished)
 
-        @if ($blocks === [])
-            <p class="public-empty-state">This page does not have published content yet.</p>
-        @else
-            @foreach ($blocks as $blockIndex => $block)
+            @if ($type === 'image')
                 @php
-                    $type = is_array($block) ? ($block['type'] ?? null) : null;
+                    $assetId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
+                    $asset = $assetId !== null ? $assets->get($assetId) : null;
+                    $variant = $asset !== null && $asset->getAttribute('state') === 'available' ? $media->thumbnailVariantForAsset($asset) : null;
+                    $decorative = (bool) ($block['image_decorative'] ?? false);
+                    $imageAlt = $asset !== null && ! $decorative ? $media->altTextForAsset($asset) : '';
+                    $loading = $blockIndex === 0 ? 'eager' : 'lazy';
                 @endphp
 
-                @if ($type === 'image')
-                    @php
-                        $assetId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
-                        $asset = $assetId !== null ? $assets->get($assetId) : null;
-                        $variant = $asset !== null ? $media->thumbnailVariantForAsset($asset) : null;
-                        $decorative = (bool) ($block['image_decorative'] ?? false);
-                        $imageAlt = $asset !== null && ! $decorative ? $media->altTextForAsset($asset) : '';
-                        $loading = $blockIndex === 0 ? 'eager' : 'lazy';
-                    @endphp
-
-                    @if ($asset !== null && $variant !== null)
-                        <figure class="custom-page__component custom-page__media custom-page__image">
-                            <img
-                                src="{{ route('media.variant', $variant) }}"
-                                alt="{{ $imageAlt }}"
-                                loading="{{ $loading }}"
-                                decoding="async"
-                            >
-                        </figure>
-                    @endif
+                @if ($asset !== null && $variant !== null)
+                    <figure class="custom-page__component custom-page__media custom-page__image">
+                        <img src="{{ $media->variantUrl($variant) }}" alt="{{ $imageAlt }}" loading="{{ $loading }}" decoding="async">
+                    </figure>
                 @endif
+            @endif
 
-                @if ($type === 'cv_list')
-                    <section class="custom-page__component" aria-label="CV entries">
-                        <div class="cv-biography">
-                            @foreach ($cvEntries as $entry)
-                                <article class="cv-entry">
-                                    <div class="cv-entry__content">
-                                        <div class="cv-entry__line">
-                                            @if (filled($entry->year_text))
-                                                <span class="cv-entry__date">{{ $entry->year_text }}</span>
-                                            @endif
-                                            <span>{{ $entry->title }}</span>
-                                        </div>
-                                        @if (filled($entry->organisation))<div>{{ $entry->organisation }}</div>@endif
-                                        @if (filled($entry->location))<div>{{ $entry->location }}</div>@endif
-                                        @if (filled($entry->body))
-                                            <div class="rich-text">{!! $richText->render((string) $entry->body) !!}</div>
-                                        @endif
-                                        @if (filled($entry->external_url))
-                                            <p><a href="{{ $entry->external_url }}" rel="noopener noreferrer">More information</a></p>
-                                        @endif
-                                        @if ($isPreview && $entry->state !== 'published')
-                                            <small class="public-preview-state">{{ ucfirst((string) $entry->state) }}</small>
-                                        @endif
-                                    </div>
-                                </article>
-                            @endforeach
-                        </div>
-                    </section>
-                @endif
+            @if ($type === 'text')
+                <section class="custom-page__component">
+                    <div class="custom-page__copy">
+                        @if (filled($block['title'] ?? null))
+                            <h3>{{ $block['title'] }}</h3>
+                        @endif
+                        @if (filled($block['body'] ?? null))
+                            <div class="rich-text">{!! $richText->render((string) $block['body']) !!}</div>
+                        @endif
+                    </div>
+                </section>
+            @endif
 
-                @if ($type === 'text')
-                    <section class="custom-page__component">
-                        <div class="custom-page__copy">
-                            @if (filled($block['title'] ?? null))
-                                <h3>{{ $block['title'] }}</h3>
-                            @endif
-                            @if (filled($block['body'] ?? null))
-                                <div class="rich-text">{!! $richText->render((string) $block['body']) !!}</div>
-                            @endif
-                        </div>
-                    </section>
-                @endif
-
-                @if ($type === 'list')
-                    <section class="custom-page__component">
+            @if ($type === 'list')
+                @php
+                    $listAssetId = is_numeric($block['media_asset_id'] ?? null) ? (int) $block['media_asset_id'] : null;
+                    $listAsset = $listAssetId !== null ? $assets->get($listAssetId) : null;
+                    $listVariant = $listAsset !== null && $listAsset->getAttribute('state') === 'available'
+                        ? $media->thumbnailVariantForAsset($listAsset)
+                        : null;
+                @endphp
+                <section class="custom-page__component">
+                    <div class="custom-page__list-layout{{ $listVariant !== null ? ' custom-page__list-layout--with-media' : '' }}">
                         <div class="custom-page__copy">
                             @if (filled($block['title'] ?? null))
                                 <h3>{{ $block['title'] }}</h3>
                             @endif
                             <div class="custom-page__list">
                                 @foreach (($block['items'] ?? []) as $item)
-                                    @continue(! is_array($item) || (! $isPreview && (($item['visible'] ?? true) !== true)))
+                                    @continue(! is_array($item) || (! $isPreview && ! \App\Models\CustomPageSetting::listItemPublished($item)))
                                     <article class="custom-page__list-item">
                                         <div class="custom-page__list-line">
                                             @if (filled($item['date'] ?? null))
@@ -113,41 +83,41 @@
                                 @endforeach
                             </div>
                         </div>
-                    </section>
-                @endif
-
-                @if ($type === 'divider')
-                    <div class="custom-page__divider" aria-hidden="true"></div>
-                @endif
-
-                @if ($type === 'contact')
-                    @php
-                        $formState = is_string($block['form_state'] ?? null) ? $block['form_state'] : 'enabled';
-                        $statusText = is_string($block['status_text'] ?? null) ? $block['status_text'] : null;
-                        $showEmail = (bool) ($block['show_email'] ?? true);
-                        $showForm = (bool) ($block['show_form'] ?? true);
-                        $socialPlatforms = is_array($block['social_platforms'] ?? null) ? $block['social_platforms'] : [];
-                    @endphp
-                    <div class="custom-page__component custom-page__contact">
-                        <x-contact
-                            :general-settings="$generalSettings"
-                            :form-state="$formState"
-                            :status-text="$statusText"
-                            :show-status="true"
-                            :show-email="$showEmail"
-                            :show-form="$showForm"
-                            :social-platforms="$socialPlatforms"
-                        />
+                        @if ($listVariant !== null && $listAsset instanceof \App\Models\MediaAsset)
+                            <img
+                                class="custom-page__list-media"
+                                src="{{ $media->variantUrl($listVariant) }}"
+                                alt="{{ $media->altTextForAsset($listAsset) }}"
+                                loading="lazy"
+                                decoding="async"
+                            >
+                        @endif
                     </div>
-                @endif
-            @endforeach
-        @endif
+                </section>
+            @endif
 
-        @if ($generalSettings->legal_disclaimer !== null)
-            <section class="legal-disclaimer" aria-labelledby="legal-disclaimer-heading">
-                <h2 id="legal-disclaimer-heading">Haftungsablehnung</h2>
-                <p>{{ $generalSettings->legal_disclaimer }}</p>
-            </section>
-        @endif
+            @if ($type === 'divider')
+                @php
+                    $dividerVariant = is_string($block['variant'] ?? null)
+                        && in_array($block['variant'], \App\Models\CustomPageSetting::DIVIDER_VARIANTS, true)
+                            ? $block['variant']
+                            : 'thin';
+                @endphp
+                <div class="custom-page__divider custom-page__divider--{{ $dividerVariant }}" aria-hidden="true"></div>
+            @endif
+
+            @if ($type === 'contact')
+                <div class="custom-page__component custom-page__contact">
+                    <x-contact :general-settings="$generalSettings" :children="$settings->contactChildren($block)" />
+                </div>
+            @endif
+
+            @if ($type === 'legal_disclaimer' && $generalSettings->legal_disclaimer !== null)
+                <section class="legal-disclaimer" aria-labelledby="legal-disclaimer-heading-{{ $blockIndex }}">
+                    <h2 id="legal-disclaimer-heading-{{ $blockIndex }}">Haftungsablehnung</h2>
+                    <p>{{ $generalSettings->legal_disclaimer }}</p>
+                </section>
+            @endif
+        @endforeach
     </div>
 @endsection

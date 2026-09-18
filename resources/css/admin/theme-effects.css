@@ -1,0 +1,169 @@
+/* Shared optical lighting language for the admin shell. */
+
+html.fi {
+    /*
+     * Keep the lighting system central, but render each role appropriately.
+     * Small selected SVGs can carry contour depth; typography stays untouched.
+     */
+    --admin-optical-accent: rgba(176, 142, 91, .18);
+    --admin-optical-depth: rgba(20, 20, 20, .34);
+    --admin-icon-light-effect:
+        drop-shadow(.55px .8px 0 rgba(20, 20, 20, .42))
+        drop-shadow(0 1.2px 1.4px rgba(70, 49, 26, .18));
+
+    --admin-user-badge-edge: rgba(24, 24, 24, .22);
+    --admin-user-badge-aura: rgba(176, 142, 91, .10);
+    --admin-user-badge-inner: rgba(255, 255, 255, .82);
+    --admin-user-badge-depth: rgba(24, 24, 24, .18);
+
+    --admin-control-popup-surface: #fff;
+    --admin-control-popup-ink: #181818;
+    --admin-control-popup-muted: #9a9a9a;
+
+    /* Warm graphite: selected without the hard pure-black look. */
+    --admin-sidebar-selected-ink: #403731;
+}
+
+html.fi.dark {
+    --admin-optical-accent: rgba(240, 182, 95, .14);
+    --admin-optical-depth: rgba(0, 0, 0, .76);
+
+    /* General in dark mode is the accepted selected-icon reference. */
+    --admin-icon-light-effect:
+        drop-shadow(-.45px -.5px 0 rgba(255, 255, 255, .24))
+        drop-shadow(.55px .7px 0 var(--admin-optical-depth))
+        drop-shadow(0 0 1.55px var(--admin-optical-accent));
+
+    --admin-user-badge-edge: rgba(240, 182, 95, .34);
+    --admin-user-badge-aura: rgba(240, 182, 95, .10);
+    --admin-user-badge-inner: rgba(255, 255, 255, .10);
+    --admin-user-badge-depth: rgba(0, 0, 0, .82);
+
+    --admin-control-popup-surface: #151515;
+    --admin-control-popup-ink: #f2f2f0;
+    --admin-control-popup-muted: #7d7c78;
+    --admin-sidebar-selected-ink: #f4f4f2;
+}
+
+/* User identity keeps crisp rings and relief; no blurred halo or card surface. */
+html.fi .fi-topbar .fi-user-menu-trigger .fi-user-avatar {
+    box-shadow:
+        0 0 0 1px var(--admin-user-badge-edge),
+        0 0 0 2px var(--admin-user-badge-aura),
+        inset 1px 1px 0 var(--admin-user-badge-inner),
+        inset -1px -1px 0 var(--admin-user-badge-depth);
+    transition: box-shadow .18s ease;
+}
+
+html.fi .fi-topbar .fi-user-menu-trigger:hover .fi-user-avatar,
+html.fi .fi-topbar .fi-user-menu-trigger:focus-visible .fi-user-avatar {
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--admin-user-badge-edge) 82%, var(--admin-text)),
+        0 0 0 2px color-mix(in srgb, var(--admin-user-badge-aura) 72%, var(--admin-user-badge-edge)),
+        inset 1px 1px 0 var(--admin-user-badge-inner),
+        inset -1px -1px 0 var(--admin-user-badge-depth);
+}
+
+/*
+ * Header state stays on the title row. Its left edge follows the sixth column
+ * of the shared six-column metrics geometry rather than floating at the edge.
+ */
+html.fi .admin-workspace__header {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    column-gap: 0;
+    row-gap: 1rem;
+    align-items: end;
+}
+
+html.fi .admin-workspace__heading {
+    min-width: 0;
+    grid-column: 1 / 6;
+    grid-row: 1;
+}
+
+html.fi .admin-workspace__status {
+    grid-column: 6 / 7;
+    grid-row: 1;
+    align-self: end;
+    justify-self: stretch;
+    min-width: 0;
+    padding: 0 0 .18rem 1rem;
+}
+
+html.fi .admin-workspace__summary {
+    grid-column: 1 / -1;
+    grid-row: 2;
+}
+
+html.fi .admin-workspace-status {
+    --admin-status-light: var(--admin-faint);
+    position: relative;
+    max-width: 100%;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* Status indicators share one restrained signal language across every workspace. */
+html.fi .admin-workspace-status.is-success { --admin-status-light: var(--admin-success); }
+html.fi .admin-workspace-status.is-warning { --admin-status-light: var(--admin-accent); }
+html.fi .admin-workspace-status.is-danger { --admin-status-light: var(--admin-danger); }
+
+html.fi .admin-workspace-status::before {
+    background: var(--admin-status-light);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--admin-status-light) 24%, transparent),
+        0 0 2px color-mix(in srgb, var(--admin-status-light) 36%, transparent);
+    animation: admin-status-pulse 4.8s cubic-bezier(.22, .61, .36, 1) infinite;
+}
+
+html.fi .admin-workspace-status.is-warning::before { animation-duration: 3.9s; }
+html.fi .admin-workspace-status.is-danger::before { animation-duration: 3.2s; }
+html.fi .admin-workspace-status.is-neutral::before { animation: none; }
+
+@keyframes admin-status-pulse {
+    0%, 62%, 100% {
+        box-shadow:
+            0 0 0 1px color-mix(in srgb, var(--admin-status-light) 22%, transparent),
+            0 0 2px color-mix(in srgb, var(--admin-status-light) 34%, transparent);
+    }
+    76% {
+        box-shadow:
+            0 0 0 .16rem color-mix(in srgb, var(--admin-status-light) 16%, transparent),
+            0 0 2px color-mix(in srgb, var(--admin-status-light) 42%, transparent);
+    }
+    90% {
+        box-shadow:
+            0 0 0 .34rem transparent,
+            0 0 2px color-mix(in srgb, var(--admin-status-light) 30%, transparent);
+    }
+}
+
+/* At the two-column responsive metrics breakpoint, follow its last column too. */
+@media (max-width: 900px) {
+    html.fi .admin-workspace__header {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 0;
+        align-items: end;
+    }
+
+    html.fi .admin-workspace__heading {
+        grid-column: 1;
+    }
+
+    html.fi .admin-workspace__status {
+        grid-column: 2;
+        justify-self: stretch;
+        padding-left: 1rem;
+    }
+
+    html.fi .admin-workspace-status {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.fi .admin-workspace-status::before {
+        animation: none;
+    }
+}

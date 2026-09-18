@@ -3,13 +3,24 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         columns="160"
+         displayDetailsOnTestsThatTriggerWarnings="true"
 >
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+        </testsuite>
+        <testsuite name="Architecture">
+            <directory>tests/Architecture</directory>
+        </testsuite>
+        <testsuite name="Migration">
+            <directory>tests/Migration</directory>
         </testsuite>
     </testsuites>
     <source>
@@ -19,6 +30,8 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- Public test-only fallback. CI supplies its own generated APP_KEY. -->
+        <env name="APP_KEY" value="base64:AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>

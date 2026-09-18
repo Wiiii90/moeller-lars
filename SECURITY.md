@@ -13,13 +13,14 @@ Include only the information needed to reproduce and assess the problem:
 - minimal reproduction steps;
 - whether any secret/private data may already have been exposed.
 
-Never include real production credentials or private data in the report.
+Never include real production credentials, reset links, MFA secrets/recovery codes or private data in the report.
 
 ## Scope
 
 Security-sensitive application areas include:
 
-- `/admin` authentication/authorization/session behavior;
+- `/admin` authentication, `is_admin` authorization, session behavior and optional TOTP MFA/recovery;
+- admin password-reset enumeration resistance, token handling and transactional mail;
 - preview/private media access;
 - Contact form abuse/delivery boundaries;
 - upload/media validation and storage paths;
@@ -28,7 +29,9 @@ Security-sensitive application areas include:
 - secret/configuration handling;
 - migration/import processing of untrusted legacy input.
 
-Host/network/backup/runtime findings that belong to the deployment platform should be reported against `Wiiii90/server-platform` through an appropriate private channel rather than documented with exploitable detail here.
+The durable application contract for admin login, MFA and account recovery is [docs/ADMIN-AUTHENTICATION.md](docs/ADMIN-AUTHENTICATION.md). Passwords are never recoverable plaintext and password recovery must not disclose whether an arbitrary address is an administrator account.
+
+Concrete SMTP credentials, relay policy, TLS, ingress and mail-server operations are platform concerns and must remain outside this repository. Host/network/backup/runtime findings that belong to the deployment platform should be reported against `Wiiii90/server-platform` through an appropriate private channel rather than documented with exploitable detail here.
 
 ## Supported version
 

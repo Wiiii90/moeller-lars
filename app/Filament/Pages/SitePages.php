@@ -4,22 +4,21 @@ namespace App\Filament\Pages;
 
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
-use App\Domain\Content\SiteNodeType;
-use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
+use App\Domain\Content\SiteSectionType;
+use App\Filament\Pages\Concerns\ManagesSitePageDialogs;
+use App\Filament\Support\AdminIcon;
+use App\Filament\Support\Dialogs\AdminDialog;
+use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\SiteNodePresentation;
 use App\Models\ArtworkCategory;
 use App\Models\SiteSection;
-use App\Routing\SiteNodeRoute;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Validation\ValidationException;
@@ -27,7 +26,9 @@ use UnitEnum;
 
 final class SitePages extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    use ManagesSitePageDialogs;
+
+    protected static string|BackedEnum|null $navigationIcon = AdminIcon::Pages;
 
     protected static string|UnitEnum|null $navigationGroup = 'Website';
 
@@ -44,8 +45,62 @@ final class SitePages extends Page
     /** @var list<array<string, mixed>> */
     public array $sections = [];
 
-    /** @var list<array{id: int, label: string, type: string}> */
-    public array $parentCandidates = [];
+    /** @var list<array<string, mixed>> */
+    public array $filteredRows = [];
+
+    /** @var array{total:int,published:int,unpublished:int,top_level:int,children:int,navigation:int} */
+    public array $metrics = [
+        'total' => 0,
+        'published' => 0,
+        'unpublished' => 0,
+        'top_level' => 0,
+        'children' => 0,
+        'navigation' => 0,
+    ];
+
+    /** @var list<int|string> */
+    public array $selectedSectionIds = [];
+
+    /** @var array<int, string> */
+    public array $parentOptions = [];
+
+    public string $search = '';
+
+    public string $typeFilter = '';
+
+    public string $statusFilter = '';
+
+    public bool $filtersActive = false;
+
+    public bool $reorderEnabled = true;
+
+    public bool $allVisibleSelected = false;
+
+    public bool $selectionIndeterminate = false;
+
+    public bool $addingPage = false;
+
+    public string $newPageType = 'custom';
+
+    public string $newPageTitle = '';
+
+    public string $newPageSlug = '';
+
+    public string $newJournalTemplate = 'blog';
+
+    public string $newPageParent = '';
+
+    public int $perPage = 25;
+
+    public int $pageNumber = 1;
+
+    public int $totalGroups = 0;
+
+    public int $lastPage = 1;
+
+    public int $rangeStart = 0;
+
+    public int $rangeEnd = 0;
 
     private ?SiteSectionOrderService $orderService = null;
 
@@ -54,54 +109,216 @@ final class SitePages extends Page
         $this->loadSections();
     }
 
+    public function updatedSearch(): void
+    {
+        $this->pageNumber = 1;
+        $this->loadSections();
+    }
+
+    public function updatedTypeFilter(): void
+    {
+        $this->pageNumber = 1;
+        $this->loadSections();
+    }
+
+    public function updatedStatusFilter(): void
+    {
+        $this->pageNumber = 1;
+        $this->loadSections();
+    }
+
+    public function updatedPerPage(): void
+    {
+        if (! in_array($this->perPage, [25, 50, 100], true)) {
+            $this->perPage = 25;
+        }
+
+        $this->pageNumber = 1;
+        $this->loadSections();
+    }
+
+    public function updatedSelectedSectionIds(): void
+    {
+        $this->syncSelectionState();
+    }
+
+    public function resetFilters(): void
+    {
+        $this->search = '';
+        $this->typeFilter = '';
+        $this->statusFilter = '';
+        $this->pageNumber = 1;
+        $this->loadSections();
+    }
+
+    public function previousPage(): void
+    {
+        if ($this->pageNumber <= 1) {
+            return;
+        }
+
+        $this->pageNumber--;
+        $this->loadSections();
+    }
+
+    public function nextPage(): void
+    {
+        if ($this->pageNumber >= $this->lastPage) {
+            return;
+        }
+
+        $this->pageNumber++;
+        $this->loadSections();
+    }
+
+    public function toggleSelectAll(): void
+    {
+        $visibleIds = array_map(static fn (array $row): int => (int) $row['id'], $this->filteredRows);
+        $selected = $this->selectedIds();
+        $allVisibleSelected = $visibleIds !== [] && array_diff($visibleIds, $selected) === [];
+
+        if ($allVisibleSelected) {
+            $selected = array_values(array_diff($selected, $visibleIds));
+        } else {
+            $selected = array_values(array_unique([...$selected, ...$visibleIds]));
+        }
+
+        $this->selectedSectionIds = $selected;
+        $this->syncSelectionState();
+    }
+
+    public function sortSection(int $sectionId, int $position, int|string|null $groupId = null): void
+    {
+        if (! $this->reorderEnabled) {
+            Notification::make()
+                ->title('Reordering is unavailable for this view')
+                ->body($this->filtersActive
+                    ? 'Reset Search, Type and Status before changing page order.'
+                    : 'Show the complete canonical root-page set before changing page order.')
+                ->warning()
+                ->send();
+            $this->loadSections();
+
+            return;
+        }
+
+        $parentId = null;
+        if ($groupId !== null && $groupId !== '' && $groupId !== 'root') {
+            if (! ctype_digit((string) $groupId)) {
+                Notification::make()->title('Page order unchanged')->danger()->send();
+                $this->loadSections();
+
+                return;
+            }
+            $parentId = (int) $groupId;
+        }
+
+        try {
+            /** @var SiteSection $section */
+            $section = SiteSection::query()->findOrFail($sectionId);
+            if ($this->orderService()->moveTo($section, $parentId, $position)) {
+                Notification::make()->title('Page order updated')->success()->send();
+            }
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Page order unchanged', $exception);
+        }
+
+        $this->loadSections();
+    }
+
     public function moveSection(int $sectionId, string $direction): void
     {
-        /** @var SiteSection $section */
-        $section = SiteSection::query()->findOrFail($sectionId);
-        if ($this->orderService()->move($section, $direction)) {
-            Notification::make()->title('Site order updated')->success()->send();
+        if (! $this->reorderEnabled) {
+            Notification::make()->title('Show the complete unfiltered page order before reordering')->warning()->send();
+
+            return;
+        }
+
+        try {
+            /** @var SiteSection $section */
+            $section = SiteSection::query()->findOrFail($sectionId);
+            if ($this->orderService()->move($section, $direction)) {
+                Notification::make()->title('Page order updated')->success()->send();
+                $this->loadSections();
+            }
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Page order unchanged', $exception);
             $this->loadSections();
         }
+    }
+
+    public function editPlacementAction(): Action
+    {
+        return AdminDialog::edit(
+            Action::make('editPlacement')
+                ->label('Edit')
+                ->modalHeading('Edit page placement')
+                ->modalDescription('Choose whether this page is top level or belongs under another top-level page.')
+                ->fillForm(function (array $arguments): array {
+                    /** @var SiteSection $section */
+                    $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
+
+                    return [
+                        'parent_id' => $section->getAttribute('parent_id'),
+                    ];
+                })
+                ->schema([
+                    Select::make('parent_id')
+                        ->label('Parent page')
+                        ->options(fn (): array => $this->parentOptions)
+                        ->placeholder('Top level')
+                        ->native()
+                        ->nullable(),
+                ])
+                ->action(function (array $data, array $arguments): void {
+                    /** @var SiteSection $section */
+                    $section = SiteSection::query()->findOrFail((int) ($arguments['section'] ?? 0));
+                    if ($section->nodeType() === SiteSectionType::Home) {
+                        return;
+                    }
+
+                    $parentId = isset($data['parent_id']) && $data['parent_id'] !== ''
+                        ? (int) $data['parent_id']
+                        : null;
+
+                    try {
+                        app(SiteSectionEditorialService::class)->updatePlacement(
+                            $section,
+                            (string) $section->getAttribute('state'),
+                            (bool) $section->getAttribute('show_in_navigation'),
+                            $parentId,
+                        );
+                        Notification::make()->title('Page placement updated')->success()->send();
+                    } catch (ValidationException $exception) {
+                        $this->validationNotification('Page placement unchanged', $exception);
+                    }
+
+                    $this->loadSections();
+                }),
+            AdminDialogSize::Default,
+        );
     }
 
     public function toggleSectionState(int $sectionId): void
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if (! $section->nodeType()->canChangePlacement()) {
+        if (! $section->nodeType()->canChangePublication()) {
             return;
         }
 
         $state = (string) $section->getAttribute('state') === 'published' ? 'hidden' : 'published';
-        $this->updatePlacement($section, $state, (bool) $section->getAttribute('show_in_navigation'), $section->getAttribute('parent_id'));
+        $this->updatePlacement($section, $state, (bool) $section->getAttribute('show_in_navigation'));
     }
 
     public function toggleSectionNavigation(int $sectionId): void
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        if (! $section->nodeType()->canChangePlacement()) {
-            return;
-        }
-
         $this->updatePlacement(
             $section,
             (string) $section->getAttribute('state'),
             ! (bool) $section->getAttribute('show_in_navigation'),
-            $section->getAttribute('parent_id'),
-        );
-    }
-
-    public function moveSectionParent(int $sectionId, int|string|null $parentSectionId): void
-    {
-        /** @var SiteSection $section */
-        $section = SiteSection::query()->findOrFail($sectionId);
-        $parentId = filled($parentSectionId) ? (int) $parentSectionId : null;
-        $this->updatePlacement(
-            $section,
-            (string) $section->getAttribute('state'),
-            (bool) $section->getAttribute('show_in_navigation'),
-            $parentId,
         );
     }
 
@@ -109,208 +326,406 @@ final class SitePages extends Page
     {
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
-        $type = $section->nodeType();
-        if (! $type->canDelete()) {
+        if (! $section->nodeType()->canDelete()) {
             return;
         }
 
         try {
-            if ($type === SiteNodeType::Gallery) {
-                /** @var ArtworkCategory $gallery */
-                $gallery = ArtworkCategory::query()->findOrFail((int) $section->getAttribute('artwork_category_id'));
-                app(GalleryEditorialService::class)->delete($gallery);
-            } else {
-                app(SiteSectionEditorialService::class)->deleteConfigurableSection($section);
-            }
-
+            $this->deleteSectionRecord($section);
             Notification::make()->title('Page removed')->success()->send();
         } catch (ValidationException $exception) {
-            $message = collect($exception->errors())->flatten()->first();
-            Notification::make()
-                ->title('Page was not removed')
-                ->body(is_string($message) ? $message : 'This page cannot be removed yet.')
-                ->danger()
-                ->send();
+            $this->validationNotification('Page was not removed', $exception);
         }
 
         $this->loadSections();
     }
 
-    protected function getHeaderActions(): array
+    public function bulkPublish(): void
     {
-        return [
-            Action::make('previewSite')
-                ->label('Preview site')
-                ->icon(Heroicon::OutlinedEye)
-                ->url(fn (): string => app(SitePreviewContext::class)->previewSiteUrl())
-                ->openUrlInNewTab(),
-            Action::make('addSection')
-                ->label('Add page/section')
-                ->icon(Heroicon::OutlinedPlus)
-                ->schema([
-                    Select::make('type')
-                        ->label('Page type')
-                        ->options(SiteNodeType::creatableOptions())
-                        ->required()
-                        ->live(),
-                    Select::make('template')
-                        ->label('Journal template')
-                        ->options(JournalTemplate::options())
-                        ->required(fn (callable $get): bool => $get('type') === SiteNodeType::Journal->value)
-                        ->visible(fn (callable $get): bool => $get('type') === SiteNodeType::Journal->value),
-                    TextInput::make('title')->label('Title')->required()->maxLength(160),
-                    TextInput::make('slug')
-                        ->label('Public URL slug')
-                        ->maxLength(80)
-                        ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                        ->required(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
-                        ->visible(fn (callable $get): bool => SiteNodeType::tryFrom((string) $get('type'))?->requiresSlug() ?? false)
-                        ->helperText('Use lowercase letters, numbers and hyphens.'),
-                ])
-                ->action(function (array $data): void {
-                    $type = SiteNodeType::tryFrom((string) ($data['type'] ?? ''));
-                    $title = trim((string) ($data['title'] ?? ''));
-                    $slug = trim((string) ($data['slug'] ?? ''));
-
-                    $message = match ($type) {
-                        SiteNodeType::NavigationNode => $this->createNavigationNode($title),
-                        SiteNodeType::CustomPage => $this->createCustomPage($title, $slug),
-                        SiteNodeType::Journal => $this->createJournal($title, $slug, (string) ($data['template'] ?? '')),
-                        SiteNodeType::Gallery => $this->createGallery($title, $slug),
-                        default => throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Navigation Node.']),
-                    };
-
-                    $this->loadSections();
-                    Notification::make()->title($message)->success()->send();
-                }),
-        ];
+        $this->bulkChangeState('published');
     }
 
-    private function createNavigationNode(string $title): string
+    public function bulkUnpublish(): void
     {
-        app(SiteSectionEditorialService::class)->createNavigationGroup($title);
-
-        return 'Navigation Node created';
+        $this->bulkChangeState('hidden');
     }
 
-    private function createCustomPage(string $title, string $slug): string
+    public function bulkDelete(): void
     {
-        app(SiteSectionEditorialService::class)->createCustomPage($title, $slug);
+        $sections = $this->selectedSections()
+            ->sortByDesc(static fn (SiteSection $section): int => $section->getAttribute('parent_id') === null ? 0 : 1)
+            ->values();
 
-        return 'Custom Page created as hidden';
+        $deleted = 0;
+        $blocked = 0;
+        foreach ($sections as $section) {
+            if (! $section->nodeType()->canDelete()) {
+                $blocked++;
+
+                continue;
+            }
+
+            try {
+                $this->deleteSectionRecord($section);
+                $deleted++;
+            } catch (ValidationException) {
+                $blocked++;
+            }
+        }
+
+        $this->loadSections();
+        $this->bulkNotification('Delete', $deleted, $blocked);
     }
 
-    private function createJournal(string $title, string $slug, string $template): string
+    public function convertSectionType(int $sectionId, string $targetType): void
     {
-        app(SiteSectionEditorialService::class)->createJournal($title, $slug, $template);
+        try {
+            /** @var SiteSection $section */
+            $section = SiteSection::query()->findOrFail($sectionId);
+            app(SiteSectionEditorialService::class)->convertType($section, $targetType);
+            Notification::make()->title('Page type updated')->success()->send();
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Page type unchanged', $exception);
+        }
 
-        return 'Journal created as hidden';
+        $this->loadSections();
     }
 
-    private function createGallery(string $title, string $slug): string
+    public function changeJournalTemplate(int $sectionId, string $template): void
+    {
+        try {
+            /** @var SiteSection $section */
+            $section = SiteSection::query()->findOrFail($sectionId);
+            app(SiteSectionEditorialService::class)->updateJournalTemplate($section, $template);
+            Notification::make()->title('Journal template updated')->success()->send();
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Journal template unchanged', $exception);
+        }
+
+        $this->loadSections();
+    }
+
+    public function startAddingPage(): void
+    {
+        $this->addingPage = true;
+        $this->newPageType = SiteSectionType::CustomPage->value;
+        $this->newJournalTemplate = JournalTemplate::Blog->value;
+        $this->newPageParent = '';
+    }
+
+    public function cancelAddingPage(): void
+    {
+        $this->addingPage = false;
+        $this->newPageTitle = '';
+        $this->newPageSlug = '';
+        $this->newPageParent = '';
+    }
+
+    public function createPage(): void
+    {
+        $type = SiteSectionType::tryFrom($this->newPageType);
+
+        try {
+            $parentId = $this->newParentId();
+            $message = match ($type) {
+                SiteSectionType::NavigationNode => $this->createNavigationGroup($parentId),
+                SiteSectionType::CustomPage => $this->createCustomPage($parentId),
+                SiteSectionType::Journal => $this->createJournal($parentId),
+                SiteSectionType::Gallery => $this->createGallery($parentId),
+                default => throw ValidationException::withMessages(['type' => 'Choose Gallery, Journal, Custom Page or Group Node.']),
+            };
+
+            $this->addingPage = false;
+            $this->newPageTitle = '';
+            $this->newPageSlug = '';
+            $this->newPageType = SiteSectionType::CustomPage->value;
+            $this->newJournalTemplate = JournalTemplate::Blog->value;
+            $this->newPageParent = '';
+            $this->pageNumber = 1;
+            $this->loadSections();
+            Notification::make()->title($message)->success()->send();
+        } catch (ValidationException $exception) {
+            $this->validationNotification('Page was not added', $exception);
+        }
+    }
+
+    private function createNavigationGroup(?int $parentId): string
+    {
+        $section = app(SiteSectionEditorialService::class)->createNavigationGroup($this->newPageTitle);
+        $this->placeCreatedSection($section, $parentId);
+
+        return 'Group Node added';
+    }
+
+    private function createCustomPage(?int $parentId): string
+    {
+        $section = app(SiteSectionEditorialService::class)->createCustomPage($this->newPageTitle, $this->newPageSlug);
+        $this->placeCreatedSection($section, $parentId);
+
+        return 'Custom Page added as unpublished';
+    }
+
+    private function createJournal(?int $parentId): string
+    {
+        $section = app(SiteSectionEditorialService::class)->createJournal(
+            $this->newPageTitle,
+            $this->newPageSlug,
+            $this->newJournalTemplate,
+        );
+        $this->placeCreatedSection($section, $parentId);
+
+        return 'Journal added as unpublished';
+    }
+
+    private function createGallery(?int $parentId): string
     {
         app(GalleryEditorialService::class)->create([
-            'name' => $title,
-            'slug' => $slug,
-            'parent_section_id' => null,
+            'name' => $this->newPageTitle,
+            'slug' => $this->newPageSlug,
+            'parent_section_id' => $parentId,
             'description' => null,
             'show_on_home' => false,
         ]);
 
-        return 'Gallery created as hidden';
+        return 'Gallery added as unpublished';
+    }
+
+    private function placeCreatedSection(SiteSection $section, ?int $parentId): void
+    {
+        if ($parentId !== null) {
+            $this->orderService()->moveTo($section, $parentId, PHP_INT_MAX);
+        }
+    }
+
+    private function newParentId(): ?int
+    {
+        if ($this->newPageParent === '') {
+            return null;
+        }
+        if (! ctype_digit($this->newPageParent)) {
+            throw ValidationException::withMessages(['parent_id' => 'Choose a valid top-level parent page.']);
+        }
+
+        $parentId = (int) $this->newPageParent;
+        if (! SiteSection::query()->whereKey($parentId)->whereNull('parent_id')->exists()) {
+            throw ValidationException::withMessages(['parent_id' => 'The parent must be a top-level page.']);
+        }
+
+        return $parentId;
     }
 
     private function loadSections(): void
     {
         $this->orderService = app(SiteSectionOrderService::class);
 
-        /** @var Builder<SiteSection> $topLevelQuery */
-        $topLevelQuery = SiteSection::query()->whereNull('parent_id');
-
         /** @var EloquentCollection<int, SiteSection> $topLevel */
-        $topLevel = $topLevelQuery
-            ->with([
-                'customPageSetting',
-                'children' => static function (Relation $relation): void {
-                    $query = $relation->getQuery();
-                    $query->with('customPageSetting');
-                    $query->orderBy('position');
-                    $query->orderBy('id');
-                },
-            ])
+        $topLevel = SiteSection::query()
+            ->whereNull('parent_id')
+            ->with(['children' => static function (Relation $relation): void {
+                $query = $relation->getQuery();
+                $query->orderBy('position');
+                $query->orderBy('id');
+            }])
             ->orderBy('position')
             ->orderBy('id')
             ->get();
 
-        $this->parentCandidates = $topLevel
-            ->filter(static fn (SiteSection $section): bool => $section->nodeType()->canContainChildren())
-            ->map(static fn (SiteSection $section): array => [
-                'id' => (int) $section->getKey(),
-                'label' => (string) ($section->getAttribute('navigation_label') ?: $section->getAttribute('title')),
-                'type' => $section->nodeType()->value,
-            ])
-            ->values()
-            ->all();
-
-        $rows = [];
-        foreach ($topLevel as $section) {
-            $row = $this->row($section, 0);
+        $allGroups = [];
+        $allRows = [];
+        $topCount = $topLevel->count();
+        foreach ($topLevel->values() as $topIndex => $section) {
             /** @var EloquentCollection<int, SiteSection> $children */
             $children = $section->getRelation('children');
-            $row['children'] = $children
-                ->map(fn (SiteSection $child): array => $this->row($child, 1))
-                ->values()
-                ->all();
-            $rows[] = $row;
+            $label = $this->sectionLabel($section);
+            $isHome = $section->nodeType() === SiteSectionType::Home;
+            $previous = $topIndex > 0 ? $topLevel->values()->get($topIndex - 1) : null;
+            $previousIsHome = $previous instanceof SiteSection && $previous->nodeType() === SiteSectionType::Home;
+            $row = $this->row(
+                $section,
+                0,
+                (string) ($topIndex + 1),
+                null,
+                ! $isHome && $topIndex > 0 && ! $previousIsHome,
+                ! $isHome && $topIndex < $topCount - 1,
+                $children->isNotEmpty(),
+            );
+
+            $childRows = [];
+            $childCount = $children->count();
+            foreach ($children->values() as $childIndex => $child) {
+                $childRows[] = $this->row(
+                    $child,
+                    1,
+                    ($topIndex + 1).'.'.($childIndex + 1),
+                    $label,
+                    $childIndex > 0,
+                    $childIndex < $childCount - 1,
+                    false,
+                );
+            }
+
+            $row['children'] = $childRows;
+            $allGroups[] = $row;
+            $allRows[] = $row;
+            foreach ($childRows as $childRow) {
+                $allRows[] = $childRow;
+            }
         }
 
-        $this->sections = $rows;
+        $this->parentOptions = [];
+        foreach ($allGroups as $group) {
+            $this->parentOptions[(int) $group['id']] = (string) ($group['navigation_label'] ?: $group['title']);
+        }
+
+        $this->metrics = [
+            'total' => count($allRows),
+            'published' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] === 'published')),
+            'unpublished' => count(array_filter($allRows, static fn (array $row): bool => $row['state'] !== 'published')),
+            'top_level' => count($allGroups),
+            'children' => count(array_filter($allRows, static fn (array $row): bool => $row['parent_id'] !== null)),
+            'navigation' => count(array_filter($allRows, static fn (array $row): bool => $row['visible'] === true)),
+        ];
+
+        $this->filtersActive = trim($this->search) !== '' || $this->typeFilter !== '' || $this->statusFilter !== '';
+        $groups = $this->filtersActive ? $this->filteredGroups($allGroups) : $allGroups;
+
+        $this->totalGroups = count($groups);
+        $this->lastPage = max(1, (int) ceil($this->totalGroups / $this->perPage));
+        $this->pageNumber = min(max(1, $this->pageNumber), $this->lastPage);
+
+        $offset = ($this->pageNumber - 1) * $this->perPage;
+        $this->sections = array_slice($groups, $offset, $this->perPage);
+        $this->rangeStart = $this->totalGroups === 0 ? 0 : $offset + 1;
+        $this->rangeEnd = $this->totalGroups === 0 ? 0 : min($offset + count($this->sections), $this->totalGroups);
+        $this->filteredRows = $this->flattenGroups($this->sections);
+
+        $visibleIds = array_map(static fn (array $row): int => (int) $row['id'], $this->filteredRows);
+        $this->selectedSectionIds = array_values(array_intersect($this->selectedIds(), $visibleIds));
+        $this->reorderEnabled = ! $this->filtersActive && $this->totalGroups <= $this->perPage;
+        $this->syncSelectionState();
+    }
+
+    /** @param list<array<string, mixed>> $groups
+     * @return list<array<string, mixed>>
+     */
+    private function filteredGroups(array $groups): array
+    {
+        $filtered = [];
+
+        foreach ($groups as $group) {
+            $children = $group['children'];
+            $rootMatches = $this->matchesFilters($group);
+            $matchingChildren = array_values(array_filter(
+                $children,
+                fn (array $child): bool => $this->matchesFilters($child),
+            ));
+
+            if (! $rootMatches && $matchingChildren === []) {
+                continue;
+            }
+
+            $group['children'] = $matchingChildren;
+            $group['filter_context'] = ! $rootMatches;
+            $filtered[] = $group;
+        }
+
+        return $filtered;
+    }
+
+    /** @param list<array<string, mixed>> $groups
+     * @return list<array<string, mixed>>
+     */
+    private function flattenGroups(array $groups): array
+    {
+        $rows = [];
+        foreach ($groups as $group) {
+            $children = $group['children'];
+            $root = $group;
+            unset($root['children']);
+            $rows[] = $root;
+            foreach ($children as $child) {
+                $rows[] = $child;
+            }
+        }
+
+        return $rows;
     }
 
     /** @return array<string, mixed> */
-    private function row(SiteSection $section, int $depth): array
-    {
+    private function row(
+        SiteSection $section,
+        int $depth,
+        string $positionLabel,
+        ?string $parentLabel,
+        bool $canMoveUp,
+        bool $canMoveDown,
+        bool $hasChildren,
+    ): array {
         $type = $section->nodeType();
         $journalTemplate = $section->journalTemplate();
-        $hasChildren = $section->relationLoaded('children') && $section->getRelation('children')->isNotEmpty();
-        $workspaceUrl = app(SiteNodePresentation::class)->workspaceUrl($section);
-        $order = $this->orderService();
-
-        $validParentIds = collect($this->parentCandidates)
-            ->filter(function (array $candidate) use ($section, $type): bool {
-                if ($candidate['id'] === (int) $section->getKey()) {
-                    return false;
-                }
-
-                $parentType = SiteNodeType::tryFrom($candidate['type']);
-
-                return $parentType !== null && $type->canBeChildOf($parentType);
-            })
-            ->pluck('id')
-            ->all();
+        $navigationLabel = $section->getAttribute('navigation_label');
 
         return [
             'id' => (int) $section->getKey(),
             'type' => $type->value,
             'template' => $journalTemplate?->value,
-            'type_label' => $type->label($journalTemplate),
+            'type_label' => $type->label(),
             'title' => (string) $section->getAttribute('title'),
-            'navigation_label' => $section->getAttribute('navigation_label'),
+            'navigation_label' => $navigationLabel,
+            'slug' => $section->getAttribute('slug'),
             'state' => (string) $section->getAttribute('state'),
             'visible' => (bool) $section->getAttribute('show_in_navigation'),
             'position' => (int) $section->getAttribute('position'),
+            'position_label' => $positionLabel,
             'parent_id' => $section->getAttribute('parent_id'),
+            'parent_label' => $parentLabel,
             'has_children' => $hasChildren,
             'depth' => $depth,
-            'public_url' => app(SiteNodeRoute::class)->url($section),
-            'can_move_up' => $order->canMove($section, 'up'),
-            'can_move_down' => $order->canMove($section, 'down'),
+            'can_reorder' => $type !== SiteSectionType::Home,
+            'can_move_up' => $canMoveUp,
+            'can_move_down' => $canMoveDown,
             'can_delete' => $type->canDelete(),
-            'fixed_placement' => ! $type->canChangePlacement(),
-            'can_choose_parent' => $type->canHaveParent() && ! $hasChildren,
-            'valid_parent_ids' => $validParentIds,
-            'workspace_url' => $workspaceUrl,
+            'can_change_publication' => $type->canChangePublication(),
+            'can_convert' => $type->canConvert(),
+            'filter_context' => false,
+            'workspace_url' => app(SiteNodePresentation::class)->workspaceUrl($section),
         ];
+    }
+
+    private function matchesFilters(array $row): bool
+    {
+        if ($this->typeFilter !== '' && $row['type'] !== $this->typeFilter) {
+            return false;
+        }
+        if ($this->statusFilter !== '' && $row['state'] !== $this->statusFilter) {
+            return false;
+        }
+
+        $needle = mb_strtolower(trim($this->search));
+        if ($needle === '') {
+            return true;
+        }
+
+        $templateLabel = JournalTemplate::tryFrom((string) ($row['template'] ?? ''))?->label() ?? '';
+        $haystack = mb_strtolower(implode(' ', array_filter([
+            $row['title'],
+            $row['navigation_label'],
+            $row['slug'],
+            $row['type_label'],
+            $templateLabel,
+            $row['parent_label'],
+        ], static fn (mixed $value): bool => is_string($value) && $value !== '')));
+
+        return str_contains($haystack, $needle);
+    }
+
+    private function sectionLabel(SiteSection $section): string
+    {
+        $navigationLabel = $section->getAttribute('navigation_label');
+
+        return is_string($navigationLabel) && trim($navigationLabel) !== ''
+            ? trim($navigationLabel)
+            : (string) $section->getAttribute('title');
     }
 
     private function orderService(): SiteSectionOrderService
@@ -318,25 +733,124 @@ final class SitePages extends Page
         return $this->orderService ??= app(SiteSectionOrderService::class);
     }
 
-    private function updatePlacement(SiteSection $section, string $state, bool $visible, mixed $parentId): void
+    private function updatePlacement(SiteSection $section, string $state, bool $visible): void
     {
         try {
             app(SiteSectionEditorialService::class)->updatePlacement(
                 $section,
                 $state,
                 $visible,
-                $parentId === null ? null : (int) $parentId,
+                $section->getAttribute('parent_id') === null ? null : (int) $section->getAttribute('parent_id'),
             );
-            Notification::make()->title('Section placement updated')->success()->send();
+            Notification::make()->title('Page settings updated')->success()->send();
         } catch (ValidationException $exception) {
-            $message = collect($exception->errors())->flatten()->first();
-            Notification::make()
-                ->title('Section placement unchanged')
-                ->body(is_string($message) ? $message : 'The requested section placement is invalid.')
-                ->danger()
-                ->send();
+            $this->validationNotification('Page settings unchanged', $exception);
         }
 
         $this->loadSections();
+    }
+
+    private function bulkChangeState(string $state): void
+    {
+        $sections = $this->selectedSections();
+        $sections = $state === 'published'
+            ? $sections->sortBy(static fn (SiteSection $section): int => $section->getAttribute('parent_id') === null ? 0 : 1)->values()
+            : $sections->sortByDesc(static fn (SiteSection $section): int => $section->getAttribute('parent_id') === null ? 0 : 1)->values();
+
+        $changed = 0;
+        $blocked = 0;
+        foreach ($sections as $section) {
+            if ($state === 'hidden' && ! $section->nodeType()->canChangePublication()) {
+                $blocked++;
+
+                continue;
+            }
+            if ((string) $section->getAttribute('state') === $state) {
+                continue;
+            }
+
+            try {
+                app(SiteSectionEditorialService::class)->updatePlacement(
+                    $section,
+                    $state,
+                    (bool) $section->getAttribute('show_in_navigation'),
+                    $section->getAttribute('parent_id') === null ? null : (int) $section->getAttribute('parent_id'),
+                );
+                $changed++;
+            } catch (ValidationException) {
+                $blocked++;
+            }
+        }
+
+        $this->loadSections();
+        $this->bulkNotification($state === 'published' ? 'Publish' : 'Unpublish', $changed, $blocked);
+    }
+
+    private function deleteSectionRecord(SiteSection $section): void
+    {
+        if ($section->nodeType() === SiteSectionType::Gallery) {
+            /** @var ArtworkCategory $gallery */
+            $gallery = ArtworkCategory::query()->findOrFail((int) $section->getAttribute('artwork_category_id'));
+            app(GalleryEditorialService::class)->delete($gallery);
+
+            return;
+        }
+
+        app(SiteSectionEditorialService::class)->deleteConfigurableSection($section);
+    }
+
+    /** @return EloquentCollection<int, SiteSection> */
+    private function selectedSections(): EloquentCollection
+    {
+        $ids = $this->selectedIds();
+        if ($ids === []) {
+            return new EloquentCollection;
+        }
+
+        /** @var EloquentCollection<int, SiteSection> $sections */
+        $sections = SiteSection::query()->whereKey($ids)->get();
+
+        return $sections;
+    }
+
+    /** @return list<int> */
+    private function selectedIds(): array
+    {
+        return array_values(array_unique(array_filter(
+            array_map(static fn (mixed $id): int => (int) $id, $this->selectedSectionIds),
+            static fn (int $id): bool => $id > 0,
+        )));
+    }
+
+    private function syncSelectionState(): void
+    {
+        $selected = $this->selectedIds();
+        $visible = array_map(static fn (array $row): int => (int) $row['id'], $this->filteredRows);
+        $visibleSelected = array_intersect($visible, $selected);
+
+        $this->allVisibleSelected = $visible !== [] && count($visibleSelected) === count($visible);
+        $this->selectionIndeterminate = $visibleSelected !== [] && ! $this->allVisibleSelected;
+    }
+
+    private function validationNotification(string $title, ValidationException $exception): void
+    {
+        $message = collect($exception->errors())->flatten()->first();
+        Notification::make()
+            ->title($title)
+            ->body(is_string($message) ? $message : 'The requested change is not safe.')
+            ->danger()
+            ->send();
+    }
+
+    private function bulkNotification(string $action, int $changed, int $blocked): void
+    {
+        $notification = Notification::make()->title($action.' selection complete');
+        if ($blocked > 0) {
+            $notification->body($changed.' changed · '.$blocked.' blocked by page safety rules')->warning()->send();
+
+            return;
+        }
+
+        $notification->body($changed.' changed')->success()->send();
     }
 }

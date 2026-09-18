@@ -6,7 +6,24 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature');
+pest()->group('unit')->in('Unit');
+
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->group('integration')
+    ->in('Integration');
+
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->group('feature')
+    ->in('Feature');
+
+pest()->group('architecture')->in('Architecture');
+
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->group('migration')
+    ->in('Migration');
 
 /** @param array<string, mixed> $overrides */
 function testGallerySection(ArtworkCategory $category, array $overrides = []): SiteSection
