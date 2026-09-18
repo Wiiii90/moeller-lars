@@ -445,7 +445,7 @@
 
         @if ($viewMode === 'activity')
             <x-admin.table class="admin-table--data activity-workspace__table activity-events-table" wire:key="activity-events-table">
-                <table>
+                <table class="admin-table--six-grid">
                     <colgroup>
                         <col class="activity-col--change">
                         <col class="activity-col--who">
@@ -455,7 +455,7 @@
                         <col class="activity-col--type">
                         <col class="activity-col--publication">
                         <col class="activity-col--actions">
-                        <col class="activity-col--selection">
+                        <col class="admin-table__selection-col">
                     </colgroup>
                     <thead>
                         <tr>
@@ -574,7 +574,7 @@
             @endif
         @else
             <x-admin.table class="admin-table--data activity-workspace__table activity-commits-table" wire:key="activity-commits-table">
-                <table>
+                <table class="admin-table--six-grid">
                     <colgroup>
                         <col class="activity-commit-col--commit">
                         <col class="activity-commit-col--who">
@@ -582,7 +582,7 @@
                         <col class="activity-commit-col--summary">
                         <col class="activity-commit-col--publication">
                         <col class="activity-commit-col--actions">
-                        <col class="activity-commit-col--selection">
+                        <col class="admin-table__selection-col">
                     </colgroup>
                     <thead>
                         <tr>
