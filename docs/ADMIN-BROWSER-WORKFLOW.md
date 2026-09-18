@@ -98,24 +98,26 @@ Durable local interface:
 - repository: `P:\moeller-lars`;
 - browser: `http://127.0.0.1:8001`;
 - image: `moeller-lars-local-preview`;
-- web container: `moeller-lars-local-web`;
+- Compose service / web container: `preview` / `moeller-lars-local-web`;
 - PostgreSQL container commonly used by the preview: `moeller-lars-postgres-1`;
 - internal application port: `8080`;
-- preview Dockerfile: `docker/Dockerfile.local-preview`;
+- preview build target: `local-preview` in the root `Dockerfile`;
+- Windows helper: `scripts/local-preview.ps1`;
 - private media mount destination: `/var/www/html/storage/app/private`.
 
 Normal browser cycle:
 
 1. fast-forward local `dev` to the intended head;
-2. ensure PostgreSQL is running;
-3. rebuild `docker/Dockerfile.local-preview` so Vite assets match that source;
-4. replace only `moeller-lars-local-web` while reusing the existing network/environment/media mount;
-5. inspect container status/log tail;
-6. review the exact built candidate in the browser.
+2. set `APP_GIT_SHA` to that exact head;
+3. run `docker compose up -d --build --wait preview`;
+4. Compose starts/reuses PostgreSQL, builds the single shared image graph, replaces the preview container and waits for health;
+5. review the exact built candidate in the browser.
+
+Do not rebuild a separate runtime image before the preview build. Docker/BuildKit reuses unchanged PHP, Composer and Node layers from the single graph. Analytics demo/cache preparation is also not part of every image build; the normal database cache persists in PostgreSQL and any deliberate demo reseed is a separate preview-data action.
 
 Do not use a full dependency reinstall or broad test suite merely to inspect a CSS/Blade change. The persistent local browser database is not disposable test state; follow the database safety rules in `AGENTS.md` and `docs/RELEASE.md`.
 
-The preview Dockerfile must only change ownership on runtime-writable cache/log directories. Do not recursively change ownership across the complete `storage` tree, because local recovery/snapshot material can be read-only and is not part of the runtime write surface.
+The preview target must not add a second source/dependency/frontend build path. Runtime-writable paths come from the shared runtime image; the host private-media bind mount is attached only when the Compose preview container starts.
 
 ## Browser acceptance vocabulary
 

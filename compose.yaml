@@ -24,6 +24,37 @@ services:
         condition: service_healthy
     command: sleep infinity
 
+  preview:
+    profiles: ["preview"]
+    image: moeller-lars-local-preview
+    container_name: moeller-lars-local-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: local-preview
+      args:
+        APP_GIT_SHA: ${APP_GIT_SHA:-local}
+    ports:
+      - "127.0.0.1:8001:8080"
+    env_file:
+      - .env
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: moeller_lars_testing
+      DB_USERNAME: postgres
+      DB_PASSWORD: moeller_lars_local
+      MATOMO_TRACKING_ENABLED: "false"
+      MATOMO_REPORTING_ENABLED: "true"
+      MOELLER_LARS_PERSISTENT_PREVIEW: "1"
+    volumes:
+      - ./storage/app/private:/var/www/html/storage/app/private
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     environment:

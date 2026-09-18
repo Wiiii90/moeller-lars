@@ -51,7 +51,7 @@ Stop the local stack without discarding its database container:
 docker compose stop
 ```
 
-Browser-polish/reconciliation uses the canonical local preview image recipe at [`docker/Dockerfile.local-preview`](docker/Dockerfile.local-preview). That image contains the built frontend assets, so a source pull alone does not update the running CSS/JavaScript; rebuild the preview image before judging frontend changes in the browser. Branch/review rules are owned by [AGENTS.md](AGENTS.md); the browser-reconciliation loop is summarized in [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md); CI, release-image and Validation contracts are owned by [docs/RELEASE.md](docs/RELEASE.md).
+Browser-polish/reconciliation uses the `local-preview` target in the root [`Dockerfile`](Dockerfile) through the opt-in Compose `preview` service. Run [`scripts/local-preview.ps1`](scripts/local-preview.ps1) for the normal Windows browser-preview cycle. The preview and production image now share one build graph, so frontend/runtime stages are not rebuilt through a second Dockerfile. Branch/review rules are owned by [AGENTS.md](AGENTS.md); the browser-reconciliation loop is summarized in [docs/ADMIN-BROWSER-WORKFLOW.md](docs/ADMIN-BROWSER-WORKFLOW.md); CI, release-image and Validation contracts are owned by [docs/RELEASE.md](docs/RELEASE.md).
 
 ## Site structure
 

@@ -66,3 +66,15 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl --fail --silent --show-error http://127.0.0.1:8080/up >/dev/null || exit 1
 ENTRYPOINT ["/usr/local/bin/moeller-lars-entrypoint"]
 CMD ["apache2-foreground"]
+
+
+FROM runtime AS local-preview
+ENV APP_ENV=local \
+    MOELLER_LARS_PERSISTENT_PREVIEW=1 \
+    MEDIA_STORAGE_QUOTA_BYTES=5000000000
+
+ENTRYPOINT ["docker-php-entrypoint"]
+CMD ["sh", "-lc", "php artisan migrate --force --no-interaction && php artisan optimize:clear && php artisan media:measure-capacity --no-interaction && exec apache2-foreground"]
+
+# Keep the production runtime as the default image when no explicit target is requested.
+FROM runtime AS release

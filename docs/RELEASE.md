@@ -127,7 +127,8 @@ The current project workflow may reuse the lightweight local browser preview doc
 
 - browser URL `http://127.0.0.1:8001`;
 - application image internal port `8080`;
-- local preview Dockerfile `docker/Dockerfile.local-preview`.
+- local preview build target `local-preview` in the root `Dockerfile`;
+- opt-in Compose service `preview` and Windows helper `scripts/local-preview.ps1`.
 
 Local container names/mount source paths are iteration details, not Production topology. The current follow-up prompt carries their exact transient values when needed.
 
