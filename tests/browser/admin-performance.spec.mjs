@@ -223,6 +223,7 @@ async function shellGeometry(page) {
       layout_width: layout?.getBoundingClientRect().width ?? null,
       main_left: main?.getBoundingClientRect().left ?? null,
       main_width: main?.getBoundingClientRect().width ?? null,
+      has_vertical_overflow: root.scrollHeight > root.clientHeight,
       has_classic_scrollbar: window.innerWidth > root.clientWidth,
       modal_existing_scrollbar: root.classList.contains('admin-modal-existing-scrollbar'),
       overflow_y: rootStyle.overflowY,
@@ -241,15 +242,15 @@ function expectStableShellGeometry(before, during, context) {
 }
 
 function expectModalScrollbarMode(before, during, context) {
-  const hadClassicScrollbar = before.inner_width > before.client_width;
+  const hadVerticalOverflow = before.has_vertical_overflow;
   expect(
     during.modal_existing_scrollbar,
-    `${context}: long-page modal mode must match the pre-open classic scrollbar state`,
-  ).toBe(hadClassicScrollbar);
+    `${context}: long-page modal mode must match the pre-open vertical overflow state`,
+  ).toBe(hadVerticalOverflow);
 
-  if (hadClassicScrollbar) {
-    expect(during.has_classic_scrollbar, `${context}: existing scrollbar disappeared`).toBe(true);
-    expect(during.overflow_y, `${context}: existing scrollbar is not kept visible`).toBe('scroll');
+  if (hadVerticalOverflow) {
+    expect(during.has_vertical_overflow, `${context}: document stopped being vertically scrollable`).toBe(true);
+    expect(during.overflow_y, `${context}: existing scrollbar path is not kept visible`).toBe('scroll');
     expect(during.padding_right, `${context}: Filament padding compensation leaked through`).toBe('0px');
     expect(during.scrollbar_gutter, `${context}: empty stable gutter was introduced`).toBe('auto');
   }
@@ -354,9 +355,9 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectStableShellGeometry(pagesBeforeDialogGeometry, pagesAfterDialogGeometry, 'Pages Add page close');
     expect(pagesAfterDialogGeometry.modal_existing_scrollbar, 'Pages Add page close: modal scrollbar class leaked').toBe(false);
 
-    // Explicitly cover a page that already has a classic vertical scrollbar.
-    // The production bug only appeared on long table pages, while short pages
-    // were already stable.
+    // Explicitly cover a document that already needs vertical scrolling.
+    // CI Chromium may use overlay scrollbars, so vertical overflow rather than
+    // innerWidth/clientWidth is the portable trigger for the production path.
     await page.evaluate(() => {
       const spacer = document.createElement('div');
       spacer.dataset.modalScrollbarTestSpacer = 'true';
@@ -365,7 +366,7 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
       document.querySelector('.fi-main')?.append(spacer);
     });
     const longPageBeforeDialogGeometry = await shellGeometry(page);
-    expect(longPageBeforeDialogGeometry.has_classic_scrollbar, 'Long-page fixture must have a classic scrollbar').toBe(true);
+    expect(longPageBeforeDialogGeometry.has_vertical_overflow, 'Long-page fixture must overflow vertically').toBe(true);
 
     await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();

@@ -68,7 +68,7 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain("window.addEventListener('modal-closed', releaseModalScrollbarGeometry)")
         ->toContain('root.classList.toggle(')
         ->toContain('MODAL_EXISTING_SCROLLBAR_CLASS,')
-        ->toContain('hasClassicDocumentScrollbar(window.innerWidth, root.clientWidth),');
+        ->toContain('hasDocumentVerticalOverflow(root.scrollHeight, root.clientHeight),');
 
     expect($homeWorkspace)
         ->toContain('use Filament\\Schemas\\Components\\Grid;')

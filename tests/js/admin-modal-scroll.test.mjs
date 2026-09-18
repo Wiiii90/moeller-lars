@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { hasClassicDocumentScrollbar } from '../../resources/js/admin-modal-scroll.js';
+import { hasDocumentVerticalOverflow } from '../../resources/js/admin-modal-scroll.js';
 
-test('detects only a classic pre-existing document scrollbar', () => {
-    assert.equal(hasClassicDocumentScrollbar(1280, 1263), true);
-    assert.equal(hasClassicDocumentScrollbar(1280, 1280), false);
-    assert.equal(hasClassicDocumentScrollbar(1280, 1290), false);
+test('detects whether the document already needs vertical scrolling', () => {
+    assert.equal(hasDocumentVerticalOverflow(2400, 900), true);
+    assert.equal(hasDocumentVerticalOverflow(900, 900), false);
+    assert.equal(hasDocumentVerticalOverflow(800, 900), false);
 });

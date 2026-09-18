@@ -2,10 +2,10 @@ const MODAL_EXISTING_SCROLLBAR_CLASS = 'admin-modal-existing-scrollbar';
 
 let initialized = false;
 
-export function hasClassicDocumentScrollbar(innerWidth, clientWidth) {
-    return Number.isFinite(innerWidth)
-        && Number.isFinite(clientWidth)
-        && innerWidth > clientWidth;
+export function hasDocumentVerticalOverflow(scrollHeight, clientHeight) {
+    return Number.isFinite(scrollHeight)
+        && Number.isFinite(clientHeight)
+        && scrollHeight > clientHeight;
 }
 
 function modalFromOpenEvent(event) {
@@ -26,7 +26,7 @@ function prepareModalScrollbarGeometry(event) {
     const root = document.documentElement;
     root.classList.toggle(
         MODAL_EXISTING_SCROLLBAR_CLASS,
-        hasClassicDocumentScrollbar(window.innerWidth, root.clientWidth),
+        hasDocumentVerticalOverflow(root.scrollHeight, root.clientHeight),
     );
 }
 
@@ -47,9 +47,9 @@ export function initializeAdminModalScrollbarGeometry() {
     initialized = true;
 
     // Capture runs before Filament's window-level open-modal listener. On a
-    // page that already scrolls, the class keeps the real vertical scrollbar
-    // visible and overrides Filament's inline padding compensation. A short
-    // page is left entirely to Filament's native lock path.
+    // document that already needs vertical scrolling, the class keeps the
+    // vertical scrollbar path visible and overrides Filament's inline padding
+    // compensation. A short page is left entirely to Filament's native lock.
     window.addEventListener('open-modal', prepareModalScrollbarGeometry, true);
     window.addEventListener('modal-closed', releaseModalScrollbarGeometry);
     document.addEventListener('livewire:navigated', resetModalScrollbarGeometry);
