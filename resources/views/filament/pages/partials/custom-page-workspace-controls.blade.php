@@ -57,7 +57,7 @@
                             aria-haspopup="menu"
                             @disabled($selectedItemCount === 0)
                         >
-                            Selected items
+                            <span class="admin-action__label">Selected</span>
                             <span class="admin-selection__count">{{ $selectedItemCount }}</span>
                         </button>
                         <div class="admin-selection__menu" role="menu" x-show="open" x-cloak>
