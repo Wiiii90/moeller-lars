@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-Set-Location (Resolve-Path (Join-Path $PSScriptRoot '..'))
+Set-Location 'P:\moeller-lars'
 
 if (git status --porcelain) {
     throw 'Lokale Git-Aenderungen vorhanden. Erst committen, stashen oder verwerfen.'
