@@ -11,7 +11,7 @@ These describe the durable current application architecture and behavior. Browse
 - [DATA-MODEL.md](DATA-MODEL.md) — durable persistence/domain relationships
 - [TESTING.md](TESTING.md) — test layers, placement, discovery, naming, database safety and browser-testing direction
 - [PUBLIC-IMPLEMENTATION-CONTRACT.md](PUBLIC-IMPLEMENTATION-CONTRACT.md) — public routing/publication/Home/Journal/media behavior
-- [MEDIA.md](MEDIA.md) — image/video/audio ingest, Rich Text references, public/preview policy and guarded deletion
+- [MEDIA.md](MEDIA.md) — media ingest/references, whole-site Storage allowance, capacity/distribution UI and guarded/reclaimable storage behavior
 - [ANALYTICS.md](ANALYTICS.md) — Matomo/reporting and operational-metrics boundary
 - [ADMIN-AUTHENTICATION.md](ADMIN-AUTHENTICATION.md) — `/admin` access, optional TOTP MFA/recovery codes, password reset and transactional-mail boundary
 - [ADMIN-PASSWORD-POLICY.md](ADMIN-PASSWORD-POLICY.md) — shared environment-aware password policy and browser-local generator contract
@@ -21,7 +21,7 @@ These describe the durable current application architecture and behavior. Browse
 - [ADMIN-DIALOG-CONTRACT.md](ADMIN-DIALOG-CONTRACT.md) — shared native Filament dialog types, chrome, lifecycle and edit/command semantics
 - [ADMIN-TABLE-CONTRACT.md](ADMIN-TABLE-CONTRACT.md) — canonical ordinary-table role order, alignment, typography, actions and trailing Selection
 - [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md) — explicit Toast/Notification/Activity/Publication semantics, persistent inbox ownership and server-side delivery contract
-- [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) — append-only Activity, Working/LIVE state, SHA-256 Commit history, full snapshots and reset/restore/revert semantics
+- [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) — append-only Activity, bounded Undo recovery, shared content-addressed history payloads, Working/LIVE Commit history and reset/restore/revert semantics
 - [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — direct/worker browser-reconciliation modes, shared Visual Stage ownership, icon semantics and local preview loop
 - [RELEASE.md](RELEASE.md) — immutable image, preview, runtime, persistence and release contract
 - [SERVER-OPERATIONS-BASELINE.md](SERVER-OPERATIONS-BASELINE.md) — application/platform ownership boundary; mutable operational implementation lives in `server-platform`
