@@ -205,7 +205,7 @@
         </section>
 
         <section class="analytics-detail-surface admin-visual-stage-followup" aria-label="Analytics detail table">
-            <x-admin.controls aria-label="Analytics report controls">
+            <x-admin.controls :metric-grid="true" :search-span="4" aria-label="Analytics report controls">
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>

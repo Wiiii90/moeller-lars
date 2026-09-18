@@ -463,9 +463,10 @@
     gap: .28rem;
 }
 
-/* Search owns the first two metric cells. The remaining four cells give the
- * compact Storage filters/actions enough room to keep their labels and selected
- * state readable without changing the shared controls primitive. */
+/* Search owns the first two metric cells. The remaining four cells use fine
+ * subtracks so heterogeneous filters can take efficient widths instead of one
+ * full cell each. Selection owns the final half-cell; its fixed inner selection
+ * rail therefore remains aligned with the trailing table checkboxes. */
 .admin-storage .media-workspace__controls {
     display: grid;
     grid-template-columns: repeat(72, minmax(0, 1fr));
@@ -485,15 +486,15 @@
 .admin-storage .media-workspace__controls > :nth-child(2) { grid-column: span 7; }
 .admin-storage .media-workspace__controls > :nth-child(3) { grid-column: span 6; }
 .admin-storage .media-workspace__controls > :nth-child(4) { grid-column: span 7; }
-.admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 8; }
+.admin-storage .media-workspace__controls > :nth-child(5) { grid-column: span 9; }
 
 .admin-storage .media-workspace__controls > .admin-data-controls__utility {
     display: contents;
 }
 
 .admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(1) { grid-column: span 5; }
-.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(2) { grid-column: span 7; }
-.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(3) { grid-column: span 8; }
+.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(2) { grid-column: span 8; }
+.admin-storage .media-workspace__controls > .admin-data-controls__utility > :nth-child(3) { grid-column: span 6; }
 
 .admin-storage .media-workspace__controls .admin-data-field select,
 .admin-storage .media-workspace__controls .admin-data-field input {
