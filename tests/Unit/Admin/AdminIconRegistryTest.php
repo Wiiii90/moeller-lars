@@ -22,9 +22,14 @@ it('derives compact admin icons from central semantics with explicit solid and c
             continue;
         }
 
-        if ($icon === AdminIcon::NavigationNode) {
-            expect($icon->value)->toBe('admin-node')
-                ->and($icon->mini())->toBe('admin-node');
+        $customIcons = [
+            AdminIcon::NavigationNode->value => 'admin-node',
+            AdminIcon::SkipHome->value => 'admin-skip-home',
+        ];
+
+        if (array_key_exists($icon->value, $customIcons)) {
+            expect($icon->value)->toBe($customIcons[$icon->value])
+                ->and($icon->mini())->toBe($customIcons[$icon->value]);
 
             continue;
         }
