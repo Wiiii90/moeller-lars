@@ -275,7 +275,7 @@ function expectGeometryNear(actual, expected, fields, context, tolerance = 0.1) 
   for (const field of fields) {
     expect(
       Math.abs(actual[field] - expected[field]),
-      `${context}: ${field} differs by more than ${tolerance}px`,
+      `${context}: ${field} differs by more than ${tolerance}px (actual ${actual[field]}px, expected ${expected[field]}px)`,
     ).toBeLessThanOrEqual(tolerance);
   }
 }

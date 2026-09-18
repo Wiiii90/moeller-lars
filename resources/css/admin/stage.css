@@ -7,7 +7,7 @@
 :root {
     --admin-stage-divider-inset: .25rem;
     --admin-stage-pane-space: var(--admin-section-gap);
-    --admin-stage-orbit-size: 17.5rem;
+    --admin-stage-orbit-size: clamp(12rem, 20vw, 17.5rem);
     --admin-stage-orbit-caption-reserve: 2.1rem;
     --admin-stage-orbit-gap: .35rem;
 }
@@ -373,6 +373,10 @@
 }
 
 @media (max-width: 760px) {
+    :root {
+        --admin-stage-orbit-size: min(17.5rem, calc(100vw - 2rem));
+    }
+
     :is(
         .admin-visual-stage--rail,
         .admin-visual-stage--triptych,
