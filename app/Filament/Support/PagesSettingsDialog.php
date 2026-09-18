@@ -54,6 +54,8 @@ final class PagesSettingsDialog
         $enabled = (bool) ($data['navigation_nesting_enabled'] ?? true);
 
         DB::transaction(function () use ($data, $settings, $wasEnabled, $enabled): void {
+            $this->homeRouting->save($data);
+
             if ($wasEnabled && ! $enabled) {
                 $this->order->flattenHierarchy();
             }
@@ -61,7 +63,6 @@ final class PagesSettingsDialog
             $this->settings->updatePublicContent($settings, [
                 'navigation_nesting_enabled' => $enabled,
             ]);
-            $this->homeRouting->save($data);
         });
     }
 }
