@@ -187,36 +187,6 @@
     box-shadow: none !important;
 }
 
-.admin-general .admin-form-label-with-help {
-    gap: .2rem;
-    align-items: baseline;
-    line-height: 1.25;
-}
-
-.admin-general .admin-form-label-with-help .admin-help {
-    width: 1rem;
-    height: 1rem;
-    margin-inline-start: 0;
-    align-self: baseline;
-}
-
-.admin-general .admin-form-label-with-help .admin-help__trigger {
-    position: relative;
-    top: .12em;
-    width: 1rem;
-    height: 1rem;
-    margin-inline-start: 0;
-}
-
-.admin-general .admin-form-label-with-help .admin-help__trigger svg {
-    width: .78rem;
-    height: .78rem;
-}
-
-.dark .admin-general .admin-help__popover {
-    background: #181818;
-}
-
 .admin-general .general-separator {
     border-top-color: var(--admin-line-strong);
 }

@@ -356,11 +356,6 @@
     justify-self: start;
 }
 
-.admin-storage__reclaim-footer .admin-help {
-    margin-inline-start: 0;
-    flex: 0 0 auto;
-}
-
 /* Shared Storage/Dashboard visualization container. ECharts owns the Canvas;
  * the existing Admin Stage continues to own pane size and alignment. */
 .admin-storage-capacity[data-admin-viz="storage-capacity"] {
