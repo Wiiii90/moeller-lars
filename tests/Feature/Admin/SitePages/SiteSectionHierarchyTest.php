@@ -279,7 +279,6 @@ it('allows safe Journal template changes and blocks changes or conversion when e
         ->and($journal->type)->toBe(SiteSectionType::Journal->value);
 });
 
-
 it('flattens nested pages in canonical order when nesting is disabled and blocks new nesting', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);

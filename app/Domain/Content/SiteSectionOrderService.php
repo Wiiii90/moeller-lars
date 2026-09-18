@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -77,7 +78,7 @@ final class SiteSectionOrderService
         if ($position < 0) {
             throw new InvalidArgumentException('Site-section position must be zero or greater.');
         }
-        if ($parentSectionId !== null && ! \App\Models\PublicContentSetting::navigationNestingEnabled()) {
+        if ($parentSectionId !== null && ! PublicContentSetting::navigationNestingEnabled()) {
             throw ValidationException::withMessages([
                 'parent_id' => 'Nested pages are disabled in Pages settings.',
             ]);
