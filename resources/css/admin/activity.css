@@ -18,7 +18,7 @@
 }
 
 .activity-clock {
-    --activity-clock-caption-reserve: var(--admin-stage-orbit-caption-reserve, 2.1rem);
+    --activity-clock-caption-reserve: var(--admin-stage-orbit-caption-reserve, 2.28125rem);
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
 }
@@ -127,7 +127,9 @@
 .activity-clock__caption {
     box-sizing: border-box;
     display: grid;
+    width: 100%;
     min-width: 0;
+    height: var(--activity-clock-caption-reserve);
     min-height: var(--activity-clock-caption-reserve);
     gap: .08rem;
     padding: 0 0 .2rem;

@@ -8,7 +8,7 @@
     --admin-stage-divider-inset: .25rem;
     --admin-stage-pane-space: var(--admin-section-gap);
     --admin-stage-orbit-size: clamp(12rem, 20vw, 17.5rem);
-    --admin-stage-orbit-caption-reserve: 2.1rem;
+    --admin-stage-orbit-caption-reserve: 2.28125rem;
     --admin-stage-orbit-gap: .35rem;
 }
 
