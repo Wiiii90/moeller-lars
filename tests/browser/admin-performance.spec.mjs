@@ -35,7 +35,7 @@ const structuralBudgets = Object.freeze({
     max_xhr_fetch_count: 2,
     max_response_bytes: 640 * KiB,
   },
-  activity_filter_editorial_area: {
+  activity_filter_area: {
     completed_on_first_click: true,
     full_navigation_count: 1,
     max_xhr_fetch_count: 0,
@@ -353,15 +353,15 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectNoBrowserErrors(commits);
 
     const areaFilter = await profiler.run(
-      'activity_filter_editorial_area',
+      'activity_filter_area',
       async () => {
-        const trigger = page.getByRole('combobox', { name: 'Editorial area' });
+        const trigger = page.getByRole('combobox', { name: 'Area' });
         await trigger.click();
-        await page.getByRole('listbox', { name: 'Editorial area' }).getByText('Website', { exact: true }).click();
+        await page.getByRole('listbox', { name: 'Area' }).getByText('Website', { exact: true }).click();
       },
       async () => {
         await expect(page).toHaveURL(/(?:\?|&)area=Website(?:&|$)/);
-        await expect(page.getByRole('combobox', { name: 'Editorial area' })).toContainText('Website');
+        await expect(page.getByRole('combobox', { name: 'Area' })).toContainText('Website');
       },
     );
     expectStructuralBudget(areaFilter);

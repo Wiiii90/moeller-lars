@@ -285,6 +285,16 @@ it('flattens nested pages in canonical order when nesting is disabled and blocks
     $service = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
     $homeId = (int) SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail()->getKey();
+    $existingRootIds = SiteSection::query()
+        ->whereNull('parent_id')
+        ->orderBy('position')
+        ->orderBy('id')
+        ->pluck('id')
+        ->map(fn ($id): int => (int) $id)
+        ->values()
+        ->all();
+
+    expect($existingRootIds[0] ?? null)->toBe($homeId);
 
     $rootA = $service->createCustomPage('Root A Settings', 'root-a-settings');
     $childA = $service->createNavigationGroup('Child A Settings');
@@ -293,6 +303,18 @@ it('flattens nested pages in canonical order when nesting is disabled and blocks
 
     $order->moveTo($childA, (int) $rootA->getKey(), 0);
     $order->moveTo($childB, (int) $rootA->getKey(), 1);
+
+    $expectedIds = [
+        ...$existingRootIds,
+        (int) $rootA->getKey(),
+        (int) $childA->getKey(),
+        (int) $childB->getKey(),
+        (int) $rootB->getKey(),
+    ];
+    $expectedPositions = array_map(
+        static fn (int $index): int => ($index + 1) * 10,
+        array_keys($expectedIds),
+    );
 
     app(PagesSettingsDialog::class)->save([
         'navigation_nesting_enabled' => false,
@@ -304,14 +326,8 @@ it('flattens nested pages in canonical order when nesting is disabled and blocks
 
     expect(PublicContentSetting::navigationNestingEnabled())->toBeFalse()
         ->and($ordered->pluck('parent_id')->filter()->all())->toBe([])
-        ->and($ordered->pluck('id')->map(fn ($id): int => (int) $id)->values()->all())->toBe([
-            $homeId,
-            (int) $rootA->getKey(),
-            (int) $childA->getKey(),
-            (int) $childB->getKey(),
-            (int) $rootB->getKey(),
-        ])
-        ->and($ordered->pluck('position')->values()->all())->toBe([10, 20, 30, 40, 50]);
+        ->and($ordered->pluck('id')->map(fn ($id): int => (int) $id)->values()->all())->toBe($expectedIds)
+        ->and($ordered->pluck('position')->values()->all())->toBe($expectedPositions);
 
     expect(fn () => $order->moveTo($rootB->refresh(), (int) $rootA->getKey(), 0))
         ->toThrow(ValidationException::class, 'Nested pages are disabled in Pages settings.');
