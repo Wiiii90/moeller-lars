@@ -68,6 +68,7 @@
                     <div class="admin-task-control-group">
                         <span class="admin-task-control-label">PAGES</span>
                         <div class="admin-task-control-actions">
+                            <button class="admin-action" type="button" wire:click="mountAction('pagesSettings')">Settings</button>
                             <button class="admin-action" type="button" wire:click="mountAction('addPage')">Add page</button>
                         </div>
                     </div>
@@ -186,13 +187,13 @@
                                         'journalTemplateOptions' => $journalTemplateOptions,
                                     ])
 
-                                    @if ($section['children'] !== [] || $reorderEnabled)
+                                    @if ($section['children'] !== [] || ($reorderEnabled && $nestedNavigationEnabled))
                                         <div class="admin-hierarchy__children">
                                             <div
                                                 class="admin-hierarchy__children-rows"
                                                 role="rowgroup"
                                                 aria-label="Child pages under {{ $section['title'] }}"
-                                                @if ($reorderEnabled)
+                                                @if ($reorderEnabled && $nestedNavigationEnabled)
                                                     data-drop-target="true"
                                                     wire:sort="sortSection"
                                                     wire:sort:group="site-pages"

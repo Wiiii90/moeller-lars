@@ -80,7 +80,8 @@ trait ManagesSitePageEditDialog
                             ->options(fn (): array => $this->parentOptions)
                             ->placeholder('Top level')
                             ->native()
-                            ->nullable(),
+                            ->nullable()
+                            ->visible(fn (): bool => $this->nestedNavigationEnabled),
                         TextInput::make('position')
                             ->label('Position')
                             ->numeric()

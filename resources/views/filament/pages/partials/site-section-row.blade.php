@@ -167,7 +167,7 @@
         </label>
     </div>
 
-    @if (! $isChild && $reorderEnabled)
+    @if (! $isChild && $reorderEnabled && $nestedNavigationEnabled)
         <div
             class="admin-pages__nest-target"
             x-cloak

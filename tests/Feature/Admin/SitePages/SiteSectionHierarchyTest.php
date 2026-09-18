@@ -5,9 +5,11 @@ use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Pages\SitePages;
+use App\Filament\Support\PagesSettingsDialog;
 use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
+use App\Models\PublicContentSetting;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -275,4 +277,62 @@ it('allows safe Journal template changes and blocks changes or conversion when e
 
     expect($journal->refresh()->template)->toBe(JournalTemplate::Blog->value)
         ->and($journal->type)->toBe(SiteSectionType::Journal->value);
+});
+
+
+it('flattens nested pages in canonical order when nesting is disabled and blocks new nesting', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    $service = app(SiteSectionEditorialService::class);
+    $order = app(SiteSectionOrderService::class);
+    $homeId = (int) SiteSection::query()->where('type', SiteSectionType::Home->value)->firstOrFail()->getKey();
+
+    $rootA = $service->createCustomPage('Root A Settings', 'root-a-settings');
+    $childA = $service->createNavigationGroup('Child A Settings');
+    $childB = $service->createNavigationGroup('Child B Settings');
+    $rootB = $service->createCustomPage('Root B Settings', 'root-b-settings');
+
+    $order->moveTo($childA, (int) $rootA->getKey(), 0);
+    $order->moveTo($childB, (int) $rootA->getKey(), 1);
+
+    app(PagesSettingsDialog::class)->save([
+        'navigation_nesting_enabled' => false,
+        'skip_home' => false,
+        'skip_target_section_id' => null,
+    ]);
+
+    $ordered = SiteSection::query()->orderBy('position')->orderBy('id')->get();
+
+    expect(PublicContentSetting::navigationNestingEnabled())->toBeFalse()
+        ->and($ordered->pluck('parent_id')->filter()->all())->toBe([])
+        ->and($ordered->pluck('id')->map(fn ($id): int => (int) $id)->values()->all())->toBe([
+            $homeId,
+            (int) $rootA->getKey(),
+            (int) $childA->getKey(),
+            (int) $childB->getKey(),
+            (int) $rootB->getKey(),
+        ])
+        ->and($ordered->pluck('position')->values()->all())->toBe([10, 20, 30, 40, 50]);
+
+    expect(fn () => $order->moveTo($rootB->refresh(), (int) $rootA->getKey(), 0))
+        ->toThrow(ValidationException::class, 'Nested pages are disabled in Pages settings.');
+
+    $component = Livewire::test(SitePages::class);
+    expect($component->get('nestedNavigationEnabled'))->toBeFalse()
+        ->and($component->get('metrics')['children'])->toBe(0);
+});
+
+it('keeps the Pages Settings action before Add page and exposes the shared Home routing controls', function (): void {
+    $view = file_get_contents(resource_path('views/filament/pages/site-pages.blade.php'));
+    $settingsPosition = strpos($view, "mountAction('pagesSettings')");
+    $addPosition = strpos($view, "mountAction('addPage')");
+
+    expect($settingsPosition)->not->toBeFalse()
+        ->and($addPosition)->not->toBeFalse()
+        ->and($settingsPosition)->toBeLessThan($addPosition);
+
+    expect(app(PagesSettingsDialog::class)->fill())->toHaveKeys([
+        'navigation_nesting_enabled',
+        'skip_home',
+        'skip_target_section_id',
+    ]);
 });
