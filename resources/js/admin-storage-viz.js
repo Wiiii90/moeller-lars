@@ -387,7 +387,7 @@ function storageOption(element, config) {
                 id: 'storage-capacity-donut',
                 type: 'pie',
                 silent: compact,
-                radius: compact ? ['61%', '82%'] : ['54%', '84%'],
+                radius: compact ? ['61%', '82%'] : ['58.125%', '88.125%'],
                 center: ['50%', '50%'],
                 startAngle: 90,
                 clockwise: true,

@@ -73,8 +73,37 @@
 .admin-storage__upload,
 .admin-storage__capacity-group {
     display: grid;
+}
+
+.admin-storage__upload {
     grid-template-rows: auto minmax(0, 1fr);
     gap: .55rem;
+}
+
+.admin-storage__capacity-group {
+    position: relative;
+    grid-template-rows: minmax(0, 1fr) var(--admin-stage-orbit-caption-reserve);
+    gap: var(--admin-stage-orbit-gap);
+    place-items: center;
+}
+
+.admin-storage__capacity-group > .admin-storage__visual-heading {
+    position: absolute;
+    z-index: 2;
+    top: var(--admin-stage-divider-inset);
+    right: var(--admin-stage-pane-space);
+    left: var(--admin-stage-pane-space);
+}
+
+.admin-storage__capacity-group::after {
+    display: block;
+    min-height: var(--admin-stage-orbit-caption-reserve);
+    grid-row: 2;
+    content: "";
+}
+
+.admin-storage__capacity-group > .admin-storage-capacity {
+    grid-row: 1;
 }
 
 /* Storage is Upload | Capacity | Distribution. Internal pane breathing belongs
@@ -362,11 +391,13 @@
     --storage-fallback-ring-width: 2.45rem;
     position: relative;
     display: block;
-    width: min(100%, 17.5rem);
+    width: min(100%, var(--admin-stage-orbit-size));
     min-width: 0;
     min-height: 0;
-    height: 100%;
-    margin: 0 auto;
+    height: var(--admin-stage-orbit-size);
+    max-height: 100%;
+    aspect-ratio: 1;
+    margin: auto;
     overflow: visible;
 }
 
@@ -376,7 +407,7 @@
     left: 50%;
     z-index: 0;
     box-sizing: border-box;
-    width: 84%;
+    width: 88.125%;
     aspect-ratio: 1;
     transform: translate(-50%, -50%);
     border: var(--storage-fallback-ring-width) solid var(--storage-color-remaining);
@@ -448,6 +479,7 @@
 .admin-storage-capacity.is-compact[data-admin-viz="storage-capacity"] {
     --storage-fallback-ring-width: 1.15rem;
     width: min(100%, 9.5rem);
+    height: 9.5rem;
 }
 
 .admin-storage .media-workspace__library {
@@ -648,7 +680,7 @@
     }
 
     .admin-storage-capacity[data-admin-viz="storage-capacity"] {
-        width: min(100%, 17.5rem);
+        width: min(100%, var(--admin-stage-orbit-size));
     }
 
     .admin-storage__dropzone.media-workspace__dropzone {

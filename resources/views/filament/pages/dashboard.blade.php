@@ -40,9 +40,9 @@
                     :activity="$activity['clock_activity']"
                     :peak-count="$activity['clock_peak_count']"
                     :peak-hour="$activity['clock_peak_hour']"
+                    :caption-label="now()->format('M j, Y')"
                     aria-context="activity distribution for the last 30 days"
                 />
-                <p class="admin-dashboard__facts">{{ number_format($activity['recent_changes']) }} changes · last 30 days</p>
             </article>
 
             <article class="admin-dashboard__overview-column">

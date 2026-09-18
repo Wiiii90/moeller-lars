@@ -256,6 +256,30 @@ function expectModalScrollbarMode(before, during, context) {
   }
 }
 
+async function visualGeometry(page, selector) {
+  return page.locator(selector).evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      center_x: rect.left + (rect.width / 2),
+      center_y: rect.top + (rect.height / 2),
+    };
+  });
+}
+
+function expectGeometryNear(actual, expected, fields, context, tolerance = 0.1) {
+  for (const field of fields) {
+    expect(
+      Math.abs(actual[field] - expected[field]),
+      `${context}: ${field} differs by more than ${tolerance}px`,
+    ).toBeLessThanOrEqual(tolerance);
+  }
+}
+
 function expectStructuralBudget(flow) {
   const budget = structuralBudgets[flow.name];
   expect(budget, `${flow.name} must have a structural performance budget`).toBeDefined();
@@ -313,6 +337,15 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
       },
     );
     expectNoBrowserErrors(login);
+
+    const dashboardClockGeometry = await visualGeometry(
+      page,
+      '.admin-dashboard__activity-visual .activity-clock__dial',
+    );
+    const dashboardStorageGeometry = await visualGeometry(
+      page,
+      '.admin-dashboard__storage-visual .admin-storage-capacity',
+    );
 
     // Prime Pages once so the measured transition represents a warmed admin navigation.
     await page.goto('/admin/pages');
@@ -428,6 +461,17 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     await expect(page.getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();
     await page.waitForLoadState('networkidle');
 
+    const activityClockGeometry = await visualGeometry(
+      page,
+      '.activity-atlas__view.activity-clock .activity-clock__dial',
+    );
+    expectGeometryNear(
+      activityClockGeometry,
+      dashboardClockGeometry,
+      ['left', 'top', 'width', 'height', 'center_x', 'center_y'],
+      'Dashboard clock must exactly reuse Activity clock geometry',
+    );
+
     const commits = await profiler.run(
       'activity_to_commits',
       async () => {
@@ -465,6 +509,27 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     );
     expectStructuralBudget(idle);
     expectNoBrowserErrors(idle);
+
+    await page.goto('/admin/storage');
+    await expect(page.getByRole('heading', { name: 'Storage', exact: true })).toBeVisible();
+    await page.waitForLoadState('networkidle');
+
+    const storageSourceGeometry = await visualGeometry(
+      page,
+      '.admin-storage__capacity-group .admin-storage-capacity',
+    );
+    expectGeometryNear(
+      storageSourceGeometry,
+      dashboardStorageGeometry,
+      ['width', 'height', 'center_y'],
+      'Dashboard storage ring must preserve source Storage geometry',
+    );
+    expectGeometryNear(
+      storageSourceGeometry,
+      activityClockGeometry,
+      ['width', 'height', 'center_y'],
+      'Storage ring and Activity clock must share one orbit size and vertical axis',
+    );
   } finally {
     profiler.write(process.env.GITHUB_SHA ?? 'local');
   }
