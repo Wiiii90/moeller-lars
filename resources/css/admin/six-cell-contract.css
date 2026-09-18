@@ -112,6 +112,14 @@
     align-items: end;
 }
 
+/* When Search explicitly owns two cells and only one filter follows, the
+ * utility cluster consumes the remaining three metric cells. Selection still
+ * ends on the shared fixed checkbox rail at the far right. */
+.admin-data-controls--six-cell.admin-data-controls--six-cell-search-2.admin-data-controls--filters-1
+    > .admin-data-controls__utility {
+    grid-column: span 3;
+}
+
 .admin-data-controls__utility > * {
     min-width: 0;
 }

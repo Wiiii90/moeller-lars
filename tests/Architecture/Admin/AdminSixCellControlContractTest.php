@@ -14,6 +14,7 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain("'admin-data-controls--filters-'.\$normalizedFilterCount")
         ->toContain("'admin-data-controls--six-cell' => \$metricGrid")
         ->toContain("'admin-data-controls--six-cell-filters-'.\$normalizedFilterCount => \$metricGrid")
+        ->toContain("'admin-data-controls--six-cell-search-'.\$normalizedSearchSpan => \$metricGrid && \$normalizedSearchSpan !== null")
         ->toContain('@if ($hasUtility)')
         ->toContain('class="admin-data-controls__utility"')
         ->not->toContain('$hasCompleteDataToolbar')
@@ -25,6 +26,7 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
         ->toContain('.journal-workspace__entries > .admin-data-controls')
         ->toContain(".admin-data-controls__utility {\n    display: contents;")
         ->toContain('grid-template-columns: 4rem minmax(0, 1fr) 8.5rem;')
+        ->toContain('.admin-data-controls--six-cell-search-2.admin-data-controls--filters-1')
         ->toContain(".admin-data-controls__utility .admin-action {\n    white-space: nowrap;")
         ->toContain('var(--admin-table-selection-width)')
         ->toContain('justify-self: center;');
@@ -35,7 +37,8 @@ it('keeps metric toolbars scoped without forcing dense toolbars into six cells',
 
     expect($dashboard)
         ->toContain('admin-dashboard__feed-controls')
-        ->not->toContain('metric-grid');
+        ->toContain(':metric-grid="true"')
+        ->toContain(':search-span="2"');
 
     expect($storage)
         ->toContain('media-workspace__controls')
