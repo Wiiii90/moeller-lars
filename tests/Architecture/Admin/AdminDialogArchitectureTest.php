@@ -51,6 +51,11 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     expect($contract)
         ->toContain('.admin-task-dialog .fi-modal-content')
         ->toContain('scrollbar-width: thin')
+        ->toContain('transform-origin: top right;')
+        ->toContain('transition-duration: 200ms !important;')
+        ->toContain('transform: translate3d(.3rem, -.3rem, 0) scale(.985) !important;')
+        ->toContain('transition-duration: 260ms !important;')
+        ->toContain('@media (prefers-reduced-motion: reduce)')
         ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
 
     $modalScroll = file_get_contents($root.'/resources/js/admin-modal-scroll.js');

@@ -139,6 +139,16 @@ Undo must extend the existing Activity/Audit receipt architecture. Do not create
 
 Dialog schemas use the canonical controls from `ADMIN-CONTROL-CONTRACT.md`. A dialog does not get a separate form design language.
 
+## Motion
+
+Admin dialog motion is shared rather than page-local. Standard task dialogs open and close on a short top-right-origin path aligned with the native close control:
+
+- enter: 220ms, from scale(.985) with a slight up/right offset into the resting position;
+- leave: 200ms, back toward that same top-right point;
+- overlay: 260ms, so the dialog clears before the dimming fully disappears;
+- reduced-motion preferences collapse the transform animation to an effectively immediate transition.
+
+Do not add page-specific modal transforms, animation timings or alternate close trajectories.
 ## Scrolling and responsive behavior
 
 Width modifiers are desktop maxima, not fixed mobile widths. On narrow viewports the shared contract reduces the viewport gutter and lets the dialog fit the available screen. Long content scrolls inside the native modal behavior; page-local horizontal compensation is forbidden.
