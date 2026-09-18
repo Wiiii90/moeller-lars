@@ -188,7 +188,7 @@ it('uses shared controls table identity and pager contracts without a fake filte
     $css = file_get_contents(resource_path('css/admin/analytics.css'));
 
     expect($view)
-        ->toContain('<x-admin.controls aria-label="Analytics report controls">')
+        ->toContain('<x-admin.controls :metric-grid="true" :search-span="4" aria-label="Analytics report controls">')
         ->toContain('class="admin-data-field"')
         ->toContain('wire:change="setRange($event.target.value)"')
         ->toContain('$detailLayout = $this->detailTableLayout();')
