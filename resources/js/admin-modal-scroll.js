@@ -12,6 +12,7 @@ let initialized = false;
 let softScrollLockCount = 0;
 let lockedScrollX = 0;
 let lockedScrollY = 0;
+const softLockedModals = new WeakSet();
 
 export function isDocumentScrollKey(key) {
     return SCROLL_LOCK_KEYS.has(key);
@@ -19,14 +20,6 @@ export function isDocumentScrollKey(key) {
 
 function adminTaskDialogWindow(modal) {
     return modal.querySelector(':scope > .fi-modal-window-ctn > .fi-modal-window.admin-task-dialog');
-}
-
-function alpineModalState(modal) {
-    if (typeof window.Alpine?.$data === 'function') {
-        return window.Alpine.$data(modal);
-    }
-
-    return modal._x_dataStack?.[0] ?? null;
 }
 
 function scrollableDialogContent(target) {
@@ -109,37 +102,31 @@ function releaseSoftScrollLock() {
     restoreLockedWindowScroll();
 }
 
-function patchAdminTaskDialogScrollLock(modal) {
-    if (! adminTaskDialogWindow(modal)) return;
-
-    const state = alpineModalState(modal);
-    if (! state || state.__adminSoftScrollLockPatched) return;
-
-    state.__adminSoftScrollLockPatched = true;
-
-    state.acquireScrollLock = function () {
-        if (this.isHoldingScrollLock) return;
-
-        this.isHoldingScrollLock = true;
-        acquireSoftScrollLock();
-    };
-
-    state.releaseScrollLock = function () {
-        if (! this.isHoldingScrollLock) return;
-
-        this.isHoldingScrollLock = false;
-        releaseSoftScrollLock();
-    };
-}
-
-function prepareAdminTaskDialogScrollLock(event) {
+function modalFromEvent(event) {
     const id = event.detail?.id;
-    if (id === undefined || id === null || id === '') return;
+    if (id === undefined || id === null || id === '') return null;
 
     const modal = document.getElementById(String(id));
-    if (! modal?.classList.contains('fi-modal')) return;
+    if (! modal?.classList.contains('fi-modal')) return null;
+    if (! adminTaskDialogWindow(modal)) return null;
 
-    patchAdminTaskDialogScrollLock(modal);
+    return modal;
+}
+
+function acquireAdminTaskDialogSoftLock(event) {
+    const modal = modalFromEvent(event);
+    if (! modal || softLockedModals.has(modal)) return;
+
+    softLockedModals.add(modal);
+    acquireSoftScrollLock();
+}
+
+function releaseAdminTaskDialogSoftLock(event) {
+    const modal = modalFromEvent(event);
+    if (! modal || ! softLockedModals.has(modal)) return;
+
+    softLockedModals.delete(modal);
+    releaseSoftScrollLock();
 }
 
 function resetSoftScrollLock() {
@@ -151,10 +138,10 @@ export function initializeAdminModalScrollBehavior() {
     if (initialized) return;
     initialized = true;
 
-    // Capture runs before Filament's window-level open-modal listener. We patch
-    // only AdminDialog instances so Filament still owns modal state, overlay,
-    // focus trapping, Escape, X and animation, while its root-mutating scroll
-    // lock is replaced with a layout-neutral soft lock.
-    window.addEventListener('open-modal', prepareAdminTaskDialogScrollLock, true);
+    // Filament's modal provider is preconfigured in admin-modal-bootstrap.blade.php
+    // so AdminDialog instances never acquire Filament's root-mutating scroll lock.
+    // These listeners provide the blocking behavior without touching <html>.
+    window.addEventListener('open-modal', acquireAdminTaskDialogSoftLock, true);
+    window.addEventListener('modal-closed', releaseAdminTaskDialogSoftLock);
     document.addEventListener('livewire:navigated', resetSoftScrollLock);
 }

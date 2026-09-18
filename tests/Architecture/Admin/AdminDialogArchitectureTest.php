@@ -59,18 +59,30 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
 
     $modalScroll = file_get_contents($root.'/resources/js/admin-modal-scroll.js');
+    $modalBootstrap = file_get_contents($root.'/resources/views/filament/partials/admin-modal-bootstrap.blade.php');
+    $panelProvider = file_get_contents($root.'/app/Providers/Filament/AdminPanelProvider.php');
 
     expect($layouts)
         ->toContain("html.fi,\n.fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
         ->not->toContain('admin-modal-existing-scrollbar')
         ->not->toContain('html.fi:has(.fi-modal.fi-modal-open)');
 
+    expect($panelProvider)
+        ->toContain('PanelsRenderHook::SCRIPTS_BEFORE')
+        ->toContain("view('filament.partials.admin-modal-bootstrap')");
+
+    expect($modalBootstrap)
+        ->toContain("document.addEventListener('alpine:init', wrapFilamentModalRegistration")
+        ->toContain("if (name !== 'filamentModal')")
+        ->toContain('isScrollLocked: isAdminTaskDialog ? false : options?.isScrollLocked')
+        ->toContain('Alpine.data = originalData');
+
     expect($modalScroll)
-        ->toContain("window.addEventListener('open-modal', prepareAdminTaskDialogScrollLock, true)")
-        ->toContain('state.acquireScrollLock = function ()')
-        ->toContain('state.releaseScrollLock = function ()')
+        ->toContain("window.addEventListener('open-modal', acquireAdminTaskDialogSoftLock, true)")
+        ->toContain("window.addEventListener('modal-closed', releaseAdminTaskDialogSoftLock)")
         ->toContain("window.addEventListener('scroll', restoreLockedWindowScroll)")
         ->toContain("document.addEventListener('wheel', preventBackgroundWheel")
+        ->not->toContain('state.acquireScrollLock = function ()')
         ->not->toContain('document.documentElement.style')
         ->not->toContain('document.documentElement.classList');
 

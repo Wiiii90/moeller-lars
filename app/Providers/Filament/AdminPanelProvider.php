@@ -99,6 +99,10 @@ class AdminPanelProvider extends PanelProvider
                 fn (): string => view('filament.partials.admin-auth-back')->render(),
             )
             ->renderHook(
+                PanelsRenderHook::SCRIPTS_BEFORE,
+                fn (): string => view('filament.partials.admin-modal-bootstrap')->render(),
+            )
+            ->renderHook(
                 PanelsRenderHook::BODY_END,
                 fn (): string => view('filament.partials.admin-viz')->render(),
             )
