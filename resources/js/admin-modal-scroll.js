@@ -1,8 +1,8 @@
-const MODAL_SCROLLBAR_GUTTER_CLASS = 'admin-modal-scrollbar-gutter';
+const MODAL_EXISTING_SCROLLBAR_CLASS = 'admin-modal-existing-scrollbar';
 
 let initialized = false;
 
-export function needsStableScrollbarGutter(innerWidth, clientWidth) {
+export function hasClassicDocumentScrollbar(innerWidth, clientWidth) {
     return Number.isFinite(innerWidth)
         && Number.isFinite(clientWidth)
         && innerWidth > clientWidth;
@@ -25,8 +25,8 @@ function prepareModalScrollbarGeometry(event) {
 
     const root = document.documentElement;
     root.classList.toggle(
-        MODAL_SCROLLBAR_GUTTER_CLASS,
-        needsStableScrollbarGutter(window.innerWidth, root.clientWidth),
+        MODAL_EXISTING_SCROLLBAR_CLASS,
+        hasClassicDocumentScrollbar(window.innerWidth, root.clientWidth),
     );
 }
 
@@ -34,21 +34,22 @@ function releaseModalScrollbarGeometry() {
     queueMicrotask(() => {
         if (document.querySelector('.fi-modal.fi-modal-open:not(.fi-modal-click-through)')) return;
 
-        document.documentElement.classList.remove(MODAL_SCROLLBAR_GUTTER_CLASS);
+        document.documentElement.classList.remove(MODAL_EXISTING_SCROLLBAR_CLASS);
     });
 }
 
 function resetModalScrollbarGeometry() {
-    document.documentElement.classList.remove(MODAL_SCROLLBAR_GUTTER_CLASS);
+    document.documentElement.classList.remove(MODAL_EXISTING_SCROLLBAR_CLASS);
 }
 
 export function initializeAdminModalScrollbarGeometry() {
     if (initialized) return;
     initialized = true;
 
-    // Capture runs before Filament's window-level open-modal listener. This is
-    // intentional: acquireScrollLock() reads computed scrollbar-gutter before
-    // it decides whether to inject padding-right compensation.
+    // Capture runs before Filament's window-level open-modal listener. On a
+    // page that already scrolls, the class keeps the real vertical scrollbar
+    // visible and overrides Filament's inline padding compensation. A short
+    // page is left entirely to Filament's native lock path.
     window.addEventListener('open-modal', prepareModalScrollbarGeometry, true);
     window.addEventListener('modal-closed', releaseModalScrollbarGeometry);
     document.addEventListener('livewire:navigated', resetModalScrollbarGeometry);

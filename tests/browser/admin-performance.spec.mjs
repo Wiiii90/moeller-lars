@@ -214,6 +214,7 @@ async function shellGeometry(page) {
     const root = document.documentElement;
     const layout = document.querySelector('.fi-layout');
     const main = document.querySelector('.fi-main');
+    const rootStyle = getComputedStyle(root);
 
     return {
       inner_width: window.innerWidth,
@@ -222,7 +223,11 @@ async function shellGeometry(page) {
       layout_width: layout?.getBoundingClientRect().width ?? null,
       main_left: main?.getBoundingClientRect().left ?? null,
       main_width: main?.getBoundingClientRect().width ?? null,
-      modal_gutter_reserved: root.classList.contains('admin-modal-scrollbar-gutter'),
+      has_classic_scrollbar: window.innerWidth > root.clientWidth,
+      modal_existing_scrollbar: root.classList.contains('admin-modal-existing-scrollbar'),
+      overflow_y: rootStyle.overflowY,
+      padding_right: rootStyle.paddingRight,
+      scrollbar_gutter: rootStyle.scrollbarGutter,
     };
   });
 }
@@ -235,12 +240,19 @@ function expectStableShellGeometry(before, during, context) {
   expect(during.main_width, `${context}: main width shifted`).toBeCloseTo(before.main_width, 1);
 }
 
-function expectModalGutterMatchesScrollbar(before, during, context) {
+function expectModalScrollbarMode(before, during, context) {
   const hadClassicScrollbar = before.inner_width > before.client_width;
   expect(
-    during.modal_gutter_reserved,
-    `${context}: modal gutter reservation must match the pre-open classic scrollbar state`,
+    during.modal_existing_scrollbar,
+    `${context}: long-page modal mode must match the pre-open classic scrollbar state`,
   ).toBe(hadClassicScrollbar);
+
+  if (hadClassicScrollbar) {
+    expect(during.has_classic_scrollbar, `${context}: existing scrollbar disappeared`).toBe(true);
+    expect(during.overflow_y, `${context}: existing scrollbar is not kept visible`).toBe('scroll');
+    expect(during.padding_right, `${context}: Filament padding compensation leaked through`).toBe('0px');
+    expect(during.scrollbar_gutter, `${context}: empty stable gutter was introduced`).toBe('auto');
+  }
 }
 
 function expectStructuralBudget(flow) {
@@ -335,12 +347,37 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectNoBrowserErrors(addPage);
     const pagesDuringDialogGeometry = await shellGeometry(page);
     expectStableShellGeometry(pagesBeforeDialogGeometry, pagesDuringDialogGeometry, 'Pages Add page open');
-    expectModalGutterMatchesScrollbar(pagesBeforeDialogGeometry, pagesDuringDialogGeometry, 'Pages Add page open');
+    expectModalScrollbarMode(pagesBeforeDialogGeometry, pagesDuringDialogGeometry, 'Pages Add page open');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
     const pagesAfterDialogGeometry = await shellGeometry(page);
     expectStableShellGeometry(pagesBeforeDialogGeometry, pagesAfterDialogGeometry, 'Pages Add page close');
-    expect(pagesAfterDialogGeometry.modal_gutter_reserved, 'Pages Add page close: modal gutter class leaked').toBe(false);
+    expect(pagesAfterDialogGeometry.modal_existing_scrollbar, 'Pages Add page close: modal scrollbar class leaked').toBe(false);
+
+    // Explicitly cover a page that already has a classic vertical scrollbar.
+    // The production bug only appeared on long table pages, while short pages
+    // were already stable.
+    await page.evaluate(() => {
+      const spacer = document.createElement('div');
+      spacer.dataset.modalScrollbarTestSpacer = 'true';
+      spacer.style.height = '200vh';
+      spacer.style.pointerEvents = 'none';
+      document.querySelector('.fi-main')?.append(spacer);
+    });
+    const longPageBeforeDialogGeometry = await shellGeometry(page);
+    expect(longPageBeforeDialogGeometry.has_classic_scrollbar, 'Long-page fixture must have a classic scrollbar').toBe(true);
+
+    await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
+    const longPageDuringDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(longPageBeforeDialogGeometry, longPageDuringDialogGeometry, 'Pages long-page Add page open');
+    expectModalScrollbarMode(longPageBeforeDialogGeometry, longPageDuringDialogGeometry, 'Pages long-page Add page open');
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
+    const longPageAfterDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(longPageBeforeDialogGeometry, longPageAfterDialogGeometry, 'Pages long-page Add page close');
+    expect(longPageAfterDialogGeometry.modal_existing_scrollbar, 'Pages long-page Add page close: modal scrollbar class leaked').toBe(false);
+    await page.evaluate(() => document.querySelector('[data-modal-scrollbar-test-spacer]')?.remove());
 
     await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
@@ -379,12 +416,12 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectNoBrowserErrors(homeSettings);
     const homeDuringDialogGeometry = await shellGeometry(page);
     expectStableShellGeometry(homeBeforeDialogGeometry, homeDuringDialogGeometry, 'Home settings open');
-    expectModalGutterMatchesScrollbar(homeBeforeDialogGeometry, homeDuringDialogGeometry, 'Home settings open');
+    expectModalScrollbarMode(homeBeforeDialogGeometry, homeDuringDialogGeometry, 'Home settings open');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Home settings', exact: true })).toBeHidden();
     const homeAfterDialogGeometry = await shellGeometry(page);
     expectStableShellGeometry(homeBeforeDialogGeometry, homeAfterDialogGeometry, 'Home settings close');
-    expect(homeAfterDialogGeometry.modal_gutter_reserved, 'Home settings close: modal gutter class leaked').toBe(false);
+    expect(homeAfterDialogGeometry.modal_existing_scrollbar, 'Home settings close: modal scrollbar class leaked').toBe(false);
 
     await page.goto('/admin/activity');
     await expect(page.getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();
