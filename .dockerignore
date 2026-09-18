@@ -21,3 +21,4 @@ Pest.php
 compose*.yml
 compose*.yaml
 README.md
+scripts/local-preview.ps1

@@ -73,3 +73,5 @@ services:
 
 volumes:
   postgres_data:
+    external: true
+    name: moeller-lars_postgres_data

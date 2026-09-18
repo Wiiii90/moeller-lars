@@ -253,6 +253,8 @@ Current durable local interface assumptions:
 - image runtime listens internally on port `8080`;
 - preview build target: `local-preview` in the root `Dockerfile`;
 - canonical Windows helper: `scripts/local-preview.ps1`;
+- canonical copy/paste command from any PowerShell location: `& 'P:\moeller-lars\scripts\local-preview.ps1'`;
+- when the user asks to rebuild/run the local preview, give that exact command; do not invent a new helper, launcher, inline build recipe or alternative local build path unless the user explicitly asks for one;
 - canonical private media mount destination: `/var/www/html/storage/app/private`.
 
 The local browser database is the one persistent local development database. Do not run

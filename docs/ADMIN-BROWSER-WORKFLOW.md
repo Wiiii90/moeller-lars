@@ -103,14 +103,15 @@ Durable local interface:
 - internal application port: `8080`;
 - preview build target: `local-preview` in the root `Dockerfile`;
 - Windows helper: `scripts/local-preview.ps1`;
+- canonical copy/paste invocation from any PowerShell location: `& 'P:\moeller-lars\scripts\local-preview.ps1'`;
 - private media mount destination: `/var/www/html/storage/app/private`.
 
 Normal browser cycle:
 
 1. fast-forward local `dev` to the intended head;
-2. set `APP_GIT_SHA` to that exact head;
-3. run `docker compose up -d --build --wait preview`;
-4. Compose starts/reuses PostgreSQL, builds the single shared image graph, replaces the preview container and waits for health;
+2. run the canonical helper with `& 'P:\moeller-lars\scripts\local-preview.ps1'`;
+3. the helper fast-forwards `dev`, builds the `preview` service exactly once, then replaces the old preview container only after that build succeeds;
+4. it starts the already-built image with `docker compose up -d --no-build --wait preview`, so container startup cannot trigger a second build;
 5. review the exact built candidate in the browser.
 
 Do not rebuild a separate runtime image before the preview build. Docker/BuildKit reuses unchanged PHP, Composer and Node layers from the single graph. Analytics demo/cache preparation is also not part of every image build; the normal database cache persists in PostgreSQL and any deliberate demo reseed is a separate preview-data action.
