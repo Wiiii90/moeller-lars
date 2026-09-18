@@ -89,15 +89,14 @@
         <div class="admin-row-actions admin-row-actions--canonical admin-toolbar admin-pages__row-actions" role="cell" data-cell="actions" aria-label="Actions for {{ $label }}">
             @if ($isHome)
                 @if ($homeState['skip_home'] ?? false)
-                    <span class="admin-pages__redirect-marker" aria-label="Skip Home">
-                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Redirect->mini()" class="admin-action__icon" />
-                    </span>
                     <button
                         class="admin-action admin-pages__redirect-target"
                         type="button"
                         wire:click="mountAction('skipHome')"
                         title="Change Skip Home target"
+                        aria-label="Skip Home to {{ $homeState['skip_target_label'] ?: 'target page' }}"
                     >
+                        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Redirect->mini()" class="admin-action__icon" />
                         <span class="admin-action__label">{{ $homeState['skip_target_label'] ?: 'Set target' }}</span>
                     </button>
                 @else

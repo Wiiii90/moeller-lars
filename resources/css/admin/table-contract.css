@@ -233,16 +233,10 @@
     white-space: nowrap;
 }
 
-.admin-pages__redirect-marker {
-    display: flex;
-    min-width: 0;
-    min-height: 2rem;
-    align-items: center;
-    color: var(--admin-muted);
-}
-
 .admin-pages__redirect-target {
     min-width: 0;
+    grid-column: span 2;
+    gap: .3rem;
     color: var(--admin-text);
     text-decoration: none;
 }
