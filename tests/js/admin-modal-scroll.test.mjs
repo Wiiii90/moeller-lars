@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { hasDocumentVerticalOverflow } from '../../resources/js/admin-modal-scroll.js';
+import { isDocumentScrollKey } from '../../resources/js/admin-modal-scroll.js';
 
-test('detects whether the document already needs vertical scrolling', () => {
-    assert.equal(hasDocumentVerticalOverflow(2400, 900), true);
-    assert.equal(hasDocumentVerticalOverflow(900, 900), false);
-    assert.equal(hasDocumentVerticalOverflow(800, 900), false);
+test('recognizes document-scrolling keyboard keys', () => {
+    for (const key of ['ArrowDown', 'ArrowUp', 'End', 'Home', 'PageDown', 'PageUp', ' ']) {
+        assert.equal(isDocumentScrollKey(key), true);
+    }
+
+    for (const key of ['Enter', 'Escape', 'Tab', 'a']) {
+        assert.equal(isDocumentScrollKey(key), false);
+    }
 });

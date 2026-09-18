@@ -62,18 +62,17 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
 
     expect($layouts)
         ->toContain("html.fi,\n.fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
-        ->toContain('html.fi.admin-modal-existing-scrollbar')
-        ->toContain('overflow-y: scroll !important;')
-        ->toContain('scrollbar-gutter: stable !important;')
-        ->not->toContain('padding-right: 0 !important;')
+        ->not->toContain('admin-modal-existing-scrollbar')
         ->not->toContain('html.fi:has(.fi-modal.fi-modal-open)');
 
     expect($modalScroll)
-        ->toContain("window.addEventListener('open-modal', prepareModalScrollbarGeometry, true)")
-        ->toContain("window.addEventListener('modal-closed', releaseModalScrollbarGeometry)")
-        ->toContain('root.classList.toggle(')
-        ->toContain('MODAL_EXISTING_SCROLLBAR_CLASS,')
-        ->toContain('hasDocumentVerticalOverflow(root.scrollHeight, root.clientHeight),');
+        ->toContain("window.addEventListener('open-modal', prepareAdminTaskDialogScrollLock, true)")
+        ->toContain('state.acquireScrollLock = function ()')
+        ->toContain('state.releaseScrollLock = function ()')
+        ->toContain("window.addEventListener('scroll', restoreLockedWindowScroll)")
+        ->toContain("document.addEventListener('wheel', preventBackgroundWheel")
+        ->not->toContain('document.documentElement.style')
+        ->not->toContain('document.documentElement.classList');
 
     expect($homeWorkspace)
         ->toContain('use Filament\\Schemas\\Components\\Grid;')
