@@ -68,11 +68,35 @@ ENTRYPOINT ["/usr/local/bin/moeller-lars-entrypoint"]
 CMD ["apache2-foreground"]
 
 
-FROM runtime AS local-preview
-ENV APP_ENV=local \
+# Local browser preview reuses the prepared application/dependency stages directly.
+# Do not route it through the release runtime: that would copy the candidate source
+# and vendor tree a second time and force a large runtime layer export on every edit.
+FROM application AS local-preview
+ARG APP_GIT_SHA=unknown
+ENV APP_RELEASE_SHA=${APP_GIT_SHA} \
+    APP_ENV=local \
     MOELLER_LARS_PERSISTENT_PREVIEW=1 \
     MEDIA_STORAGE_QUOTA_BYTES=5000000000
 
+COPY --from=frontend /build/public/build ./public/build
+COPY --from=frontend /build/resources/views/filament/generated/analytics-world-map.blade.php ./resources/views/filament/generated/analytics-world-map.blade.php
+COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
+
+RUN mkdir -p \
+        storage/framework/cache \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
+    && chown -R www-data:www-data \
+        storage/framework/cache \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl --fail --silent --show-error http://127.0.0.1:8080/up >/dev/null || exit 1
 ENTRYPOINT ["docker-php-entrypoint"]
 CMD ["sh", "-lc", "php artisan migrate --force --no-interaction && php artisan optimize:clear && php artisan media:measure-capacity --no-interaction && exec apache2-foreground"]
 
