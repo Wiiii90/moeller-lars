@@ -24,7 +24,7 @@
             <x-admin.controls aria-label="{{ $isBlog ? 'Blog controls' : 'Exhibition controls' }}">
                 <x-slot:search>
                     <label class="admin-field admin-control-bar__search">
-                        <span class="admin-field__label">Search {{ $entryLabel }}</span>
+                        <span class="admin-field__label">Search</span>
                         <input
                             type="search"
                             wire:model.live.debounce.300ms="search"

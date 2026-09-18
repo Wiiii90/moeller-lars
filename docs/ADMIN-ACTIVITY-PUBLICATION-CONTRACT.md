@@ -25,7 +25,7 @@ The Activity workspace uses the shared six-unit admin alignment system, but sema
 
 `Details` is the stable first row action. When `AdminActionReceiptService` exposes a currently valid actor-scoped receipt, `Undo` appears immediately after Details and applies the inverse as a new audited editorial action. Rows without a safe current receipt simply omit Undo; they do not expose a permanently disabled undo control.
 
-Activity and Commits are two views of the same workspace and switch through the normal View control. Both retain the applicable Search/Area/Change type/Date/Time filter context. Activity and Commits use bounded pagination with the shared page-size choices `25`, `50` and `100`.
+Activity and Commits are two views of the same workspace and switch through the normal View control. Both retain the applicable Search/Area/Type/Date/Time filter context. Activity and Commits use bounded pagination with the shared page-size choices `25`, `50` and `100`.
 
 ### Date and time filters
 

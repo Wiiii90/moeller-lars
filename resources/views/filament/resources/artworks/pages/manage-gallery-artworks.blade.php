@@ -85,7 +85,7 @@
         <div class="gallery-workspace__result-surface">
             <div class="gallery-workspace__controls" aria-label="Gallery controls">
                 <label class="gallery-workspace__field gallery-workspace__search">
-                    <span>Search artworks</span>
+                    <span>Search</span>
                     <input
                         type="search"
                         wire:model.live.debounce.300ms="search"

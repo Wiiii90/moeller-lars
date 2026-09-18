@@ -20,7 +20,7 @@
     <x-admin.controls class="media-workspace__controls" aria-label="File search and filters">
         <x-slot:search>
             <label class="admin-data-field">
-                <span>Search media</span>
+                <span>Search</span>
                 <input type="search" wire:model.live.debounce.300ms="search" placeholder="Filename, ALT, credit…">
             </label>
         </x-slot:search>
