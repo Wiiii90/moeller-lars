@@ -140,9 +140,10 @@
     margin: 0 !important;
 }
 
-/* Storage uses the first 2/3 rail for Upload | Capacity and the final third for
- * Destinations. The shared primitive owns only the metric-aligned outer axes;
- * storage.css owns the internal pair's breathing room. */
+/* Storage uses the first 2/3 rail for Upload Media Files | Total Capacity and
+ * the final third for Media Distribution. The shared primitive owns only the
+ * metric-aligned outer axes; storage.css owns the internal pair's breathing
+ * room and bounded Distribution scrolling. */
 .admin-storage__visual-stage > .admin-storage__visual-main {
     padding-right: 0 !important;
 }

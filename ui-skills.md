@@ -623,6 +623,8 @@ Rules:
 - if the accepted global stage should change height, change the shared token once;
 - vertical divider top/bottom breathing uses the shared divider inset instead of page-local pixel tuning;
 - a page may use a different internal column layout while keeping the same outer height and follow-up rhythm;
+- variable Stage content that can exceed its pane must scroll or clip inside that pane; it must not increase the shared Stage height, append a pseudo-section below the Stage, or silently discard meaningful rows merely to fit;
+- a fixed pane footer may hold actions/help while the variable content above it owns the bounded scroll region. Storage's scrollable Media Distribution plus fixed `Free storage now` footer is the reference composition;
 - schema-backed Filament pages use the shared `admin-visual-stage-block` / `admin-visual-stage-followup` mechanism so framework grid gaps do not shift their post-stage separator;
 - General may own its internal desktop/mobile matrix divider, but it does not own a separate outer stage height or a compensating post-stage margin.
 

@@ -33,7 +33,7 @@ Format/safety ceilings are configured in bytes:
 - `MEDIA_VIDEO_MAX_BYTES` — default 100 MiB
 - `MEDIA_AUDIO_MAX_BYTES` — default 100 MiB
 
-`MEDIA_STORAGE_QUOTA_BYTES` is the operator/platform-injected admission ceiling. Cached display values are not authoritative for upload admission.
+`MEDIA_STORAGE_QUOTA_BYTES` is the operator/platform-injected **whole-site** admission ceiling. Quota usage includes canonical media originals, generated variants and logical persistent application/database data. Logical database usage includes live editorial data, append-only Activity, bounded Undo receipts, retained Publication restore data/shared history payloads and other persistent application rows. PostgreSQL's physical database-file footprint is operational overhead and is not the quota value. Cached display values are not authoritative for upload admission.
 
 The artist-facing Storage workspace deliberately separates normal navigation from authoritative filesystem measurement. Production and the dedicated local-preview container warm a durable display snapshot at container startup through `php artisan media:measure-capacity`. Normal navigation consumes that already-measured snapshot only and never turns a cache miss into a recursive filesystem walk. Successful ingest and physical cleanup refresh the snapshot at their existing file-mutation boundaries; the explicit Storage `Refresh` action remains a manual rescan/recovery boundary. Upload admission remains independently authoritative.
 
@@ -151,14 +151,15 @@ The artist-facing reusable media and capacity workspace is **Storage** at `/admi
 
 Canonical behavior:
 
-- the Storage status reflects authoritative capacity state, not merely library readiness;
+- the Storage status reflects authoritative **whole-site** capacity state, not merely library readiness;
 - six top metrics combine library counts with capacity state;
-- the shared Visual Stage remains three metric-aligned thirds in the artist workflow order **Upload Media Files → Capacity → Destinations**;
+- the shared Visual Stage remains exactly three metric-aligned thirds in the artist workflow order **Upload Media Files → Total Capacity → Media Distribution**; Stage content must not extend the shared Stage height;
 - each Visual Stage third uses one concise heading rather than stacked decorative headings;
-- the Capacity visualization uses the configured allowance as its common denominator and measured authoritative originals as the used portion; generated variants remain outside that allowance because they are rebuildable derivatives;
-- usage-area selection and the Destinations projection may highlight the same measured Storage breakdown without triggering a filesystem measurement;
-- where a Storage usage area has an exact canonical library filter, Destinations selection and the library Usage filter stay synchronized; categories without an exact library equivalent remain visualization-only rather than applying an inaccurate filter;
-- concrete destination totals are deliberately non-exclusive while the authoritative area breakdown remains exclusive, so a shared original may appear in multiple concrete destinations but contributes its bytes only once to capacity;
+- the Total Capacity visualization uses the configured allowance as its common denominator and total quota-relevant site usage as the used portion; its coarse used segments are Original Media, Generated Variants and Application Data;
+- Application Data is logical persistent database usage. Internal Activity/Undo/Publication/shared-history components contribute to Total Capacity but are not promoted into separate media filters or Media table rows;
+- Media Distribution remains a media-only projection because its rows can map to the media library below. It lists all matching distribution rows inside the fixed third and scrolls internally rather than truncating rows or growing the Stage;
+- where a Media Distribution row has an exact canonical library filter, selecting it and the library Usage filter stay synchronized; categories without an exact library equivalent remain visualization-only rather than applying an inaccurate filter;
+- concrete media destination totals are deliberately non-exclusive while authoritative original bytes remain exclusive, so a shared original may appear in multiple concrete destinations without being charged twice as an original;
 - attention retains integrity/context signals such as unused originals, uncatalogued originals, largest gallery and largest original when available;
 - authoritative storage analysis starts from measured originals, not only `MediaAsset` rows, so uncatalogued originals remain detectable;
 - the media library remains the operational surface for search, type/usage/status filtering, list/grid/dense views, selection, details, download, metadata editing and deletion;
@@ -170,7 +171,10 @@ Canonical behavior:
 - thumbnails/variants remain bounded and expensive original access stays on demand;
 - technical hashes/storage paths are not primary artist-facing UI;
 - reference filters include structured and Rich Text consumers through central reference rules;
-- Dashboard reuses the same shared capacity component in compact form, fed only by the cached capacity snapshot so the dashboard does not add Storage reference-analysis work to normal navigation.
+- Dashboard reuses the same shared capacity component in compact form, fed only by the cached capacity snapshot so the dashboard does not add Storage reference-analysis work to normal navigation;
+- `Free storage now` is the explicit destructive recovery-space action in the Media Distribution footer. Its adjacent shared Help/lightbulb explains the consequences before the normal danger confirmation: all current Undo receipts are cleared, older unprotected Publication restore snapshots are released, safely rebuildable generated thumbnails are removed, and media/history garbage collection may then remove data that has no remaining recovery root;
+- Activity itself is permanent and is never reclaimed by this action. The current LIVE Publication snapshot and the Publication snapshot currently serving as Working's restore/revert source remain protected. Commit metadata also remains factual history even when an older snapshot payload is no longer restorable;
+- generated files are reclaimed only when the current variant pipeline proves they can be recreated from canonical originals. Logical site usage is refreshed immediately; PostgreSQL's physical database file may shrink only later through normal database maintenance.
 
 The current visualization renderer is an implementation detail beneath the existing admin theme/Visual Stage contract; browser acceptance may change its composition without changing the Storage domain contract above.
 

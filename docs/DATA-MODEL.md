@@ -180,11 +180,17 @@ Persistent notifications are created by the central server-side admin notifier. 
 
 See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
 
-## Audit and editorial checkpoints
+## Audit, Undo and editorial checkpoints
 
-`audit_events` is durable append-only admin history. Domain writes are persisted/audited independently of logical Commit/checkpoint behavior and independently of notification retention.
+`audit_events` is durable append-only admin history. Domain writes are persisted/audited independently of logical Commit/checkpoint behavior and independently of notification retention. Activity records successful administrative facts and is not a recovery payload store.
 
-Activity records successful administrative facts. A persistent notification may reference an audit event for navigation/context, but notification read/delete/prune operations do not mutate audit history.
+`admin_action_receipts` stores bounded actor-scoped Undo roots. Snapshot-style receipts reference immutable content-addressed JSON through `snapshot_payload_id` rather than owning a duplicate payload copy.
+
+`publication_checkpoints` stores permanent Commit metadata/lineage. A checkpoint's `snapshot_available` flag states whether its restore payload remains retained. `publication_version_row_manifests` maps a retained checkpoint/table/row identity to `history_payloads`; the transparent `publication_version_rows` interface reconstructs the logical complete snapshot expected by Publication services.
+
+`history_payloads` is the shared immutable payload store for both Publication row manifests and Undo snapshot receipts. Payload rows are collected only when no manifest or receipt still references them.
+
+A persistent notification may reference an audit event for navigation/context, but notification read/delete/prune operations do not mutate audit history. Storage reclamation may delete Undo receipts and release older unprotected Publication snapshot manifests while preserving `audit_events`, Commit metadata, the current LIVE restore snapshot and the current Working restore/revert source.
 
 ## Operational metrics
 
@@ -203,7 +209,8 @@ Laravel user/session/cache/job tables support authenticated administration/runti
 - disabling a presentation feature does not silently detach/delete its retained data.
 - Gallery detach is Artwork unassignment, not Artwork/Media deletion.
 - destructive/publication operations are authorized/audited and go through canonical domain services.
-- deleting/pruning a notification never deletes related Activity/audit or Publication history.
+- deleting/pruning a notification never deletes related Activity/audit or Publication history;
+- explicit Storage reclamation may remove bounded Undo and older restore payload roots, but never Activity events or Publication checkpoint metadata.
 
 ## Migration boundary
 

@@ -143,7 +143,7 @@ Current application media ceilings:
 - `MEDIA_IMAGE_MAX_BYTES` — default 20 MiB;
 - `MEDIA_VIDEO_MAX_BYTES` — default 100 MiB;
 - `MEDIA_AUDIO_MAX_BYTES` — default 100 MiB;
-- `MEDIA_STORAGE_QUOTA_BYTES` — operator/platform-injected allowance when configured.
+- `MEDIA_STORAGE_QUOTA_BYTES` — operator/platform-injected whole-site logical allowance when configured; admission accounts for canonical originals, generated variants and logical persistent application/database data rather than raw PostgreSQL physical-file size.
 
 The canonical media policy supports validated image/video/audio content. Consumer support remains narrower where appropriate.
 

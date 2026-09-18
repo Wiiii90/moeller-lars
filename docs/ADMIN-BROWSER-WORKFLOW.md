@@ -75,6 +75,8 @@ Rules:
 - if the product wants the shared stage shorter or taller, change the shared token once;
 - vertical divider top/bottom inset comes from the shared stage divider inset, not per-page pixel tuning;
 - a page may have a different internal column composition, but its outer stage height and follow-up rhythm still use the shared contract;
+- content that can exceed a Stage pane's available height must scroll or clip **inside that pane**; it must not append a fourth pseudo-section below the Stage, extend the Stage height, or silently truncate meaningful rows merely to fit;
+- fixed footer actions may occupy a pane's final row while the variable content above them owns the bounded scroll region. Storage's Media Distribution list plus `Free storage now` footer is the reference pattern;
 - schema-backed Filament pages must neutralize framework grid gaps around the stage/follow-up boundary instead of compensating with page-local margins;
 - `admin-visual-stage-block` / `admin-visual-stage-followup` are the shared mechanism for that schema-backed boundary;
 - General may own its internal matrix divider because its desktop/mobile composition differs, but it must not own a separate outer stage height or post-stage spacing system.

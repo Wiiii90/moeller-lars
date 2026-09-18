@@ -87,7 +87,7 @@
                 ? this.targets.filter((target) => target.area === this.selectedArea)
                 : this.targets
 
-            return rows.slice(0, 6)
+            return rows
         },
         targetWidth(bytes) {
             const rows = this.visibleTargets()

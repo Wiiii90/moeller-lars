@@ -163,8 +163,9 @@
     justify-items: center;
 }
 
-/* Distribution remains wheel/keyboard scrollable, but its short in-stage list
- * does not advertise a permanent native scrollbar rail. */
+/* Media Distribution keeps every matching row inside the fixed Stage pane.
+ * The list is wheel/keyboard scrollable without advertising a permanent native
+ * scrollbar rail or increasing the shared Stage height. */
 .admin-storage__target-plot {
     display: grid;
     min-height: 0;
