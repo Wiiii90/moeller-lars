@@ -2,8 +2,20 @@
 .admin-dashboard__feed-section { border-bottom: 0; }
 
 .admin-dashboard__feed-controls {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: .85rem;
     padding: .85rem 0;
+    align-items: end;
 }
+
+.admin-dashboard__feed-controls > * {
+    min-width: 0 !important;
+    width: 100%;
+}
+
+.admin-dashboard__feed-controls > :first-child { grid-column: span 8; }
+.admin-dashboard__feed-controls > :not(:first-child) { grid-column: span 1; }
 
 .admin-dashboard__feed-controls .admin-data-control-group,
 .admin-dashboard__feed-controls .admin-selection__anchor { width: 100%; }
@@ -203,6 +215,16 @@
     justify-self: start;
     color: var(--admin-muted) !important;
     font-size: .74rem;
+}
+
+@media (max-width: 1180px) {
+    .admin-dashboard__feed-controls { display: flex; }
+    .admin-dashboard__feed-controls > * { width: auto; }
+    .admin-dashboard__feed-controls > :first-child { min-width: 12rem !important; flex: 1 1 16rem; }
+    .admin-dashboard__feed-controls .admin-data-control-group,
+    .admin-dashboard__feed-controls .admin-selection__anchor { width: auto; }
+    .admin-dashboard__feed-controls .admin-data-control-group > .admin-action,
+    .admin-dashboard__feed-controls .admin-selection__trigger { width: auto; }
 }
 
 @media (max-width: 980px) {

@@ -112,7 +112,7 @@
                     && \App\Models\ArtworkCategory::query()->whereHas('siteSection')->exists());
             @endphp
 
-            <x-admin.controls class="home-artwork-source-controls" aria-label="Gallery source controls">
+            <x-admin.controls :metric-grid="true" :search-span="2" class="home-artwork-source-controls" aria-label="Gallery source controls">
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>
