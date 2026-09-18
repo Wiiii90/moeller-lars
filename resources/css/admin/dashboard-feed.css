@@ -5,7 +5,7 @@
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: .85rem;
-    padding: .85rem 0;
+    padding: 0 0 .85rem;
     align-items: end;
 }
 
