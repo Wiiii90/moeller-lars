@@ -51,7 +51,7 @@
 
 <section
     class="admin-storage__visual-stage admin-visual-stage admin-visual-stage--triptych admin-visual-stage--stackable"
-    aria-label="Storage upload, capacity and distribution"
+    aria-label="Storage upload, total capacity and media distribution"
     x-data="{
         selectedTarget: null,
         selectedArea: null,
@@ -188,7 +188,7 @@
 
         <div class="admin-storage__capacity-group">
             <div class="admin-storage__visual-heading">
-                <p class="admin-storage__eyebrow">Capacity</p>
+                <p class="admin-storage__eyebrow">Total Capacity</p>
                 <button
                     class="admin-icon-action"
                     type="button"
@@ -212,7 +212,7 @@
 
     <div class="admin-storage__distribution admin-visual-stage__pane">
         <div class="admin-storage__visual-heading">
-            <p class="admin-storage__eyebrow">Distribution</p>
+            <p class="admin-storage__eyebrow">Media Distribution</p>
         </div>
 
         <div class="admin-storage__target-plot" aria-live="polite">
