@@ -53,10 +53,18 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('scrollbar-width: thin')
         ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
 
+    $modalScroll = file_get_contents($root.'/resources/js/admin-modal-scroll.js');
+
     expect($layouts)
         ->toContain("html.fi,\n.fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
-        ->toContain("html.fi:has(.fi-modal.fi-modal-open) {\n    overflow-y: scroll !important;\n    padding-right: 0 !important;\n}")
-        ->not->toContain('scrollbar-gutter: stable');
+        ->toContain("html.fi.admin-modal-scrollbar-gutter {\n    scrollbar-gutter: stable !important;\n}")
+        ->not->toContain('html.fi:has(.fi-modal.fi-modal-open)')
+        ->not->toContain('overflow-y: scroll !important');
+
+    expect($modalScroll)
+        ->toContain("window.addEventListener('open-modal', prepareModalScrollbarGeometry, true)")
+        ->toContain("window.addEventListener('modal-closed', releaseModalScrollbarGeometry)")
+        ->toContain("root.classList.toggle(MODAL_SCROLLBAR_GUTTER_CLASS, needsStableScrollbarGutter(window.innerWidth, root.clientWidth))");
 
     expect($homeWorkspace)
         ->toContain('use Filament\\Schemas\\Components\\Grid;')

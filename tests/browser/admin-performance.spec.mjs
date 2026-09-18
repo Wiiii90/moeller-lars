@@ -209,6 +209,40 @@ function expectNoBrowserErrors(flow) {
   expect(flow.page_errors, `${flow.name} page errors`).toEqual([]);
 }
 
+async function shellGeometry(page) {
+  return page.evaluate(() => {
+    const root = document.documentElement;
+    const layout = document.querySelector('.fi-layout');
+    const main = document.querySelector('.fi-main');
+
+    return {
+      inner_width: window.innerWidth,
+      client_width: root.clientWidth,
+      layout_left: layout?.getBoundingClientRect().left ?? null,
+      layout_width: layout?.getBoundingClientRect().width ?? null,
+      main_left: main?.getBoundingClientRect().left ?? null,
+      main_width: main?.getBoundingClientRect().width ?? null,
+      modal_gutter_reserved: root.classList.contains('admin-modal-scrollbar-gutter'),
+    };
+  });
+}
+
+function expectStableShellGeometry(before, during, context) {
+  expect(during.client_width, `${context}: document client width shifted`).toBe(before.client_width);
+  expect(during.layout_left, `${context}: layout left edge shifted`).toBeCloseTo(before.layout_left, 1);
+  expect(during.layout_width, `${context}: layout width shifted`).toBeCloseTo(before.layout_width, 1);
+  expect(during.main_left, `${context}: main left edge shifted`).toBeCloseTo(before.main_left, 1);
+  expect(during.main_width, `${context}: main width shifted`).toBeCloseTo(before.main_width, 1);
+}
+
+function expectModalGutterMatchesScrollbar(before, during, context) {
+  const hadClassicScrollbar = before.inner_width > before.client_width;
+  expect(
+    during.modal_gutter_reserved,
+    `${context}: modal gutter reservation must match the pre-open classic scrollbar state`,
+  ).toBe(hadClassicScrollbar);
+}
+
 function expectStructuralBudget(flow) {
   const budget = structuralBudgets[flow.name];
   expect(budget, `${flow.name} must have a structural performance budget`).toBeDefined();
@@ -286,6 +320,8 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     expectStructuralBudget(pagesNavigation);
     expectNoBrowserErrors(pagesNavigation);
 
+    const pagesBeforeDialogGeometry = await shellGeometry(page);
+
     const addPage = await profiler.run(
       'pages_add_page_dialog',
       async () => {
@@ -297,8 +333,14 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     );
     expectStructuralBudget(addPage);
     expectNoBrowserErrors(addPage);
+    const pagesDuringDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(pagesBeforeDialogGeometry, pagesDuringDialogGeometry, 'Pages Add page open');
+    expectModalGutterMatchesScrollbar(pagesBeforeDialogGeometry, pagesDuringDialogGeometry, 'Pages Add page open');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeHidden();
+    const pagesAfterDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(pagesBeforeDialogGeometry, pagesAfterDialogGeometry, 'Pages Add page close');
+    expect(pagesAfterDialogGeometry.modal_gutter_reserved, 'Pages Add page close: modal gutter class leaked').toBe(false);
 
     await page.getByLabel('Page controls').getByRole('button', { name: 'Add page', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Add page', exact: true })).toBeVisible();
@@ -322,6 +364,8 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
     await page.waitForLoadState('networkidle');
 
+    const homeBeforeDialogGeometry = await shellGeometry(page);
+
     const homeSettings = await profiler.run(
       'home_settings_dialog',
       async () => {
@@ -333,8 +377,14 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     );
     expectStructuralBudget(homeSettings);
     expectNoBrowserErrors(homeSettings);
+    const homeDuringDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(homeBeforeDialogGeometry, homeDuringDialogGeometry, 'Home settings open');
+    expectModalGutterMatchesScrollbar(homeBeforeDialogGeometry, homeDuringDialogGeometry, 'Home settings open');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('heading', { name: 'Home settings', exact: true })).toBeHidden();
+    const homeAfterDialogGeometry = await shellGeometry(page);
+    expectStableShellGeometry(homeBeforeDialogGeometry, homeAfterDialogGeometry, 'Home settings close');
+    expect(homeAfterDialogGeometry.modal_gutter_reserved, 'Home settings close: modal gutter class leaked').toBe(false);
 
     await page.goto('/admin/activity');
     await expect(page.getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();

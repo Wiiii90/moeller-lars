@@ -34,24 +34,19 @@ html:not(.dark) .fi-sidebar-nav {
 }
 
 /*
- * Do not reserve a permanent document or sidebar scrollbar gutter. The desktop
- * shell below is tied to the layout viewport and clips the deliberate classic-
- * scrollbar overhang horizontally.
+ * Do not reserve a permanent document or sidebar scrollbar gutter. Before a
+ * blocking Filament modal opens, admin-modal-scroll.js marks <html> only when
+ * the page already has a classic vertical scrollbar. Filament then keeps that
+ * existing gutter while it locks scrolling, without inventing space on short
+ * pages or applying its padding-right compensation.
  */
 html.fi,
 .fi-sidebar-nav {
     scrollbar-gutter: auto !important;
 }
 
-/*
- * Filament 5 locks the document by writing overflow:hidden and compensating
- * padding to <html> whenever a normal modal opens. The admin keeps its native
- * document scrollbar visible instead: removing that rail changes the viewport
- * width and makes the whole workspace jump on open/close.
- */
-html.fi:has(.fi-modal.fi-modal-open) {
-    overflow-y: scroll !important;
-    padding-right: 0 !important;
+html.fi.admin-modal-scrollbar-gutter {
+    scrollbar-gutter: stable !important;
 }
 
 /* Native select controls inherit the active browser color scheme. */

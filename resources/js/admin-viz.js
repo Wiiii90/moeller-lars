@@ -1,9 +1,12 @@
 import '../css/admin/selects.css';
 import './admin-selects.js';
+import { initializeAdminModalScrollbarGeometry } from './admin-modal-scroll.js';
 
 let storageRuntimePromise = null;
 let refreshFrame = null;
 let livewireHookRegistered = false;
+
+initializeAdminModalScrollbarGeometry();
 
 function hasStorageVisualization() {
     return document.querySelector('[data-admin-viz="storage-capacity"]') !== null;
