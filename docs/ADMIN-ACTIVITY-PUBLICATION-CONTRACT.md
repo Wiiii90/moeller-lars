@@ -27,6 +27,8 @@ The Activity workspace uses the shared six-unit admin alignment system, but sema
 
 Activity and Commits are two views of the same workspace and switch through the normal View control. Both retain the applicable Search/Area/Type/Date/Time filter context. Activity and Commits use bounded pagination with the shared page-size choices `25`, `50` and `100`.
 
+Both table views implement the shared trailing Selection contract: row checkboxes occupy the far-right rail, the visible select-all checkbox sits directly above them, and the Selection trigger's count badge shares that horizontal axis. The Activity multi-action menu supports Details for exactly one selected event, Undo for selected events that still expose safe receipts, and Clear selection. The Commits menu supports Details for exactly one selected Commit plus Restore or Revert only when exactly one selected Commit is semantically eligible for that operation. Selection never weakens the existing row/domain safety checks.
+
 ### Date and time filters
 
 Calendar and clock are not decorative secondary controls.
@@ -95,9 +97,9 @@ Commit hashes are application-level logical publication identities. They are not
 
 ## Full restorable snapshots
 
-`publication_version_rows` stores the complete tracked database snapshot for every new Commit as one JSONB payload per table row. Media binaries are **not** duplicated per version; snapshots reference the canonical MediaAsset identities/storage keys.
+Every new Commit still exposes a logically complete row snapshot through the transparent `publication_version_rows` interface, but those rows are not stored as repeated JSONB copies. `publication_version_row_manifests` stores each Commit/table/row identity and references immutable content-addressed payloads in `history_payloads`. Undo snapshot receipts reference the same `history_payloads` store through `snapshot_payload_id`, so identical JSON payloads shared by Undo and Publication are physically stored once.
 
-This project intentionally favors full database snapshots over reconstructing historical state from Activity deltas. The data set is small enough that simplicity and deterministic restore are more valuable than delta-chain compression.
+This project intentionally favors logically full snapshots over reconstructing historical state from Activity deltas. Content-addressed payload sharing is an implementation/storage optimization beneath that deterministic restore contract. Media binaries are **not** duplicated per version; snapshots reference canonical MediaAsset identities/storage keys.
 
 Historical checkpoint metadata that predates this snapshot system remains visible in Commit history. Such legacy checkpoints are explicitly `metadata only`; the UI must not offer Restore when a real compatible snapshot does not exist.
 
@@ -105,13 +107,16 @@ A retained snapshot is restorable only while its stored `schema_hash` matches th
 
 ## Commit permanence
 
-Commit metadata is permanent history.
+Commit metadata is permanent factual history.
 
-- There is no flush/delete action in the admin UI.
 - PostgreSQL rejects deletion of `publication_checkpoints` at the database boundary.
 - Reverting/restoring creates later working state and, once explicitly committed, a new Commit. Existing commits remain in the chain.
+- The explicit Storage action `Free storage now` may relinquish **restore payloads**, not Commit metadata. Released checkpoints remain visible as history with `snapshot_available=false` and cannot be offered as restorable versions.
+- The current LIVE checkpoint and the checkpoint referenced by `publication_working_context.source_publication_checkpoint_id` are protected from that reclaim action.
 
-The current implementation retains full version snapshots indefinitely together with commit history. If bounded snapshot retention is introduced later, it must preserve permanent commit metadata and must integrate with Media cleanup before any snapshot payload is pruned.
+Undo receipts are intentionally bounded recovery data rather than permanent history: actor-scoped receipts expire after 365 days, retain at most 5,000 receipts per user and are capped at 256 MiB logical payload budget per user. `Free storage now` may clear them immediately. Activity events remain append-only and are never deleted for storage reclamation.
+
+Shared `history_payloads` are garbage-collected only after neither a Publication manifest nor an Undo receipt references them. This lets recovery roots be released without duplicating or prematurely deleting payload data still required elsewhere.
 
 ## Working changes
 
@@ -205,7 +210,7 @@ Physical Media files may be deleted only when none of these still require the as
 - any retained restorable publication version;
 - canonical current media references.
 
-`PublicationMediaCleanupService` checks retained `publication_version_rows` before physical deletion. This ensures a historical version cannot become formally restorable while its binary assets have already disappeared.
+`PublicationMediaCleanupService` checks retained logical `publication_version_rows` before physical deletion. This ensures a retained historical version cannot remain formally restorable while its binary assets have already disappeared. When `Free storage now` releases an older snapshot root, cleanup may finally remove media that has no Working/LIVE/current-reference or other retained recovery dependency.
 
 ## Activity integration for publication controls
 

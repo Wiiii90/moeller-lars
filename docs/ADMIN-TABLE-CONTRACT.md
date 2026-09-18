@@ -119,7 +119,7 @@ When bulk selection exists:
 - the checkbox column itself does not receive redundant visible `Selection` text; an accessible label on the select-all checkbox is sufficient;
 - destructive bulk behavior retains the same domain safeguards as row actions.
 
-This count-to-checkbox axis applies to ordinary tables and table-like hierarchies, including views that preserve the same toolbar while switching between table modes. A contact-sheet/card surface such as Gallery, which has no single trailing table Selection column, does not invent a fake axis merely to satisfy this rule.
+This count-to-checkbox axis applies to ordinary tables and table-like hierarchies, including views that preserve the same toolbar while switching between table modes. Activity and Commits are concrete examples: both keep the same terminal Selection rail while their multi-action menu exposes only actions valid for the active history table and current selection. A contact-sheet/card surface such as Gallery, which has no single trailing table Selection column, does not invent a fake axis merely to satisfy this rule.
 
 At an intentional responsive breakpoint where controls or the table stack/reflow into a different composition, exact cross-row pixel alignment may relax. Before that breakpoint the desktop/table axis is invariant.
 

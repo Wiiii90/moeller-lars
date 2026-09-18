@@ -51,7 +51,7 @@ Canonical responsibilities:
 8. **General** — site identity, contact/social/global legal/public settings; no infrastructure secrets.
 9. **Analytics** — privacy-conscious Matomo reporting plus clearly separate operational aggregates.
 10. **Activity** — durable admin/editorial history.
-11. **Storage** — artist-facing site allowance/usage, not host-wide infrastructure capacity.
+11. **Storage** — artist-facing whole-site allowance/usage across media, generated variants and logical persistent application data; not host-wide infrastructure or raw PostgreSQL physical footprint.
 
 Persistent Preview / future logical Commit / Settings utilities may exist at shell level, but normal form persistence is independent of logical Commit/checkpoint concepts.
 
@@ -72,7 +72,8 @@ Durable principles:
 - shared accessible dialogs/overlays;
 - central Rich Text/media-selection technologies rather than page-local forks;
 - text settings persist on normal change/blur only when changed;
-- destructive/publication operations are explicit, authorized and audited.
+- destructive/publication operations are explicit, authorized and audited;
+- permanent Activity history is distinct from bounded/reclaimable recovery data such as Undo receipts and older Publication restore payloads.
 
 Browser acceptance may reject a technically functioning implementation for poor/inconsistent UI. A healthy container or green CI is not product acceptance.
 

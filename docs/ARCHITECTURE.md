@@ -214,6 +214,10 @@ See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
 
 A shell-level Commit groups already-persisted working changes into the public/live publication state. Commit/restore/reset/revert behavior continues through canonical Publication services rather than through Notifications. Publication failures or blockers may create persistent notifications when they remain actionable.
 
+Publication restore rows remain logically full snapshots, but their immutable JSON payloads are content-addressed in the shared `history_payloads` store. Publication manifests and Undo receipts may reference the same payload identity, so shared history data is stored once and garbage-collected only after all recovery roots release it. Activity itself remains permanent; Undo receipts and older Publication restore payloads are bounded/reclaimable recovery data.
+
+The Storage allowance is a whole-site logical contract: canonical originals, generated variants and logical persistent database/application data count toward site usage. Raw PostgreSQL physical-file size is an operational metric rather than billable site usage. Storage's explicit reclaim action may clear Undo and older unprotected restore roots, but must protect LIVE/current Working restore context and must never delete Activity history.
+
 ## Security and trust boundaries
 
 - public visitors read only published content/explicitly public media;
