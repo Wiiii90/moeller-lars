@@ -48,9 +48,15 @@ it('frees recovery roots while preserving Activity and protected publication sna
         'created_at' => now()->subMinute(),
     ]);
 
-    $releasable = reclaimCheckpoint($actor, 'releasable', now()->subSeconds(30));
-    $workingSource = reclaimCheckpoint($actor, 'working-source', now()->subSeconds(20));
-    $live = reclaimCheckpoint($actor, 'live', now()->subSeconds(10));
+    $existingLatest = PublicationCheckpoint::query()
+        ->orderByDesc('published_at')
+        ->orderByDesc('id')
+        ->firstOrFail();
+    $basePublishedAt = $existingLatest->getAttribute('published_at')->copy();
+
+    $releasable = reclaimCheckpoint($actor, 'releasable', $basePublishedAt->copy()->addSecond());
+    $workingSource = reclaimCheckpoint($actor, 'working-source', $basePublishedAt->copy()->addSeconds(2));
+    $live = reclaimCheckpoint($actor, 'live', $basePublishedAt->copy()->addSeconds(3));
 
     DB::table('publication_working_context')->where('id', 1)->update([
         'operation' => 'restore',
