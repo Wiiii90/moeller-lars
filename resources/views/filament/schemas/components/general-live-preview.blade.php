@@ -362,7 +362,16 @@
                 </span>
                 <span class="general-live-preview__address">
                     @if ($faviconThumbnail instanceof \App\Models\MediaVariant)
-                        <img src="{{ route('admin.media.variant', $faviconThumbnail) }}" alt="">
+                        <span class="general-live-preview__favicon" aria-hidden="true">
+                            <img
+                                src="{{ route('admin.media.variant', $faviconThumbnail) }}"
+                                alt=""
+                                width="10"
+                                height="10"
+                                loading="eager"
+                                decoding="async"
+                            >
+                        </span>
                     @endif
                     <span>{{ $previewHost }}{{ $previewPath }}</span>
                 </span>

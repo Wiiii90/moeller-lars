@@ -188,8 +188,13 @@
     border-top: 1px solid var(--admin-line);
 }
 
+.admin-favicon-control .fi-input-wrp,
 .admin-favicon-control .fi-select-input-btn {
     min-height: 4.5rem;
+}
+
+.admin-favicon-control .fi-select-input-btn {
+    height: 4.5rem;
     padding-inline-end: .75rem !important;
     align-items: center;
     background-image: none !important;
@@ -198,6 +203,7 @@
 .admin-favicon-control .fi-select-input-value-label {
     display: flex;
     min-width: 0;
+    min-height: 3.25rem;
     gap: .7rem;
     align-items: center;
 }

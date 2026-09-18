@@ -248,65 +248,69 @@ final class General extends Page
                     ->extraAttributes(['class' => 'admin-visual-stage-block'])
                     ->columnSpanFull(),
 
-                View::make('filament.schemas.components.general-separator')
-                    ->columnSpanFull(),
+                Group::make([
+                    View::make('filament.schemas.components.admin-section-heading')
+                        ->viewData([
+                            'label' => 'Contact',
+                            'class' => 'general-form-section-heading',
+                        ])
+                        ->columnSpanFull(),
 
-                View::make('filament.schemas.components.admin-section-heading')
-                    ->viewData([
-                        'label' => 'Contact',
-                        'class' => 'general-form-section-heading',
+                    Group::make([
+                        TextInput::make('public_email')
+                            ->label(self::publicEmailLabel())
+                            ->email()
+                            ->maxLength(254)
+                            ->nullable()
+                            ->lazy()
+                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                            ->afterStateUpdated(self::persist('public_email')),
+                        TextInput::make('contact_recipient_email')
+                            ->label(self::contactRecipientLabel())
+                            ->email()
+                            ->maxLength(254)
+                            ->nullable()
+                            ->lazy()
+                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                            ->afterStateUpdated(self::persist('contact_recipient_email')),
                     ])
+                        ->columns(2)
+                        ->extraAttributes(['class' => 'general-two-column-settings general-contact-settings'])
+                        ->columnSpanFull(),
+                ])
+                    ->columns(1)
+                    ->extraAttributes(['class' => 'general-settings-section'])
                     ->columnSpanFull(),
 
                 Group::make([
-                    TextInput::make('public_email')
-                        ->label(self::publicEmailLabel())
-                        ->email()
-                        ->maxLength(254)
-                        ->nullable()
-                        ->lazy()
-                        ->extraInputAttributes(self::commitOnEnterAttributes())
-                        ->afterStateUpdated(self::persist('public_email')),
-                    TextInput::make('contact_recipient_email')
-                        ->label(self::contactRecipientLabel())
-                        ->email()
-                        ->maxLength(254)
-                        ->nullable()
-                        ->lazy()
-                        ->extraInputAttributes(self::commitOnEnterAttributes())
-                        ->afterStateUpdated(self::persist('contact_recipient_email')),
-                ])
-                    ->columns(2)
-                    ->extraAttributes(['class' => 'general-two-column-settings general-contact-settings'])
-                    ->columnSpanFull(),
+                    View::make('filament.schemas.components.admin-section-heading')
+                        ->viewData([
+                            'label' => 'Legal',
+                            'class' => 'general-form-section-heading',
+                        ])
+                        ->columnSpanFull(),
 
-                View::make('filament.schemas.components.general-separator')
-                    ->columnSpanFull(),
-
-                View::make('filament.schemas.components.admin-section-heading')
-                    ->viewData([
-                        'label' => 'Legal',
-                        'class' => 'general-form-section-heading',
+                    Group::make([
+                        TextInput::make('default_media_copyright_notice')
+                            ->label(self::defaultCopyrightLabel())
+                            ->maxLength(500)
+                            ->nullable()
+                            ->lazy()
+                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                            ->afterStateUpdated(self::persist('default_media_copyright_notice')),
+                        TextInput::make('legal_disclaimer')
+                            ->label(self::legalDisclaimerLabel())
+                            ->nullable()
+                            ->lazy()
+                            ->extraInputAttributes(self::commitOnEnterAttributes())
+                            ->afterStateUpdated(self::persist('legal_disclaimer')),
                     ])
-                    ->columnSpanFull(),
-
-                Group::make([
-                    TextInput::make('default_media_copyright_notice')
-                        ->label(self::defaultCopyrightLabel())
-                        ->maxLength(500)
-                        ->nullable()
-                        ->lazy()
-                        ->extraInputAttributes(self::commitOnEnterAttributes())
-                        ->afterStateUpdated(self::persist('default_media_copyright_notice')),
-                    TextInput::make('legal_disclaimer')
-                        ->label(self::legalDisclaimerLabel())
-                        ->nullable()
-                        ->lazy()
-                        ->extraInputAttributes(self::commitOnEnterAttributes())
-                        ->afterStateUpdated(self::persist('legal_disclaimer')),
+                        ->columns(2)
+                        ->extraAttributes(['class' => 'general-two-column-settings general-legal-settings'])
+                        ->columnSpanFull(),
                 ])
-                    ->columns(2)
-                    ->extraAttributes(['class' => 'general-two-column-settings general-legal-settings'])
+                    ->columns(1)
+                    ->extraAttributes(['class' => 'general-settings-section'])
                     ->columnSpanFull(),
             ])
             ->record($this->generalSettingsRecord())
