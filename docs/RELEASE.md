@@ -44,6 +44,18 @@ A local container being healthy means only that the candidate boots. It is not b
 
 Do not trigger extra/manual canonical verification runs merely to inspect a CSS/Blade/editorial-workspace iteration unless a concrete risk warrants it. Normal pushes to `dev` already invoke the configured verification workflow.
 
+## Accepted candidate promotion to `main`
+
+When an exact `dev` candidate has browser/product acceptance and is intended to become the release candidate:
+
+1. finish durable documentation and acceptance-issue bookkeeping on that exact integration line;
+2. promote the accepted `dev` head to protected `main` through the normal repository gate;
+3. let the canonical `release.yml` verification on `main` qualify and publish the image for that exact `main` SHA;
+4. deploy isolated Validation from that exact `main` SHA/immutable image digest through the `server-platform` contract;
+5. verify `/app-release.json`, health, migrations/media and the remaining Validation/RC checks against the deployed candidate.
+
+Do not rebuild the same release candidate from a different branch after promotion. A branch/SHA preview can be useful before `main`, but it is not the release-qualified artifact used for final candidate Validation.
+
 ## Fast protected Validation preview loop
 
 When protected Validation is required:
@@ -55,7 +67,7 @@ When protected Validation is required:
 5. after success use the existing platform helper printed by that script;
 6. perform browser acceptance against protected Validation.
 
-The preview workflow is not release qualification. Do not invent host commands/topology outside the existing platform contract.
+The preview workflow is not release qualification. Once a candidate has been accepted and promoted to `main`, use the canonical verified `main` release image for release-candidate Validation instead of rebuilding it through `preview.yml`. Do not invent host commands/topology outside the existing platform contract.
 
 Worker integration and branch deletion follow `AGENTS.md`. A protected Validation preview is a separate explicitly authorized operation.
 

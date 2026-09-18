@@ -81,9 +81,9 @@ Small browser defects may be fixed directly on `dev` when the user explicitly ch
 
 ## Releases
 
-Daily integration happens on `dev`; `main` is the protected acceptance/release branch. See [docs/RELEASE.md](docs/RELEASE.md) for the canonical CI, image publication and Validation contract.
+Daily integration happens on `dev`. Once a coherent browser/product milestone is accepted, the exact accepted `dev` head is promoted to protected `main` through the normal integration/release gates. `main` is the canonical source for release-image publication and release-candidate Validation; branch/SHA preview images remain pre-release evidence only. See [docs/RELEASE.md](docs/RELEASE.md) for the canonical CI, image publication and Validation contract.
 
-A green CI run, a local browser candidate or a published preview image does not itself authorize a Production deployment.
+A green CI run, a local browser candidate, a published preview image or a successful Validation deployment does not itself authorize a Production deployment.
 
 ## Documentation
 

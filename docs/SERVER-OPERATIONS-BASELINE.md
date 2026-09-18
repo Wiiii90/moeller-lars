@@ -31,6 +31,8 @@ It may share physical infrastructure with Production only when platform isolatio
 
 Validation may use a deliberately restricted read-only Matomo reporting identity when required for dashboard review while browser tracking is disabled. That does not permit shared application persistence.
 
+For a browser/product-accepted release candidate, Validation should run the exact verified `main` release image identified by Git SHA and immutable digest. Branch/SHA preview images remain useful for pre-release investigation but do not replace release-candidate qualification.
+
 ## Application-owned contract
 
 `moeller-lars` owns:

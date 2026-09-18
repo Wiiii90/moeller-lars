@@ -1,6 +1,6 @@
 # Migration and cutover plan
 
-The application is no longer in an early build phase. Remaining work is protected-state reconciliation, browser/editorial acceptance, production-readiness gating, cutover and eventual legacy retirement.
+The application is no longer in an early build phase. The current v0.3 admin/browser product-composition gate is accepted; remaining release work is exact-candidate promotion to `main`, isolated Validation/release-candidate qualification, production-readiness gating, cutover and eventual legacy retirement.
 
 Production/Validation placement, backups, deployment and rollback are owned by [`Wiiii90/server-platform`](https://github.com/Wiiii90/server-platform).
 
@@ -102,21 +102,19 @@ Validation remains isolated from Production writable state: separate PostgreSQL,
 
 Validation may use restricted read-only Matomo Reporting while tracking stays disabled.
 
-## 7. Current browser/editorial reconciliation gate
+## 7. Application acceptance and candidate promotion
 
-Before release-candidate qualification, admin/browser work may be reconciled on a temporary combined branch and reviewed locally/protected Validation.
+The current v0.3 admin/browser composition has completed its product-acceptance pass. Historical issue comments describing older rejected browser candidates are evidence of those earlier states, not instructions to recreate defects that are no longer present in the accepted current candidate.
 
-The important rule is **one coherent browser cycle**, not one deployment/build per worker:
+For the release-candidate line:
 
-1. collect complete browser feedback for a review slice;
-2. create focused worker side branches from an exact base where parallelism is useful;
-3. independently review actual diffs;
-4. reconcile accepted work and shared-file unions;
-5. run required forward migration(s) against isolated preview data;
-6. build/recreate one combined browser candidate;
-7. continue browser acceptance.
+1. keep the accepted candidate on the exact current `dev` integration line while durable documentation and issue bookkeeping are completed;
+2. promote that exact accepted `dev` head to protected `main`;
+3. let the canonical `main` release workflow verify and publish the immutable image for the exact promoted SHA;
+4. deploy isolated Validation from that same `main` SHA/image digest through the platform contract;
+5. perform the remaining release-candidate/environment checks there.
 
-A technically running candidate is not product accepted. Current browser feedback can reject UI that is functionally present but inconsistent/unusable.
+Further local/protected browser-reconciliation cycles remain valid when a concrete regression or later milestone changes presentation, but they are not a standing blocker once the accepted milestone composition is complete. A technically running candidate still does not establish future browser/product acceptance by itself.
 
 Detailed admin UI expectations are in [`../ui-skills.md`](../ui-skills.md).
 

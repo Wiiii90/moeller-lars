@@ -4,7 +4,7 @@ The documents in this directory are split by purpose so current application cont
 
 ## Current application contracts
 
-These describe the durable application architecture/behavior that current accepted work is converging on and must be reconciled before release:
+These describe the durable current application architecture and behavior. Browser/product milestone acceptance, release-candidate promotion and environment-specific evidence are tracked separately through the current review/release workflow:
 
 - [PROJECT-CHARTER.md](PROJECT-CHARTER.md) — product scope and public/admin principles
 - [ARCHITECTURE.md](ARCHITECTURE.md) — application boundaries, typed site structure and ownership
@@ -45,7 +45,7 @@ GitHub Issues and the current browser/orchestration review are the source of tru
 
 A source-reviewed or technically running reconciliation candidate is not automatically product accepted. A durable contract may be implemented on a temporary browser branch or directly on explicitly authorized `dev` before it reaches `main`; documentation should describe the intended/current contract without pretending that transient browser acceptance is complete.
 
-Browser feedback from the exact current candidate overrides stale acceptance wording. Temporary worker branches, candidate SHAs and local container state belong in the current continuation handoff, not in timeless architecture docs.
+Browser feedback from the exact current candidate overrides stale acceptance wording. Once an exact `dev` candidate is browser/product accepted, stale issue history must not be treated as proof that already-resolved UI defects still exist; update/close the affected acceptance issues and promote that exact candidate through the `main`/release gates. Temporary worker branches, candidate SHAs and local container state belong in the current continuation handoff, not in timeless architecture docs.
 
 ## Migration and cutover evidence
 
