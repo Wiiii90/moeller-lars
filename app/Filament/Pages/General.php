@@ -152,6 +152,8 @@ final class General extends Page
                                         PublicAppearance::MODE_SOLID => 'Solid',
                                         PublicAppearance::MODE_GRADIENT => 'Linear gradient',
                                     ])
+                                    ->placeholder(null)
+                                    ->selectablePlaceholder(false)
                                     ->native()
                                     ->required()
                                     ->live()

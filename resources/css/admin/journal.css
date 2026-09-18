@@ -12,15 +12,18 @@
     min-width: 76rem !important;
 }
 
-/* Blog follows the same six-unit contract as the other editorial tables. The
- * first six columns consume exactly four units; Actions + trailing Selection
- * own the final two units. */
+/* Blog needs a wider action rail than Exhibitions: content ends on the 3/6
+ * metric line, then Actions + trailing Selection own the final three units. */
 .journal-table--blog col:nth-child(4) {
-    width: var(--admin-table-one-half-units);
+    width: var(--admin-table-one-unit);
+}
+
+.journal-table--blog col:nth-child(6) {
+    width: var(--admin-table-half-unit);
 }
 
 .journal-table col.journal-table__actions--blog {
-    width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width));
+    width: calc(50% - var(--admin-table-selection-width));
 }
 
 /* Exhibitions keeps the colgroup's canonical four-content/two-utility split:
@@ -38,14 +41,13 @@
     gap: .06rem !important;
 }
 
-/* Blog has seven actions inside the fixed two-unit rail. Give each action its
- * real intrinsic width and distribute the remaining space between slots. This
- * prevents labels from painting across neighboring tracks while keeping every
- * canonical icon + label visible. */
+/* Blog has seven actions and deliberately owns three metric units. Each action
+ * keeps its intrinsic label width while the spare rail space is distributed
+ * evenly, so no action paints into the next slot. */
 .journal-row-actions--blog {
-    grid-template-columns: repeat(7, max-content);
-    gap: .1rem !important;
-    justify-content: space-between;
+    grid-template-columns: repeat(7, minmax(max-content, 1fr));
+    gap: .28rem !important;
+    justify-content: stretch;
 }
 
 .journal-row-actions--exhibitions {
@@ -80,8 +82,8 @@
 }
 
 .journal-row-actions.journal-row-actions--blog .admin-action {
-    width: auto;
-    padding-inline: 0;
+    width: 100%;
+    padding-inline: .06rem;
 }
 
 .journal-row-actions.journal-row-actions--blog .admin-action--with-icon {

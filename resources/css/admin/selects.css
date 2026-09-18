@@ -16,15 +16,19 @@
     max-width: 100%;
 }
 
-/* Filament form controls are full-width fields. The enhanced select trigger is
- * the one visible control baseline; the hidden native wrapper must not draw a
- * second, longer underline behind it. */
+/* Filament/native single-selects share one visible baseline. The enhanced
+ * trigger fills the field wrapper, and the hidden native wrapper never paints
+ * a second, longer underline behind it. This applies to General as well as the
+ * shared admin control fields. */
+.fi-input-wrp:has(.admin-select) .admin-select,
 .admin-control-field .admin-select {
     width: 100%;
     min-width: 0;
     flex: 1 1 100%;
 }
 
+.fi-input-wrp:has(.admin-select),
+.admin-general .fi-input-wrp:has(.admin-select),
 .admin-control-field .fi-input-wrp:has(.admin-select) {
     border-bottom: 0 !important;
 }

@@ -191,8 +191,35 @@
 }
 
 .admin-dashboard__overview-column:nth-child(2) {
+    position: relative;
     padding-right: var(--admin-stage-pane-space) !important;
     padding-left: var(--admin-stage-pane-space) !important;
+}
+
+.admin-dashboard__overview-column:nth-child(2) > :is(.admin-dashboard__overview-head, .admin-dashboard__facts) {
+    position: relative;
+    z-index: 2;
+}
+
+.admin-dashboard__overview-column:nth-child(2) > .admin-dashboard__activity-visual {
+    position: absolute;
+    z-index: 1;
+    top: var(--admin-stage-divider-inset);
+    right: var(--admin-stage-pane-space);
+    bottom: var(--admin-stage-divider-inset);
+    left: var(--admin-stage-pane-space);
+    width: auto;
+    height: auto !important;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) var(--activity-clock-caption-reserve) !important;
+    gap: .35rem;
+    place-items: center;
+}
+
+.admin-dashboard__overview-column:nth-child(2) > .admin-dashboard__activity-visual::after {
+    display: block;
+    min-height: var(--activity-clock-caption-reserve);
+    content: "";
 }
 
 .admin-dashboard__overview-column:last-child {

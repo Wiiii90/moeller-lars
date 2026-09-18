@@ -437,7 +437,15 @@
 
 @media (min-width: 821px) {
     .admin-hierarchy--pages {
-        overflow-x: visible;
+        overflow-x: auto;
+        overflow-y: visible;
+        scrollbar-width: none;
+    }
+
+    .admin-hierarchy--pages::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
     }
 }
 

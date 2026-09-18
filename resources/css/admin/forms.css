@@ -388,6 +388,7 @@
 
 .admin-help {
     position: relative;
+    z-index: 120;
     display: inline-flex;
     margin-inline-start: .2rem;
     align-items: center;
@@ -429,7 +430,7 @@
 
 .admin-help__popover {
     position: absolute;
-    z-index: 30;
+    z-index: 1000;
     top: calc(100% + .35rem);
     right: 0;
     width: min(18rem, 72vw);
