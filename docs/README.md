@@ -17,6 +17,7 @@ These describe the durable current application architecture and behavior. Browse
 - [ADMIN-PASSWORD-POLICY.md](ADMIN-PASSWORD-POLICY.md) — shared environment-aware password policy and browser-local generator contract
 - [ADMIN-PERFORMANCE.md](ADMIN-PERFORMANCE.md) — admin performance budget and investigation rules
 - [ADMIN-PROFILING.md](ADMIN-PROFILING.md) — canonical local Debugbar/DevTools/request-classification and on-demand callgraph workflow
+- [PULSE-REPORT.md](PULSE-REPORT.md) — read-only Markdown/JSON export of retained Laravel Pulse aggregates, including schema, interpretation, privacy, retention and Validation usage
 - [ADMIN-CONTROL-CONTRACT.md](ADMIN-CONTROL-CONTRACT.md) — canonical admin form/control rendering and persistence semantics
 - [ADMIN-DIALOG-CONTRACT.md](ADMIN-DIALOG-CONTRACT.md) — shared native Filament dialog types, chrome, lifecycle and edit/command semantics
 - [ADMIN-TABLE-CONTRACT.md](ADMIN-TABLE-CONTRACT.md) — canonical ordinary-table role order, alignment, typography, actions and trailing Selection

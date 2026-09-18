@@ -181,6 +181,8 @@ The `/pulse` dashboard is protected by the `viewPulse` authorization gate and is
 
 The application repository owns Pulse dependency/configuration, schema and authorization. Long-running `pulse:check`, process supervision, runtime environment values and deployment topology remain platform-owned. Enable Pulse first on Validation, inspect overhead/data quality, then decide the Production runtime setting. Do not claim that a Pulse aggregate identifies the root cause of one slow browser action; reproduce that action through Playwright/DevTools/Debugbar when exact attribution is required.
 
+For a copy/paste or machine-readable snapshot of retained aggregate telemetry, use the application-owned `php artisan pulse:report --hours=24` command. On Validation, the platform wrapper is `server-platform-moeller-lars-validation pulse-report --hours=24`. See [PULSE-REPORT.md](PULSE-REPORT.md) for supported options, schema, aggregate semantics, privacy limits and read-only guarantees.
+
 ## Evidence record
 
 For a meaningful investigation, keep a compact record containing:
