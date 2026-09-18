@@ -51,15 +51,30 @@
     grid-column: span 2;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-2 > :first-child {
+/* An explicit search span is authoritative. Keep these selectors on the same
+ * scoped specificity level as the filter-count defaults above so their later
+ * declaration reliably overrides the inferred width. */
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+).admin-data-controls--six-cell-search-2 > :first-child {
     grid-column: span 2;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-3 > :first-child {
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+).admin-data-controls--six-cell-search-3 > :first-child {
     grid-column: span 3;
 }
 
-.admin-data-controls--six-cell.admin-data-controls--six-cell-search-4 > :first-child {
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+).admin-data-controls--six-cell-search-4 > :first-child {
     grid-column: span 4;
 }
 
