@@ -49,10 +49,15 @@ Do not trigger extra/manual canonical verification runs merely to inspect a CSS/
 When an exact `dev` candidate has browser/product acceptance and is intended to become the release candidate:
 
 1. finish durable documentation and acceptance-issue bookkeeping on that exact integration line;
-2. promote the accepted `dev` head to protected `main` through the normal repository gate;
-3. let the canonical `release.yml` verification on `main` qualify and publish the image for that exact `main` SHA;
-4. deploy isolated Validation from that exact `main` SHA/immutable image digest through the `server-platform` contract;
-5. verify `/app-release.json`, health, migrations/media and the remaining Validation/RC checks against the deployed candidate.
+2. create a temporary promotion branch `chore/promote-<short-dev-sha>-to-main` from the exact accepted `dev` SHA;
+3. open the protected-main PR from that temporary branch to `main`; never use permanent `dev` itself as the PR head;
+4. merge only after the required PR gates pass, then allow/delete only the temporary promotion branch;
+5. verify after merge that permanent `dev` still exists and that the intended accepted `dev` commits are reachable from the resulting `main`; reconcile concurrent branch advances without force/reset or history loss;
+6. let the canonical `release.yml` verification on `main` qualify and publish the image for that exact `main` SHA;
+7. deploy isolated Validation from that exact `main` SHA/immutable image digest through the `server-platform` contract;
+8. verify `/app-release.json`, health, migrations/media and the remaining Validation/RC checks against the deployed candidate.
+
+The temporary promotion branch exists specifically because merged PR head branches may be automatically deleted by repository settings. Permanent `dev` must never be exposed to that cleanup path.
 
 Do not rebuild the same release candidate from a different branch after promotion. A branch/SHA preview can be useful before `main`, but it is not the release-qualified artifact used for final candidate Validation.
 

@@ -43,6 +43,15 @@ Do not create archive branches/tags or persistent repair/reconcile/integration/b
 Normal flow: named scope branch -> source review -> `dev` -> browser/product acceptance
 and release qualification -> `main`. Integration does not itself establish browser acceptance.
 
+Promotion from `dev` to `main` must never use permanent `dev` itself as the pull-request head.
+Create a temporary branch such as `chore/promote-<short-dev-sha>-to-main` from the exact accepted
+`dev` SHA, open the PR from that temporary branch to `main`, and delete only that temporary
+branch after merge. This keeps repository auto-delete behavior away from permanent `dev`.
+Immediately after promotion, verify that both permanent branches still exist and that every
+intended `dev` commit is reachable from the resulting `main`. Never force/reset `dev` to repair
+a promotion; if either branch advanced concurrently, reconcile the histories without dropping
+those commits.
+
 Remote workers start from the exact `dev` SHA named in their prompt and use only their
 assigned branch. They never push to `main` or deploy Validation without explicit instruction.
 For parallel workers, freeze one shared dev base, review each base-to-head net diff, then
