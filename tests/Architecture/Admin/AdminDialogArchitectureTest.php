@@ -59,8 +59,8 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain("html.fi,\n.fi-sidebar-nav {\n    scrollbar-gutter: auto !important;\n}")
         ->toContain('html.fi.admin-modal-existing-scrollbar')
         ->toContain('overflow-y: scroll !important;')
-        ->toContain('padding-right: 0 !important;')
-        ->not->toContain('scrollbar-gutter: stable !important')
+        ->toContain('scrollbar-gutter: stable !important;')
+        ->not->toContain('padding-right: 0 !important;')
         ->not->toContain('html.fi:has(.fi-modal.fi-modal-open)');
 
     expect($modalScroll)

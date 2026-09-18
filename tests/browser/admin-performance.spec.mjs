@@ -252,7 +252,7 @@ function expectModalScrollbarMode(before, during, context) {
     expect(during.has_vertical_overflow, `${context}: document stopped being vertically scrollable`).toBe(true);
     expect(during.overflow_y, `${context}: existing scrollbar path is not kept visible`).toBe('scroll');
     expect(during.padding_right, `${context}: Filament padding compensation leaked through`).toBe('0px');
-    expect(during.scrollbar_gutter, `${context}: empty stable gutter was introduced`).toBe('auto');
+    expect(during.scrollbar_gutter, `${context}: Filament did not detect the protected scrollbar gutter`).toBe('stable');
   }
 }
 

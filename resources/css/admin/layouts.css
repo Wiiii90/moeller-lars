@@ -37,8 +37,8 @@ html:not(.dark) .fi-sidebar-nav {
  * Do not reserve a permanent document or sidebar scrollbar gutter. Before a
  * blocking Filament modal opens, admin-modal-scroll.js marks <html> only when
  * the page already has a classic vertical scrollbar. In that case the real
- * scrollbar remains visible and Filament's padding compensation is neutralized.
- * Short pages keep Filament's native no-scrollbar lock unchanged.
+ * scrollbar remains visible. The stable gutter also makes Filament skip its own
+ * padding-right compensation entirely. Short pages keep Filament's native lock.
  */
 html.fi,
 .fi-sidebar-nav {
@@ -47,8 +47,7 @@ html.fi,
 
 html.fi.admin-modal-existing-scrollbar {
     overflow-y: scroll !important;
-    padding-right: 0 !important;
-    scrollbar-gutter: auto !important;
+    scrollbar-gutter: stable !important;
 }
 
 /* Native select controls inherit the active browser color scheme. */
