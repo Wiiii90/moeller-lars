@@ -579,14 +579,24 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
     const tickerRoot = document.querySelector('[data-admin-notification-ticker]');
     const main = document.querySelector('.fi-main');
     const user = document.querySelector('.fi-user-menu-trigger');
-    const headerRect = header?.getBoundingClientRect();
+    const stickyOwner = (() => {
+      let node = tickerRoot;
+      while (node instanceof HTMLElement) {
+        const position = getComputedStyle(node).position;
+        if (position === 'sticky' || position === 'fixed') return node;
+        node = node.parentElement;
+      }
+
+      return null;
+    })();
+    const stickyRect = stickyOwner?.getBoundingClientRect();
     const tickerRect = tickerRoot?.getBoundingClientRect();
     const mainRect = main?.getBoundingClientRect();
     const userRect = user?.getBoundingClientRect();
 
     return {
-      header_position: header ? getComputedStyle(header).position : null,
-      header_top: headerRect?.top ?? null,
+      sticky_owner_position: stickyOwner ? getComputedStyle(stickyOwner).position : null,
+      sticky_owner_top: stickyRect?.top ?? null,
       ticker_left: tickerRect?.left ?? null,
       ticker_right: tickerRect?.right ?? null,
       ticker_width: tickerRect?.width ?? null,
@@ -596,9 +606,9 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
     };
   });
 
-  expect(['sticky', 'fixed']).toContain(desktop.header_position);
-  expect(desktop.header_top).not.toBeNull();
-  expect(Math.abs(desktop.header_top)).toBeLessThanOrEqual(1);
+  expect(['sticky', 'fixed']).toContain(desktop.sticky_owner_position);
+  expect(desktop.sticky_owner_top).not.toBeNull();
+  expect(Math.abs(desktop.sticky_owner_top)).toBeLessThanOrEqual(1);
   expect(desktop.ticker_width).toBeGreaterThan(100);
   expect(desktop.ticker_left).toBeGreaterThanOrEqual(desktop.main_left - 1);
   expect(desktop.ticker_right).toBeLessThanOrEqual(desktop.main_right + 1);
@@ -638,14 +648,24 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
     const burgerButton = document.querySelector('.fi-topbar-open-sidebar-btn:not([style*="display: none"]), .fi-topbar-close-sidebar-btn:not([style*="display: none"])');
     const user = document.querySelector('.fi-user-menu-trigger');
     const body = document.querySelector('[data-admin-notification-body]');
-    const headerRect = header?.getBoundingClientRect();
+    const stickyOwner = (() => {
+      let node = tickerRoot;
+      while (node instanceof HTMLElement) {
+        const position = getComputedStyle(node).position;
+        if (position === 'sticky' || position === 'fixed') return node;
+        node = node.parentElement;
+      }
+
+      return null;
+    })();
+    const stickyRect = stickyOwner?.getBoundingClientRect();
     const tickerRect = tickerRoot?.getBoundingClientRect();
     const burgerRect = burgerButton?.getBoundingClientRect();
     const userRect = user?.getBoundingClientRect();
 
     return {
-      header_position: header ? getComputedStyle(header).position : null,
-      header_top: headerRect?.top ?? null,
+      sticky_owner_position: stickyOwner ? getComputedStyle(stickyOwner).position : null,
+      sticky_owner_top: stickyRect?.top ?? null,
       burger_left: burgerRect?.left ?? null,
       burger_right: burgerRect?.right ?? null,
       ticker_left: tickerRect?.left ?? null,
@@ -657,8 +677,9 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
     };
   });
 
-  expect(['sticky', 'fixed']).toContain(mobile.header_position);
-  expect(Math.abs(mobile.header_top)).toBeLessThanOrEqual(1);
+  expect(['sticky', 'fixed']).toContain(mobile.sticky_owner_position);
+  expect(mobile.sticky_owner_top).not.toBeNull();
+  expect(Math.abs(mobile.sticky_owner_top)).toBeLessThanOrEqual(1);
   expect(mobile.burger_left).not.toBeNull();
   expect(mobile.user_right).not.toBeNull();
   expect(mobile.ticker_width).toBeGreaterThan(80);
