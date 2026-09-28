@@ -968,11 +968,21 @@ final class ListMediaAssets extends Page
                 $this->removeSelection($assetId);
                 $this->loadLibrary();
                 $this->refreshStorageOverviewAfterMutation();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()
-                    ->title('File cleanup failed')
-                    ->body('The file was removed from Storage, but stored file cleanup could not be completed.')
-                    ->danger()
-                    ->send();
+                $actor = auth()->user();
+                if ($actor instanceof \App\Models\User) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->both(
+                        user: $actor,
+                        sourceId: 'media-cleanup:asset-'.$assetId,
+                        title: 'File cleanup failed',
+                        body: 'The file was removed from Storage, but stored file cleanup could not be completed.',
+                        status: 'danger',
+                        context: [
+                            'type' => 'media.cleanup_failure',
+                            'entity_type' => 'media_asset',
+                            'entity_id' => $assetId,
+                        ],
+                    );
+                }
 
                 return true;
             }
