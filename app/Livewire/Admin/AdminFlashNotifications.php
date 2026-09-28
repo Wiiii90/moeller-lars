@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Admin;
 
-use Filament\Notifications\Livewire\Notifications;
+use Filament\Livewire\Notifications;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 
