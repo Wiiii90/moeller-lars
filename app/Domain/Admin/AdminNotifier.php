@@ -14,6 +14,16 @@ final class AdminNotifier
     private const STATUSES = ['success', 'warning', 'danger', 'info'];
 
     /**
+     * Fluent transient notification builder for framework hooks that require a
+     * Filament Notification instance. Presentation is still owned by the
+     * project ticker component.
+     */
+    public function transient(): Notification
+    {
+        return Notification::make();
+    }
+
+    /**
      * Immediate feedback only. This deliberately does not persist an
      * AdminNotification row.
      */
@@ -24,7 +34,7 @@ final class AdminNotifier
     ): void {
         [$title, $body, $status] = $this->normalizeMessage($title, $body, $status);
 
-        $notification = Notification::make()->title($title);
+        $notification = $this->transient()->title($title);
         if ($body !== null) {
             $notification->body($body);
         }
