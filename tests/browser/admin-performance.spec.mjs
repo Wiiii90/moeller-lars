@@ -534,3 +534,135 @@ test('profiles representative warmed admin interactions', async ({ page }, testI
     profiler.write(process.env.GITHUB_SHA ?? 'local');
   }
 });
+
+
+test('keeps the notification ticker inside the sticky header on desktop and smartphone', async ({ page }) => {
+  const email = process.env.PLAYWRIGHT_ADMIN_EMAIL;
+  const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD;
+  expect(email).toBeTruthy();
+  expect(password).toBeTruthy();
+
+  await page.goto('/admin/login');
+  await page.locator('input[type="email"]').fill(email);
+  await page.locator('input[type="password"]').fill(password);
+  await page.getByRole('button', { name: /sign in/i }).click();
+  await expect(page).toHaveURL(/\/admin\/dashboard(?:[/?#]|$)/);
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible();
+
+  const ticker = page.locator('[data-admin-notification-ticker]');
+  const topbar = page.locator('.fi-topbar');
+  const userMenu = page.locator('.fi-user-menu-trigger');
+
+  await expect(topbar).toBeVisible();
+  await expect(ticker).toBeAttached();
+  await expect(userMenu).toBeVisible();
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new CustomEvent('admin-notification-ticker', {
+      detail: {
+        notification: {
+          id: 'browser-acceptance-desktop',
+          title: 'Changes saved',
+          body: 'Activity now records the precise values.',
+          status: 'success',
+          duration: 8_000,
+        },
+      },
+    }));
+  });
+
+  await expect(ticker).toHaveClass(/is-active/);
+  await expect(ticker.getByText('Changes saved', { exact: true })).toBeVisible();
+
+  const desktop = await page.evaluate(() => {
+    const header = document.querySelector('.fi-topbar');
+    const tickerRoot = document.querySelector('[data-admin-notification-ticker]');
+    const main = document.querySelector('.fi-main');
+    const user = document.querySelector('.fi-user-menu-trigger');
+    const headerRect = header?.getBoundingClientRect();
+    const tickerRect = tickerRoot?.getBoundingClientRect();
+    const mainRect = main?.getBoundingClientRect();
+    const userRect = user?.getBoundingClientRect();
+
+    return {
+      header_position: header ? getComputedStyle(header).position : null,
+      header_top: headerRect?.top ?? null,
+      ticker_left: tickerRect?.left ?? null,
+      ticker_right: tickerRect?.right ?? null,
+      ticker_width: tickerRect?.width ?? null,
+      main_left: mainRect?.left ?? null,
+      main_right: mainRect?.right ?? null,
+      user_left: userRect?.left ?? null,
+    };
+  });
+
+  expect(['sticky', 'fixed']).toContain(desktop.header_position);
+  expect(desktop.header_top).not.toBeNull();
+  expect(Math.abs(desktop.header_top)).toBeLessThanOrEqual(1);
+  expect(desktop.ticker_width).toBeGreaterThan(100);
+  expect(desktop.ticker_left).toBeGreaterThanOrEqual(desktop.main_left - 1);
+  expect(desktop.ticker_right).toBeLessThanOrEqual(desktop.main_right + 1);
+  expect(desktop.ticker_right).toBeLessThanOrEqual(desktop.user_left + 1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible();
+
+  const mobileTicker = page.locator('[data-admin-notification-ticker]');
+  const burger = page.locator('.fi-topbar-open-sidebar-btn:visible, .fi-topbar-close-sidebar-btn:visible').first();
+  const mobileUserMenu = page.locator('.fi-user-menu-trigger');
+
+  await expect(burger).toBeVisible();
+  await expect(mobileUserMenu).toBeVisible();
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new CustomEvent('admin-notification-ticker', {
+      detail: {
+        notification: {
+          id: 'browser-acceptance-mobile',
+          title: 'Page updated',
+          body: 'This body is intentionally hidden on narrow screens.',
+          status: 'success',
+          duration: 8_000,
+        },
+      },
+    }));
+  });
+
+  await expect(mobileTicker).toHaveClass(/is-active/);
+  await expect(mobileTicker.getByText('Page updated', { exact: true })).toBeVisible();
+
+  const mobile = await page.evaluate(() => {
+    const header = document.querySelector('.fi-topbar');
+    const tickerRoot = document.querySelector('[data-admin-notification-ticker]');
+    const burgerButton = document.querySelector('.fi-topbar-open-sidebar-btn:not([style*="display: none"]), .fi-topbar-close-sidebar-btn:not([style*="display: none"])');
+    const user = document.querySelector('.fi-user-menu-trigger');
+    const body = document.querySelector('[data-admin-notification-body]');
+    const headerRect = header?.getBoundingClientRect();
+    const tickerRect = tickerRoot?.getBoundingClientRect();
+    const burgerRect = burgerButton?.getBoundingClientRect();
+    const userRect = user?.getBoundingClientRect();
+
+    return {
+      header_position: header ? getComputedStyle(header).position : null,
+      header_top: headerRect?.top ?? null,
+      burger_left: burgerRect?.left ?? null,
+      burger_right: burgerRect?.right ?? null,
+      ticker_left: tickerRect?.left ?? null,
+      ticker_right: tickerRect?.right ?? null,
+      ticker_width: tickerRect?.width ?? null,
+      user_left: userRect?.left ?? null,
+      user_right: userRect?.right ?? null,
+      body_display: body ? getComputedStyle(body).display : null,
+    };
+  });
+
+  expect(['sticky', 'fixed']).toContain(mobile.header_position);
+  expect(Math.abs(mobile.header_top)).toBeLessThanOrEqual(1);
+  expect(mobile.burger_left).not.toBeNull();
+  expect(mobile.user_right).not.toBeNull();
+  expect(mobile.ticker_width).toBeGreaterThan(80);
+  expect(mobile.burger_right).toBeLessThanOrEqual(mobile.ticker_left + 1);
+  expect(mobile.ticker_right).toBeLessThanOrEqual(mobile.user_left + 1);
+  expect(mobile.body_display).toBe('none');
+});
