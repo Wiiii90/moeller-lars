@@ -114,8 +114,8 @@ final class AdminChangeSummary
             if ($before === null || $after === null) {
                 $this->append(
                     $items,
-                    field: (string) ($snapshot['table'] ?? 'record'),
-                    label: $this->tableLabel((string) ($snapshot['table'] ?? 'record')),
+                    field: $snapshot['table'],
+                    label: $this->tableLabel($snapshot['table']),
                     before: $before === null ? 'Not present' : 'Present',
                     after: $after === null ? 'Removed' : 'Created',
                 );
@@ -160,17 +160,17 @@ final class AdminChangeSummary
     {
         $items = array_map(
             static fn (array $item): array => [
-                'field' => (string) ($item['field'] ?? ''),
-                'label' => (string) ($item['label'] ?? 'Change'),
-                'before' => (string) ($item['after'] ?? '—'),
-                'after' => (string) ($item['before'] ?? '—'),
+                'field' => $item['field'],
+                'label' => $item['label'],
+                'before' => $item['after'],
+                'after' => $item['before'],
             ],
-            is_array($summary['items'] ?? null) ? $summary['items'] : [],
+            $summary['items'],
         );
 
         return [
-            'count' => max(count($items), (int) ($summary['count'] ?? count($items))),
-            'truncated' => (bool) ($summary['truncated'] ?? false),
+            'count' => max(count($items), $summary['count']),
+            'truncated' => $summary['truncated'],
             'items' => $items,
         ];
     }
