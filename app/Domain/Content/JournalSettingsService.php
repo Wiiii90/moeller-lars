@@ -53,7 +53,7 @@ final class JournalSettingsService
                 $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
             }
 
-            return $fresh->fresh();
+            return $fresh;
         });
     }
 
