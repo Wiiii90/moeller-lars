@@ -290,8 +290,9 @@ final class AdminChangeSummary
         );
     }
 
-    /** @param list<mixed> $shorter
-     * @param list<mixed> $longer
+    /**
+     * @param  list<mixed>  $shorter
+     * @param  list<mixed>  $longer
      */
     private function singleInsertionIndex(array $shorter, array $longer): ?int
     {
@@ -306,8 +307,9 @@ final class AdminChangeSummary
         return null;
     }
 
-    /** @param list<mixed> $left
-     * @param list<mixed> $right
+    /**
+     * @param  list<mixed>  $left
+     * @param  list<mixed>  $right
      */
     private function sameListMembers(array $left, array $right): bool
     {
@@ -324,7 +326,7 @@ final class AdminChangeSummary
         return $leftHashes === $rightHashes && $this->listOrder($left) !== $this->listOrder($right);
     }
 
-    /** @param list<mixed> $values */
+    /** @param  list<mixed>  $values */
     private function listOrder(array $values): string
     {
         return collect($values)
@@ -356,7 +358,7 @@ final class AdminChangeSummary
         return $title === '' ? $label : $label.' “'.Str::limit($title, 50, '…').'”';
     }
 
-    /** @param list<string> $path */
+    /** @param  list<string>  $path */
     private function pathLabel(array $path): string
     {
         $labels = [];
