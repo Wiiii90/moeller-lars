@@ -129,8 +129,14 @@ trait CustomPageWorkspaceComponentActions
     {
         $block = $this->componentAt($index, $type);
         $block['published'] = $published;
-        app(CustomPageEditorialService::class)->updateBlock($this->settings(), $index, $type, $block);
+        $changed = app(CustomPageEditorialService::class)->updateBlock($this->settings(), $index, $type, $block);
         $this->loadComponentProjection();
+        if ($changed) {
+            app(\App\Domain\Admin\AdminNotifier::class)->toast(
+                $published ? 'Component published' : 'Component unpublished',
+                status: 'success',
+            );
+        }
     }
 
     public function publishSelected(): void
