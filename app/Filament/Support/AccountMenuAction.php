@@ -9,7 +9,6 @@ use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View;
@@ -94,7 +93,7 @@ final class AccountMenuAction
                         return;
                     }
 
-                    Notification::make()
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()
                         ->danger()
                         ->title('Too many attempts')
                         ->body('Try again in a minute.')
@@ -114,7 +113,7 @@ final class AccountMenuAction
                         ]);
                     }
 
-                    Notification::make()
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()
                         ->success()
                         ->title('Account updated')
                         ->send();
