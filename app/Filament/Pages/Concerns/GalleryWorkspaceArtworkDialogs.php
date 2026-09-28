@@ -93,6 +93,10 @@ trait GalleryWorkspaceArtworkDialogs
                 $artwork = $this->actionArtwork($arguments);
                 $currentPrimary = $artwork->artworkMedia()->where('role', 'primary')->first();
                 $currentAssetId = $currentPrimary === null ? 0 : (int) $currentPrimary->getAttribute('media_asset_id');
+                $before = [
+                    'artwork' => $artwork->getAttributes(),
+                    'primary_media_asset_id' => $currentAssetId,
+                ];
                 $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
                 $upload = $data['primary_upload'] ?? null;
 
@@ -122,8 +126,18 @@ trait GalleryWorkspaceArtworkDialogs
                     }
                 });
 
+                /** @var \App\Models\Artwork $freshArtwork */
+                $freshArtwork = \App\Models\Artwork::query()->findOrFail($artwork->getKey());
+                $freshPrimary = $freshArtwork->artworkMedia()->where('role', 'primary')->first();
+                $after = [
+                    'artwork' => $freshArtwork->getAttributes(),
+                    'primary_media_asset_id' => $freshPrimary === null ? 0 : (int) $freshPrimary->getAttribute('media_asset_id'),
+                ];
+
                 $this->refreshWorkspaceAfterMutation();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork saved')->success()->send();
+                if ($before !== $after) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
