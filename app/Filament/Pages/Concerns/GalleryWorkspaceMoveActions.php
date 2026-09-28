@@ -9,7 +9,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -23,7 +22,7 @@ trait GalleryWorkspaceMoveActions
         }
 
         if (! $this->artworkReorderingAvailable()) {
-            Notification::make()->title('Clear filters to reorder')->warning()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Clear filters to reorder')->warning()->send();
 
             return;
         }
@@ -42,7 +41,7 @@ trait GalleryWorkspaceMoveActions
         [$orderedIds[$index], $orderedIds[$targetIndex]] = [$orderedIds[$targetIndex], $orderedIds[$index]];
         $this->saveArtworkOrder($orderedIds);
         $this->refreshWorkspaceAfterMutation();
-        Notification::make()->title('Gallery order updated')->success()->send();
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Gallery order updated')->success()->send();
     }
 
     public function sortArtwork(int|string $artworkId, int|string $position): void
@@ -80,7 +79,7 @@ trait GalleryWorkspaceMoveActions
         }
 
         $this->refreshWorkspaceAfterMutation();
-        Notification::make()->title('Gallery order updated')->success()->send();
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Gallery order updated')->success()->send();
     }
 
     public function moveSelectedArtworks(string $direction): void
@@ -90,14 +89,14 @@ trait GalleryWorkspaceMoveActions
         }
 
         if (! $this->artworkReorderingAvailable()) {
-            Notification::make()->title('Clear filters to reorder')->warning()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Clear filters to reorder')->warning()->send();
 
             return;
         }
 
         $selectedIds = array_keys($this->selectedArtworkIdSet());
         if ($selectedIds === []) {
-            Notification::make()->title('Select artworks first')->warning()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Select artworks first')->warning()->send();
 
             return;
         }
@@ -105,7 +104,7 @@ trait GalleryWorkspaceMoveActions
         $orderedIds = ArtworkSelectionOrder::moveOneSlot($this->orderedArtworkIds(), $selectedIds, $direction);
         $this->saveArtworkOrder($orderedIds);
         $this->refreshWorkspaceAfterMutation();
-        Notification::make()->title('Selected artworks reordered')->success()->send();
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Selected artworks reordered')->success()->send();
     }
 
     public function moveArtworkToGalleryAction(): Action
@@ -153,7 +152,7 @@ trait GalleryWorkspaceMoveActions
         $destination = ArtworkCategory::query()->whereKey($targetGalleryId)->where('id', '<>', $galleryId)->first();
 
         if (! $artwork || ! $destination) {
-            Notification::make()->title('Artwork could not be moved')->danger()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork could not be moved')->danger()->send();
 
             return;
         }
@@ -172,7 +171,7 @@ trait GalleryWorkspaceMoveActions
         ));
 
         $this->refreshWorkspaceAfterMutation();
-        Notification::make()->title('Artwork moved')->body('Media references were preserved.')->success()->send();
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork moved')->body('Media references were preserved.')->success()->send();
     }
 
     private function reassignSelectedArtworksTo(int $targetGalleryId): void
@@ -181,7 +180,7 @@ trait GalleryWorkspaceMoveActions
         /** @var ArtworkCategory|null $destination */
         $destination = ArtworkCategory::query()->whereKey($targetGalleryId)->where('id', '<>', $galleryId)->first();
         if (! $destination) {
-            Notification::make()->title('Choose a destination Gallery')->warning()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Choose a destination Gallery')->warning()->send();
 
             return;
         }
@@ -202,7 +201,7 @@ trait GalleryWorkspaceMoveActions
         $count = $artworks->count();
         $this->clearSelection();
         $this->refreshWorkspaceAfterMutation();
-        Notification::make()->title($count === 1 ? 'Artwork moved' : $count.' artworks moved')->body('Media references remain shared and unchanged.')->success()->send();
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($count === 1 ? 'Artwork moved' : $count.' artworks moved')->body('Media references remain shared and unchanged.')->success()->send();
     }
 
     private function artworkReorderingAvailable(): bool
