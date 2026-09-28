@@ -5,7 +5,6 @@ namespace App\Filament\Pages\Concerns;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Models\CustomPageSetting;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -94,7 +93,7 @@ trait CustomPageWorkspaceChildOrdering
         $count = count($parents) + count($children);
         $this->clearSelections();
         $this->reloadWorkspace();
-        Notification::make()
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()
             ->title($published ? 'Selection published' : 'Selection unpublished')
             ->body($count.' selected '.($count === 1 ? 'item' : 'items').' updated on their own hierarchy levels.')
             ->success()
