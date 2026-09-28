@@ -47,22 +47,24 @@ final class PagesSettingsDialog
     }
 
     /** @param array<string, mixed> $data */
-    public function save(array $data): void
+    public function save(array $data): bool
     {
         $settings = PublicContentSetting::general();
         $wasEnabled = PublicContentSetting::navigationNestingEnabled();
         $enabled = (bool) ($data['navigation_nesting_enabled'] ?? true);
 
-        DB::transaction(function () use ($data, $settings, $wasEnabled, $enabled): void {
-            $this->homeRouting->save($data);
+        return DB::transaction(function () use ($data, $settings, $wasEnabled, $enabled): bool {
+            $changed = $this->homeRouting->save($data);
 
             if ($wasEnabled && ! $enabled) {
-                $this->order->flattenHierarchy();
+                $changed = $this->order->flattenHierarchy() > 0 || $changed;
             }
 
-            $this->settings->updatePublicContent($settings, [
+            $updated = $this->settings->updatePublicContent($settings, [
                 'navigation_nesting_enabled' => $enabled,
             ]);
+
+            return $updated->wasChanged('navigation_nesting_enabled') || $changed;
         });
     }
 }
