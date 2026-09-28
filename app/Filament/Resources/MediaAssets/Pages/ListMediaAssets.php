@@ -545,22 +545,26 @@ final class ListMediaAssets extends Page
             default => 'The site storage allowance or current usage could not be measured reliably.',
         };
 
-        app(\App\Domain\Admin\AdminNotifier::class)->both(
-            user: $actor,
-            sourceId: 'storage-capacity:'.$status,
-            title: match ($status) {
-                'near_capacity' => 'Storage nearing capacity',
-                'full' => 'Storage allowance full',
-                default => 'Storage measurement unavailable',
-            },
-            body: $body,
-            status: $status === 'near_capacity' ? 'warning' : 'danger',
-            context: [
-                'type' => 'storage.capacity_'.$status,
-                'action_url' => MediaAssetResource::getUrl('index'),
-                'action_label' => 'Open Storage',
-            ],
-        );
+        try {
+            app(\App\Domain\Admin\AdminNotifier::class)->both(
+                user: $actor,
+                sourceId: 'storage-capacity:'.$status,
+                title: match ($status) {
+                    'near_capacity' => 'Storage nearing capacity',
+                    'full' => 'Storage allowance full',
+                    default => 'Storage measurement unavailable',
+                },
+                body: $body,
+                status: $status === 'near_capacity' ? 'warning' : 'danger',
+                context: [
+                    'type' => 'storage.capacity_'.$status,
+                    'action_url' => MediaAssetResource::getUrl('index'),
+                    'action_label' => 'Open Storage',
+                ],
+            );
+        } catch (Throwable $notificationException) {
+            report($notificationException);
+        }
     }
 
     private function refreshStorageOverviewAfterMutation(): void
@@ -1013,18 +1017,24 @@ final class ListMediaAssets extends Page
                 $this->refreshStorageOverviewAfterMutation();
                 $actor = auth()->user();
                 if ($actor instanceof \App\Models\User) {
-                    app(\App\Domain\Admin\AdminNotifier::class)->both(
-                        user: $actor,
-                        sourceId: 'media-cleanup:asset-'.$assetId,
-                        title: 'File cleanup failed',
-                        body: 'The file was removed from Storage, but stored file cleanup could not be completed.',
-                        status: 'danger',
-                        context: [
-                            'type' => 'media.cleanup_failure',
-                            'entity_type' => 'media_asset',
-                            'entity_id' => $assetId,
-                        ],
-                    );
+                    try {
+                        app(\App\Domain\Admin\AdminNotifier::class)->both(
+                            user: $actor,
+                            sourceId: 'media-cleanup:asset-'.$assetId,
+                            title: 'File cleanup failed',
+                            body: 'The file was removed from Storage, but stored file cleanup could not be completed.',
+                            status: 'danger',
+                            context: [
+                                'type' => 'media.cleanup_failure',
+                                'action_url' => MediaAssetResource::getUrl('index'),
+                                'action_label' => 'Open Storage',
+                                'entity_type' => 'media_asset',
+                                'entity_id' => $assetId,
+                            ],
+                        );
+                    } catch (Throwable $notificationException) {
+                        report($notificationException);
+                    }
                 }
 
                 return true;
