@@ -55,6 +55,36 @@ it('persists structured inbox notifications without rendered browser markup', fu
         ->and($notification->getAttribute('metadata'))->toBe(['variant' => 'preview']);
 });
 
+it('delivers persistent conditions to both inbox and ticker', function (): void {
+    $user = User::factory()->admin()->create();
+    $this->actingAs($user);
+
+    $notification = app(AdminNotifier::class)->both(
+        user: $user,
+        sourceId: 'media-cleanup:asset-72',
+        title: 'File cleanup failed',
+        body: 'Stored file cleanup could not be completed.',
+        status: 'danger',
+        context: [
+            'type' => 'media.cleanup_failure',
+            'entity_type' => 'media_asset',
+            'entity_id' => 72,
+        ],
+    );
+
+    expect($notification->getAttribute('source_id'))->toBe('media-cleanup:asset-72')
+        ->and(AdminNotification::query()->whereKey($notification->getKey())->exists())->toBeTrue();
+
+    Livewire::test(AdminFlashNotifications::class)
+        ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
+            $payload = $params['notification'] ?? [];
+
+            return $event === 'admin-notification-ticker'
+                && ($payload['title'] ?? null) === 'File cleanup failed'
+                && ($payload['status'] ?? null) === 'danger';
+        });
+});
+
 it('deduplicates persistent notifications by recipient and source id', function (): void {
     $user = User::factory()->admin()->create();
     $notifier = app(AdminNotifier::class);
