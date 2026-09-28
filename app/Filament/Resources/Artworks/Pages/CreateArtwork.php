@@ -105,15 +105,15 @@ class CreateArtwork extends CreateRecord
     protected function getCreatedNotification(): Notification
     {
         return match ($this->primaryMediaResult) {
-            'attached' => Notification::make()
+            'attached' => app(\App\Domain\Admin\AdminNotifier::class)->transient()
                 ->success()
                 ->title('Artwork draft created')
                 ->body('The primary media was attached. Add or confirm ALT text before publication.'),
-            'failed' => Notification::make()
+            'failed' => app(\App\Domain\Admin\AdminNotifier::class)->transient()
                 ->warning()
                 ->title('Artwork draft created; media needs attention')
                 ->body('The draft is saved, but the primary media could not be attached. Add it from the artwork editor.'),
-            default => Notification::make()
+            default => app(\App\Domain\Admin\AdminNotifier::class)->transient()
                 ->success()
                 ->title('Artwork draft created')
                 ->body('No primary media was attached yet. Add an image or video before publication.'),
