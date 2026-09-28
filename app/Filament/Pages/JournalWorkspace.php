@@ -30,7 +30,6 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -189,7 +188,7 @@ final class JournalWorkspace extends Page
         }
         $post = $this->post((int) $id);
         if (app(JournalEntryOrderService::class)->moveToPosition($post, $position)) {
-            Notification::make()->title('Journal order updated')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Journal order updated')->success()->send();
         }
         $this->loadPosts(false);
     }
@@ -201,7 +200,7 @@ final class JournalWorkspace extends Page
         }
         $entry = $this->exhibition((int) $id);
         if (app(JournalEntryOrderService::class)->moveToPosition($entry, $position)) {
-            Notification::make()->title('Exhibition order updated')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Exhibition order updated')->success()->send();
         }
         $this->loadExhibitions(false);
     }
@@ -231,7 +230,7 @@ final class JournalWorkspace extends Page
     public function movePost(int $id, string $direction): void
     {
         if (app(BlogEditorialService::class)->move($this->post($id), $direction)) {
-            Notification::make()->title('Journal order updated')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Journal order updated')->success()->send();
         }
         $this->loadPosts(false);
     }
@@ -239,7 +238,7 @@ final class JournalWorkspace extends Page
     public function moveExhibition(int $id, string $direction): void
     {
         if (app(ExhibitionEditorialService::class)->move($this->exhibition($id), $direction)) {
-            Notification::make()->title('Exhibition order updated')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Exhibition order updated')->success()->send();
         }
         $this->loadExhibitions(false);
     }
@@ -385,7 +384,7 @@ final class JournalWorkspace extends Page
                 $this->page = 1;
                 $this->loadJournalContext($updated);
                 $this->reloadEntries();
-                Notification::make()->title('Journal settings saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Journal settings saved')->success()->send();
             });
 
         return AdminDialog::edit($action);
@@ -407,7 +406,7 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadPosts();
-                Notification::make()->title('Post draft created')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Post draft created')->success()->send();
             });
 
         return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
@@ -435,7 +434,7 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadPosts(false);
-                Notification::make()->title('Post saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Post saved')->success()->send();
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -456,7 +455,7 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadPosts();
-                Notification::make()->title('Publication scheduled')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Publication scheduled')->success()->send();
             });
 
         return AdminDialog::command($action, 'Schedule publication');
@@ -478,7 +477,7 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadExhibitions();
-                Notification::make()->title('Exhibition created')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Exhibition created')->success()->send();
             });
 
         return AdminDialog::create($action, 'Create exhibition', AdminDialogSize::Large);
@@ -506,7 +505,7 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadExhibitions(false);
-                Notification::make()->title('Exhibition saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Exhibition saved')->success()->send();
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -543,7 +542,7 @@ final class JournalWorkspace extends Page
 
                     return;
                 }
-                Notification::make()->title(ucfirst($type).' deleted')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title(ucfirst($type).' deleted')->success()->send();
             });
 
         return AdminDialog::confirm(
@@ -862,7 +861,7 @@ final class JournalWorkspace extends Page
     {
         try {
             $action();
-            Notification::make()->title($successTitle)->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($successTitle)->success()->send();
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Journal entry unchanged', $exception);
         }
@@ -897,7 +896,7 @@ final class JournalWorkspace extends Page
 
     private function notifyBatch(string $label, int $ok, int $failed): void
     {
-        $notification = Notification::make()->title(ucfirst($label))->body($ok.' succeeded'.($failed > 0 ? ' · '.$failed.' failed' : ''));
+        $notification = app(\App\Domain\Admin\AdminNotifier::class)->transient()->title(ucfirst($label))->body($ok.' succeeded'.($failed > 0 ? ' · '.$failed.' failed' : ''));
         $failed > 0 ? $notification->warning() : $notification->success();
         $notification->send();
     }
@@ -905,7 +904,7 @@ final class JournalWorkspace extends Page
     private function notifyValidationFailure(string $title, ValidationException $exception): void
     {
         $message = collect($exception->errors())->flatten()->first();
-        Notification::make()->title($title)->body(is_string($message) ? $message : 'The requested Journal change is not valid.')->danger()->send();
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($title)->body(is_string($message) ? $message : 'The requested Journal change is not valid.')->danger()->send();
     }
 
     private function selectedPosts(): EloquentCollection
