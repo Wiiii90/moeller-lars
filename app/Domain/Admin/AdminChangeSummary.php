@@ -193,7 +193,7 @@ final class AdminChangeSummary
                 return;
             }
 
-            if (! array_is_list($before) && ! array_is_list($after)) {
+            if (array_is_list($before) === false && array_is_list($after) === false) {
                 $keys = array_values(array_unique([...array_keys($before), ...array_keys($after)]));
                 sort($keys);
                 foreach ($keys as $key) {
@@ -334,7 +334,7 @@ final class AdminChangeSummary
 
     private function listItemLabel(mixed $value): string
     {
-        if (! is_array($value)) {
+        if (is_array($value) === false) {
             return $this->displayValue($value);
         }
 
@@ -453,12 +453,12 @@ final class AdminChangeSummary
 
     private function structured(mixed $value): mixed
     {
-        if (! is_string($value)) {
+        if (is_string($value) === false) {
             return $value;
         }
 
         $trimmed = trim($value);
-        if ($trimmed === '' || ! in_array($trimmed[0] ?? '', ['[', '{'], true)) {
+        if ($trimmed === '' || in_array($trimmed[0] ?? '', ['[', '{'], true) === false) {
             return $value;
         }
 
