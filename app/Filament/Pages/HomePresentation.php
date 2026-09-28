@@ -579,11 +579,13 @@ final class HomePresentation extends Page
                     ],
                     default => throw ValidationException::withMessages(['component' => 'This component has no editable fields.']),
                 };
-                app(HomePresentationEditorialService::class)->updateComponent(
+                $changed = app(HomePresentationEditorialService::class)->updateComponent(
                     $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, $component,
                 );
                 $this->reloadWorkspace();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component saved')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component saved')->success()->send();
+                }
             });
     }
 
@@ -632,11 +634,13 @@ final class HomePresentation extends Page
         if (! $this->componentReorderEnabled()) {
             return;
         }
-        app(HomePresentationEditorialService::class)->moveComponent(
+        $changed = app(HomePresentationEditorialService::class)->moveComponent(
             $this->settings(), $this->componentTemplate(), $index, $expectedType, $direction,
         );
         $this->reloadWorkspace();
-        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component order updated')->success()->send();
+        if ($changed) {
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component order updated')->success()->send();
+        }
     }
 
     public function sortComponent(string $target, int $position): void
@@ -653,12 +657,14 @@ final class HomePresentation extends Page
         array_splice($targets, $from, 1);
         $position = max(0, min($position, count($targets)));
         array_splice($targets, $position, 0, [$moved]);
-        app(HomePresentationEditorialService::class)->reorderComponents(
+        $changed = app(HomePresentationEditorialService::class)->reorderComponents(
             $this->settings(), $this->componentTemplate(),
             array_map(fn (string $value): array => $this->parseComponentTarget($value), $targets),
         );
         $this->reloadWorkspace();
-        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component order updated')->success()->send();
+        if ($changed) {
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component order updated')->success()->send();
+        }
     }
 
     public function moveSelectedComponents(string $direction): void
@@ -728,11 +734,16 @@ final class HomePresentation extends Page
                 'show_on_home' => $enabled,
             ]);
         }
-        $count = $galleries->count();
+        $changed = $galleries
+            ->filter(static fn (ArtworkCategory $gallery): bool => (bool) $gallery->getAttribute('show_on_home') !== $enabled)
+            ->count();
+
         $this->clearSourceSelection();
         $this->reloadWorkspace();
-        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($enabled ? 'Home source preferences enabled' : 'Home source preferences disabled')
-            ->body($count.' '.($count === 1 ? 'Gallery' : 'Galleries').' updated.')->success()->send();
+        if ($changed > 0) {
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($enabled ? 'Home source preferences enabled' : 'Home source preferences disabled')
+                ->body($changed.' '.($changed === 1 ? 'Gallery' : 'Galleries').' updated.')->success()->send();
+        }
     }
 
     public function sourceRows(): LengthAwarePaginator
