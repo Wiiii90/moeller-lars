@@ -21,9 +21,11 @@ trait ManagesSitePagesSettings
                 ->fillForm(fn (): array => $dialog->fill())
                 ->schema($dialog->schema())
                 ->action(function (array $data) use ($dialog): void {
-                    $dialog->save($data);
+                    $changed = $dialog->save($data);
                     $this->loadSections();
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Pages settings saved')->success()->send();
+                    if ($changed) {
+                        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Pages settings saved')->success()->send();
+                    }
                 }),
             'Save settings',
             AdminDialogSize::Default,
