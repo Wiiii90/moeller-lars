@@ -56,7 +56,7 @@ final class HomeRoutingDialog
     }
 
     /** @param array<string, mixed> $data */
-    public function save(array $data): void
+    public function save(array $data): bool
     {
         $settings = $this->resolver->settings();
         $enabled = (bool) ($data['skip_home'] ?? false);
@@ -68,7 +68,7 @@ final class HomeRoutingDialog
             ]);
         }
 
-        $this->routing->update($settings, $enabled, $enabled ? $targetId : null);
+        return $this->routing->update($settings, $enabled, $enabled ? $targetId : null);
     }
 
     /** @return array{skip_home:bool,skip_target_label:?string} */
