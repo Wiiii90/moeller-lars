@@ -184,13 +184,13 @@ final class HomeSettingsDialog
                 }
             }
 
-            $changed = $this->heroConfiguration->updateArtworkSettings($settings, $input) || $changed;
+            $changed = $this->heroConfiguration->updateArtworkSettings($settings, $input);
         } else {
             $input = [];
             if ($template === HomeTemplate::UnderConstruction) {
                 $input['public_site_gate'] = (bool) ($data['public_site_gate'] ?? false);
             }
-            $changed = $this->editorial->updateSettings($settings, $template, $input) || $changed;
+            $changed = $this->editorial->updateSettings($settings, $template, $input);
         }
 
         $settings = $settings->fresh();
