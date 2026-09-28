@@ -33,7 +33,6 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Builder;
@@ -409,7 +408,7 @@ final class HomePresentation extends Page
                 );
                 $this->showHomeInNavigation = (bool) ($data['show_in_navigation'] ?? false);
                 $this->reloadWorkspace();
-                Notification::make()->title('Home settings saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
             });
     }
 
@@ -425,7 +424,7 @@ final class HomePresentation extends Page
         )->action(function (array $data): void {
             app(HomeHeroConfigurationService::class)->addManualMember($this->settings(), (int) $data['artwork_id']);
             $this->reloadWorkspace();
-            Notification::make()->title('Artwork added to Home group')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork added to Home group')->success()->send();
         });
     }
 
@@ -433,7 +432,7 @@ final class HomePresentation extends Page
     {
         app(HomeHeroConfigurationService::class)->removeManualMember($this->settings(), $artworkId);
         $this->reloadWorkspace();
-        Notification::make()->title('Artwork removed from Home group')->success()->send();
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork removed from Home group')->success()->send();
     }
 
     public function sortHeroArtwork(string $target, int $position): void
@@ -522,7 +521,7 @@ final class HomePresentation extends Page
             };
             app(HomePresentationEditorialService::class)->addComponent($this->settings(), $this->componentTemplate(), $component);
             $this->reloadWorkspace();
-            Notification::make()->title('Home component added')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component added')->success()->send();
         });
     }
 
@@ -575,7 +574,7 @@ final class HomePresentation extends Page
                     $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, $component,
                 );
                 $this->reloadWorkspace();
-                Notification::make()->title('Home component saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component saved')->success()->send();
             });
     }
 
@@ -594,7 +593,7 @@ final class HomePresentation extends Page
                 $this->settings(), $this->componentTemplate(), (int) $arguments['index'], (string) $component['type'],
             );
             $this->reloadWorkspace();
-            Notification::make()->title('Home component deleted')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component deleted')->success()->send();
         });
     }
 
@@ -614,7 +613,7 @@ final class HomePresentation extends Page
             app(HomePresentationEditorialService::class)->deleteComponents($this->settings(), $this->componentTemplate(), $targets);
             $count = count($targets);
             $this->reloadWorkspace();
-            Notification::make()->title('Selected Home components deleted')
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Selected Home components deleted')
                 ->body($count.' component'.($count === 1 ? '' : 's').' deleted.')->success()->send();
         });
     }
@@ -628,7 +627,7 @@ final class HomePresentation extends Page
             $this->settings(), $this->componentTemplate(), $index, $expectedType, $direction,
         );
         $this->reloadWorkspace();
-        Notification::make()->title('Home component order updated')->success()->send();
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component order updated')->success()->send();
     }
 
     public function sortComponent(string $target, int $position): void
@@ -650,7 +649,7 @@ final class HomePresentation extends Page
             array_map(fn (string $value): array => $this->parseComponentTarget($value), $targets),
         );
         $this->reloadWorkspace();
-        Notification::make()->title('Home component order updated')->success()->send();
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home component order updated')->success()->send();
     }
 
     public function moveSelectedComponents(string $direction): void
@@ -668,7 +667,7 @@ final class HomePresentation extends Page
         $count = count($targets);
         $this->reloadWorkspace();
         if ($changed) {
-            Notification::make()->title('Selected Home components moved')
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Selected Home components moved')
                 ->body($count.' component'.($count === 1 ? '' : 's').' updated.')->success()->send();
         }
     }
@@ -684,7 +683,7 @@ final class HomePresentation extends Page
         ]);
         $this->clearSourceSelection();
         $this->reloadWorkspace();
-        Notification::make()->title('Home source preference updated')->success()->send();
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home source preference updated')->success()->send();
     }
 
     public function toggleVisibleSourceSelection(): void
@@ -723,7 +722,7 @@ final class HomePresentation extends Page
         $count = $galleries->count();
         $this->clearSourceSelection();
         $this->reloadWorkspace();
-        Notification::make()->title($enabled ? 'Home source preferences enabled' : 'Home source preferences disabled')
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($enabled ? 'Home source preferences enabled' : 'Home source preferences disabled')
             ->body($count.' '.($count === 1 ? 'Gallery' : 'Galleries').' updated.')->success()->send();
     }
 
