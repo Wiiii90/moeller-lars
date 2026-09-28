@@ -23,6 +23,22 @@
     margin-inline-start: 0 !important;
 }
 
+@media (min-width: 1024px) {
+    /*
+     * The desktop topbar spans the viewport while the editorial workspace begins
+     * after the persistent sidebar. Align ticker copy to the same left content
+     * axis as .fi-main instead of letting it occupy the sidebar's horizontal band.
+     */
+    .fi-topbar {
+        padding-inline-start: 0 !important;
+    }
+
+    .admin-notification-ticker {
+        margin-inline-start: calc(var(--admin-sidebar-width) + var(--admin-workspace-gutter));
+        margin-inline-end: auto;
+    }
+}
+
 .admin-notification-ticker__viewport {
     display: grid;
     min-width: 0;
