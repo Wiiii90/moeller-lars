@@ -1,3 +1,5 @@
+export const MAX_PENDING_NOTIFICATIONS = 20;
+
 const queue = [];
 let current = null;
 let timeoutId = null;
@@ -86,6 +88,16 @@ function showNext() {
     timeoutId = window.setTimeout(finishCurrent, current.duration);
 }
 
+export function appendPendingNotification(pending, notification, max = MAX_PENDING_NOTIFICATIONS) {
+    if (pending.length >= max) {
+        return false;
+    }
+
+    pending.push(notification);
+
+    return true;
+}
+
 function enqueue(detail) {
     const notification = normalize(detail);
 
@@ -93,7 +105,10 @@ function enqueue(detail) {
         return;
     }
 
-    queue.push(notification);
+    if (! appendPendingNotification(queue, notification)) {
+        return;
+    }
+
     showNext();
 }
 
