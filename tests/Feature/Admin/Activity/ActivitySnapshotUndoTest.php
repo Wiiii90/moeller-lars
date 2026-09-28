@@ -64,6 +64,34 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
     expect($projectedUndo['action'] ?? null)->toBe('Restored Public email');
 });
 
+it('names multiple changed fields instead of a generic settings activity', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor);
+
+    $settings = PublicContentSetting::general();
+    $beforeVisibility = (bool) $settings->getAttribute('show_public_email');
+
+    app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'public_email' => 'precise-activity@example.test',
+        'show_public_email' => ! $beforeVisibility,
+    ]);
+
+    $event = AuditEvent::query()
+        ->where('action', 'public_content_setting.updated')
+        ->latest('id')
+        ->firstOrFail();
+    $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
+    $items = collect($projected['change_summary']['items'] ?? [])->keyBy('label');
+
+    expect($projected['action'] ?? null)
+        ->toContain('Public email')
+        ->toContain('Public email visibility')
+        ->not->toBe('Edited website settings')
+        ->and($items->get('Public email')['after'] ?? null)->toBe('precise-activity@example.test')
+        ->and($items->get('Public email visibility')['before'] ?? null)->toBe($beforeVisibility ? 'On' : 'Off')
+        ->and($items->get('Public email visibility')['after'] ?? null)->toBe($beforeVisibility ? 'Off' : 'On');
+});
+
 it('hides an older snapshot Undo after the same row changes again', function (): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor);
