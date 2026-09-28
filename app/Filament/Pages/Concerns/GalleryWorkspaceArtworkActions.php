@@ -93,18 +93,24 @@ trait GalleryWorkspaceArtworkActions
                         $this->refreshWorkspaceAfterMutation();
                         $actor = auth()->user();
                         if ($actor instanceof \App\Models\User) {
-                            app(\App\Domain\Admin\AdminNotifier::class)->both(
-                                user: $actor,
-                                sourceId: 'media-cleanup:asset-'.(int) $asset->getKey(),
-                                title: 'File cleanup failed',
-                                body: 'The file was removed from Media Files, but stored file cleanup could not be completed.',
-                                status: 'danger',
-                                context: [
-                                    'type' => 'media.cleanup_failure',
-                                    'entity_type' => 'media_asset',
-                                    'entity_id' => (int) $asset->getKey(),
-                                ],
-                            );
+                            try {
+                                app(\App\Domain\Admin\AdminNotifier::class)->both(
+                                    user: $actor,
+                                    sourceId: 'media-cleanup:asset-'.(int) $asset->getKey(),
+                                    title: 'File cleanup failed',
+                                    body: 'The file was removed from Media Files, but stored file cleanup could not be completed.',
+                                    status: 'danger',
+                                    context: [
+                                        'type' => 'media.cleanup_failure',
+                                        'action_url' => \App\Filament\Resources\MediaAssets\MediaAssetResource::getUrl('index'),
+                                        'action_label' => 'Open Storage',
+                                        'entity_type' => 'media_asset',
+                                        'entity_id' => (int) $asset->getKey(),
+                                    ],
+                                );
+                            } catch (Throwable $notificationException) {
+                                report($notificationException);
+                            }
                         }
 
                         return;
