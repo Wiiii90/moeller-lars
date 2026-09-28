@@ -14,7 +14,6 @@ use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -35,7 +34,7 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Artwork removed from Gallery')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork removed from Gallery')->success()->send();
             });
 
         return AdminDialog::confirm(
@@ -92,7 +91,7 @@ trait GalleryWorkspaceArtworkActions
                     if ($fresh instanceof MediaAsset && $fresh->getAttribute('state') === 'deleted') {
                         $this->detachGalleryArtworksAfterPrimaryMediaDelete($affectedArtworkIds);
                         $this->refreshWorkspaceAfterMutation();
-                        Notification::make()
+                        app(\App\Domain\Admin\AdminNotifier::class)->transient()
                             ->title('File cleanup failed')
                             ->body('The file was removed from Media Files, but stored file cleanup could not be completed.')
                             ->danger()
@@ -107,7 +106,7 @@ trait GalleryWorkspaceArtworkActions
                         return;
                     }
 
-                    Notification::make()
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()
                         ->title('Media file was not deleted')
                         ->body('The file could not be deleted.')
                         ->danger()
@@ -118,7 +117,7 @@ trait GalleryWorkspaceArtworkActions
 
                 $this->detachGalleryArtworksAfterPrimaryMediaDelete($affectedArtworkIds);
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('File deleted')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('File deleted')->success()->send();
             });
 
         return AdminDialog::confirm(
@@ -144,7 +143,7 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Artwork published')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork published')->success()->send();
             });
     }
 
@@ -155,7 +154,7 @@ trait GalleryWorkspaceArtworkActions
             ->action(function (array $arguments): void {
                 app(ArtworkPublicationService::class)->unpublish($this->actionArtwork($arguments));
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Artwork unpublished')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork unpublished')->success()->send();
             });
 
         return AdminDialog::confirm(
