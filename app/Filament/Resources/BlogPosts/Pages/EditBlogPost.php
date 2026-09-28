@@ -8,6 +8,7 @@ use App\Filament\Pages\JournalWorkspace;
 use App\Filament\Resources\BlogPosts\BlogPostResource;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\BlogPost;
+use App\Models\JournalEntryMedia;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -37,7 +38,36 @@ final class EditBlogPost extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var BlogPost $record */
-        return app(BlogEditorialService::class)->update($record, $data);
+        $before = $this->mutationState($record);
+        $updated = app(BlogEditorialService::class)->update($record, $data);
+        $this->adminEditorSetMutationChanged($before !== $this->mutationState($updated));
+
+        return $updated;
+    }
+
+    protected function adminEditorSavedNotificationTitle(): string
+    {
+        return 'Post saved';
+    }
+
+    /**
+     * @return array{record:array<string,mixed>,media:list<array<string,mixed>>}
+     */
+    private function mutationState(BlogPost $post): array
+    {
+        /** @var BlogPost $fresh */
+        $fresh = BlogPost::query()->findOrFail($post->getKey());
+        $media = $fresh->mediaUsages()
+            ->orderBy('id')
+            ->get()
+            ->map(static fn (JournalEntryMedia $usage): array => $usage->getAttributes())
+            ->values()
+            ->all();
+
+        return [
+            'record' => $fresh->getAttributes(),
+            'media' => $media,
+        ];
     }
 
     protected function getRedirectUrl(): string
