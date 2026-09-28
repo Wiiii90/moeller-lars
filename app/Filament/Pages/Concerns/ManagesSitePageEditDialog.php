@@ -18,7 +18,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -100,7 +99,7 @@ trait ManagesSitePageEditDialog
                 });
 
                 $this->loadSections();
-                Notification::make()->title('Page updated')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page updated')->success()->send();
             })
             ->extraModalFooterActions(fn (array $arguments): array => $this->pageDialogHeaderActions($arguments));
 
@@ -118,7 +117,7 @@ trait ManagesSitePageEditDialog
             ->action(function (array $data) use ($dialog): void {
                 $dialog->save($data);
                 $this->loadSections();
-                Notification::make()->title('Home settings saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
