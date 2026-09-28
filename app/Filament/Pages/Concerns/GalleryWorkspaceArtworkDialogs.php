@@ -10,7 +10,6 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -57,7 +56,7 @@ trait GalleryWorkspaceArtworkDialogs
 
                 $this->pendingPrimaryMediaAssetId = null;
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Artwork draft created')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork draft created')->success()->send();
             });
 
         return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
@@ -124,7 +123,7 @@ trait GalleryWorkspaceArtworkDialogs
                 });
 
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Artwork saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork saved')->success()->send();
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
