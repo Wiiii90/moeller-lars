@@ -188,7 +188,7 @@ trait CustomPageWorkspaceComponentActions
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $existing = $this->actionComponent($arguments);
 
-                app(CustomPageEditorialService::class)->updateBlock(
+                $changed = app(CustomPageEditorialService::class)->updateBlock(
                     $this->settings(),
                     $index,
                     $type,
@@ -197,7 +197,9 @@ trait CustomPageWorkspaceComponentActions
 
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Component saved')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Component saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
