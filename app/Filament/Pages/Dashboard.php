@@ -338,6 +338,7 @@ final class Dashboard extends Page
 
                 app(DashboardNotificationRetention::class)->pruneFor($user);
                 $this->refreshFeedFromFirstPage();
+                app(AdminNotifier::class)->toast(title: 'Dashboard settings saved', status: 'success');
             });
     }
 
