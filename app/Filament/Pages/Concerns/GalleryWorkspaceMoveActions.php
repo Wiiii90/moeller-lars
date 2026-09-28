@@ -101,7 +101,12 @@ trait GalleryWorkspaceMoveActions
             return;
         }
 
-        $orderedIds = ArtworkSelectionOrder::moveOneSlot($this->orderedArtworkIds(), $selectedIds, $direction);
+        $currentIds = $this->orderedArtworkIds();
+        $orderedIds = ArtworkSelectionOrder::moveOneSlot($currentIds, $selectedIds, $direction);
+        if ($orderedIds === $currentIds) {
+            return;
+        }
+
         $this->saveArtworkOrder($orderedIds);
         $this->refreshWorkspaceAfterMutation();
         app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Selected artworks reordered')->success()->send();
