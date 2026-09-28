@@ -384,7 +384,9 @@ final class JournalWorkspace extends Page
                 $this->page = 1;
                 $this->loadJournalContext($updated);
                 $this->reloadEntries();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Journal settings saved')->success()->send();
+                if ($updated->wasChanged()) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Journal settings saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action);
