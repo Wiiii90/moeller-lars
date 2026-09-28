@@ -2,6 +2,9 @@
 
 namespace App\Filament\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
+use Filament\Notifications\Notification;
+
 trait UsesAdminEditor
 {
     private bool $adminEditorMutationChanged = true;
@@ -16,13 +19,13 @@ trait UsesAdminEditor
         return 'Changes saved';
     }
 
-    protected function getSavedNotification(): ?\Filament\Notifications\Notification
+    protected function getSavedNotification(): ?Notification
     {
         if (! $this->adminEditorMutationChanged) {
             return null;
         }
 
-        return app(\App\Domain\Admin\AdminNotifier::class)
+        return app(AdminNotifier::class)
             ->transient()
             ->success()
             ->title($this->adminEditorSavedNotificationTitle());

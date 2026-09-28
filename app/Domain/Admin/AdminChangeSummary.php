@@ -3,6 +3,7 @@
 namespace App\Domain\Admin;
 
 use Illuminate\Support\Str;
+use JsonException;
 
 final class AdminChangeSummary
 {
@@ -465,7 +466,7 @@ final class AdminChangeSummary
             $decoded = json_decode($trimmed, true, flags: JSON_THROW_ON_ERROR);
 
             return is_array($decoded) ? $decoded : $value;
-        } catch (\JsonException) {
+        } catch (JsonException) {
             return $value;
         }
     }

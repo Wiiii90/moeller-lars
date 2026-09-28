@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
@@ -100,7 +101,7 @@ trait ManagesSitePageEditDialog
 
                 $this->loadSections();
                 if ($changed) {
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page updated')->success()->send();
+                    app(AdminNotifier::class)->transient()->title('Page updated')->success()->send();
                 }
             })
             ->extraModalFooterActions(fn (array $arguments): array => $this->pageDialogHeaderActions($arguments));
@@ -120,7 +121,7 @@ trait ManagesSitePageEditDialog
                 $changed = $dialog->save($data);
                 $this->loadSections();
                 if ($changed) {
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
+                    app(AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
                 }
             });
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -25,7 +26,7 @@ trait CustomPageWorkspaceComponentActions
         $this->reloadWorkspace();
 
         if ($changed) {
-            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Component order updated')->success()->send();
+            app(AdminNotifier::class)->transient()->title('Component order updated')->success()->send();
         }
     }
 
@@ -55,7 +56,7 @@ trait CustomPageWorkspaceComponentActions
         $this->reloadWorkspace();
 
         if ($changed) {
-            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Component order updated')->success()->send();
+            app(AdminNotifier::class)->transient()->title('Component order updated')->success()->send();
         }
     }
 
@@ -112,7 +113,7 @@ trait CustomPageWorkspaceComponentActions
         $this->reloadWorkspace();
 
         if ($changed) {
-            app(\App\Domain\Admin\AdminNotifier::class)->transient()
+            app(AdminNotifier::class)->transient()
                 ->title('Selection moved')
                 ->body($count.' selected '.($count === 1 ? 'item' : 'items').' updated in '.($parents !== [] && $children !== [] ? 'their own scopes.' : 'order.'))
                 ->success()
@@ -132,7 +133,7 @@ trait CustomPageWorkspaceComponentActions
         $changed = app(CustomPageEditorialService::class)->updateBlock($this->settings(), $index, $type, $block);
         $this->loadComponentProjection();
         if ($changed) {
-            app(\App\Domain\Admin\AdminNotifier::class)->toast(
+            app(AdminNotifier::class)->toast(
                 $published ? 'Component published' : 'Component unpublished',
                 status: 'success',
             );
@@ -167,7 +168,7 @@ trait CustomPageWorkspaceComponentActions
 
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Component added')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Component added')->success()->send();
             });
 
         return AdminDialog::create($action, 'Add component', AdminDialogSize::Large);
@@ -198,7 +199,7 @@ trait CustomPageWorkspaceComponentActions
                 $this->clearSelections();
                 $this->reloadWorkspace();
                 if ($changed) {
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Component saved')->success()->send();
+                    app(AdminNotifier::class)->transient()->title('Component saved')->success()->send();
                 }
             });
 
@@ -226,7 +227,7 @@ trait CustomPageWorkspaceComponentActions
                 $this->reloadWorkspace();
 
                 if ($changed) {
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Component type updated')->success()->send();
+                    app(AdminNotifier::class)->transient()->title('Component type updated')->success()->send();
                 }
             });
 
@@ -249,7 +250,7 @@ trait CustomPageWorkspaceComponentActions
                 app(CustomPageEditorialService::class)->deleteBlock($this->settings(), $index, $type);
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Component deleted')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Component deleted')->success()->send();
             });
 
         return AdminDialog::confirm($action, 'Delete component?', submitLabel: 'Delete', danger: true);
@@ -277,7 +278,7 @@ trait CustomPageWorkspaceComponentActions
                 $count = count($parents) + count($children);
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()
+                app(AdminNotifier::class)->transient()
                     ->title('Selection deleted')
                     ->body($count.' selected '.($count === 1 ? 'item' : 'items').' processed.')
                     ->success()

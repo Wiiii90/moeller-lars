@@ -2,10 +2,12 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkGalleryAssignmentService;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaTypePolicy;
+use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
@@ -13,6 +15,7 @@ use App\Filament\Support\MediaReferenceCatalog;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
+use App\Models\User;
 use Filament\Actions\Action;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -34,7 +37,7 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork removed from Gallery')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Artwork removed from Gallery')->success()->send();
             });
 
         return AdminDialog::confirm(
@@ -92,9 +95,9 @@ trait GalleryWorkspaceArtworkActions
                         $this->detachGalleryArtworksAfterPrimaryMediaDelete($affectedArtworkIds);
                         $this->refreshWorkspaceAfterMutation();
                         $actor = auth()->user();
-                        if ($actor instanceof \App\Models\User) {
+                        if ($actor instanceof User) {
                             try {
-                                app(\App\Domain\Admin\AdminNotifier::class)->both(
+                                app(AdminNotifier::class)->both(
                                     user: $actor,
                                     sourceId: 'media-cleanup:asset-'.(int) $asset->getKey(),
                                     title: 'File cleanup failed',
@@ -102,7 +105,7 @@ trait GalleryWorkspaceArtworkActions
                                     status: 'danger',
                                     context: [
                                         'type' => 'media.cleanup_failure',
-                                        'action_url' => \App\Filament\Resources\MediaAssets\MediaAssetResource::getUrl('index'),
+                                        'action_url' => MediaAssetResource::getUrl('index'),
                                         'action_label' => 'Open Storage',
                                         'entity_type' => 'media_asset',
                                         'entity_id' => (int) $asset->getKey(),
@@ -122,7 +125,7 @@ trait GalleryWorkspaceArtworkActions
                         return;
                     }
 
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()
+                    app(AdminNotifier::class)->transient()
                         ->title('Media file was not deleted')
                         ->body('The file could not be deleted.')
                         ->danger()
@@ -133,7 +136,7 @@ trait GalleryWorkspaceArtworkActions
 
                 $this->detachGalleryArtworksAfterPrimaryMediaDelete($affectedArtworkIds);
                 $this->refreshWorkspaceAfterMutation();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('File deleted')->success()->send();
+                app(AdminNotifier::class)->transient()->title('File deleted')->success()->send();
             });
 
         return AdminDialog::confirm(
@@ -159,7 +162,7 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork published')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Artwork published')->success()->send();
             });
     }
 
@@ -170,7 +173,7 @@ trait GalleryWorkspaceArtworkActions
             ->action(function (array $arguments): void {
                 app(ArtworkPublicationService::class)->unpublish($this->actionArtwork($arguments));
                 $this->refreshWorkspaceAfterMutation();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork unpublished')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Artwork unpublished')->success()->send();
             });
 
         return AdminDialog::confirm(

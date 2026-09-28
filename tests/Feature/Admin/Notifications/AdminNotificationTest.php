@@ -6,6 +6,7 @@ use App\Livewire\Admin\AdminFlashNotifications;
 use App\Models\AdminNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -181,7 +182,7 @@ it('owns transient notification creation and presentation centrally', function (
         ->and($flashView)
         ->not->toContain('fi-no-notification');
 
-    foreach (\Illuminate\Support\Facades\File::allFiles(app_path()) as $file) {
+    foreach (File::allFiles(app_path()) as $file) {
         $path = $file->getRealPath();
         if ($path === app_path('Domain/Admin/AdminNotifier.php')) {
             continue;

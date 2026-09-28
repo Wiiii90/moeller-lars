@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -196,7 +197,7 @@ trait CustomPageWorkspaceLifecycle
                 });
 
                 $section = $this->section()->fresh();
-                $changed = $section instanceof \App\Models\SiteSection
+                $changed = $section instanceof SiteSection
                     && $before !== $section->only([
                         'title',
                         'navigation_label',
@@ -210,7 +211,7 @@ trait CustomPageWorkspaceLifecycle
                 $this->loadAnalyticsSnapshot($section);
                 $this->reloadWorkspace();
                 if ($changed) {
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page settings saved')->success()->send();
+                    app(AdminNotifier::class)->transient()->title('Page settings saved')->success()->send();
                 }
             });
 

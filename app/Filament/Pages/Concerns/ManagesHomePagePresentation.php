@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminIcon;
@@ -30,7 +31,7 @@ trait ManagesHomePagePresentation
             }
 
             if (app(HomeSettingsDialog::class)->changeTemplate($homeTemplate)) {
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home template updated')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Home template updated')->success()->send();
             }
         } catch (ValidationException $exception) {
             $this->validationNotification('Home template unchanged', $exception);
@@ -55,7 +56,7 @@ trait ManagesHomePagePresentation
                     $changed = $dialog->save($data);
                     $this->loadSections();
                     if ($changed) {
-                        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home routing updated')->success()->send();
+                        app(AdminNotifier::class)->transient()->title('Home routing updated')->success()->send();
                     }
                 }),
             'Save Skip Home',

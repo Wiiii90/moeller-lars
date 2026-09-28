@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\MediaAssets\Pages;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIngestService;
@@ -16,6 +17,7 @@ use App\Filament\Support\MediaReferenceCatalog;
 use App\Filament\Support\StorageWorkspaceOverview;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use App\Models\User;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -158,7 +160,7 @@ final class ListMediaAssets extends Page
         app(MediaCapacityService::class)->forgetCachedSnapshot();
         $this->loadStorageOverview(measure: true);
 
-        app(\App\Domain\Admin\AdminNotifier::class)->transient()
+        app(AdminNotifier::class)->transient()
             ->title('Storage measurement refreshed')
             ->success()
             ->send();
@@ -230,7 +232,7 @@ final class ListMediaAssets extends Page
                 $details[] = '+'.($failed - 4).' more';
             }
 
-            $notification = app(\App\Domain\Admin\AdminNotifier::class)->transient()
+            $notification = app(AdminNotifier::class)->transient()
                 ->title(($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed')
                 ->body(implode("\n", $details));
 
@@ -242,13 +244,13 @@ final class ListMediaAssets extends Page
 
             $notification->send();
         } elseif ($added > 0) {
-            app(\App\Domain\Admin\AdminNotifier::class)->transient()
+            app(AdminNotifier::class)->transient()
                 ->title($total === 1 ? 'File uploaded' : 'Files uploaded')
                 ->body($this->directUploadSummary($total, $added, $duplicates, 0))
                 ->success()
                 ->send();
         } elseif ($duplicates > 0) {
-            app(\App\Domain\Admin\AdminNotifier::class)->transient()
+            app(AdminNotifier::class)->transient()
                 ->title('Already in Storage')
                 ->body($total === 1 ? null : $duplicates.' files already exist in Storage')
                 ->info()
@@ -425,7 +427,7 @@ final class ListMediaAssets extends Page
                 $this->normalizeSelection();
                 $ids = $this->selectedAssets;
                 if ($ids === []) {
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('No files selected')->warning()->send();
+                    app(AdminNotifier::class)->transient()->title('No files selected')->warning()->send();
 
                     return;
                 }
@@ -482,7 +484,7 @@ final class ListMediaAssets extends Page
                         $details[] = '+'.(count($failed) - 4).' more';
                     }
 
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()
+                    app(AdminNotifier::class)->transient()
                         ->title('Some selected files need attention')
                         ->body($deleted.' deleted. '.implode(' ', $details))
                         ->warning()
@@ -491,7 +493,7 @@ final class ListMediaAssets extends Page
                     return;
                 }
 
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()
+                app(AdminNotifier::class)->transient()
                     ->title('Selected files deleted')
                     ->success()
                     ->send();
@@ -532,7 +534,7 @@ final class ListMediaAssets extends Page
         }
 
         $actor = auth()->user();
-        if (! $actor instanceof \App\Models\User) {
+        if (! $actor instanceof User) {
             return;
         }
 
@@ -546,7 +548,7 @@ final class ListMediaAssets extends Page
         };
 
         try {
-            app(\App\Domain\Admin\AdminNotifier::class)->both(
+            app(AdminNotifier::class)->both(
                 user: $actor,
                 sourceId: 'storage-capacity:'.$status,
                 title: match ($status) {
@@ -910,7 +912,7 @@ final class ListMediaAssets extends Page
 
         $this->loadLibrary();
         if ($updated->wasChanged()) {
-            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('File metadata saved')->success()->send();
+            app(AdminNotifier::class)->transient()->title('File metadata saved')->success()->send();
         }
     }
 
@@ -1016,9 +1018,9 @@ final class ListMediaAssets extends Page
                 $this->loadLibrary();
                 $this->refreshStorageOverviewAfterMutation();
                 $actor = auth()->user();
-                if ($actor instanceof \App\Models\User) {
+                if ($actor instanceof User) {
                     try {
-                        app(\App\Domain\Admin\AdminNotifier::class)->both(
+                        app(AdminNotifier::class)->both(
                             user: $actor,
                             sourceId: 'media-cleanup:asset-'.$assetId,
                             title: 'File cleanup failed',
@@ -1040,7 +1042,7 @@ final class ListMediaAssets extends Page
                 return true;
             }
 
-            app(\App\Domain\Admin\AdminNotifier::class)->transient()
+            app(AdminNotifier::class)->transient()
                 ->title('File not deleted')
                 ->body($exception instanceof ValidationException
                     ? $this->validationMessage($exception)
@@ -1054,7 +1056,7 @@ final class ListMediaAssets extends Page
         $this->removeSelection($assetId);
         $this->loadLibrary();
         $this->refreshStorageOverviewAfterMutation();
-        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('File deleted')->success()->send();
+        app(AdminNotifier::class)->transient()->title('File deleted')->success()->send();
 
         return true;
     }

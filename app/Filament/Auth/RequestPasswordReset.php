@@ -2,6 +2,7 @@
 
 namespace App\Filament\Auth;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Notifications\AdminPasswordResetNotification;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Auth\Pages\PasswordReset\RequestPasswordReset as BaseRequestPasswordReset;
@@ -66,7 +67,7 @@ class RequestPasswordReset extends BaseRequestPasswordReset
 
     protected function neutralSentNotification(): Notification
     {
-        return app(\App\Domain\Admin\AdminNotifier::class)->transient()
+        return app(AdminNotifier::class)->transient()
             ->title('Check your inbox')
             ->body('If an administrator account exists for that email address, a password reset link has been sent.')
             ->success();

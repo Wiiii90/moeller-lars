@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaAssetEditorialService;
@@ -212,7 +213,7 @@ trait GalleryWorkspaceDirectUpload
                     $count = count($rows);
                     $this->pendingBatchArtworkMedia = [];
                     $this->refreshWorkspaceAfterMutation();
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()
+                    app(AdminNotifier::class)->transient()
                         ->title($count.' artworks added')
                         ->body('The new artworks were created as drafts with their uploaded Media Files as primary media.')
                         ->success()
@@ -310,7 +311,7 @@ trait GalleryWorkspaceDirectUpload
                 $details[] = '+'.(count($failures) - 4).' more';
             }
 
-            $notification = app(\App\Domain\Admin\AdminNotifier::class)->transient()
+            $notification = app(AdminNotifier::class)->transient()
                 ->title(($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed')
                 ->body(implode("\n", $details));
 
@@ -325,13 +326,13 @@ trait GalleryWorkspaceDirectUpload
         }
 
         if ($added > 0) {
-            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($added === 1 ? 'File uploaded' : 'Files uploaded')->body($summary)->success()->send();
+            app(AdminNotifier::class)->transient()->title($added === 1 ? 'File uploaded' : 'Files uploaded')->body($summary)->success()->send();
 
             return;
         }
 
         if ($duplicates > 0) {
-            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Already in Media Files')->body($summary)->info()->send();
+            app(AdminNotifier::class)->transient()->title('Already in Media Files')->body($summary)->info()->send();
         }
     }
 

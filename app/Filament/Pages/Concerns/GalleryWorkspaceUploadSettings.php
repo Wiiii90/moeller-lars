@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -79,7 +80,7 @@ trait GalleryWorkspaceUploadSettings
                 $this->loadMoveTargets();
                 $this->refreshWorkspaceAfterMutation();
                 if ($changed) {
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Gallery settings saved')->success()->send();
+                    app(AdminNotifier::class)->transient()->title('Gallery settings saved')->success()->send();
                 }
             });
 
@@ -109,7 +110,7 @@ trait GalleryWorkspaceUploadSettings
             ->action(function (array $data): void {
                 $changed = app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
                 if ($changed) {
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Material presets saved')->success()->send();
+                    app(AdminNotifier::class)->transient()->title('Material presets saved')->success()->send();
                 }
             });
 

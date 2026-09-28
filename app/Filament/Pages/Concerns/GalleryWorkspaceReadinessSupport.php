@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Models\Artwork;
@@ -51,7 +52,7 @@ trait GalleryWorkspaceReadinessSupport
 
     private function notifyValidationFailure(string $title, ValidationException $exception): void
     {
-        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($title)->body($this->firstValidationMessage($exception))->danger()->send();
+        app(AdminNotifier::class)->transient()->title($title)->body($this->firstValidationMessage($exception))->danger()->send();
     }
 
     private function firstValidationMessage(ValidationException $exception): string

@@ -2,12 +2,14 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
+use App\Models\Artwork;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\DB;
@@ -56,7 +58,7 @@ trait GalleryWorkspaceArtworkDialogs
 
                 $this->pendingPrimaryMediaAssetId = null;
                 $this->refreshWorkspaceAfterMutation();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork draft created')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Artwork draft created')->success()->send();
             });
 
         return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
@@ -126,8 +128,8 @@ trait GalleryWorkspaceArtworkDialogs
                     }
                 });
 
-                /** @var \App\Models\Artwork $freshArtwork */
-                $freshArtwork = \App\Models\Artwork::query()->findOrFail($artwork->getKey());
+                /** @var Artwork $freshArtwork */
+                $freshArtwork = Artwork::query()->findOrFail($artwork->getKey());
                 $freshPrimary = $freshArtwork->artworkMedia()->where('role', 'primary')->first();
                 $after = [
                     'artwork' => $freshArtwork->getAttributes(),
@@ -136,7 +138,7 @@ trait GalleryWorkspaceArtworkDialogs
 
                 $this->refreshWorkspaceAfterMutation();
                 if ($before !== $after) {
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork saved')->success()->send();
+                    app(AdminNotifier::class)->transient()->title('Artwork saved')->success()->send();
                 }
             });
 

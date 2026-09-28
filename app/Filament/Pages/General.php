@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
 use App\Domain\Content\SocialLinks;
@@ -14,6 +15,7 @@ use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
@@ -587,7 +589,7 @@ final class General extends Page
                 $this->dispatch('general-appearance-updated');
             }
 
-            app(\App\Domain\Admin\AdminNotifier::class)->toast(
+            app(AdminNotifier::class)->toast(
                 'Changes saved',
                 $this->persistenceFeedbackLabel($field).' updated.',
                 'success',
@@ -601,7 +603,7 @@ final class General extends Page
             }
 
             $message = collect($exception->errors())->flatten()->first();
-            app(\App\Domain\Admin\AdminNotifier::class)->toast(
+            app(AdminNotifier::class)->toast(
                 'Change not saved',
                 is_string($message) ? $message : 'This setting could not be saved.',
                 'danger',
@@ -610,7 +612,7 @@ final class General extends Page
             report($exception);
             $message = 'This setting could not be saved. Please try again.';
             $this->addError('data.'.$field, $message);
-            app(\App\Domain\Admin\AdminNotifier::class)->toast('Change not saved', $message, 'danger');
+            app(AdminNotifier::class)->toast('Change not saved', $message, 'danger');
         }
     }
 
@@ -625,7 +627,7 @@ final class General extends Page
         return $rows;
     }
 
-    private static function persist(string $field): \Closure
+    private static function persist(string $field): Closure
     {
         return static function ($livewire) use ($field): void {
             if ($livewire instanceof self) {
@@ -779,7 +781,7 @@ final class General extends Page
                 ['social_links' => $links],
             );
             $this->settingsRecord = null;
-            app(\App\Domain\Admin\AdminNotifier::class)->toast('Social links updated', status: 'success');
+            app(AdminNotifier::class)->toast('Social links updated', status: 'success');
         } catch (ValidationException $exception) {
             $mapped = [];
             foreach ($exception->errors() as $key => $messages) {

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\PagesSettingsDialog;
@@ -24,7 +25,7 @@ trait ManagesSitePagesSettings
                     $changed = $dialog->save($data);
                     $this->loadSections();
                     if ($changed) {
-                        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Pages settings saved')->success()->send();
+                        app(AdminNotifier::class)->transient()->title('Pages settings saved')->success()->send();
                     }
                 }),
             'Save settings',

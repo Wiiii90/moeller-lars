@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Filament\Pages\Concerns\GalleryWorkspaceArtworkActions;
 use App\Filament\Pages\Concerns\GalleryWorkspaceArtworkDialogs;
@@ -160,7 +161,7 @@ final class GalleryWorkspace extends Page
         }
 
         $this->refreshWorkspaceAfterMutation();
-        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Artwork title saved')->success()->send();
+        app(AdminNotifier::class)->transient()->title('Artwork title saved')->success()->send();
 
         return $normalized;
     }

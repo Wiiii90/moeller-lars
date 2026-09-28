@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Models\CustomPageSetting;
 use Filament\Actions\Action;
@@ -29,7 +30,7 @@ trait CustomPageWorkspaceChildOrdering
             $this->clearSelections();
             $this->loadComponentProjection();
             if ($changed) {
-                app(\App\Domain\Admin\AdminNotifier::class)->toast('List entry order updated', status: 'success');
+                app(AdminNotifier::class)->toast('List entry order updated', status: 'success');
             }
 
             return;
@@ -46,7 +47,7 @@ trait CustomPageWorkspaceChildOrdering
             $this->clearSelections();
             $this->loadComponentProjection();
             if ($changed) {
-                app(\App\Domain\Admin\AdminNotifier::class)->toast('Contact item order updated', status: 'success');
+                app(AdminNotifier::class)->toast('Contact item order updated', status: 'success');
             }
 
             return;
@@ -99,7 +100,7 @@ trait CustomPageWorkspaceChildOrdering
         $count = count($parents) + count($children);
         $this->clearSelections();
         $this->reloadWorkspace();
-        app(\App\Domain\Admin\AdminNotifier::class)->transient()
+        app(AdminNotifier::class)->transient()
             ->title($published ? 'Selection published' : 'Selection unpublished')
             ->body($count.' selected '.($count === 1 ? 'item' : 'items').' updated on their own hierarchy levels.')
             ->success()

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Models\User;
@@ -93,7 +94,7 @@ final class AccountMenuAction
                         return;
                     }
 
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()
+                    app(AdminNotifier::class)->transient()
                         ->danger()
                         ->title('Too many attempts')
                         ->body('Try again in a minute.')
@@ -113,7 +114,7 @@ final class AccountMenuAction
                         ]);
                     }
 
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()
+                    app(AdminNotifier::class)->transient()
                         ->success()
                         ->title('Account updated')
                         ->send();

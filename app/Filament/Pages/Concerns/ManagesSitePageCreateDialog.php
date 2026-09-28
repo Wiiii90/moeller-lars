@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
@@ -72,7 +73,7 @@ trait ManagesSitePageCreateDialog
                 $this->pageNumber = 1;
                 $this->loadSections();
 
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()
+                app(AdminNotifier::class)->transient()
                     ->title($section->nodeType()->label().' added')
                     ->success()
                     ->send();
