@@ -8,7 +8,6 @@ use App\Domain\Artwork\ArtworkPublicationService;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Dialogs\AdminDialog;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -35,7 +34,7 @@ trait GalleryWorkspaceBatchActions
                 $count = $artworks->count();
                 $this->clearSelection();
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title($count.' selected '.($count === 1 ? 'artwork was' : 'artworks were').' removed')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($count.' selected '.($count === 1 ? 'artwork was' : 'artworks were').' removed')->success()->send();
             });
 
         return AdminDialog::confirm(
@@ -69,7 +68,7 @@ trait GalleryWorkspaceBatchActions
                 $count = $artworks->count();
                 $this->clearSelection();
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title($count.' '.($count === 1 ? 'artwork deleted' : 'artworks deleted'))->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($count.' '.($count === 1 ? 'artwork deleted' : 'artworks deleted'))->success()->send();
             });
 
         return AdminDialog::confirm(
@@ -100,7 +99,7 @@ trait GalleryWorkspaceBatchActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Selected artworks published')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Selected artworks published')->success()->send();
             });
     }
 
@@ -117,7 +116,7 @@ trait GalleryWorkspaceBatchActions
                 });
 
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Selected artworks unpublished')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Selected artworks unpublished')->success()->send();
             });
 
         return AdminDialog::confirm(
