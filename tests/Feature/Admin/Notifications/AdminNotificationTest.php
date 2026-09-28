@@ -174,8 +174,10 @@ it('owns transient notification creation and presentation centrally', function (
     $flashView = file_get_contents(resource_path('views/livewire/admin/admin-flash-notifications.blade.php'));
 
     expect($provider)
+        ->toContain("app()->booted")
         ->toContain("Livewire::component('notifications', AdminFlashNotifications::class)")
         ->toContain('PanelsRenderHook::TOPBAR_START')
+        ->and(Livewire::new('notifications'))->toBeInstanceOf(AdminFlashNotifications::class)
         ->and($ticker)
         ->toContain('data-admin-notification-ticker')
         ->and($flashView)

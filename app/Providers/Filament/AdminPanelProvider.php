@@ -45,7 +45,10 @@ class AdminPanelProvider extends PanelProvider
     public function boot(): void
     {
         AdminControl::register();
-        Livewire::component('notifications', AdminFlashNotifications::class);
+
+        app()->booted(static function (): void {
+            Livewire::component('notifications', AdminFlashNotifications::class);
+        });
 
         $this->callAfterResolving(BladeIconFactory::class, static function (BladeIconFactory $factory): void {
             $factory->add('admin', [
