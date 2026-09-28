@@ -11,7 +11,6 @@ use App\Filament\Support\HomeRoutingDialog;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Illuminate\Validation\ValidationException;
 
 trait ManagesHomePagePresentation
@@ -31,7 +30,7 @@ trait ManagesHomePagePresentation
             }
 
             app(HomeSettingsDialog::class)->changeTemplate($homeTemplate);
-            Notification::make()->title('Home template updated')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home template updated')->success()->send();
         } catch (ValidationException $exception) {
             $this->validationNotification('Home template unchanged', $exception);
         }
@@ -54,7 +53,7 @@ trait ManagesHomePagePresentation
                 ->action(function (array $data) use ($dialog): void {
                     $dialog->save($data);
                     $this->loadSections();
-                    Notification::make()->title('Home routing updated')->success()->send();
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home routing updated')->success()->send();
                 }),
             'Save Skip Home',
             AdminDialogSize::Small,
