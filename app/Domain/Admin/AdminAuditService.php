@@ -64,7 +64,8 @@ class AdminAuditService
         );
 
         if ($action === 'admin.undo_applied' && is_int($metadata['source_audit_event_id'] ?? null)) {
-            $sourceMetadata = AuditEvent::query()->whereKey($metadata['source_audit_event_id'])->value('metadata');
+            $sourceEvent = AuditEvent::query()->find($metadata['source_audit_event_id']);
+            $sourceMetadata = $sourceEvent?->getAttribute('metadata');
             $sourceSummary = is_array($sourceMetadata) ? ($sourceMetadata['change_summary'] ?? null) : null;
             if (is_array($sourceSummary)) {
                 $summary = $this->changeSummary->reverse($sourceSummary);
