@@ -923,7 +923,7 @@ final class JournalWorkspace extends Page
         $media = $fresh->mediaUsages()
             ->orderBy('id')
             ->get()
-            ->map(static fn (JournalEntryMedia $usage): array => $usage->getAttributes())
+            ->map(static fn ($usage): array => $usage->getAttributes())
             ->values()
             ->all();
 
