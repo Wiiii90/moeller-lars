@@ -13,7 +13,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 
@@ -189,7 +188,7 @@ trait CustomPageWorkspaceLifecycle
                 $section = $this->section();
                 $this->loadAnalyticsSnapshot($section);
                 $this->reloadWorkspace();
-                Notification::make()->title('Page settings saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page settings saved')->success()->send();
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
