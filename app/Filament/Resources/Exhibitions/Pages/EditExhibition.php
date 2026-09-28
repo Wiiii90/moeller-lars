@@ -8,7 +8,6 @@ use App\Filament\Pages\JournalWorkspace;
 use App\Filament\Resources\Exhibitions\ExhibitionResource;
 use App\Filament\Support\JournalEntryEditorState;
 use App\Models\Exhibition;
-use App\Models\JournalEntryMedia;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -55,7 +54,7 @@ class EditExhibition extends EditRecord
         $media = $fresh->mediaUsages()
             ->orderBy('id')
             ->get()
-            ->map(static fn (JournalEntryMedia $usage): array => $usage->getAttributes())
+            ->map(static fn ($usage): array => $usage->getAttributes())
             ->values()
             ->all();
 
