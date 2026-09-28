@@ -66,7 +66,7 @@ class RequestPasswordReset extends BaseRequestPasswordReset
 
     protected function neutralSentNotification(): Notification
     {
-        return Notification::make()
+        return app(\App\Domain\Admin\AdminNotifier::class)->transient()
             ->title('Check your inbox')
             ->body('If an administrator account exists for that email address, a password reset link has been sent.')
             ->success();
