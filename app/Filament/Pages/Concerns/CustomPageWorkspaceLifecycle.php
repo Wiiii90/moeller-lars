@@ -168,6 +168,16 @@ trait CustomPageWorkspaceLifecycle
             ])
             ->modalHeading('Page settings')
             ->action(function (array $data): void {
+                $before = $this->section()->only([
+                    'title',
+                    'navigation_label',
+                    'slug',
+                    'state',
+                    'show_in_navigation',
+                    'parent_id',
+                    'position',
+                ]);
+
                 DB::transaction(function () use ($data): void {
                     $service = app(SiteSectionEditorialService::class);
                     $section = $service->updateCustomPageIdentity(
@@ -185,10 +195,23 @@ trait CustomPageWorkspaceLifecycle
                     );
                 });
 
-                $section = $this->section();
+                $section = $this->section()->fresh();
+                $changed = $section instanceof \App\Models\SiteSection
+                    && $before !== $section->only([
+                        'title',
+                        'navigation_label',
+                        'slug',
+                        'state',
+                        'show_in_navigation',
+                        'parent_id',
+                        'position',
+                    ]);
+                $section ??= $this->section();
                 $this->loadAnalyticsSnapshot($section);
                 $this->reloadWorkspace();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page settings saved')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page settings saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
