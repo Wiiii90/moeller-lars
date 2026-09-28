@@ -450,8 +450,11 @@ final class HomePresentation extends Page
         array_splice($ids, $from, 1);
         $position = max(0, min($position, count($ids)));
         array_splice($ids, $position, 0, [$moved]);
-        app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
+        $changed = app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
         $this->reloadWorkspace();
+        if ($changed) {
+            app(\App\Domain\Admin\AdminNotifier::class)->toast('Home group order updated', status: 'success');
+        }
     }
 
     public function moveHeroArtwork(int $artworkId, string $direction): void
@@ -469,8 +472,11 @@ final class HomePresentation extends Page
             return;
         }
         [$ids[$index], $ids[$target]] = [$ids[$target], $ids[$index]];
-        app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
+        $changed = app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
         $this->reloadWorkspace();
+        if ($changed) {
+            app(\App\Domain\Admin\AdminNotifier::class)->toast('Home group order updated', status: 'success');
+        }
     }
 
     public function setHeroPercentage(int $artworkId, mixed $percentage): void
@@ -482,12 +488,15 @@ final class HomePresentation extends Page
         if ($value < 0 || $value > 100) {
             throw ValidationException::withMessages(['weight' => 'Percentage must be between 0 and 100.']);
         }
-        app(HomeHeroConfigurationService::class)->updateManualMemberWeight(
+        $changed = app(HomeHeroConfigurationService::class)->updateManualMemberWeight(
             $this->settings(),
             $artworkId,
             (int) round($value * 100),
         );
         $this->reloadWorkspace();
+        if ($changed) {
+            app(\App\Domain\Admin\AdminNotifier::class)->toast('Home artwork percentage updated', status: 'success');
+        }
     }
 
     public function addComponentAction(): Action
