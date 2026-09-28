@@ -91,11 +91,21 @@ trait GalleryWorkspaceArtworkActions
                     if ($fresh instanceof MediaAsset && $fresh->getAttribute('state') === 'deleted') {
                         $this->detachGalleryArtworksAfterPrimaryMediaDelete($affectedArtworkIds);
                         $this->refreshWorkspaceAfterMutation();
-                        app(\App\Domain\Admin\AdminNotifier::class)->transient()
-                            ->title('File cleanup failed')
-                            ->body('The file was removed from Media Files, but stored file cleanup could not be completed.')
-                            ->danger()
-                            ->send();
+                        $actor = auth()->user();
+                        if ($actor instanceof \App\Models\User) {
+                            app(\App\Domain\Admin\AdminNotifier::class)->both(
+                                user: $actor,
+                                sourceId: 'media-cleanup:asset-'.(int) $asset->getKey(),
+                                title: 'File cleanup failed',
+                                body: 'The file was removed from Media Files, but stored file cleanup could not be completed.',
+                                status: 'danger',
+                                context: [
+                                    'type' => 'media.cleanup_failure',
+                                    'entity_type' => 'media_asset',
+                                    'entity_id' => (int) $asset->getKey(),
+                                ],
+                            );
+                        }
 
                         return;
                     }
