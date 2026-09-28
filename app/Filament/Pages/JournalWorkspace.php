@@ -426,17 +426,21 @@ final class JournalWorkspace extends Page
             ->modalHeading('Edit post')
             ->action(function (Action $action, array $data, array $arguments): void {
                 $post = $this->post((int) ($arguments['post'] ?? 0));
+                $before = $this->journalEntryMutationState($post);
                 $data = [...$data, 'site_section_id' => $this->sectionId, 'state' => $post->getAttribute('state'), 'position' => $post->getAttribute('position'), 'published_at' => $post->getAttribute('published_at'), 'scheduled_at' => $post->getAttribute('scheduled_at')];
                 try {
-                    app(BlogEditorialService::class)->update($post, $data);
+                    $updated = app(BlogEditorialService::class)->update($post, $data);
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Post unchanged', $exception);
                     $action->halt();
 
                     return;
                 }
+                $changed = $before !== $this->journalEntryMutationState($updated);
                 $this->loadPosts(false);
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Post saved')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Post saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -497,17 +501,21 @@ final class JournalWorkspace extends Page
             ->modalHeading('Edit exhibition')
             ->action(function (Action $action, array $data, array $arguments): void {
                 $entry = $this->exhibition((int) ($arguments['exhibition'] ?? 0));
+                $before = $this->journalEntryMutationState($entry);
                 $data['site_section_id'] = $this->sectionId;
                 try {
-                    app(ExhibitionEditorialService::class)->update($entry, $data);
+                    $updated = app(ExhibitionEditorialService::class)->update($entry, $data);
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Exhibition unchanged', $exception);
                     $action->halt();
 
                     return;
                 }
+                $changed = $before !== $this->journalEntryMutationState($updated);
                 $this->loadExhibitions(false);
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Exhibition saved')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Exhibition saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -901,6 +909,28 @@ final class JournalWorkspace extends Page
         $notification = app(\App\Domain\Admin\AdminNotifier::class)->transient()->title(ucfirst($label))->body($ok.' succeeded'.($failed > 0 ? ' · '.$failed.' failed' : ''));
         $failed > 0 ? $notification->warning() : $notification->success();
         $notification->send();
+    }
+
+    /**
+     * @return array{record:array<string,mixed>,media:list<array<string,mixed>>}
+     */
+    private function journalEntryMutationState(BlogPost|Exhibition $entry): array
+    {
+        $fresh = $entry instanceof BlogPost
+            ? BlogPost::query()->findOrFail($entry->getKey())
+            : Exhibition::query()->findOrFail($entry->getKey());
+
+        $media = $fresh->mediaUsages()
+            ->orderBy('id')
+            ->get()
+            ->map(static fn (JournalEntryMedia $usage): array => $usage->getAttributes())
+            ->values()
+            ->all();
+
+        return [
+            'record' => $fresh->getAttributes(),
+            'media' => $media,
+        ];
     }
 
     private function notifyValidationFailure(string $title, ValidationException $exception): void
