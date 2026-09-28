@@ -645,7 +645,16 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
   const mobile = await page.evaluate(() => {
     const header = document.querySelector('.fi-topbar');
     const tickerRoot = document.querySelector('[data-admin-notification-ticker]');
-    const burgerButton = document.querySelector('.fi-topbar-open-sidebar-btn:not([style*="display: none"]), .fi-topbar-close-sidebar-btn:not([style*="display: none"])');
+    const burgerButton = [...document.querySelectorAll('.fi-topbar-open-sidebar-btn, .fi-topbar-close-sidebar-btn')]
+      .find((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+
+        return style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && rect.width > 0
+          && rect.height > 0;
+      }) ?? null;
     const user = document.querySelector('.fi-user-menu-trigger');
     const body = document.querySelector('[data-admin-notification-body]');
     const stickyOwner = (() => {
