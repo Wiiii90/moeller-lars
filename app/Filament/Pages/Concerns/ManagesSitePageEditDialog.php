@@ -94,12 +94,14 @@ trait ManagesSitePageEditDialog
                     ]),
             ])
             ->action(function (array $data, array $arguments): void {
-                DB::transaction(function () use ($data, $arguments): void {
-                    $this->savePageFromDialog($this->dialogSection($arguments), $data);
+                $changed = DB::transaction(function () use ($data, $arguments): bool {
+                    return $this->savePageFromDialog($this->dialogSection($arguments), $data);
                 });
 
                 $this->loadSections();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page updated')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page updated')->success()->send();
+                }
             })
             ->extraModalFooterActions(fn (array $arguments): array => $this->pageDialogHeaderActions($arguments));
 
@@ -126,8 +128,19 @@ trait ManagesSitePageEditDialog
     }
 
     /** @param array<string, mixed> $data */
-    private function savePageFromDialog(SiteSection $section, array $data): void
+    private function savePageFromDialog(SiteSection $section, array $data): bool
     {
+        $before = $section->only([
+            'type',
+            'template',
+            'title',
+            'navigation_label',
+            'slug',
+            'parent_id',
+            'position',
+            'show_in_navigation',
+        ]);
+
         $targetType = SiteSectionType::tryFrom((string) ($data['type'] ?? ''));
         if ($targetType === null || $targetType === SiteSectionType::Home) {
             throw ValidationException::withMessages(['type' => 'Choose a supported editable page type.']);
@@ -166,6 +179,19 @@ trait ManagesSitePageEditDialog
             }
             $this->orderService()->moveTo($section, $parentId, $position - 1);
         }
+
+        $after = SiteSection::query()->findOrFail($section->getKey())->only([
+            'type',
+            'template',
+            'title',
+            'navigation_label',
+            'slug',
+            'parent_id',
+            'position',
+            'show_in_navigation',
+        ]);
+
+        return $before !== $after;
     }
 
     private function updateDialogIdentity(SiteSection $section, string $name, ?string $slug): SiteSection
