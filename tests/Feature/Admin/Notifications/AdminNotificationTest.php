@@ -147,7 +147,6 @@ it('has no DOM recorder in the admin panel notification path', function (): void
         ->and(file_exists(resource_path('views/filament/partials/admin-notification-history.blade.php')))->toBeFalse();
 });
 
-
 it('routes transient feedback through the project ticker component', function (): void {
     $user = User::factory()->admin()->create();
     $this->actingAs($user);
