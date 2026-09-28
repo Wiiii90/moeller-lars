@@ -40,8 +40,12 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
 
     $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
     expect($projected)->not->toBeNull()
+        ->and($projected['action'])->toBe('Changed Public email')
+        ->and($projected['change_summary']['items'][0]['label'] ?? null)->toBe('Public email')
+        ->and($projected['change_summary']['items'][0]['after'] ?? null)->toBe('undo-snapshot@example.test')
         ->and($projected['undo']['id'] ?? null)->toBe((int) $receipt->getKey())
-        ->and($projected['undo']['inverse_label'] ?? null)->toBe('Restored previous values');
+        ->and($projected['undo']['inverse_label'] ?? null)->toBe('Restored previous values')
+        ->and($projected['undo']['confirmation'] ?? null)->toContain('restore Public email');
 
     $result = app(AdminUndoService::class)->undo((int) $receipt->getKey());
 
@@ -51,9 +55,13 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
         ->and($receipt->fresh()?->getAttribute('undone_at'))->not->toBeNull();
 
     $undoEvent = AuditEvent::query()->where('action', 'admin.undo_applied')->latest('id')->firstOrFail();
-    expect($undoEvent->getAttribute('metadata'))->toBe([
-        'source_audit_event_id' => (int) $event->getKey(),
-    ]);
+    $undoMetadata = $undoEvent->getAttribute('metadata');
+    expect($undoMetadata['source_audit_event_id'] ?? null)->toBe((int) $event->getKey())
+        ->and($undoMetadata['change_summary']['items'][0]['label'] ?? null)->toBe('Public email')
+        ->and($undoMetadata['change_summary']['items'][0]['after'] ?? null)->toBe($beforeEmail === null ? 'None' : (string) $beforeEmail);
+
+    $projectedUndo = app(AdminActivityFeed::class)->event((int) $undoEvent->getKey(), $actor);
+    expect($projectedUndo['action'] ?? null)->toBe('Restored Public email');
 });
 
 it('hides an older snapshot Undo after the same row changes again', function (): void {
