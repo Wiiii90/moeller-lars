@@ -114,13 +114,9 @@ final class AdminMutationSnapshotBuffer
     /**
      * @return list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>|null
      */
-    public function takeForAudit(string $entityType, int $entityId): ?array
+    public function peekForAudit(string $entityType, int $entityId): ?array
     {
         $snapshots = array_values($this->snapshots);
-        $this->snapshots = [];
-        $this->pendingUpdates = [];
-        $this->pendingDeletes = [];
-
         if ($snapshots === []) {
             return null;
         }
@@ -130,6 +126,19 @@ final class AdminMutationSnapshotBuffer
         );
 
         return $matchesTarget ? $snapshots : null;
+    }
+
+    /**
+     * @return list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>|null
+     */
+    public function takeForAudit(string $entityType, int $entityId): ?array
+    {
+        $snapshots = $this->peekForAudit($entityType, $entityId);
+        $this->snapshots = [];
+        $this->pendingUpdates = [];
+        $this->pendingDeletes = [];
+
+        return $snapshots;
     }
 
     public function markPublicationStateMayHaveChanged(): void
