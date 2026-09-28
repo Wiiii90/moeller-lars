@@ -29,8 +29,9 @@ trait ManagesHomePagePresentation
                 throw ValidationException::withMessages(['template' => 'Choose a Home content template.']);
             }
 
-            app(HomeSettingsDialog::class)->changeTemplate($homeTemplate);
-            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home template updated')->success()->send();
+            if (app(HomeSettingsDialog::class)->changeTemplate($homeTemplate)) {
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home template updated')->success()->send();
+            }
         } catch (ValidationException $exception) {
             $this->validationNotification('Home template unchanged', $exception);
         }
@@ -51,9 +52,11 @@ trait ManagesHomePagePresentation
                 ->fillForm(fn (): array => $dialog->fill())
                 ->schema($dialog->schema())
                 ->action(function (array $data) use ($dialog): void {
-                    $dialog->save($data);
+                    $changed = $dialog->save($data);
                     $this->loadSections();
-                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home routing updated')->success()->send();
+                    if ($changed) {
+                        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home routing updated')->success()->send();
+                    }
                 }),
             'Save Skip Home',
             AdminDialogSize::Small,
