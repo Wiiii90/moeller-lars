@@ -558,20 +558,25 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
   await expect(userMenu).toBeVisible();
 
   await page.evaluate(() => {
-    window.dispatchEvent(new CustomEvent('admin-notification-ticker', {
-      detail: {
-        notification: {
-          id: 'browser-acceptance-desktop',
-          title: 'Changes saved',
-          body: 'Activity now records the precise values.',
-          status: 'success',
-          duration: 8_000,
-        },
+    window.Livewire.dispatch('notificationSent', {
+      notification: {
+        id: 'browser-acceptance-desktop',
+        actions: [],
+        body: 'Activity now records the precise values.',
+        color: null,
+        duration: 8_000,
+        icon: null,
+        iconColor: null,
+        status: 'success',
+        title: 'Changes saved',
+        view: null,
+        viewData: [],
       },
-    }));
+    });
   });
 
   await expect(ticker).toHaveClass(/is-active/);
+  await expect(page.locator('.fi-no')).toHaveCount(0);
   await expect(ticker.getByText('Changes saved', { exact: true })).toBeVisible();
 
   const desktop = await page.evaluate(() => {
@@ -626,20 +631,25 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
   await expect(mobileUserMenu).toBeVisible();
 
   await page.evaluate(() => {
-    window.dispatchEvent(new CustomEvent('admin-notification-ticker', {
-      detail: {
-        notification: {
-          id: 'browser-acceptance-mobile',
-          title: 'Page updated',
-          body: 'This body is intentionally hidden on narrow screens.',
-          status: 'success',
-          duration: 8_000,
-        },
+    window.Livewire.dispatch('notificationSent', {
+      notification: {
+        id: 'browser-acceptance-mobile',
+        actions: [],
+        body: 'This body is intentionally hidden on narrow screens.',
+        color: null,
+        duration: 8_000,
+        icon: null,
+        iconColor: null,
+        status: 'success',
+        title: 'Page updated',
+        view: null,
+        viewData: [],
       },
-    }));
+    });
   });
 
   await expect(mobileTicker).toHaveClass(/is-active/);
+  await expect(page.locator('.fi-no')).toHaveCount(0);
   await expect(mobileTicker.getByText('Page updated', { exact: true })).toBeVisible();
 
   const mobile = await page.evaluate(() => {
