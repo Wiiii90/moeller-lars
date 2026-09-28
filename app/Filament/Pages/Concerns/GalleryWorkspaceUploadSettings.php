@@ -14,7 +14,6 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 
@@ -75,7 +74,7 @@ trait GalleryWorkspaceUploadSettings
                 $this->loadGallery((int) $gallery->getKey());
                 $this->loadMoveTargets();
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Gallery settings saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Gallery settings saved')->success()->send();
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -103,7 +102,7 @@ trait GalleryWorkspaceUploadSettings
             ->modalHeading('Material presets')
             ->action(function (array $data): void {
                 app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
-                Notification::make()->title('Material presets saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Material presets saved')->success()->send();
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Default);
