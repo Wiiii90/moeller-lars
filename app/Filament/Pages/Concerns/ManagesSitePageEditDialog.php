@@ -130,16 +130,7 @@ trait ManagesSitePageEditDialog
     /** @param array<string, mixed> $data */
     private function savePageFromDialog(SiteSection $section, array $data): bool
     {
-        $before = $section->only([
-            'type',
-            'template',
-            'title',
-            'navigation_label',
-            'slug',
-            'parent_id',
-            'position',
-            'show_in_navigation',
-        ]);
+        $before = $this->pageDialogPersistedState($section);
 
         $targetType = SiteSectionType::tryFrom((string) ($data['type'] ?? ''));
         if ($targetType === null || $targetType === SiteSectionType::Home) {
@@ -180,18 +171,32 @@ trait ManagesSitePageEditDialog
             $this->orderService()->moveTo($section, $parentId, $position - 1);
         }
 
-        $after = SiteSection::query()->findOrFail($section->getKey())->only([
-            'type',
-            'template',
-            'title',
-            'navigation_label',
-            'slug',
-            'parent_id',
-            'position',
-            'show_in_navigation',
-        ]);
+        /** @var SiteSection $fresh */
+        $fresh = SiteSection::query()->findOrFail($section->getKey());
 
-        return $before !== $after;
+        return $before !== $this->pageDialogPersistedState($fresh);
+    }
+
+    /**
+     * @return array{type:string,template:?string,title:string,navigation_label:?string,slug:?string,parent_id:?int,position:int,show_in_navigation:bool}
+     */
+    private function pageDialogPersistedState(SiteSection $section): array
+    {
+        $template = $section->getAttribute('template');
+        $navigationLabel = $section->getAttribute('navigation_label');
+        $slug = $section->getAttribute('slug');
+        $parentId = $section->getAttribute('parent_id');
+
+        return [
+            'type' => (string) $section->getAttribute('type'),
+            'template' => $template === null ? null : (string) $template,
+            'title' => (string) $section->getAttribute('title'),
+            'navigation_label' => $navigationLabel === null ? null : (string) $navigationLabel,
+            'slug' => $slug === null ? null : (string) $slug,
+            'parent_id' => $parentId === null ? null : (int) $parentId,
+            'position' => (int) $section->getAttribute('position'),
+            'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
+        ];
     }
 
     private function updateDialogIdentity(SiteSection $section, string $name, ?string $slug): SiteSection
