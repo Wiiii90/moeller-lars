@@ -8,7 +8,6 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\CustomPageSetting;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 
 trait CustomPageWorkspaceListContactActions
 {
@@ -26,7 +25,7 @@ trait CustomPageWorkspaceListContactActions
                 app(CustomPageEditorialService::class)->addListItem($this->settings(), $index, $type, $this->listItemPayload($data));
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('List entry added')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('List entry added')->success()->send();
             });
 
         return AdminDialog::create($action, 'Add list entry', AdminDialogSize::Large);
@@ -55,7 +54,7 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('List entry saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('List entry saved')->success()->send();
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -100,7 +99,7 @@ trait CustomPageWorkspaceListContactActions
                 app(CustomPageEditorialService::class)->deleteListItem($this->settings(), $index, $type, $itemIndex);
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('List entry deleted')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('List entry deleted')->success()->send();
             });
 
         return AdminDialog::confirm($action, 'Delete list entry?', submitLabel: 'Delete', danger: true);
@@ -129,7 +128,7 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('Contact item added')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Contact item added')->success()->send();
             });
 
         return AdminDialog::create($action, 'Add contact item', AdminDialogSize::Large);
@@ -162,7 +161,7 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('Contact item saved')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Contact item saved')->success()->send();
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -211,7 +210,7 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('Contact item deleted')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Contact item deleted')->success()->send();
             });
 
         return AdminDialog::confirm($action, 'Delete contact item?', submitLabel: 'Delete', danger: true);
