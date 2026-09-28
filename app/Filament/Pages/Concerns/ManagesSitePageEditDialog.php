@@ -115,9 +115,11 @@ trait ManagesSitePageEditDialog
             ->fillForm(fn (): array => $dialog->fill())
             ->schema($dialog->schema())
             ->action(function (array $data) use ($dialog): void {
-                $dialog->save($data);
+                $changed = $dialog->save($data);
                 $this->loadSections();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
