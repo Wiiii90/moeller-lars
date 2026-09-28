@@ -42,7 +42,7 @@ final class ArtworkMaterialPresetService
     }
 
     /** @param array<int, mixed> $names */
-    public function sync(array $names): void
+    public function sync(array $names): bool
     {
         $normalized = [];
         foreach ($names as $name) {
@@ -64,7 +64,9 @@ final class ArtworkMaterialPresetService
             $normalized[$key] ??= $value;
         }
 
-        DB::transaction(function () use ($normalized): void {
+        return DB::transaction(function () use ($normalized): bool {
+            $changed = false;
+
             /** @var EloquentCollection<int, ArtworkMaterialPreset> $presets */
             $presets = ArtworkMaterialPreset::query()
                 ->lockForUpdate()
@@ -79,6 +81,7 @@ final class ArtworkMaterialPresetService
                 if (isset($existing[$key])) {
                     if ((string) $existing[$key]->getAttribute('name') !== $name) {
                         $existing[$key]->forceFill(['name' => $name])->save();
+                        $changed = true;
                     }
                     unset($existing[$key]);
 
@@ -86,11 +89,15 @@ final class ArtworkMaterialPresetService
                 }
 
                 ArtworkMaterialPreset::query()->create(['name' => $name]);
+                $changed = true;
             }
 
             foreach ($existing as $preset) {
                 $preset->delete();
+                $changed = true;
             }
+
+            return $changed;
         });
     }
 }

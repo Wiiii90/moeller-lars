@@ -1,5 +1,6 @@
 @import './admin/base.css';
 @import './admin/layouts.css';
+@import './admin/notifications.css';
 @import './admin/forms.css';
 @import './admin/data-workspace.css';
 @import './admin/analytics.css';

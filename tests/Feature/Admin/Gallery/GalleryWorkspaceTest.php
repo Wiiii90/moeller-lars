@@ -182,11 +182,13 @@ it('still requires the canonical public thumbnail for image publication', functi
 it('stores reusable Material presets without rewriting historical Artwork material text', function (): void {
     $artwork = polishArtwork(polishGallery(), ['medium' => 'Oil on linen']);
 
-    app(ArtworkMaterialPresetService::class)->sync(['Oil on linen', 'Graphite']);
+    expect(app(ArtworkMaterialPresetService::class)->sync(['Oil on linen', 'Graphite']))->toBeTrue()
+        ->and(app(ArtworkMaterialPresetService::class)->sync(['Oil on linen', 'Graphite']))->toBeFalse();
     expect(ArtworkMaterialPreset::query()->orderBy('name')->pluck('name')->all())
         ->toBe(['Graphite', 'Oil on linen']);
 
-    app(ArtworkMaterialPresetService::class)->sync(['Graphite']);
+    expect(app(ArtworkMaterialPresetService::class)->sync(['Graphite']))->toBeTrue()
+        ->and(app(ArtworkMaterialPresetService::class)->sync(['Graphite']))->toBeFalse();
 
     expect(ArtworkMaterialPreset::query()->pluck('name')->all())->toBe(['Graphite'])
         ->and($artwork->fresh()->medium)->toBe('Oil on linen');

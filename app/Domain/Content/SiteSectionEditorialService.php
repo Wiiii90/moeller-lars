@@ -249,8 +249,12 @@ final class SiteSectionEditorialService
                 'parent_id' => $parentId,
                 'position' => $position,
             ]);
-            $fresh->save();
 
+            if (! $fresh->isDirty()) {
+                return $fresh;
+            }
+
+            $fresh->save();
             $this->audit->record($actor, 'site_section.updated', 'site_section', (int) $fresh->getKey());
 
             return $fresh;

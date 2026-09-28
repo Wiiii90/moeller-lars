@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
@@ -18,7 +19,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -95,12 +95,14 @@ trait ManagesSitePageEditDialog
                     ]),
             ])
             ->action(function (array $data, array $arguments): void {
-                DB::transaction(function () use ($data, $arguments): void {
-                    $this->savePageFromDialog($this->dialogSection($arguments), $data);
+                $changed = DB::transaction(function () use ($data, $arguments): bool {
+                    return $this->savePageFromDialog($this->dialogSection($arguments), $data);
                 });
 
                 $this->loadSections();
-                Notification::make()->title('Page updated')->success()->send();
+                if ($changed) {
+                    app(AdminNotifier::class)->transient()->title('Page updated')->success()->send();
+                }
             })
             ->extraModalFooterActions(fn (array $arguments): array => $this->pageDialogHeaderActions($arguments));
 
@@ -116,17 +118,21 @@ trait ManagesSitePageEditDialog
             ->fillForm(fn (): array => $dialog->fill())
             ->schema($dialog->schema())
             ->action(function (array $data) use ($dialog): void {
-                $dialog->save($data);
+                $changed = $dialog->save($data);
                 $this->loadSections();
-                Notification::make()->title('Home settings saved')->success()->send();
+                if ($changed) {
+                    app(AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     /** @param array<string, mixed> $data */
-    private function savePageFromDialog(SiteSection $section, array $data): void
+    private function savePageFromDialog(SiteSection $section, array $data): bool
     {
+        $before = $this->pageDialogPersistedState($section);
+
         $targetType = SiteSectionType::tryFrom((string) ($data['type'] ?? ''));
         if ($targetType === null || $targetType === SiteSectionType::Home) {
             throw ValidationException::withMessages(['type' => 'Choose a supported editable page type.']);
@@ -165,6 +171,33 @@ trait ManagesSitePageEditDialog
             }
             $this->orderService()->moveTo($section, $parentId, $position - 1);
         }
+
+        /** @var SiteSection $fresh */
+        $fresh = SiteSection::query()->findOrFail($section->getKey());
+
+        return $before !== $this->pageDialogPersistedState($fresh);
+    }
+
+    /**
+     * @return array{type:string,template:?string,title:string,navigation_label:?string,slug:?string,parent_id:?int,position:int,show_in_navigation:bool}
+     */
+    private function pageDialogPersistedState(SiteSection $section): array
+    {
+        $template = $section->getAttribute('template');
+        $navigationLabel = $section->getAttribute('navigation_label');
+        $slug = $section->getAttribute('slug');
+        $parentId = $section->getAttribute('parent_id');
+
+        return [
+            'type' => (string) $section->getAttribute('type'),
+            'template' => $template === null ? null : (string) $template,
+            'title' => (string) $section->getAttribute('title'),
+            'navigation_label' => $navigationLabel === null ? null : (string) $navigationLabel,
+            'slug' => $slug === null ? null : (string) $slug,
+            'parent_id' => $parentId === null ? null : (int) $parentId,
+            'position' => (int) $section->getAttribute('position'),
+            'show_in_navigation' => (bool) $section->getAttribute('show_in_navigation'),
+        ];
     }
 
     private function updateDialogIdentity(SiteSection $section, string $name, ?string $slug): SiteSection

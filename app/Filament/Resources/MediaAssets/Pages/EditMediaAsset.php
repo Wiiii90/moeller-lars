@@ -20,7 +20,15 @@ class EditMediaAsset extends EditRecord
         /** @var MediaAsset $asset */
         $asset = $record;
 
-        return app(MediaAssetEditorialService::class)->updateMetadata($asset, $data);
+        $updated = app(MediaAssetEditorialService::class)->updateMetadata($asset, $data);
+        $this->adminEditorSetMutationChanged($updated->wasChanged());
+
+        return $updated;
+    }
+
+    protected function adminEditorSavedNotificationTitle(): string
+    {
+        return 'File metadata saved';
     }
 
     protected function getRedirectUrl(): string

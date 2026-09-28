@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\MediaAssets\Pages;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIngestService;
@@ -16,12 +17,12 @@ use App\Filament\Support\MediaReferenceCatalog;
 use App\Filament\Support\StorageWorkspaceOverview;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
+use App\Models\User;
 use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -159,7 +160,7 @@ final class ListMediaAssets extends Page
         app(MediaCapacityService::class)->forgetCachedSnapshot();
         $this->loadStorageOverview(measure: true);
 
-        Notification::make()
+        app(AdminNotifier::class)->transient()
             ->title('Storage measurement refreshed')
             ->success()
             ->send();
@@ -231,7 +232,7 @@ final class ListMediaAssets extends Page
                 $details[] = '+'.($failed - 4).' more';
             }
 
-            $notification = Notification::make()
+            $notification = app(AdminNotifier::class)->transient()
                 ->title(($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed')
                 ->body(implode("\n", $details));
 
@@ -243,13 +244,13 @@ final class ListMediaAssets extends Page
 
             $notification->send();
         } elseif ($added > 0) {
-            Notification::make()
+            app(AdminNotifier::class)->transient()
                 ->title($total === 1 ? 'File uploaded' : 'Files uploaded')
                 ->body($this->directUploadSummary($total, $added, $duplicates, 0))
                 ->success()
                 ->send();
         } elseif ($duplicates > 0) {
-            Notification::make()
+            app(AdminNotifier::class)->transient()
                 ->title('Already in Storage')
                 ->body($total === 1 ? null : $duplicates.' files already exist in Storage')
                 ->info()
@@ -426,7 +427,7 @@ final class ListMediaAssets extends Page
                 $this->normalizeSelection();
                 $ids = $this->selectedAssets;
                 if ($ids === []) {
-                    Notification::make()->title('No files selected')->warning()->send();
+                    app(AdminNotifier::class)->transient()->title('No files selected')->warning()->send();
 
                     return;
                 }
@@ -483,7 +484,7 @@ final class ListMediaAssets extends Page
                         $details[] = '+'.(count($failed) - 4).' more';
                     }
 
-                    Notification::make()
+                    app(AdminNotifier::class)->transient()
                         ->title('Some selected files need attention')
                         ->body($deleted.' deleted. '.implode(' ', $details))
                         ->warning()
@@ -492,7 +493,7 @@ final class ListMediaAssets extends Page
                     return;
                 }
 
-                Notification::make()
+                app(AdminNotifier::class)->transient()
                     ->title('Selected files deleted')
                     ->success()
                     ->send();
@@ -519,6 +520,53 @@ final class ListMediaAssets extends Page
         $this->capacity = $overview['capacity'];
         $this->storageBreakdown = $overview['breakdown'];
         $this->storageAttention = $overview['attention'];
+
+        if ($measure) {
+            $this->notifyMeasuredStorageCondition();
+        }
+    }
+
+    private function notifyMeasuredStorageCondition(): void
+    {
+        $status = (string) ($this->capacity['status'] ?? '');
+        if (! in_array($status, ['near_capacity', 'full', 'unavailable'], true)) {
+            return;
+        }
+
+        $actor = auth()->user();
+        if (! $actor instanceof User) {
+            return;
+        }
+
+        $percent = $this->capacity['percent'] ?? null;
+        $body = match ($status) {
+            'near_capacity' => is_numeric($percent)
+                ? 'Site storage is at '.rtrim(rtrim(number_format((float) $percent, 1), '0'), '.').'% of the configured allowance.'
+                : 'Site storage is nearing the configured allowance.',
+            'full' => 'The site storage allowance is full. New uploads can be blocked until storage is reclaimed or the allowance is increased.',
+            default => 'The site storage allowance or current usage could not be measured reliably.',
+        };
+
+        try {
+            app(AdminNotifier::class)->both(
+                user: $actor,
+                sourceId: 'storage-capacity:'.$status,
+                title: match ($status) {
+                    'near_capacity' => 'Storage nearing capacity',
+                    'full' => 'Storage allowance full',
+                    default => 'Storage measurement unavailable',
+                },
+                body: $body,
+                status: $status === 'near_capacity' ? 'warning' : 'danger',
+                context: [
+                    'type' => 'storage.capacity_'.$status,
+                    'action_url' => MediaAssetResource::getUrl('index'),
+                    'action_label' => 'Open Storage',
+                ],
+            );
+        } catch (Throwable $notificationException) {
+            report($notificationException);
+        }
     }
 
     private function refreshStorageOverviewAfterMutation(): void
@@ -855,7 +903,7 @@ final class ListMediaAssets extends Page
     /** @param array<string, mixed> $data */
     private function saveMetadata(MediaAsset $asset, array $data): void
     {
-        app(MediaAssetEditorialService::class)->updateMetadata($asset, [
+        $updated = app(MediaAssetEditorialService::class)->updateMetadata($asset, [
             'alt_text' => $data['alt_text'] ?? null,
             'credit' => $data['credit'] ?? null,
             'copyright_notice_mode' => $data['copyright_notice_mode'] ?? MediaAsset::COPYRIGHT_INHERIT,
@@ -863,7 +911,9 @@ final class ListMediaAssets extends Page
         ]);
 
         $this->loadLibrary();
-        Notification::make()->title('File metadata saved')->success()->send();
+        if ($updated->wasChanged()) {
+            app(AdminNotifier::class)->transient()->title('File metadata saved')->success()->send();
+        }
     }
 
     /**
@@ -967,16 +1017,32 @@ final class ListMediaAssets extends Page
                 $this->removeSelection($assetId);
                 $this->loadLibrary();
                 $this->refreshStorageOverviewAfterMutation();
-                Notification::make()
-                    ->title('File cleanup failed')
-                    ->body('The file was removed from Storage, but stored file cleanup could not be completed.')
-                    ->danger()
-                    ->send();
+                $actor = auth()->user();
+                if ($actor instanceof User) {
+                    try {
+                        app(AdminNotifier::class)->both(
+                            user: $actor,
+                            sourceId: 'media-cleanup:asset-'.$assetId,
+                            title: 'File cleanup failed',
+                            body: 'The file was removed from Storage, but stored file cleanup could not be completed.',
+                            status: 'danger',
+                            context: [
+                                'type' => 'media.cleanup_failure',
+                                'action_url' => MediaAssetResource::getUrl('index'),
+                                'action_label' => 'Open Storage',
+                                'entity_type' => 'media_asset',
+                                'entity_id' => $assetId,
+                            ],
+                        );
+                    } catch (Throwable $notificationException) {
+                        report($notificationException);
+                    }
+                }
 
                 return true;
             }
 
-            Notification::make()
+            app(AdminNotifier::class)->transient()
                 ->title('File not deleted')
                 ->body($exception instanceof ValidationException
                     ? $this->validationMessage($exception)
@@ -990,7 +1056,7 @@ final class ListMediaAssets extends Page
         $this->removeSelection($assetId);
         $this->loadLibrary();
         $this->refreshStorageOverviewAfterMutation();
-        Notification::make()->title('File deleted')->success()->send();
+        app(AdminNotifier::class)->transient()->title('File deleted')->success()->send();
 
         return true;
     }

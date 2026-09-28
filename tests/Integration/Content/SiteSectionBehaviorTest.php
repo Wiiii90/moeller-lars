@@ -5,6 +5,7 @@ use App\Domain\Content\PublicNavigationService;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Domain\Publication\PublicationService;
+use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use App\Models\User;
 use App\Routing\SiteNodeRoute;
@@ -72,6 +73,32 @@ it('uses committed SiteSection state as the public availability gate', function 
 
     app(PublicationService::class)->commit($actor);
     $this->get('/statement-architecture')->assertNotFound();
+});
+
+it('does not create Activity for an unchanged page placement', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+    $service = app(SiteSectionEditorialService::class);
+    $page = $service->createCustomPage('No-op placement', 'no-op-placement');
+
+    $before = AuditEvent::query()
+        ->where('action', 'site_section.updated')
+        ->where('entity_type', 'site_section')
+        ->where('entity_id', $page->getKey())
+        ->count();
+
+    $result = $service->updatePlacement(
+        $page,
+        (string) $page->getAttribute('state'),
+        (bool) $page->getAttribute('show_in_navigation'),
+        null,
+    );
+
+    expect($result->wasChanged())->toBeFalse()
+        ->and(AuditEvent::query()
+            ->where('action', 'site_section.updated')
+            ->where('entity_type', 'site_section')
+            ->where('entity_id', $page->getKey())
+            ->count())->toBe($before);
 });
 
 it('keeps Home editorial capabilities locked', function (): void {

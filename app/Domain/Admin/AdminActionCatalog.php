@@ -25,7 +25,7 @@ final class AdminActionCatalog
         'artwork_category.deleted' => ['label' => 'Deleted Gallery', 'area' => 'Galleries', 'family' => 'lifecycle'],
         'artwork_category.gallery_reordered' => ['label' => 'Reordered artworks', 'area' => 'Galleries', 'family' => 'ordering'],
         'site_section.created' => ['label' => 'Created website page', 'area' => 'Website', 'family' => 'create'],
-        'site_section.updated' => ['label' => 'Edited public page placement', 'area' => 'Website', 'family' => 'settings'],
+        'site_section.updated' => ['label' => 'Edited website page', 'area' => 'Website', 'family' => 'settings'],
         'site_section.reordered' => ['label' => 'Reordered public navigation', 'area' => 'Website', 'family' => 'ordering'],
         'site_section.type_converted' => ['label' => 'Changed website page type', 'area' => 'Website', 'family' => 'settings'],
         'site_section.journal_template_updated' => ['label' => 'Changed Journal template', 'area' => 'Website', 'family' => 'settings'],

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Artworks\Pages;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Domain\Media\MediaTypePolicy;
 use App\Filament\Concerns\UsesAdminEditor;
@@ -105,15 +106,15 @@ class CreateArtwork extends CreateRecord
     protected function getCreatedNotification(): Notification
     {
         return match ($this->primaryMediaResult) {
-            'attached' => Notification::make()
+            'attached' => app(AdminNotifier::class)->transient()
                 ->success()
                 ->title('Artwork draft created')
                 ->body('The primary media was attached. Add or confirm ALT text before publication.'),
-            'failed' => Notification::make()
+            'failed' => app(AdminNotifier::class)->transient()
                 ->warning()
                 ->title('Artwork draft created; media needs attention')
                 ->body('The draft is saved, but the primary media could not be attached. Add it from the artwork editor.'),
-            default => Notification::make()
+            default => app(AdminNotifier::class)->transient()
                 ->success()
                 ->title('Artwork draft created')
                 ->body('No primary media was attached yet. Add an image or video before publication.'),

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Storage\SiteStorageReclaimService;
 use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -9,7 +10,6 @@ use App\Filament\Support\Dialogs\AdminDialogSize;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Illuminate\Contracts\View\View;
@@ -28,7 +28,7 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
             ->action(function (): void {
                 $result = app(SiteStorageReclaimService::class)->reclaim();
 
-                Notification::make()
+                app(AdminNotifier::class)->transient()
                     ->title('Storage reclaimed')
                     ->body(sprintf(
                         'Cleared %d Undo entries, released %d older publication restore snapshots, and removed %d rebuildable generated files. Activity remains available.',

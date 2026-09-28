@@ -32,7 +32,36 @@ class EditExhibition extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var Exhibition $record */
-        return app(ExhibitionEditorialService::class)->update($record, $data);
+        $before = $this->mutationState($record);
+        $updated = app(ExhibitionEditorialService::class)->update($record, $data);
+        $this->adminEditorSetMutationChanged($before !== $this->mutationState($updated));
+
+        return $updated;
+    }
+
+    protected function adminEditorSavedNotificationTitle(): string
+    {
+        return 'Exhibition saved';
+    }
+
+    /**
+     * @return array{record:array<string,mixed>,media:list<array<string,mixed>>}
+     */
+    private function mutationState(Exhibition $exhibition): array
+    {
+        /** @var Exhibition $fresh */
+        $fresh = Exhibition::query()->findOrFail($exhibition->getKey());
+        $media = $fresh->mediaUsages()
+            ->orderBy('id')
+            ->get()
+            ->map(static fn ($usage): array => $usage->getAttributes())
+            ->values()
+            ->all();
+
+        return [
+            'record' => $fresh->getAttributes(),
+            'media' => $media,
+        ];
     }
 
     protected function getRedirectUrl(): string

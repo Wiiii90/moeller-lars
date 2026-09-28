@@ -153,6 +153,8 @@ final class HomeHeroConfigurationService
             }
 
             $rotationStartedAt = $current['rotation_started_at'];
+            $showDetails = (bool) ($input['show_details'] ?? $current['show_details']);
+            $showGalleryLink = (bool) ($input['show_gallery_link'] ?? $current['show_gallery_link']);
             $manualSequenceChanged = $this->manualGroupIds($manualGroup) !== $this->manualGroupIds($current['manual_group']);
             $intervalChanged = $rotationInterval !== $current['rotation_interval'];
             $sourceChanged = $groupSource !== $current['group_source'];
@@ -176,13 +178,30 @@ final class HomeHeroConfigurationService
                 $rotationStartedAt = CarbonImmutable::now('UTC')->toIso8601String();
             }
 
+            if (
+                $groupSource === $current['group_source']
+                && $displayStrategy === $current['display_strategy']
+                && $manualGroup === $current['manual_group']
+                && $rotationInterval === $current['rotation_interval']
+                && $rotationStartedAt === $current['rotation_started_at']
+                && $newestBy === $current['newest_by']
+                && $groupSize === $current['group_size']
+                && $candidateFilter === $current['candidate_filter']
+                && $requestedSpecificYear === $currentSpecificYear
+                && $this->sameIdSet($manualIncludeIds, $current['manual_include_ids'])
+                && $showDetails === $current['show_details']
+                && $showGalleryLink === $current['show_gallery_link']
+            ) {
+                return false;
+            }
+
             $root = $fresh->configuration();
             $artwork = is_array($root[HomeTemplate::Artwork->value] ?? null)
                 ? $root[HomeTemplate::Artwork->value]
                 : [];
 
-            $artwork['show_details'] = (bool) ($input['show_details'] ?? $current['show_details']);
-            $artwork['show_gallery_link'] = (bool) ($input['show_gallery_link'] ?? $current['show_gallery_link']);
+            $artwork['show_details'] = $showDetails;
+            $artwork['show_gallery_link'] = $showGalleryLink;
             $artwork['group_source'] = $groupSource;
             $artwork['display_strategy'] = $displayStrategy;
             $artwork['manual_group'] = $manualGroup;

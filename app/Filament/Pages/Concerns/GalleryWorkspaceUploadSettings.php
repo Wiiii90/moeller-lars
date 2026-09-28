@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkMaterialPresetService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -14,7 +15,6 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 
@@ -59,23 +59,29 @@ trait GalleryWorkspaceUploadSettings
                 $currentSlug = (string) $gallery->getAttribute('slug');
                 $service = app(GalleryEditorialService::class);
 
-                DB::transaction(function () use ($service, $gallery, $currentSlug, $data): void {
-                    $service->update($gallery, [
+                $changed = DB::transaction(function () use ($service, $gallery, $currentSlug, $data): bool {
+                    $updated = $service->update($gallery, [
                         'name' => $data['name'],
                         'description' => $data['description'] ?? null,
                         'show_on_home' => (bool) ($data['show_on_home'] ?? false),
                     ]);
+                    $changed = $updated->wasChanged();
 
                     $newSlug = trim((string) ($data['slug'] ?? ''));
                     if ($newSlug !== $currentSlug) {
                         $service->changeSlug($gallery, $newSlug);
+                        $changed = true;
                     }
+
+                    return $changed;
                 });
 
                 $this->loadGallery((int) $gallery->getKey());
                 $this->loadMoveTargets();
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Gallery settings saved')->success()->send();
+                if ($changed) {
+                    app(AdminNotifier::class)->transient()->title('Gallery settings saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -102,8 +108,10 @@ trait GalleryWorkspaceUploadSettings
             ])
             ->modalHeading('Material presets')
             ->action(function (array $data): void {
-                app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
-                Notification::make()->title('Material presets saved')->success()->send();
+                $changed = app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
+                if ($changed) {
+                    app(AdminNotifier::class)->transient()->title('Material presets saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Default);

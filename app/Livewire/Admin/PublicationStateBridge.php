@@ -27,7 +27,7 @@ final class PublicationStateBridge extends Component
             $checkpoint = $publication->commit($actor);
         } catch (\Throwable $exception) {
             try {
-                app(AdminNotifier::class)->inbox(
+                app(AdminNotifier::class)->both(
                     user: $actor,
                     sourceId: 'publication-failed:'.Str::uuid(),
                     title: 'Publication failed',

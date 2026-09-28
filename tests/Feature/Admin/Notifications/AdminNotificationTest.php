@@ -2,9 +2,12 @@
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
+use App\Livewire\Admin\AdminFlashNotifications;
 use App\Models\AdminNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -51,6 +54,36 @@ it('persists structured inbox notifications without rendered browser markup', fu
         ->and($notification->getAttribute('entity_type'))->toBe('media_asset')
         ->and($notification->getAttribute('entity_id'))->toBe(72)
         ->and($notification->getAttribute('metadata'))->toBe(['variant' => 'preview']);
+});
+
+it('delivers persistent conditions to both inbox and ticker', function (): void {
+    $user = User::factory()->admin()->create();
+    $this->actingAs($user);
+
+    $notification = app(AdminNotifier::class)->both(
+        user: $user,
+        sourceId: 'media-cleanup:asset-72',
+        title: 'File cleanup failed',
+        body: 'Stored file cleanup could not be completed.',
+        status: 'danger',
+        context: [
+            'type' => 'media.cleanup_failure',
+            'entity_type' => 'media_asset',
+            'entity_id' => 72,
+        ],
+    );
+
+    expect($notification->getAttribute('source_id'))->toBe('media-cleanup:asset-72')
+        ->and(AdminNotification::query()->whereKey($notification->getKey())->exists())->toBeTrue();
+
+    Livewire::test(AdminFlashNotifications::class)
+        ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
+            $payload = $params['notification'] ?? [];
+
+            return $event === 'admin-notification-ticker'
+                && ($payload['title'] ?? null) === 'File cleanup failed'
+                && ($payload['status'] ?? null) === 'danger';
+        });
 });
 
 it('deduplicates persistent notifications by recipient and source id', function (): void {
@@ -112,4 +145,49 @@ it('has no DOM recorder in the admin panel notification path', function (): void
         ->and(file_exists(app_path('Livewire/Admin/AdminNotificationRecorder.php')))->toBeFalse()
         ->and(file_exists(resource_path('views/livewire/admin/admin-notification-recorder.blade.php')))->toBeFalse()
         ->and(file_exists(resource_path('views/filament/partials/admin-notification-history.blade.php')))->toBeFalse();
+});
+
+it('routes transient feedback through the project ticker component', function (): void {
+    $user = User::factory()->admin()->create();
+    $this->actingAs($user);
+
+    app(AdminNotifier::class)->toast(
+        title: 'Changes saved',
+        body: 'Background gradient updated.',
+        status: 'success',
+    );
+
+    Livewire::test(AdminFlashNotifications::class)
+        ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
+            $notification = $params['notification'] ?? [];
+
+            return $event === 'admin-notification-ticker'
+                && ($notification['title'] ?? null) === 'Changes saved'
+                && ($notification['body'] ?? null) === 'Background gradient updated.'
+                && ($notification['status'] ?? null) === 'success';
+        });
+});
+
+it('owns transient notification creation and presentation centrally', function (): void {
+    $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
+    $ticker = file_get_contents(resource_path('views/filament/partials/admin-notification-ticker.blade.php'));
+    $flashView = file_get_contents(resource_path('views/livewire/admin/admin-flash-notifications.blade.php'));
+
+    expect($provider)
+        ->toContain("Livewire::component('notifications', AdminFlashNotifications::class)")
+        ->toContain('PanelsRenderHook::TOPBAR_START')
+        ->and($ticker)
+        ->toContain('data-admin-notification-ticker')
+        ->and($flashView)
+        ->not->toContain('fi-no-notification');
+
+    foreach (File::allFiles(app_path()) as $file) {
+        $path = $file->getRealPath();
+        if ($path === app_path('Domain/Admin/AdminNotifier.php')) {
+            continue;
+        }
+
+        expect(file_get_contents($path))
+            ->not->toContain('Notification::make()');
+    }
 });

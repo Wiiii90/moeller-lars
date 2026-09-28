@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
@@ -12,7 +13,6 @@ use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -73,7 +73,7 @@ trait ManagesSitePageCreateDialog
                 $this->pageNumber = 1;
                 $this->loadSections();
 
-                Notification::make()
+                app(AdminNotifier::class)->transient()
                     ->title($section->nodeType()->label().' added')
                     ->success()
                     ->send();

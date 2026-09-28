@@ -2,15 +2,16 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDimensions;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Artwork\ArtworkPrimaryMediaService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
+use App\Models\Artwork;
 use App\Models\MediaAsset;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -57,7 +58,7 @@ trait GalleryWorkspaceArtworkDialogs
 
                 $this->pendingPrimaryMediaAssetId = null;
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Artwork draft created')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Artwork draft created')->success()->send();
             });
 
         return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
@@ -94,6 +95,10 @@ trait GalleryWorkspaceArtworkDialogs
                 $artwork = $this->actionArtwork($arguments);
                 $currentPrimary = $artwork->artworkMedia()->where('role', 'primary')->first();
                 $currentAssetId = $currentPrimary === null ? 0 : (int) $currentPrimary->getAttribute('media_asset_id');
+                $before = [
+                    'artwork' => $artwork->getAttributes(),
+                    'primary_media_asset_id' => $currentAssetId,
+                ];
                 $assetId = (int) ($data['primary_media_asset_id'] ?? 0);
                 $upload = $data['primary_upload'] ?? null;
 
@@ -123,8 +128,18 @@ trait GalleryWorkspaceArtworkDialogs
                     }
                 });
 
+                /** @var Artwork $freshArtwork */
+                $freshArtwork = Artwork::query()->findOrFail($artwork->getKey());
+                $freshPrimary = $freshArtwork->artworkMedia()->where('role', 'primary')->first();
+                $after = [
+                    'artwork' => $freshArtwork->getAttributes(),
+                    'primary_media_asset_id' => $freshPrimary === null ? 0 : (int) $freshPrimary->getAttribute('media_asset_id'),
+                ];
+
                 $this->refreshWorkspaceAfterMutation();
-                Notification::make()->title('Artwork saved')->success()->send();
+                if ($before !== $after) {
+                    app(AdminNotifier::class)->transient()->title('Artwork saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);

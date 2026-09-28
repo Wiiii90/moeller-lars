@@ -19,6 +19,7 @@ class AdminAuditService
     public function __construct(
         private readonly AdminActionReceiptService $receipts,
         private readonly AdminMutationSnapshotBuffer $mutationSnapshots,
+        private readonly AdminChangeSummary $changeSummary,
         private readonly AdminUndoContext $undoContext,
     ) {}
 
@@ -56,6 +57,23 @@ class AdminAuditService
             if (! $validReference && ! $validPosition && ! $validDirection && ! $validReason) {
                 throw new InvalidArgumentException('Invalid audit metadata.');
             }
+        }
+
+        $summary = $this->changeSummary->summarize(
+            $this->mutationSnapshots->peekForAudit($entityType, $entityId),
+        );
+
+        if ($action === 'admin.undo_applied' && is_int($metadata['source_audit_event_id'] ?? null)) {
+            $sourceEvent = AuditEvent::query()->find($metadata['source_audit_event_id']);
+            $sourceMetadata = $sourceEvent?->getAttribute('metadata');
+            $sourceSummary = is_array($sourceMetadata) ? ($sourceMetadata['change_summary'] ?? null) : null;
+            if (is_array($sourceSummary)) {
+                $summary = $this->changeSummary->reverse($sourceSummary);
+            }
+        }
+
+        if ($summary !== null) {
+            $metadata['change_summary'] = $summary;
         }
 
         $event = new AuditEvent;

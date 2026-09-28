@@ -371,20 +371,23 @@ final class AdminActivityFeed
                 : null;
             $publicationEventState = $event->getRelationValue('publicationEventState');
             $metadata = $event->getAttribute('metadata');
+            $metadata = is_array($metadata) ? $metadata : [];
+            $changeSummary = $this->changeSummary($metadata['change_summary'] ?? null);
+            $actionLabel = $this->activityLabel($actionKey, $definition, $changeSummary);
 
             if (is_array($receipt)) {
                 $inverseLabel = (string) $receipt['inverse_label'];
                 $undo = [
                     'id' => (int) $receipt['id'],
                     'inverse_label' => $inverseLabel,
-                    'confirmation' => 'Undo “'.$definition['label'].'” for “'.$target.'”? This will apply “'.$inverseLabel.'”.',
+                    'confirmation' => $this->undoConfirmation($actionLabel, $target, $inverseLabel, $changeSummary),
                 ];
             }
 
             return [
                 'id' => (int) $event->getKey(),
                 'action_key' => $actionKey,
-                'action' => $definition['label'],
+                'action' => $actionLabel,
                 'area' => $definition['area'],
                 'family' => $definition['family'],
                 'entity_type' => $entityType,
@@ -394,7 +397,8 @@ final class AdminActivityFeed
                 'actor' => $adminUser?->getAttribute('name') ?? 'Admin',
                 'when' => $occurredAt->diffForHumans(),
                 'timestamp' => $occurredAt->format('Y-m-d H:i'),
-                'metadata' => is_array($metadata) ? $metadata : [],
+                'metadata' => $metadata,
+                'change_summary' => $changeSummary,
                 'publication_status' => $checkpoint !== null
                     ? 'committed'
                     : ($publicationEventState instanceof PublicationEventState
@@ -407,6 +411,99 @@ final class AdminActivityFeed
                 'undo' => $undo,
             ];
         })->values()->all();
+    }
+
+    /**
+     * @param  array{label:string,area:string,family:string}  $definition
+     * @param  array{count:int,truncated:bool,items:list<array{field:string,label:string,before:string,after:string}>}|null  $summary
+     */
+    private function activityLabel(string $actionKey, array $definition, ?array $summary): string
+    {
+        if ($summary === null || $summary['items'] === []) {
+            return $definition['label'];
+        }
+
+        $labels = collect($summary['items'])
+            ->pluck('label')
+            ->filter(fn (mixed $label): bool => is_string($label) && trim($label) !== '')
+            ->unique()
+            ->values();
+
+        if ($labels->isEmpty()) {
+            return $definition['label'];
+        }
+
+        $shown = $labels->take(2)->implode(', ');
+        $remaining = max(0, $summary['count'] - min(2, $labels->count()));
+        $suffix = $remaining > 0 ? ' +'.$remaining.' more' : '';
+
+        if ($actionKey === 'admin.undo_applied') {
+            return 'Restored '.$shown.$suffix;
+        }
+
+        if (in_array($definition['family'], ['edit', 'settings'], true)) {
+            return 'Changed '.$shown.$suffix;
+        }
+
+        return $definition['label'];
+    }
+
+    /**
+     * @param  array{count:int,truncated:bool,items:list<array{field:string,label:string,before:string,after:string}>}|null  $summary
+     */
+    private function undoConfirmation(string $actionLabel, string $target, string $inverseLabel, ?array $summary): string
+    {
+        if ($summary === null || $summary['items'] === []) {
+            return 'Undo “'.$actionLabel.'” for “'.$target.'”? This will apply “'.$inverseLabel.'”.';
+        }
+
+        $restores = collect($summary['items'])
+            ->take(2)
+            ->map(static fn (array $item): string => $item['label'].' to “'.$item['before'].'”')
+            ->implode('; ');
+        $remaining = max(0, $summary['count'] - min(2, count($summary['items'])));
+        if ($remaining > 0) {
+            $restores .= '; +'.$remaining.' more';
+        }
+
+        return 'Undo “'.$actionLabel.'” for “'.$target.'”? This will restore '.$restores.'.';
+    }
+
+    /**
+     * @return array{count:int,truncated:bool,items:list<array{field:string,label:string,before:string,after:string}>}|null
+     */
+    private function changeSummary(mixed $value): ?array
+    {
+        if (! is_array($value) || ! is_array($value['items'] ?? null)) {
+            return null;
+        }
+
+        $items = [];
+        foreach ($value['items'] as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $field = $item['field'] ?? null;
+            $label = $item['label'] ?? null;
+            $before = $item['before'] ?? null;
+            $after = $item['after'] ?? null;
+            if (! is_string($field) || ! is_string($label) || ! is_string($before) || ! is_string($after)) {
+                continue;
+            }
+
+            $items[] = compact('field', 'label', 'before', 'after');
+        }
+
+        if ($items === []) {
+            return null;
+        }
+
+        return [
+            'count' => max(count($items), (int) ($value['count'] ?? count($items))),
+            'truncated' => (bool) ($value['truncated'] ?? false),
+            'items' => $items,
+        ];
     }
 
     /**

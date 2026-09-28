@@ -2,12 +2,12 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -26,7 +26,7 @@ trait CustomPageWorkspaceComponentActions
         $this->reloadWorkspace();
 
         if ($changed) {
-            Notification::make()->title('Component order updated')->success()->send();
+            app(AdminNotifier::class)->transient()->title('Component order updated')->success()->send();
         }
     }
 
@@ -56,7 +56,7 @@ trait CustomPageWorkspaceComponentActions
         $this->reloadWorkspace();
 
         if ($changed) {
-            Notification::make()->title('Component order updated')->success()->send();
+            app(AdminNotifier::class)->transient()->title('Component order updated')->success()->send();
         }
     }
 
@@ -113,7 +113,7 @@ trait CustomPageWorkspaceComponentActions
         $this->reloadWorkspace();
 
         if ($changed) {
-            Notification::make()
+            app(AdminNotifier::class)->transient()
                 ->title('Selection moved')
                 ->body($count.' selected '.($count === 1 ? 'item' : 'items').' updated in '.($parents !== [] && $children !== [] ? 'their own scopes.' : 'order.'))
                 ->success()
@@ -130,8 +130,14 @@ trait CustomPageWorkspaceComponentActions
     {
         $block = $this->componentAt($index, $type);
         $block['published'] = $published;
-        app(CustomPageEditorialService::class)->updateBlock($this->settings(), $index, $type, $block);
+        $changed = app(CustomPageEditorialService::class)->updateBlock($this->settings(), $index, $type, $block);
         $this->loadComponentProjection();
+        if ($changed) {
+            app(AdminNotifier::class)->toast(
+                $published ? 'Component published' : 'Component unpublished',
+                status: 'success',
+            );
+        }
     }
 
     public function publishSelected(): void
@@ -162,7 +168,7 @@ trait CustomPageWorkspaceComponentActions
 
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                Notification::make()->title('Component added')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Component added')->success()->send();
             });
 
         return AdminDialog::create($action, 'Add component', AdminDialogSize::Large);
@@ -183,7 +189,7 @@ trait CustomPageWorkspaceComponentActions
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $existing = $this->actionComponent($arguments);
 
-                app(CustomPageEditorialService::class)->updateBlock(
+                $changed = app(CustomPageEditorialService::class)->updateBlock(
                     $this->settings(),
                     $index,
                     $type,
@@ -192,7 +198,9 @@ trait CustomPageWorkspaceComponentActions
 
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                Notification::make()->title('Component saved')->success()->send();
+                if ($changed) {
+                    app(AdminNotifier::class)->transient()->title('Component saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -219,7 +227,7 @@ trait CustomPageWorkspaceComponentActions
                 $this->reloadWorkspace();
 
                 if ($changed) {
-                    Notification::make()->title('Component type updated')->success()->send();
+                    app(AdminNotifier::class)->transient()->title('Component type updated')->success()->send();
                 }
             });
 
@@ -242,7 +250,7 @@ trait CustomPageWorkspaceComponentActions
                 app(CustomPageEditorialService::class)->deleteBlock($this->settings(), $index, $type);
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                Notification::make()->title('Component deleted')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Component deleted')->success()->send();
             });
 
         return AdminDialog::confirm($action, 'Delete component?', submitLabel: 'Delete', danger: true);
@@ -270,7 +278,7 @@ trait CustomPageWorkspaceComponentActions
                 $count = count($parents) + count($children);
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                Notification::make()
+                app(AdminNotifier::class)->transient()
                     ->title('Selection deleted')
                     ->body($count.' selected '.($count === 1 ? 'item' : 'items').' processed.')
                     ->success()

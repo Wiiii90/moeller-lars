@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
 use App\Domain\Content\SocialLinks;
@@ -14,6 +15,7 @@ use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Filament\Support\MediaAssetSelect;
 use App\Models\PublicContentSetting;
 use BackedEnum;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
@@ -586,6 +588,12 @@ final class General extends Page
             ], true)) {
                 $this->dispatch('general-appearance-updated');
             }
+
+            app(AdminNotifier::class)->toast(
+                'Changes saved',
+                $this->persistenceFeedbackLabel($field).' updated.',
+                'success',
+            );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $key => $messages) {
                 $errorKey = str_starts_with($key, 'data.') ? $key : 'data.'.$key;
@@ -593,9 +601,18 @@ final class General extends Page
                     $this->addError($errorKey, $message);
                 }
             }
+
+            $message = collect($exception->errors())->flatten()->first();
+            app(AdminNotifier::class)->toast(
+                'Change not saved',
+                is_string($message) ? $message : 'This setting could not be saved.',
+                'danger',
+            );
         } catch (Throwable $exception) {
             report($exception);
-            $this->addError('data.'.$field, 'This setting could not be saved. Please try again.');
+            $message = 'This setting could not be saved. Please try again.';
+            $this->addError('data.'.$field, $message);
+            app(AdminNotifier::class)->toast('Change not saved', $message, 'danger');
         }
     }
 
@@ -610,7 +627,7 @@ final class General extends Page
         return $rows;
     }
 
-    private static function persist(string $field): \Closure
+    private static function persist(string $field): Closure
     {
         return static function ($livewire) use ($field): void {
             if ($livewire instanceof self) {
@@ -672,6 +689,28 @@ final class General extends Page
                 $this->resetErrorBag($key);
             }
         }
+    }
+
+    private function persistenceFeedbackLabel(string $field): string
+    {
+        return match ($field) {
+            'favicon_media_asset_id' => 'Site icon',
+            'contact_recipient_email' => 'Contact form recipient',
+            'public_email' => 'Public email',
+            'show_public_email' => 'Public email visibility',
+            'social_links' => 'Social links',
+            'legal_disclaimer' => 'Legal disclaimer',
+            'default_media_copyright_notice' => 'Default copyright notice',
+            'background_mode' => 'Background',
+            'background_color' => 'Background color',
+            'background_gradient_start' => 'Background gradient start color',
+            'background_gradient_end' => 'Background gradient end color',
+            'background_gradient_angle' => 'Background gradient angle',
+            'public_page_width' => 'Public page width',
+            'public_content_padding' => 'Public content padding',
+            'navigation_nesting_enabled' => 'Navigation nesting',
+            default => str($field)->replace('_', ' ')->headline()->toString(),
+        };
     }
 
     private function normalizePersistenceValue(string $field, mixed $value): mixed
@@ -742,6 +781,7 @@ final class General extends Page
                 ['social_links' => $links],
             );
             $this->settingsRecord = null;
+            app(AdminNotifier::class)->toast('Social links updated', status: 'success');
         } catch (ValidationException $exception) {
             $mapped = [];
             foreach ($exception->errors() as $key => $messages) {

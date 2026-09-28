@@ -148,9 +148,10 @@ final class HomeSettingsDialog
     }
 
     /** @param array<string, mixed> $data */
-    public function save(array $data): void
+    public function save(array $data): bool
     {
         $settings = $this->resolver->settings();
+        $changed = false;
         $template = HomeTemplate::tryFrom((string) ($data['template'] ?? ''));
         if (! $template instanceof HomeTemplate || ! $template->isContentTemplate()) {
             throw ValidationException::withMessages(['template' => 'Choose a Home content template.']);
@@ -183,13 +184,13 @@ final class HomeSettingsDialog
                 }
             }
 
-            $this->heroConfiguration->updateArtworkSettings($settings, $input);
+            $changed = $this->heroConfiguration->updateArtworkSettings($settings, $input);
         } else {
             $input = [];
             if ($template === HomeTemplate::UnderConstruction) {
                 $input['public_site_gate'] = (bool) ($data['public_site_gate'] ?? false);
             }
-            $this->editorial->updateSettings($settings, $template, $input);
+            $changed = $this->editorial->updateSettings($settings, $template, $input);
         }
 
         $settings = $settings->fresh();
@@ -197,24 +198,26 @@ final class HomeSettingsDialog
             throw ValidationException::withMessages(['home' => 'Home settings changed while editing. Reload and try again.']);
         }
 
-        $this->routingDialog->save($data);
+        $changed = $this->routingDialog->save($data) || $changed;
 
         $section = $this->homeSection($settings);
-        app(SiteSectionEditorialService::class)->updatePlacement(
+        $section = app(SiteSectionEditorialService::class)->updatePlacement(
             $section,
             'published',
             (bool) ($data['show_in_navigation'] ?? false),
             null,
         );
+
+        return $section->wasChanged(['state', 'show_in_navigation', 'parent_id', 'position']) || $changed;
     }
 
-    public function changeTemplate(HomeTemplate $template): void
+    public function changeTemplate(HomeTemplate $template): bool
     {
         if (! $template->isContentTemplate()) {
             throw ValidationException::withMessages(['template' => 'Choose a Home content template.']);
         }
 
-        $this->editorial->updateSettings($this->resolver->settings(), $template, []);
+        return $this->editorial->updateSettings($this->resolver->settings(), $template, []);
     }
 
     public function templateLabel(): string

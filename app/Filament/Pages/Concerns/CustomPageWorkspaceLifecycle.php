@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\Dialogs\AdminDialog;
@@ -13,7 +14,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 
@@ -169,6 +169,16 @@ trait CustomPageWorkspaceLifecycle
             ])
             ->modalHeading('Page settings')
             ->action(function (array $data): void {
+                $before = $this->section()->only([
+                    'title',
+                    'navigation_label',
+                    'slug',
+                    'state',
+                    'show_in_navigation',
+                    'parent_id',
+                    'position',
+                ]);
+
                 DB::transaction(function () use ($data): void {
                     $service = app(SiteSectionEditorialService::class);
                     $section = $service->updateCustomPageIdentity(
@@ -186,10 +196,23 @@ trait CustomPageWorkspaceLifecycle
                     );
                 });
 
-                $section = $this->section();
+                $section = $this->section()->fresh();
+                $changed = $section instanceof SiteSection
+                    && $before !== $section->only([
+                        'title',
+                        'navigation_label',
+                        'slug',
+                        'state',
+                        'show_in_navigation',
+                        'parent_id',
+                        'position',
+                    ]);
+                $section ??= $this->section();
                 $this->loadAnalyticsSnapshot($section);
                 $this->reloadWorkspace();
-                Notification::make()->title('Page settings saved')->success()->send();
+                if ($changed) {
+                    app(AdminNotifier::class)->transient()->title('Page settings saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);

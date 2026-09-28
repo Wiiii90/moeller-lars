@@ -60,10 +60,15 @@ it('uses the next published top-level page when the routing dialog keeps its aut
             'skip_target_section_id' => null,
         ]);
 
-    $dialog->save([
+    expect($dialog->save([
         'skip_home' => true,
         'skip_target_section_id' => null,
-    ]);
+    ]))->toBeTrue();
+
+    expect($dialog->save([
+        'skip_home' => true,
+        'skip_target_section_id' => null,
+    ]))->toBeFalse();
 
     /** @var HomePresentationSetting $fresh */
     $fresh = $settings->fresh();
@@ -121,7 +126,8 @@ it('does not pin the automatic Skip Home target when the Home template changes',
         'skip_home' => true,
         'skip_target_section_id' => null,
     ]);
-    app(HomeSettingsDialog::class)->changeTemplate(HomeTemplate::Custom);
+    expect(app(HomeSettingsDialog::class)->changeTemplate(HomeTemplate::Custom))->toBeTrue()
+        ->and(app(HomeSettingsDialog::class)->changeTemplate(HomeTemplate::Custom))->toBeFalse();
 
     /** @var HomePresentationSetting $fresh */
     $fresh = $settings->fresh();
@@ -129,4 +135,13 @@ it('does not pin the automatic Skip Home target when the Home template changes',
         ->and(app(HomeRoutingSettingsService::class)->enabled($fresh))->toBeTrue()
         ->and(app(HomeRoutingSettingsService::class)->configuredTargetId($fresh))->toBeNull()
         ->and($resolver->skipTarget()?->getKey())->toBe($target->getKey());
+});
+
+it('reports a fully unchanged Home settings dialog save as a no-op', function (): void {
+    $this->actingAs(User::factory()->admin()->create(), 'web');
+
+    $dialog = app(HomeSettingsDialog::class);
+    $data = $dialog->fill();
+
+    expect($dialog->save($data))->toBeFalse();
 });

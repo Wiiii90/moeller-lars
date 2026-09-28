@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Analytics\ArtistReportingService;
 use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Artwork\PublicArtworkQuery;
@@ -33,7 +34,6 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Builder;
@@ -369,6 +369,7 @@ final class HomePresentation extends Page
             ])
             ->modalHeading('Home settings'), AdminDialogSize::Large)->action(function (array $data): void {
                 $template = HomeTemplate::from((string) $data['template']);
+                $changed = false;
                 if ($template === HomeTemplate::Artwork) {
                     $groupSource = (string) ($data['group_source'] ?? $this->heroGroupSource);
                     $input = [
@@ -390,26 +391,29 @@ final class HomePresentation extends Page
                             'weight' => HomeHeroConfigurationService::WEIGHT_TOTAL,
                         ]];
                     }
-                    app(HomeHeroConfigurationService::class)->updateArtworkSettings($this->settings(), $input);
+                    $changed = app(HomeHeroConfigurationService::class)->updateArtworkSettings($this->settings(), $input);
                 } else {
                     $input = [];
                     if ($template === HomeTemplate::UnderConstruction) {
                         $input['public_site_gate'] = $data['public_site_gate'] ?? $this->publicSiteGate;
                     }
-                    app(HomePresentationEditorialService::class)->updateSettings($this->settings(), $template, $input);
+                    $changed = app(HomePresentationEditorialService::class)->updateSettings($this->settings(), $template, $input);
                 }
 
                 $homeSection = $this->homeSection();
                 $parentId = $homeSection->getAttribute('parent_id');
-                app(SiteSectionEditorialService::class)->updatePlacement(
+                $homeSection = app(SiteSectionEditorialService::class)->updatePlacement(
                     $homeSection,
                     'published',
                     (bool) ($data['show_in_navigation'] ?? false),
                     is_numeric($parentId) ? (int) $parentId : null,
                 );
+                $changed = $homeSection->wasChanged(['state', 'show_in_navigation', 'parent_id', 'position']) || $changed;
                 $this->showHomeInNavigation = (bool) ($data['show_in_navigation'] ?? false);
                 $this->reloadWorkspace();
-                Notification::make()->title('Home settings saved')->success()->send();
+                if ($changed) {
+                    app(AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
+                }
             });
     }
 
@@ -425,7 +429,7 @@ final class HomePresentation extends Page
         )->action(function (array $data): void {
             app(HomeHeroConfigurationService::class)->addManualMember($this->settings(), (int) $data['artwork_id']);
             $this->reloadWorkspace();
-            Notification::make()->title('Artwork added to Home group')->success()->send();
+            app(AdminNotifier::class)->transient()->title('Artwork added to Home group')->success()->send();
         });
     }
 
@@ -433,7 +437,7 @@ final class HomePresentation extends Page
     {
         app(HomeHeroConfigurationService::class)->removeManualMember($this->settings(), $artworkId);
         $this->reloadWorkspace();
-        Notification::make()->title('Artwork removed from Home group')->success()->send();
+        app(AdminNotifier::class)->transient()->title('Artwork removed from Home group')->success()->send();
     }
 
     public function sortHeroArtwork(string $target, int $position): void
@@ -451,8 +455,11 @@ final class HomePresentation extends Page
         array_splice($ids, $from, 1);
         $position = max(0, min($position, count($ids)));
         array_splice($ids, $position, 0, [$moved]);
-        app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
+        $changed = app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
         $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->toast('Home group order updated', status: 'success');
+        }
     }
 
     public function moveHeroArtwork(int $artworkId, string $direction): void
@@ -470,8 +477,11 @@ final class HomePresentation extends Page
             return;
         }
         [$ids[$index], $ids[$target]] = [$ids[$target], $ids[$index]];
-        app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
+        $changed = app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
         $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->toast('Home group order updated', status: 'success');
+        }
     }
 
     public function setHeroPercentage(int $artworkId, mixed $percentage): void
@@ -483,12 +493,15 @@ final class HomePresentation extends Page
         if ($value < 0 || $value > 100) {
             throw ValidationException::withMessages(['weight' => 'Percentage must be between 0 and 100.']);
         }
-        app(HomeHeroConfigurationService::class)->updateManualMemberWeight(
+        $changed = app(HomeHeroConfigurationService::class)->updateManualMemberWeight(
             $this->settings(),
             $artworkId,
             (int) round($value * 100),
         );
         $this->reloadWorkspace();
+        if ($changed) {
+            app(AdminNotifier::class)->toast('Home artwork percentage updated', status: 'success');
+        }
     }
 
     public function addComponentAction(): Action
@@ -522,7 +535,7 @@ final class HomePresentation extends Page
             };
             app(HomePresentationEditorialService::class)->addComponent($this->settings(), $this->componentTemplate(), $component);
             $this->reloadWorkspace();
-            Notification::make()->title('Home component added')->success()->send();
+            app(AdminNotifier::class)->transient()->title('Home component added')->success()->send();
         });
     }
 
@@ -571,11 +584,13 @@ final class HomePresentation extends Page
                     ],
                     default => throw ValidationException::withMessages(['component' => 'This component has no editable fields.']),
                 };
-                app(HomePresentationEditorialService::class)->updateComponent(
+                $changed = app(HomePresentationEditorialService::class)->updateComponent(
                     $this->settings(), $this->componentTemplate(), (int) $arguments['index'], $type, $component,
                 );
                 $this->reloadWorkspace();
-                Notification::make()->title('Home component saved')->success()->send();
+                if ($changed) {
+                    app(AdminNotifier::class)->transient()->title('Home component saved')->success()->send();
+                }
             });
     }
 
@@ -594,7 +609,7 @@ final class HomePresentation extends Page
                 $this->settings(), $this->componentTemplate(), (int) $arguments['index'], (string) $component['type'],
             );
             $this->reloadWorkspace();
-            Notification::make()->title('Home component deleted')->success()->send();
+            app(AdminNotifier::class)->transient()->title('Home component deleted')->success()->send();
         });
     }
 
@@ -614,7 +629,7 @@ final class HomePresentation extends Page
             app(HomePresentationEditorialService::class)->deleteComponents($this->settings(), $this->componentTemplate(), $targets);
             $count = count($targets);
             $this->reloadWorkspace();
-            Notification::make()->title('Selected Home components deleted')
+            app(AdminNotifier::class)->transient()->title('Selected Home components deleted')
                 ->body($count.' component'.($count === 1 ? '' : 's').' deleted.')->success()->send();
         });
     }
@@ -624,11 +639,13 @@ final class HomePresentation extends Page
         if (! $this->componentReorderEnabled()) {
             return;
         }
-        app(HomePresentationEditorialService::class)->moveComponent(
+        $changed = app(HomePresentationEditorialService::class)->moveComponent(
             $this->settings(), $this->componentTemplate(), $index, $expectedType, $direction,
         );
         $this->reloadWorkspace();
-        Notification::make()->title('Home component order updated')->success()->send();
+        if ($changed) {
+            app(AdminNotifier::class)->transient()->title('Home component order updated')->success()->send();
+        }
     }
 
     public function sortComponent(string $target, int $position): void
@@ -645,12 +662,14 @@ final class HomePresentation extends Page
         array_splice($targets, $from, 1);
         $position = max(0, min($position, count($targets)));
         array_splice($targets, $position, 0, [$moved]);
-        app(HomePresentationEditorialService::class)->reorderComponents(
+        $changed = app(HomePresentationEditorialService::class)->reorderComponents(
             $this->settings(), $this->componentTemplate(),
             array_map(fn (string $value): array => $this->parseComponentTarget($value), $targets),
         );
         $this->reloadWorkspace();
-        Notification::make()->title('Home component order updated')->success()->send();
+        if ($changed) {
+            app(AdminNotifier::class)->transient()->title('Home component order updated')->success()->send();
+        }
     }
 
     public function moveSelectedComponents(string $direction): void
@@ -668,7 +687,7 @@ final class HomePresentation extends Page
         $count = count($targets);
         $this->reloadWorkspace();
         if ($changed) {
-            Notification::make()->title('Selected Home components moved')
+            app(AdminNotifier::class)->transient()->title('Selected Home components moved')
                 ->body($count.' component'.($count === 1 ? '' : 's').' updated.')->success()->send();
         }
     }
@@ -684,7 +703,7 @@ final class HomePresentation extends Page
         ]);
         $this->clearSourceSelection();
         $this->reloadWorkspace();
-        Notification::make()->title('Home source preference updated')->success()->send();
+        app(AdminNotifier::class)->transient()->title('Home source preference updated')->success()->send();
     }
 
     public function toggleVisibleSourceSelection(): void
@@ -720,11 +739,16 @@ final class HomePresentation extends Page
                 'show_on_home' => $enabled,
             ]);
         }
-        $count = $galleries->count();
+        $changed = $galleries
+            ->filter(static fn (ArtworkCategory $gallery): bool => (bool) $gallery->getAttribute('show_on_home') !== $enabled)
+            ->count();
+
         $this->clearSourceSelection();
         $this->reloadWorkspace();
-        Notification::make()->title($enabled ? 'Home source preferences enabled' : 'Home source preferences disabled')
-            ->body($count.' '.($count === 1 ? 'Gallery' : 'Galleries').' updated.')->success()->send();
+        if ($changed > 0) {
+            app(AdminNotifier::class)->transient()->title($enabled ? 'Home source preferences enabled' : 'Home source preferences disabled')
+                ->body($changed.' '.($changed === 1 ? 'Gallery' : 'Galleries').' updated.')->success()->send();
+        }
     }
 
     public function sourceRows(): LengthAwarePaginator

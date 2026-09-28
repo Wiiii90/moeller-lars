@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\SiteSectionType;
 use App\Filament\Support\AdminIcon;
@@ -11,7 +12,6 @@ use App\Filament\Support\HomeRoutingDialog;
 use App\Filament\Support\HomeSettingsDialog;
 use App\Models\SiteSection;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Illuminate\Validation\ValidationException;
 
 trait ManagesHomePagePresentation
@@ -30,8 +30,9 @@ trait ManagesHomePagePresentation
                 throw ValidationException::withMessages(['template' => 'Choose a Home content template.']);
             }
 
-            app(HomeSettingsDialog::class)->changeTemplate($homeTemplate);
-            Notification::make()->title('Home template updated')->success()->send();
+            if (app(HomeSettingsDialog::class)->changeTemplate($homeTemplate)) {
+                app(AdminNotifier::class)->transient()->title('Home template updated')->success()->send();
+            }
         } catch (ValidationException $exception) {
             $this->validationNotification('Home template unchanged', $exception);
         }
@@ -52,9 +53,11 @@ trait ManagesHomePagePresentation
                 ->fillForm(fn (): array => $dialog->fill())
                 ->schema($dialog->schema())
                 ->action(function (array $data) use ($dialog): void {
-                    $dialog->save($data);
+                    $changed = $dialog->save($data);
                     $this->loadSections();
-                    Notification::make()->title('Home routing updated')->success()->send();
+                    if ($changed) {
+                        app(AdminNotifier::class)->transient()->title('Home routing updated')->success()->send();
+                    }
                 }),
             'Save Skip Home',
             AdminDialogSize::Small,

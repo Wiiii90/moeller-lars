@@ -2,13 +2,13 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
 use App\Models\CustomPageSetting;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 
 trait CustomPageWorkspaceListContactActions
 {
@@ -26,7 +26,7 @@ trait CustomPageWorkspaceListContactActions
                 app(CustomPageEditorialService::class)->addListItem($this->settings(), $index, $type, $this->listItemPayload($data));
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('List entry added')->success()->send();
+                app(AdminNotifier::class)->transient()->title('List entry added')->success()->send();
             });
 
         return AdminDialog::create($action, 'Add list entry', AdminDialogSize::Large);
@@ -46,7 +46,7 @@ trait CustomPageWorkspaceListContactActions
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $itemIndex = $this->actionListItemIndex($arguments);
-                app(CustomPageEditorialService::class)->updateListItem(
+                $changed = app(CustomPageEditorialService::class)->updateListItem(
                     $this->settings(),
                     $index,
                     $type,
@@ -55,7 +55,9 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('List entry saved')->success()->send();
+                if ($changed) {
+                    app(AdminNotifier::class)->transient()->title('List entry saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -63,7 +65,7 @@ trait CustomPageWorkspaceListContactActions
 
     public function setListEntryPublished(int $componentIndex, string $componentType, int $itemIndex, bool $published): void
     {
-        app(CustomPageEditorialService::class)->setListItemPublished(
+        $changed = app(CustomPageEditorialService::class)->setListItemPublished(
             $this->settings(),
             $componentIndex,
             $componentType,
@@ -71,6 +73,12 @@ trait CustomPageWorkspaceListContactActions
             $published,
         );
         $this->loadComponentProjection(refreshCvCount: false);
+        if ($changed) {
+            app(AdminNotifier::class)->toast(
+                $published ? 'List entry published' : 'List entry unpublished',
+                status: 'success',
+            );
+        }
     }
 
     public function moveListEntry(int $componentIndex, string $componentType, int $itemIndex, string $direction): void
@@ -78,7 +86,7 @@ trait CustomPageWorkspaceListContactActions
         if (! $this->componentReorderEnabled()) {
             return;
         }
-        app(CustomPageEditorialService::class)->moveListItem(
+        $changed = app(CustomPageEditorialService::class)->moveListItem(
             $this->settings(),
             $componentIndex,
             $componentType,
@@ -87,6 +95,9 @@ trait CustomPageWorkspaceListContactActions
         );
         $this->clearSelections();
         $this->loadComponentProjection(refreshCvCount: false);
+        if ($changed) {
+            app(AdminNotifier::class)->toast('List entry order updated', status: 'success');
+        }
     }
 
     public function deleteListEntryAction(): Action
@@ -100,7 +111,7 @@ trait CustomPageWorkspaceListContactActions
                 app(CustomPageEditorialService::class)->deleteListItem($this->settings(), $index, $type, $itemIndex);
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('List entry deleted')->success()->send();
+                app(AdminNotifier::class)->transient()->title('List entry deleted')->success()->send();
             });
 
         return AdminDialog::confirm($action, 'Delete list entry?', submitLabel: 'Delete', danger: true);
@@ -129,7 +140,7 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('Contact item added')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Contact item added')->success()->send();
             });
 
         return AdminDialog::create($action, 'Add contact item', AdminDialogSize::Large);
@@ -153,7 +164,7 @@ trait CustomPageWorkspaceListContactActions
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $childType = $this->actionContactChildType($arguments);
-                app(CustomPageEditorialService::class)->updateContactChild(
+                $changed = app(CustomPageEditorialService::class)->updateContactChild(
                     $this->settings(),
                     $index,
                     $type,
@@ -162,7 +173,9 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('Contact item saved')->success()->send();
+                if ($changed) {
+                    app(AdminNotifier::class)->transient()->title('Contact item saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -170,7 +183,7 @@ trait CustomPageWorkspaceListContactActions
 
     public function setContactChildPublished(int $index, string $type, string $childType, bool $published): void
     {
-        app(CustomPageEditorialService::class)->setContactChildPublished(
+        $changed = app(CustomPageEditorialService::class)->setContactChildPublished(
             $this->settings(),
             $index,
             $type,
@@ -178,6 +191,12 @@ trait CustomPageWorkspaceListContactActions
             $published,
         );
         $this->loadComponentProjection(refreshCvCount: false);
+        if ($changed) {
+            app(AdminNotifier::class)->toast(
+                $published ? 'Contact item published' : 'Contact item unpublished',
+                status: 'success',
+            );
+        }
     }
 
     public function moveContactChild(int $index, string $type, string $childType, string $direction): void
@@ -185,7 +204,7 @@ trait CustomPageWorkspaceListContactActions
         if (! $this->componentReorderEnabled()) {
             return;
         }
-        app(CustomPageEditorialService::class)->moveContactChild(
+        $changed = app(CustomPageEditorialService::class)->moveContactChild(
             $this->settings(),
             $index,
             $type,
@@ -194,6 +213,9 @@ trait CustomPageWorkspaceListContactActions
         );
         $this->clearSelections();
         $this->loadComponentProjection(refreshCvCount: false);
+        if ($changed) {
+            app(AdminNotifier::class)->toast('Contact item order updated', status: 'success');
+        }
     }
 
     public function deleteContactChildAction(): Action
@@ -211,7 +233,7 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                Notification::make()->title('Contact item deleted')->success()->send();
+                app(AdminNotifier::class)->transient()->title('Contact item deleted')->success()->send();
             });
 
         return AdminDialog::confirm($action, 'Delete contact item?', submitLabel: 'Delete', danger: true);

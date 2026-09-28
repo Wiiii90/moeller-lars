@@ -2,10 +2,10 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Models\CustomPageSetting;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,7 +20,7 @@ trait CustomPageWorkspaceChildOrdering
         $parts = explode(':', $target);
         $kind = $parts[0];
         if ($kind === 'list' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && ctype_digit($parts[2])) {
-            app(CustomPageEditorialService::class)->sortListItem(
+            $changed = app(CustomPageEditorialService::class)->sortListItem(
                 $this->settings(),
                 (int) $parts[1],
                 'list',
@@ -29,12 +29,15 @@ trait CustomPageWorkspaceChildOrdering
             );
             $this->clearSelections();
             $this->loadComponentProjection();
+            if ($changed) {
+                app(AdminNotifier::class)->toast('List entry order updated', status: 'success');
+            }
 
             return;
         }
 
         if ($kind === 'contact' && isset($parts[1], $parts[2]) && ctype_digit($parts[1]) && array_key_exists($parts[2], self::CONTACT_CHILD_LABELS)) {
-            app(CustomPageEditorialService::class)->sortContactChild(
+            $changed = app(CustomPageEditorialService::class)->sortContactChild(
                 $this->settings(),
                 (int) $parts[1],
                 'contact',
@@ -43,6 +46,9 @@ trait CustomPageWorkspaceChildOrdering
             );
             $this->clearSelections();
             $this->loadComponentProjection();
+            if ($changed) {
+                app(AdminNotifier::class)->toast('Contact item order updated', status: 'success');
+            }
 
             return;
         }
@@ -94,7 +100,7 @@ trait CustomPageWorkspaceChildOrdering
         $count = count($parents) + count($children);
         $this->clearSelections();
         $this->reloadWorkspace();
-        Notification::make()
+        app(AdminNotifier::class)->transient()
             ->title($published ? 'Selection published' : 'Selection unpublished')
             ->body($count.' selected '.($count === 1 ? 'item' : 'items').' updated on their own hierarchy levels.')
             ->success()

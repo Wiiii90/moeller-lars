@@ -1,5 +1,7 @@
 @php
     $metadata = is_array($event['metadata'] ?? null) ? $event['metadata'] : [];
+    $changeSummary = is_array($event['change_summary'] ?? null) ? $event['change_summary'] : null;
+    unset($metadata['change_summary']);
     $publicationLabel = match ($event['publication_status'] ?? null) {
         'committed' => 'Committed',
         'pending' => 'Staged for next publish',
@@ -33,6 +35,23 @@
         <span>Target</span>
         <p>{{ $event['target'] }}</p>
     </div>
+
+    @if (is_array($changeSummary) && ($changeSummary['items'] ?? []) !== [])
+        <div class="admin-detail-dialog__field">
+            <span>Changed values</span>
+            <dl class="admin-detail-dialog__meta">
+                @foreach ($changeSummary['items'] as $change)
+                    <div>
+                        <dt>{{ $change['label'] }}</dt>
+                        <dd>{{ $change['before'] }} → {{ $change['after'] }}</dd>
+                    </div>
+                @endforeach
+            </dl>
+            @if ($changeSummary['truncated'] ?? false)
+                <small>{{ $changeSummary['count'] }} changes recorded; showing the first {{ count($changeSummary['items']) }}.</small>
+            @endif
+        </div>
+    @endif
 
     <div class="admin-detail-dialog__field">
         <span>Publication</span>

@@ -80,6 +80,8 @@ final class HomePresentationEditorialService
         return DB::transaction(function () use ($settings, $template, $input): bool {
             $fresh = $this->locked($settings);
             $configuration = $this->configuration($fresh);
+            $originalConfiguration = $configuration;
+            $originalTemplate = $fresh->template();
             $artworkSettingsChanged = false;
 
             if (array_key_exists('show_details', $input) && $input['show_details'] !== null) {
@@ -115,6 +117,10 @@ final class HomePresentationEditorialService
             $this->validateConfiguration($configuration);
             if ($artworkSettingsChanged) {
                 $this->validateArtworkReferences($configuration[HomeTemplate::Artwork->value]);
+            }
+
+            if ($originalTemplate === $template && $originalConfiguration === $configuration) {
+                return false;
             }
 
             $fresh->setAttribute('template', $template->value);

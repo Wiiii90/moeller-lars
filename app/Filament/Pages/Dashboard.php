@@ -334,10 +334,18 @@ final class Dashboard extends Page
                     'dashboard_notification_filter' => $this->notificationFilter,
                     'dashboard_notification_retention' => $retention,
                     'dashboard_delete_without_confirmation' => (bool) ($data['delete_without_confirmation'] ?? false),
-                ])->save();
+                ]);
+                $changed = $user->isDirty();
 
-                app(DashboardNotificationRetention::class)->pruneFor($user);
+                if ($changed) {
+                    $user->save();
+                    app(DashboardNotificationRetention::class)->pruneFor($user);
+                }
+
                 $this->refreshFeedFromFirstPage();
+                if ($changed) {
+                    app(AdminNotifier::class)->toast(title: 'Dashboard settings saved', status: 'success');
+                }
             });
     }
 

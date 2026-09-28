@@ -40,8 +40,12 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
 
     $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
     expect($projected)->not->toBeNull()
+        ->and($projected['action'])->toBe('Changed Public email')
+        ->and($projected['change_summary']['items'][0]['label'] ?? null)->toBe('Public email')
+        ->and($projected['change_summary']['items'][0]['after'] ?? null)->toBe('undo-snapshot@example.test')
         ->and($projected['undo']['id'] ?? null)->toBe((int) $receipt->getKey())
-        ->and($projected['undo']['inverse_label'] ?? null)->toBe('Restored previous values');
+        ->and($projected['undo']['inverse_label'] ?? null)->toBe('Restored previous values')
+        ->and($projected['undo']['confirmation'] ?? null)->toContain('restore Public email');
 
     $result = app(AdminUndoService::class)->undo((int) $receipt->getKey());
 
@@ -51,9 +55,41 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
         ->and($receipt->fresh()?->getAttribute('undone_at'))->not->toBeNull();
 
     $undoEvent = AuditEvent::query()->where('action', 'admin.undo_applied')->latest('id')->firstOrFail();
-    expect($undoEvent->getAttribute('metadata'))->toBe([
-        'source_audit_event_id' => (int) $event->getKey(),
+    $undoMetadata = $undoEvent->getAttribute('metadata');
+    expect($undoMetadata['source_audit_event_id'] ?? null)->toBe((int) $event->getKey())
+        ->and($undoMetadata['change_summary']['items'][0]['label'] ?? null)->toBe('Public email')
+        ->and($undoMetadata['change_summary']['items'][0]['after'] ?? null)->toBe($beforeEmail === null ? 'None' : (string) $beforeEmail);
+
+    $projectedUndo = app(AdminActivityFeed::class)->event((int) $undoEvent->getKey(), $actor);
+    expect($projectedUndo['action'] ?? null)->toBe('Restored Public email');
+});
+
+it('names multiple changed fields instead of a generic settings activity', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor);
+
+    $settings = PublicContentSetting::general();
+    $beforeVisibility = (bool) $settings->getAttribute('show_public_email');
+
+    app(AdminSettingsService::class)->updatePublicContent($settings, [
+        'public_email' => 'precise-activity@example.test',
+        'show_public_email' => ! $beforeVisibility,
     ]);
+
+    $event = AuditEvent::query()
+        ->where('action', 'public_content_setting.updated')
+        ->latest('id')
+        ->firstOrFail();
+    $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
+    $items = collect($projected['change_summary']['items'] ?? [])->keyBy('label');
+
+    expect($projected['action'] ?? null)
+        ->toContain('Public email')
+        ->toContain('Public email visibility')
+        ->not->toBe('Edited website settings')
+        ->and($items->get('Public email')['after'] ?? null)->toBe('precise-activity@example.test')
+        ->and($items->get('Public email visibility')['before'] ?? null)->toBe($beforeVisibility ? 'On' : 'Off')
+        ->and($items->get('Public email visibility')['after'] ?? null)->toBe($beforeVisibility ? 'Off' : 'On');
 });
 
 it('hides an older snapshot Undo after the same row changes again', function (): void {

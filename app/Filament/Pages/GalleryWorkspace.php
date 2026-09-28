@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Artwork\ArtworkDraftService;
 use App\Filament\Pages\Concerns\GalleryWorkspaceArtworkActions;
 use App\Filament\Pages\Concerns\GalleryWorkspaceArtworkDialogs;
@@ -14,7 +15,6 @@ use App\Filament\Pages\Concerns\GalleryWorkspaceReadinessSupport;
 use App\Filament\Pages\Concerns\GalleryWorkspaceSelectionSupport;
 use App\Filament\Pages\Concerns\GalleryWorkspaceUploadSettings;
 use App\Models\Artwork;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -161,7 +161,7 @@ final class GalleryWorkspace extends Page
         }
 
         $this->refreshWorkspaceAfterMutation();
-        Notification::make()->title('Artwork title saved')->success()->send();
+        app(AdminNotifier::class)->transient()->title('Artwork title saved')->success()->send();
 
         return $normalized;
     }

@@ -80,7 +80,9 @@ class EditArtwork extends EditRecord
             $originalCategoryId = $originalCategoryId === null ? null : (int) $originalCategoryId;
             $targetCategoryId = $data['artwork_category_id'] === null ? null : (int) $data['artwork_category_id'];
 
-            if ($targetCategoryId !== $originalCategoryId) {
+            $changed = $targetCategoryId !== $originalCategoryId;
+
+            if ($changed) {
                 if ($targetCategoryId === null) {
                     app(ArtworkGalleryAssignmentService::class)->detach($artwork);
                 } else {
@@ -107,10 +109,18 @@ class EditArtwork extends EditRecord
             if ($artwork->isDirty()) {
                 $artwork->save();
                 app(AdminAuditService::class)->record($actor, 'artwork.updated', 'artwork', $artwork->getKey());
+                $changed = true;
             }
+
+            $this->adminEditorSetMutationChanged($changed);
 
             return $artwork;
         });
+    }
+
+    protected function adminEditorSavedNotificationTitle(): string
+    {
+        return 'Artwork saved';
     }
 
     protected function getRedirectUrl(): string

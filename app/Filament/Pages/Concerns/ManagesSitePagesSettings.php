@@ -2,11 +2,11 @@
 
 namespace App\Filament\Pages\Concerns;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\PagesSettingsDialog;
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 
 trait ManagesSitePagesSettings
 {
@@ -22,9 +22,11 @@ trait ManagesSitePagesSettings
                 ->fillForm(fn (): array => $dialog->fill())
                 ->schema($dialog->schema())
                 ->action(function (array $data) use ($dialog): void {
-                    $dialog->save($data);
+                    $changed = $dialog->save($data);
                     $this->loadSections();
-                    Notification::make()->title('Pages settings saved')->success()->send();
+                    if ($changed) {
+                        app(AdminNotifier::class)->transient()->title('Pages settings saved')->success()->send();
+                    }
                 }),
             'Save settings',
             AdminDialogSize::Default,
