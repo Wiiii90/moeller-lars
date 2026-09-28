@@ -45,7 +45,7 @@ trait CustomPageWorkspaceListContactActions
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $itemIndex = $this->actionListItemIndex($arguments);
-                app(CustomPageEditorialService::class)->updateListItem(
+                $changed = app(CustomPageEditorialService::class)->updateListItem(
                     $this->settings(),
                     $index,
                     $type,
@@ -54,7 +54,9 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('List entry saved')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('List entry saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -161,7 +163,7 @@ trait CustomPageWorkspaceListContactActions
             ->action(function (array $data, array $arguments): void {
                 [$index, $type] = $this->actionComponentTarget($arguments);
                 $childType = $this->actionContactChildType($arguments);
-                app(CustomPageEditorialService::class)->updateContactChild(
+                $changed = app(CustomPageEditorialService::class)->updateContactChild(
                     $this->settings(),
                     $index,
                     $type,
@@ -170,7 +172,9 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Contact item saved')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Contact item saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
