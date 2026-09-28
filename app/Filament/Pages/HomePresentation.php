@@ -368,6 +368,7 @@ final class HomePresentation extends Page
             ])
             ->modalHeading('Home settings'), AdminDialogSize::Large)->action(function (array $data): void {
                 $template = HomeTemplate::from((string) $data['template']);
+                $changed = false;
                 if ($template === HomeTemplate::Artwork) {
                     $groupSource = (string) ($data['group_source'] ?? $this->heroGroupSource);
                     $input = [
@@ -389,26 +390,29 @@ final class HomePresentation extends Page
                             'weight' => HomeHeroConfigurationService::WEIGHT_TOTAL,
                         ]];
                     }
-                    app(HomeHeroConfigurationService::class)->updateArtworkSettings($this->settings(), $input);
+                    $changed = app(HomeHeroConfigurationService::class)->updateArtworkSettings($this->settings(), $input);
                 } else {
                     $input = [];
                     if ($template === HomeTemplate::UnderConstruction) {
                         $input['public_site_gate'] = $data['public_site_gate'] ?? $this->publicSiteGate;
                     }
-                    app(HomePresentationEditorialService::class)->updateSettings($this->settings(), $template, $input);
+                    $changed = app(HomePresentationEditorialService::class)->updateSettings($this->settings(), $template, $input);
                 }
 
                 $homeSection = $this->homeSection();
                 $parentId = $homeSection->getAttribute('parent_id');
-                app(SiteSectionEditorialService::class)->updatePlacement(
+                $homeSection = app(SiteSectionEditorialService::class)->updatePlacement(
                     $homeSection,
                     'published',
                     (bool) ($data['show_in_navigation'] ?? false),
                     is_numeric($parentId) ? (int) $parentId : null,
                 );
+                $changed = $homeSection->wasChanged(['state', 'show_in_navigation', 'parent_id', 'position']) || $changed;
                 $this->showHomeInNavigation = (bool) ($data['show_in_navigation'] ?? false);
                 $this->reloadWorkspace();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
+                }
             });
     }
 
