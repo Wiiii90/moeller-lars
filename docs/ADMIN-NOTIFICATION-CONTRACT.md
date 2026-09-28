@@ -8,12 +8,12 @@ The admin has four separate concepts. They must not be collapsed into one anothe
 
 | Concept | Purpose | Persistence |
 | --- | --- | --- |
-| Toast | Immediate feedback for the action the current user just performed | Ephemeral |
+| Ticker feedback | Immediate feedback for the action the current user just performed | Ephemeral |
 | Notification | Information that deserves later attention in the admin inbox/feed | Persistent, retention-managed |
 | Activity | Immutable factual history of successful administrative changes | Append-only |
 | Publication | Working/live/version state and publication operations | Domain state/history |
 
-A successful edit may create a toast and an Activity event without creating a persistent notification. A publication or processing failure may create both a toast and a persistent notification without inventing an Activity event for a change that did not succeed.
+A successful edit may create ticker feedback and an Activity event without creating a persistent notification. A publication or processing failure may create both ticker feedback and a persistent notification without inventing an Activity event for a change that did not succeed.
 
 ## Central notification authority
 
@@ -21,7 +21,7 @@ Persistent admin notifications originate from structured server-side application
 
 The central notifier owns the three explicit delivery intents:
 
-- **toast** — immediate Filament feedback only;
+- **toast** — immediate transient feedback only; Filament's notification object is transport, while presentation is the project-owned sticky-header ticker;
 - **inbox** — persistent `AdminNotification` only;
 - **both** — immediate feedback plus persistent notification.
 
@@ -33,7 +33,9 @@ The notifier is the normal application boundary around Filament notification con
 
 Toast-only examples include successful save/reorder/upload operations, mark read/unread confirmations, a successful undo, successful staged-state reset, successful version restore and successful publication.
 
-Persistent notification examples include new contact messages that require attention, publication/preflight failures, background-job failures, media-processing failures, incomplete cleanup, meaningful storage-capacity warnings and other system conditions that remain relevant after the initiating request ends.
+Persistent notification examples include publication/preflight failures, background-job failures, media-processing failures, incomplete cleanup, meaningful storage-capacity warnings and other system conditions that remain relevant after the initiating request ends.
+
+Contact messages are already durable first-class `DashboardFeed` entries. Do not create a second `AdminNotification` for the same incoming contact merely to make it persistent; create an `AdminNotification` only for a separate condition that is not already represented by the contact record itself.
 
 Use **both** when a condition deserves immediate interruption and later retrieval, for example a publication failure or media-processing failure encountered by the current user.
 
@@ -86,7 +88,7 @@ A notification may link to Activity or Publication, but those references do not 
 
 ## Transaction semantics
 
-Success feedback that depends on a database mutation must not be emitted as durable truth before that mutation is committed.
+Success feedback that depends on a database mutation must not be emitted as durable truth before that mutation is committed. No-op saves must emit neither mutation Activity nor success ticker feedback.
 
 When a transaction can still roll back, success toasts/persistent notifications must be dispatched only after successful commit or from a point where the domain service has established success. A failed operation must not leave behind a persistent notification claiming that it succeeded.
 
@@ -118,6 +120,8 @@ Notification-specific persistence remains in `AdminNotification`, while common f
 
 ## UI details
 
+Transient feedback is rendered only in the project-owned ticker inside the persistent sticky admin header. Filament notification objects are intercepted server-side/Livewire-side and projected into this ticker rather than rendered as stacked floating cards. The ticker uses a bounded FIFO pending queue, displays one message at a time, folds only its message region when idle, and keeps the surrounding header controls present. On narrow screens the composition remains sidebar control | flexible ticker | user control, with the ticker truncating before either control becomes inaccessible. Reduced-motion preferences disable the folding motion.
+
 Persistent-notification details use the shared admin dialog/viewer primitives. Context actions such as `Open record`, `Open activity`, `Review staged changes` or `Mark unread` appear only when they are semantically available.
 
 Notification status/severity is factual state, not decorative styling. Do not add page-local dialog, badge or action systems when shared admin primitives already own those roles.
@@ -141,9 +145,9 @@ After callers have moved to the central notifier, remove the recorder component,
 
 Durable coverage should prove at least:
 
-- toast-only delivery does not create `AdminNotification` rows;
+- toast-only/ticker delivery does not create `AdminNotification` rows;
 - inbox delivery works without a browser session rendering a toast;
-- both delivery persists and sends immediate feedback;
+- both delivery persists and sends immediate ticker feedback;
 - `(user_id, source_id)` remains idempotent;
 - notification reads/mutations remain user-scoped;
 - retention and pin protection remain correct;
