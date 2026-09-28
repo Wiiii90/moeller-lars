@@ -58,23 +58,29 @@ trait GalleryWorkspaceUploadSettings
                 $currentSlug = (string) $gallery->getAttribute('slug');
                 $service = app(GalleryEditorialService::class);
 
-                DB::transaction(function () use ($service, $gallery, $currentSlug, $data): void {
-                    $service->update($gallery, [
+                $changed = DB::transaction(function () use ($service, $gallery, $currentSlug, $data): bool {
+                    $updated = $service->update($gallery, [
                         'name' => $data['name'],
                         'description' => $data['description'] ?? null,
                         'show_on_home' => (bool) ($data['show_on_home'] ?? false),
                     ]);
+                    $changed = $updated->wasChanged();
 
                     $newSlug = trim((string) ($data['slug'] ?? ''));
                     if ($newSlug !== $currentSlug) {
                         $service->changeSlug($gallery, $newSlug);
+                        $changed = true;
                     }
+
+                    return $changed;
                 });
 
                 $this->loadGallery((int) $gallery->getKey());
                 $this->loadMoveTargets();
                 $this->refreshWorkspaceAfterMutation();
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Gallery settings saved')->success()->send();
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Gallery settings saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Large);
@@ -101,8 +107,10 @@ trait GalleryWorkspaceUploadSettings
             ])
             ->modalHeading('Material presets')
             ->action(function (array $data): void {
-                app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
-                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Material presets saved')->success()->send();
+                $changed = app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
+                if ($changed) {
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Material presets saved')->success()->send();
+                }
             });
 
         return AdminDialog::edit($action, AdminDialogSize::Default);
