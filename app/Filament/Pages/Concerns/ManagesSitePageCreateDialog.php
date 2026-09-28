@@ -12,7 +12,6 @@ use App\Models\SiteSection;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -73,7 +72,7 @@ trait ManagesSitePageCreateDialog
                 $this->pageNumber = 1;
                 $this->loadSections();
 
-                Notification::make()
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()
                     ->title($section->nodeType()->label().' added')
                     ->success()
                     ->send();
