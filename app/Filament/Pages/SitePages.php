@@ -18,7 +18,6 @@ use App\Models\SiteSection;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -193,7 +192,7 @@ final class SitePages extends Page
     public function sortSection(int $sectionId, int $position, int|string|null $groupId = null): void
     {
         if (! $this->reorderEnabled) {
-            Notification::make()
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()
                 ->title('Reordering is unavailable for this view')
                 ->body($this->filtersActive
                     ? 'Reset Search, Type and Status before changing page order.'
@@ -208,7 +207,7 @@ final class SitePages extends Page
         $parentId = null;
         if ($groupId !== null && $groupId !== '' && $groupId !== 'root') {
             if (! ctype_digit((string) $groupId)) {
-                Notification::make()->title('Page order unchanged')->danger()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page order unchanged')->danger()->send();
                 $this->loadSections();
 
                 return;
@@ -220,7 +219,7 @@ final class SitePages extends Page
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             if ($this->orderService()->moveTo($section, $parentId, $position)) {
-                Notification::make()->title('Page order updated')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page order updated')->success()->send();
             }
         } catch (ValidationException $exception) {
             $this->validationNotification('Page order unchanged', $exception);
@@ -232,7 +231,7 @@ final class SitePages extends Page
     public function moveSection(int $sectionId, string $direction): void
     {
         if (! $this->reorderEnabled) {
-            Notification::make()->title('Show the complete unfiltered page order before reordering')->warning()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Show the complete unfiltered page order before reordering')->warning()->send();
 
             return;
         }
@@ -241,7 +240,7 @@ final class SitePages extends Page
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             if ($this->orderService()->move($section, $direction)) {
-                Notification::make()->title('Page order updated')->success()->send();
+                app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page order updated')->success()->send();
                 $this->loadSections();
             }
         } catch (ValidationException $exception) {
@@ -292,7 +291,7 @@ final class SitePages extends Page
                             (bool) $section->getAttribute('show_in_navigation'),
                             $parentId,
                         );
-                        Notification::make()->title('Page placement updated')->success()->send();
+                        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page placement updated')->success()->send();
                     } catch (ValidationException $exception) {
                         $this->validationNotification('Page placement unchanged', $exception);
                     }
@@ -336,7 +335,7 @@ final class SitePages extends Page
 
         try {
             $this->deleteSectionRecord($section);
-            Notification::make()->title('Page removed')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page removed')->success()->send();
         } catch (ValidationException $exception) {
             $this->validationNotification('Page was not removed', $exception);
         }
@@ -387,7 +386,7 @@ final class SitePages extends Page
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             app(SiteSectionEditorialService::class)->convertType($section, $targetType);
-            Notification::make()->title('Page type updated')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page type updated')->success()->send();
         } catch (ValidationException $exception) {
             $this->validationNotification('Page type unchanged', $exception);
         }
@@ -401,7 +400,7 @@ final class SitePages extends Page
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             app(SiteSectionEditorialService::class)->updateJournalTemplate($section, $template);
-            Notification::make()->title('Journal template updated')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Journal template updated')->success()->send();
         } catch (ValidationException $exception) {
             $this->validationNotification('Journal template unchanged', $exception);
         }
@@ -447,7 +446,7 @@ final class SitePages extends Page
             $this->newPageParent = '';
             $this->pageNumber = 1;
             $this->loadSections();
-            Notification::make()->title($message)->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($message)->success()->send();
         } catch (ValidationException $exception) {
             $this->validationNotification('Page was not added', $exception);
         }
@@ -752,7 +751,7 @@ final class SitePages extends Page
                 $visible,
                 $section->getAttribute('parent_id') === null ? null : (int) $section->getAttribute('parent_id'),
             );
-            Notification::make()->title('Page settings updated')->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Page settings updated')->success()->send();
         } catch (ValidationException $exception) {
             $this->validationNotification('Page settings unchanged', $exception);
         }
@@ -845,7 +844,7 @@ final class SitePages extends Page
     private function validationNotification(string $title, ValidationException $exception): void
     {
         $message = collect($exception->errors())->flatten()->first();
-        Notification::make()
+        app(\App\Domain\Admin\AdminNotifier::class)->transient()
             ->title($title)
             ->body(is_string($message) ? $message : 'The requested change is not safe.')
             ->danger()
@@ -854,7 +853,7 @@ final class SitePages extends Page
 
     private function bulkNotification(string $action, int $changed, int $blocked): void
     {
-        $notification = Notification::make()->title($action.' selection complete');
+        $notification = app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($action.' selection complete');
         if ($blocked > 0) {
             $notification->body($changed.' changed · '.$blocked.' blocked by page safety rules')->warning()->send();
 
