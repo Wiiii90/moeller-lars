@@ -62,7 +62,7 @@ trait CustomPageWorkspaceListContactActions
 
     public function setListEntryPublished(int $componentIndex, string $componentType, int $itemIndex, bool $published): void
     {
-        app(CustomPageEditorialService::class)->setListItemPublished(
+        $changed = app(CustomPageEditorialService::class)->setListItemPublished(
             $this->settings(),
             $componentIndex,
             $componentType,
@@ -70,6 +70,12 @@ trait CustomPageWorkspaceListContactActions
             $published,
         );
         $this->loadComponentProjection(refreshCvCount: false);
+        if ($changed) {
+            app(\App\Domain\Admin\AdminNotifier::class)->toast(
+                $published ? 'List entry published' : 'List entry unpublished',
+                status: 'success',
+            );
+        }
     }
 
     public function moveListEntry(int $componentIndex, string $componentType, int $itemIndex, string $direction): void
@@ -77,7 +83,7 @@ trait CustomPageWorkspaceListContactActions
         if (! $this->componentReorderEnabled()) {
             return;
         }
-        app(CustomPageEditorialService::class)->moveListItem(
+        $changed = app(CustomPageEditorialService::class)->moveListItem(
             $this->settings(),
             $componentIndex,
             $componentType,
@@ -86,6 +92,9 @@ trait CustomPageWorkspaceListContactActions
         );
         $this->clearSelections();
         $this->loadComponentProjection(refreshCvCount: false);
+        if ($changed) {
+            app(\App\Domain\Admin\AdminNotifier::class)->toast('List entry order updated', status: 'success');
+        }
     }
 
     public function deleteListEntryAction(): Action
@@ -169,7 +178,7 @@ trait CustomPageWorkspaceListContactActions
 
     public function setContactChildPublished(int $index, string $type, string $childType, bool $published): void
     {
-        app(CustomPageEditorialService::class)->setContactChildPublished(
+        $changed = app(CustomPageEditorialService::class)->setContactChildPublished(
             $this->settings(),
             $index,
             $type,
@@ -177,6 +186,12 @@ trait CustomPageWorkspaceListContactActions
             $published,
         );
         $this->loadComponentProjection(refreshCvCount: false);
+        if ($changed) {
+            app(\App\Domain\Admin\AdminNotifier::class)->toast(
+                $published ? 'Contact item published' : 'Contact item unpublished',
+                status: 'success',
+            );
+        }
     }
 
     public function moveContactChild(int $index, string $type, string $childType, string $direction): void
@@ -184,7 +199,7 @@ trait CustomPageWorkspaceListContactActions
         if (! $this->componentReorderEnabled()) {
             return;
         }
-        app(CustomPageEditorialService::class)->moveContactChild(
+        $changed = app(CustomPageEditorialService::class)->moveContactChild(
             $this->settings(),
             $index,
             $type,
@@ -193,6 +208,9 @@ trait CustomPageWorkspaceListContactActions
         );
         $this->clearSelections();
         $this->loadComponentProjection(refreshCvCount: false);
+        if ($changed) {
+            app(\App\Domain\Admin\AdminNotifier::class)->toast('Contact item order updated', status: 'success');
+        }
     }
 
     public function deleteContactChildAction(): Action
