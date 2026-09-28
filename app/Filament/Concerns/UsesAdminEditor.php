@@ -4,6 +4,30 @@ namespace App\Filament\Concerns;
 
 trait UsesAdminEditor
 {
+    private bool $adminEditorMutationChanged = true;
+
+    protected function adminEditorSetMutationChanged(bool $changed): void
+    {
+        $this->adminEditorMutationChanged = $changed;
+    }
+
+    protected function adminEditorSavedNotificationTitle(): string
+    {
+        return 'Changes saved';
+    }
+
+    protected function getSavedNotification(): ?\Filament\Notifications\Notification
+    {
+        if (! $this->adminEditorMutationChanged) {
+            return null;
+        }
+
+        return app(\App\Domain\Admin\AdminNotifier::class)
+            ->transient()
+            ->success()
+            ->title($this->adminEditorSavedNotificationTitle());
+    }
+
     public function areFormActionsSticky(): bool
     {
         return true;
