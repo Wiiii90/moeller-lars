@@ -854,7 +854,7 @@ final class ListMediaAssets extends Page
     /** @param array<string, mixed> $data */
     private function saveMetadata(MediaAsset $asset, array $data): void
     {
-        app(MediaAssetEditorialService::class)->updateMetadata($asset, [
+        $updated = app(MediaAssetEditorialService::class)->updateMetadata($asset, [
             'alt_text' => $data['alt_text'] ?? null,
             'credit' => $data['credit'] ?? null,
             'copyright_notice_mode' => $data['copyright_notice_mode'] ?? MediaAsset::COPYRIGHT_INHERIT,
@@ -862,7 +862,9 @@ final class ListMediaAssets extends Page
         ]);
 
         $this->loadLibrary();
-        app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('File metadata saved')->success()->send();
+        if ($updated->wasChanged()) {
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('File metadata saved')->success()->send();
+        }
     }
 
     /**
