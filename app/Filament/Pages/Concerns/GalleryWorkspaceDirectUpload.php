@@ -16,7 +16,6 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -213,7 +212,7 @@ trait GalleryWorkspaceDirectUpload
                     $count = count($rows);
                     $this->pendingBatchArtworkMedia = [];
                     $this->refreshWorkspaceAfterMutation();
-                    Notification::make()
+                    app(\App\Domain\Admin\AdminNotifier::class)->transient()
                         ->title($count.' artworks added')
                         ->body('The new artworks were created as drafts with their uploaded Media Files as primary media.')
                         ->success()
@@ -311,7 +310,7 @@ trait GalleryWorkspaceDirectUpload
                 $details[] = '+'.(count($failures) - 4).' more';
             }
 
-            $notification = Notification::make()
+            $notification = app(\App\Domain\Admin\AdminNotifier::class)->transient()
                 ->title(($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed')
                 ->body(implode("\n", $details));
 
@@ -326,13 +325,13 @@ trait GalleryWorkspaceDirectUpload
         }
 
         if ($added > 0) {
-            Notification::make()->title($added === 1 ? 'File uploaded' : 'Files uploaded')->body($summary)->success()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title($added === 1 ? 'File uploaded' : 'Files uploaded')->body($summary)->success()->send();
 
             return;
         }
 
         if ($duplicates > 0) {
-            Notification::make()->title('Already in Media Files')->body($summary)->info()->send();
+            app(\App\Domain\Admin\AdminNotifier::class)->transient()->title('Already in Media Files')->body($summary)->info()->send();
         }
     }
 
