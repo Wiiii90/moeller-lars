@@ -518,6 +518,49 @@ final class ListMediaAssets extends Page
         $this->capacity = $overview['capacity'];
         $this->storageBreakdown = $overview['breakdown'];
         $this->storageAttention = $overview['attention'];
+
+        if ($measure) {
+            $this->notifyMeasuredStorageCondition();
+        }
+    }
+
+    private function notifyMeasuredStorageCondition(): void
+    {
+        $status = (string) ($this->capacity['status'] ?? '');
+        if (! in_array($status, ['near_capacity', 'full', 'unavailable'], true)) {
+            return;
+        }
+
+        $actor = auth()->user();
+        if (! $actor instanceof \App\Models\User) {
+            return;
+        }
+
+        $percent = $this->capacity['percent'] ?? null;
+        $body = match ($status) {
+            'near_capacity' => is_numeric($percent)
+                ? 'Site storage is at '.rtrim(rtrim(number_format((float) $percent, 1), '0'), '.').'% of the configured allowance.'
+                : 'Site storage is nearing the configured allowance.',
+            'full' => 'The site storage allowance is full. New uploads can be blocked until storage is reclaimed or the allowance is increased.',
+            default => 'The site storage allowance or current usage could not be measured reliably.',
+        };
+
+        app(\App\Domain\Admin\AdminNotifier::class)->both(
+            user: $actor,
+            sourceId: 'storage-capacity:'.$status,
+            title: match ($status) {
+                'near_capacity' => 'Storage nearing capacity',
+                'full' => 'Storage allowance full',
+                default => 'Storage measurement unavailable',
+            },
+            body: $body,
+            status: $status === 'near_capacity' ? 'warning' : 'danger',
+            context: [
+                'type' => 'storage.capacity_'.$status,
+                'action_url' => MediaAssetResource::getUrl('index'),
+                'action_label' => 'Open Storage',
+            ],
+        );
     }
 
     private function refreshStorageOverviewAfterMutation(): void
