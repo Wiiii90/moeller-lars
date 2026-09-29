@@ -30,13 +30,12 @@
     --admin-workspace-gutter: 2rem;
     --admin-sidebar-width: 18rem;
     --admin-sidebar-half-width: 9rem;
-    --admin-header-feedback-height: 2rem;
+    --admin-header-control-size: 2rem;
     --admin-header-feedback-edge-gap: .75rem;
-    --admin-feedback-enter-duration: 320ms;
-    --admin-feedback-exit-duration: 240ms;
-    --admin-feedback-default-hold: 5200ms;
-    --admin-feedback-warning-hold: 6200ms;
-    --admin-feedback-danger-hold: 7000ms;
+    --admin-feedback-scroll-speed: 112;
+    --admin-feedback-scroll-min-duration: 4200ms;
+    --admin-feedback-scroll-max-duration: 9000ms;
+    --admin-feedback-gap-duration: 180ms;
     --admin-status-neutral: var(--admin-faint);
     --admin-status-success: var(--admin-success);
     --admin-status-warning: var(--admin-accent);
@@ -528,13 +527,33 @@
     line-height: 1.05;
 }
 
-.fi-topbar .fi-icon-btn,
 .fi-sidebar-item-btn {
     min-height: var(--admin-control-height) !important;
 }
 
-.fi-topbar .fi-icon-btn {
-    min-width: var(--admin-control-height) !important;
+.fi-topbar :is(
+    .fi-topbar-open-sidebar-btn,
+    .fi-topbar-close-sidebar-btn,
+    .fi-topbar-open-collapse-sidebar-btn,
+    .fi-topbar-close-collapse-sidebar-btn,
+    .fi-user-menu-trigger
+) {
+    box-sizing: border-box;
+    width: var(--admin-header-control-size) !important;
+    height: var(--admin-header-control-size) !important;
+    min-width: var(--admin-header-control-size) !important;
+    min-height: var(--admin-header-control-size) !important;
+    padding: 0 !important;
+}
+
+.fi-topbar :is(
+    .fi-topbar-open-sidebar-btn,
+    .fi-topbar-close-sidebar-btn,
+    .fi-topbar-open-collapse-sidebar-btn,
+    .fi-topbar-close-collapse-sidebar-btn
+) .fi-icon {
+    width: 1.1rem;
+    height: 1.1rem;
 }
 
 .admin-workspace__heading > .admin-workspace__title:first-child {
