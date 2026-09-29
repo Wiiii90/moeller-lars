@@ -7,6 +7,7 @@ function runtime() {
         queue: [],
         current: null,
         timer: null,
+        frame: null,
         listenerRegistered: false,
         resizeListenerRegistered: false,
         layoutObserver: null,
@@ -95,9 +96,9 @@ function prefersReducedMotion() {
 export function tickerTravelDuration(
     runwayWidth,
     trackWidth,
-    pixelsPerSecond = 112,
-    minimum = 4200,
-    maximum = 9000,
+    pixelsPerSecond = 280,
+    minimum = 3000,
+    maximum = 5600,
 ) {
     const distance = Math.max(0, Number(runwayWidth) || 0) + Math.max(0, Number(trackWidth) || 0);
     const speed = Math.max(1, Number(pixelsPerSecond) || 1);
@@ -221,10 +222,19 @@ function updatePendingIndicator() {
 function clearTimer() {
     const state = runtime();
 
-    if (state.timer === null) return;
+    if (state.timer !== null) {
+        window.clearTimeout(state.timer);
+        state.timer = null;
+    }
+}
 
-    window.clearTimeout(state.timer);
-    state.timer = null;
+function clearFrame() {
+    const state = runtime();
+
+    if (state.frame !== null) {
+        window.cancelAnimationFrame(state.frame);
+        state.frame = null;
+    }
 }
 
 function render(notification) {
@@ -233,19 +243,16 @@ function render(notification) {
 
     const title = root.querySelector('[data-admin-notification-title]');
     const body = root.querySelector('[data-admin-notification-body]');
-    const track = root.querySelector('[data-admin-notification-track]');
 
     if (title) title.textContent = notification.title;
     if (body) {
         body.textContent = notification.body;
         body.hidden = notification.body === '';
     }
-    if (track instanceof HTMLElement) {
-        track.style.removeProperty('transform');
-    }
 
     root.dataset.status = notification.status;
-    root.classList.remove('is-active', 'is-leaving');
+    root.classList.remove('is-leaving');
+    root.classList.add('is-active');
 
     return true;
 }
@@ -253,23 +260,21 @@ function render(notification) {
 function fold() {
     const root = ticker();
 
-    root?.classList.remove('is-active', 'is-leaving', 'is-traveling');
+    root?.classList.remove('is-active', 'is-leaving');
     if (root) delete root.dataset.status;
 }
 
-function completeCurrent({ dismissed = false } = {}) {
+function finishCurrent({ dismissed = false } = {}) {
     const state = runtime();
 
     if (!state.current || state.phase === 'leaving') return;
 
     clearTimer();
-
+    clearFrame();
     state.phase = 'leaving';
 
     const root = ticker();
     root?.classList.add('is-leaving');
-
-    const fadeDuration = prefersReducedMotion() ? 0 : 140;
 
     state.timer = window.setTimeout(() => {
         fold();
@@ -279,14 +284,14 @@ function completeCurrent({ dismissed = false } = {}) {
 
         const gap = dismissed
             ? 120
-            : cssDuration('--admin-feedback-gap-duration', 280);
+            : cssDuration('--admin-feedback-gap-duration', 320);
 
         state.timer = window.setTimeout(() => {
             state.phase = 'idle';
             state.timer = null;
             showNext();
         }, gap);
-    }, fadeDuration);
+    }, 160);
 }
 
 function startTickerTravel(root) {
@@ -295,7 +300,7 @@ function startTickerTravel(root) {
     const track = root.querySelector('[data-admin-notification-track]');
 
     if (!(runway instanceof HTMLElement) || !(track instanceof HTMLElement)) {
-        completeCurrent();
+        finishCurrent();
 
         return;
     }
@@ -304,7 +309,7 @@ function startTickerTravel(root) {
     const trackWidth = track.scrollWidth;
 
     if (runwayWidth <= 0 || trackWidth <= 0) {
-        completeCurrent();
+        state.timer = window.setTimeout(() => startTickerTravel(root), 50);
 
         return;
     }
@@ -322,25 +327,35 @@ function startTickerTravel(root) {
     const duration = tickerTravelDuration(runwayWidth, trackWidth, speed, minimum, maximum);
     const startX = runwayWidth;
     const endX = -trackWidth;
+    const distance = startX - endX;
+    const startedAt = performance.now();
 
-    track.style.setProperty('--admin-ticker-start-x', `${startX}px`);
-    track.style.setProperty('--admin-ticker-end-x', `${endX}px`);
-    track.style.setProperty('--admin-ticker-travel-duration', `${duration}ms`);
-    track.style.transform = `translate3d(${startX}px, -50%, 0)`;
-
-    root.classList.remove('is-traveling');
-    void track.offsetWidth;
-    root.classList.add('is-active', 'is-traveling');
     state.phase = 'traveling';
 
-    const finish = () => {
-        if (state.phase !== 'traveling') return;
+    const step = (now) => {
+        if (state.phase !== 'traveling' || !state.current) {
+            state.frame = null;
 
-        completeCurrent();
+            return;
+        }
+
+        const progress = Math.min(1, Math.max(0, (now - startedAt) / duration));
+        const x = startX - (distance * progress);
+
+        track.style.transform = `translate3d(${x}px, -50%, 0)`;
+
+        if (progress >= 1) {
+            state.frame = null;
+            finishCurrent();
+
+            return;
+        }
+
+        state.frame = window.requestAnimationFrame(step);
     };
 
-    track.onanimationend = finish;
-    state.timer = window.setTimeout(finish, duration + 120);
+    track.style.transform = `translate3d(${startX}px, -50%, 0)`;
+    state.frame = window.requestAnimationFrame(step);
 }
 
 function presentCurrent() {
@@ -350,6 +365,7 @@ function presentCurrent() {
     if (!root || !state.current || !render(state.current)) return;
 
     clearTimer();
+    clearFrame();
 
     window.requestAnimationFrame(() => {
         const activeRoot = ticker();
@@ -369,6 +385,7 @@ function showNext() {
 
     state.current = state.queue.shift() ?? null;
     updatePendingIndicator();
+
     if (!state.current) return;
 
     presentCurrent();
@@ -427,8 +444,9 @@ function bindRoot(root) {
 
     state.boundRoot = root;
     updatePendingIndicator();
+
     root.querySelector('[data-admin-notification-dismiss]')
-        ?.addEventListener('click', () => completeCurrent({ dismissed: true }));
+        ?.addEventListener('click', () => finishCurrent({ dismissed: true }));
 
     enqueueInitialFeedback(root);
 
