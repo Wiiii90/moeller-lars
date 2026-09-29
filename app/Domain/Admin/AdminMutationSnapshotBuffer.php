@@ -11,6 +11,11 @@ use Illuminate\Support\Str;
 
 final class AdminMutationSnapshotBuffer
 {
+    /** @var array<string, string> */
+    private const AUDIT_ONLY_TABLES = [
+        'artwork_material_presets' => 'artwork_material_preset',
+    ];
+
     /** @var array<string, array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}> */
     private array $snapshots = [];
 
@@ -174,7 +179,10 @@ final class AdminMutationSnapshotBuffer
             return;
         }
 
-        $this->publicationStateMayHaveChanged = true;
+        if (in_array($descriptor['table'], PublicationSnapshot::TABLES, true)) {
+            $this->publicationStateMayHaveChanged = true;
+        }
+
         $this->snapshots[$key] = [
             'entity_type' => $descriptor['entity_type'],
             'table' => $descriptor['table'],
@@ -217,13 +225,16 @@ final class AdminMutationSnapshotBuffer
         }
 
         $table = $model->getTable();
-        if (! in_array($table, PublicationSnapshot::TABLES, true)) {
-            return null;
-        }
-
-        $entityType = Str::snake(class_basename($model));
-        if (! PublicationSnapshot::tracksAuditEntityType($entityType)) {
-            return null;
+        if (in_array($table, PublicationSnapshot::TABLES, true)) {
+            $entityType = Str::snake(class_basename($model));
+            if (! PublicationSnapshot::tracksAuditEntityType($entityType)) {
+                return null;
+            }
+        } else {
+            $entityType = self::AUDIT_ONLY_TABLES[$table] ?? null;
+            if ($entityType === null) {
+                return null;
+            }
         }
 
         $rowId = (int) $model->getKey();
