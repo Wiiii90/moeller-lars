@@ -133,7 +133,7 @@ Admin mutation
   -> admin-notification-ticker
 ```
 
-The ticker uses a bounded FIFO pending queue, displays one message at a time, folds only its message region when idle, and keeps the surrounding header controls present. On narrow screens the composition remains sidebar control | flexible ticker | user control, with the ticker truncating before either control becomes inaccessible. Reduced-motion preferences disable the folding motion.
+The ticker uses a bounded FIFO pending queue and renders a continuous right-to-left message stream. The first message enters from the right; once that message is fully inside the visible runway, the next queued message may follow immediately behind a neutral separator while the previous message continues travelling left. Messages are never coalesced merely because their text is identical. The ticker folds only when both the active stream and pending queue are empty, and the surrounding header controls remain present. On narrow screens the composition remains sidebar control | flexible ticker | user control, with the ticker constrained before either control becomes inaccessible. Reduced-motion preferences use a calmer travel speed rather than replacing the ticker with static text.
 
 Persistent-notification details use the shared admin dialog/viewer primitives. Context actions such as `Open record`, `Open activity`, `Review staged changes` or `Mark unread` appear only when they are semantically available.
 
