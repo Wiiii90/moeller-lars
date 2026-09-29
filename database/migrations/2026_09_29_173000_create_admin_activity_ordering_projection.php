@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('admin_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('scope', 240);
             $table->string('action', 80);
+            $table->string('target_label', 240)->nullable();
             $table->foreignId('first_audit_event_id')->constrained('audit_events')->restrictOnDelete();
             $table->foreignId('last_audit_event_id')->constrained('audit_events')->restrictOnDelete();
             $table->unsignedInteger('event_count')->default(1);
@@ -95,6 +96,7 @@ return new class extends Migration
                         'admin_user_id' => $event->admin_user_id,
                         'scope' => $scope,
                         'action' => (string) $event->action,
+                        'target_label' => $this->legacyScopeLabel($scope),
                         'first_audit_event_id' => (int) $event->id,
                         'last_audit_event_id' => (int) $event->id,
                         'event_count' => 1,
@@ -129,6 +131,25 @@ return new class extends Migration
                     ];
                 });
             });
+    }
+
+    private function legacyScopeLabel(string $scope): ?string
+    {
+        if ($scope === 'site-navigation') {
+            return 'Public navigation';
+        }
+
+        if (preg_match('/^gallery-artworks:(\d+)$/', $scope, $matches) === 1) {
+            return DB::table('artwork_categories')->where('id', (int) $matches[1])->value('name');
+        }
+        if (preg_match('/^artwork-media:(\d+)$/', $scope, $matches) === 1) {
+            return DB::table('artworks')->where('id', (int) $matches[1])->value('title');
+        }
+        if (preg_match('/^(?:journal-blog|journal-exhibitions|home-artworks|home-components|page-components|page-list|page-contact):(\d+)/', $scope, $matches) === 1) {
+            return DB::table('site_sections')->where('id', (int) $matches[1])->value('title');
+        }
+
+        return null;
     }
 
     private function legacyScope(object $event): ?string
