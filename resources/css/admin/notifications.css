@@ -6,83 +6,88 @@
 
 /*
  * Horizontal geometry is projected from the real admin content surface by
- * admin-notification-ticker.js. The ticker never reorders or resizes Filament
- * topbar controls.
+ * admin-notification-ticker.js. The ticker is an overlay and never participates
+ * in Filament's topbar flex layout.
  */
 .admin-notification-ticker {
     position: absolute;
-    top: 50%;
+    inset-block: 0;
     left: var(--admin-notification-ticker-left, 4rem);
     z-index: 1;
     box-sizing: border-box;
     width: var(--admin-notification-ticker-width, calc(100% - 8rem));
-    height: var(--admin-header-feedback-height);
+    height: var(--admin-header-control-size);
     min-width: 0;
-    transform: translateY(-50%);
+    margin-block: auto;
     pointer-events: none;
+}
+
+.admin-notification-ticker__viewport,
+.admin-notification-ticker__message,
+.admin-notification-ticker__runway {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
 }
 
 .admin-notification-ticker__viewport {
     position: relative;
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    overflow: hidden;
 }
 
 .admin-notification-ticker__message {
-    position: absolute;
-    inset: 0;
     box-sizing: border-box;
     display: grid;
-    min-width: 0;
-    grid-template-columns: minmax(0, 1fr) var(--admin-header-feedback-height);
-    align-items: center;
-    border-inline: 1px solid var(--admin-line);
-    background: color-mix(in srgb, var(--admin-subtle) 72%, transparent);
+    grid-template-columns: minmax(0, 1fr) var(--admin-header-control-size);
+    align-items: stretch;
+    overflow: hidden;
+    border-radius: .28rem;
+    background: color-mix(in srgb, var(--admin-text) 3.6%, transparent);
+    box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--admin-line-strong) 58%, transparent),
+        0 1px 0 color-mix(in srgb, var(--admin-text) 4%, transparent);
     opacity: 0;
-    clip-path: inset(0 100% 0 0);
-    transform: translate3d(-.5rem, 0, 0);
-    pointer-events: none;
+    transition: opacity 140ms ease;
 }
 
-.admin-notification-ticker.is-active:not(.is-entering, .is-leaving) .admin-notification-ticker__message {
+.admin-notification-ticker.is-active .admin-notification-ticker__message {
     opacity: 1;
-    clip-path: inset(0 0 0 0);
-    transform: translate3d(0, 0, 0);
 }
 
-.admin-notification-ticker.is-entering .admin-notification-ticker__message {
-    animation: admin-notification-ticker-enter var(--admin-feedback-enter-duration) cubic-bezier(.2, .75, .2, 1) forwards;
-}
-
-.admin-notification-ticker.is-leaving .admin-notification-ticker__message {
-    animation: admin-notification-ticker-leave var(--admin-feedback-exit-duration) cubic-bezier(.4, 0, .6, 1) forwards;
-}
-
-.admin-notification-ticker.is-active .admin-notification-ticker__dismiss {
-    pointer-events: auto;
+.admin-notification-ticker__runway {
+    position: relative;
+    overflow: hidden;
+    mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        #000 .7rem,
+        #000 calc(100% - .7rem),
+        transparent 100%
+    );
 }
 
 .admin-notification-ticker__copy {
-    display: flex;
-    min-width: 0;
-    height: 100%;
-    gap: .6rem;
-    padding-inline: .7rem .55rem;
-    align-items: center;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    display: inline-flex;
+    width: max-content;
+    max-width: none;
+    min-width: max-content;
+    gap: .7rem;
+    align-items: baseline;
+    color: var(--admin-text);
+    white-space: nowrap;
+    transform: translate3d(100%, -50%, 0);
+    will-change: transform;
 }
 
 .admin-notification-ticker__copy strong,
 .admin-notification-ticker__copy span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: inline-block;
     white-space: nowrap;
 }
 
 .admin-notification-ticker__copy strong {
-    flex: 0 1 auto;
     color: var(--admin-text);
     font-size: var(--admin-font-size-table-support);
     font-weight: 650;
@@ -90,26 +95,42 @@
 }
 
 .admin-notification-ticker__copy span {
-    flex: 1 1 auto;
     color: var(--admin-muted);
     font-size: var(--admin-font-size-table-compact);
 }
 
+.admin-notification-ticker[data-status="warning"] .admin-notification-ticker__copy strong {
+    color: var(--admin-accent-strong);
+}
+
+.admin-notification-ticker[data-status="danger"] .admin-notification-ticker__copy strong {
+    color: var(--admin-danger);
+}
+
 .admin-notification-ticker__dismiss {
     display: grid;
-    width: var(--admin-header-feedback-height);
-    height: var(--admin-header-feedback-height);
+    width: var(--admin-header-control-size);
+    height: var(--admin-header-control-size);
     padding: 0;
     place-items: center;
     border: 0;
-    border-inline-start: 1px solid var(--admin-line);
+    border-inline-start: 1px solid color-mix(in srgb, var(--admin-line-strong) 58%, transparent);
     border-radius: 0;
     background: transparent;
     color: var(--admin-muted);
-    font: inherit;
-    font-size: .92rem;
-    line-height: 1;
     cursor: pointer;
+    pointer-events: none;
+}
+
+.admin-notification-ticker.is-active .admin-notification-ticker__dismiss {
+    pointer-events: auto;
+}
+
+.admin-notification-ticker__dismiss svg {
+    width: .9rem;
+    height: .9rem;
+    stroke: currentColor;
+    stroke-width: 1.65;
 }
 
 .admin-notification-ticker__dismiss:hover,
@@ -123,51 +144,32 @@
     box-shadow: inset 0 0 0 1px var(--admin-line-strong);
 }
 
-@keyframes admin-notification-ticker-enter {
-    from {
-        opacity: 0;
-        clip-path: inset(0 100% 0 0);
-        transform: translate3d(-.5rem, 0, 0);
-    }
-
-    to {
-        opacity: 1;
-        clip-path: inset(0 0 0 0);
-        transform: translate3d(0, 0, 0);
-    }
-}
-
-@keyframes admin-notification-ticker-leave {
-    from {
-        opacity: 1;
-        clip-path: inset(0 0 0 0);
-        transform: translate3d(0, 0, 0);
-    }
-
-    to {
-        opacity: 0;
-        clip-path: inset(0 0 0 100%);
-        transform: translate3d(.5rem, 0, 0);
-    }
-}
-
 @media (max-width: 640px) {
     .admin-notification-ticker__copy {
-        padding-inline: .5rem .4rem;
+        gap: .55rem;
     }
 
     .admin-notification-ticker__copy span {
         display: none;
     }
-
-    .admin-notification-ticker__copy strong {
-        width: 100%;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .admin-notification-ticker.is-entering .admin-notification-ticker__message,
-    .admin-notification-ticker.is-leaving .admin-notification-ticker__message {
-        animation-duration: .01ms;
+    .admin-notification-ticker__message {
+        transition: none;
+    }
+
+    .admin-notification-ticker__copy {
+        left: .7rem;
+        right: .7rem;
+        width: auto;
+        min-width: 0;
+        transform: translateY(-50%);
+    }
+
+    .admin-notification-ticker__copy strong,
+    .admin-notification-ticker__copy span {
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
