@@ -232,17 +232,11 @@ final class ListMediaAssets extends Page
                 $details[] = '+'.($failed - 4).' more';
             }
 
-            $notification = app(AdminNotifier::class)->transient()
-                ->title(($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed')
-                ->body(implode("\n", $details));
-
-            if (($added + $duplicates) > 0) {
-                $notification->warning();
-            } else {
-                $notification->danger();
-            }
-
-            $notification->send();
+            app(AdminNotifier::class)->feedback(
+                title: ($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed',
+                body: implode("\n", $details),
+                status: ($added + $duplicates) > 0 ? 'warning' : 'danger',
+            );
         } elseif ($added > 0) {
             app(AdminNotifier::class)->feedback(
                 title: $total === 1 ? 'File uploaded' : 'Files uploaded',
