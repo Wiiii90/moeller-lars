@@ -38,6 +38,10 @@ return new class extends Migration
                         $ordering = $this->orderingMetadata($event->metadata);
 
                         if ($ordering === null) {
+                            $scope = $this->legacyScope($event);
+                            if ($scope !== null) {
+                                unset($latest[$event->action.'|'.$scope]);
+                            }
                             $this->insertLegacySingleton($event);
 
                             continue;
