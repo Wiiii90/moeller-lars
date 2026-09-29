@@ -109,10 +109,13 @@ final class HomeHeroConfigurationService
         ];
     }
 
-    /** @param array<string, mixed> $input */
-    public function updateArtworkSettings(HomePresentationSetting $settings, array $input): bool
+    /**
+     * @param array<string, mixed> $input
+     * @param array{before:list<int|string>,after:list<int|string>}|null $orderingState
+     */
+    public function updateArtworkSettings(HomePresentationSetting $settings, array $input, ?array $orderingState = null): bool
     {
-        return DB::transaction(function () use ($settings, $input): bool {
+        return DB::transaction(function () use ($settings, $input, $orderingState): bool {
             /** @var HomePresentationSetting $fresh */
             $fresh = HomePresentationSetting::query()
                 ->whereKey($settings->getKey())
@@ -232,12 +235,25 @@ final class HomeHeroConfigurationService
 
             $fresh->save();
             $actor = $this->audit->requireActor();
-            $this->audit->record(
-                $actor,
-                'site_section.updated',
-                'site_section',
-                (int) $fresh->getAttribute('site_section_id'),
-            );
+            $sectionId = (int) $fresh->getAttribute('site_section_id');
+            if ($orderingState !== null) {
+                $this->audit->recordOrdering(
+                    $actor,
+                    'site_section.home_artworks_reordered',
+                    'site_section',
+                    $sectionId,
+                    'home-artworks:'.$sectionId,
+                    $orderingState['before'],
+                    $orderingState['after'],
+                );
+            } else {
+                $this->audit->record(
+                    $actor,
+                    'site_section.updated',
+                    'site_section',
+                    $sectionId,
+                );
+            }
 
             return true;
         });
@@ -319,7 +335,11 @@ final class HomeHeroConfigurationService
         }
         $reordered = array_map(static fn (int $id): array => $byId[$id], $actual);
 
-        return $this->updateArtworkSettings($settings, ['manual_group' => $reordered]);
+        return $this->updateArtworkSettings(
+            $settings,
+            ['manual_group' => $reordered],
+            ['before' => $expected, 'after' => $actual],
+        );
     }
 
     public function updateManualMemberWeight(HomePresentationSetting $settings, int $artworkId, int $basisPoints): bool
