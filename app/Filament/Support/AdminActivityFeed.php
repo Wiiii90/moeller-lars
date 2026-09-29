@@ -427,6 +427,10 @@ final class AdminActivityFeed
             $orderingCount = $orderingProjectionState instanceof AdminActivityOrderingProjection
                 ? (int) $orderingProjectionState->getAttribute('event_count')
                 : 1;
+            if ($orderingProjectionState instanceof AdminActivityOrderingProjection && $orderingCount > 1) {
+                $receipt = null;
+            }
+
             $checkpointEvent = $event->getRelationValue('publicationCheckpointEvent');
             $checkpoint = $checkpointEvent instanceof PublicationCheckpointEvent
                 ? $checkpointEvent->getRelationValue('checkpoint')
