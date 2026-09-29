@@ -15,6 +15,25 @@ Notification/inbox state is not part of this contract. See [ADMIN-NOTIFICATION-C
 
 `audit_events` is append-only factual history. Successful mutations create new events; undo/reset/restore/revert operations never rewrite or delete the events that came before them.
 
+### Ordering Activity projection
+
+Ordering has two deliberately different representations:
+
+- raw `audit_events` retain every successful persisted reorder mutation for factual history;
+- `AdminActivityFeed` presents contiguous reorder mutations as one logical Activity sequence through the persistent ordering projection.
+
+A reorder joins the immediately preceding ordering sequence for the same admin only when action and ordering scope match, the previous sequence's end-state hash equals the new mutation's start-state hash, and the mutations are no more than ten minutes apart. Any intervening non-order Activity by that admin, a different scope/action, state discontinuity or a longer gap starts a new sequence.
+
+This is state-aware compaction, not text deduplication. In particular:
+
+- repeated moves that eventually restore the exact starting order form one visible Activity row marked as returned to the starting order;
+- a single drag/reorder that rewrites several row positions still creates one logical ordering Activity event;
+- pagination and Activity aggregates operate on the compacted projection rather than hiding duplicate rows only after a page has been loaded;
+- historical ordering events predating state hashes may be grouped conservatively, but the UI must not claim that a legacy sequence returned to identity when that cannot be proven;
+- a multi-step compacted ordering sequence does not expose the latest raw event's single-step Undo as though it reverted the complete sequence.
+
+The ordering projection never updates or deletes `audit_events`; it is a derived read model over immutable evidence.
+
 Activity uses the shared `AdminActivityFeed` read model. The current Activity table exposes the factual row roles directly:
 
 ```text
