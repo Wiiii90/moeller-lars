@@ -3,6 +3,8 @@
 namespace App\Domain\Admin;
 
 use App\Models\AdminActionReceipt;
+use App\Models\AdminActivityOrderingEvent;
+use App\Models\AdminActivityOrderingProjection;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\AuditEvent;
@@ -24,12 +26,12 @@ final class AdminActionReceiptService
     private const MEDIA_ACTIONS = [
         'artwork.additional_media_attached',
         'artwork.additional_media_detached',
-        'artwork.additional_media_reordered',
     ];
 
     public function __construct(
         private readonly AdminSnapshotReceiptService $snapshots,
         private readonly AdminLifecycleRegistry $lifecycle,
+        private readonly AdminOrderingState $orderingState,
     ) {}
 
     public function recordForAuditEvent(AuditEvent $event, User $actor): ?AdminActionReceipt
@@ -60,6 +62,12 @@ final class AdminActionReceiptService
             );
         }
 
+        if (AdminActionCatalog::definition($action)['family'] === 'ordering') {
+            $this->snapshots->discardForAuditEvent($event);
+
+            return null;
+        }
+
         if (in_array($action, self::MEDIA_ACTIONS, true)) {
             $this->snapshots->discardForAuditEvent($event);
 
@@ -72,6 +80,37 @@ final class AdminActionReceiptService
     public function discardPendingSnapshotForEvent(AuditEvent $event): void
     {
         $this->snapshots->discardForAuditEvent($event);
+    }
+
+    public function recordOrderingProjection(
+        AuditEvent $event,
+        User $actor,
+        AdminActivityOrderingProjection $projection,
+    ): ?AdminActionReceipt {
+        $projectionEventIds = AdminActivityOrderingEvent::query()
+            ->where('projection_id', $projection->getKey())
+            ->pluck('audit_event_id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+
+        if ($projectionEventIds !== []) {
+            AdminActionReceipt::query()
+                ->where('admin_user_id', $actor->getKey())
+                ->whereIn('audit_event_id', $projectionEventIds)
+                ->delete();
+        }
+
+        if ($projection->isIdentity() || $this->orderingState->current((string) $projection->getAttribute('scope')) !== $projection->afterState()) {
+            return null;
+        }
+
+        return $this->storeReceipt($event, $actor, [
+            'inverse_action_key' => 'admin.undo_applied',
+            'entity_type' => (string) $event->getAttribute('entity_type'),
+            'entity_id' => (int) $event->getAttribute('entity_id'),
+            'before_state' => 'ordering',
+            'after_state' => 'ordering',
+        ]);
     }
 
     /**
@@ -183,7 +222,6 @@ final class AdminActionReceiptService
         return match ((string) $event->getAttribute('action')) {
             'artwork.additional_media_attached' => $this->recordAttachedMediaReceipt($event, $actor, $artworkId, $metadata),
             'artwork.additional_media_detached' => $this->recordDetachedMediaReceipt($event, $actor, $artworkId, $metadata),
-            'artwork.additional_media_reordered' => $this->recordReorderedMediaReceipt($event, $actor, $artworkId, $metadata),
             default => null,
         };
     }
@@ -254,63 +292,6 @@ final class AdminActionReceiptService
         ]);
     }
 
-    /** @param array<string, mixed> $metadata */
-    private function recordReorderedMediaReceipt(AuditEvent $event, User $actor, int $artworkId, array $metadata): ?AdminActionReceipt
-    {
-        $artworkMediaId = $this->positiveInt($metadata['artwork_media_id'] ?? null);
-        $neighborId = $this->positiveInt($metadata['neighbor_artwork_media_id'] ?? null);
-        $fromPosition = $this->positiveInt($metadata['from_position'] ?? null);
-        $toPosition = $this->positiveInt($metadata['to_position'] ?? null);
-        $direction = $metadata['direction'] ?? null;
-
-        if (
-            $artworkMediaId === null
-            || $neighborId === null
-            || $fromPosition === null
-            || $toPosition === null
-            || ! is_string($direction)
-            || ! in_array($direction, ['up', 'down'], true)
-        ) {
-            return null;
-        }
-
-        /** @var EloquentCollection<int, ArtworkMedia> $usages */
-        $usages = ArtworkMedia::query()
-            ->whereIn('id', [$artworkMediaId, $neighborId])
-            ->get();
-        /** @var ArtworkMedia|null $moving */
-        $moving = $usages->firstWhere('id', $artworkMediaId);
-        /** @var ArtworkMedia|null $neighbor */
-        $neighbor = $usages->firstWhere('id', $neighborId);
-
-        if (
-            ! $moving
-            || ! $neighbor
-            || (int) $moving->getAttribute('artwork_id') !== $artworkId
-            || (int) $neighbor->getAttribute('artwork_id') !== $artworkId
-            || $moving->getAttribute('role') !== 'additional'
-            || $neighbor->getAttribute('role') !== 'additional'
-            || (int) $moving->getAttribute('position') !== $toPosition
-            || (int) $neighbor->getAttribute('position') !== $fromPosition
-            || abs($fromPosition - $toPosition) !== 1
-        ) {
-            return null;
-        }
-
-        return $this->storeReceipt($event, $actor, [
-            'inverse_action_key' => 'artwork.additional_media_reordered',
-            'entity_type' => 'artwork',
-            'entity_id' => $artworkId,
-            'before_state' => 'ordered',
-            'after_state' => 'ordered',
-            'artwork_media_id' => $artworkMediaId,
-            'neighbor_artwork_media_id' => $neighborId,
-            'before_position' => $fromPosition,
-            'after_position' => $toPosition,
-            'inverse_direction' => $direction === 'up' ? 'down' : 'up',
-        ]);
-    }
-
     /** @param array<string, mixed> $data */
     private function storeReceipt(AuditEvent $event, User $actor, array $data): AdminActionReceipt
     {
@@ -356,6 +337,20 @@ final class AdminActionReceiptService
     {
         $action = (string) $receipt->getAttribute('action_key');
 
+        if (AdminActionCatalog::definition($action)['family'] === 'ordering') {
+            /** @var AdminActivityOrderingEvent|null $orderingEvent */
+            $orderingEvent = AdminActivityOrderingEvent::query()
+                ->with('projection')
+                ->whereKey((int) $receipt->getAttribute('audit_event_id'))
+                ->first();
+            $projection = $orderingEvent?->getRelationValue('projection');
+
+            return $projection instanceof AdminActivityOrderingProjection
+                && ! $projection->isIdentity()
+                && (int) $projection->getAttribute('last_audit_event_id') === (int) $receipt->getAttribute('audit_event_id')
+                && $this->orderingState->current((string) $projection->getAttribute('scope')) === $projection->afterState();
+        }
+
         if (! in_array($action, self::MEDIA_ACTIONS, true)) {
             $entityType = (string) $receipt->getAttribute('entity_type');
             $entityId = (int) $receipt->getAttribute('entity_id');
@@ -372,7 +367,7 @@ final class AdminActionReceiptService
             return $this->detachedMediaReceiptAvailable($receipt, $media);
         }
 
-        return $this->reorderedMediaReceiptAvailable($receipt, $media);
+        return $this->detachedMediaReceiptAvailable($receipt, $media);
     }
 
     /** @param array{usages:array<int, array{artwork_id:int,media_asset_id:int,position:int}>,ordered:array<int, array<int, int>>,asset_states:array<int, string>} $media */
@@ -426,21 +421,6 @@ final class AdminActionReceiptService
         $nextIndex = array_search($nextId, $ordered, true);
 
         return is_int($previousIndex) && is_int($nextIndex) && $nextIndex === $previousIndex + 1;
-    }
-
-    /** @param array{usages:array<int, array{artwork_id:int,media_asset_id:int,position:int}>,ordered:array<int, array<int, int>>,asset_states:array<int, string>} $media */
-    private function reorderedMediaReceiptAvailable(AdminActionReceipt $receipt, array $media): bool
-    {
-        $moving = $media['usages'][(int) $receipt->getAttribute('artwork_media_id')] ?? null;
-        $neighbor = $media['usages'][(int) $receipt->getAttribute('neighbor_artwork_media_id')] ?? null;
-
-        return $moving !== null
-            && $neighbor !== null
-            && $moving['artwork_id'] === (int) $receipt->getAttribute('entity_id')
-            && $neighbor['artwork_id'] === (int) $receipt->getAttribute('entity_id')
-            && $moving['position'] === (int) $receipt->getAttribute('after_position')
-            && $neighbor['position'] === (int) $receipt->getAttribute('before_position')
-            && abs($moving['position'] - $neighbor['position']) === 1;
     }
 
     /**
@@ -513,7 +493,12 @@ final class AdminActionReceiptService
     private function loadTargetStates(EloquentCollection $receipts): array
     {
         $ids = $receipts
-            ->reject(fn (AdminActionReceipt $receipt): bool => in_array((string) $receipt->getAttribute('action_key'), self::MEDIA_ACTIONS, true))
+            ->reject(function (AdminActionReceipt $receipt): bool {
+                $action = (string) $receipt->getAttribute('action_key');
+
+                return in_array($action, self::MEDIA_ACTIONS, true)
+                    || AdminActionCatalog::definition($action)['family'] === 'ordering';
+            })
             ->groupBy(fn (AdminActionReceipt $receipt): string => (string) $receipt->getAttribute('entity_type'))
             ->map(fn (Collection $group): array => $group
                 ->pluck('entity_id')
