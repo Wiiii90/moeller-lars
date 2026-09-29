@@ -17,6 +17,11 @@ final class AdminActivityOrderingEvent extends Model
 
     public $timestamps = false;
 
+    public function auditEvent(): BelongsTo
+    {
+        return $this->belongsTo(AuditEvent::class, 'audit_event_id');
+    }
+
     public function projection(): BelongsTo
     {
         return $this->belongsTo(AdminActivityOrderingProjection::class, 'projection_id');
