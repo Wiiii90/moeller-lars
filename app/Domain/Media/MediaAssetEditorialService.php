@@ -3,6 +3,7 @@
 namespace App\Domain\Media;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminUndoContext;
 use App\Domain\Content\CustomPageEditorialService;
 use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomeTemplate;
@@ -27,6 +28,7 @@ class MediaAssetEditorialService
 {
     public function __construct(
         private readonly AdminAuditService $adminAuditService,
+        private readonly AdminUndoContext $undoContext,
         private readonly MediaReferenceQuery $referenceQuery,
         private readonly JournalEntryMediaService $journalMedia,
         private readonly CustomPageEditorialService $customPages,
@@ -155,15 +157,17 @@ class MediaAssetEditorialService
                 return;
             }
 
-            if ($this->referenceQuery->isReferenced($locked)) {
-                $this->removeCanonicalReferences($locked, $actor);
-            }
-            $this->removeLegacyJournalReferences($locked);
+            $this->undoContext->withoutReceipts(function () use ($locked, $actor): void {
+                if ($this->referenceQuery->isReferenced($locked)) {
+                    $this->removeCanonicalReferences($locked, $actor);
+                }
+                $this->removeLegacyJournalReferences($locked);
 
-            $locked->variants()->update(['state' => 'deleted']);
-            $locked->setAttribute('state', 'deleted');
-            $locked->save();
-            $this->adminAuditService->record($actor, 'media.deleted', 'media_asset', $locked->getKey());
+                $locked->variants()->update(['state' => 'deleted']);
+                $locked->setAttribute('state', 'deleted');
+                $locked->save();
+                $this->adminAuditService->record($actor, 'media.deleted', 'media_asset', $locked->getKey());
+            });
 
             if ($deferCleanup) {
                 $this->publicationMediaCleanup->queue($assetId, $keys);
