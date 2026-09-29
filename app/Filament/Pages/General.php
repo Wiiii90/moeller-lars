@@ -776,12 +776,18 @@ final class General extends Page
         $links = array_values($links);
 
         try {
-            app(AdminSettingsService::class)->updatePublicContent(
+            $updated = app(AdminSettingsService::class)->updatePublicContent(
                 PublicContentSetting::general(),
                 ['social_links' => $links],
             );
             $this->settingsRecord = null;
-            app(AdminNotifier::class)->feedback('Social links updated', status: 'success');
+
+            if ($updated->wasChanged()) {
+                app(AdminNotifier::class)->feedback(
+                    title: 'Social links updated',
+                    status: 'success',
+                );
+            }
         } catch (ValidationException $exception) {
             $mapped = [];
             foreach ($exception->errors() as $key => $messages) {
