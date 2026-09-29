@@ -80,7 +80,10 @@ trait GalleryWorkspaceUploadSettings
                 $this->loadMoveTargets();
                 $this->refreshWorkspaceAfterMutation();
                 if ($changed) {
-                    app(AdminNotifier::class)->transient()->title('Gallery settings saved')->success()->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Gallery settings saved',
+                        status: 'success',
+                    );
                 }
             });
 
@@ -110,7 +113,10 @@ trait GalleryWorkspaceUploadSettings
             ->action(function (array $data): void {
                 $changed = app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
                 if ($changed) {
-                    app(AdminNotifier::class)->transient()->title('Material presets saved')->success()->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Material presets saved',
+                        status: 'success',
+                    );
                 }
             });
 
