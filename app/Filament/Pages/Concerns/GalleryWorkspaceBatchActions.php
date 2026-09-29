@@ -94,10 +94,17 @@ trait GalleryWorkspaceBatchActions
             ->action(function (): void {
                 try {
                     $artworks = $this->selectedArtworks();
-                    DB::transaction(function () use ($artworks): void {
+                    $changed = DB::transaction(function () use ($artworks): int {
+                        $changed = 0;
                         foreach ($artworks as $artwork) {
-                            app(ArtworkPublicationService::class)->publish($artwork);
+                            $before = (string) $artwork->getAttribute('state');
+                            $updated = app(ArtworkPublicationService::class)->publish($artwork);
+                            if ($before !== (string) $updated->getAttribute('state')) {
+                                $changed++;
+                            }
                         }
+
+                        return $changed;
                     });
                 } catch (ValidationException $exception) {
                     $this->notifyValidationFailure('Selected artworks cannot be published', $exception);
@@ -106,10 +113,12 @@ trait GalleryWorkspaceBatchActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->feedback(
-                    title: 'Selected artworks published',
-                    status: 'success',
-                );
+                if ($changed > 0) {
+                    app(AdminNotifier::class)->feedback(
+                        title: $changed === 1 ? 'Artwork published' : $changed.' artworks published',
+                        status: 'success',
+                    );
+                }
             });
     }
 
@@ -119,17 +128,26 @@ trait GalleryWorkspaceBatchActions
             ->label('Unpublish')
             ->action(function (): void {
                 $artworks = $this->selectedArtworks();
-                DB::transaction(function () use ($artworks): void {
+                $changed = DB::transaction(function () use ($artworks): int {
+                    $changed = 0;
                     foreach ($artworks as $artwork) {
-                        app(ArtworkPublicationService::class)->unpublish($artwork);
+                        $before = (string) $artwork->getAttribute('state');
+                        $updated = app(ArtworkPublicationService::class)->unpublish($artwork);
+                        if ($before !== (string) $updated->getAttribute('state')) {
+                            $changed++;
+                        }
                     }
+
+                    return $changed;
                 });
 
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->feedback(
-                    title: 'Selected artworks unpublished',
-                    status: 'success',
-                );
+                if ($changed > 0) {
+                    app(AdminNotifier::class)->feedback(
+                        title: $changed === 1 ? 'Artwork unpublished' : $changed.' artworks unpublished',
+                        status: 'success',
+                    );
+                }
             });
 
         return AdminDialog::confirm(
