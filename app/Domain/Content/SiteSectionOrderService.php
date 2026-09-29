@@ -137,6 +137,8 @@ final class SiteSectionOrderService
                 ->values()
                 ->all();
 
+            $beforeOrder = $this->navigationOrderState();
+
             if ($sourceParentId === $targetParentId) {
                 $targetIds = $sourceIds;
             } else {
@@ -176,11 +178,14 @@ final class SiteSectionOrderService
                 $metadata['site_section_id'] = $targetParentId;
             }
 
-            $this->audit->record(
+            $this->audit->recordOrdering(
                 $actor,
                 'site_section.reordered',
                 'site_section',
                 (int) $fresh->getKey(),
+                'site-navigation',
+                $beforeOrder,
+                $this->navigationOrderState(),
                 $metadata,
             );
 
@@ -193,6 +198,8 @@ final class SiteSectionOrderService
         $actor = $this->audit->requireActor();
 
         return DB::transaction(function () use ($actor): int {
+            $beforeOrder = $this->navigationOrderState();
+
             /** @var Collection<int, SiteSection> $roots */
             $roots = SiteSection::query()
                 ->whereNull('parent_id')
@@ -227,20 +234,35 @@ final class SiteSectionOrderService
             }
 
             $this->rewriteGroups([[null, $flatIds]]);
-            $positions = array_flip($flatIds);
-
-            foreach ($movedIds as $sectionId) {
-                $this->audit->record(
-                    $actor,
-                    'site_section.reordered',
-                    'site_section',
-                    $sectionId,
-                    ['position' => ((int) $positions[$sectionId]) + 1],
-                );
-            }
+            $this->audit->recordOrdering(
+                $actor,
+                'site_section.reordered',
+                'site_section',
+                $movedIds[0],
+                'site-navigation',
+                $beforeOrder,
+                $this->navigationOrderState(),
+            );
 
             return count($movedIds);
         });
+    }
+
+    /** @return list<string> */
+    private function navigationOrderState(): array
+    {
+        return SiteSection::query()
+            ->orderBy('id')
+            ->get(['id', 'parent_id', 'position'])
+            ->map(static function (SiteSection $section): string {
+                $parentId = $section->getAttribute('parent_id');
+
+                return (int) $section->getKey()
+                    .':'.($parentId === null ? 'root' : (int) $parentId)
+                    .':'.(int) $section->getAttribute('position');
+            })
+            ->values()
+            ->all();
     }
 
     /** @return list<int> */
