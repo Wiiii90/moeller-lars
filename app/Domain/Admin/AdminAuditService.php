@@ -62,8 +62,8 @@ class AdminAuditService
             throw new InvalidArgumentException('Invalid ordering Activity scope.');
         }
 
-        $before = $this->orderingState($beforeState);
-        $after = $this->orderingState($afterState);
+        $before = AdminOrderingState::normalize($beforeState);
+        $after = AdminOrderingState::normalize($afterState);
         if ($before === $after) {
             return null;
         }
@@ -197,22 +197,6 @@ class AdminAuditService
                 ->where('id', $entityId)
                 ->value($descriptor['field']),
         );
-    }
-
-    /** @param list<int|string> $state
-     * @return list<string>
-     */
-    private function orderingState(array $state): array
-    {
-        $normalized = [];
-        foreach ($state as $value) {
-            if (! is_int($value) && ! is_string($value)) {
-                throw new InvalidArgumentException('Ordering state values must be integer or string identities.');
-            }
-            $normalized[] = is_int($value) ? 'i:'.$value : 's:'.$value;
-        }
-
-        return $normalized;
     }
 
     private function validOrderingMetadata(mixed $value): bool
