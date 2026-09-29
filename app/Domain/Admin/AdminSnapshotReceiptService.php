@@ -320,11 +320,17 @@ final class AdminSnapshotReceiptService
 
     private function actionSupportsSnapshotUndo(string $action): bool
     {
-        if (! str_ends_with($action, '.updated') || ! AdminActionCatalog::has($action)) {
+        if (! AdminActionCatalog::has($action)) {
             return false;
         }
 
-        return in_array(AdminActionCatalog::definition($action)['family'], ['edit', 'settings'], true);
+        $family = AdminActionCatalog::definition($action)['family'];
+        if ($family === 'ordering') {
+            return true;
+        }
+
+        return str_ends_with($action, '.updated')
+            && in_array($family, ['edit', 'settings'], true);
     }
 
     private function prune(User $actor): void
