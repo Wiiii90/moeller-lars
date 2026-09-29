@@ -42,6 +42,7 @@ final class AdminActivityOrderingProjector
 
                 if (
                     $candidate instanceof AdminActivityOrderingGroup
+                    && ! $candidate->returnedToIdentity()
                     && (string) $candidate->getAttribute('scope') === $ordering['scope']
                     && (string) $candidate->getAttribute('action') === (string) $event->getAttribute('action')
                     && hash_equals((string) $candidate->getAttribute('after_hash'), $ordering['before_hash'])
