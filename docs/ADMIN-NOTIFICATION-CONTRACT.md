@@ -17,21 +17,23 @@ A successful edit may create ticker feedback and an Activity event without creat
 
 ## Central notification authority
 
-Persistent admin notifications originate from structured server-side application state through one central notifier/service. Application code must not infer persistent notifications from rendered HTML, Filament CSS classes, browser DOM mutations or client-side toast markup.
+Administrative feedback and persistent notifications originate from structured server-side application state through `AdminNotifier`.
 
-The central notifier owns the three explicit delivery intents:
+The notifier owns three explicit delivery intents:
 
-- **toast** — immediate transient feedback only; Filament's notification object is transport, while presentation is the project-owned sticky-header ticker;
+- **feedback** — immediate ephemeral feedback for the project-owned sticky-header ticker only;
 - **inbox** — persistent `AdminNotification` only;
-- **both** — immediate feedback plus persistent notification.
+- **both** — immediate ticker feedback plus a persistent `AdminNotification`.
 
-Callers choose the semantic delivery intent. `Toast = Notification` is not a system invariant.
+Immediate feedback does **not** use Filament notification objects as transport. During a Livewire request, `AdminNotifier::feedback()` dispatches the project-owned `admin-notification-ticker` event directly from the active component. Outside a Livewire request it places a bounded message in the session queue for the next admin render.
 
-The notifier is the normal application boundary around Filament notification construction. New admin code should not spread direct `Filament\Notifications\Notification::make()` calls when the same result belongs to the central feedback contract.
+Persistent notifications are written directly to `AdminNotification`. They do not depend on browser markup, a rendered framework notification, DOM inspection or the ticker being visible.
+
+Application code must not construct or send framework notifications for normal admin feedback. Filament resource hooks that require a nullable notification return type may be overridden only to return `null` after project feedback has been emitted.
 
 ## What belongs in each channel
 
-Toast-only examples include successful save/reorder/upload operations, mark read/unread confirmations, a successful undo, successful staged-state reset, successful version restore and successful publication.
+Ticker-feedback examples include successful save/reorder/upload operations, mark read/unread confirmations, successful Undo, successful staged-state reset, successful version restore and successful publication.
 
 Persistent notification examples include publication/preflight failures, background-job failures, media-processing failures, incomplete cleanup, meaningful storage-capacity warnings and other system conditions that remain relevant after the initiating request ends.
 
@@ -45,7 +47,7 @@ Do not use the inbox as a duplicate Activity feed. Routine successful editorial 
 
 `AdminNotification` is the persistent inbox/history record. It remains user-scoped and retention-managed.
 
-Every persistent notification has an origin-generated `source_id`. The database uniqueness contract `(user_id, source_id)` provides idempotency. `source_id` must identify the source event or condition rather than a rendered toast instance.
+Every persistent notification has an origin-generated `source_id`. The database uniqueness contract `(user_id, source_id)` provides idempotency. `source_id` identifies the source event or condition rather than an ephemeral ticker message.
 
 Examples:
 
@@ -90,7 +92,7 @@ A notification may link to Activity or Publication, but those references do not 
 
 Success feedback that depends on a database mutation must not be emitted as durable truth before that mutation is committed. No-op saves must emit neither mutation Activity nor success ticker feedback.
 
-When a transaction can still roll back, success toasts/persistent notifications must be dispatched only after successful commit or from a point where the domain service has established success. A failed operation must not leave behind a persistent notification claiming that it succeeded.
+When a transaction can still roll back, success feedback or persistent notifications must be dispatched only after successful commit or from a point where the domain service has established success. A failed operation must not leave behind a persistent notification claiming that it succeeded.
 
 Failure notifications may be emitted from the failure path when their underlying failure fact is itself valid to retain.
 
@@ -118,41 +120,52 @@ The existing `DashboardFeed` remains the canonical mixed dashboard inbox/feed pr
 
 Notification-specific persistence remains in `AdminNotification`, while common feed behavior such as search, filtering, pagination, read/unread handling and pinning continues through the dashboard feed contract.
 
-## UI details
+## Ticker runtime
 
-Transient feedback is rendered only in the project-owned ticker inside the persistent sticky admin header. Filament notification objects are intercepted server-side/Livewire-side and projected into this ticker rather than rendered as stacked floating cards. The ticker uses a bounded FIFO pending queue, displays one message at a time, folds only its message region when idle, and keeps the surrounding header controls present. On narrow screens the composition remains sidebar control | flexible ticker | user control, with the ticker truncating before either control becomes inaccessible. Reduced-motion preferences disable the folding motion.
+Transient feedback is rendered only in the project-owned ticker inside the persistent sticky admin header.
+
+The runtime path is:
+
+```text
+Admin mutation
+  -> AdminNotifier::feedback()
+  -> project-owned Livewire event or bounded session queue
+  -> admin-notification-ticker
+```
+
+The ticker uses a bounded FIFO pending queue, displays one message at a time, folds only its message region when idle, and keeps the surrounding header controls present. On narrow screens the composition remains sidebar control | flexible ticker | user control, with the ticker truncating before either control becomes inaccessible. Reduced-motion preferences disable the folding motion.
 
 Persistent-notification details use the shared admin dialog/viewer primitives. Context actions such as `Open record`, `Open activity`, `Review staged changes` or `Mark unread` appear only when they are semantically available.
 
 Notification status/severity is factual state, not decorative styling. Do not add page-local dialog, badge or action systems when shared admin primitives already own those roles.
 
-## Forbidden legacy capture path
+## Forbidden parallel feedback paths
 
-The following architecture is explicitly not part of the durable system:
+The project must not maintain a second transient-feedback renderer alongside the ticker.
 
-```text
-Filament toast
-  -> render browser DOM
-  -> MutationObserver
-  -> parse notification markup/classes
-  -> Livewire recorder
-  -> AdminNotification
-```
+Forbidden paths include:
 
-After callers have moved to the central notifier, remove the recorder component, render-hook partial, DOM observer, markup parsers and recorder-specific fallback code. Do not retain DOM capture as a compatibility fallback because parallel capture paths create duplicate and semantically ambiguous notifications.
+- constructing or sending Filament notification objects for normal admin feedback;
+- rendering stacked floating framework notification cards;
+- intercepting framework notification markup and translating it afterward;
+- observing the DOM to discover administrative events;
+- keeping a compatibility bridge that can produce duplicate ticker + framework feedback.
+
+The ticker event/session channel and `AdminNotification` persistence are the two intentional notification mechanisms.
 
 ## Verification
 
 Durable coverage should prove at least:
 
-- toast-only/ticker delivery does not create `AdminNotification` rows;
-- inbox delivery works without a browser session rendering a toast;
-- both delivery persists and sends immediate ticker feedback;
+- ticker feedback does not create `AdminNotification` rows;
+- inbox delivery works without a browser session;
+- `both` persists and sends immediate ticker feedback;
 - `(user_id, source_id)` remains idempotent;
 - notification reads/mutations remain user-scoped;
 - retention and pin protection remain correct;
 - structured action/context projection remains bounded and safe;
-- the DOM/MutationObserver recorder is absent;
+- framework notification construction is absent from normal admin feedback;
+- the DOM/markup capture path is absent;
 - dashboard notification filtering reflects the current feed sources.
 
-Tests should protect these semantics rather than Filament's private DOM/class names.
+Tests should protect these semantics rather than framework-private presentation classes.
