@@ -33,7 +33,7 @@ This is permutation-state reduction, not text deduplication. In particular:
 - a visible row targets the ordering scope itself (for example Public navigation, the Journal page, Gallery, Artwork, Home or Custom Page) rather than pretending the last moved child is the whole operation;
 - a single drag/reorder that rewrites several persisted row positions still creates one logical ordering audit mutation;
 - pagination and Activity aggregates query the reduced projection, so intermediate reorder events never inflate the visible feed;
-- raw ordering events created before canonical ordering-state metadata existed remain audit evidence only and are not reconstructed through compatibility heuristics;
+- the short-lived #177 hash-only ordering metadata is migrated only by exact hash continuity; older ordering events with no canonical state evidence remain raw audit evidence and are not guessed into projections;
 - every visible non-identity projection owns at most one actor-scoped Undo receipt, and that Undo restores the complete canonical starting order only while the current scope still exactly equals the projection's end state.
 
 The ordering projection never updates or deletes `audit_events`; it is a derived read model over immutable evidence.
