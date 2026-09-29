@@ -14,7 +14,7 @@ final class AdminActivityOrderingProjector
     public const COALESCE_SECONDS = 600;
 
     /**
-     * @param array{scope:string,before_hash:string,after_hash:string,item_count:int} $ordering
+     * @param array{scope:string,target_label:?string,before_hash:string,after_hash:string,item_count:int} $ordering
      */
     public function record(AuditEvent $event, array $ordering): void
     {
@@ -72,6 +72,7 @@ final class AdminActivityOrderingProjector
                     'admin_user_id' => $actorId,
                     'scope' => $ordering['scope'],
                     'action' => (string) $event->getAttribute('action'),
+                    'target_label' => $ordering['target_label'],
                     'first_audit_event_id' => (int) $event->getKey(),
                     'last_audit_event_id' => (int) $event->getKey(),
                     'event_count' => 1,
