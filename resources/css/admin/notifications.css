@@ -38,8 +38,8 @@
     gap: .7rem;
     align-items: center;
     overflow: hidden;
-    padding-inline: .9rem 3.4rem;
-    padding-left: .9rem;
+    padding-inline-start: .9rem;
+    padding-inline-end: 3.4rem;
     color: var(--admin-text);
     white-space: nowrap;
 }
@@ -77,7 +77,7 @@
 
 .admin-header-feedback__counter {
     position: absolute;
-    top: 50%;
+    inset-block: 0;
     right: .65rem;
     display: inline-grid;
     min-width: 1.65rem;
@@ -90,8 +90,8 @@
     font-size: var(--admin-font-size-table-compact);
     font-weight: 650;
     line-height: 1;
+    margin-block: auto;
     white-space: nowrap;
-    translate: 0 -50%;
 }
 
 .admin-header-feedback__counter[hidden] {
