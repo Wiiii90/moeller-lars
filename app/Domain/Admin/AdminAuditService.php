@@ -7,6 +7,7 @@ use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -110,19 +111,21 @@ class AdminAuditService
      */
     private function targetLabelFromSnapshots(?array $snapshots, string $entityType, int $entityId): ?string
     {
-        $field = match ($entityType) {
-            'artwork' => 'title',
-            'artwork_category' => 'name',
-            'site_section', 'exhibition', 'blog_post' => 'title',
-            'media_asset' => 'original_filename',
+        $descriptor = match ($entityType) {
+            'artwork' => ['table' => 'artworks', 'field' => 'title'],
+            'artwork_category' => ['table' => 'artwork_categories', 'field' => 'name'],
+            'site_section' => ['table' => 'site_sections', 'field' => 'title'],
+            'media_asset' => ['table' => 'media_assets', 'field' => 'original_filename'],
+            'exhibition' => ['table' => 'exhibitions', 'field' => 'title'],
+            'blog_post' => ['table' => 'blog_posts', 'field' => 'title'],
             default => null,
         };
 
-        if ($field === null || $snapshots === null) {
+        if ($descriptor === null) {
             return null;
         }
 
-        foreach ($snapshots as $snapshot) {
+        foreach ($snapshots ?? [] as $snapshot) {
             if (($snapshot['entity_type'] ?? null) !== $entityType || (int) ($snapshot['row_id'] ?? 0) !== $entityId) {
                 continue;
             }
@@ -130,15 +133,25 @@ class AdminAuditService
             $state = is_array($snapshot['after'] ?? null)
                 ? $snapshot['after']
                 : (is_array($snapshot['before'] ?? null) ? $snapshot['before'] : null);
-            $label = is_array($state) ? ($state[$field] ?? null) : null;
-            if (! is_string($label) || trim($label) === '') {
-                return null;
-            }
+            $label = is_array($state) ? ($state[$descriptor['field']] ?? null) : null;
 
-            return Str::limit(trim(strip_tags($label)), 240, '…');
+            return $this->normalizeTargetLabel($label);
         }
 
-        return null;
+        return $this->normalizeTargetLabel(
+            DB::table($descriptor['table'])
+                ->where('id', $entityId)
+                ->value($descriptor['field']),
+        );
+    }
+
+    private function normalizeTargetLabel(mixed $label): ?string
+    {
+        if (! is_string($label) || trim($label) === '') {
+            return null;
+        }
+
+        return Str::limit(trim(strip_tags($label)), 240, '…');
     }
 
     private function validEntityType(string $action, string $entityType): bool
