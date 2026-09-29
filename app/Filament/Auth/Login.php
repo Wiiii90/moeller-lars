@@ -2,7 +2,9 @@
 
 namespace App\Filament\Auth;
 
+use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Auth\Pages\Login as BaseLogin;
+use Filament\Notifications\Notification;
 use Illuminate\Contracts\Support\Htmlable;
 
 class Login extends BaseLogin
@@ -23,5 +25,15 @@ class Login extends BaseLogin
         }
 
         return 'Sign in to manage the website.';
+    }
+
+    protected function getRateLimitedNotification(TooManyRequestsException $exception): ?Notification
+    {
+        $message = 'Too many attempts. Try again in '.$exception->secondsUntilAvailable.' seconds.';
+
+        $this->addError('data.email', $message);
+        $this->addError('code', $message);
+
+        return null;
     }
 }
