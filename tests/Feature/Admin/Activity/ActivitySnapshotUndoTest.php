@@ -6,10 +6,12 @@ use App\Domain\Admin\AdminChangeSummary;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Admin\AdminUndoService;
 use App\Domain\Artwork\ArtworkDraftService;
+use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\BlogEditorialService;
 use App\Filament\Support\AdminActivityFeed;
 use App\Models\AdminActionReceipt;
 use App\Models\Artwork;
+use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\PublicContentSetting;
@@ -67,6 +69,59 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
     $projectedUndo = app(AdminActivityFeed::class)->event((int) $undoEvent->getKey(), $actor);
     expect($projectedUndo['action'] ?? null)
         ->toBe('Restored Public email: undo-snapshot@example.test → '.$beforeEmailLabel);
+});
+
+it('exposes snapshot Undo for a single non-identity Gallery reorder', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor);
+
+    $gallery = ArtworkCategory::query()->create([
+        'slug' => 'snapshot-order-gallery',
+        'name' => 'Snapshot order Gallery',
+        'show_on_home' => false,
+    ]);
+    $first = Artwork::query()->create([
+        'artwork_category_id' => $gallery->getKey(),
+        'slug' => 'snapshot-order-first',
+        'title' => 'Snapshot order first',
+        'analytics_key' => '11111111-1111-4111-8111-111111111111',
+        'state' => 'draft',
+        'position' => 0,
+        'date_precision' => 'unknown',
+    ]);
+    $second = Artwork::query()->create([
+        'artwork_category_id' => $gallery->getKey(),
+        'slug' => 'snapshot-order-second',
+        'title' => 'Snapshot order second',
+        'analytics_key' => '22222222-2222-4222-8222-222222222222',
+        'state' => 'draft',
+        'position' => 1,
+        'date_precision' => 'unknown',
+    ]);
+
+    app(GalleryEditorialService::class)->reorderArtworks($gallery, [
+        (int) $second->getKey(),
+        (int) $first->getKey(),
+    ]);
+
+    $event = AuditEvent::query()
+        ->where('action', 'artwork_category.gallery_reordered')
+        ->latest('id')
+        ->firstOrFail();
+    $receipt = AdminActionReceipt::query()
+        ->where('audit_event_id', $event->getKey())
+        ->firstOrFail();
+    $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
+
+    expect($receipt->getAttribute('snapshot_payload'))->toBeArray()
+        ->and($projected['undo']['id'] ?? null)->toBe((int) $receipt->getKey())
+        ->and((int) $first->fresh()->getAttribute('position'))->toBe(1)
+        ->and((int) $second->fresh()->getAttribute('position'))->toBe(0);
+
+    app(AdminUndoService::class)->undo((int) $receipt->getKey());
+
+    expect((int) $first->fresh()->getAttribute('position'))->toBe(0)
+        ->and((int) $second->fresh()->getAttribute('position'))->toBe(1);
 });
 
 it('names multiple changed fields instead of a generic settings activity', function (): void {
