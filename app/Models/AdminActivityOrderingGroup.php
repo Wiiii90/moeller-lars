@@ -37,10 +37,9 @@ class AdminActivityOrderingGroup extends Model
 
     public function returnedToIdentity(): bool
     {
-        return (int) $this->getAttribute('event_count') > 1
-            && hash_equals(
-                (string) $this->getAttribute('before_hash'),
-                (string) $this->getAttribute('after_hash'),
-            );
+        return hash_equals(
+            (string) $this->getAttribute('before_hash'),
+            (string) $this->getAttribute('after_hash'),
+        );
     }
 }
