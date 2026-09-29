@@ -2,24 +2,62 @@
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\DashboardFeed;
-use App\Livewire\Admin\AdminFlashNotifications;
 use App\Models\AdminNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Livewire\Component;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-it('keeps immediate toast feedback ephemeral', function (): void {
+final class AdminTickerFeedbackProbe extends Component
+{
+    public function emitFeedback(): void
+    {
+        app(AdminNotifier::class)->feedback(
+            title: 'Changes saved',
+            body: 'Background gradient updated.',
+            status: 'success',
+        );
+    }
+
+    public function emitBoth(int $userId): void
+    {
+        app(AdminNotifier::class)->both(
+            user: $userId,
+            sourceId: 'media-cleanup:asset-72',
+            title: 'File cleanup failed',
+            body: 'Stored file cleanup could not be completed.',
+            status: 'danger',
+            context: [
+                'type' => 'media.cleanup_failure',
+                'entity_type' => 'media_asset',
+                'entity_id' => 72,
+            ],
+        );
+    }
+
+    public function render(): string
+    {
+        return '<div></div>';
+    }
+}
+
+it('keeps immediate ticker feedback ephemeral', function (): void {
     $user = User::factory()->admin()->create();
     $this->actingAs($user);
 
-    app(AdminNotifier::class)->toast(
-        title: 'Artwork saved',
-        body: 'The editorial change was stored.',
-        status: 'success',
-    );
+    Livewire::test(AdminTickerFeedbackProbe::class)
+        ->call('emitFeedback')
+        ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
+            $message = $params['notification'] ?? [];
+
+            return $event === 'admin-notification-ticker'
+                && ($message['title'] ?? null) === 'Changes saved'
+                && ($message['body'] ?? null) === 'Background gradient updated.'
+                && ($message['status'] ?? null) === 'success';
+        });
 
     expect(AdminNotification::query()->count())->toBe(0);
 });
@@ -60,30 +98,20 @@ it('delivers persistent conditions to both inbox and ticker', function (): void 
     $user = User::factory()->admin()->create();
     $this->actingAs($user);
 
-    $notification = app(AdminNotifier::class)->both(
-        user: $user,
-        sourceId: 'media-cleanup:asset-72',
-        title: 'File cleanup failed',
-        body: 'Stored file cleanup could not be completed.',
-        status: 'danger',
-        context: [
-            'type' => 'media.cleanup_failure',
-            'entity_type' => 'media_asset',
-            'entity_id' => 72,
-        ],
-    );
-
-    expect($notification->getAttribute('source_id'))->toBe('media-cleanup:asset-72')
-        ->and(AdminNotification::query()->whereKey($notification->getKey())->exists())->toBeTrue();
-
-    Livewire::test(AdminFlashNotifications::class)
+    Livewire::test(AdminTickerFeedbackProbe::class)
+        ->call('emitBoth', (int) $user->getKey())
         ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
-            $payload = $params['notification'] ?? [];
+            $message = $params['notification'] ?? [];
 
             return $event === 'admin-notification-ticker'
-                && ($payload['title'] ?? null) === 'File cleanup failed'
-                && ($payload['status'] ?? null) === 'danger';
+                && ($message['title'] ?? null) === 'File cleanup failed'
+                && ($message['status'] ?? null) === 'danger';
         });
+
+    expect(AdminNotification::query()
+        ->where('user_id', $user->getKey())
+        ->where('source_id', 'media-cleanup:asset-72')
+        ->exists())->toBeTrue();
 });
 
 it('deduplicates persistent notifications by recipient and source id', function (): void {
@@ -138,57 +166,40 @@ it('keeps dashboard notification reads isolated to the authenticated user', func
         ->and(app(DashboardFeed::class)->entry('notification:'.$second->getKey()))->toBeNull();
 });
 
-it('has no DOM recorder in the admin panel notification path', function (): void {
+it('has no legacy notification capture or framework feedback bridge', function (): void {
     $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
 
-    expect($provider)->not->toContain('admin-notification-history')
+    expect($provider)
+        ->not->toContain('AdminFlashNotifications')
+        ->not->toContain("Livewire::component('filament.livewire.notifications'")
+        ->not->toContain('admin-notification-history')
+        ->and(file_exists(app_path('Livewire/Admin/AdminFlashNotifications.php')))->toBeFalse()
+        ->and(file_exists(resource_path('views/livewire/admin/admin-flash-notifications.blade.php')))->toBeFalse()
         ->and(file_exists(app_path('Livewire/Admin/AdminNotificationRecorder.php')))->toBeFalse()
         ->and(file_exists(resource_path('views/livewire/admin/admin-notification-recorder.blade.php')))->toBeFalse()
         ->and(file_exists(resource_path('views/filament/partials/admin-notification-history.blade.php')))->toBeFalse();
 });
 
-it('routes transient feedback through the project ticker component', function (): void {
-    $user = User::factory()->admin()->create();
-    $this->actingAs($user);
-
-    app(AdminNotifier::class)->toast(
-        title: 'Changes saved',
-        body: 'Background gradient updated.',
-        status: 'success',
-    );
-
-    Livewire::test(AdminFlashNotifications::class)
-        ->assertDispatched('admin-notification-ticker', function (string $event, array $params): bool {
-            $notification = $params['notification'] ?? [];
-
-            return $event === 'admin-notification-ticker'
-                && ($notification['title'] ?? null) === 'Changes saved'
-                && ($notification['body'] ?? null) === 'Background gradient updated.'
-                && ($notification['status'] ?? null) === 'success';
-        });
-});
-
-it('owns transient notification creation and presentation centrally', function (): void {
+it('owns immediate feedback without constructing framework notifications', function (): void {
     $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
+    $notifier = file_get_contents(app_path('Domain/Admin/AdminNotifier.php'));
     $ticker = file_get_contents(resource_path('views/filament/partials/admin-notification-ticker.blade.php'));
-    $flashView = file_get_contents(resource_path('views/livewire/admin/admin-flash-notifications.blade.php'));
 
     expect($provider)
-        ->toContain("Livewire::component('filament.livewire.notifications', AdminFlashNotifications::class)")
         ->toContain('PanelsRenderHook::TOPBAR_START')
-        ->and(Livewire::new(\Filament\Livewire\Notifications::class))->toBeInstanceOf(AdminFlashNotifications::class)
+        ->and($notifier)
+        ->toContain("dispatch('admin-notification-ticker'")
+        ->not->toContain('Filament\\Notifications')
         ->and($ticker)
         ->toContain('data-admin-notification-ticker')
-        ->and($flashView)
-        ->not->toContain('fi-no-notification');
+        ->toContain('data-admin-notification-initial');
 
     foreach (File::allFiles(app_path()) as $file) {
-        $path = $file->getRealPath();
-        if ($path === app_path('Domain/Admin/AdminNotifier.php')) {
-            continue;
-        }
+        $source = file_get_contents($file->getRealPath());
 
-        expect(file_get_contents($path))
-            ->not->toContain('Notification::make()');
+        expect($source)
+            ->not->toContain('Notification::make()')
+            ->not->toContain('->transient()')
+            ->not->toContain('->toast(');
     }
 });
