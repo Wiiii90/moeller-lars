@@ -36,7 +36,6 @@ final class AdminActivityOrderingProjector
             if (
                 $candidate instanceof AdminActivityOrderingProjection
                 && (int) $candidate->getAttribute('admin_user_id') === (int) $actorId
-                && ! $candidate->isIdentity()
                 && $candidate->afterState() === $ordering['before_state']
                 && ! PublicationCheckpointEvent::query()
                     ->where('audit_event_id', (int) $candidate->getAttribute('last_audit_event_id'))
