@@ -89,7 +89,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::TOPBAR_START,
-                fn (): string => view('filament.partials.admin-notification-ticker')->render(),
+                fn (): string => view('filament.partials.admin-header-feedback')->render(),
             )
             ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
