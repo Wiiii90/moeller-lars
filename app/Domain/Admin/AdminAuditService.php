@@ -78,10 +78,12 @@ class AdminAuditService
         $metadata ??= [];
         $metadata['ordering'] = $ordering;
 
-        $event = $this->record($actor, $action, $entityType, $entityId, $metadata);
-        $this->orderingProjector->record($event, $ordering);
+        return DB::transaction(function () use ($actor, $action, $entityType, $entityId, $metadata, $ordering): AuditEvent {
+            $event = $this->record($actor, $action, $entityType, $entityId, $metadata);
+            $this->orderingProjector->record($event, $ordering);
 
-        return $event;
+            return $event;
+        });
     }
 
     public function record(User $actor, string $action, string $entityType, int $entityId, ?array $metadata = null): AuditEvent
