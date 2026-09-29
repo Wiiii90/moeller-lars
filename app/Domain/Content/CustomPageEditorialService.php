@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminOrderingState;
 use App\Models\CustomPageSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -99,7 +100,7 @@ final class CustomPageEditorialService
             [$items[$itemIndex], $items[$target]] = [$items[$target], $items[$itemIndex]];
 
             return $items;
-        });
+        }, ordering: true);
     }
 
     public function sortListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex, int $position): bool
@@ -112,7 +113,7 @@ final class CustomPageEditorialService
             array_splice($items, $position, 0, [$moved]);
 
             return $items;
-        });
+        }, ordering: true);
     }
 
     public function deleteListItem(CustomPageSetting $settings, int $index, string $expectedType, int $itemIndex): bool
@@ -192,7 +193,7 @@ final class CustomPageEditorialService
             [$children[$childIndex], $children[$target]] = [$children[$target], $children[$childIndex]];
 
             return $children;
-        });
+        }, ordering: true);
     }
 
     public function sortContactChild(CustomPageSetting $settings, int $index, string $expectedType, string $childType, int $position): bool
@@ -205,7 +206,7 @@ final class CustomPageEditorialService
             array_splice($children, $position, 0, [$moved]);
 
             return $children;
-        });
+        }, ordering: true);
     }
 
     public function deleteContactChild(CustomPageSetting $settings, int $index, string $expectedType, string $childType): bool
@@ -283,9 +284,15 @@ final class CustomPageEditorialService
             if (! array_key_exists($target, $blocks)) {
                 return false;
             }
+            $beforeOrder = AdminOrderingState::fingerprints($blocks);
             [$blocks[$index], $blocks[$target]] = [$blocks[$target], $blocks[$index]];
 
-            return $this->persist($fresh, $blocks);
+            return $this->persist($fresh, $blocks, [
+                'action' => 'site_section.page_components_reordered',
+                'scope' => 'page-components:'.(int) $fresh->getAttribute('site_section_id'),
+                'before' => $beforeOrder,
+                'after' => AdminOrderingState::fingerprints($blocks),
+            ]);
         });
     }
 
@@ -304,7 +311,12 @@ final class CustomPageEditorialService
             }
             $next = array_map(static fn (array $target): array => $blocks[$target['index']], $targets);
 
-            return $this->persist($fresh, $next);
+            return $this->persist($fresh, $next, [
+                'action' => 'site_section.page_components_reordered',
+                'scope' => 'page-components:'.(int) $fresh->getAttribute('site_section_id'),
+                'before' => AdminOrderingState::fingerprints($blocks),
+                'after' => AdminOrderingState::fingerprints($next),
+            ]);
         });
     }
 
@@ -365,37 +377,76 @@ final class CustomPageEditorialService
                 }
             }
 
-            return $this->persist($fresh, array_map(static fn (array $item): array => $item['block'], $sequence));
+            $next = array_map(static fn (array $item): array => $item['block'], $sequence);
+
+            return $this->persist($fresh, $next, [
+                'action' => 'site_section.page_components_reordered',
+                'scope' => 'page-components:'.(int) $fresh->getAttribute('site_section_id'),
+                'before' => AdminOrderingState::fingerprints($blocks),
+                'after' => AdminOrderingState::fingerprints($next),
+            ]);
         });
     }
 
     /** @param callable(list<array<string,mixed>>): list<array<string,mixed>> $mutator */
-    private function mutateListItems(CustomPageSetting $settings, int $index, string $expectedType, callable $mutator): bool
-    {
-        return DB::transaction(function () use ($settings, $index, $expectedType, $mutator): bool {
+    private function mutateListItems(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        callable $mutator,
+        bool $ordering = false,
+    ): bool {
+        return DB::transaction(function () use ($settings, $index, $expectedType, $mutator, $ordering): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertListTarget($blocks, $index, $expectedType);
-            $blocks[$index]['items'] = $mutator($this->listItems($blocks[$index]));
+            $beforeItems = $this->listItems($blocks[$index]);
+            $afterItems = $mutator($beforeItems);
+            $blocks[$index]['items'] = $afterItems;
 
-            return $this->persist($fresh, $blocks);
+            return $this->persist(
+                $fresh,
+                $blocks,
+                $ordering ? [
+                    'action' => 'site_section.list_entries_reordered',
+                    'scope' => 'page-list:'.(int) $fresh->getAttribute('site_section_id').':'.$index,
+                    'before' => AdminOrderingState::fingerprints($beforeItems),
+                    'after' => AdminOrderingState::fingerprints($afterItems),
+                ] : null,
+            );
         });
     }
 
     /** @param callable(list<array<string,mixed>>): list<array<string,mixed>> $mutator */
-    private function mutateContactChildren(CustomPageSetting $settings, int $index, string $expectedType, callable $mutator): bool
-    {
-        return DB::transaction(function () use ($settings, $index, $expectedType, $mutator): bool {
+    private function mutateContactChildren(
+        CustomPageSetting $settings,
+        int $index,
+        string $expectedType,
+        callable $mutator,
+        bool $ordering = false,
+    ): bool {
+        return DB::transaction(function () use ($settings, $index, $expectedType, $mutator, $ordering): bool {
             $fresh = $this->locked($settings);
             $blocks = $fresh->components();
             $this->assertContactTarget($blocks, $index, $expectedType);
+            $beforeChildren = $fresh->contactChildren($blocks[$index]);
+            $afterChildren = $mutator($beforeChildren);
             $blocks[$index] = [
                 'type' => 'contact',
                 'published' => CustomPageSetting::componentPublished($blocks[$index]),
-                'children' => $mutator($fresh->contactChildren($blocks[$index])),
+                'children' => $afterChildren,
             ];
 
-            return $this->persist($fresh, $blocks);
+            return $this->persist(
+                $fresh,
+                $blocks,
+                $ordering ? [
+                    'action' => 'site_section.contact_items_reordered',
+                    'scope' => 'page-contact:'.(int) $fresh->getAttribute('site_section_id').':'.$index,
+                    'before' => AdminOrderingState::fingerprints($beforeChildren),
+                    'after' => AdminOrderingState::fingerprints($afterChildren),
+                ] : null,
+            );
         });
     }
 
@@ -581,8 +632,11 @@ final class CustomPageEditorialService
         }
     }
 
-    /** @param list<array<string,mixed>> $blocks */
-    private function persist(CustomPageSetting $settings, array $blocks): bool
+    /**
+     * @param list<array<string,mixed>> $blocks
+     * @param array{action:string,scope:string,before:list<string>,after:list<string>}|null $orderingState
+     */
+    private function persist(CustomPageSetting $settings, array $blocks, ?array $orderingState = null): bool
     {
         $settings->fill(['blocks' => $blocks]);
         if (! $settings->isDirty()) {
@@ -591,12 +645,25 @@ final class CustomPageEditorialService
 
         $actor = $this->audit->requireActor();
         $settings->save();
-        $this->audit->record(
-            $actor,
-            'site_section.updated',
-            'site_section',
-            (int) $settings->getAttribute('site_section_id'),
-        );
+        $sectionId = (int) $settings->getAttribute('site_section_id');
+        if ($orderingState !== null) {
+            $this->audit->recordOrdering(
+                $actor,
+                $orderingState['action'],
+                'site_section',
+                $sectionId,
+                $orderingState['scope'],
+                $orderingState['before'],
+                $orderingState['after'],
+            );
+        } else {
+            $this->audit->record(
+                $actor,
+                'site_section.updated',
+                'site_section',
+                $sectionId,
+            );
+        }
 
         return true;
     }
