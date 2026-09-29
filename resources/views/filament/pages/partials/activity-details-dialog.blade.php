@@ -40,12 +40,7 @@
     @if (is_array($orderingGroup) && ($orderingGroup['event_count'] ?? 1) > 1)
         <div class="admin-detail-dialog__field">
             <span>Ordering sequence</span>
-            <p>
-                {{ $orderingGroup['event_count'] }} reorder changes combined
-                @if ($orderingGroup['returned_to_identity'] ?? false)
-                    · final order matches the starting order
-                @endif
-            </p>
+            <p>{{ $orderingGroup['event_count'] }} raw reorder operations reduced to one net ordering change.</p>
             @if (($orderingGroup['started_at'] ?? null) && ($orderingGroup['ended_at'] ?? null))
                 <small>{{ $orderingGroup['started_at'] }} → {{ $orderingGroup['ended_at'] }}</small>
             @endif
