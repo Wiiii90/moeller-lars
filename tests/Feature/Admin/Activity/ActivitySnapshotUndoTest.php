@@ -124,6 +124,53 @@ it('exposes snapshot Undo for a single non-identity Gallery reorder', function (
         ->and((int) $second->fresh()->getAttribute('position'))->toBe(1);
 });
 
+it('does not expose a last-step receipt as Undo for a compacted multi-step reorder', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor);
+
+    $gallery = ArtworkCategory::query()->create([
+        'slug' => 'multi-order-gallery',
+        'name' => 'Multi order Gallery',
+        'show_on_home' => false,
+    ]);
+    $artworks = collect([
+        ['slug' => 'multi-order-first', 'title' => 'Multi order first', 'analytics_key' => '33333333-3333-4333-8333-333333333333'],
+        ['slug' => 'multi-order-second', 'title' => 'Multi order second', 'analytics_key' => '44444444-4444-4444-8444-444444444444'],
+        ['slug' => 'multi-order-third', 'title' => 'Multi order third', 'analytics_key' => '55555555-5555-4555-8555-555555555555'],
+    ])->map(fn (array $data, int $position): Artwork => Artwork::query()->create([
+        'artwork_category_id' => $gallery->getKey(),
+        ...$data,
+        'state' => 'draft',
+        'position' => $position,
+        'date_precision' => 'unknown',
+    ]));
+
+    $service = app(GalleryEditorialService::class);
+    $service->reorderArtworks($gallery, [
+        (int) $artworks[1]->getKey(),
+        (int) $artworks[0]->getKey(),
+        (int) $artworks[2]->getKey(),
+    ]);
+    $service->reorderArtworks($gallery, [
+        (int) $artworks[1]->getKey(),
+        (int) $artworks[2]->getKey(),
+        (int) $artworks[0]->getKey(),
+    ]);
+
+    $event = AuditEvent::query()
+        ->where('action', 'artwork_category.gallery_reordered')
+        ->latest('id')
+        ->firstOrFail();
+
+    expect(AdminActionReceipt::query()->where('audit_event_id', $event->getKey())->exists())->toBeTrue();
+
+    $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
+
+    expect($projected)->not->toBeNull()
+        ->and($projected['ordering_projection']['event_count'] ?? null)->toBe(2)
+        ->and($projected['undo'] ?? null)->toBeNull();
+});
+
 it('names multiple changed fields instead of a generic settings activity', function (): void {
     $actor = User::factory()->admin()->create();
     $this->actingAs($actor);
