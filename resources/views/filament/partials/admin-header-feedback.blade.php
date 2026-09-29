@@ -1,5 +1,5 @@
 @php
-    $initialFeedback = app(\App\Domain\Admin\AdminNotifier::class)->pullQueuedFeedback();
+    $initialFeedback = app(\App\Domain\Admin\AdminNotifier::class)->pullPendingFeedback();
 @endphp
 
 <div
