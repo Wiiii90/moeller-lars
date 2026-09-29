@@ -319,12 +319,26 @@ final class JournalWorkspace extends Page
 
     public function publishSelectedPosts(): void
     {
-        $this->runPostBatch('posts published', fn (BlogPost $post) => app(BlogEditorialService::class)->publish($post));
+        $this->runPostBatch('posts published', function (BlogPost $post): bool {
+            if ((string) $post->getAttribute('state') === 'published') {
+                return false;
+            }
+            app(BlogEditorialService::class)->publish($post);
+
+            return true;
+        });
     }
 
     public function archiveSelectedPosts(): void
     {
-        $this->runPostBatch('posts archived', fn (BlogPost $post) => app(BlogEditorialService::class)->archive($post));
+        $this->runPostBatch('posts archived', function (BlogPost $post): bool {
+            if ((string) $post->getAttribute('state') === 'archived') {
+                return false;
+            }
+            app(BlogEditorialService::class)->archive($post);
+
+            return true;
+        });
     }
 
     public function unpublishSelectedPosts(): void
@@ -937,11 +951,13 @@ final class JournalWorkspace extends Page
 
     private function bestEffort(iterable $records, callable $action): array
     {
-        $ok = 0;
+        $changed = 0;
         $failed = 0;
         foreach ($records as $record) {
             try {
-                $action($record) === false ? $failed++ : $ok++;
+                if ($action($record) !== false) {
+                    $changed++;
+                }
             } catch (ValidationException) {
                 $failed++;
             } catch (Throwable $exception) {
@@ -950,14 +966,18 @@ final class JournalWorkspace extends Page
             }
         }
 
-        return [$ok, $failed];
+        return [$changed, $failed];
     }
 
-    private function notifyBatch(string $label, int $ok, int $failed): void
+    private function notifyBatch(string $label, int $changed, int $failed): void
     {
+        if ($changed === 0 && $failed === 0) {
+            return;
+        }
+
         app(AdminNotifier::class)->feedback(
             title: ucfirst($label),
-            body: $ok.' succeeded'.($failed > 0 ? ' · '.$failed.' failed' : ''),
+            body: $changed.' changed'.($failed > 0 ? ' · '.$failed.' failed' : ''),
             status: $failed > 0 ? 'warning' : 'success',
         );
     }
