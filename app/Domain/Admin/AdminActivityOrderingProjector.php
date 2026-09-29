@@ -3,7 +3,7 @@
 namespace App\Domain\Admin;
 
 use App\Models\AdminActivityOrderingEvent;
-use App\Models\AdminActivityOrderingGroup;
+use App\Models\AdminActivityOrderingProjection;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpointEvent;
 use Carbon\CarbonInterface;
@@ -13,50 +13,49 @@ use RuntimeException;
 final class AdminActivityOrderingProjector
 {
     /**
-     * @param array{scope:string,target_label:?string,before_hash:string,after_hash:string,item_count:int} $ordering
+     * @param array{scope:string,target_label:?string,before_state:list<string>,after_state:list<string>,item_count:int} $ordering
      */
-    public function record(AuditEvent $event, array $ordering): void
+    public function record(AuditEvent $event, array $ordering): AdminActivityOrderingProjection
     {
-        DB::transaction(function () use ($event, $ordering): void {
+        return DB::transaction(function () use ($event, $ordering): AdminActivityOrderingProjection {
             $actorId = $event->getAttribute('admin_user_id');
             $occurredAt = $event->getAttribute('occurred_at');
             if (! $occurredAt instanceof CarbonInterface) {
                 throw new RuntimeException('Ordering Activity requires an event timestamp.');
             }
 
-            /** @var AdminActivityOrderingGroup|null $candidate */
-            $candidate = AdminActivityOrderingGroup::query()
+            /** @var AdminActivityOrderingProjection|null $candidate */
+            $candidate = AdminActivityOrderingProjection::query()
+                ->where('admin_user_id', $actorId)
                 ->where('scope', $ordering['scope'])
                 ->where('action', (string) $event->getAttribute('action'))
                 ->orderByDesc('id')
                 ->lockForUpdate()
                 ->first();
 
-            $group = null;
+            $projection = null;
             if (
-                $candidate instanceof AdminActivityOrderingGroup
-                && (int) $candidate->getAttribute('admin_user_id') === (int) $actorId
-                && ! $candidate->returnedToIdentity()
-                && hash_equals((string) $candidate->getAttribute('after_hash'), $ordering['before_hash'])
+                $candidate instanceof AdminActivityOrderingProjection
+                && $candidate->afterState() === $ordering['before_state']
                 && ! PublicationCheckpointEvent::query()
                     ->where('audit_event_id', (int) $candidate->getAttribute('last_audit_event_id'))
                     ->exists()
             ) {
-                $group = $candidate;
+                $projection = $candidate;
             }
 
-            if ($group instanceof AdminActivityOrderingGroup) {
-                $sequence = ((int) $group->getAttribute('event_count')) + 1;
-                $group->forceFill([
+            if ($projection instanceof AdminActivityOrderingProjection) {
+                $sequence = ((int) $projection->getAttribute('event_count')) + 1;
+                $projection->forceFill([
                     'last_audit_event_id' => (int) $event->getKey(),
                     'event_count' => $sequence,
-                    'item_count' => max((int) $group->getAttribute('item_count'), $ordering['item_count']),
-                    'after_hash' => $ordering['after_hash'],
+                    'item_count' => max((int) $projection->getAttribute('item_count'), $ordering['item_count']),
+                    'after_state' => $ordering['after_state'],
                     'ended_at' => $occurredAt,
                 ])->save();
             } else {
                 $sequence = 1;
-                $group = AdminActivityOrderingGroup::query()->create([
+                $projection = AdminActivityOrderingProjection::query()->create([
                     'admin_user_id' => $actorId,
                     'scope' => $ordering['scope'],
                     'action' => (string) $event->getAttribute('action'),
@@ -65,8 +64,8 @@ final class AdminActivityOrderingProjector
                     'last_audit_event_id' => (int) $event->getKey(),
                     'event_count' => 1,
                     'item_count' => $ordering['item_count'],
-                    'before_hash' => $ordering['before_hash'],
-                    'after_hash' => $ordering['after_hash'],
+                    'before_state' => $ordering['before_state'],
+                    'after_state' => $ordering['after_state'],
                     'started_at' => $occurredAt,
                     'ended_at' => $occurredAt,
                 ]);
@@ -74,9 +73,11 @@ final class AdminActivityOrderingProjector
 
             AdminActivityOrderingEvent::query()->create([
                 'audit_event_id' => (int) $event->getKey(),
-                'group_id' => (int) $group->getKey(),
+                'projection_id' => (int) $projection->getKey(),
                 'sequence' => $sequence,
             ]);
+
+            return $projection;
         });
     }
 }
