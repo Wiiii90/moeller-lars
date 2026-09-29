@@ -399,18 +399,24 @@ final class AdminActivityFeed
             $historicalTarget = is_string($metadata['target_label'] ?? null)
                 ? trim($metadata['target_label'])
                 : '';
-            $target = $historicalTarget !== ''
-                ? $historicalTarget
-                : ($labels[$entityType][$entityId] ?? $this->fallbackTarget($entityType));
+            $orderingProjection = $event->getRelationValue('activityOrderingEvent');
+            $orderingGroup = $orderingProjection instanceof AdminActivityOrderingEvent
+                ? $orderingProjection->getRelationValue('group')
+                : null;
+            $orderingScopeTarget = $orderingGroup instanceof AdminActivityOrderingGroup
+                && is_string($orderingGroup->getAttribute('target_label'))
+                ? trim((string) $orderingGroup->getAttribute('target_label'))
+                : '';
+            $target = $orderingScopeTarget !== ''
+                ? $orderingScopeTarget
+                : ($historicalTarget !== ''
+                    ? $historicalTarget
+                    : ($labels[$entityType][$entityId] ?? $this->fallbackTarget($entityType)));
             /** @var CarbonInterface $occurredAt */
             $occurredAt = $event->getAttribute('occurred_at');
             $adminUser = $event->getRelationValue('adminUser');
             $receipt = $undoReceipts[(int) $event->getKey()] ?? null;
             $undo = null;
-            $orderingProjection = $event->getRelationValue('activityOrderingEvent');
-            $orderingGroup = $orderingProjection instanceof AdminActivityOrderingEvent
-                ? $orderingProjection->getRelationValue('group')
-                : null;
             $orderingCount = $orderingGroup instanceof AdminActivityOrderingGroup
                 ? (int) $orderingGroup->getAttribute('event_count')
                 : 1;
