@@ -20,21 +20,21 @@ Notification/inbox state is not part of this contract. See [ADMIN-NOTIFICATION-C
 Ordering has two deliberately different representations:
 
 - raw `audit_events` retain every successful persisted reorder mutation for factual history;
-- `AdminActivityFeed` presents contiguous reorder mutations as one logical Activity sequence through the persistent ordering projection.
+- `AdminActivityFeed` exposes the canonical net permutation for each ordering projection.
 
-A reorder continues the latest open ordering projection for the same admin, action and ordering scope only when the previous complete end-state exactly equals the new mutation's complete start-state. There is no time window. Publication of the representative event freezes that projection as historical state. A different scope/action, a different actor, a discontinuous state or a previously completed identity cycle starts a new projection.
+An ordering projection is structural, never time-based. It is identified by admin, action and stable ordering scope. A later reorder composes into the latest projection only when that projection's exact canonical end state equals the mutation's exact canonical start state. Publication of a non-identity representative freezes that projection as historical state. A different scope/action, a different actor, a discontinuous state or a publication boundary starts another projection. There is no timer, debounce window, burst timeout or elapsed-time heuristic anywhere in this contract.
 
 This is permutation-state reduction, not text deduplication. In particular:
 
-- Activity represents the net permutation from the projection's starting order to its current order;
-- when the net permutation is the identity, the ordering projection has no visible Activity row at all;
-- after an identity cycle a later reorder starts a fresh projection rather than reviving the cancelled cycle;
-- a compacted row targets the ordering scope itself (for example Public navigation, the Journal page, Gallery, Artwork, Home or Custom Page) rather than pretending the last moved child is the whole operation;
-- a single drag/reorder that rewrites several row positions still creates one logical ordering Activity event;
-- pagination and Activity aggregates operate on the reduced projection rather than hiding duplicate rows only after a page has been loaded;
-- historical ordering events with earlier hash-only evidence are reduced by hash continuity; events without canonical state/hash evidence remain conservative singleton history rather than being grouped by timing heuristics;
-- a single non-identity reorder may expose snapshot Undo when its complete persisted mutation is captured safely;
-- a multi-step non-identity projection does not expose the latest raw event's single-step Undo as though it reverted the complete net permutation.
+- the projection stores canonical `before_state` and `after_state` sequences rather than opaque hashes;
+- Activity represents only the net permutation from the projection's starting order to its current order;
+- when `before_state === after_state`, the net permutation is the identity and there is no visible Activity row or Undo receipt;
+- reaching identity does not itself create history or close the projection; a later continuous reorder may compose from that same canonical identity state;
+- a visible row targets the ordering scope itself (for example Public navigation, the Journal page, Gallery, Artwork, Home or Custom Page) rather than pretending the last moved child is the whole operation;
+- a single drag/reorder that rewrites several persisted row positions still creates one logical ordering audit mutation;
+- pagination and Activity aggregates query the reduced projection, so intermediate reorder events never inflate the visible feed;
+- raw ordering events created before canonical ordering-state metadata existed remain audit evidence only and are not reconstructed through compatibility heuristics;
+- every visible non-identity projection owns at most one actor-scoped Undo receipt, and that Undo restores the complete canonical starting order only while the current scope still exactly equals the projection's end state.
 
 The ordering projection never updates or deletes `audit_events`; it is a derived read model over immutable evidence.
 
