@@ -89,7 +89,7 @@ final class AdminActivityFeed
             : null;
         if (
             AdminActionCatalog::definition((string) $event->getAttribute('action'))['family'] === 'ordering'
-            && ! $orderingProjectionState instanceof AdminActivityOrderingProjection
+            && ! ($orderingProjectionState instanceof AdminActivityOrderingProjection)
         ) {
             return null;
         }
