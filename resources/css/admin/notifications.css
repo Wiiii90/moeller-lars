@@ -1,104 +1,76 @@
-/* Project-owned transient notification ticker inside the persistent Filament topbar. */
+/* Project-owned transient feedback ticker inside the persistent Filament topbar. */
 
 .fi-topbar {
-    column-gap: .65rem;
+    position: relative;
 }
 
-.fi-topbar > :is(.fi-topbar-open-sidebar-btn, .fi-topbar-close-sidebar-btn, .fi-topbar-start) {
-    order: 1;
-}
-
+/*
+ * Horizontal geometry is projected from the real admin content surface by
+ * admin-notification-ticker.js. The ticker never reorders or resizes Filament
+ * topbar controls.
+ */
 .admin-notification-ticker {
-    order: 2;
-    display: grid;
-    width: min(100%, calc(var(--admin-workspace-max-width) + var(--admin-workspace-gutter) + var(--admin-workspace-gutter)));
+    position: absolute;
+    top: 50%;
+    left: var(--admin-notification-ticker-left, 4rem);
+    z-index: 1;
+    box-sizing: border-box;
+    width: var(--admin-notification-ticker-width, calc(100% - 8rem));
+    height: var(--admin-header-feedback-height);
     min-width: 0;
-    flex: 1 1 auto;
-    margin-inline: auto;
-}
-
-.fi-topbar-end {
-    order: 3;
-    flex: 0 0 auto;
-    margin-inline-start: 0 !important;
-}
-
-@media (min-width: 1024px) {
-    /*
-     * The desktop topbar spans the viewport while the editorial workspace begins
-     * after the persistent sidebar. Align ticker copy to the same left content
-     * axis as .fi-main instead of letting it occupy the sidebar's horizontal band.
-     */
-    .fi-topbar {
-        padding-inline-start: 0 !important;
-    }
-
-    .admin-notification-ticker {
-        margin-inline-start: calc(var(--admin-sidebar-width) + var(--admin-workspace-gutter));
-        margin-inline-end: auto;
-    }
+    transform: translateY(-50%);
+    pointer-events: none;
 }
 
 .admin-notification-ticker__viewport {
-    display: grid;
+    position: relative;
+    width: 100%;
+    height: 100%;
     min-width: 0;
-    grid-template-rows: 0fr;
-    opacity: 0;
-    transform: translateY(-.28rem) scaleY(.88);
-    transform-origin: top;
-    transition:
-        grid-template-rows .22s cubic-bezier(.2, .7, .2, 1),
-        opacity .16s ease,
-        transform .22s cubic-bezier(.2, .7, .2, 1);
-}
-
-.admin-notification-ticker.is-active .admin-notification-ticker__viewport {
-    grid-template-rows: 1fr;
-    opacity: 1;
-    transform: translateY(0) scaleY(1);
+    overflow: hidden;
 }
 
 .admin-notification-ticker__message {
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
     display: grid;
     min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: .6rem;
+    grid-template-columns: minmax(0, 1fr) var(--admin-header-feedback-height);
     align-items: center;
-    padding: .32rem .5rem;
-    border-block: 1px solid transparent;
-    color: var(--admin-text);
+    border-inline: 1px solid var(--admin-line);
+    background: color-mix(in srgb, var(--admin-subtle) 72%, transparent);
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+    transform: translate3d(-.5rem, 0, 0);
+    pointer-events: none;
 }
 
-.admin-notification-ticker.is-active .admin-notification-ticker__message {
-    border-color: var(--admin-line);
+.admin-notification-ticker.is-active:not(.is-entering, .is-leaving) .admin-notification-ticker__message {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translate3d(0, 0, 0);
 }
 
-.admin-notification-ticker__signal {
-    width: .42rem;
-    height: .42rem;
-    border-radius: 999px;
-    background: var(--admin-status-neutral);
+.admin-notification-ticker.is-entering .admin-notification-ticker__message {
+    animation: admin-notification-ticker-enter var(--admin-feedback-enter-duration) cubic-bezier(.2, .75, .2, 1) forwards;
 }
 
-.admin-notification-ticker[data-status="success"] .admin-notification-ticker__signal {
-    background: var(--admin-status-success);
+.admin-notification-ticker.is-leaving .admin-notification-ticker__message {
+    animation: admin-notification-ticker-leave var(--admin-feedback-exit-duration) cubic-bezier(.4, 0, .6, 1) forwards;
 }
 
-.admin-notification-ticker[data-status="warning"] .admin-notification-ticker__signal {
-    background: var(--admin-status-warning);
-}
-
-.admin-notification-ticker[data-status="danger"] .admin-notification-ticker__signal {
-    background: var(--admin-status-danger);
+.admin-notification-ticker.is-active .admin-notification-ticker__dismiss {
+    pointer-events: auto;
 }
 
 .admin-notification-ticker__copy {
     display: flex;
     min-width: 0;
-    gap: .55rem;
-    align-items: baseline;
+    height: 100%;
+    gap: .6rem;
+    padding-inline: .7rem .55rem;
+    align-items: center;
 }
 
 .admin-notification-ticker__copy strong,
@@ -111,53 +83,77 @@
 
 .admin-notification-ticker__copy strong {
     flex: 0 1 auto;
-    font-size: .76rem;
+    color: var(--admin-text);
+    font-size: var(--admin-font-size-table-support);
     font-weight: 650;
+    letter-spacing: -.01em;
 }
 
 .admin-notification-ticker__copy span {
     flex: 1 1 auto;
     color: var(--admin-muted);
-    font-size: .72rem;
+    font-size: var(--admin-font-size-table-compact);
 }
 
 .admin-notification-ticker__dismiss {
     display: grid;
-    width: 1.65rem;
-    height: 1.65rem;
+    width: var(--admin-header-feedback-height);
+    height: var(--admin-header-feedback-height);
     padding: 0;
     place-items: center;
     border: 0;
-    border-radius: .2rem;
+    border-inline-start: 1px solid var(--admin-line);
+    border-radius: 0;
     background: transparent;
     color: var(--admin-muted);
     font: inherit;
-    font-size: 1rem;
+    font-size: .92rem;
     line-height: 1;
     cursor: pointer;
 }
 
 .admin-notification-ticker__dismiss:hover,
 .admin-notification-ticker__dismiss:focus-visible {
-    background: var(--admin-subtle);
+    background: color-mix(in srgb, var(--admin-text) 5%, transparent);
     color: var(--admin-text);
-    outline: 2px solid var(--admin-accent);
-    outline-offset: 1px;
+    outline: none;
+}
+
+.admin-notification-ticker__dismiss:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--admin-line-strong);
+}
+
+@keyframes admin-notification-ticker-enter {
+    from {
+        opacity: 0;
+        clip-path: inset(0 100% 0 0);
+        transform: translate3d(-.5rem, 0, 0);
+    }
+
+    to {
+        opacity: 1;
+        clip-path: inset(0 0 0 0);
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes admin-notification-ticker-leave {
+    from {
+        opacity: 1;
+        clip-path: inset(0 0 0 0);
+        transform: translate3d(0, 0, 0);
+    }
+
+    to {
+        opacity: 0;
+        clip-path: inset(0 0 0 100%);
+        transform: translate3d(.5rem, 0, 0);
+    }
 }
 
 @media (max-width: 640px) {
-    .fi-topbar {
-        padding-inline: .65rem !important;
-        column-gap: .35rem;
-    }
-
-    .admin-notification-ticker {
-        width: auto;
-    }
-
-    .admin-notification-ticker__message {
-        gap: .4rem;
-        padding-inline: .25rem;
+    .admin-notification-ticker__copy {
+        padding-inline: .5rem .4rem;
     }
 
     .admin-notification-ticker__copy span {
@@ -166,18 +162,12 @@
 
     .admin-notification-ticker__copy strong {
         width: 100%;
-        font-size: .72rem;
-    }
-
-    .admin-notification-ticker__dismiss {
-        width: 1.4rem;
-        height: 1.4rem;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .admin-notification-ticker__viewport {
-        transition: opacity .01ms linear;
-        transform: none;
+    .admin-notification-ticker.is-entering .admin-notification-ticker__message,
+    .admin-notification-ticker.is-leaving .admin-notification-ticker__message {
+        animation-duration: .01ms;
     }
 }
