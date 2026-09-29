@@ -943,9 +943,11 @@ final class JournalWorkspace extends Page
 
     private function notifyBatch(string $label, int $ok, int $failed): void
     {
-        $notification = app(AdminNotifier::class)->transient()->title(ucfirst($label))->body($ok.' succeeded'.($failed > 0 ? ' · '.$failed.' failed' : ''));
-        $failed > 0 ? $notification->warning() : $notification->success();
-        $notification->send();
+        app(AdminNotifier::class)->feedback(
+            title: ucfirst($label),
+            body: $ok.' succeeded'.($failed > 0 ? ' · '.$failed.' failed' : ''),
+            status: $failed > 0 ? 'warning' : 'success',
+        );
     }
 
     /**
