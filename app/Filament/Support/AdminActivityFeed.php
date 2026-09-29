@@ -290,7 +290,8 @@ final class AdminActivityFeed
                             ->from('admin_activity_ordering_events as ordering_event')
                             ->join('admin_activity_ordering_groups as ordering_group', 'ordering_group.id', '=', 'ordering_event.group_id')
                             ->whereColumn('ordering_event.audit_event_id', 'audit_events.id')
-                            ->whereColumn('ordering_group.last_audit_event_id', 'audit_events.id');
+                            ->whereColumn('ordering_group.last_audit_event_id', 'audit_events.id')
+                            ->whereColumn('ordering_group.before_hash', '<>', 'ordering_group.after_hash');
                     });
             });
         $driver = $query->getModel()->getConnection()->getDriverName();
