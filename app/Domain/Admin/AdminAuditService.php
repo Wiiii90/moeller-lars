@@ -70,6 +70,7 @@ class AdminAuditService
 
         $ordering = [
             'scope' => $scope,
+            'target_label' => $this->orderingScopeTarget($scope),
             'before_hash' => $this->orderingHash($before),
             'after_hash' => $this->orderingHash($after),
             'item_count' => max(count($before), count($after)),
@@ -226,12 +227,32 @@ class AdminAuditService
             && is_string($value['scope'] ?? null)
             && trim($value['scope']) !== ''
             && mb_strlen($value['scope']) <= 240
+            && (($value['target_label'] ?? null) === null || (is_string($value['target_label']) && mb_strlen($value['target_label']) <= 240))
             && is_string($value['before_hash'] ?? null)
             && preg_match('/^[a-f0-9]{64}$/', $value['before_hash']) === 1
             && is_string($value['after_hash'] ?? null)
             && preg_match('/^[a-f0-9]{64}$/', $value['after_hash']) === 1
             && is_int($value['item_count'] ?? null)
             && $value['item_count'] >= 0;
+    }
+
+    private function orderingScopeTarget(string $scope): ?string
+    {
+        if ($scope === 'site-navigation') {
+            return 'Public navigation';
+        }
+
+        if (preg_match('/^gallery-artworks:(\d+)$/', $scope, $matches) === 1) {
+            return $this->normalizeTargetLabel(DB::table('artwork_categories')->where('id', (int) $matches[1])->value('name'));
+        }
+        if (preg_match('/^artwork-media:(\d+)$/', $scope, $matches) === 1) {
+            return $this->normalizeTargetLabel(DB::table('artworks')->where('id', (int) $matches[1])->value('title'));
+        }
+        if (preg_match('/^(?:journal-blog|journal-exhibitions|home-artworks|home-components|page-components|page-list|page-contact):(\d+)/', $scope, $matches) === 1) {
+            return $this->normalizeTargetLabel(DB::table('site_sections')->where('id', (int) $matches[1])->value('title'));
+        }
+
+        return null;
     }
 
     private function normalizeTargetLabel(mixed $label): ?string
