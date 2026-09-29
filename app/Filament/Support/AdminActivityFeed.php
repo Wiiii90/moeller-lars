@@ -441,7 +441,7 @@ final class AdminActivityFeed
                 ? null
                 : $this->changeSummary($metadata['change_summary'] ?? null);
             $actionLabel = $orderingCount > 1
-                ? $this->orderingActivityLabel($definition['label'], $orderingCount, $orderingIdentity)
+                ? $definition['label']
                 : $this->activityLabel($actionKey, $definition, $changeSummary);
 
             if (is_array($receipt)) {
@@ -489,15 +489,6 @@ final class AdminActivityFeed
                 'undo' => $undo,
             ];
         })->values()->all();
-    }
-
-    private function orderingActivityLabel(string $label, int $eventCount, bool $returnedToIdentity): string
-    {
-        if ($returnedToIdentity) {
-            return $label.' · returned to starting order after '.$eventCount.' changes';
-        }
-
-        return $label.' · '.$eventCount.' changes combined';
     }
 
     /**
