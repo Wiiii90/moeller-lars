@@ -112,7 +112,7 @@ it('preserves the historical target label after a deleted record disappears', fu
         'artwork_category_id' => $galleryId,
         'slug' => 'activity-delete-target',
         'title' => 'Vanishing Activity Artwork',
-        'analytics_key' => 'activity-delete-target-key',
+        'analytics_key' => '6d6f9c8a-7b61-4a85-8f09-7d6d5f6e3c21',
         'state' => 'draft',
         'position' => 0,
         'date_precision' => 'unknown',
