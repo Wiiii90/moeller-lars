@@ -93,22 +93,8 @@
     align-items: baseline;
     color: var(--admin-text);
     white-space: nowrap;
-    transform: translate3d(var(--admin-ticker-start-x, 100%), -50%, 0);
+    transform: translate3d(100%, -50%, 0);
     will-change: transform;
-}
-
-.admin-notification-ticker.is-traveling .admin-notification-ticker__copy {
-    animation: admin-notification-ticker-travel var(--admin-ticker-travel-duration, 4s) linear forwards;
-}
-
-@keyframes admin-notification-ticker-travel {
-    from {
-        transform: translate3d(var(--admin-ticker-start-x), -50%, 0);
-    }
-
-    to {
-        transform: translate3d(var(--admin-ticker-end-x), -50%, 0);
-    }
 }
 
 .admin-notification-ticker__copy strong,
