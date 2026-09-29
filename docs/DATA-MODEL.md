@@ -184,6 +184,8 @@ See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
 
 `audit_events` is durable append-only admin history. Domain writes are persisted/audited independently of logical Commit/checkpoint behavior and independently of notification retention. Activity records successful administrative facts and is not a recovery payload store.
 
+`admin_activity_ordering_projections` is the mutable read/recovery projection for ordering Activity. It stores the exact canonical `before_state` and `after_state` of one state-continuous ordering scope; `admin_activity_ordering_events` links immutable raw ordering audit events to that projection. A non-identity projection is one visible Activity change; an identity projection is omitted from Activity and has no Undo receipt. These tables do not replace or rewrite `audit_events`, and pre-projection ordering history is not reconstructed through compatibility fallbacks.
+
 `admin_action_receipts` stores bounded actor-scoped Undo roots. Snapshot-style receipts reference immutable content-addressed JSON through `snapshot_payload_id` rather than owning a duplicate payload copy.
 
 `publication_checkpoints` stores permanent Commit metadata/lineage. A checkpoint's `snapshot_available` flag states whether its restore payload remains retained. `publication_version_row_manifests` maps a retained checkpoint/table/row identity to `history_payloads`; the transparent `publication_version_rows` interface reconstructs the logical complete snapshot expected by Publication services.
