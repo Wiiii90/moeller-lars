@@ -5,14 +5,13 @@ namespace App\Domain\Admin;
 use App\Models\AdminActivityOrderingEvent;
 use App\Models\AdminActivityOrderingGroup;
 use App\Models\AuditEvent;
+use App\Models\PublicationCheckpointEvent;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 final class AdminActivityOrderingProjector
 {
-    public const COALESCE_SECONDS = 600;
-
     /**
      * @param array{scope:string,target_label:?string,before_hash:string,after_hash:string,item_count:int} $ordering
      */
@@ -25,36 +24,25 @@ final class AdminActivityOrderingProjector
                 throw new RuntimeException('Ordering Activity requires an event timestamp.');
             }
 
-            $previous = AuditEvent::query()
+            /** @var AdminActivityOrderingGroup|null $candidate */
+            $candidate = AdminActivityOrderingGroup::query()
                 ->where('admin_user_id', $actorId)
-                ->where('id', '<', $event->getKey())
+                ->where('scope', $ordering['scope'])
+                ->where('action', (string) $event->getAttribute('action'))
                 ->orderByDesc('id')
+                ->lockForUpdate()
                 ->first();
 
             $group = null;
-            if ($previous instanceof AuditEvent) {
-                /** @var AdminActivityOrderingEvent|null $previousProjection */
-                $previousProjection = AdminActivityOrderingEvent::query()
-                    ->with('group')
-                    ->whereKey($previous->getKey())
-                    ->first();
-                $candidate = $previousProjection?->getRelationValue('group');
-
-                if (
-                    $candidate instanceof AdminActivityOrderingGroup
-                    && ! $candidate->returnedToIdentity()
-                    && (string) $candidate->getAttribute('scope') === $ordering['scope']
-                    && (string) $candidate->getAttribute('action') === (string) $event->getAttribute('action')
-                    && hash_equals((string) $candidate->getAttribute('after_hash'), $ordering['before_hash'])
-                    && $candidate->getAttribute('ended_at') instanceof CarbonInterface
-                    && $candidate->getAttribute('ended_at')->diffInSeconds($occurredAt) <= self::COALESCE_SECONDS
-                ) {
-                    /** @var AdminActivityOrderingGroup $group */
-                    $group = AdminActivityOrderingGroup::query()
-                        ->whereKey($candidate->getKey())
-                        ->lockForUpdate()
-                        ->firstOrFail();
-                }
+            if (
+                $candidate instanceof AdminActivityOrderingGroup
+                && ! $candidate->returnedToIdentity()
+                && hash_equals((string) $candidate->getAttribute('after_hash'), $ordering['before_hash'])
+                && ! PublicationCheckpointEvent::query()
+                    ->where('audit_event_id', (int) $candidate->getAttribute('last_audit_event_id'))
+                    ->exists()
+            ) {
+                $group = $candidate;
             }
 
             if ($group instanceof AdminActivityOrderingGroup) {
