@@ -245,8 +245,7 @@ function render(notification) {
     }
 
     root.dataset.status = notification.status;
-    root.classList.remove('is-leaving');
-    root.classList.add('is-active');
+    root.classList.remove('is-active', 'is-leaving');
 
     return true;
 }
@@ -298,6 +297,7 @@ function startReducedMotionPresentation(root) {
         track.style.transform = 'translateY(-50%)';
     }
 
+    root.classList.add('is-active');
     state.phase = 'visible';
     state.timer = window.setTimeout(
         () => completeCurrent(),
@@ -332,6 +332,8 @@ function startTickerTravel(root) {
     const startX = runwayWidth;
     const endX = -trackWidth;
 
+    track.style.transform = `translate3d(${startX}px, -50%, 0)`;
+    root.classList.add('is-active');
     state.phase = 'traveling';
 
     state.animation = track.animate(
