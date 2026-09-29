@@ -148,6 +148,13 @@ final class JournalEntryOrderService
     /** @param list<Model> $ordered */
     private function persistOrder(Model $record, Collection $records, array $ordered, int $sectionId, $actor): bool
     {
+        $beforeOrder = $records
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->values()
+            ->all();
+        $afterOrder = array_map(static fn (Model $candidate): int => (int) $candidate->getKey(), $ordered);
+
         $changes = [];
         foreach ($ordered as $index => $candidate) {
             $position = $index + 1;
@@ -166,14 +173,18 @@ final class JournalEntryOrderService
         }
         foreach ($changes as [$candidate, $position]) {
             DB::table($record->getTable())->where('id', $candidate->getKey())->update(['position' => $position, 'updated_at' => now()]);
-            $this->audit->record(
-                $actor,
-                $candidate instanceof BlogPost ? 'blog_post.reordered' : 'exhibition.reordered',
-                $candidate instanceof BlogPost ? 'blog_post' : 'exhibition',
-                $candidate->getKey(),
-                ['position' => $position, 'site_section_id' => $sectionId],
-            );
         }
+
+        $this->audit->recordOrdering(
+            $actor,
+            $record instanceof BlogPost ? 'blog_post.reordered' : 'exhibition.reordered',
+            $record instanceof BlogPost ? 'blog_post' : 'exhibition',
+            (int) $record->getKey(),
+            ($record instanceof BlogPost ? 'journal-blog:' : 'journal-exhibitions:').$sectionId,
+            $beforeOrder,
+            $afterOrder,
+            ['site_section_id' => $sectionId],
+        );
 
         return true;
     }
