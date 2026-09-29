@@ -3,6 +3,7 @@
 namespace App\Domain\Content;
 
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminOrderingState;
 use App\Domain\Artwork\PublicArtworkQuery;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
@@ -181,7 +182,7 @@ final class HomePresentationEditorialService
             [$components[$index], $components[$target]] = [$components[$target], $components[$index]];
 
             return $components;
-        });
+        }, ordering: true);
     }
 
     /** @param list<array{index:int,type:string}> $targets */
@@ -205,7 +206,7 @@ final class HomePresentationEditorialService
                 static fn (array $target): array => $components[$target['index']],
                 $targets,
             );
-        });
+        }, ordering: true);
     }
 
     /** @param list<array{index:int,type:string}> $targets */
@@ -250,7 +251,7 @@ final class HomePresentationEditorialService
                 static fn (array $item): array => $item['component'],
                 $sequence,
             );
-        });
+        }, ordering: true);
     }
 
     public function deleteComponent(
@@ -292,6 +293,7 @@ final class HomePresentationEditorialService
         HomePresentationSetting $settings,
         HomeTemplate $mode,
         callable $mutator,
+        bool $ordering = false,
     ): bool {
         if (! in_array($mode, [HomeTemplate::UnderConstruction, HomeTemplate::Custom], true)) {
             throw ValidationException::withMessages([
@@ -299,17 +301,24 @@ final class HomePresentationEditorialService
             ]);
         }
 
-        return DB::transaction(function () use ($settings, $mode, $mutator): bool {
+        return DB::transaction(function () use ($settings, $mode, $mutator, $ordering): bool {
             $fresh = $this->locked($settings);
             $configuration = $this->configuration($fresh);
             $components = $configuration[$mode->value]['components'] ?? [];
             $components = is_array($components) && array_is_list($components) ? $components : [];
-            $configuration[$mode->value]['components'] = $mutator($components);
+            $nextComponents = $mutator($components);
+            $configuration[$mode->value]['components'] = $nextComponents;
 
             $this->validateConfiguration($configuration);
             $fresh->setAttribute('configuration', $configuration);
 
-            return $this->save($fresh);
+            return $this->save(
+                $fresh,
+                $ordering ? [
+                    'before' => AdminOrderingState::fingerprints($components),
+                    'after' => AdminOrderingState::fingerprints($nextComponents),
+                ] : null,
+            );
         });
     }
 
@@ -578,7 +587,8 @@ final class HomePresentationEditorialService
         return $fresh;
     }
 
-    private function save(HomePresentationSetting $settings): bool
+    /** @param array{before:list<string>,after:list<string>}|null $orderingState */
+    private function save(HomePresentationSetting $settings, ?array $orderingState = null): bool
     {
         if (! $settings->isDirty(['template', 'configuration'])) {
             return false;
@@ -586,12 +596,25 @@ final class HomePresentationEditorialService
 
         $settings->save();
         $actor = $this->audit->requireActor();
-        $this->audit->record(
-            $actor,
-            'site_section.updated',
-            'site_section',
-            (int) $settings->getAttribute('site_section_id'),
-        );
+        $sectionId = (int) $settings->getAttribute('site_section_id');
+        if ($orderingState !== null) {
+            $this->audit->recordOrdering(
+                $actor,
+                'site_section.home_components_reordered',
+                'site_section',
+                $sectionId,
+                'home-components:'.$sectionId,
+                $orderingState['before'],
+                $orderingState['after'],
+            );
+        } else {
+            $this->audit->record(
+                $actor,
+                'site_section.updated',
+                'site_section',
+                $sectionId,
+            );
+        }
 
         return true;
     }
