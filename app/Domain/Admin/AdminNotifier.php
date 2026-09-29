@@ -15,14 +15,14 @@ final class AdminNotifier
     /** @var list<string> */
     private const STATUSES = ['success', 'warning', 'danger', 'info'];
 
-    private const FEEDBACK_SESSION_KEY = 'admin.ticker.feedback';
+    private const FEEDBACK_SESSION_KEY = 'admin.header.feedback';
 
     private const MAX_PENDING_FEEDBACK = 20;
 
     /**
      * Immediate feedback for the current admin action.
      *
-     * Livewire requests dispatch directly to the project-owned header ticker.
+     * Livewire requests dispatch directly to the project-owned header feedback surface.
      * Non-Livewire requests queue feedback for the next admin page render.
      */
     public function feedback(
@@ -43,7 +43,7 @@ final class AdminNotifier
             $component = app(LivewireManager::class)->current();
 
             if ($component instanceof Component) {
-                $component->dispatch('admin-notification-ticker', notification: $message);
+                $component->dispatch('admin-header-feedback', notification: $message);
 
                 return;
             }
