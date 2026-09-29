@@ -34,6 +34,24 @@ final class AdminOrderingState
     }
 
     /**
+     * @param list<string> $state
+     * @return list<int|string>
+     */
+    public static function denormalize(array $state): array
+    {
+        return array_map(static function (string $identity): int|string {
+            if (preg_match('/^i:(\d+)$/', $identity, $matches) === 1) {
+                return (int) $matches[1];
+            }
+            if (str_starts_with($identity, 's:')) {
+                return substr($identity, 2);
+            }
+
+            throw new \InvalidArgumentException('Invalid canonical ordering identity.');
+        }, $state);
+    }
+
+    /**
      * Stable identities for structured list items whose payload remains unchanged while only order changes.
      *
      * @param list<mixed> $items
