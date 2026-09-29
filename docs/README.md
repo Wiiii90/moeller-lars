@@ -21,7 +21,7 @@ These describe the durable current application architecture and behavior. Browse
 - [ADMIN-CONTROL-CONTRACT.md](ADMIN-CONTROL-CONTRACT.md) — canonical admin form/control rendering and persistence semantics
 - [ADMIN-DIALOG-CONTRACT.md](ADMIN-DIALOG-CONTRACT.md) — shared native Filament dialog types, chrome, lifecycle and edit/command semantics
 - [ADMIN-TABLE-CONTRACT.md](ADMIN-TABLE-CONTRACT.md) — canonical ordinary-table role order, alignment, typography, actions and trailing Selection
-- [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md) — explicit Toast/Notification/Activity/Publication semantics, persistent inbox ownership and server-side delivery contract
+- [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md) — explicit Ticker feedback/Notification/Activity/Publication semantics, persistent inbox ownership and server-side delivery contract
 - [ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md](ADMIN-ACTIVITY-PUBLICATION-CONTRACT.md) — append-only Activity, bounded Undo recovery, shared content-addressed history payloads, Working/LIVE Commit history and reset/restore/revert semantics
 - [ADMIN-BROWSER-WORKFLOW.md](ADMIN-BROWSER-WORKFLOW.md) — direct/worker browser-reconciliation modes, shared Visual Stage ownership, icon semantics and local preview loop
 - [RELEASE.md](RELEASE.md) — immutable image, preview, runtime, persistence and release contract
