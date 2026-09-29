@@ -103,7 +103,7 @@ class CreateArtwork extends CreateRecord
         return ArtworkResource::getUrl('gallery', ['gallery' => $galleryId]);
     }
 
-    protected function getCreatedNotification(): ?Notification
+    protected function afterCreate(): void
     {
         [$title, $body, $status] = match ($this->primaryMediaResult) {
             'attached' => [
@@ -128,7 +128,15 @@ class CreateArtwork extends CreateRecord
             body: $body,
             status: $status,
         );
+    }
 
+    /**
+     * Filament 5.7.6 calls this hook after every successful CreateRecord operation.
+     * Returning null suppresses the framework toast because project-owned mutation
+     * feedback is emitted centrally through AdminNotifier in afterCreate().
+     */
+    protected function getCreatedNotification(): ?Notification
+    {
         return null;
     }
 }
