@@ -38,6 +38,7 @@ it('compacts contiguous reorder mutations and closes a sequence when it returns 
     $first = projectedOrderingEvent($actor, $now);
     $projector->record($first, [
         'scope' => 'gallery-artworks:999999',
+        'target_label' => 'Test Gallery',
         'before_hash' => $a,
         'after_hash' => $b,
         'item_count' => 4,
@@ -46,6 +47,7 @@ it('compacts contiguous reorder mutations and closes a sequence when it returns 
     $second = projectedOrderingEvent($actor, $now->addSecond());
     $projector->record($second, [
         'scope' => 'gallery-artworks:999999',
+        'target_label' => 'Test Gallery',
         'before_hash' => $b,
         'after_hash' => $a,
         'item_count' => 4,
@@ -54,6 +56,7 @@ it('compacts contiguous reorder mutations and closes a sequence when it returns 
     $third = projectedOrderingEvent($actor, $now->addSeconds(2));
     $projector->record($third, [
         'scope' => 'gallery-artworks:999999',
+        'target_label' => 'Test Gallery',
         'before_hash' => $a,
         'after_hash' => $c,
         'item_count' => 4,
@@ -75,6 +78,7 @@ it('compacts contiguous reorder mutations and closes a sequence when it returns 
         ->and($page->pluck('id')->all())->toBe([(int) $third->getKey(), (int) $second->getKey()])
         ->and($page->firstWhere('id', (int) $second->getKey())['action'])
         ->toContain('returned to starting order after 2 changes')
+        ->and($page->firstWhere('id', (int) $second->getKey())['target'])->toBe('Test Gallery')
         ->and($feed->overview(days: 7)['total'])->toBe(2);
 
     $historicalStep = $feed->event((int) $first->getKey(), $actor);
