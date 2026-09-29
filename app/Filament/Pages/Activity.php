@@ -184,7 +184,7 @@ final class Activity extends Page
         $this->selectedActivityIds = [];
         $this->refreshWorkspaceSnapshot();
 
-        app(AdminNotifier::class)->toast(
+        app(AdminNotifier::class)->feedback(
             title: $undone > 0 ? 'Selected changes undone' : 'Undo unavailable',
             body: number_format($undone).' change'.($undone === 1 ? '' : 's').' undone'
                 .($skipped > 0 ? ' · '.number_format($skipped).' skipped because Undo was unavailable.' : '.'),
@@ -249,7 +249,7 @@ final class Activity extends Page
         } catch (ValidationException $exception) {
             $message = $exception->errors()['undo'][0] ?? 'This change can no longer be undone safely.';
 
-            app(AdminNotifier::class)->toast(
+            app(AdminNotifier::class)->feedback(
                 title: 'Undo unavailable',
                 body: $message,
                 status: 'warning',
@@ -260,7 +260,7 @@ final class Activity extends Page
 
         $this->refreshWorkspaceSnapshot();
 
-        app(AdminNotifier::class)->toast(
+        app(AdminNotifier::class)->feedback(
             title: 'Change undone',
             body: $result['inverse'].' was applied as a new editorial action.',
             status: 'success',
@@ -281,7 +281,7 @@ final class Activity extends Page
 
         $this->refreshWorkspaceSnapshot();
 
-        app(AdminNotifier::class)->toast(
+        app(AdminNotifier::class)->feedback(
             title: $changed > 0 ? 'Staged changes reset' : 'Nothing staged',
             body: $changed > 0
                 ? number_format($changed).' working row'.($changed === 1 ? '' : 's').' restored from the current live version.'
@@ -309,7 +309,7 @@ final class Activity extends Page
 
         $staged = app(PublicationService::class)->pendingSummary()['total'];
         $this->refreshWorkspaceSnapshot();
-        app(AdminNotifier::class)->toast(
+        app(AdminNotifier::class)->feedback(
             title: 'Version restored to working state',
             body: $checkpoint->shortHash().' is now staged with '.number_format($staged).' pending change'.($staged === 1 ? '' : 's').'.',
             status: 'success',
@@ -330,7 +330,7 @@ final class Activity extends Page
 
         $staged = app(PublicationService::class)->pendingSummary()['total'];
         $this->refreshWorkspaceSnapshot();
-        app(AdminNotifier::class)->toast(
+        app(AdminNotifier::class)->feedback(
             title: 'Commit revert staged',
             body: $result['reverted']->shortHash().' will be reversed by publishing the parent state '.$result['checkpoint']->shortHash().'. '.number_format($staged).' change'.($staged === 1 ? '' : 's').' staged.',
             status: 'success',
@@ -926,7 +926,7 @@ final class Activity extends Page
 
     private function selectionWarning(string $message): void
     {
-        app(AdminNotifier::class)->toast(
+        app(AdminNotifier::class)->feedback(
             title: 'Selection action unavailable',
             body: $message,
             status: 'warning',
@@ -937,7 +937,7 @@ final class Activity extends Page
     {
         $message = $exception->errors()['publication'][0] ?? $fallback;
 
-        app(AdminNotifier::class)->toast(
+        app(AdminNotifier::class)->feedback(
             title: 'Publication action unavailable',
             body: $message,
             status: 'warning',
