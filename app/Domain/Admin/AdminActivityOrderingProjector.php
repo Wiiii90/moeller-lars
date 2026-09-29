@@ -26,7 +26,6 @@ final class AdminActivityOrderingProjector
 
             /** @var AdminActivityOrderingGroup|null $candidate */
             $candidate = AdminActivityOrderingGroup::query()
-                ->where('admin_user_id', $actorId)
                 ->where('scope', $ordering['scope'])
                 ->where('action', (string) $event->getAttribute('action'))
                 ->orderByDesc('id')
@@ -36,6 +35,7 @@ final class AdminActivityOrderingProjector
             $group = null;
             if (
                 $candidate instanceof AdminActivityOrderingGroup
+                && (int) $candidate->getAttribute('admin_user_id') === (int) $actorId
                 && ! $candidate->returnedToIdentity()
                 && hash_equals((string) $candidate->getAttribute('after_hash'), $ordering['before_hash'])
                 && ! PublicationCheckpointEvent::query()
