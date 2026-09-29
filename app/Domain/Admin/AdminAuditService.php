@@ -23,6 +23,7 @@ class AdminAuditService
         private readonly AdminMutationSnapshotBuffer $mutationSnapshots,
         private readonly AdminChangeSummary $changeSummary,
         private readonly AdminUndoContext $undoContext,
+        private readonly AdminActivityOrderingProjector $orderingProjector,
     ) {}
 
     public function requireActor(): User
@@ -33,6 +34,54 @@ class AdminAuditService
         }
 
         return $actor;
+    }
+
+    /**
+     * Record one logical ordering mutation while preserving the immutable raw Audit event.
+     *
+     * @param list<int|string> $beforeState
+     * @param list<int|string> $afterState
+     */
+    public function recordOrdering(
+        User $actor,
+        string $action,
+        string $entityType,
+        int $entityId,
+        string $scope,
+        array $beforeState,
+        array $afterState,
+        ?array $metadata = null,
+    ): ?AuditEvent {
+        $definition = AdminActionCatalog::definition($action);
+        if (($definition['family'] ?? null) !== 'ordering') {
+            throw new InvalidArgumentException('Ordering Activity requires an ordering action.');
+        }
+
+        $scope = trim($scope);
+        if ($scope === '' || mb_strlen($scope) > 240) {
+            throw new InvalidArgumentException('Invalid ordering Activity scope.');
+        }
+
+        $before = $this->orderingState($beforeState);
+        $after = $this->orderingState($afterState);
+        if ($before === $after) {
+            return null;
+        }
+
+        $ordering = [
+            'scope' => $scope,
+            'before_hash' => $this->orderingHash($before),
+            'after_hash' => $this->orderingHash($after),
+            'item_count' => max(count($before), count($after)),
+        ];
+
+        $metadata ??= [];
+        $metadata['ordering'] = $ordering;
+
+        $event = $this->record($actor, $action, $entityType, $entityId, $metadata);
+        $this->orderingProjector->record($event, $ordering);
+
+        return $event;
     }
 
     public function record(User $actor, string $action, string $entityType, int $entityId, ?array $metadata = null): AuditEvent
@@ -55,8 +104,9 @@ class AdminAuditService
                 && is_int($value) && $value >= 0;
             $validDirection = $key === 'direction' && in_array($value, ['up', 'down'], true);
             $validReason = $key === 'reason' && is_string($value) && in_array($value, self::REASONS, true);
+            $validOrdering = $key === 'ordering' && $this->validOrderingMetadata($value);
 
-            if (! $validReference && ! $validPosition && ! $validDirection && ! $validReason) {
+            if (! $validReference && ! $validPosition && ! $validDirection && ! $validReason && ! $validOrdering) {
                 throw new InvalidArgumentException('Invalid audit metadata.');
             }
         }
@@ -144,6 +194,42 @@ class AdminAuditService
                 ->where('id', $entityId)
                 ->value($descriptor['field']),
         );
+    }
+
+    /** @param list<int|string> $state
+     * @return list<string>
+     */
+    private function orderingState(array $state): array
+    {
+        $normalized = [];
+        foreach ($state as $value) {
+            if (! is_int($value) && ! is_string($value)) {
+                throw new InvalidArgumentException('Ordering state values must be integer or string identities.');
+            }
+            $normalized[] = is_int($value) ? 'i:'.$value : 's:'.$value;
+        }
+
+        return $normalized;
+    }
+
+    /** @param list<string> $state */
+    private function orderingHash(array $state): string
+    {
+        return hash('sha256', json_encode($state, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
+    private function validOrderingMetadata(mixed $value): bool
+    {
+        return is_array($value)
+            && is_string($value['scope'] ?? null)
+            && trim($value['scope']) !== ''
+            && mb_strlen($value['scope']) <= 240
+            && is_string($value['before_hash'] ?? null)
+            && preg_match('/^[a-f0-9]{64}$/', $value['before_hash']) === 1
+            && is_string($value['after_hash'] ?? null)
+            && preg_match('/^[a-f0-9]{64}$/', $value['after_hash']) === 1
+            && is_int($value['item_count'] ?? null)
+            && $value['item_count'] >= 0;
     }
 
     private function normalizeTargetLabel(mixed $label): ?string
