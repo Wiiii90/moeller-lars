@@ -81,7 +81,11 @@ class AdminAuditService
 
         return DB::transaction(function () use ($actor, $action, $entityType, $entityId, $metadata, $ordering): AuditEvent {
             $event = $this->record($actor, $action, $entityType, $entityId, $metadata);
-            $this->orderingProjector->record($event, $ordering);
+            $projection = $this->orderingProjector->record($event, $ordering);
+
+            if (! $this->undoContext->receiptsSuppressed()) {
+                $this->receipts->recordOrderingProjection($event, $actor, $projection);
+            }
 
             return $event;
         });
