@@ -318,7 +318,12 @@ final class AdminOrderingState
             }
         }
         $ids = array_map(fn (string $identity): int => $this->integerIdentity($identity), $target);
-        if (array_keys($byId) !== $ids && array_diff(array_keys($byId), $ids) !== [] || array_diff($ids, array_keys($byId)) !== []) {
+        $currentIds = array_keys($byId);
+        $sortedCurrent = $currentIds;
+        $sortedTarget = $ids;
+        sort($sortedCurrent);
+        sort($sortedTarget);
+        if ($sortedCurrent !== $sortedTarget) {
             $this->conflict();
         }
         $artwork['manual_group'] = array_map(static fn (int $id): array => $byId[$id], $ids);
