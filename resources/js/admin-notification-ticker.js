@@ -302,22 +302,6 @@ function completeCurrent({ dismissed = false } = {}) {
     }, fadeDuration);
 }
 
-function startReducedMotionPresentation(root) {
-    const state = runtime();
-    const track = root.querySelector('[data-admin-notification-track]');
-
-    if (track instanceof HTMLElement) {
-        track.style.transform = 'translateY(-50%)';
-    }
-
-    root.classList.add('is-active');
-    state.phase = 'visible';
-    state.timer = window.setTimeout(
-        () => completeCurrent(),
-        cssDuration('--admin-feedback-scroll-min-duration', 4200),
-    );
-}
-
 function startTickerTravel(root) {
     const state = runtime();
     const runway = root.querySelector('[data-admin-notification-runway]');
@@ -338,9 +322,16 @@ function startTickerTravel(root) {
         return;
     }
 
-    const speed = cssNumber('--admin-feedback-scroll-speed', 112);
-    const minimum = cssDuration('--admin-feedback-scroll-min-duration', 4200);
-    const maximum = cssDuration('--admin-feedback-scroll-max-duration', 9000);
+    const reducedMotion = prefersReducedMotion();
+    const speed = reducedMotion
+        ? cssNumber('--admin-feedback-scroll-speed-reduced', 210)
+        : cssNumber('--admin-feedback-scroll-speed', 280);
+    const minimum = reducedMotion
+        ? cssDuration('--admin-feedback-scroll-min-duration-reduced', 3800)
+        : cssDuration('--admin-feedback-scroll-min-duration', 3000);
+    const maximum = reducedMotion
+        ? cssDuration('--admin-feedback-scroll-max-duration-reduced', 7200)
+        : cssDuration('--admin-feedback-scroll-max-duration', 5600);
     const duration = tickerTravelDuration(runwayWidth, trackWidth, speed, minimum, maximum);
     const startX = runwayWidth;
     const endX = -trackWidth;
@@ -380,12 +371,6 @@ function presentCurrent() {
         const activeRoot = ticker();
 
         if (!activeRoot || !state.current) return;
-
-        if (prefersReducedMotion()) {
-            startReducedMotionPresentation(activeRoot);
-
-            return;
-        }
 
         startTickerTravel(activeRoot);
     });
