@@ -6,7 +6,6 @@ function runtime() {
     window[RUNTIME_KEY] ??= {
         queue: [],
         current: null,
-        animation: null,
         timer: null,
         listenerRegistered: false,
         resizeListenerRegistered: false,
@@ -228,17 +227,6 @@ function clearTimer() {
     state.timer = null;
 }
 
-function cancelAnimation() {
-    const state = runtime();
-
-    if (!state.animation) return;
-
-    state.animation.onfinish = null;
-    state.animation.oncancel = null;
-    state.animation.cancel();
-    state.animation = null;
-}
-
 function render(notification) {
     const root = ticker();
     if (!root) return false;
@@ -265,7 +253,7 @@ function render(notification) {
 function fold() {
     const root = ticker();
 
-    root?.classList.remove('is-active', 'is-leaving');
+    root?.classList.remove('is-active', 'is-leaving', 'is-traveling');
     if (root) delete root.dataset.status;
 }
 
@@ -275,7 +263,6 @@ function completeCurrent({ dismissed = false } = {}) {
     if (!state.current || state.phase === 'leaving') return;
 
     clearTimer();
-    cancelAnimation();
 
     state.phase = 'leaving';
 
@@ -336,26 +323,24 @@ function startTickerTravel(root) {
     const startX = runwayWidth;
     const endX = -trackWidth;
 
+    track.style.setProperty('--admin-ticker-start-x', `${startX}px`);
+    track.style.setProperty('--admin-ticker-end-x', `${endX}px`);
+    track.style.setProperty('--admin-ticker-travel-duration', `${duration}ms`);
     track.style.transform = `translate3d(${startX}px, -50%, 0)`;
-    root.classList.add('is-active');
+
+    root.classList.remove('is-traveling');
+    void track.offsetWidth;
+    root.classList.add('is-active', 'is-traveling');
     state.phase = 'traveling';
 
-    state.animation = track.animate(
-        [
-            { transform: `translate3d(${startX}px, -50%, 0)` },
-            { transform: `translate3d(${endX}px, -50%, 0)` },
-        ],
-        {
-            duration,
-            easing: 'linear',
-            fill: 'forwards',
-        },
-    );
+    const finish = () => {
+        if (state.phase !== 'traveling') return;
 
-    state.animation.onfinish = () => {
-        state.animation = null;
         completeCurrent();
     };
+
+    track.onanimationend = finish;
+    state.timer = window.setTimeout(finish, duration + 120);
 }
 
 function presentCurrent() {
@@ -365,7 +350,6 @@ function presentCurrent() {
     if (!root || !state.current || !render(state.current)) return;
 
     clearTimer();
-    cancelAnimation();
 
     window.requestAnimationFrame(() => {
         const activeRoot = ticker();
