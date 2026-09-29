@@ -202,8 +202,17 @@ final class GalleryEditorialService
             /** @var ArtworkCategory $lockedGallery */
             $lockedGallery = ArtworkCategory::query()->whereKey($freshGallery->getKey())->lockForUpdate()->firstOrFail();
             /** @var Collection<int, Artwork> $lockedArtworks */
-            $lockedArtworks = $lockedGallery->artworks()->lockForUpdate()->get();
+            $lockedArtworks = $lockedGallery->artworks()
+                ->orderBy('position')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
             $this->validateArtworkIds($artworkIds, $lockedArtworks);
+            $beforeOrder = $lockedArtworks
+                ->pluck('id')
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->values()
+                ->all();
 
             $artworksById = $lockedArtworks->keyBy(fn (Artwork $artwork): int => (int) $artwork->getKey());
             $changed = false;
@@ -217,7 +226,15 @@ final class GalleryEditorialService
             }
 
             if ($changed) {
-                $this->adminAuditService->record($actor, 'artwork_category.gallery_reordered', 'artwork_category', $lockedGallery->getKey());
+                $this->adminAuditService->recordOrdering(
+                    $actor,
+                    'artwork_category.gallery_reordered',
+                    'artwork_category',
+                    (int) $lockedGallery->getKey(),
+                    'gallery-artworks:'.(int) $lockedGallery->getKey(),
+                    $beforeOrder,
+                    $artworkIds,
+                );
             }
         });
 
