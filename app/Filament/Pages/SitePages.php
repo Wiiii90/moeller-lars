@@ -193,13 +193,13 @@ final class SitePages extends Page
     public function sortSection(int $sectionId, int $position, int|string|null $groupId = null): void
     {
         if (! $this->reorderEnabled) {
-            app(AdminNotifier::class)->transient()
-                ->title('Reordering is unavailable for this view')
-                ->body($this->filtersActive
+            app(AdminNotifier::class)->feedback(
+                title: 'Reordering is unavailable for this view',
+                body: $this->filtersActive
                     ? 'Reset Search, Type and Status before changing page order.'
-                    : 'Show the complete canonical root-page set before changing page order.')
-                ->warning()
-                ->send();
+                    : 'Show the complete canonical root-page set before changing page order.',
+                status: 'warning',
+            );
             $this->loadSections();
 
             return;
@@ -208,7 +208,10 @@ final class SitePages extends Page
         $parentId = null;
         if ($groupId !== null && $groupId !== '' && $groupId !== 'root') {
             if (! ctype_digit((string) $groupId)) {
-                app(AdminNotifier::class)->transient()->title('Page order unchanged')->danger()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Page order unchanged',
+                    status: 'danger',
+                );
                 $this->loadSections();
 
                 return;
@@ -220,7 +223,10 @@ final class SitePages extends Page
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             if ($this->orderService()->moveTo($section, $parentId, $position)) {
-                app(AdminNotifier::class)->transient()->title('Page order updated')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Page order updated',
+                    status: 'success',
+                );
             }
         } catch (ValidationException $exception) {
             $this->validationNotification('Page order unchanged', $exception);
@@ -232,7 +238,10 @@ final class SitePages extends Page
     public function moveSection(int $sectionId, string $direction): void
     {
         if (! $this->reorderEnabled) {
-            app(AdminNotifier::class)->transient()->title('Show the complete unfiltered page order before reordering')->warning()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Show the complete unfiltered page order before reordering',
+                status: 'warning',
+            );
 
             return;
         }
@@ -241,7 +250,10 @@ final class SitePages extends Page
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             if ($this->orderService()->move($section, $direction)) {
-                app(AdminNotifier::class)->transient()->title('Page order updated')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Page order updated',
+                    status: 'success',
+                );
                 $this->loadSections();
             }
         } catch (ValidationException $exception) {
@@ -292,7 +304,10 @@ final class SitePages extends Page
                             (bool) $section->getAttribute('show_in_navigation'),
                             $parentId,
                         );
-                        app(AdminNotifier::class)->transient()->title('Page placement updated')->success()->send();
+                        app(AdminNotifier::class)->feedback(
+                            title: 'Page placement updated',
+                            status: 'success',
+                        );
                     } catch (ValidationException $exception) {
                         $this->validationNotification('Page placement unchanged', $exception);
                     }
@@ -336,7 +351,10 @@ final class SitePages extends Page
 
         try {
             $this->deleteSectionRecord($section);
-            app(AdminNotifier::class)->transient()->title('Page removed')->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Page removed',
+                status: 'success',
+            );
         } catch (ValidationException $exception) {
             $this->validationNotification('Page was not removed', $exception);
         }
@@ -387,7 +405,10 @@ final class SitePages extends Page
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             app(SiteSectionEditorialService::class)->convertType($section, $targetType);
-            app(AdminNotifier::class)->transient()->title('Page type updated')->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Page type updated',
+                status: 'success',
+            );
         } catch (ValidationException $exception) {
             $this->validationNotification('Page type unchanged', $exception);
         }
@@ -401,7 +422,10 @@ final class SitePages extends Page
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             app(SiteSectionEditorialService::class)->updateJournalTemplate($section, $template);
-            app(AdminNotifier::class)->transient()->title('Journal template updated')->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Journal template updated',
+                status: 'success',
+            );
         } catch (ValidationException $exception) {
             $this->validationNotification('Journal template unchanged', $exception);
         }
@@ -447,7 +471,10 @@ final class SitePages extends Page
             $this->newPageParent = '';
             $this->pageNumber = 1;
             $this->loadSections();
-            app(AdminNotifier::class)->transient()->title($message)->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: $message,
+                status: 'success',
+            );
         } catch (ValidationException $exception) {
             $this->validationNotification('Page was not added', $exception);
         }
@@ -752,7 +779,10 @@ final class SitePages extends Page
                 $visible,
                 $section->getAttribute('parent_id') === null ? null : (int) $section->getAttribute('parent_id'),
             );
-            app(AdminNotifier::class)->transient()->title('Page settings updated')->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Page settings updated',
+                status: 'success',
+            );
         } catch (ValidationException $exception) {
             $this->validationNotification('Page settings unchanged', $exception);
         }
@@ -845,11 +875,11 @@ final class SitePages extends Page
     private function validationNotification(string $title, ValidationException $exception): void
     {
         $message = collect($exception->errors())->flatten()->first();
-        app(AdminNotifier::class)->transient()
-            ->title($title)
-            ->body(is_string($message) ? $message : 'The requested change is not safe.')
-            ->danger()
-            ->send();
+        app(AdminNotifier::class)->feedback(
+            title: $title,
+            body: is_string($message) ? $message : 'The requested change is not safe.',
+            status: 'danger',
+        );
     }
 
     private function bulkNotification(string $action, int $changed, int $blocked): void
