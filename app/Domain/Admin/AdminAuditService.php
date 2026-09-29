@@ -116,6 +116,7 @@ class AdminAuditService
             'artwork_category' => ['table' => 'artwork_categories', 'field' => 'name'],
             'site_section' => ['table' => 'site_sections', 'field' => 'title'],
             'media_asset' => ['table' => 'media_assets', 'field' => 'original_filename'],
+            'artwork_material_preset' => ['table' => 'artwork_material_presets', 'field' => 'name'],
             'exhibition' => ['table' => 'exhibitions', 'field' => 'title'],
             'blog_post' => ['table' => 'blog_posts', 'field' => 'title'],
             default => null,
