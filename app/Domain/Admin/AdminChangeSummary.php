@@ -493,10 +493,6 @@ final class AdminChangeSummary
      */
     private function append(array &$items, string $field, string $label, string $before, string $after): void
     {
-        if (count($items) > self::MAX_ITEMS) {
-            return;
-        }
-
         $items[] = compact('field', 'label', 'before', 'after');
     }
 }
