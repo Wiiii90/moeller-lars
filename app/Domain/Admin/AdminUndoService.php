@@ -4,6 +4,8 @@ namespace App\Domain\Admin;
 
 use App\Domain\Artwork\ArtworkEditorialService;
 use App\Models\AdminActionReceipt;
+use App\Models\AdminActivityOrderingEvent;
+use App\Models\AdminActivityOrderingProjection;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\Exhibition;
@@ -20,7 +22,6 @@ final class AdminUndoService
     private const MEDIA_ACTIONS = [
         'artwork.additional_media_attached',
         'artwork.additional_media_detached',
-        'artwork.additional_media_reordered',
     ];
 
     public function __construct(
@@ -29,6 +30,7 @@ final class AdminUndoService
         private readonly AdminLifecycleRegistry $lifecycle,
         private readonly AdminSnapshotReceiptService $snapshots,
         private readonly AdminUndoContext $undoContext,
+        private readonly AdminOrderingState $orderingState,
     ) {}
 
     /** @return array{action:string,inverse:string} */
@@ -48,6 +50,47 @@ final class AdminUndoService
             $inverseActionKey = (string) $receipt->getAttribute('inverse_action_key');
 
             $this->undoContext->withoutReceipts(function () use ($receipt, $actor, $actionKey, $inverseActionKey): void {
+                if (AdminActionCatalog::definition($actionKey)['family'] === 'ordering') {
+                    /** @var AdminActivityOrderingEvent|null $orderingEvent */
+                    $orderingEvent = AdminActivityOrderingEvent::query()
+                        ->with('projection')
+                        ->whereKey((int) $receipt->getAttribute('audit_event_id'))
+                        ->first();
+                    $projection = $orderingEvent?->getRelationValue('projection');
+
+                    if (! $projection instanceof AdminActivityOrderingProjection
+                        || $projection->isIdentity()
+                        || (int) $projection->getAttribute('last_audit_event_id') !== (int) $receipt->getAttribute('audit_event_id')) {
+                        throw ValidationException::withMessages(['undo' => 'This ordering Undo is no longer attached to the current net change.']);
+                    }
+
+                    $scope = (string) $projection->getAttribute('scope');
+                    $before = $projection->afterState();
+                    $after = $projection->beforeState();
+                    $this->orderingState->restore($scope, $before, $after);
+
+                    /** @var \App\Models\AuditEvent $sourceEvent */
+                    $sourceEvent = $orderingEvent->auditEvent()->firstOrFail();
+                    $this->audit->recordOrdering(
+                        $actor,
+                        $actionKey,
+                        (string) $sourceEvent->getAttribute('entity_type'),
+                        (int) $sourceEvent->getAttribute('entity_id'),
+                        $scope,
+                        AdminOrderingState::denormalize($before),
+                        AdminOrderingState::denormalize($after),
+                    );
+                    $this->audit->record(
+                        $actor,
+                        'admin.undo_applied',
+                        (string) $sourceEvent->getAttribute('entity_type'),
+                        (int) $sourceEvent->getAttribute('entity_id'),
+                        ['source_audit_event_id' => (int) $sourceEvent->getKey()],
+                    );
+
+                    return;
+                }
+
                 if ($this->snapshots->isSnapshotReceipt($receipt)) {
                     $this->snapshots->restore($receipt);
                     $this->audit->record(
@@ -132,7 +175,6 @@ final class AdminUndoService
         match ((string) $receipt->getAttribute('action_key')) {
             'artwork.additional_media_attached' => $this->assertAttachedPrecondition($receipt, $artwork),
             'artwork.additional_media_detached' => $this->assertDetachedPrecondition($receipt, $artwork),
-            'artwork.additional_media_reordered' => $this->assertReorderedPrecondition($receipt, $artwork),
             default => throw ValidationException::withMessages(['undo' => 'This media change has no reversible contract.']),
         };
     }
@@ -180,34 +222,11 @@ final class AdminUndoService
         }
     }
 
-    private function assertReorderedPrecondition(AdminActionReceipt $receipt, Artwork $artwork): void
-    {
-        /** @var EloquentCollection<int, ArtworkMedia> $usages */
-        $usages = ArtworkMedia::query()
-            ->whereIn('id', [(int) $receipt->getAttribute('artwork_media_id'), (int) $receipt->getAttribute('neighbor_artwork_media_id')])
-            ->where('artwork_id', $artwork->getKey())
-            ->where('role', 'additional')
-            ->lockForUpdate()
-            ->get();
-        /** @var ArtworkMedia|null $moving */
-        $moving = $usages->firstWhere('id', (int) $receipt->getAttribute('artwork_media_id'));
-        /** @var ArtworkMedia|null $neighbor */
-        $neighbor = $usages->firstWhere('id', (int) $receipt->getAttribute('neighbor_artwork_media_id'));
-
-        if (! $moving || ! $neighbor
-            || (int) $moving->getAttribute('position') !== (int) $receipt->getAttribute('after_position')
-            || (int) $neighbor->getAttribute('position') !== (int) $receipt->getAttribute('before_position')
-            || abs((int) $moving->getAttribute('position') - (int) $neighbor->getAttribute('position')) !== 1) {
-            $this->conflict();
-        }
-    }
-
     private function executeMediaInverse(AdminActionReceipt $receipt, Artwork $artwork): void
     {
         match ((string) $receipt->getAttribute('action_key')) {
             'artwork.additional_media_attached' => $this->undoMediaAttach($receipt, $artwork),
             'artwork.additional_media_detached' => $this->undoMediaDetach($receipt, $artwork),
-            'artwork.additional_media_reordered' => $this->undoMediaReorder($receipt, $artwork),
             default => throw ValidationException::withMessages(['undo' => 'This media change has no reversible contract.']),
         };
     }
@@ -224,17 +243,6 @@ final class AdminUndoService
         /** @var MediaAsset $asset */
         $asset = MediaAsset::query()->findOrFail((int) $receipt->getAttribute('media_asset_id'));
         $this->artworkEditorial->restoreAdditionalMedia($artwork, $asset, (int) $receipt->getAttribute('before_position'));
-    }
-
-    private function undoMediaReorder(AdminActionReceipt $receipt, Artwork $artwork): void
-    {
-        /** @var ArtworkMedia $usage */
-        $usage = ArtworkMedia::query()->findOrFail((int) $receipt->getAttribute('artwork_media_id'));
-        $direction = (string) $receipt->getAttribute('inverse_direction');
-        if (! in_array($direction, ['up', 'down'], true)) {
-            throw ValidationException::withMessages(['undo' => 'This reorder receipt has no valid inverse direction.']);
-        }
-        $this->artworkEditorial->moveAdditionalMedia($artwork, $usage, $direction);
     }
 
     private function assertMediaRestored(AdminActionReceipt $receipt, Artwork $artwork): void
@@ -257,22 +265,6 @@ final class AdminUndoService
             if (! $restored || (int) $restored->getAttribute('position') !== (int) $receipt->getAttribute('before_position')) {
                 throw new RuntimeException('The media inverse did not restore the expected gallery position.');
             }
-
-            return;
-        }
-
-        /** @var EloquentCollection<int, ArtworkMedia> $usages */
-        $usages = ArtworkMedia::query()
-            ->whereIn('id', [(int) $receipt->getAttribute('artwork_media_id'), (int) $receipt->getAttribute('neighbor_artwork_media_id')])
-            ->get();
-        /** @var ArtworkMedia|null $moving */
-        $moving = $usages->firstWhere('id', (int) $receipt->getAttribute('artwork_media_id'));
-        /** @var ArtworkMedia|null $neighbor */
-        $neighbor = $usages->firstWhere('id', (int) $receipt->getAttribute('neighbor_artwork_media_id'));
-        if (! $moving || ! $neighbor
-            || (int) $moving->getAttribute('position') !== (int) $receipt->getAttribute('before_position')
-            || (int) $neighbor->getAttribute('position') !== (int) $receipt->getAttribute('after_position')) {
-            throw new RuntimeException('The media inverse did not restore the expected order.');
         }
     }
 
