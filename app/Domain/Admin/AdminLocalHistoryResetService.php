@@ -37,6 +37,10 @@ final class AdminLocalHistoryResetService
         return DB::transaction(function () use ($tables): array {
             $deleted = [];
 
+            if (Schema::hasTable('audit_events')) {
+                DB::statement('LOCK TABLE audit_events IN ACCESS EXCLUSIVE MODE');
+            }
+
             foreach ($tables as $table) {
                 if (! Schema::hasTable($table)) {
                     $deleted[$table] = 0;
@@ -45,6 +49,19 @@ final class AdminLocalHistoryResetService
                 }
 
                 $deleted[$table] = DB::table($table)->count();
+
+                if ($table === 'audit_events') {
+                    DB::statement('ALTER TABLE audit_events DISABLE TRIGGER audit_events_append_only');
+
+                    try {
+                        DB::table($table)->delete();
+                    } finally {
+                        DB::statement('ALTER TABLE audit_events ENABLE TRIGGER audit_events_append_only');
+                    }
+
+                    continue;
+                }
+
                 DB::table($table)->delete();
             }
 
