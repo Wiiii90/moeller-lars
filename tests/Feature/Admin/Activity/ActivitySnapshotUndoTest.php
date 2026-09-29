@@ -2,6 +2,7 @@
 
 use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminAuditService;
+use App\Domain\Admin\AdminChangeSummary;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Admin\AdminUndoService;
 use App\Domain\Artwork\ArtworkDraftService;
@@ -240,8 +241,13 @@ it('roundtrips a media-only Blog update as one atomic snapshot Undo', function (
         static fn (mixed $row): bool => is_array($row) && ($row['table'] ?? null) === 'journal_entry_media',
     ));
 
+    $eventMetadata = $event->getAttribute('metadata');
+    $projectedEvent = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
+
     expect(AuditEvent::query()->count())->toBe($eventsBefore + 1)
         ->and($event->getAttribute('entity_type'))->toBe('blog_post')
+        ->and($eventMetadata['target_label'] ?? null)->toBe('Activity media-only Undo')
+        ->and($projectedEvent['target'] ?? null)->toBe('Activity media-only Undo')
         ->and((int) $event->getAttribute('entity_id'))->toBe($postId)
         ->and($journalRows)->toHaveCount(2)
         ->and(DB::table('journal_entry_media')->where('id', $originalUsageId)->exists())->toBeFalse()
@@ -268,6 +274,28 @@ it('roundtrips a media-only Blog update as one atomic snapshot Undo', function (
         ->and((int) DB::table('journal_entry_media')->where('id', $originalUsageId)->value('position'))->toBe(1)
         ->and(DB::table('journal_entry_media')->where('blog_post_id', $postId)->where('media_asset_id', $replacementAssetId)->exists())->toBeFalse()
         ->and(AuditEvent::query()->where('action', 'admin.undo_applied')->where('entity_type', 'blog_post')->where('entity_id', $postId)->exists())->toBeTrue();
+});
+
+it('keeps the full change count when the Activity detail payload is truncated', function (): void {
+    $before = [];
+    $after = [];
+    foreach (range(1, 20) as $index) {
+        $before['field_'.$index] = 'before-'.$index;
+        $after['field_'.$index] = 'after-'.$index;
+    }
+
+    $summary = app(AdminChangeSummary::class)->summarize([[
+        'entity_type' => 'public_content_setting',
+        'table' => 'public_content_settings',
+        'row_id' => 1,
+        'before' => $before,
+        'after' => $after,
+    ]]);
+
+    expect($summary)->not->toBeNull()
+        ->and($summary['count'])->toBe(20)
+        ->and($summary['truncated'])->toBeTrue()
+        ->and($summary['items'])->toHaveCount(12);
 });
 
 it('does not create snapshot receipts for no-op settings writes and accepts Journal settings audit actions', function (): void {
