@@ -107,7 +107,7 @@ final class AdminActivityFeed
 
     public function exists(): bool
     {
-        return AuditEvent::query()->exists();
+        return $this->filteredQuery()->exists();
     }
 
     /**
