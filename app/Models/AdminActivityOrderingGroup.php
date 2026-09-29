@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
     'admin_user_id',
     'scope',
     'action',
+    'target_label',
     'first_audit_event_id',
     'last_audit_event_id',
     'event_count',
