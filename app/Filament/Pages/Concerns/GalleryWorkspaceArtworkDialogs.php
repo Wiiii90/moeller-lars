@@ -58,7 +58,10 @@ trait GalleryWorkspaceArtworkDialogs
 
                 $this->pendingPrimaryMediaAssetId = null;
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->transient()->title('Artwork draft created')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Artwork draft created',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
@@ -138,7 +141,10 @@ trait GalleryWorkspaceArtworkDialogs
 
                 $this->refreshWorkspaceAfterMutation();
                 if ($before !== $after) {
-                    app(AdminNotifier::class)->transient()->title('Artwork saved')->success()->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Artwork saved',
+                        status: 'success',
+                    );
                 }
             });
 
