@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Admin\AdminLocalHistoryResetService;
 use App\Domain\Media\MediaCapacityService;
 use App\Domain\Media\MediaIntegrityService;
 use App\Domain\Migration\LegacyArtworkManifestImporter;
@@ -20,6 +21,34 @@ use Illuminate\Validation\Rules\Password;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+
+Artisan::command('admin:reset-local-history {--force : Skip the confirmation prompt}', function (AdminLocalHistoryResetService $reset) {
+    if (! app()->environment('local')) {
+        $this->error('admin:reset-local-history is available only in the local environment.');
+
+        return 1;
+    }
+
+    if (! (bool) $this->option('force') && ! $this->confirm(
+        'Delete local Activity, Undo receipts, notifications, feed pins and derived publication/audit history while preserving editorial content and publication snapshots?',
+    )) {
+        $this->info('Local admin history reset cancelled.');
+
+        return 0;
+    }
+
+    $deleted = $reset->reset();
+
+    $this->info('Local admin history reset complete. Editorial content and publication snapshots were preserved.');
+    foreach ($deleted as $table => $count) {
+        if ($count > 0) {
+            $this->line(sprintf('%s: %d', $table, $count));
+        }
+    }
+
+    return 0;
+})->purpose('Clear disposable local admin history without deleting editorial content or publication snapshots');
 
 Artisan::command('pulse:report {--hours=24 : Lookback window in hours (1-168)} {--format=markdown : Output format: markdown or json} {--limit=50 : Maximum rows per aggregate section (1-100)}', function (PulseReport $pulseReport) {
     $hours = filter_var($this->option('hours'), FILTER_VALIDATE_INT, [
