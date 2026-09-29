@@ -193,15 +193,20 @@ function render() {
     root.dataset.status = state.current.status;
 }
 
+export function nextStaticFeedbackState(current, additionalCount, notification) {
+    return {
+        current: notification,
+        additionalCount: current === null ? additionalCount : additionalCount + 1,
+    };
+}
+
 function receive(detail) {
     const state = runtime();
     const notification = normalize(detail);
+    const next = nextStaticFeedbackState(state.current, state.additionalCount, notification);
 
-    if (state.current !== null) {
-        state.additionalCount += 1;
-    }
-
-    state.current = notification;
+    state.current = next.current;
+    state.additionalCount = next.additionalCount;
     render();
 }
 
