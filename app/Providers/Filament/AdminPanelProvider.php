@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Domain\Publication\PublicationService;
+use App\Filament\Auth\AdminAppAuthentication;
 use App\Filament\Auth\Login;
 use App\Filament\Auth\RequestPasswordReset;
 use App\Filament\Auth\ResetPassword;
@@ -19,7 +20,6 @@ use App\Filament\Support\SiteNavigation;
 use App\Http\Middleware\DeferMatomoReporting;
 use BladeUI\Icons\Factory as BladeIconFactory;
 use Filament\Actions\Action;
-use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -55,7 +55,7 @@ class AdminPanelProvider extends PanelProvider
 
     public function panel(Panel $panel): Panel
     {
-        $appAuthentication = AppAuthentication::make()
+        $appAuthentication = AdminAppAuthentication::make()
             ->recoverable()
             ->brandName('Lars Möller Administration');
 
