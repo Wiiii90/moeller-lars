@@ -274,7 +274,7 @@ Feature/Pest tests and `migrate:fresh` against it are fail-closed; GitHub Action
 uses an explicit disposable-database context instead.
 
 When disposable local admin history needs to be cleared without touching editorial content,
-Working/LIVE state or retained publication snapshots, use `php artisan admin:reset-local-history`.
+Working/LIVE state or retained publication snapshots, use `docker exec -it moeller-lars-local-web php artisan admin:reset-local-history` against the running local preview container.
 That command is local-only and clears Activity/audit history, Undo receipts, notifications/feed
 pins, ordering projections, action stats, publication event state and Audit↔Commit links. It must
 not be expanded into a general database reset.
