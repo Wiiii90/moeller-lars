@@ -161,7 +161,10 @@ final class GalleryWorkspace extends Page
         }
 
         $this->refreshWorkspaceAfterMutation();
-        app(AdminNotifier::class)->transient()->title('Artwork title saved')->success()->send();
+        app(AdminNotifier::class)->feedback(
+            title: 'Artwork title saved',
+            status: 'success',
+        );
 
         return $normalized;
     }
