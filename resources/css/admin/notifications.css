@@ -1,40 +1,21 @@
-/* Project-owned transient feedback surface inside the persistent Filament topbar. */
+/* Project-owned ephemeral feedback surface inside the persistent Filament topbar. */
 
 .fi-topbar {
     position: relative;
 }
 
-/*
- * Horizontal geometry is projected from the real admin content surface by
- * admin-notification-ticker.js. The feedback surface is an overlay and never
- * participates in Filament's topbar flex layout.
- */
-.admin-notification-ticker {
+.admin-header-feedback {
     position: absolute;
     inset-block: 0;
-    left: var(--admin-notification-ticker-left, 4rem);
+    inset-inline: max(
+        calc(var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap)),
+        calc((100% - var(--admin-workspace-max-width)) / 2)
+    );
     z-index: 1;
     box-sizing: border-box;
-    width: var(--admin-notification-ticker-width, calc(100% - 8rem));
     height: var(--admin-header-control-size);
     min-width: 0;
     margin-block: auto;
-    pointer-events: none;
-}
-
-.admin-notification-ticker__viewport,
-.admin-notification-ticker__message {
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-}
-
-.admin-notification-ticker__message {
-    position: relative;
-    box-sizing: border-box;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 3rem;
-    align-items: center;
     overflow: hidden;
     border-radius: .28rem;
     background: #fff;
@@ -43,33 +24,36 @@
         0 0 0 2px var(--admin-user-badge-aura),
         inset 1px 1px 0 var(--admin-user-badge-inner),
         inset -1px -1px 0 color-mix(in srgb, var(--admin-user-badge-depth) 58%, transparent);
+    pointer-events: none;
 }
 
-.dark .admin-notification-ticker__message {
+.dark .admin-header-feedback {
     background: rgba(20, 20, 20, .82);
 }
 
-.admin-notification-ticker__content {
-    display: inline-flex;
+.admin-header-feedback__content {
+    display: flex;
     min-width: 0;
+    height: 100%;
     gap: .7rem;
-    align-items: baseline;
+    align-items: center;
     overflow: hidden;
-    padding-inline: .9rem .65rem;
+    padding-inline: .9rem 3.4rem;
+    padding-left: .9rem;
     color: var(--admin-text);
     white-space: nowrap;
 }
 
-.admin-notification-ticker__title,
-.admin-notification-ticker__body {
-    display: inline-block;
+.admin-header-feedback__title,
+.admin-header-feedback__body {
+    display: block;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.admin-notification-ticker__title {
+.admin-header-feedback__title {
     flex: 0 1 auto;
     color: var(--admin-text);
     font-size: var(--admin-font-size-table-support);
@@ -77,29 +61,24 @@
     letter-spacing: -.01em;
 }
 
-.admin-notification-ticker__body {
+.admin-header-feedback__body {
     flex: 1 1 auto;
     color: var(--admin-muted);
     font-size: var(--admin-font-size-table-compact);
 }
 
-.admin-notification-ticker[data-status="warning"] .admin-notification-ticker__title {
+.admin-header-feedback[data-status="warning"] .admin-header-feedback__title {
     color: var(--admin-accent-strong);
 }
 
-.admin-notification-ticker[data-status="danger"] .admin-notification-ticker__title {
+.admin-header-feedback[data-status="danger"] .admin-header-feedback__title {
     color: var(--admin-danger);
 }
 
-.admin-notification-ticker__counter-slot {
-    display: grid;
-    width: 3rem;
-    height: 100%;
-    place-items: center;
-    border-inline-start: 1px solid color-mix(in srgb, var(--admin-user-badge-edge) 72%, transparent);
-}
-
-.admin-notification-ticker__counter {
+.admin-header-feedback__counter {
+    position: absolute;
+    top: 50%;
+    right: .65rem;
     display: inline-grid;
     min-width: 1.65rem;
     height: 1.65rem;
@@ -112,26 +91,27 @@
     font-weight: 650;
     line-height: 1;
     white-space: nowrap;
+    translate: 0 -50%;
 }
 
-.admin-notification-ticker__counter[hidden] {
+.admin-header-feedback__counter[hidden] {
     display: none;
 }
 
 @media (max-width: 640px) {
-    .admin-notification-ticker__message {
-        grid-template-columns: minmax(0, 1fr) 2.75rem;
+    .admin-header-feedback {
+        inset-inline: calc(var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap));
     }
 
-    .admin-notification-ticker__content {
-        padding-inline: .7rem .5rem;
+    .admin-header-feedback__content {
+        padding-inline: .7rem 3.15rem;
     }
 
-    .admin-notification-ticker__body {
+    .admin-header-feedback__body {
         display: none;
     }
 
-    .admin-notification-ticker__counter-slot {
-        width: 2.75rem;
+    .admin-header-feedback__counter {
+        right: .5rem;
     }
 }
