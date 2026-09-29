@@ -20,6 +20,12 @@
                     <span data-admin-notification-body></span>
                 </div>
             </div>
+            <span
+                class="admin-notification-ticker__pending"
+                data-admin-notification-pending
+                aria-hidden="true"
+                hidden
+            ></span>
             <button
                 type="button"
                 class="admin-notification-ticker__dismiss"
