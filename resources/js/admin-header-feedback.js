@@ -5,7 +5,6 @@ function runtime() {
         current: null,
         additionalCount: 0,
         listenerRegistered: false,
-        boundRoot: null,
     };
 
     return window[RUNTIME_KEY];
@@ -102,10 +101,6 @@ export function initializeAdminHeaderFeedback() {
     const element = root();
     if (!element) return;
 
-    if (state.boundRoot !== element) {
-        state.boundRoot = element;
-        receiveInitialFeedback(element);
-    }
-
+    receiveInitialFeedback(element);
     render();
 }
