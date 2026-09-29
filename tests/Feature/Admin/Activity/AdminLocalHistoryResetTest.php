@@ -9,6 +9,7 @@ use App\Models\AuditEvent;
 use App\Models\SiteSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
@@ -104,4 +105,17 @@ it('clears disposable admin history without deleting editorial or publication co
         ->and(DB::table('admin_action_stats')->count())->toBe(0)
         ->and(DB::table('publication_event_states')->count())->toBe(0)
         ->and(DB::table('publication_checkpoint_events')->count())->toBe(0);
+
+    $postResetEventId = DB::table('audit_events')->insertGetId([
+        'admin_user_id' => $actor->getKey(),
+        'action' => 'local_history_reset.guard_check',
+        'entity_type' => 'system',
+        'entity_id' => 1,
+        'occurred_at' => now(),
+        'request_id' => null,
+        'metadata' => null,
+    ]);
+
+    expect(fn () => DB::table('audit_events')->where('id', $postResetEventId)->delete())
+        ->toThrow(QueryException::class);
 });
