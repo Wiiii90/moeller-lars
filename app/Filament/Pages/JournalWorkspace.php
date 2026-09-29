@@ -189,7 +189,10 @@ final class JournalWorkspace extends Page
         }
         $post = $this->post((int) $id);
         if (app(JournalEntryOrderService::class)->moveToPosition($post, $position)) {
-            app(AdminNotifier::class)->transient()->title('Journal order updated')->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Journal order updated',
+                status: 'success',
+            );
         }
         $this->loadPosts(false);
     }
@@ -201,7 +204,10 @@ final class JournalWorkspace extends Page
         }
         $entry = $this->exhibition((int) $id);
         if (app(JournalEntryOrderService::class)->moveToPosition($entry, $position)) {
-            app(AdminNotifier::class)->transient()->title('Exhibition order updated')->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Exhibition order updated',
+                status: 'success',
+            );
         }
         $this->loadExhibitions(false);
     }
@@ -231,7 +237,10 @@ final class JournalWorkspace extends Page
     public function movePost(int $id, string $direction): void
     {
         if (app(BlogEditorialService::class)->move($this->post($id), $direction)) {
-            app(AdminNotifier::class)->transient()->title('Journal order updated')->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Journal order updated',
+                status: 'success',
+            );
         }
         $this->loadPosts(false);
     }
@@ -239,7 +248,10 @@ final class JournalWorkspace extends Page
     public function moveExhibition(int $id, string $direction): void
     {
         if (app(ExhibitionEditorialService::class)->move($this->exhibition($id), $direction)) {
-            app(AdminNotifier::class)->transient()->title('Exhibition order updated')->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Exhibition order updated',
+                status: 'success',
+            );
         }
         $this->loadExhibitions(false);
     }
@@ -386,7 +398,10 @@ final class JournalWorkspace extends Page
                 $this->loadJournalContext($updated);
                 $this->reloadEntries();
                 if ($updated->wasChanged()) {
-                    app(AdminNotifier::class)->transient()->title('Journal settings saved')->success()->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Journal settings saved',
+                        status: 'success',
+                    );
                 }
             });
 
@@ -409,7 +424,10 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadPosts();
-                app(AdminNotifier::class)->transient()->title('Post draft created')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Post draft created',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::create($action, 'Create draft', AdminDialogSize::Large);
@@ -440,7 +458,10 @@ final class JournalWorkspace extends Page
                 $changed = $before !== $this->journalEntryMutationState($updated);
                 $this->loadPosts(false);
                 if ($changed) {
-                    app(AdminNotifier::class)->transient()->title('Post saved')->success()->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Post saved',
+                        status: 'success',
+                    );
                 }
             });
 
@@ -462,7 +483,10 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadPosts();
-                app(AdminNotifier::class)->transient()->title('Publication scheduled')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Publication scheduled',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::command($action, 'Schedule publication');
@@ -484,7 +508,10 @@ final class JournalWorkspace extends Page
                     return;
                 }
                 $this->loadExhibitions();
-                app(AdminNotifier::class)->transient()->title('Exhibition created')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Exhibition created',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::create($action, 'Create exhibition', AdminDialogSize::Large);
@@ -515,7 +542,10 @@ final class JournalWorkspace extends Page
                 $changed = $before !== $this->journalEntryMutationState($updated);
                 $this->loadExhibitions(false);
                 if ($changed) {
-                    app(AdminNotifier::class)->transient()->title('Exhibition saved')->success()->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Exhibition saved',
+                        status: 'success',
+                    );
                 }
             });
 
@@ -553,7 +583,10 @@ final class JournalWorkspace extends Page
 
                     return;
                 }
-                app(AdminNotifier::class)->transient()->title(ucfirst($type).' deleted')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: ucfirst($type).' deleted',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::confirm(
@@ -872,7 +905,10 @@ final class JournalWorkspace extends Page
     {
         try {
             $action();
-            app(AdminNotifier::class)->transient()->title($successTitle)->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: $successTitle,
+                status: 'success',
+            );
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Journal entry unchanged', $exception);
         }
@@ -937,7 +973,11 @@ final class JournalWorkspace extends Page
     private function notifyValidationFailure(string $title, ValidationException $exception): void
     {
         $message = collect($exception->errors())->flatten()->first();
-        app(AdminNotifier::class)->transient()->title($title)->body(is_string($message) ? $message : 'The requested Journal change is not valid.')->danger()->send();
+        app(AdminNotifier::class)->feedback(
+            title: $title,
+            body: is_string($message) ? $message : 'The requested Journal change is not valid.',
+            status: 'danger',
+        );
     }
 
     private function selectedPosts(): EloquentCollection
