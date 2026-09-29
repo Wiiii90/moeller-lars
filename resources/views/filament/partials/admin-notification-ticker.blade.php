@@ -5,6 +5,7 @@
 <div
     class="admin-notification-ticker"
     data-admin-notification-ticker
+    data-status="info"
     role="status"
     aria-live="polite"
     aria-atomic="true"
@@ -14,20 +15,25 @@
 
     <div class="admin-notification-ticker__viewport">
         <div class="admin-notification-ticker__message">
-            <div class="admin-notification-ticker__runway" data-admin-notification-runway>
-                <div class="admin-notification-ticker__stream" data-admin-notification-stream></div>
+            <div class="admin-notification-ticker__content">
+                <strong
+                    class="admin-notification-ticker__title"
+                    data-admin-notification-title
+                ></strong>
+                <span
+                    class="admin-notification-ticker__body"
+                    data-admin-notification-body
+                    hidden
+                ></span>
             </div>
-            <button
-                type="button"
-                class="admin-notification-ticker__dismiss"
-                data-admin-notification-dismiss
-                aria-label="Dismiss notification"
-                title="Dismiss notification"
-            >
-                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                    <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke-linecap="round" />
-                </svg>
-            </button>
+
+            <div class="admin-notification-ticker__counter-slot" aria-hidden="true">
+                <span
+                    class="admin-notification-ticker__counter"
+                    data-admin-notification-counter
+                    hidden
+                ></span>
+            </div>
         </div>
     </div>
 </div>
