@@ -4,9 +4,11 @@ use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Admin\AdminUndoService;
+use App\Domain\Artwork\ArtworkDraftService;
 use App\Domain\Content\BlogEditorialService;
 use App\Filament\Support\AdminActivityFeed;
 use App\Models\AdminActionReceipt;
+use App\Models\Artwork;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\PublicContentSetting;
@@ -22,6 +24,7 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
 
     $settings = PublicContentSetting::general();
     $beforeEmail = $settings->getAttribute('public_email');
+    $beforeEmailLabel = $beforeEmail === null ? 'None' : (string) $beforeEmail;
 
     app(AdminSettingsService::class)->updatePublicContent($settings, [
         'public_email' => 'undo-snapshot@example.test',
@@ -40,7 +43,7 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
 
     $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
     expect($projected)->not->toBeNull()
-        ->and($projected['action'])->toBe('Changed Public email')
+        ->and($projected['action'])->toBe('Changed Public email: '.$beforeEmailLabel.' → undo-snapshot@example.test')
         ->and($projected['change_summary']['items'][0]['label'] ?? null)->toBe('Public email')
         ->and($projected['change_summary']['items'][0]['after'] ?? null)->toBe('undo-snapshot@example.test')
         ->and($projected['undo']['id'] ?? null)->toBe((int) $receipt->getKey())
@@ -61,7 +64,8 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
         ->and($undoMetadata['change_summary']['items'][0]['after'] ?? null)->toBe($beforeEmail === null ? 'None' : (string) $beforeEmail);
 
     $projectedUndo = app(AdminActivityFeed::class)->event((int) $undoEvent->getKey(), $actor);
-    expect($projectedUndo['action'] ?? null)->toBe('Restored Public email');
+    expect($projectedUndo['action'] ?? null)
+        ->toBe('Restored Public email: undo-snapshot@example.test → '.$beforeEmailLabel);
 });
 
 it('names multiple changed fields instead of a generic settings activity', function (): void {
@@ -86,10 +90,48 @@ it('names multiple changed fields instead of a generic settings activity', funct
     expect($projected['action'] ?? null)
         ->toContain('Public email')
         ->toContain('Public email visibility')
+        ->toContain('precise-activity@example.test')
+        ->toContain($beforeVisibility ? 'On → Off' : 'Off → On')
         ->not->toBe('Edited website settings')
         ->and($items->get('Public email')['after'] ?? null)->toBe('precise-activity@example.test')
         ->and($items->get('Public email visibility')['before'] ?? null)->toBe($beforeVisibility ? 'On' : 'Off')
         ->and($items->get('Public email visibility')['after'] ?? null)->toBe($beforeVisibility ? 'Off' : 'On');
+});
+
+it('preserves the historical target label after a deleted record disappears', function (): void {
+    $actor = User::factory()->admin()->create();
+    $this->actingAs($actor);
+
+    $galleryId = (int) DB::table('artwork_categories')->insertGetId([
+        'slug' => 'activity-delete-target-gallery',
+        'name' => 'Activity delete target Gallery',
+        'show_on_home' => false,
+    ]);
+    $artworkId = (int) DB::table('artworks')->insertGetId([
+        'artwork_category_id' => $galleryId,
+        'slug' => 'activity-delete-target',
+        'title' => 'Vanishing Activity Artwork',
+        'state' => 'draft',
+        'position' => 0,
+        'date_precision' => 'unknown',
+    ]);
+
+    app(ArtworkDraftService::class)->delete(Artwork::query()->findOrFail($artworkId));
+
+    expect(Artwork::query()->whereKey($artworkId)->exists())->toBeFalse();
+
+    $event = AuditEvent::query()
+        ->where('action', 'artwork.deleted')
+        ->where('entity_id', $artworkId)
+        ->latest('id')
+        ->firstOrFail();
+    $metadata = $event->getAttribute('metadata');
+    $projected = app(AdminActivityFeed::class)->event((int) $event->getKey(), $actor);
+
+    expect($metadata['target_label'] ?? null)->toBe('Vanishing Activity Artwork')
+        ->and($projected['target'] ?? null)->toBe('Vanishing Activity Artwork')
+        ->and($projected['action'] ?? null)->toBe('Deleted artwork')
+        ->and($projected['url'] ?? null)->toBeNull();
 });
 
 it('hides an older snapshot Undo after the same row changes again', function (): void {
