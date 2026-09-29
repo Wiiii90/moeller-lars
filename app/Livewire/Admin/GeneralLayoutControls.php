@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Domain\Admin\AdminNotifier;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Content\PublicAppearance;
 use App\Models\PublicContentSetting;
@@ -42,7 +43,25 @@ final class GeneralLayoutControls extends Component
 
     private function persist(string $field, int $value): void
     {
-        app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [$field => $value]);
+        $updated = app(AdminSettingsService::class)->updatePublicContent(
+            PublicContentSetting::general(),
+            [$field => $value],
+        );
+
+        if (! $updated->wasChanged()) {
+            return;
+        }
+
         $this->dispatch('general-appearance-updated');
+
+        app(AdminNotifier::class)->feedback(
+            title: 'Changes saved',
+            body: match ($field) {
+                'public_page_width' => 'Public page width updated.',
+                'public_content_padding' => 'Public content padding updated.',
+                default => 'Public layout updated.',
+            },
+            status: 'success',
+        );
     }
 }
