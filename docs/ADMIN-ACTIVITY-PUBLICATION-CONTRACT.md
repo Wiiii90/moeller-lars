@@ -33,6 +33,7 @@ This is permutation-state reduction, not text deduplication. In particular:
 - a single drag/reorder that rewrites several row positions still creates one logical ordering Activity event;
 - pagination and Activity aggregates operate on the reduced projection rather than hiding duplicate rows only after a page has been loaded;
 - historical ordering events that predate canonical before/after hashes remain conservative singleton history rather than being grouped by timing heuristics;
+- a single non-identity reorder may expose snapshot Undo when its complete persisted mutation is captured safely;
 - a multi-step non-identity projection does not expose the latest raw event's single-step Undo as though it reverted the complete net permutation.
 
 The ordering projection never updates or deletes `audit_events`; it is a derived read model over immutable evidence.
