@@ -189,7 +189,7 @@ final class AdminOrderingState
             $blocks = $settings->components();
             $index = (int) $matches[3];
             $block = $blocks[$index] ?? null;
-            if (! is_array($block)) {
+            if (! is_array($block) || ($block['type'] ?? null) !== $matches[1]) {
                 return null;
             }
 
@@ -378,7 +378,7 @@ final class AdminOrderingState
         $settings = CustomPageSetting::query()->where('site_section_id', $sectionId)->lockForUpdate()->firstOrFail();
         $blocks = $settings->components();
         $block = $blocks[$index] ?? null;
-        if (! is_array($block)) {
+        if (! is_array($block) || ($block['type'] ?? null) !== $kind) {
             $this->conflict();
         }
 
