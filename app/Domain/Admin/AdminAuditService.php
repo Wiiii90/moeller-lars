@@ -103,17 +103,15 @@ class AdminAuditService
         $metadata ??= [];
         foreach ($metadata as $key => $value) {
             $validReference = in_array($key, [
-                'artwork_id', 'media_asset_id', 'artwork_media_id', 'neighbor_artwork_media_id',
+                'artwork_id', 'media_asset_id', 'artwork_media_id',
                 'previous_artwork_media_id', 'next_artwork_media_id', 'site_section_id',
                 'source_publication_checkpoint_id', 'source_audit_event_id',
             ], true) && is_int($value) && $value > 0;
-            $validPosition = in_array($key, ['position', 'from_position', 'to_position'], true)
-                && is_int($value) && $value >= 0;
-            $validDirection = $key === 'direction' && in_array($value, ['up', 'down'], true);
+            $validPosition = $key === 'position' && is_int($value) && $value >= 0;
             $validReason = $key === 'reason' && is_string($value) && in_array($value, self::REASONS, true);
             $validOrdering = $key === 'ordering' && $this->validOrderingMetadata($value);
 
-            if (! $validReference && ! $validPosition && ! $validDirection && ! $validReason && ! $validOrdering) {
+            if (! $validReference && ! $validPosition && ! $validReason && ! $validOrdering) {
                 throw new InvalidArgumentException('Invalid audit metadata.');
             }
         }
