@@ -258,32 +258,38 @@ final class JournalWorkspace extends Page
 
     public function publishPost(int $id): void
     {
-        $this->runEntryAction('Post published', fn () => app(BlogEditorialService::class)->publish($this->post($id)));
+        $post = $this->post($id);
+        $this->runEntryAction('Post published', $post, fn (BlogPost $target) => app(BlogEditorialService::class)->publish($target));
     }
 
     public function unpublishPost(int $id): void
     {
-        $this->runEntryAction('Post unpublished', fn () => app(BlogEditorialService::class)->unpublish($this->post($id)));
+        $post = $this->post($id);
+        $this->runEntryAction('Post unpublished', $post, fn (BlogPost $target) => app(BlogEditorialService::class)->unpublish($target));
     }
 
     public function archivePost(int $id): void
     {
-        $this->runEntryAction('Post archived', fn () => app(BlogEditorialService::class)->archive($this->post($id)));
+        $post = $this->post($id);
+        $this->runEntryAction('Post archived', $post, fn (BlogPost $target) => app(BlogEditorialService::class)->archive($target));
     }
 
     public function restorePostDraft(int $id): void
     {
-        $this->runEntryAction('Post restored to draft', fn () => app(BlogEditorialService::class)->restoreDraft($this->post($id)));
+        $post = $this->post($id);
+        $this->runEntryAction('Post restored to draft', $post, fn (BlogPost $target) => app(BlogEditorialService::class)->restoreDraft($target));
     }
 
     public function publishExhibition(int $id): void
     {
-        $this->runEntryAction('Exhibition published', fn () => app(ExhibitionEditorialService::class)->publish($this->exhibition($id)));
+        $entry = $this->exhibition($id);
+        $this->runEntryAction('Exhibition published', $entry, fn (Exhibition $target) => app(ExhibitionEditorialService::class)->publish($target));
     }
 
     public function unpublishExhibition(int $id): void
     {
-        $this->runEntryAction('Exhibition unpublished', fn () => app(ExhibitionEditorialService::class)->unpublish($this->exhibition($id)));
+        $entry = $this->exhibition($id);
+        $this->runEntryAction('Exhibition unpublished', $entry, fn (Exhibition $target) => app(ExhibitionEditorialService::class)->unpublish($target));
     }
 
     public function moveSelectedEntries(string $direction): void
@@ -901,14 +907,20 @@ final class JournalWorkspace extends Page
         return $all ? $selectedIds->reject(fn (int $id): bool => in_array($id, $visible, true))->values()->all() : $selectedIds->merge($visible)->unique()->values()->all();
     }
 
-    private function runEntryAction(string $successTitle, callable $action): void
+    private function runEntryAction(string $successTitle, BlogPost|Exhibition $entry, callable $action): void
     {
         try {
-            $action();
-            app(AdminNotifier::class)->feedback(
-                title: $successTitle,
-                status: 'success',
-            );
+            $before = $this->journalEntryMutationState($entry);
+            $updated = $action($entry);
+            if (
+                ($updated instanceof BlogPost || $updated instanceof Exhibition)
+                && $before !== $this->journalEntryMutationState($updated)
+            ) {
+                app(AdminNotifier::class)->feedback(
+                    title: $successTitle,
+                    status: 'success',
+                );
+            }
         } catch (ValidationException $exception) {
             $this->notifyValidationFailure('Journal entry unchanged', $exception);
         }
