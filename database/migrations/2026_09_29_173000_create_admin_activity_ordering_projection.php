@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    private const COALESCE_SECONDS = 600;
-
     public function up(): void
     {
         Schema::create('admin_activity_ordering_groups', function (Blueprint $table): void {
