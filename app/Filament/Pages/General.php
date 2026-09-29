@@ -589,7 +589,7 @@ final class General extends Page
                 $this->dispatch('general-appearance-updated');
             }
 
-            app(AdminNotifier::class)->toast(
+            app(AdminNotifier::class)->feedback(
                 'Changes saved',
                 $this->persistenceFeedbackLabel($field).' updated.',
                 'success',
@@ -603,7 +603,7 @@ final class General extends Page
             }
 
             $message = collect($exception->errors())->flatten()->first();
-            app(AdminNotifier::class)->toast(
+            app(AdminNotifier::class)->feedback(
                 'Change not saved',
                 is_string($message) ? $message : 'This setting could not be saved.',
                 'danger',
@@ -612,7 +612,7 @@ final class General extends Page
             report($exception);
             $message = 'This setting could not be saved. Please try again.';
             $this->addError('data.'.$field, $message);
-            app(AdminNotifier::class)->toast('Change not saved', $message, 'danger');
+            app(AdminNotifier::class)->feedback('Change not saved', $message, 'danger');
         }
     }
 
@@ -781,7 +781,7 @@ final class General extends Page
                 ['social_links' => $links],
             );
             $this->settingsRecord = null;
-            app(AdminNotifier::class)->toast('Social links updated', status: 'success');
+            app(AdminNotifier::class)->feedback('Social links updated', status: 'success');
         } catch (ValidationException $exception) {
             $mapped = [];
             foreach ($exception->errors() as $key => $messages) {
