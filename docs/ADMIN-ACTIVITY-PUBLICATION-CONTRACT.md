@@ -22,7 +22,7 @@ Ordering has two deliberately different representations:
 - raw `audit_events` retain every successful persisted reorder mutation for factual history;
 - `AdminActivityFeed` presents contiguous reorder mutations as one logical Activity sequence through the persistent ordering projection.
 
-A reorder continues the latest open ordering projection for the same admin, action and ordering scope only when the previous end-state hash exactly equals the new mutation's start-state hash. There is no time window. Publication of the representative event freezes that projection as historical state. A different scope/action, a different actor, a discontinuous state or a previously completed identity cycle starts a new projection.
+A reorder continues the latest open ordering projection for the same admin, action and ordering scope only when the previous complete end-state exactly equals the new mutation's complete start-state. There is no time window. Publication of the representative event freezes that projection as historical state. A different scope/action, a different actor, a discontinuous state or a previously completed identity cycle starts a new projection.
 
 This is permutation-state reduction, not text deduplication. In particular:
 
@@ -32,7 +32,7 @@ This is permutation-state reduction, not text deduplication. In particular:
 - a compacted row targets the ordering scope itself (for example Public navigation, the Journal page, Gallery, Artwork, Home or Custom Page) rather than pretending the last moved child is the whole operation;
 - a single drag/reorder that rewrites several row positions still creates one logical ordering Activity event;
 - pagination and Activity aggregates operate on the reduced projection rather than hiding duplicate rows only after a page has been loaded;
-- historical ordering events that predate canonical before/after hashes remain conservative singleton history rather than being grouped by timing heuristics;
+- historical ordering events with earlier hash-only evidence are reduced by hash continuity; events without canonical state/hash evidence remain conservative singleton history rather than being grouped by timing heuristics;
 - a single non-identity reorder may expose snapshot Undo when its complete persisted mutation is captured safely;
 - a multi-step non-identity projection does not expose the latest raw event's single-step Undo as though it reverted the complete net permutation.
 
