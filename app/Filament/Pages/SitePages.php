@@ -298,16 +298,18 @@ final class SitePages extends Page
                         : null;
 
                     try {
-                        app(SiteSectionEditorialService::class)->updatePlacement(
+                        $updated = app(SiteSectionEditorialService::class)->updatePlacement(
                             $section,
                             (string) $section->getAttribute('state'),
                             (bool) $section->getAttribute('show_in_navigation'),
                             $parentId,
                         );
-                        app(AdminNotifier::class)->feedback(
-                            title: 'Page placement updated',
-                            status: 'success',
-                        );
+                        if ($updated->wasChanged()) {
+                            app(AdminNotifier::class)->feedback(
+                                title: 'Page placement updated',
+                                status: 'success',
+                            );
+                        }
                     } catch (ValidationException $exception) {
                         $this->validationNotification('Page placement unchanged', $exception);
                     }
@@ -404,11 +406,13 @@ final class SitePages extends Page
         try {
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
-            app(SiteSectionEditorialService::class)->convertType($section, $targetType);
-            app(AdminNotifier::class)->feedback(
-                title: 'Page type updated',
-                status: 'success',
-            );
+            if ($section->nodeType()->value !== $targetType) {
+                app(SiteSectionEditorialService::class)->convertType($section, $targetType);
+                app(AdminNotifier::class)->feedback(
+                    title: 'Page type updated',
+                    status: 'success',
+                );
+            }
         } catch (ValidationException $exception) {
             $this->validationNotification('Page type unchanged', $exception);
         }
@@ -421,11 +425,13 @@ final class SitePages extends Page
         try {
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
-            app(SiteSectionEditorialService::class)->updateJournalTemplate($section, $template);
-            app(AdminNotifier::class)->feedback(
-                title: 'Journal template updated',
-                status: 'success',
-            );
+            if ($section->journalTemplate()?->value !== $template) {
+                app(SiteSectionEditorialService::class)->updateJournalTemplate($section, $template);
+                app(AdminNotifier::class)->feedback(
+                    title: 'Journal template updated',
+                    status: 'success',
+                );
+            }
         } catch (ValidationException $exception) {
             $this->validationNotification('Journal template unchanged', $exception);
         }
@@ -884,6 +890,10 @@ final class SitePages extends Page
 
     private function bulkNotification(string $action, int $changed, int $blocked): void
     {
+        if ($changed === 0 && $blocked === 0) {
+            return;
+        }
+
         app(AdminNotifier::class)->feedback(
             title: $action.' selection complete',
             body: $blocked > 0
