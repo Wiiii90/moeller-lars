@@ -14,6 +14,8 @@ use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use App\Models\AdminActivityOrderingEvent;
+use App\Models\AdminActivityOrderingGroup;
 use App\Models\ArtworkMaterialPreset;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
@@ -56,7 +58,7 @@ final class AdminActivityFeed
         ?int $hour = null,
     ): array {
         $query = $this->filteredQuery($area, $family, $days, $search, $date, $hour)
-            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState'])
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState', 'activityOrderingEvent.group'])
             ->orderByDesc('occurred_at')
             ->orderByDesc('id');
 
@@ -74,14 +76,29 @@ final class AdminActivityFeed
     {
         /** @var AuditEvent|null $event */
         $event = AuditEvent::query()
-            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState'])
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState', 'activityOrderingEvent.group'])
             ->find($eventId);
 
         if (! $event instanceof AuditEvent) {
             return null;
         }
 
-        return $this->project(new EloquentCollection([$event]), $actor)[0] ?? null;
+        $orderingProjection = $event->getRelationValue('activityOrderingEvent');
+        $orderingGroup = $orderingProjection instanceof AdminActivityOrderingEvent
+            ? $orderingProjection->getRelationValue('group')
+            : null;
+        if (
+            $orderingGroup instanceof AdminActivityOrderingGroup
+            && (int) $orderingGroup->getAttribute('last_audit_event_id') !== (int) $event->getKey()
+        ) {
+            $event = AuditEvent::query()
+                ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState', 'activityOrderingEvent.group'])
+                ->find((int) $orderingGroup->getAttribute('last_audit_event_id'));
+        }
+
+        return $event instanceof AuditEvent
+            ? ($this->project(new EloquentCollection([$event]), $actor)[0] ?? null)
+            : null;
     }
 
     public function exists(): bool
@@ -237,7 +254,7 @@ final class AdminActivityFeed
     {
         /** @var EloquentCollection<int, AuditEvent> $events */
         $events = $this->filteredQuery()
-            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState'])
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState', 'activityOrderingEvent.group'])
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
             ->limit($limit)
@@ -254,7 +271,24 @@ final class AdminActivityFeed
         ?string $date = null,
         ?int $hour = null,
     ): Builder {
-        $query = AuditEvent::query();
+        $query = AuditEvent::query()
+            ->where(function (Builder $activityQuery): void {
+                $activityQuery
+                    ->whereNotExists(function ($projectionQuery): void {
+                        $projectionQuery
+                            ->selectRaw('1')
+                            ->from('admin_activity_ordering_events as ordering_event')
+                            ->whereColumn('ordering_event.audit_event_id', 'audit_events.id');
+                    })
+                    ->orWhereExists(function ($projectionQuery): void {
+                        $projectionQuery
+                            ->selectRaw('1')
+                            ->from('admin_activity_ordering_events as ordering_event')
+                            ->join('admin_activity_ordering_groups as ordering_group', 'ordering_group.id', '=', 'ordering_event.group_id')
+                            ->whereColumn('ordering_event.audit_event_id', 'audit_events.id')
+                            ->whereColumn('ordering_group.last_audit_event_id', 'audit_events.id');
+                    });
+            });
         $driver = $query->getModel()->getConnection()->getDriverName();
         $dateExpression = match ($driver) {
             'pgsql' => 'occurred_at::date',
@@ -373,13 +407,31 @@ final class AdminActivityFeed
             $adminUser = $event->getRelationValue('adminUser');
             $receipt = $undoReceipts[(int) $event->getKey()] ?? null;
             $undo = null;
+            $orderingProjection = $event->getRelationValue('activityOrderingEvent');
+            $orderingGroup = $orderingProjection instanceof AdminActivityOrderingEvent
+                ? $orderingProjection->getRelationValue('group')
+                : null;
+            $orderingCount = $orderingGroup instanceof AdminActivityOrderingGroup
+                ? (int) $orderingGroup->getAttribute('event_count')
+                : 1;
+            $orderingIdentity = $orderingGroup instanceof AdminActivityOrderingGroup
+                && $orderingGroup->returnedToIdentity();
+
+            if ($orderingCount > 1) {
+                $receipt = null;
+            }
+
             $checkpointEvent = $event->getRelationValue('publicationCheckpointEvent');
             $checkpoint = $checkpointEvent instanceof PublicationCheckpointEvent
                 ? $checkpointEvent->getRelationValue('checkpoint')
                 : null;
             $publicationEventState = $event->getRelationValue('publicationEventState');
-            $changeSummary = $this->changeSummary($metadata['change_summary'] ?? null);
-            $actionLabel = $this->activityLabel($actionKey, $definition, $changeSummary);
+            $changeSummary = $orderingCount > 1
+                ? null
+                : $this->changeSummary($metadata['change_summary'] ?? null);
+            $actionLabel = $orderingCount > 1
+                ? $this->orderingActivityLabel($definition['label'], $orderingCount, $orderingIdentity)
+                : $this->activityLabel($actionKey, $definition, $changeSummary);
 
             if (is_array($receipt)) {
                 $inverseLabel = (string) $receipt['inverse_label'];
@@ -405,6 +457,15 @@ final class AdminActivityFeed
                 'timestamp' => $occurredAt->format('Y-m-d H:i'),
                 'metadata' => $metadata,
                 'change_summary' => $changeSummary,
+                'ordering_group' => $orderingGroup instanceof AdminActivityOrderingGroup
+                    ? [
+                        'event_count' => $orderingCount,
+                        'item_count' => (int) $orderingGroup->getAttribute('item_count'),
+                        'returned_to_identity' => $orderingIdentity,
+                        'started_at' => $orderingGroup->getAttribute('started_at')?->format('Y-m-d H:i'),
+                        'ended_at' => $orderingGroup->getAttribute('ended_at')?->format('Y-m-d H:i'),
+                    ]
+                    : null,
                 'publication_status' => $checkpoint !== null
                     ? 'committed'
                     : ($publicationEventState instanceof PublicationEventState
@@ -417,6 +478,15 @@ final class AdminActivityFeed
                 'undo' => $undo,
             ];
         })->values()->all();
+    }
+
+    private function orderingActivityLabel(string $label, int $eventCount, bool $returnedToIdentity): string
+    {
+        if ($returnedToIdentity) {
+            return $label.' · returned to starting order after '.$eventCount.' changes';
+        }
+
+        return $label.' · '.$eventCount.' changes combined';
     }
 
     /**
