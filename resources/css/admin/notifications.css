@@ -37,7 +37,7 @@
 .admin-notification-ticker__message {
     box-sizing: border-box;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto var(--admin-header-control-size);
+    grid-template-columns: minmax(0, 1fr) var(--admin-header-control-size);
     align-items: stretch;
     overflow: hidden;
     border-radius: .28rem;
@@ -81,13 +81,18 @@
     );
 }
 
-.admin-notification-ticker__copy {
+.admin-notification-ticker__stream {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+}
+
+.admin-notification-ticker__item {
     position: absolute;
     top: 50%;
     left: 0;
     display: inline-flex;
     width: max-content;
-    max-width: none;
     min-width: max-content;
     gap: .7rem;
     align-items: baseline;
@@ -97,53 +102,39 @@
     will-change: transform;
 }
 
-.admin-notification-ticker__copy strong,
-.admin-notification-ticker__copy span {
+.admin-notification-ticker__item strong,
+.admin-notification-ticker__item span {
     display: inline-block;
     white-space: nowrap;
 }
 
-.admin-notification-ticker__copy strong {
+.admin-notification-ticker__item strong {
     color: var(--admin-text);
     font-size: var(--admin-font-size-table-support);
     font-weight: 650;
     letter-spacing: -.01em;
 }
 
-.admin-notification-ticker__copy span {
+.admin-notification-ticker__item-body {
     color: var(--admin-muted);
     font-size: var(--admin-font-size-table-compact);
 }
 
-.admin-notification-ticker[data-status="warning"] .admin-notification-ticker__copy strong {
+.admin-notification-ticker__item[data-status="warning"] strong {
     color: var(--admin-accent-strong);
 }
 
-.admin-notification-ticker[data-status="danger"] .admin-notification-ticker__copy strong {
+.admin-notification-ticker__item[data-status="danger"] strong {
     color: var(--admin-danger);
 }
 
-.admin-notification-ticker__pending {
-    display: inline-flex;
-    min-width: 1.6rem;
-    height: 100%;
-    padding-inline: .38rem;
-    align-items: center;
-    justify-content: center;
-    border-inline-start: 1px solid color-mix(in srgb, var(--admin-user-badge-edge) 72%, transparent);
-    color: var(--admin-muted);
-    font-size: .62rem;
-    font-weight: 650;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: .02em;
-}
-
-.dark .admin-notification-ticker__pending {
-    color: color-mix(in srgb, var(--admin-user-badge-edge) 72%, var(--admin-text));
-}
-
-.admin-notification-ticker__pending[hidden] {
-    display: none;
+.admin-notification-ticker__separator {
+    display: inline-block;
+    padding-inline: .28rem .12rem;
+    color: color-mix(in srgb, var(--admin-muted) 72%, transparent);
+    font-size: .78rem;
+    font-weight: 500;
+    line-height: 1;
 }
 
 .admin-notification-ticker__dismiss {
@@ -184,12 +175,16 @@
 }
 
 @media (max-width: 640px) {
-    .admin-notification-ticker__copy {
+    .admin-notification-ticker__item {
         gap: .55rem;
     }
 
-    .admin-notification-ticker__copy span {
+    .admin-notification-ticker__item-body {
         display: none;
+    }
+
+    .admin-notification-ticker__separator {
+        padding-inline: .2rem .05rem;
     }
 }
 
