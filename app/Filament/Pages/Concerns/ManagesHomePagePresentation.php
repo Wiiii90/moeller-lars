@@ -31,7 +31,10 @@ trait ManagesHomePagePresentation
             }
 
             if (app(HomeSettingsDialog::class)->changeTemplate($homeTemplate)) {
-                app(AdminNotifier::class)->transient()->title('Home template updated')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Home template updated',
+                    status: 'success',
+                );
             }
         } catch (ValidationException $exception) {
             $this->validationNotification('Home template unchanged', $exception);
@@ -56,7 +59,10 @@ trait ManagesHomePagePresentation
                     $changed = $dialog->save($data);
                     $this->loadSections();
                     if ($changed) {
-                        app(AdminNotifier::class)->transient()->title('Home routing updated')->success()->send();
+                        app(AdminNotifier::class)->feedback(
+                            title: 'Home routing updated',
+                            status: 'success',
+                        );
                     }
                 }),
             'Save Skip Home',
