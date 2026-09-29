@@ -71,8 +71,8 @@ class AdminAuditService
         $ordering = [
             'scope' => $scope,
             'target_label' => $this->orderingScopeTarget($scope),
-            'before_hash' => $this->orderingHash($before),
-            'after_hash' => $this->orderingHash($after),
+            'before_state' => $before,
+            'after_state' => $after,
             'item_count' => max(count($before), count($after)),
         ];
 
@@ -215,12 +215,6 @@ class AdminAuditService
         return $normalized;
     }
 
-    /** @param list<string> $state */
-    private function orderingHash(array $state): string
-    {
-        return hash('sha256', json_encode($state, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-    }
-
     private function validOrderingMetadata(mixed $value): bool
     {
         return is_array($value)
@@ -228,12 +222,25 @@ class AdminAuditService
             && trim($value['scope']) !== ''
             && mb_strlen($value['scope']) <= 240
             && (($value['target_label'] ?? null) === null || (is_string($value['target_label']) && mb_strlen($value['target_label']) <= 240))
-            && is_string($value['before_hash'] ?? null)
-            && preg_match('/^[a-f0-9]{64}$/', $value['before_hash']) === 1
-            && is_string($value['after_hash'] ?? null)
-            && preg_match('/^[a-f0-9]{64}$/', $value['after_hash']) === 1
+            && $this->validOrderingState($value['before_state'] ?? null)
+            && $this->validOrderingState($value['after_state'] ?? null)
             && is_int($value['item_count'] ?? null)
             && $value['item_count'] >= 0;
+    }
+
+    private function validOrderingState(mixed $value): bool
+    {
+        if (! is_array($value) || ! array_is_list($value)) {
+            return false;
+        }
+
+        foreach ($value as $identity) {
+            if (! is_string($identity) || $identity === '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function orderingScopeTarget(string $scope): ?string
