@@ -48,11 +48,17 @@
         inset 1px 1px 0 var(--admin-user-badge-inner),
         inset -1px -1px 0 color-mix(in srgb, var(--admin-user-badge-depth) 58%, transparent);
     opacity: 0;
-    transition: opacity 140ms ease;
+    transform: scaleY(.92);
+    transform-origin: center;
+    transition:
+        opacity 160ms ease,
+        transform 220ms cubic-bezier(.2, .75, .2, 1),
+        box-shadow 220ms ease;
 }
 
 .admin-notification-ticker.is-active .admin-notification-ticker__message {
     opacity: 1;
+    transform: scaleY(1);
 }
 
 .admin-notification-ticker.is-active.is-leaving .admin-notification-ticker__message {
@@ -87,8 +93,22 @@
     align-items: baseline;
     color: var(--admin-text);
     white-space: nowrap;
-    transform: translate3d(100%, -50%, 0);
+    transform: translate3d(var(--admin-ticker-start-x, 100%), -50%, 0);
     will-change: transform;
+}
+
+.admin-notification-ticker.is-traveling .admin-notification-ticker__copy {
+    animation: admin-notification-ticker-travel var(--admin-ticker-travel-duration, 4s) linear forwards;
+}
+
+@keyframes admin-notification-ticker-travel {
+    from {
+        transform: translate3d(var(--admin-ticker-start-x), -50%, 0);
+    }
+
+    to {
+        transform: translate3d(var(--admin-ticker-end-x), -50%, 0);
+    }
 }
 
 .admin-notification-ticker__copy strong,
@@ -187,22 +207,3 @@
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .admin-notification-ticker__message {
-        transition: none;
-    }
-
-    .admin-notification-ticker__copy {
-        left: .7rem;
-        right: .7rem;
-        width: auto;
-        min-width: 0;
-        transform: translateY(-50%);
-    }
-
-    .admin-notification-ticker__copy strong,
-    .admin-notification-ticker__copy span {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-}
