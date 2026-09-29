@@ -37,14 +37,16 @@
 .admin-notification-ticker__message {
     box-sizing: border-box;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--admin-header-control-size);
+    grid-template-columns: minmax(0, 1fr) auto var(--admin-header-control-size);
     align-items: stretch;
     overflow: hidden;
     border-radius: .28rem;
-    background: color-mix(in srgb, var(--admin-text) 3.6%, transparent);
+    background: #fff;
     box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--admin-line-strong) 58%, transparent),
-        0 1px 0 color-mix(in srgb, var(--admin-text) 4%, transparent);
+        0 0 0 1px var(--admin-user-badge-edge),
+        0 0 0 2px var(--admin-user-badge-aura),
+        inset 1px 1px 0 var(--admin-user-badge-inner),
+        inset -1px -1px 0 color-mix(in srgb, var(--admin-user-badge-depth) 58%, transparent);
     opacity: 0;
     transition: opacity 140ms ease;
 }
@@ -55,6 +57,10 @@
 
 .admin-notification-ticker.is-active.is-leaving .admin-notification-ticker__message {
     opacity: 0;
+}
+
+.dark .admin-notification-ticker__message {
+    background: rgba(20, 20, 20, .82);
 }
 
 .admin-notification-ticker__runway {
@@ -111,6 +117,25 @@
     color: var(--admin-danger);
 }
 
+.admin-notification-ticker__pending {
+    display: inline-flex;
+    min-width: 1.6rem;
+    height: 100%;
+    padding-inline: .38rem;
+    align-items: center;
+    justify-content: center;
+    border-inline-start: 1px solid color-mix(in srgb, var(--admin-user-badge-edge) 72%, transparent);
+    color: var(--admin-muted);
+    font-size: .62rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .02em;
+}
+
+.admin-notification-ticker__pending[hidden] {
+    display: none;
+}
+
 .admin-notification-ticker__dismiss {
     display: grid;
     width: var(--admin-header-control-size);
@@ -118,7 +143,7 @@
     padding: 0;
     place-items: center;
     border: 0;
-    border-inline-start: 1px solid color-mix(in srgb, var(--admin-line-strong) 58%, transparent);
+    border-inline-start: 1px solid color-mix(in srgb, var(--admin-user-badge-edge) 72%, transparent);
     border-radius: 0;
     background: transparent;
     color: var(--admin-muted);
