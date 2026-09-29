@@ -52,7 +52,7 @@ final class PublicationStateBridge extends Component
             return;
         }
 
-        app(AdminNotifier::class)->toast(
+        app(AdminNotifier::class)->feedback(
             title: 'Website committed',
             status: 'success',
         );
