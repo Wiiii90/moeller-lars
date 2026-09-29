@@ -34,6 +34,9 @@
     --admin-header-feedback-edge-gap: .75rem;
     --admin-feedback-enter-duration: 320ms;
     --admin-feedback-exit-duration: 240ms;
+    --admin-feedback-default-hold: 5200ms;
+    --admin-feedback-warning-hold: 6200ms;
+    --admin-feedback-danger-hold: 7000ms;
     --admin-status-neutral: var(--admin-faint);
     --admin-status-success: var(--admin-success);
     --admin-status-warning: var(--admin-accent);
