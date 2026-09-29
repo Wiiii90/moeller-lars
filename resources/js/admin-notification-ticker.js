@@ -207,6 +207,18 @@ function bindLayoutObserver() {
     scheduleGeometrySync();
 }
 
+function updatePendingIndicator() {
+    const state = runtime();
+    const root = ticker();
+    const indicator = root?.querySelector('[data-admin-notification-pending]');
+
+    if (!(indicator instanceof HTMLElement)) return;
+
+    const count = state.queue.length;
+    indicator.hidden = count === 0;
+    indicator.textContent = count === 0 ? '' : `+${count}`;
+}
+
 function clearTimer() {
     const state = runtime();
 
@@ -275,17 +287,18 @@ function completeCurrent({ dismissed = false } = {}) {
     state.timer = window.setTimeout(() => {
         fold();
         state.current = null;
+        updatePendingIndicator();
         state.phase = 'gap';
 
         const gap = dismissed
-            ? 80
-            : cssDuration('--admin-feedback-gap-duration', 180);
+            ? 120
+            : cssDuration('--admin-feedback-gap-duration', 280);
 
         state.timer = window.setTimeout(() => {
             state.phase = 'idle';
             state.timer = null;
             showNext();
-        }, prefersReducedMotion() ? 0 : gap);
+        }, gap);
     }, fadeDuration);
 }
 
@@ -386,6 +399,7 @@ function showNext() {
     if (!ticker()) return;
 
     state.current = state.queue.shift() ?? null;
+    updatePendingIndicator();
     if (!state.current) return;
 
     presentCurrent();
@@ -416,6 +430,7 @@ function enqueue(detail) {
         return;
     }
 
+    updatePendingIndicator();
     showNext();
 }
 
@@ -442,6 +457,7 @@ function bindRoot(root) {
     if (state.boundRoot === root) return;
 
     state.boundRoot = root;
+    updatePendingIndicator();
     root.querySelector('[data-admin-notification-dismiss]')
         ?.addEventListener('click', () => completeCurrent({ dismissed: true }));
 
