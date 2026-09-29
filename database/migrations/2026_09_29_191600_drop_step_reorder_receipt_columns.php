@@ -25,12 +25,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('admin_action_receipts', function (Blueprint $table): void {
-            if (! Schema::hasColumn('admin_action_receipts', 'neighbor_artwork_media_id')) {
-                $table->unsignedBigInteger('neighbor_artwork_media_id')->nullable();
-            }
-            if (! Schema::hasColumn('admin_action_receipts', 'inverse_direction')) {
-                $table->string('inverse_direction', 8)->nullable();
-            }
+            $table->unsignedBigInteger('neighbor_artwork_media_id')->nullable();
+            $table->string('inverse_direction', 8)->nullable();
         });
     }
 };
