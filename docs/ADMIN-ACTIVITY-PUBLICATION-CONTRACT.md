@@ -22,16 +22,18 @@ Ordering has two deliberately different representations:
 - raw `audit_events` retain every successful persisted reorder mutation for factual history;
 - `AdminActivityFeed` presents contiguous reorder mutations as one logical Activity sequence through the persistent ordering projection.
 
-A reorder joins the immediately preceding ordering sequence for the same admin only when action and ordering scope match, the previous sequence's end-state hash equals the new mutation's start-state hash, and the mutations are no more than ten minutes apart. Any intervening non-order Activity by that admin, a different scope/action, state discontinuity or a longer gap starts a new sequence.
+A reorder continues the latest open ordering projection for the same admin, action and ordering scope only when the previous end-state hash exactly equals the new mutation's start-state hash. There is no time window. Publication of the representative event freezes that projection as historical state. A different scope/action, a different actor, a discontinuous state or a previously completed identity cycle starts a new projection.
 
-This is state-aware compaction, not text deduplication. In particular:
+This is permutation-state reduction, not text deduplication. In particular:
 
-- repeated moves that eventually restore the exact starting order form one visible Activity row marked as returned to the starting order; reaching identity closes that sequence, so a later move starts a new sequence;
+- Activity represents the net permutation from the projection's starting order to its current order;
+- when the net permutation is the identity, the ordering projection has no visible Activity row at all;
+- after an identity cycle a later reorder starts a fresh projection rather than reviving the cancelled cycle;
 - a compacted row targets the ordering scope itself (for example Public navigation, the Journal page, Gallery, Artwork, Home or Custom Page) rather than pretending the last moved child is the whole operation;
 - a single drag/reorder that rewrites several row positions still creates one logical ordering Activity event;
-- pagination and Activity aggregates operate on the compacted projection rather than hiding duplicate rows only after a page has been loaded;
-- historical ordering events predating state hashes may be grouped conservatively, but the UI must not claim that a legacy sequence returned to identity when that cannot be proven;
-- a multi-step compacted ordering sequence does not expose the latest raw event's single-step Undo as though it reverted the complete sequence.
+- pagination and Activity aggregates operate on the reduced projection rather than hiding duplicate rows only after a page has been loaded;
+- historical ordering events that predate canonical before/after hashes remain conservative singleton history rather than being grouped by timing heuristics;
+- a multi-step non-identity projection does not expose the latest raw event's single-step Undo as though it reverted the complete net permutation.
 
 The ordering projection never updates or deletes `audit_events`; it is a derived read model over immutable evidence.
 
