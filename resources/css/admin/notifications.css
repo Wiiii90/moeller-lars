@@ -132,6 +132,10 @@
     letter-spacing: .02em;
 }
 
+.dark .admin-notification-ticker__pending {
+    color: color-mix(in srgb, var(--admin-user-badge-edge) 72%, var(--admin-text));
+}
+
 .admin-notification-ticker__pending[hidden] {
     display: none;
 }
