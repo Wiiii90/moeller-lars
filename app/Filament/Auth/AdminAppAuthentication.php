@@ -9,7 +9,10 @@ use Filament\Auth\MultiFactor\App\Actions\DisableAppAuthenticationAction;
 use Filament\Auth\MultiFactor\App\Actions\RegenerateAppAuthenticationRecoveryCodesAction;
 use Filament\Auth\MultiFactor\App\Actions\SetUpAppAuthenticationAction;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
 use Filament\Facades\Filament;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
 
 final class AdminAppAuthentication extends AppAuthentication
@@ -25,6 +28,7 @@ final class AdminAppAuthentication extends AppAuthentication
         return [
             SetUpAppAuthenticationAction::make($this)
                 ->action(function (array $arguments): void {
+                    /** @var Authenticatable&HasAppAuthentication&HasAppAuthenticationRecovery $user */
                     $user = Filament::auth()->user();
                     $encrypted = decrypt($arguments['encrypted']);
 
@@ -50,6 +54,7 @@ final class AdminAppAuthentication extends AppAuthentication
             RegenerateAppAuthenticationRecoveryCodesAction::make($this)
                 ->action(function (Action $action, HasActions $livewire): void {
                     $recoveryCodes = $this->generateRecoveryCodes();
+                    /** @var HasAppAuthenticationRecovery $user */
                     $user = Filament::auth()->user();
 
                     $this->saveRecoveryCodes($user, $recoveryCodes);
@@ -67,6 +72,7 @@ final class AdminAppAuthentication extends AppAuthentication
 
             DisableAppAuthenticationAction::make($this)
                 ->action(function () use ($isRecoverable): void {
+                    /** @var HasAppAuthentication&HasAppAuthenticationRecovery $user */
                     $user = Filament::auth()->user();
 
                     DB::transaction(function () use ($isRecoverable, $user): void {
