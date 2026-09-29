@@ -273,6 +273,12 @@ to bypass the guard. Local
 Feature/Pest tests and `migrate:fresh` against it are fail-closed; GitHub Actions
 uses an explicit disposable-database context instead.
 
+When disposable local admin history needs to be cleared without touching editorial content,
+Working/LIVE state or retained publication snapshots, use `php artisan admin:reset-local-history`.
+That command is local-only and clears Activity/audit history, Undo receipts, notifications/feed
+pins, ordering projections, action stats, publication event state and Audit↔Commit links. It must
+not be expanded into a general database reset.
+
 Exact transient branch SHAs, mount source paths and commands belong in the current follow-up prompt, not as timeless architecture facts in this file.
 
 ## Fast Validation preview
