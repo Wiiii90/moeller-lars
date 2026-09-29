@@ -17,7 +17,6 @@ use App\Filament\Support\AdminIcon;
 use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\SiteNavigation;
 use App\Http\Middleware\DeferMatomoReporting;
-use App\Livewire\Admin\AdminFlashNotifications;
 use BladeUI\Icons\Factory as BladeIconFactory;
 use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
@@ -38,7 +37,6 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Livewire\Livewire;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -46,7 +44,6 @@ class AdminPanelProvider extends PanelProvider
     {
         AdminControl::register();
 
-        Livewire::component('filament.livewire.notifications', AdminFlashNotifications::class);
 
         $this->callAfterResolving(BladeIconFactory::class, static function (BladeIconFactory $factory): void {
             $factory->add('admin', [
