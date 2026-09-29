@@ -652,7 +652,9 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
           && rect.height > 0;
       }) ?? null;
     const user = document.querySelector('.fi-user-menu-trigger');
-    const body = document.querySelector('[data-admin-notification-body]');
+    const body = document.querySelector(
+      '[data-notification-id="browser-acceptance-mobile"] .admin-notification-ticker__item-body',
+    );
     const stickyOwner = (() => {
       let node = tickerRoot;
       while (node instanceof HTMLElement) {
