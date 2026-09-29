@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['audit_event_id', 'group_id', 'sequence'])]
+#[Fillable(['audit_event_id', 'projection_id', 'sequence'])]
 #[Guarded([])]
-class AdminActivityOrderingEvent extends Model
+final class AdminActivityOrderingEvent extends Model
 {
     protected $primaryKey = 'audit_event_id';
 
@@ -17,8 +17,8 @@ class AdminActivityOrderingEvent extends Model
 
     public $timestamps = false;
 
-    public function group(): BelongsTo
+    public function projection(): BelongsTo
     {
-        return $this->belongsTo(AdminActivityOrderingGroup::class, 'group_id');
+        return $this->belongsTo(AdminActivityOrderingProjection::class, 'projection_id');
     }
 }
