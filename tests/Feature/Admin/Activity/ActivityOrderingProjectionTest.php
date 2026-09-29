@@ -10,6 +10,7 @@ use App\Models\AdminActivityOrderingGroup;
 use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 
 uses(RefreshDatabase::class);
 
@@ -18,7 +19,7 @@ beforeEach(function (): void {
     $this->actingAs($this->actor, 'web');
 });
 
-it('keeps raw reorder history while projecting an identity permutation cycle as one Activity row', function (): void {
+it('reduces a reorder cycle to no visible Activity when the net permutation is identity', function (): void {
     $editor = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
 
@@ -27,16 +28,26 @@ it('keeps raw reorder history while projecting an identity permutation cycle as 
     $editor->createCustomPage('Cycle C', 'cycle-c');
 
     $rawBefore = AuditEvent::query()->where('action', 'site_section.reordered')->count();
+    $baseTime = now();
 
-    expect($order->move($middle, 'down'))->toBeTrue()
-        ->and($order->move($middle, 'up'))->toBeTrue();
+    Carbon::setTestNow($baseTime);
+    expect($order->move($middle, 'down'))->toBeTrue();
+
+    Carbon::setTestNow($baseTime->copy()->addDays(2));
+    expect($order->move($middle, 'up'))->toBeTrue();
+    Carbon::setTestNow();
 
     $rawEvents = AuditEvent::query()
         ->where('action', 'site_section.reordered')
-        ->where('id', '>', 0)
         ->count();
+    $cycleFirstEventId = (int) AuditEvent::query()
+        ->where('action', 'site_section.reordered')
+        ->orderBy('id')
+        ->skip($rawBefore)
+        ->value('id');
 
-    $orderingRows = collect(app(AdminActivityFeed::class)->page(
+    $feed = app(AdminActivityFeed::class);
+    $orderingRows = collect($feed->page(
         family: 'ordering',
         perPage: 100,
         actor: $this->actor,
@@ -45,29 +56,15 @@ it('keeps raw reorder history while projecting an identity permutation cycle as 
 
     expect($rawEvents - $rawBefore)->toBe(2)
         ->and(AdminActivityOrderingGroup::query()->count())->toBe(1)
-        ->and($orderingRows)->toHaveCount(1)
-        ->and($orderingRows[0]['ordering_group']['event_count'] ?? null)->toBe(2)
-        ->and($orderingRows[0]['ordering_group']['returned_to_identity'] ?? false)->toBeTrue()
-        ->and($orderingRows[0]['undo'] ?? null)->toBeNull()
-        ->and($orderingRows[0]['target'])->toBe('Public navigation')
-        ->and($orderingRows[0]['action'])->toContain('returned to starting order after 2 changes')
-        ->and(app(AdminActivityFeed::class)->overview(family: 'ordering', days: 7)['total'])->toBe(1);
-
-    $cycleFirstEventId = (int) AuditEvent::query()
-        ->where('action', 'site_section.reordered')
-        ->where('id', '>', 0)
-        ->orderBy('id')
-        ->skip($rawBefore)
-        ->value('id');
-    $cycleRepresentativeId = (int) $orderingRows[0]['id'];
-
-    expect(app(AdminActivityFeed::class)->event($cycleFirstEventId, $this->actor)['id'] ?? null)
-        ->toBe($cycleRepresentativeId);
+        ->and(AdminActivityOrderingGroup::query()->firstOrFail()->returnedToIdentity())->toBeTrue()
+        ->and($orderingRows)->toHaveCount(0)
+        ->and($feed->overview(family: 'ordering', days: 7)['total'])->toBe(0)
+        ->and($feed->event($cycleFirstEventId, $this->actor))->toBeNull();
 
     expect($order->move($middle, 'down'))->toBeTrue();
 
     $groups = AdminActivityOrderingGroup::query()->orderBy('id')->get();
-    $orderingRows = collect(app(AdminActivityFeed::class)->page(
+    $orderingRows = collect($feed->page(
         family: 'ordering',
         perPage: 100,
         actor: $this->actor,
@@ -77,8 +74,10 @@ it('keeps raw reorder history while projecting an identity permutation cycle as 
     expect($groups)->toHaveCount(2)
         ->and($groups[0]->returnedToIdentity())->toBeTrue()
         ->and($groups[1]->returnedToIdentity())->toBeFalse()
-        ->and($orderingRows)->toHaveCount(2)
-        ->and(app(AdminActivityFeed::class)->overview(family: 'ordering', days: 7)['total'])->toBe(2);
+        ->and($orderingRows)->toHaveCount(1)
+        ->and($orderingRows[0]['target'])->toBe('Public navigation')
+        ->and($orderingRows[0]['action'])->toBe('Reordered public navigation')
+        ->and($feed->overview(family: 'ordering', days: 7)['total'])->toBe(1);
 });
 
 it('records one logical Journal reorder event even when several row positions change', function (): void {
