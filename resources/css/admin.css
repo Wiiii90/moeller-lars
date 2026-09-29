@@ -32,8 +32,6 @@
     --admin-sidebar-half-width: 9rem;
     --admin-header-control-size: 2rem;
     --admin-header-feedback-edge-gap: .75rem;
-    --admin-feedback-scroll-speed: 280;
-    --admin-feedback-scroll-speed-reduced: 210;
     --admin-status-neutral: var(--admin-faint);
     --admin-status-success: var(--admin-success);
     --admin-status-warning: var(--admin-accent);
