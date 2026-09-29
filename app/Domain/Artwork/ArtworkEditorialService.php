@@ -325,19 +325,34 @@ class ArtworkEditorialService
             $fromPosition = (int) $moving->getAttribute('position');
             $toPosition = (int) $neighbor->getAttribute('position');
 
+            $beforeOrder = $additional
+                ->pluck('id')
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->values()
+                ->all();
             $ordered = $additional->all();
             [$ordered[$index], $ordered[$target]] = [$ordered[$target], $ordered[$index]];
+            $afterOrder = array_map(static fn (ArtworkMedia $candidate): int => (int) $candidate->getKey(), $ordered);
             /** @var Collection<int, ArtworkMedia> $reordered */
             $reordered = new Collection($ordered);
             $this->normalizeAdditionalPositions($lockedArtwork, $reordered);
 
-            $this->adminAuditService->record($actor, 'artwork.additional_media_reordered', 'artwork', $lockedArtwork->getKey(), [
-                'artwork_media_id' => (int) $moving->getKey(),
-                'neighbor_artwork_media_id' => (int) $neighbor->getKey(),
-                'from_position' => $fromPosition,
-                'to_position' => $toPosition,
-                'direction' => $direction,
-            ]);
+            $this->adminAuditService->recordOrdering(
+                $actor,
+                'artwork.additional_media_reordered',
+                'artwork',
+                (int) $lockedArtwork->getKey(),
+                'artwork-media:'.(int) $lockedArtwork->getKey(),
+                $beforeOrder,
+                $afterOrder,
+                [
+                    'artwork_media_id' => (int) $moving->getKey(),
+                    'neighbor_artwork_media_id' => (int) $neighbor->getKey(),
+                    'from_position' => $fromPosition,
+                    'to_position' => $toPosition,
+                    'direction' => $direction,
+                ],
+            );
         });
     }
 
