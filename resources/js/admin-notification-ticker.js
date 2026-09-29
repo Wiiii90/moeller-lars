@@ -81,7 +81,6 @@ function showNext() {
     if (!render(current)) {
         queue.unshift(current);
         current = null;
-        window.requestAnimationFrame(showNext);
         return;
     }
 
