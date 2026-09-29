@@ -30,6 +30,10 @@
     --admin-workspace-gutter: 2rem;
     --admin-sidebar-width: 18rem;
     --admin-sidebar-half-width: 9rem;
+    --admin-header-feedback-height: 2rem;
+    --admin-header-feedback-edge-gap: .75rem;
+    --admin-feedback-enter-duration: 320ms;
+    --admin-feedback-exit-duration: 240ms;
     --admin-status-neutral: var(--admin-faint);
     --admin-status-success: var(--admin-success);
     --admin-status-warning: var(--admin-accent);
