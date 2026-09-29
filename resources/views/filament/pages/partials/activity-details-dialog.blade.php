@@ -1,7 +1,8 @@
 @php
     $metadata = is_array($event['metadata'] ?? null) ? $event['metadata'] : [];
     $changeSummary = is_array($event['change_summary'] ?? null) ? $event['change_summary'] : null;
-    unset($metadata['change_summary'], $metadata['target_label']);
+    $orderingGroup = is_array($event['ordering_group'] ?? null) ? $event['ordering_group'] : null;
+    unset($metadata['change_summary'], $metadata['target_label'], $metadata['ordering']);
     $publicationLabel = match ($event['publication_status'] ?? null) {
         'committed' => 'Committed',
         'pending' => 'Staged for next publish',
@@ -35,6 +36,21 @@
         <span>Target</span>
         <p>{{ $event['target'] }}</p>
     </div>
+
+    @if (is_array($orderingGroup) && ($orderingGroup['event_count'] ?? 1) > 1)
+        <div class="admin-detail-dialog__field">
+            <span>Ordering sequence</span>
+            <p>
+                {{ $orderingGroup['event_count'] }} reorder changes combined
+                @if ($orderingGroup['returned_to_identity'] ?? false)
+                    · final order matches the starting order
+                @endif
+            </p>
+            @if (($orderingGroup['started_at'] ?? null) && ($orderingGroup['ended_at'] ?? null))
+                <small>{{ $orderingGroup['started_at'] }} → {{ $orderingGroup['ended_at'] }}</small>
+            @endif
+        </div>
+    @endif
 
     @if (is_array($changeSummary) && ($changeSummary['items'] ?? []) !== [])
         <div class="admin-detail-dialog__field">
