@@ -561,16 +561,10 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
     window.dispatchEvent(new CustomEvent('admin-notification-ticker', { detail: {
       notification: {
         id: 'browser-acceptance-desktop',
-        actions: [],
         body: 'Activity now records the precise values.',
-        color: null,
         duration: 8_000,
-        icon: null,
-        iconColor: null,
         status: 'success',
         title: 'Changes saved',
-        view: null,
-        viewData: [],
       },
     } }));
   });
@@ -633,16 +627,10 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
     window.dispatchEvent(new CustomEvent('admin-notification-ticker', { detail: {
       notification: {
         id: 'browser-acceptance-mobile',
-        actions: [],
         body: 'This body is intentionally hidden on narrow screens.',
-        color: null,
         duration: 8_000,
-        icon: null,
-        iconColor: null,
         status: 'success',
         title: 'Page updated',
-        view: null,
-        viewData: [],
       },
     } }));
   });
