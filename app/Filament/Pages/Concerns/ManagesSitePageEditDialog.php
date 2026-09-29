@@ -101,7 +101,10 @@ trait ManagesSitePageEditDialog
 
                 $this->loadSections();
                 if ($changed) {
-                    app(AdminNotifier::class)->transient()->title('Page updated')->success()->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Page updated',
+                        status: 'success',
+                    );
                 }
             })
             ->extraModalFooterActions(fn (array $arguments): array => $this->pageDialogHeaderActions($arguments));
@@ -121,7 +124,10 @@ trait ManagesSitePageEditDialog
                 $changed = $dialog->save($data);
                 $this->loadSections();
                 if ($changed) {
-                    app(AdminNotifier::class)->transient()->title('Home settings saved')->success()->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Home settings saved',
+                        status: 'success',
+                    );
                 }
             });
 
