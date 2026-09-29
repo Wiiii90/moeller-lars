@@ -30,7 +30,7 @@ trait CustomPageWorkspaceChildOrdering
             $this->clearSelections();
             $this->loadComponentProjection();
             if ($changed) {
-                app(AdminNotifier::class)->toast('List entry order updated', status: 'success');
+                app(AdminNotifier::class)->feedback('List entry order updated', status: 'success');
             }
 
             return;
@@ -47,7 +47,7 @@ trait CustomPageWorkspaceChildOrdering
             $this->clearSelections();
             $this->loadComponentProjection();
             if ($changed) {
-                app(AdminNotifier::class)->toast('Contact item order updated', status: 'success');
+                app(AdminNotifier::class)->feedback('Contact item order updated', status: 'success');
             }
 
             return;
@@ -100,11 +100,11 @@ trait CustomPageWorkspaceChildOrdering
         $count = count($parents) + count($children);
         $this->clearSelections();
         $this->reloadWorkspace();
-        app(AdminNotifier::class)->transient()
-            ->title($published ? 'Selection published' : 'Selection unpublished')
-            ->body($count.' selected '.($count === 1 ? 'item' : 'items').' updated on their own hierarchy levels.')
-            ->success()
-            ->send();
+        app(AdminNotifier::class)->feedback(
+            title: $published ? 'Selection published' : 'Selection unpublished',
+            body: $count.' selected '.($count === 1 ? 'item' : 'items').' updated on their own hierarchy levels.',
+            status: 'success',
+        );
     }
 
     /** @param list<array<string,mixed>> $targets */
