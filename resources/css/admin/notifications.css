@@ -53,6 +53,10 @@
     opacity: 1;
 }
 
+.admin-notification-ticker.is-active.is-leaving .admin-notification-ticker__message {
+    opacity: 0;
+}
+
 .admin-notification-ticker__runway {
     position: relative;
     overflow: hidden;
