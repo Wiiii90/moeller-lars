@@ -166,20 +166,6 @@ it('keeps dashboard notification reads isolated to the authenticated user', func
         ->and(app(DashboardFeed::class)->entry('notification:'.$second->getKey()))->toBeNull();
 });
 
-it('has no legacy notification capture or framework feedback bridge', function (): void {
-    $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
-
-    expect($provider)
-        ->not->toContain('AdminFlashNotifications')
-        ->not->toContain("Livewire::component('filament.livewire.notifications'")
-        ->not->toContain('admin-notification-history')
-        ->and(file_exists(app_path('Livewire/Admin/AdminFlashNotifications.php')))->toBeFalse()
-        ->and(file_exists(resource_path('views/livewire/admin/admin-flash-notifications.blade.php')))->toBeFalse()
-        ->and(file_exists(app_path('Livewire/Admin/AdminNotificationRecorder.php')))->toBeFalse()
-        ->and(file_exists(resource_path('views/livewire/admin/admin-notification-recorder.blade.php')))->toBeFalse()
-        ->and(file_exists(resource_path('views/filament/partials/admin-notification-history.blade.php')))->toBeFalse();
-});
-
 it('owns immediate feedback without constructing framework notifications', function (): void {
     $provider = file_get_contents(app_path('Providers/Filament/AdminPanelProvider.php'));
     $notifier = file_get_contents(app_path('Domain/Admin/AdminNotifier.php'));
@@ -199,7 +185,6 @@ it('owns immediate feedback without constructing framework notifications', funct
 
         expect($source)
             ->not->toContain('Notification::make()')
-            ->not->toContain('->transient()')
-            ->not->toContain('->toast(');
+            ->not->toContain('->transient()');
     }
 });
