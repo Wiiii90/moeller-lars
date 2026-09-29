@@ -9,11 +9,13 @@ use App\Domain\Artwork\ArtworkPublicationService;
 use App\Domain\Media\PublicMedia;
 use App\Domain\Publication\PublicationService;
 use App\Filament\Pages\GalleryWorkspace;
+use App\Filament\Support\AdminActivityFeed;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMaterialPreset;
 use App\Models\ArtworkMedia;
+use App\Models\AuditEvent;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\User;
@@ -192,6 +194,51 @@ it('stores reusable Material presets without rewriting historical Artwork materi
 
     expect(ArtworkMaterialPreset::query()->pluck('name')->all())->toBe(['Graphite'])
         ->and($artwork->fresh()->medium)->toBe('Oil on linen');
+});
+
+it('records Material preset mutations precisely and keeps no-op preset writes silent', function (): void {
+    $service = app(ArtworkMaterialPresetService::class);
+    $eventsBefore = AuditEvent::query()->count();
+
+    expect($service->add('Tempera'))->toBeInstanceOf(ArtworkMaterialPreset::class);
+    $created = AuditEvent::query()->latest('id')->firstOrFail();
+    $afterCreate = AuditEvent::query()->count();
+
+    expect($created->getAttribute('action'))->toBe('artwork_material_preset.created')
+        ->and($created->getAttribute('entity_type'))->toBe('artwork_material_preset')
+        ->and($created->getAttribute('metadata')['target_label'] ?? null)->toBe('Tempera')
+        ->and($afterCreate)->toBe($eventsBefore + 1);
+
+    expect((int) $service->add('Tempera')->getKey())->toBe((int) $created->getAttribute('entity_id'))
+        ->and(AuditEvent::query()->count())->toBe($afterCreate);
+
+    expect($service->sync(['TEMPERA', 'Graphite']))->toBeTrue();
+    $renamed = AuditEvent::query()->where('action', 'artwork_material_preset.renamed')->latest('id')->firstOrFail();
+    $createdGraphite = AuditEvent::query()
+        ->where('action', 'artwork_material_preset.created')
+        ->where('id', '>', $created->getKey())
+        ->latest('id')
+        ->firstOrFail();
+    $afterSync = AuditEvent::query()->count();
+
+    $renamedActivity = app(AdminActivityFeed::class)->event((int) $renamed->getKey(), auth('web')->user());
+
+    expect($renamed->getAttribute('metadata')['target_label'] ?? null)->toBe('TEMPERA')
+        ->and($renamedActivity['action'] ?? null)->toBe('Changed Name: Tempera → TEMPERA')
+        ->and($renamedActivity['target'] ?? null)->toBe('TEMPERA')
+        ->and($createdGraphite->getAttribute('metadata')['target_label'] ?? null)->toBe('Graphite');
+
+    expect($service->sync(['TEMPERA', 'Graphite']))->toBeFalse()
+        ->and(AuditEvent::query()->count())->toBe($afterSync);
+
+    expect($service->sync(['Graphite']))->toBeTrue();
+    $deleted = AuditEvent::query()->where('action', 'artwork_material_preset.deleted')->latest('id')->firstOrFail();
+    $deletedActivity = app(AdminActivityFeed::class)->event((int) $deleted->getKey(), auth('web')->user());
+
+    expect($deleted->getAttribute('metadata')['target_label'] ?? null)->toBe('TEMPERA')
+        ->and($deletedActivity['target'] ?? null)->toBe('TEMPERA')
+        ->and($deletedActivity['action'] ?? null)->toBe('Deleted material preset')
+        ->and($deletedActivity['url'] ?? null)->toBeNull();
 });
 
 it('renders the six Gallery metrics and per-artwork analytics from one canonical reporting call', function (): void {
