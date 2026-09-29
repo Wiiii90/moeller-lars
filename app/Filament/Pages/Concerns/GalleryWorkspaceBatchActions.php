@@ -35,7 +35,10 @@ trait GalleryWorkspaceBatchActions
                 $count = $artworks->count();
                 $this->clearSelection();
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->transient()->title($count.' selected '.($count === 1 ? 'artwork was' : 'artworks were').' removed')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: $count.' selected '.($count === 1 ? 'artwork was' : 'artworks were').' removed',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::confirm(
@@ -69,7 +72,10 @@ trait GalleryWorkspaceBatchActions
                 $count = $artworks->count();
                 $this->clearSelection();
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->transient()->title($count.' '.($count === 1 ? 'artwork deleted' : 'artworks deleted'))->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: $count.' '.($count === 1 ? 'artwork deleted' : 'artworks deleted'),
+                    status: 'success',
+                );
             });
 
         return AdminDialog::confirm(
@@ -100,7 +106,10 @@ trait GalleryWorkspaceBatchActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->transient()->title('Selected artworks published')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Selected artworks published',
+                    status: 'success',
+                );
             });
     }
 
@@ -117,7 +126,10 @@ trait GalleryWorkspaceBatchActions
                 });
 
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->transient()->title('Selected artworks unpublished')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Selected artworks unpublished',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::confirm(
