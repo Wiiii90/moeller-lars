@@ -5,15 +5,14 @@ const RUNTIME_KEY = '__adminNotificationTickerRuntime';
 function runtime() {
     window[RUNTIME_KEY] ??= {
         queue: [],
-        current: null,
-        timer: null,
+        active: [],
         frame: null,
+        lastFrameAt: null,
         listenerRegistered: false,
         resizeListenerRegistered: false,
         layoutObserver: null,
         boundRoot: null,
         sequence: 0,
-        phase: 'idle',
     };
 
     return window[RUNTIME_KEY];
@@ -46,26 +45,6 @@ function cssNumber(name, fallback) {
     return Number.isFinite(value) ? value : fallback;
 }
 
-function cssDuration(name, fallback) {
-    const raw = window.getComputedStyle(document.documentElement)
-        .getPropertyValue(name)
-        .trim();
-
-    if (raw.endsWith('ms')) {
-        const value = Number.parseFloat(raw);
-
-        return Number.isFinite(value) ? value : fallback;
-    }
-
-    if (raw.endsWith('s')) {
-        const value = Number.parseFloat(raw);
-
-        return Number.isFinite(value) ? value * 1000 : fallback;
-    }
-
-    return fallback;
-}
-
 function cssLength(name, fallback) {
     const raw = window.getComputedStyle(document.documentElement)
         .getPropertyValue(name)
@@ -91,20 +70,6 @@ function cssLength(name, fallback) {
 
 function prefersReducedMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-export function tickerTravelDuration(
-    runwayWidth,
-    trackWidth,
-    pixelsPerSecond = 280,
-    minimum = 3000,
-    maximum = 5600,
-) {
-    const distance = Math.max(0, Number(runwayWidth) || 0) + Math.max(0, Number(trackWidth) || 0);
-    const speed = Math.max(1, Number(pixelsPerSecond) || 1);
-    const calculated = (distance / speed) * 1000;
-
-    return Math.max(minimum, Math.min(calculated, maximum));
 }
 
 function normalize(detail) {
@@ -170,11 +135,14 @@ function syncTickerGeometry() {
         right = Math.min(right, userMenu.getBoundingClientRect().left - edgeGap);
     }
 
-    const localLeft = Math.max(0, left - topbarRect.left);
-    const availableWidth = Math.max(0, right - left);
-
-    root.style.setProperty('--admin-notification-ticker-left', `${localLeft}px`);
-    root.style.setProperty('--admin-notification-ticker-width', `${availableWidth}px`);
+    root.style.setProperty(
+        '--admin-notification-ticker-left',
+        `${Math.max(0, left - topbarRect.left)}px`,
+    );
+    root.style.setProperty(
+        '--admin-notification-ticker-width',
+        `${Math.max(0, right - left)}px`,
+    );
 }
 
 function scheduleGeometrySync() {
@@ -207,188 +175,213 @@ function bindLayoutObserver() {
     scheduleGeometrySync();
 }
 
-function updatePendingIndicator() {
-    const state = runtime();
+function streamElements() {
     const root = ticker();
-    const indicator = root?.querySelector('[data-admin-notification-pending]');
+    const runway = root?.querySelector('[data-admin-notification-runway]');
+    const stream = root?.querySelector('[data-admin-notification-stream]');
 
-    if (!(indicator instanceof HTMLElement)) return;
-
-    const count = state.queue.length;
-    indicator.hidden = count === 0;
-    indicator.textContent = count === 0 ? '' : `+${count}`;
-}
-
-function clearTimer() {
-    const state = runtime();
-
-    if (state.timer !== null) {
-        window.clearTimeout(state.timer);
-        state.timer = null;
+    if (
+        !root
+        || !(runway instanceof HTMLElement)
+        || !(stream instanceof HTMLElement)
+    ) {
+        return null;
     }
+
+    return { root, runway, stream };
 }
 
-function clearFrame() {
-    const state = runtime();
+function createMessageElement(notification, withSeparator) {
+    const item = document.createElement('div');
+    item.className = 'admin-notification-ticker__item';
+    item.dataset.notificationId = notification.id;
+    item.dataset.status = notification.status;
 
-    if (state.frame !== null) {
-        window.cancelAnimationFrame(state.frame);
-        state.frame = null;
+    if (withSeparator) {
+        const separator = document.createElement('span');
+        separator.className = 'admin-notification-ticker__separator';
+        separator.setAttribute('aria-hidden', 'true');
+        separator.textContent = '·';
+        item.append(separator);
     }
-}
 
-function render(notification) {
-    const root = ticker();
-    if (!root) return false;
+    const title = document.createElement('strong');
+    title.textContent = notification.title;
+    item.append(title);
 
-    const title = root.querySelector('[data-admin-notification-title]');
-    const body = root.querySelector('[data-admin-notification-body]');
-
-    if (title) title.textContent = notification.title;
-    if (body) {
+    if (notification.body !== '') {
+        const body = document.createElement('span');
+        body.className = 'admin-notification-ticker__item-body';
         body.textContent = notification.body;
-        body.hidden = notification.body === '';
+        item.append(body);
     }
 
-    root.dataset.status = notification.status;
-    root.classList.remove('is-leaving');
-    root.classList.add('is-active');
+    return item;
+}
+
+function positionItem(item) {
+    if (!(item.element instanceof HTMLElement)) return;
+
+    item.element.style.transform = `translate3d(${item.x}px, -50%, 0)`;
+}
+
+function hydrateActiveItems(stream) {
+    const state = runtime();
+
+    stream.replaceChildren();
+
+    state.active.forEach((item, index) => {
+        const element = createMessageElement(item.notification, index > 0 || item.withSeparator);
+        stream.append(element);
+        item.element = element;
+        item.width = element.getBoundingClientRect().width;
+        positionItem(item);
+    });
+}
+
+function spawnNext(runwayWidth) {
+    const state = runtime();
+    const elements = streamElements();
+
+    if (!elements || state.queue.length === 0 || runwayWidth <= 0) {
+        return false;
+    }
+
+    const notification = state.queue.shift();
+    if (!notification) return false;
+
+    const withSeparator = state.active.length > 0;
+    const element = createMessageElement(notification, withSeparator);
+    elements.stream.append(element);
+
+    const item = {
+        notification,
+        element,
+        x: runwayWidth,
+        width: element.getBoundingClientRect().width,
+        withSeparator,
+    };
+
+    state.active.push(item);
+    positionItem(item);
+    elements.root.classList.add('is-active');
 
     return true;
 }
 
-function fold() {
-    const root = ticker();
-
-    root?.classList.remove('is-active', 'is-leaving');
-    if (root) delete root.dataset.status;
+export function canReleaseFollowingNotification(itemRight, runwayWidth) {
+    return Number(itemRight) <= Number(runwayWidth);
 }
 
-function finishCurrent({ dismissed = false } = {}) {
+function releasePendingWhenReady(runwayWidth) {
     const state = runtime();
 
-    if (!state.current || state.phase === 'leaving') return;
+    if (state.queue.length === 0) return;
 
-    clearTimer();
-    clearFrame();
-    state.phase = 'leaving';
-
-    const root = ticker();
-    root?.classList.add('is-leaving');
-
-    state.timer = window.setTimeout(() => {
-        fold();
-        state.current = null;
-        updatePendingIndicator();
-        state.phase = 'gap';
-
-        const gap = dismissed
-            ? 120
-            : cssDuration('--admin-feedback-gap-duration', 320);
-
-        state.timer = window.setTimeout(() => {
-            state.phase = 'idle';
-            state.timer = null;
-            showNext();
-        }, gap);
-    }, 160);
-}
-
-function startTickerTravel(root) {
-    const state = runtime();
-    const runway = root.querySelector('[data-admin-notification-runway]');
-    const track = root.querySelector('[data-admin-notification-track]');
-
-    if (!(runway instanceof HTMLElement) || !(track instanceof HTMLElement)) {
-        finishCurrent();
+    if (state.active.length === 0) {
+        spawnNext(runwayWidth);
 
         return;
     }
 
-    const runwayWidth = runway.clientWidth;
-    const trackWidth = track.scrollWidth;
+    const last = state.active[state.active.length - 1];
 
-    if (runwayWidth <= 0 || trackWidth <= 0) {
-        state.timer = window.setTimeout(() => startTickerTravel(root), 50);
+    if (canReleaseFollowingNotification(last.x + last.width, runwayWidth)) {
+        spawnNext(runwayWidth);
+    }
+}
 
-        return;
+function removeExitedItems() {
+    const state = runtime();
+    const retained = [];
+
+    state.active.forEach((item) => {
+        if (item.x + item.width <= 0) {
+            item.element?.remove();
+
+            return;
+        }
+
+        retained.push(item);
+    });
+
+    state.active = retained;
+}
+
+function foldIfIdle() {
+    const state = runtime();
+
+    if (state.active.length > 0 || state.queue.length > 0) {
+        return false;
     }
 
-    const reducedMotion = prefersReducedMotion();
-    const speed = reducedMotion
+    const root = ticker();
+    root?.classList.remove('is-active');
+    state.lastFrameAt = null;
+
+    return true;
+}
+
+function scrollSpeed() {
+    return prefersReducedMotion()
         ? cssNumber('--admin-feedback-scroll-speed-reduced', 210)
         : cssNumber('--admin-feedback-scroll-speed', 280);
-    const minimum = reducedMotion
-        ? cssDuration('--admin-feedback-scroll-min-duration-reduced', 3800)
-        : cssDuration('--admin-feedback-scroll-min-duration', 3000);
-    const maximum = reducedMotion
-        ? cssDuration('--admin-feedback-scroll-max-duration-reduced', 7200)
-        : cssDuration('--admin-feedback-scroll-max-duration', 5600);
-    const duration = tickerTravelDuration(runwayWidth, trackWidth, speed, minimum, maximum);
-    const startX = runwayWidth;
-    const endX = -trackWidth;
-    const distance = startX - endX;
-    const startedAt = performance.now();
-
-    state.phase = 'traveling';
-
-    const step = (now) => {
-        if (state.phase !== 'traveling' || !state.current) {
-            state.frame = null;
-
-            return;
-        }
-
-        const progress = Math.min(1, Math.max(0, (now - startedAt) / duration));
-        const x = startX - (distance * progress);
-
-        track.style.transform = `translate3d(${x}px, -50%, 0)`;
-
-        if (progress >= 1) {
-            state.frame = null;
-            finishCurrent();
-
-            return;
-        }
-
-        state.frame = window.requestAnimationFrame(step);
-    };
-
-    track.style.transform = `translate3d(${startX}px, -50%, 0)`;
-    state.frame = window.requestAnimationFrame(step);
 }
 
-function presentCurrent() {
+function tick(now) {
     const state = runtime();
-    const root = ticker();
+    const elements = streamElements();
 
-    if (!root || !state.current || !render(state.current)) return;
+    if (!elements) {
+        state.frame = window.requestAnimationFrame(tick);
 
-    clearTimer();
-    clearFrame();
+        return;
+    }
 
-    window.requestAnimationFrame(() => {
-        const activeRoot = ticker();
+    const runwayWidth = elements.runway.clientWidth;
 
-        if (!activeRoot || !state.current) return;
+    if (runwayWidth <= 0) {
+        state.frame = window.requestAnimationFrame(tick);
 
-        startTickerTravel(activeRoot);
+        return;
+    }
+
+    if (state.active.length === 0) {
+        releasePendingWhenReady(runwayWidth);
+    }
+
+    if (state.lastFrameAt === null) {
+        state.lastFrameAt = now;
+    }
+
+    const elapsed = Math.min(50, Math.max(0, now - state.lastFrameAt));
+    state.lastFrameAt = now;
+    const delta = scrollSpeed() * (elapsed / 1000);
+
+    state.active.forEach((item) => {
+        item.x -= delta;
+        positionItem(item);
     });
+
+    removeExitedItems();
+    releasePendingWhenReady(runwayWidth);
+
+    if (foldIfIdle()) {
+        state.frame = null;
+
+        return;
+    }
+
+    state.frame = window.requestAnimationFrame(tick);
 }
 
-function showNext() {
+function ensureTickerRunning() {
     const state = runtime();
 
-    if (state.current || state.phase !== 'idle' || state.queue.length === 0) return;
+    if (state.frame !== null) return;
 
-    if (!ticker()) return;
-
-    state.current = state.queue.shift() ?? null;
-    updatePendingIndicator();
-
-    if (!state.current) return;
-
-    presentCurrent();
+    state.lastFrameAt = null;
+    state.frame = window.requestAnimationFrame(tick);
 }
 
 export function appendPendingNotification(pending, notification, max = MAX_PENDING_NOTIFICATIONS) {
@@ -406,7 +399,7 @@ function enqueue(detail) {
     const notification = normalize(detail);
 
     if (
-        state.current?.id === notification.id
+        state.active.some((item) => item.notification.id === notification.id)
         || state.queue.some((queued) => queued.id === notification.id)
     ) {
         return;
@@ -416,8 +409,8 @@ function enqueue(detail) {
         return;
     }
 
-    updatePendingIndicator();
-    showNext();
+    ticker()?.classList.add('is-active');
+    ensureTickerRunning();
 }
 
 function enqueueInitialFeedback(root) {
@@ -437,24 +430,37 @@ function enqueueInitialFeedback(root) {
     }
 }
 
+function dismissTicker() {
+    const state = runtime();
+
+    state.queue = [];
+    state.active.forEach((item) => item.element?.remove());
+    state.active = [];
+    state.lastFrameAt = null;
+
+    ticker()?.classList.remove('is-active');
+}
+
 function bindRoot(root) {
     const state = runtime();
 
     if (state.boundRoot === root) return;
 
     state.boundRoot = root;
-    updatePendingIndicator();
+
+    const stream = root.querySelector('[data-admin-notification-stream]');
+    if (stream instanceof HTMLElement) {
+        hydrateActiveItems(stream);
+    }
 
     root.querySelector('[data-admin-notification-dismiss]')
-        ?.addEventListener('click', () => finishCurrent({ dismissed: true }));
+        ?.addEventListener('click', dismissTicker);
 
     enqueueInitialFeedback(root);
 
-    if (state.current) {
-        presentCurrent();
-    } else {
-        fold();
-        showNext();
+    if (state.active.length > 0 || state.queue.length > 0) {
+        root.classList.add('is-active');
+        ensureTickerRunning();
     }
 }
 
