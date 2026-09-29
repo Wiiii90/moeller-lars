@@ -160,10 +160,10 @@ final class ListMediaAssets extends Page
         app(MediaCapacityService::class)->forgetCachedSnapshot();
         $this->loadStorageOverview(measure: true);
 
-        app(AdminNotifier::class)->transient()
-            ->title('Storage measurement refreshed')
-            ->success()
-            ->send();
+        app(AdminNotifier::class)->feedback(
+            title: 'Storage measurement refreshed',
+            status: 'success',
+        );
     }
 
     /** @return array{summary:string,added:int,duplicates:int,failed:int} */
@@ -244,17 +244,17 @@ final class ListMediaAssets extends Page
 
             $notification->send();
         } elseif ($added > 0) {
-            app(AdminNotifier::class)->transient()
-                ->title($total === 1 ? 'File uploaded' : 'Files uploaded')
-                ->body($this->directUploadSummary($total, $added, $duplicates, 0))
-                ->success()
-                ->send();
+            app(AdminNotifier::class)->feedback(
+                title: $total === 1 ? 'File uploaded' : 'Files uploaded',
+                body: $this->directUploadSummary($total, $added, $duplicates, 0),
+                status: 'success',
+            );
         } elseif ($duplicates > 0) {
-            app(AdminNotifier::class)->transient()
-                ->title('Already in Storage')
-                ->body($total === 1 ? null : $duplicates.' files already exist in Storage')
-                ->info()
-                ->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Already in Storage',
+                body: $total === 1 ? null : $duplicates.' files already exist in Storage',
+                status: 'info',
+            );
         }
 
         return [
@@ -427,7 +427,10 @@ final class ListMediaAssets extends Page
                 $this->normalizeSelection();
                 $ids = $this->selectedAssets;
                 if ($ids === []) {
-                    app(AdminNotifier::class)->transient()->title('No files selected')->warning()->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'No files selected',
+                        status: 'warning',
+                    );
 
                     return;
                 }
@@ -484,19 +487,19 @@ final class ListMediaAssets extends Page
                         $details[] = '+'.(count($failed) - 4).' more';
                     }
 
-                    app(AdminNotifier::class)->transient()
-                        ->title('Some selected files need attention')
-                        ->body($deleted.' deleted. '.implode(' ', $details))
-                        ->warning()
-                        ->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Some selected files need attention',
+                        body: $deleted.' deleted. '.implode(' ', $details),
+                        status: 'warning',
+                    );
 
                     return;
                 }
 
-                app(AdminNotifier::class)->transient()
-                    ->title('Selected files deleted')
-                    ->success()
-                    ->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Selected files deleted',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::confirm(
@@ -912,7 +915,10 @@ final class ListMediaAssets extends Page
 
         $this->loadLibrary();
         if ($updated->wasChanged()) {
-            app(AdminNotifier::class)->transient()->title('File metadata saved')->success()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'File metadata saved',
+                status: 'success',
+            );
         }
     }
 
@@ -1042,13 +1048,13 @@ final class ListMediaAssets extends Page
                 return true;
             }
 
-            app(AdminNotifier::class)->transient()
-                ->title('File not deleted')
-                ->body($exception instanceof ValidationException
+            app(AdminNotifier::class)->feedback(
+                title: 'File not deleted',
+                body: $exception instanceof ValidationException
                     ? $this->validationMessage($exception)
-                    : 'The file could not be deleted.')
-                ->danger()
-                ->send();
+                    : 'The file could not be deleted.',
+                status: 'danger',
+            );
 
             return false;
         }
@@ -1056,7 +1062,10 @@ final class ListMediaAssets extends Page
         $this->removeSelection($assetId);
         $this->loadLibrary();
         $this->refreshStorageOverviewAfterMutation();
-        app(AdminNotifier::class)->transient()->title('File deleted')->success()->send();
+        app(AdminNotifier::class)->feedback(
+            title: 'File deleted',
+            status: 'success',
+        );
 
         return true;
     }
