@@ -318,13 +318,6 @@ class ArtworkEditorialService
                 return;
             }
 
-            /** @var ArtworkMedia $moving */
-            $moving = $additional->get($index);
-            /** @var ArtworkMedia $neighbor */
-            $neighbor = $additional->get($target);
-            $fromPosition = (int) $moving->getAttribute('position');
-            $toPosition = (int) $neighbor->getAttribute('position');
-
             $beforeOrder = $additional
                 ->pluck('id')
                 ->map(static fn (mixed $id): int => (int) $id)
@@ -345,13 +338,6 @@ class ArtworkEditorialService
                 'artwork-media:'.(int) $lockedArtwork->getKey(),
                 $beforeOrder,
                 $afterOrder,
-                [
-                    'artwork_media_id' => (int) $moving->getKey(),
-                    'neighbor_artwork_media_id' => (int) $neighbor->getKey(),
-                    'from_position' => $fromPosition,
-                    'to_position' => $toPosition,
-                    'direction' => $direction,
-                ],
             );
         });
     }
