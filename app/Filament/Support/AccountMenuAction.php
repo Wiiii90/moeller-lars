@@ -94,11 +94,11 @@ final class AccountMenuAction
                         return;
                     }
 
-                    app(AdminNotifier::class)->transient()
-                        ->danger()
-                        ->title('Too many attempts')
-                        ->body('Try again in a minute.')
-                        ->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Too many attempts',
+                        body: 'Try again in a minute.',
+                        status: 'danger',
+                    );
 
                     $action->halt();
                 })
@@ -114,10 +114,10 @@ final class AccountMenuAction
                         ]);
                     }
 
-                    app(AdminNotifier::class)->transient()
-                        ->success()
-                        ->title('Account updated')
-                        ->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Account updated',
+                        status: 'success',
+                    );
                 }),
             'Save account',
             AdminDialogSize::Default,
