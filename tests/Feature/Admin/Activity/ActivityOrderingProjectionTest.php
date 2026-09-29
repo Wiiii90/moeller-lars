@@ -8,6 +8,8 @@ use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\AdminActivityFeed;
 use App\Models\AdminActivityOrderingGroup;
 use App\Models\AuditEvent;
+use App\Models\PublicationCheckpoint;
+use App\Models\PublicationCheckpointEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -78,6 +80,52 @@ it('reduces a reorder cycle to no visible Activity when the net permutation is i
         ->and($orderingRows[0]['target'])->toBe('Public navigation')
         ->and($orderingRows[0]['action'])->toBe('Reordered public navigation')
         ->and($feed->overview(family: 'ordering', days: 7)['total'])->toBe(1);
+});
+
+it('freezes a non-identity ordering projection at a publication boundary', function (): void {
+    $editor = app(SiteSectionEditorialService::class);
+    $order = app(SiteSectionOrderService::class);
+
+    $editor->createCustomPage('Commit A', 'commit-a');
+    $middle = $editor->createCustomPage('Commit B', 'commit-b');
+    $editor->createCustomPage('Commit C', 'commit-c');
+    $editor->createCustomPage('Commit D', 'commit-d');
+
+    expect($order->move($middle, 'down'))->toBeTrue();
+
+    $firstEvent = AuditEvent::query()
+        ->where('action', 'site_section.reordered')
+        ->latest('id')
+        ->firstOrFail();
+    $checkpoint = PublicationCheckpoint::query()->create([
+        'admin_user_id' => $this->actor->getKey(),
+        'message' => 'Ordering boundary',
+        'change_count' => 1,
+        'published_at' => now(),
+    ]);
+    PublicationCheckpointEvent::query()->create([
+        'publication_checkpoint_id' => $checkpoint->getKey(),
+        'audit_event_id' => $firstEvent->getKey(),
+        'created_at' => now(),
+    ]);
+
+    expect($order->move($middle, 'down'))->toBeTrue();
+
+    $groups = AdminActivityOrderingGroup::query()
+        ->where('action', 'site_section.reordered')
+        ->orderBy('id')
+        ->get();
+    $rows = collect(app(AdminActivityFeed::class)->page(
+        family: 'ordering',
+        perPage: 100,
+        actor: $this->actor,
+        days: 7,
+    )['activity'])->where('action_key', 'site_section.reordered')->values();
+
+    expect($groups)->toHaveCount(2)
+        ->and($groups[0]->returnedToIdentity())->toBeFalse()
+        ->and($groups[1]->returnedToIdentity())->toBeFalse()
+        ->and($rows)->toHaveCount(2);
 });
 
 it('records one logical Journal reorder event even when several row positions change', function (): void {
