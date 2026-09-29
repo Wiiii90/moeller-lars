@@ -8,12 +8,12 @@ The admin has four separate concepts. They must not be collapsed into one anothe
 
 | Concept | Purpose | Persistence |
 | --- | --- | --- |
-| Ticker feedback | Immediate feedback for the action the current user just performed | Ephemeral |
+| Header feedback | Immediate feedback for the action the current user just performed | Ephemeral |
 | Notification | Information that deserves later attention in the admin inbox/feed | Persistent, retention-managed |
 | Activity | Immutable factual history of successful administrative changes | Append-only |
 | Publication | Working/live/version state and publication operations | Domain state/history |
 
-A successful edit may create ticker feedback and an Activity event without creating a persistent notification. A publication or processing failure may create both ticker feedback and a persistent notification without inventing an Activity event for a change that did not succeed.
+A successful edit may create header feedback and an Activity event without creating a persistent notification. A publication or processing failure may create both header feedback and a persistent notification without inventing an Activity event for a change that did not succeed.
 
 ## Central notification authority
 
@@ -21,13 +21,13 @@ Administrative feedback and persistent notifications originate from structured s
 
 The notifier owns three explicit delivery intents:
 
-- **feedback** — immediate ephemeral feedback for the project-owned sticky-header ticker only;
+- **feedback** — immediate ephemeral feedback for the project-owned sticky-header header feedback surface only;
 - **inbox** — persistent `AdminNotification` only;
-- **both** — immediate ticker feedback plus a persistent `AdminNotification`.
+- **both** — immediate header feedback plus a persistent `AdminNotification`.
 
-Immediate feedback does **not** use Filament notification objects as transport. During a Livewire request, `AdminNotifier::feedback()` dispatches the project-owned `admin-notification-ticker` event directly from the active component. Outside a Livewire request it places a bounded message in the session queue for the next admin render.
+Immediate feedback does **not** use Filament notification objects as transport. During a Livewire request, `AdminNotifier::feedback()` dispatches the project-owned `admin-header-feedback` event directly from the active component. Outside a Livewire request it places a bounded message in the session queue for the next admin render.
 
-Persistent notifications are written directly to `AdminNotification`. They do not depend on browser markup, a rendered framework notification, DOM inspection or the ticker being visible.
+Persistent notifications are written directly to `AdminNotification`. They do not depend on browser markup, a rendered framework notification, DOM inspection or the header feedback being visible.
 
 Application code must not construct or send framework notifications for normal admin feedback. Filament resource hooks that require a nullable notification return type may be overridden only to return `null` after project feedback has been emitted.
 
@@ -47,7 +47,7 @@ Do not use the inbox as a duplicate Activity feed. Routine successful editorial 
 
 `AdminNotification` is the persistent inbox/history record. It remains user-scoped and retention-managed.
 
-Every persistent notification has an origin-generated `source_id`. The database uniqueness contract `(user_id, source_id)` provides idempotency. `source_id` identifies the source event or condition rather than an ephemeral ticker message.
+Every persistent notification has an origin-generated `source_id`. The database uniqueness contract `(user_id, source_id)` provides idempotency. `source_id` identifies the source event or condition rather than an ephemeral header-feedback message.
 
 Examples:
 
@@ -90,7 +90,7 @@ A notification may link to Activity or Publication, but those references do not 
 
 ## Transaction semantics
 
-Success feedback that depends on a database mutation must not be emitted as durable truth before that mutation is committed. No-op saves must emit neither mutation Activity nor success ticker feedback.
+Success feedback that depends on a database mutation must not be emitted as durable truth before that mutation is committed. No-op saves must emit neither mutation Activity nor success header feedback.
 
 When a transaction can still roll back, success feedback or persistent notifications must be dispatched only after successful commit or from a point where the domain service has established success. A failed operation must not leave behind a persistent notification claiming that it succeeded.
 
@@ -120,7 +120,7 @@ The existing `DashboardFeed` remains the canonical mixed dashboard inbox/feed pr
 
 Notification-specific persistence remains in `AdminNotification`, while common feed behavior such as search, filtering, pagination, read/unread handling and pinning continues through the dashboard feed contract.
 
-## Ticker runtime
+## Header feedback runtime
 
 Transient feedback is rendered only in the project-owned ticker inside the persistent sticky admin header.
 
@@ -130,10 +130,10 @@ The runtime path is:
 Admin mutation
   -> AdminNotifier::feedback()
   -> project-owned Livewire event or bounded session queue
-  -> admin-notification-ticker
+  -> admin-header-feedback
 ```
 
-The ticker uses a bounded FIFO pending queue and renders a continuous right-to-left message stream. The first message enters from the right; once that message is fully inside the visible runway, the next queued message may follow immediately behind a neutral separator while the previous message continues travelling left. Messages are never coalesced merely because their text is identical. The ticker folds only when both the active stream and pending queue are empty, and the surrounding header controls remain present. On narrow screens the composition remains sidebar control | flexible ticker | user control, with the ticker constrained before either control becomes inaccessible. Reduced-motion preferences use a calmer travel speed rather than replacing the ticker with static text.
+The header feedback surface is static and keeps stable topbar geometry. The newest feedback text is shown in place. Each further feedback event increments the fixed `+N` counter while replacing the visible text with the newest message; identical messages still count as additional feedback. The surface does not scroll, animate, auto-play a queue, dismiss itself or move neighboring header controls. On narrow screens the body text may be suppressed before header controls become inaccessible.
 
 Persistent-notification details use the shared admin dialog/viewer primitives. Context actions such as `Open record`, `Open activity`, `Review staged changes` or `Mark unread` appear only when they are semantically available.
 
@@ -141,7 +141,7 @@ Notification status/severity is factual state, not decorative styling. Do not ad
 
 ## Forbidden parallel feedback paths
 
-The project must not maintain a second transient-feedback renderer alongside the ticker.
+The project must not maintain a second transient-feedback renderer alongside the header feedback surface.
 
 Forbidden paths include:
 
@@ -149,7 +149,7 @@ Forbidden paths include:
 - rendering stacked floating framework notification cards;
 - intercepting framework notification markup and translating it afterward;
 - observing the DOM to discover administrative events;
-- keeping a compatibility bridge that can produce duplicate ticker + framework feedback.
+- keeping a compatibility bridge that can produce duplicate header feedback + framework feedback.
 
 The ticker event/session channel and `AdminNotification` persistence are the two intentional notification mechanisms.
 
@@ -157,9 +157,9 @@ The ticker event/session channel and `AdminNotification` persistence are the two
 
 Durable coverage should prove at least:
 
-- ticker feedback does not create `AdminNotification` rows;
+- header feedback does not create `AdminNotification` rows;
 - inbox delivery works without a browser session;
-- `both` persists and sends immediate ticker feedback;
+- `both` persists and sends immediate header feedback;
 - `(user_id, source_id)` remains idempotent;
 - notification reads/mutations remain user-scoped;
 - retention and pin protection remain correct;
