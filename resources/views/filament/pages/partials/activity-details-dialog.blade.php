@@ -1,7 +1,7 @@
 @php
     $metadata = is_array($event['metadata'] ?? null) ? $event['metadata'] : [];
     $changeSummary = is_array($event['change_summary'] ?? null) ? $event['change_summary'] : null;
-    $orderingGroup = is_array($event['ordering_group'] ?? null) ? $event['ordering_group'] : null;
+    $orderingProjection = is_array($event['ordering_projection'] ?? null) ? $event['ordering_projection'] : null;
     unset($metadata['change_summary'], $metadata['target_label'], $metadata['ordering']);
     $publicationLabel = match ($event['publication_status'] ?? null) {
         'committed' => 'Committed',
@@ -37,12 +37,12 @@
         <p>{{ $event['target'] }}</p>
     </div>
 
-    @if (is_array($orderingGroup) && ($orderingGroup['event_count'] ?? 1) > 1)
+    @if (is_array($orderingProjection) && ($orderingProjection['event_count'] ?? 1) > 1)
         <div class="admin-detail-dialog__field">
             <span>Ordering sequence</span>
-            <p>{{ $orderingGroup['event_count'] }} raw reorder operations reduced to one net ordering change.</p>
-            @if (($orderingGroup['started_at'] ?? null) && ($orderingGroup['ended_at'] ?? null))
-                <small>{{ $orderingGroup['started_at'] }} → {{ $orderingGroup['ended_at'] }}</small>
+            <p>{{ $orderingProjection['event_count'] }} raw reorder operations reduced to one net ordering change.</p>
+            @if (($orderingProjection['started_at'] ?? null) && ($orderingProjection['ended_at'] ?? null))
+                <small>{{ $orderingProjection['started_at'] }} → {{ $orderingProjection['ended_at'] }}</small>
             @endif
         </div>
     @endif
