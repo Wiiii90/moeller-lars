@@ -73,10 +73,10 @@ trait ManagesSitePageCreateDialog
                 $this->pageNumber = 1;
                 $this->loadSections();
 
-                app(AdminNotifier::class)->transient()
-                    ->title($section->nodeType()->label().' added')
-                    ->success()
-                    ->send();
+                app(AdminNotifier::class)->feedback(
+                    title: $section->nodeType()->label().' added',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::create($action, 'Create page', AdminDialogSize::Large);
