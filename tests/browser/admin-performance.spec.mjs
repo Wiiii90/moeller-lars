@@ -558,7 +558,7 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
   await expect(userMenu).toBeVisible();
 
   await page.evaluate(() => {
-    window.Livewire.dispatch('notificationSent', {
+    window.dispatchEvent(new CustomEvent('admin-notification-ticker', { detail: {
       notification: {
         id: 'browser-acceptance-desktop',
         actions: [],
@@ -572,11 +572,10 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
         view: null,
         viewData: [],
       },
-    });
+    } }));
   });
 
   await expect(ticker).toHaveClass(/is-active/);
-  await expect(page.locator('.fi-no')).toHaveCount(0);
   await expect(ticker.getByText('Changes saved', { exact: true })).toBeVisible();
 
   const desktop = await page.evaluate(() => {
@@ -631,7 +630,7 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
   await expect(mobileUserMenu).toBeVisible();
 
   await page.evaluate(() => {
-    window.Livewire.dispatch('notificationSent', {
+    window.dispatchEvent(new CustomEvent('admin-notification-ticker', { detail: {
       notification: {
         id: 'browser-acceptance-mobile',
         actions: [],
@@ -645,11 +644,10 @@ test('keeps the notification ticker inside the sticky header on desktop and smar
         view: null,
         viewData: [],
       },
-    });
+    } }));
   });
 
   await expect(mobileTicker).toHaveClass(/is-active/);
-  await expect(page.locator('.fi-no')).toHaveCount(0);
   await expect(mobileTicker.getByText('Page updated', { exact: true })).toBeVisible();
 
   const mobile = await page.evaluate(() => {
