@@ -5,14 +5,15 @@
 <div
     class="admin-notification-ticker"
     data-admin-notification-ticker
+    role="status"
     aria-live="polite"
     aria-atomic="true"
+    aria-relevant="additions text"
 >
     <script type="application/json" data-admin-notification-initial>@json($initialFeedback)</script>
 
     <div class="admin-notification-ticker__viewport">
         <div class="admin-notification-ticker__message">
-            <span class="admin-notification-ticker__signal" aria-hidden="true"></span>
             <div class="admin-notification-ticker__copy">
                 <strong data-admin-notification-title></strong>
                 <span data-admin-notification-body></span>
