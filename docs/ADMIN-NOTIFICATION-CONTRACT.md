@@ -21,7 +21,7 @@ Administrative feedback and persistent notifications originate from structured s
 
 The notifier owns three explicit delivery intents:
 
-- **feedback** — immediate ephemeral feedback for the project-owned sticky-header header feedback surface only;
+- **feedback** — immediate ephemeral feedback for the project-owned static header feedback surface only;
 - **inbox** — persistent `AdminNotification` only;
 - **both** — immediate header feedback plus a persistent `AdminNotification`.
 
@@ -33,7 +33,7 @@ Application code must not construct or send framework notifications for normal a
 
 ## What belongs in each channel
 
-Ticker-feedback examples include successful save/reorder/upload operations, mark read/unread confirmations, successful Undo, successful staged-state reset, successful version restore and successful publication.
+Header-feedback examples include successful save/reorder/upload operations, mark read/unread confirmations, successful Undo, successful staged-state reset, successful version restore and successful publication.
 
 Persistent notification examples include publication/preflight failures, background-job failures, media-processing failures, incomplete cleanup, meaningful storage-capacity warnings and other system conditions that remain relevant after the initiating request ends.
 
@@ -122,14 +122,14 @@ Notification-specific persistence remains in `AdminNotification`, while common f
 
 ## Header feedback runtime
 
-Transient feedback is rendered only in the project-owned ticker inside the persistent sticky admin header.
+Transient feedback is rendered only in the project-owned static feedback surface inside the persistent sticky admin header.
 
 The runtime path is:
 
 ```text
 Admin mutation
   -> AdminNotifier::feedback()
-  -> project-owned Livewire event or bounded session queue
+  -> project-owned Livewire event or bounded session feedback
   -> admin-header-feedback
 ```
 
@@ -151,7 +151,7 @@ Forbidden paths include:
 - observing the DOM to discover administrative events;
 - keeping a compatibility bridge that can produce duplicate header feedback + framework feedback.
 
-The ticker event/session channel and `AdminNotification` persistence are the two intentional notification mechanisms.
+The header-feedback event/session channel and `AdminNotification` persistence are the two intentional notification mechanisms.
 
 ## Verification
 
