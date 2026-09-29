@@ -6,7 +6,7 @@ use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\AdminActivityFeed;
-use App\Models\AdminActivityOrderingGroup;
+use App\Models\AdminActivityOrderingProjection;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
 use App\Models\PublicationCheckpointEvent;
@@ -57,15 +57,15 @@ it('reduces a reorder cycle to no visible Activity when the net permutation is i
     )['activity'])->where('action_key', 'site_section.reordered')->values();
 
     expect($rawEvents - $rawBefore)->toBe(2)
-        ->and(AdminActivityOrderingGroup::query()->count())->toBe(1)
-        ->and(AdminActivityOrderingGroup::query()->firstOrFail()->returnedToIdentity())->toBeTrue()
+        ->and(AdminActivityOrderingProjection::query()->count())->toBe(1)
+        ->and(AdminActivityOrderingProjection::query()->firstOrFail()->isIdentity())->toBeTrue()
         ->and($orderingRows)->toHaveCount(0)
         ->and($feed->overview(family: 'ordering', days: 7)['total'])->toBe(0)
         ->and($feed->event($cycleFirstEventId, $this->actor))->toBeNull();
 
     expect($order->move($middle, 'down'))->toBeTrue();
 
-    $groups = AdminActivityOrderingGroup::query()->orderBy('id')->get();
+    $projections = AdminActivityOrderingProjection::query()->orderBy('id')->get();
     $orderingRows = collect($feed->page(
         family: 'ordering',
         perPage: 100,
@@ -73,9 +73,9 @@ it('reduces a reorder cycle to no visible Activity when the net permutation is i
         days: 7,
     )['activity'])->where('action_key', 'site_section.reordered')->values();
 
-    expect($groups)->toHaveCount(2)
-        ->and($groups[0]->returnedToIdentity())->toBeTrue()
-        ->and($groups[1]->returnedToIdentity())->toBeFalse()
+    expect($projections)->toHaveCount(2)
+        ->and($projections[0]->isIdentity())->toBeTrue()
+        ->and($projections[1]->isIdentity())->toBeFalse()
         ->and($orderingRows)->toHaveCount(1)
         ->and($orderingRows[0]['target'])->toBe('Public navigation')
         ->and($orderingRows[0]['action'])->toBe('Reordered public navigation')
@@ -111,7 +111,7 @@ it('freezes a non-identity ordering projection at a publication boundary', funct
 
     expect($order->move($middle, 'down'))->toBeTrue();
 
-    $groups = AdminActivityOrderingGroup::query()
+    $projections = AdminActivityOrderingProjection::query()
         ->where('action', 'site_section.reordered')
         ->orderBy('id')
         ->get();
@@ -122,9 +122,9 @@ it('freezes a non-identity ordering projection at a publication boundary', funct
         days: 7,
     )['activity'])->where('action_key', 'site_section.reordered')->values();
 
-    expect($groups)->toHaveCount(2)
-        ->and($groups[0]->returnedToIdentity())->toBeFalse()
-        ->and($groups[1]->returnedToIdentity())->toBeFalse()
+    expect($projections)->toHaveCount(2)
+        ->and($projections[0]->isIdentity())->toBeFalse()
+        ->and($projections[1]->isIdentity())->toBeFalse()
         ->and($rows)->toHaveCount(2);
 });
 
@@ -170,5 +170,5 @@ it('records one logical Journal reorder event even when several row positions ch
 
     expect($newEvents)->toBe(1)
         ->and($activityRows)->toHaveCount(1)
-        ->and($activityRows[0]['ordering_group']['event_count'] ?? null)->toBe(1);
+        ->and($activityRows[0]['ordering_projection']['event_count'] ?? null)->toBe(1);
 });
