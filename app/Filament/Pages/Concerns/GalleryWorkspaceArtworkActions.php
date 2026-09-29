@@ -37,7 +37,10 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->transient()->title('Artwork removed from Gallery')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Artwork removed from Gallery',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::confirm(
@@ -125,18 +128,21 @@ trait GalleryWorkspaceArtworkActions
                         return;
                     }
 
-                    app(AdminNotifier::class)->transient()
-                        ->title('Media file was not deleted')
-                        ->body('The file could not be deleted.')
-                        ->danger()
-                        ->send();
+                    app(AdminNotifier::class)->feedback(
+                        title: 'Media file was not deleted',
+                        body: 'The file could not be deleted.',
+                        status: 'danger',
+                    );
 
                     return;
                 }
 
                 $this->detachGalleryArtworksAfterPrimaryMediaDelete($affectedArtworkIds);
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->transient()->title('File deleted')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'File deleted',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::confirm(
@@ -162,7 +168,10 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->transient()->title('Artwork published')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Artwork published',
+                    status: 'success',
+                );
             });
     }
 
@@ -173,7 +182,10 @@ trait GalleryWorkspaceArtworkActions
             ->action(function (array $arguments): void {
                 app(ArtworkPublicationService::class)->unpublish($this->actionArtwork($arguments));
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->transient()->title('Artwork unpublished')->success()->send();
+                app(AdminNotifier::class)->feedback(
+                    title: 'Artwork unpublished',
+                    status: 'success',
+                );
             });
 
         return AdminDialog::confirm(
