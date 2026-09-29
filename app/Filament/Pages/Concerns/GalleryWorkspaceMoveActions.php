@@ -23,7 +23,10 @@ trait GalleryWorkspaceMoveActions
         }
 
         if (! $this->artworkReorderingAvailable()) {
-            app(AdminNotifier::class)->transient()->title('Clear filters to reorder')->warning()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Clear filters to reorder',
+                status: 'warning',
+            );
 
             return;
         }
@@ -42,7 +45,10 @@ trait GalleryWorkspaceMoveActions
         [$orderedIds[$index], $orderedIds[$targetIndex]] = [$orderedIds[$targetIndex], $orderedIds[$index]];
         $this->saveArtworkOrder($orderedIds);
         $this->refreshWorkspaceAfterMutation();
-        app(AdminNotifier::class)->transient()->title('Gallery order updated')->success()->send();
+        app(AdminNotifier::class)->feedback(
+            title: 'Gallery order updated',
+            status: 'success',
+        );
     }
 
     public function sortArtwork(int|string $artworkId, int|string $position): void
@@ -80,7 +86,10 @@ trait GalleryWorkspaceMoveActions
         }
 
         $this->refreshWorkspaceAfterMutation();
-        app(AdminNotifier::class)->transient()->title('Gallery order updated')->success()->send();
+        app(AdminNotifier::class)->feedback(
+            title: 'Gallery order updated',
+            status: 'success',
+        );
     }
 
     public function moveSelectedArtworks(string $direction): void
@@ -90,14 +99,20 @@ trait GalleryWorkspaceMoveActions
         }
 
         if (! $this->artworkReorderingAvailable()) {
-            app(AdminNotifier::class)->transient()->title('Clear filters to reorder')->warning()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Clear filters to reorder',
+                status: 'warning',
+            );
 
             return;
         }
 
         $selectedIds = array_keys($this->selectedArtworkIdSet());
         if ($selectedIds === []) {
-            app(AdminNotifier::class)->transient()->title('Select artworks first')->warning()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Select artworks first',
+                status: 'warning',
+            );
 
             return;
         }
@@ -110,7 +125,10 @@ trait GalleryWorkspaceMoveActions
 
         $this->saveArtworkOrder($orderedIds);
         $this->refreshWorkspaceAfterMutation();
-        app(AdminNotifier::class)->transient()->title('Selected artworks reordered')->success()->send();
+        app(AdminNotifier::class)->feedback(
+            title: 'Selected artworks reordered',
+            status: 'success',
+        );
     }
 
     public function moveArtworkToGalleryAction(): Action
@@ -158,7 +176,10 @@ trait GalleryWorkspaceMoveActions
         $destination = ArtworkCategory::query()->whereKey($targetGalleryId)->where('id', '<>', $galleryId)->first();
 
         if (! $artwork || ! $destination) {
-            app(AdminNotifier::class)->transient()->title('Artwork could not be moved')->danger()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Artwork could not be moved',
+                status: 'danger',
+            );
 
             return;
         }
@@ -177,7 +198,11 @@ trait GalleryWorkspaceMoveActions
         ));
 
         $this->refreshWorkspaceAfterMutation();
-        app(AdminNotifier::class)->transient()->title('Artwork moved')->body('Media references were preserved.')->success()->send();
+        app(AdminNotifier::class)->feedback(
+            title: 'Artwork moved',
+            body: 'Media references were preserved.',
+            status: 'success',
+        );
     }
 
     private function reassignSelectedArtworksTo(int $targetGalleryId): void
@@ -186,7 +211,10 @@ trait GalleryWorkspaceMoveActions
         /** @var ArtworkCategory|null $destination */
         $destination = ArtworkCategory::query()->whereKey($targetGalleryId)->where('id', '<>', $galleryId)->first();
         if (! $destination) {
-            app(AdminNotifier::class)->transient()->title('Choose a destination Gallery')->warning()->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Choose a destination Gallery',
+                status: 'warning',
+            );
 
             return;
         }
@@ -207,7 +235,11 @@ trait GalleryWorkspaceMoveActions
         $count = $artworks->count();
         $this->clearSelection();
         $this->refreshWorkspaceAfterMutation();
-        app(AdminNotifier::class)->transient()->title($count === 1 ? 'Artwork moved' : $count.' artworks moved')->body('Media references remain shared and unchanged.')->success()->send();
+        app(AdminNotifier::class)->feedback(
+            title: $count === 1 ? 'Artwork moved' : $count.' artworks moved',
+            body: 'Media references remain shared and unchanged.',
+            status: 'success',
+        );
     }
 
     private function artworkReorderingAvailable(): bool
