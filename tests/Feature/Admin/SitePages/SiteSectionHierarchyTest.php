@@ -205,6 +205,23 @@ it('keeps Home fixed at the top level and preserves its publication delete and c
         ->toThrow(ValidationException::class, 'Home cannot be deleted.');
 });
 
+it('does not report success for no-op page type or Journal template commands', function (): void {
+    $this->actingAs(pagesRepairAdmin(), 'web');
+    $service = app(SiteSectionEditorialService::class);
+    $page = $service->createCustomPage('No-op Type Page', 'noop-type-page');
+    $journal = $service->createJournal('No-op Template Journal', 'noop-template-journal', JournalTemplate::Blog->value);
+    $eventsBefore = AuditEvent::query()->count();
+
+    Livewire::test(SitePages::class)
+        ->call('convertSectionType', (int) $page->getKey(), SiteSectionType::CustomPage->value)
+        ->call('changeJournalTemplate', (int) $journal->getKey(), JournalTemplate::Blog->value)
+        ->assertNotDispatched('admin-notification-ticker');
+
+    expect(AuditEvent::query()->count())->toBe($eventsBefore)
+        ->and($page->fresh()->type)->toBe(SiteSectionType::CustomPage->value)
+        ->and($journal->fresh()->template)->toBe(JournalTemplate::Blog->value);
+});
+
 it('initializes target configuration for safe type conversions transactionally', function (): void {
     $this->actingAs(pagesRepairAdmin(), 'web');
     $service = app(SiteSectionEditorialService::class);
