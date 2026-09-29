@@ -8,7 +8,6 @@ use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Auth\Pages\PasswordReset\RequestPasswordReset as BaseRequestPasswordReset;
 use Filament\Facades\Filament;
 use Filament\Models\Contracts\FilamentUser;
-use Filament\Notifications\Notification;
 use Illuminate\Auth\Events\PasswordResetLinkSent;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Contracts\Support\Htmlable;
@@ -23,7 +22,11 @@ class RequestPasswordReset extends BaseRequestPasswordReset
         try {
             $this->rateLimit(2);
         } catch (TooManyRequestsException $exception) {
-            $this->getRateLimitedNotification($exception)?->send();
+            app(AdminNotifier::class)->feedback(
+                title: 'Too many attempts',
+                body: 'Try again in '.$exception->secondsUntilAvailable.' seconds.',
+                status: 'danger',
+            );
 
             return;
         }
@@ -56,21 +59,17 @@ class RequestPasswordReset extends BaseRequestPasswordReset
             },
         );
 
-        $this->neutralSentNotification()->send();
+        app(AdminNotifier::class)->feedback(
+            title: 'Check your inbox',
+            body: 'If an administrator account exists for that email address, a password reset link has been sent.',
+            status: 'success',
+        );
         $this->form->fill();
     }
 
     public function getHeading(): string|Htmlable|null
     {
         return 'Reset password';
-    }
-
-    protected function neutralSentNotification(): Notification
-    {
-        return app(AdminNotifier::class)->transient()
-            ->title('Check your inbox')
-            ->body('If an administrator account exists for that email address, a password reset link has been sent.')
-            ->success();
     }
 
     /**
