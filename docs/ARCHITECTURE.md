@@ -169,6 +169,8 @@ Archived Exhibitions remember their prior state where available. Historical arch
 
 Ordered editorial records persist explicit position. Native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) is the admin interaction mechanism; domain ordering services remain persistence authority.
 
+Ordering Activity uses `AdminAuditService::recordOrdering()` with a stable domain scope and canonical before/after identity sequence. `AdminActivityOrderingProjector` derives compact logical reorder sequences without weakening the append-only `audit_events` contract. Returning a permutation to its exact starting order is therefore represented as one identity-cycle Activity sequence rather than a stream of intermediate reorder rows.
+
 Filtered/search projections do not silently become canonical reorder sequences. Ranked tables may expose a 1-based Position column as described in `ui-skills.md`.
 
 ## Custom Pages and Contact
