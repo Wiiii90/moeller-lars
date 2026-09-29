@@ -103,21 +103,32 @@ class CreateArtwork extends CreateRecord
         return ArtworkResource::getUrl('gallery', ['gallery' => $galleryId]);
     }
 
-    protected function getCreatedNotification(): Notification
+    protected function getCreatedNotification(): ?Notification
     {
-        return match ($this->primaryMediaResult) {
-            'attached' => app(AdminNotifier::class)->transient()
-                ->success()
-                ->title('Artwork draft created')
-                ->body('The primary media was attached. Add or confirm ALT text before publication.'),
-            'failed' => app(AdminNotifier::class)->transient()
-                ->warning()
-                ->title('Artwork draft created; media needs attention')
-                ->body('The draft is saved, but the primary media could not be attached. Add it from the artwork editor.'),
-            default => app(AdminNotifier::class)->transient()
-                ->success()
-                ->title('Artwork draft created')
-                ->body('No primary media was attached yet. Add an image or video before publication.'),
+        [$title, $body, $status] = match ($this->primaryMediaResult) {
+            'attached' => [
+                'Artwork draft created',
+                'The primary media was attached. Add or confirm ALT text before publication.',
+                'success',
+            ],
+            'failed' => [
+                'Artwork draft created; media needs attention',
+                'The draft is saved, but the primary media could not be attached. Add it from the artwork editor.',
+                'warning',
+            ],
+            default => [
+                'Artwork draft created',
+                'No primary media was attached yet. Add an image or video before publication.',
+                'success',
+            ],
         };
+
+        app(AdminNotifier::class)->feedback(
+            title: $title,
+            body: $body,
+            status: $status,
+        );
+
+        return null;
     }
 }
