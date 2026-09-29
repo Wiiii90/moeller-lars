@@ -87,6 +87,8 @@ final class JournalEntryMediaService
     public function detachAsset(MediaAsset $asset): void
     {
         $assetId = (int) $asset->getKey();
+        $actor = $this->audit->requireActor();
+
         /** @var EloquentCollection<int, JournalEntryMedia> $usages */
         $usages = JournalEntryMedia::query()
             ->where('media_asset_id', $assetId)
@@ -94,57 +96,154 @@ final class JournalEntryMediaService
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
-        $owners = [];
+
+        /** @var array<string, BlogPost|Exhibition> $structuredOwners */
+        $structuredOwners = [];
         foreach ($usages as $usage) {
             $entry = $usage->entry();
             if ($entry instanceof BlogPost) {
-                $owners['blog:'.$entry->getKey()] = $entry;
+                $structuredOwners['blog:'.$entry->getKey()] = $entry;
             } elseif ($entry instanceof Exhibition) {
-                $owners['exhibition:'.$entry->getKey()] = $entry;
+                $structuredOwners['exhibition:'.$entry->getKey()] = $entry;
             }
+
             $usage->delete();
         }
 
-        $actor = $this->audit->requireActor();
-        /** @var EloquentCollection<int, BlogPost> $posts */
-        $posts = BlogPost::query()->whereNotNull('body')->lockForUpdate()->get();
-        foreach ($posts as $post) {
-            $source = (string) $post->getAttribute('body');
-            if (! in_array($assetId, RichTextMediaReference::ids($source), true)) {
+        $processedBlogIds = [];
+        $processedExhibitionIds = [];
+
+        foreach ($structuredOwners as $entry) {
+            if ($entry instanceof BlogPost) {
+                $processedBlogIds[] = (int) $entry->getKey();
+                $this->removeBlogRichTextReference($entry, $assetId);
+                $this->normalizeGallery($entry);
+                $this->recordBlogMediaRemoval($entry, $actor);
+
                 continue;
             }
-            $clean = RichTextMediaReference::remove($source, $assetId);
-            $post->setAttribute('body', $clean === '' ? null : $clean);
-            $state = (string) $post->getAttribute('state');
-            if ($clean === '' && in_array($state, ['published', 'scheduled'], true)) {
-                $post->setAttribute('state', $state === 'published' ? 'unpublished' : 'draft');
-                $post->setAttribute('scheduled_at', null);
-                $this->audit->record(
-                    $actor,
-                    $state === 'published' ? 'blog_post.unpublished' : 'blog_post.restored_to_draft',
-                    'blog_post',
-                    $post->getKey(),
-                    ['reason' => 'referenced_rich_text_media_deleted'],
-                );
+
+            $processedExhibitionIds[] = (int) $entry->getKey();
+            $this->removeExhibitionRichTextReference($entry, $assetId);
+            $this->normalizeGallery($entry);
+            $this->audit->record(
+                $actor,
+                'exhibition.media_reference_removed',
+                'exhibition',
+                (int) $entry->getKey(),
+            );
+        }
+
+        /** @var EloquentCollection<int, BlogPost> $posts */
+        $posts = BlogPost::query()
+            ->whereNotNull('body')
+            ->when(
+                $processedBlogIds !== [],
+                static fn ($query) => $query->whereNotIn('id', $processedBlogIds),
+            )
+            ->lockForUpdate()
+            ->get();
+        foreach ($posts as $post) {
+            if (! $this->removeBlogRichTextReference($post, $assetId)) {
+                continue;
             }
-            $post->save();
+
+            $this->recordBlogMediaRemoval($post, $actor);
         }
 
         /** @var EloquentCollection<int, Exhibition> $exhibitions */
-        $exhibitions = Exhibition::query()->whereNotNull('description')->lockForUpdate()->get();
+        $exhibitions = Exhibition::query()
+            ->whereNotNull('description')
+            ->when(
+                $processedExhibitionIds !== [],
+                static fn ($query) => $query->whereNotIn('id', $processedExhibitionIds),
+            )
+            ->lockForUpdate()
+            ->get();
         foreach ($exhibitions as $exhibition) {
-            $source = (string) $exhibition->getAttribute('description');
-            if (! in_array($assetId, RichTextMediaReference::ids($source), true)) {
+            if (! $this->removeExhibitionRichTextReference($exhibition, $assetId)) {
                 continue;
             }
-            $clean = RichTextMediaReference::remove($source, $assetId);
-            $exhibition->setAttribute('description', $clean === '' ? null : $clean);
-            $exhibition->save();
+
+            $this->audit->record(
+                $actor,
+                'exhibition.media_reference_removed',
+                'exhibition',
+                (int) $exhibition->getKey(),
+            );
+        }
+    }
+
+    private function removeBlogRichTextReference(BlogPost $post, int $assetId): bool
+    {
+        $source = (string) ($post->getAttribute('body') ?? '');
+        if (! in_array($assetId, RichTextMediaReference::ids($source), true)) {
+            return false;
         }
 
-        foreach ($owners as $entry) {
-            $this->normalizeGallery($entry);
+        $clean = RichTextMediaReference::remove($source, $assetId);
+        $post->setAttribute('body', $clean === '' ? null : $clean);
+
+        $state = (string) $post->getAttribute('state');
+        if ($clean === '' && in_array($state, ['published', 'scheduled'], true)) {
+            $post->setAttribute('state', $state === 'published' ? 'unpublished' : 'draft');
+            $post->setAttribute('scheduled_at', null);
         }
+
+        $post->save();
+
+        return true;
+    }
+
+    private function recordBlogMediaRemoval(BlogPost $post, User $actor): void
+    {
+        $original = $post->getOriginal('state');
+        $current = (string) $post->getAttribute('state');
+
+        if ($original === 'published' && $current === 'unpublished') {
+            $this->audit->record(
+                $actor,
+                'blog_post.unpublished',
+                'blog_post',
+                (int) $post->getKey(),
+                ['reason' => 'referenced_rich_text_media_deleted'],
+            );
+
+            return;
+        }
+
+        if ($original === 'scheduled' && $current === 'draft') {
+            $this->audit->record(
+                $actor,
+                'blog_post.restored_to_draft',
+                'blog_post',
+                (int) $post->getKey(),
+                ['reason' => 'referenced_rich_text_media_deleted'],
+            );
+
+            return;
+        }
+
+        $this->audit->record(
+            $actor,
+            'blog_post.media_reference_removed',
+            'blog_post',
+            (int) $post->getKey(),
+        );
+    }
+
+    private function removeExhibitionRichTextReference(Exhibition $exhibition, int $assetId): bool
+    {
+        $source = (string) ($exhibition->getAttribute('description') ?? '');
+        if (! in_array($assetId, RichTextMediaReference::ids($source), true)) {
+            return false;
+        }
+
+        $clean = RichTextMediaReference::remove($source, $assetId);
+        $exhibition->setAttribute('description', $clean === '' ? null : $clean);
+        $exhibition->save();
+
+        return true;
     }
 
     private function syncCover(BlogPost|Exhibition $entry, mixed $value): bool
