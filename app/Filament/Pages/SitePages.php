@@ -884,13 +884,12 @@ final class SitePages extends Page
 
     private function bulkNotification(string $action, int $changed, int $blocked): void
     {
-        $notification = app(AdminNotifier::class)->transient()->title($action.' selection complete');
-        if ($blocked > 0) {
-            $notification->body($changed.' changed · '.$blocked.' blocked by page safety rules')->warning()->send();
-
-            return;
-        }
-
-        $notification->body($changed.' changed')->success()->send();
+        app(AdminNotifier::class)->feedback(
+            title: $action.' selection complete',
+            body: $blocked > 0
+                ? $changed.' changed · '.$blocked.' blocked by page safety rules'
+                : $changed.' changed',
+            status: $blocked > 0 ? 'warning' : 'success',
+        );
     }
 }
