@@ -170,7 +170,7 @@ See [MEDIA.md](MEDIA.md).
 
 ## Admin notifications
 
-`admin_notifications` stores persistent user-scoped admin inbox entries. It is deliberately separate from append-only audit history and from Filament's ephemeral toast presentation.
+`admin_notifications` stores persistent user-scoped admin inbox entries. It is deliberately separate from append-only audit history and from the project-owned ephemeral ticker feedback channel.
 
 The durable identity is `(user_id, source_id)`: the recipient and the server-originated source event/condition together provide idempotency. Notification rows may carry bounded structured context for their severity/type, destination action and related entity/audit/publication identifiers, but they are not a second audit payload store.
 
