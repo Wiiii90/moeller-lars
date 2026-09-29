@@ -107,8 +107,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('admin_activity_ordering_events')->delete();
-        DB::table('admin_activity_ordering_projections')->delete();
+        // Derived projection data is safe to keep. Deleting it while the projection
+        // schema/runtime remain active would make valid ordering history disappear.
     }
 
     /**
