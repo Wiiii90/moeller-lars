@@ -23,7 +23,7 @@ final class AdminNotifier
      * Immediate feedback for the current admin action.
      *
      * Livewire requests dispatch directly to the project-owned header feedback surface.
-     * Non-Livewire requests queue feedback for the next admin page render.
+     * Non-Livewire requests keep bounded pending feedback for the next admin page render.
      */
     public function feedback(
         string $title,
@@ -49,25 +49,25 @@ final class AdminNotifier
             }
         }
 
-        $this->queueFeedback($message);
+        $this->storePendingFeedback($message);
     }
 
     /**
      * @return list<array<string, mixed>>
      */
-    public function pullQueuedFeedback(): array
+    public function pullPendingFeedback(): array
     {
         if (! request()->hasSession()) {
             return [];
         }
 
-        $queued = request()->session()->pull(self::FEEDBACK_SESSION_KEY, []);
-        if (! is_array($queued)) {
+        $pending = request()->session()->pull(self::FEEDBACK_SESSION_KEY, []);
+        if (! is_array($pending)) {
             return [];
         }
 
         return array_values(array_filter(
-            $queued,
+            $pending,
             static fn (mixed $message): bool => is_array($message),
         ));
     }
@@ -138,21 +138,21 @@ final class AdminNotifier
     /**
      * @param  array{id:string,title:string,body:?string,status:string}  $message
      */
-    private function queueFeedback(array $message): void
+    private function storePendingFeedback(array $message): void
     {
         if (! request()->hasSession()) {
             return;
         }
 
-        $queued = request()->session()->get(self::FEEDBACK_SESSION_KEY, []);
-        $queued = is_array($queued) ? array_values(array_filter($queued, 'is_array')) : [];
+        $pending = request()->session()->get(self::FEEDBACK_SESSION_KEY, []);
+        $pending = is_array($pending) ? array_values(array_filter($pending, 'is_array')) : [];
 
-        if (count($queued) >= self::MAX_PENDING_FEEDBACK) {
-            $queued = array_slice($queued, -(self::MAX_PENDING_FEEDBACK - 1));
+        if (count($pending) >= self::MAX_PENDING_FEEDBACK) {
+            $pending = array_slice($pending, -(self::MAX_PENDING_FEEDBACK - 1));
         }
 
-        $queued[] = $message;
-        request()->session()->put(self::FEEDBACK_SESSION_KEY, $queued);
+        $pending[] = $message;
+        request()->session()->put(self::FEEDBACK_SESSION_KEY, $pending);
     }
 
     /** @return array{0:string,1:?string,2:string} */
