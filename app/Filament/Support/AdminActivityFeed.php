@@ -14,6 +14,7 @@ use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Resources\PublicContentSettings\PublicContentSettingResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
+use App\Models\ArtworkMaterialPreset;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
@@ -538,6 +539,7 @@ final class AdminActivityFeed
         return [
             'artwork' => $this->pluckLabels(Artwork::class, $ids->get('artwork', []), 'title'),
             'artwork_category' => $this->pluckLabels(ArtworkCategory::class, $ids->get('artwork_category', []), 'name'),
+            'artwork_material_preset' => $this->pluckLabels(ArtworkMaterialPreset::class, $ids->get('artwork_material_preset', []), 'name'),
             'site_section' => $this->pluckLabels(SiteSection::class, $ids->get('site_section', []), 'title'),
             'media_asset' => $this->pluckLabels(MediaAsset::class, $ids->get('media_asset', []), 'original_filename'),
             'cv_entry' => [],
@@ -590,6 +592,7 @@ final class AdminActivityFeed
         return match ($entityType) {
             'artwork' => 'Artwork no longer available',
             'artwork_category' => 'Gallery no longer available',
+            'artwork_material_preset' => 'Material preset no longer available',
             'site_section' => 'Public page no longer available',
             'media_asset' => 'Media no longer available',
             'cv_entry' => 'Custom Page list entry no longer available',
