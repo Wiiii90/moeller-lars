@@ -25,7 +25,10 @@ trait ManagesSitePagesSettings
                     $changed = $dialog->save($data);
                     $this->loadSections();
                     if ($changed) {
-                        app(AdminNotifier::class)->transient()->title('Pages settings saved')->success()->send();
+                        app(AdminNotifier::class)->feedback(
+                            title: 'Pages settings saved',
+                            status: 'success',
+                        );
                     }
                 }),
             'Save settings',
