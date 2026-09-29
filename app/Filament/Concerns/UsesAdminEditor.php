@@ -21,14 +21,14 @@ trait UsesAdminEditor
 
     protected function getSavedNotification(): ?Notification
     {
-        if (! $this->adminEditorMutationChanged) {
-            return null;
+        if ($this->adminEditorMutationChanged) {
+            app(AdminNotifier::class)->feedback(
+                title: $this->adminEditorSavedNotificationTitle(),
+                status: 'success',
+            );
         }
 
-        return app(AdminNotifier::class)
-            ->transient()
-            ->success()
-            ->title($this->adminEditorSavedNotificationTitle());
+        return null;
     }
 
     public function areFormActionsSticky(): bool
