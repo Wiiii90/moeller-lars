@@ -363,11 +363,8 @@ final class AdminActionReceiptService
             return $this->attachedMediaReceiptAvailable($receipt, $media);
         }
 
-        if ($action === 'artwork.additional_media_detached') {
-            return $this->detachedMediaReceiptAvailable($receipt, $media);
-        }
-
-        return $this->detachedMediaReceiptAvailable($receipt, $media);
+        return $action === 'artwork.additional_media_detached'
+            && $this->detachedMediaReceiptAvailable($receipt, $media);
     }
 
     /** @param array{usages:array<int, array{artwork_id:int,media_asset_id:int,position:int}>,ordered:array<int, array<int, int>>,asset_states:array<int, string>} $media */
