@@ -57,39 +57,17 @@ return new class extends Migration
             'cv_entry.reordered',
         ];
 
-        $previousByActor = [];
-
         DB::table('audit_events')
+            ->whereIn('action', $orderingActions)
             ->select(['id', 'admin_user_id', 'action', 'entity_id', 'occurred_at', 'metadata'])
             ->orderBy('id')
-            ->chunkById(500, function ($events) use ($orderingActions, &$previousByActor): void {
-                $events->each(function (object $event) use ($orderingActions, &$previousByActor): void {
-                $actorKey = $event->admin_user_id === null ? 'guest' : 'user:'.(int) $event->admin_user_id;
-                $previous = $previousByActor[$actorKey] ?? null;
-                $isOrdering = in_array((string) $event->action, $orderingActions, true);
-                $scope = $isOrdering ? $this->legacyScope($event) : null;
-
-                if (! $isOrdering || $scope === null) {
-                    $previousByActor[$actorKey] = ['event' => $event, 'scope' => null, 'group_id' => null];
-
-                    return;
-                }
-
-                $occurredAt = Carbon::parse((string) $event->occurred_at);
-                $canAppend = is_array($previous)
-                    && $previous['scope'] === $scope
-                    && is_int($previous['group_id'])
-                    && Carbon::parse((string) $previous['event']->occurred_at)->diffInSeconds($occurredAt) <= self::COALESCE_SECONDS;
-
-                if ($canAppend) {
-                    $groupId = $previous['group_id'];
-                    $group = DB::table('admin_activity_ordering_groups')->where('id', $groupId)->first();
-                    if ($group === null) {
-                        $canAppend = false;
+            ->chunkById(500, function ($events): void {
+                $events->each(function (object $event): void {
+                    $scope = $this->legacyScope($event);
+                    if ($scope === null) {
+                        return;
                     }
-                }
 
-                if (! $canAppend) {
                     $groupId = (int) DB::table('admin_activity_ordering_groups')->insertGetId([
                         'admin_user_id' => $event->admin_user_id,
                         'scope' => $scope,
@@ -104,29 +82,12 @@ return new class extends Migration
                         'started_at' => $event->occurred_at,
                         'ended_at' => $event->occurred_at,
                     ]);
-                    $sequence = 1;
-                } else {
-                    $groupId = (int) $groupId;
-                    $sequence = ((int) $group->event_count) + 1;
-                    DB::table('admin_activity_ordering_groups')->where('id', $groupId)->update([
-                        'last_audit_event_id' => (int) $event->id,
-                        'event_count' => $sequence,
-                        'after_hash' => hash('sha256', 'legacy-ordering-end:'.(int) $event->id),
-                        'ended_at' => $event->occurred_at,
-                    ]);
-                }
 
-                DB::table('admin_activity_ordering_events')->insert([
-                    'audit_event_id' => (int) $event->id,
-                    'group_id' => $groupId,
-                    'sequence' => $sequence,
-                ]);
-
-                    $previousByActor[$actorKey] = [
-                        'event' => $event,
-                        'scope' => $scope,
+                    DB::table('admin_activity_ordering_events')->insert([
+                        'audit_event_id' => (int) $event->id,
                         'group_id' => $groupId,
-                    ];
+                        'sequence' => 1,
+                    ]);
                 });
             });
     }
