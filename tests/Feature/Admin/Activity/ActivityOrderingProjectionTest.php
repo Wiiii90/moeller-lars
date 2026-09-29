@@ -49,7 +49,36 @@ it('keeps raw reorder history while projecting an identity permutation cycle as 
         ->and($orderingRows[0]['ordering_group']['event_count'] ?? null)->toBe(2)
         ->and($orderingRows[0]['ordering_group']['returned_to_identity'] ?? false)->toBeTrue()
         ->and($orderingRows[0]['undo'] ?? null)->toBeNull()
-        ->and($orderingRows[0]['action'])->toContain('returned to starting order after 2 changes');
+        ->and($orderingRows[0]['target'])->toBe('Public navigation')
+        ->and($orderingRows[0]['action'])->toContain('returned to starting order after 2 changes')
+        ->and(app(AdminActivityFeed::class)->overview(family: 'ordering', days: 7)['total'])->toBe(1);
+
+    $cycleFirstEventId = (int) AuditEvent::query()
+        ->where('action', 'site_section.reordered')
+        ->where('id', '>', 0)
+        ->orderBy('id')
+        ->skip($rawBefore)
+        ->value('id');
+    $cycleRepresentativeId = (int) $orderingRows[0]['id'];
+
+    expect(app(AdminActivityFeed::class)->event($cycleFirstEventId, $this->actor)['id'] ?? null)
+        ->toBe($cycleRepresentativeId);
+
+    expect($order->move($middle, 'down'))->toBeTrue();
+
+    $groups = AdminActivityOrderingGroup::query()->orderBy('id')->get();
+    $orderingRows = collect(app(AdminActivityFeed::class)->page(
+        family: 'ordering',
+        perPage: 100,
+        actor: $this->actor,
+        days: 7,
+    )['activity'])->where('action_key', 'site_section.reordered')->values();
+
+    expect($groups)->toHaveCount(2)
+        ->and($groups[0]->returnedToIdentity())->toBeTrue()
+        ->and($groups[1]->returnedToIdentity())->toBeFalse()
+        ->and($orderingRows)->toHaveCount(2)
+        ->and(app(AdminActivityFeed::class)->overview(family: 'ordering', days: 7)['total'])->toBe(2);
 });
 
 it('records one logical Journal reorder event even when several row positions change', function (): void {
