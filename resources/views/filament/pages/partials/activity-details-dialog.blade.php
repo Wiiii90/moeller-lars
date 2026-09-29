@@ -1,7 +1,7 @@
 @php
     $metadata = is_array($event['metadata'] ?? null) ? $event['metadata'] : [];
     $changeSummary = is_array($event['change_summary'] ?? null) ? $event['change_summary'] : null;
-    unset($metadata['change_summary']);
+    unset($metadata['change_summary'], $metadata['target_label']);
     $publicationLabel = match ($event['publication_status'] ?? null) {
         'committed' => 'Committed',
         'pending' => 'Staged for next publish',
