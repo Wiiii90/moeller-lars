@@ -193,18 +193,18 @@ See [ANALYTICS.md](ANALYTICS.md).
 
 Administrative feedback has four separate meanings and persistence contracts:
 
-- **Toast** — ephemeral immediate feedback for an action the current user just performed;
+- **Ticker feedback** — ephemeral immediate feedback for an action the current user just performed;
 - **Notification** — persistent user-scoped information that deserves later attention in the Dashboard feed;
 - **Activity** — append-only factual history of successful administrative changes;
 - **Publication** — working/live/version state and publication operations.
 
-`App\Domain\Admin\AdminNotifier` is the server-side authority for admin feedback delivery. Callers explicitly choose toast-only, persistent inbox, or both. A rendered Filament toast is never itself a persistence source.
+`App\Domain\Admin\AdminNotifier` is the server-side authority for admin feedback delivery. Callers explicitly choose ticker feedback, persistent inbox, or both. Immediate feedback uses the project-owned ticker event/session channel and never a framework notification renderer.
 
 `AdminNotification` stores persistent inbox entries and remains integrated into `DashboardFeed`, retention, pins and read/unread state. Persistent notifications use origin-generated `source_id` values with `(user_id, source_id)` idempotency and may carry bounded action/entity/audit/publication context.
 
 DOM observation, Filament CSS-class parsing and browser round-tripping are not part of the notification architecture. Background jobs and other server-side processes may create persistent notifications directly for an explicit recipient without an open browser.
 
-Notification retention/deletion never deletes or rewrites Activity/audit history or Publication history. Routine successful editorial actions normally need a toast plus Activity, not a duplicate persistent inbox entry.
+Notification retention/deletion never deletes or rewrites Activity/audit history or Publication history. Routine successful editorial actions normally need ticker feedback plus Activity, not a duplicate persistent inbox entry.
 
 See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
 
