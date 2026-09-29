@@ -192,38 +192,32 @@ class MediaAssetEditorialService
             ->orderBy('position')
             ->lockForUpdate()
             ->get();
-        $publishedPrimaryArtworkIds = $artworkUsages
-            ->filter(static fn (ArtworkMedia $usage): bool => $usage->getAttribute('role') === 'primary')
-            ->pluck('artwork_id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
-        $artworkIds = $artworkUsages
-            ->pluck('artwork_id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
 
-        if ($publishedPrimaryArtworkIds !== []) {
-            /** @var EloquentCollection<int, Artwork> $artworks */
-            $artworks = Artwork::query()
-                ->whereIn('id', $publishedPrimaryArtworkIds)
-                ->where('state', 'published')
-                ->lockForUpdate()
-                ->get();
-            foreach ($artworks as $artwork) {
+        foreach ($artworkUsages->groupBy('artwork_id') as $artworkId => $usages) {
+            /** @var Artwork $artwork */
+            $artwork = Artwork::query()->whereKey((int) $artworkId)->lockForUpdate()->firstOrFail();
+            $removedPrimary = $usages->contains(
+                static fn (ArtworkMedia $usage): bool => $usage->getAttribute('role') === 'primary',
+            );
+
+            foreach ($usages as $usage) {
+                $usage->delete();
+            }
+            $this->normalizeArtworkAdditionalPositions((int) $artworkId);
+
+            $action = 'artwork.media_reference_removed';
+            if ($removedPrimary && (string) $artwork->getAttribute('state') === 'published') {
                 $artwork->forceFill(['state' => 'draft'])->save();
-                $this->adminAuditService->record($actor, 'artwork.unpublished', 'artwork', $artwork->getKey());
+                $action = 'artwork.unpublished';
             }
-        }
 
-        if ($artworkUsages->isNotEmpty()) {
-            ArtworkMedia::query()->where('media_asset_id', $assetId)->delete();
-            foreach ($artworkIds as $artworkId) {
-                $this->normalizeArtworkAdditionalPositions($artworkId);
-            }
+            $this->adminAuditService->record(
+                $actor,
+                $action,
+                'artwork',
+                (int) $artwork->getKey(),
+                ['media_asset_id' => $assetId],
+            );
         }
 
         $this->journalMedia->detachAsset($asset);
@@ -236,6 +230,13 @@ class MediaAssetEditorialService
         foreach ($settings as $setting) {
             $setting->setAttribute('favicon_media_asset_id', null);
             $setting->save();
+            $this->adminAuditService->record(
+                $actor,
+                'public_content_setting.favicon_removed',
+                'public_content_setting',
+                (int) $setting->getKey(),
+                ['media_asset_id' => $assetId],
+            );
         }
 
         $this->removeCustomPageReferences($assetId);
