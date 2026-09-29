@@ -15,17 +15,8 @@
     <div class="admin-notification-ticker__viewport">
         <div class="admin-notification-ticker__message">
             <div class="admin-notification-ticker__runway" data-admin-notification-runway>
-                <div class="admin-notification-ticker__copy" data-admin-notification-track>
-                    <strong data-admin-notification-title></strong>
-                    <span data-admin-notification-body></span>
-                </div>
+                <div class="admin-notification-ticker__stream" data-admin-notification-stream></div>
             </div>
-            <span
-                class="admin-notification-ticker__pending"
-                data-admin-notification-pending
-                aria-hidden="true"
-                hidden
-            ></span>
             <button
                 type="button"
                 class="admin-notification-ticker__dismiss"
