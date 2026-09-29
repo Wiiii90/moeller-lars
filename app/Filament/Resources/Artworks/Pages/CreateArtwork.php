@@ -10,7 +10,7 @@ use App\Filament\Concerns\UsesAdminEditor;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
-use Filament\Notifications\Notification;
+use Filament\Notifications\Notification as FilamentNotification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -135,7 +135,7 @@ class CreateArtwork extends CreateRecord
      * Returning null suppresses the framework toast because project-owned mutation
      * feedback is emitted centrally through AdminNotifier in afterCreate().
      */
-    protected function getCreatedNotification(): ?Notification
+    protected function getCreatedNotification(): ?FilamentNotification
     {
         return null;
     }
