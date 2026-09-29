@@ -43,6 +43,11 @@ html.fi,
     scrollbar-gutter: auto !important;
 }
 
+/* Sidebar navigation uses the same top inset as its horizontal shell inset on every viewport. */
+.fi-sidebar-nav {
+    padding-top: var(--admin-shell-content-inset) !important;
+}
+
 /* Native select controls inherit the active browser color scheme. */
 html.fi select {
     color-scheme: light;
