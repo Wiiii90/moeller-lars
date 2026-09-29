@@ -87,6 +87,10 @@ final class AdminActivityFeed
         $orderingGroup = $orderingProjection instanceof AdminActivityOrderingEvent
             ? $orderingProjection->getRelationValue('group')
             : null;
+        if ($orderingGroup instanceof AdminActivityOrderingGroup && $orderingGroup->returnedToIdentity()) {
+            return null;
+        }
+
         if (
             $orderingGroup instanceof AdminActivityOrderingGroup
             && (int) $orderingGroup->getAttribute('last_audit_event_id') !== (int) $event->getKey()
