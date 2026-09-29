@@ -26,7 +26,8 @@ A reorder joins the immediately preceding ordering sequence for the same admin o
 
 This is state-aware compaction, not text deduplication. In particular:
 
-- repeated moves that eventually restore the exact starting order form one visible Activity row marked as returned to the starting order;
+- repeated moves that eventually restore the exact starting order form one visible Activity row marked as returned to the starting order; reaching identity closes that sequence, so a later move starts a new sequence;
+- a compacted row targets the ordering scope itself (for example Public navigation, the Journal page, Gallery, Artwork, Home or Custom Page) rather than pretending the last moved child is the whole operation;
 - a single drag/reorder that rewrites several row positions still creates one logical ordering Activity event;
 - pagination and Activity aggregates operate on the compacted projection rather than hiding duplicate rows only after a page has been loaded;
 - historical ordering events predating state hashes may be grouped conservatively, but the UI must not claim that a legacy sequence returned to identity when that cannot be proven;
