@@ -58,7 +58,7 @@ final class AdminUndoService
                         ->first();
                     $projection = $orderingEvent?->getRelationValue('projection');
 
-                    if (! $projection instanceof AdminActivityOrderingProjection
+                    if (! ($projection instanceof AdminActivityOrderingProjection)
                         || $projection->isIdentity()
                         || (int) $projection->getAttribute('last_audit_event_id') !== (int) $receipt->getAttribute('audit_event_id')) {
                         throw ValidationException::withMessages(['undo' => 'This ordering Undo is no longer attached to the current net change.']);
