@@ -315,6 +315,7 @@ final class HomePresentationEditorialService
             return $this->save(
                 $fresh,
                 $ordering ? [
+                    'scope' => 'home-components:'.(int) $fresh->getAttribute('site_section_id').':'.$mode->value,
                     'before' => AdminOrderingState::fingerprints($components),
                     'after' => AdminOrderingState::fingerprints($nextComponents),
                 ] : null,
@@ -587,7 +588,7 @@ final class HomePresentationEditorialService
         return $fresh;
     }
 
-    /** @param array{before:list<string>,after:list<string>}|null $orderingState */
+    /** @param array{scope:string,before:list<string>,after:list<string>}|null $orderingState */
     private function save(HomePresentationSetting $settings, ?array $orderingState = null): bool
     {
         if (! $settings->isDirty(['template', 'configuration'])) {
@@ -603,7 +604,7 @@ final class HomePresentationEditorialService
                 'site_section.home_components_reordered',
                 'site_section',
                 $sectionId,
-                'home-components:'.$sectionId,
+                $orderingState['scope'],
                 $orderingState['before'],
                 $orderingState['after'],
             );
