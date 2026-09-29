@@ -7,6 +7,7 @@ use App\Models\AuditEvent;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class AdminAuditService
@@ -59,9 +60,12 @@ class AdminAuditService
             }
         }
 
-        $summary = $this->changeSummary->summarize(
-            $this->mutationSnapshots->peekForAudit($entityType, $entityId),
-        );
+        $snapshots = $this->mutationSnapshots->peekForAudit($entityType, $entityId);
+        $summary = $this->changeSummary->summarize($snapshots);
+        $targetLabel = $this->targetLabelFromSnapshots($snapshots, $entityType, $entityId);
+        if ($targetLabel !== null) {
+            $metadata['target_label'] = $targetLabel;
+        }
 
         if ($action === 'admin.undo_applied' && is_int($metadata['source_audit_event_id'] ?? null)) {
             $sourceEvent = AuditEvent::query()->find($metadata['source_audit_event_id']);
@@ -99,6 +103,42 @@ class AdminAuditService
         }
 
         return $event;
+    }
+
+    /**
+     * @param  list<array{entity_type:string,table:string,row_id:int,before:?array<string,mixed>,after:?array<string,mixed>}>|null  $snapshots
+     */
+    private function targetLabelFromSnapshots(?array $snapshots, string $entityType, int $entityId): ?string
+    {
+        $field = match ($entityType) {
+            'artwork' => 'title',
+            'artwork_category' => 'name',
+            'site_section', 'exhibition', 'blog_post' => 'title',
+            'media_asset' => 'original_filename',
+            default => null,
+        };
+
+        if ($field === null || $snapshots === null) {
+            return null;
+        }
+
+        foreach ($snapshots as $snapshot) {
+            if (($snapshot['entity_type'] ?? null) !== $entityType || (int) ($snapshot['row_id'] ?? 0) !== $entityId) {
+                continue;
+            }
+
+            $state = is_array($snapshot['after'] ?? null)
+                ? $snapshot['after']
+                : (is_array($snapshot['before'] ?? null) ? $snapshot['before'] : null);
+            $label = is_array($state) ? ($state[$field] ?? null) : null;
+            if (! is_string($label) || trim($label) === '') {
+                return null;
+            }
+
+            return Str::limit(trim(strip_tags($label)), 240, '…');
+        }
+
+        return null;
     }
 
     private function validEntityType(string $action, string $entityType): bool
