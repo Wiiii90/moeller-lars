@@ -43,10 +43,10 @@ return new class extends Migration
                             continue;
                         }
 
-                        $actorKey = $event->admin_user_id === null ? 'guest' : 'user:'.(int) $event->admin_user_id;
-                        $key = $actorKey.'|'.$event->action.'|'.$ordering['scope'];
+                        $key = $event->action.'|'.$ordering['scope'];
                         $candidate = $latest[$key] ?? null;
                         $canAppend = is_array($candidate)
+                            && (int) ($candidate['admin_user_id'] ?? 0) === (int) ($event->admin_user_id ?? 0)
                             && ! hash_equals((string) $candidate['before_hash'], (string) $candidate['after_hash'])
                             && hash_equals((string) $candidate['after_hash'], $ordering['before_hash'])
                             && ! isset($committedEventIds[(int) $candidate['last_audit_event_id']]);
@@ -88,6 +88,7 @@ return new class extends Migration
                             $sequence = 1;
                             $latest[$key] = [
                                 'id' => $groupId,
+                                'admin_user_id' => $event->admin_user_id,
                                 'last_audit_event_id' => (int) $event->id,
                                 'event_count' => 1,
                                 'item_count' => $ordering['item_count'],
