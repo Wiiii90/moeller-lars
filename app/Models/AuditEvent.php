@@ -47,6 +47,11 @@ class AuditEvent extends Model
         return $this->belongsTo(User::class, 'admin_user_id');
     }
 
+    public function activityOrderingEvent(): HasOne
+    {
+        return $this->hasOne(AdminActivityOrderingEvent::class, 'audit_event_id');
+    }
+
     public function publicationCheckpointEvent(): HasOne
     {
         return $this->hasOne(PublicationCheckpointEvent::class);
