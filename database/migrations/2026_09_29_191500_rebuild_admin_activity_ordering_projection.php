@@ -8,10 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::dropIfExists('admin_activity_ordering_events');
-        Schema::dropIfExists('admin_activity_ordering_groups');
-        Schema::dropIfExists('admin_activity_ordering_projections');
-
         Schema::create('admin_activity_ordering_projections', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('admin_user_id')->nullable()->constrained('users')->nullOnDelete();
