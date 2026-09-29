@@ -2,6 +2,7 @@
 
 namespace App\Domain\Artwork;
 
+use App\Domain\Admin\AdminAuditService;
 use App\Models\ArtworkMaterialPreset;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,8 @@ use Illuminate\Validation\ValidationException;
 
 final class ArtworkMaterialPresetService
 {
+    public function __construct(private readonly AdminAuditService $audit) {}
+
     public function add(string $name): ArtworkMaterialPreset
     {
         $value = trim($name);
@@ -23,7 +26,9 @@ final class ArtworkMaterialPresetService
             ]);
         }
 
-        return DB::transaction(function () use ($value): ArtworkMaterialPreset {
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($value, $actor): ArtworkMaterialPreset {
             /** @var EloquentCollection<int, ArtworkMaterialPreset> $presets */
             $presets = ArtworkMaterialPreset::query()
                 ->lockForUpdate()
@@ -37,7 +42,15 @@ final class ArtworkMaterialPresetService
                 return $existing;
             }
 
-            return ArtworkMaterialPreset::query()->create(['name' => $value]);
+            $created = ArtworkMaterialPreset::query()->create(['name' => $value]);
+            $this->audit->record(
+                $actor,
+                'artwork_material_preset.created',
+                'artwork_material_preset',
+                (int) $created->getKey(),
+            );
+
+            return $created;
         });
     }
 
@@ -64,7 +77,9 @@ final class ArtworkMaterialPresetService
             $normalized[$key] ??= $value;
         }
 
-        return DB::transaction(function () use ($normalized): bool {
+        $actor = $this->audit->requireActor();
+
+        return DB::transaction(function () use ($normalized, $actor): bool {
             $changed = false;
 
             /** @var EloquentCollection<int, ArtworkMaterialPreset> $presets */
@@ -81,6 +96,12 @@ final class ArtworkMaterialPresetService
                 if (isset($existing[$key])) {
                     if ((string) $existing[$key]->getAttribute('name') !== $name) {
                         $existing[$key]->forceFill(['name' => $name])->save();
+                        $this->audit->record(
+                            $actor,
+                            'artwork_material_preset.renamed',
+                            'artwork_material_preset',
+                            (int) $existing[$key]->getKey(),
+                        );
                         $changed = true;
                     }
                     unset($existing[$key]);
@@ -88,12 +109,25 @@ final class ArtworkMaterialPresetService
                     continue;
                 }
 
-                ArtworkMaterialPreset::query()->create(['name' => $name]);
+                $created = ArtworkMaterialPreset::query()->create(['name' => $name]);
+                $this->audit->record(
+                    $actor,
+                    'artwork_material_preset.created',
+                    'artwork_material_preset',
+                    (int) $created->getKey(),
+                );
                 $changed = true;
             }
 
             foreach ($existing as $preset) {
+                $presetId = (int) $preset->getKey();
                 $preset->delete();
+                $this->audit->record(
+                    $actor,
+                    'artwork_material_preset.deleted',
+                    'artwork_material_preset',
+                    $presetId,
+                );
                 $changed = true;
             }
 
