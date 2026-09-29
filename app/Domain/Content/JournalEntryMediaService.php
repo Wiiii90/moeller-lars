@@ -116,9 +116,10 @@ final class JournalEntryMediaService
         foreach ($structuredOwners as $entry) {
             if ($entry instanceof BlogPost) {
                 $processedBlogIds[] = (int) $entry->getKey();
-                $this->removeBlogRichTextReference($entry, $assetId);
+                $action = $this->removeBlogRichTextReference($entry, $assetId)
+                    ?? 'blog_post.media_reference_removed';
                 $this->normalizeGallery($entry);
-                $this->recordBlogMediaRemoval($entry, $actor);
+                $this->recordBlogMediaRemoval($entry, $actor, $action);
 
                 continue;
             }
@@ -144,11 +145,12 @@ final class JournalEntryMediaService
             ->lockForUpdate()
             ->get();
         foreach ($posts as $post) {
-            if (! $this->removeBlogRichTextReference($post, $assetId)) {
+            $action = $this->removeBlogRichTextReference($post, $assetId);
+            if ($action === null) {
                 continue;
             }
 
-            $this->recordBlogMediaRemoval($post, $actor);
+            $this->recordBlogMediaRemoval($post, $actor, $action);
         }
 
         /** @var EloquentCollection<int, Exhibition> $exhibitions */
@@ -174,61 +176,42 @@ final class JournalEntryMediaService
         }
     }
 
-    private function removeBlogRichTextReference(BlogPost $post, int $assetId): bool
+    private function removeBlogRichTextReference(BlogPost $post, int $assetId): ?string
     {
         $source = (string) ($post->getAttribute('body') ?? '');
         if (! in_array($assetId, RichTextMediaReference::ids($source), true)) {
-            return false;
+            return null;
         }
 
         $clean = RichTextMediaReference::remove($source, $assetId);
-        $post->setAttribute('body', $clean === '' ? null : $clean);
-
         $state = (string) $post->getAttribute('state');
+
+        $post->setAttribute('body', $clean === '' ? null : $clean);
         if ($clean === '' && in_array($state, ['published', 'scheduled'], true)) {
             $post->setAttribute('state', $state === 'published' ? 'unpublished' : 'draft');
             $post->setAttribute('scheduled_at', null);
         }
-
         $post->save();
 
-        return true;
+        return match (true) {
+            $state === 'published' && (string) $post->getAttribute('state') === 'unpublished' => 'blog_post.unpublished',
+            $state === 'scheduled' && (string) $post->getAttribute('state') === 'draft' => 'blog_post.restored_to_draft',
+            default => 'blog_post.media_reference_removed',
+        };
     }
 
-    private function recordBlogMediaRemoval(BlogPost $post, User $actor): void
+    private function recordBlogMediaRemoval(BlogPost $post, User $actor, string $action): void
     {
-        $original = $post->getOriginal('state');
-        $current = (string) $post->getAttribute('state');
-
-        if ($original === 'published' && $current === 'unpublished') {
-            $this->audit->record(
-                $actor,
-                'blog_post.unpublished',
-                'blog_post',
-                (int) $post->getKey(),
-                ['reason' => 'referenced_rich_text_media_deleted'],
-            );
-
-            return;
-        }
-
-        if ($original === 'scheduled' && $current === 'draft') {
-            $this->audit->record(
-                $actor,
-                'blog_post.restored_to_draft',
-                'blog_post',
-                (int) $post->getKey(),
-                ['reason' => 'referenced_rich_text_media_deleted'],
-            );
-
-            return;
-        }
+        $metadata = in_array($action, ['blog_post.unpublished', 'blog_post.restored_to_draft'], true)
+            ? ['reason' => 'referenced_rich_text_media_deleted']
+            : null;
 
         $this->audit->record(
             $actor,
-            'blog_post.media_reference_removed',
+            $action,
             'blog_post',
             (int) $post->getKey(),
+            $metadata,
         );
     }
 
