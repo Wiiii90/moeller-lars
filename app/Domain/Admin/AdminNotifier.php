@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Livewire\Component;
 use Livewire\Livewire;
+use Livewire\LivewireManager;
 
 final class AdminNotifier
 {
@@ -39,7 +40,7 @@ final class AdminNotifier
         ];
 
         if (Livewire::isLivewireRequest()) {
-            $component = Livewire::current();
+            $component = app(LivewireManager::class)->current();
 
             if ($component instanceof Component) {
                 $component->dispatch('admin-notification-ticker', notification: $message);
@@ -52,7 +53,7 @@ final class AdminNotifier
     }
 
     /**
-     * @return list<array{id:string,title:string,body:?string,status:string}>
+     * @return list<array<string, mixed>>
      */
     public function pullQueuedFeedback(): array
     {
