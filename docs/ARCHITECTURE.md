@@ -169,7 +169,7 @@ Archived Exhibitions remember their prior state where available. Historical arch
 
 Ordered editorial records persist explicit position. Native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) is the admin interaction mechanism; domain ordering services remain persistence authority.
 
-Ordering Activity uses `AdminAuditService::recordOrdering()` with a stable domain scope and canonical before/after identity sequence. `AdminActivityOrderingProjector` derives the net permutation without weakening the append-only `audit_events` contract. A non-identity net permutation produces one visible Activity row; returning exactly to the starting order reduces the visible ordering Activity to nothing. Publication freezes a non-identity projection as historical state.
+Ordering Activity uses `AdminAuditService::recordOrdering()` with a stable domain scope and exact canonical before/after identity sequences. `AdminActivityOrderingProjector` composes those states into one net permutation without weakening the append-only `audit_events` contract. A non-identity net permutation produces one visible Activity row and one safe net-order Undo receipt; exact identity produces neither. Composition is state-continuous and publication-bounded, never timer-, debounce- or burst-based.
 
 Filtered/search projections do not silently become canonical reorder sequences. Ranked tables may expose a 1-based Position column as described in `ui-skills.md`.
 
