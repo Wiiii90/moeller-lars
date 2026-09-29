@@ -1,11 +1,13 @@
 <?php
 
+use App\Domain\Admin\AdminUndoService;
 use App\Domain\Content\BlogEditorialService;
 use App\Domain\Content\JournalEntryOrderService;
 use App\Domain\Content\JournalTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Domain\Content\SiteSectionOrderService;
 use App\Filament\Support\AdminActivityFeed;
+use App\Models\AdminActionReceipt;
 use App\Models\AdminActivityOrderingProjection;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
@@ -21,7 +23,7 @@ beforeEach(function (): void {
     $this->actingAs($this->actor, 'web');
 });
 
-it('reduces a reorder cycle to no visible Activity when the net permutation is identity', function (): void {
+it('reduces arbitrary-time reorder composition to one net permutation with identity cancellation and net Undo', function (): void {
     $editor = app(SiteSectionEditorialService::class);
     $order = app(SiteSectionOrderService::class);
 
@@ -30,14 +32,25 @@ it('reduces a reorder cycle to no visible Activity when the net permutation is i
     $editor->createCustomPage('Cycle C', 'cycle-c');
 
     $rawBefore = AuditEvent::query()->where('action', 'site_section.reordered')->count();
-    $baseTime = now();
+    $baseTime = now()->subDays(4);
 
     Carbon::setTestNow($baseTime);
     expect($order->move($middle, 'down'))->toBeTrue();
 
+    $feed = app(AdminActivityFeed::class);
+    $firstRows = collect($feed->page(
+        family: 'ordering',
+        perPage: 100,
+        actor: $this->actor,
+        days: 7,
+    )['activity'])->where('action_key', 'site_section.reordered')->values();
+
+    expect($firstRows)->toHaveCount(1)
+        ->and($firstRows[0]['undo'] ?? null)->not->toBeNull()
+        ->and(AdminActionReceipt::query()->where('action_key', 'site_section.reordered')->count())->toBe(1);
+
     Carbon::setTestNow($baseTime->copy()->addDays(2));
     expect($order->move($middle, 'up'))->toBeTrue();
-    Carbon::setTestNow();
 
     $rawEvents = AuditEvent::query()
         ->where('action', 'site_section.reordered')
@@ -48,8 +61,7 @@ it('reduces a reorder cycle to no visible Activity when the net permutation is i
         ->skip($rawBefore)
         ->value('id');
 
-    $feed = app(AdminActivityFeed::class);
-    $orderingRows = collect($feed->page(
+    $identityRows = collect($feed->page(
         family: 'ordering',
         perPage: 100,
         actor: $this->actor,
@@ -59,13 +71,16 @@ it('reduces a reorder cycle to no visible Activity when the net permutation is i
     expect($rawEvents - $rawBefore)->toBe(2)
         ->and(AdminActivityOrderingProjection::query()->count())->toBe(1)
         ->and(AdminActivityOrderingProjection::query()->firstOrFail()->isIdentity())->toBeTrue()
-        ->and($orderingRows)->toHaveCount(0)
+        ->and($identityRows)->toHaveCount(0)
+        ->and(AdminActionReceipt::query()->where('action_key', 'site_section.reordered')->count())->toBe(0)
         ->and($feed->overview(family: 'ordering', days: 7)['total'])->toBe(0)
         ->and($feed->event($cycleFirstEventId, $this->actor))->toBeNull();
 
+    Carbon::setTestNow($baseTime->copy()->addDays(4));
     expect($order->move($middle, 'down'))->toBeTrue();
+    Carbon::setTestNow();
 
-    $projections = AdminActivityOrderingProjection::query()->orderBy('id')->get();
+    $projection = AdminActivityOrderingProjection::query()->firstOrFail();
     $orderingRows = collect($feed->page(
         family: 'ordering',
         perPage: 100,
@@ -73,13 +88,30 @@ it('reduces a reorder cycle to no visible Activity when the net permutation is i
         days: 7,
     )['activity'])->where('action_key', 'site_section.reordered')->values();
 
-    expect($projections)->toHaveCount(2)
-        ->and($projections[0]->isIdentity())->toBeTrue()
-        ->and($projections[1]->isIdentity())->toBeFalse()
+    expect(AdminActivityOrderingProjection::query()->count())->toBe(1)
+        ->and($projection->isIdentity())->toBeFalse()
+        ->and((int) $projection->event_count)->toBe(3)
         ->and($orderingRows)->toHaveCount(1)
         ->and($orderingRows[0]['target'])->toBe('Public navigation')
         ->and($orderingRows[0]['action'])->toBe('Reordered public navigation')
+        ->and($orderingRows[0]['undo'] ?? null)->not->toBeNull()
         ->and($feed->overview(family: 'ordering', days: 7)['total'])->toBe(1);
+
+    $undoReceiptId = (int) $orderingRows[0]['undo']['id'];
+    app(AdminUndoService::class)->undo($undoReceiptId);
+
+    $projection->refresh();
+    $afterUndoRows = collect($feed->page(
+        family: 'ordering',
+        perPage: 100,
+        actor: $this->actor,
+        days: 7,
+    )['activity'])->where('action_key', 'site_section.reordered')->values();
+
+    expect($projection->isIdentity())->toBeTrue()
+        ->and((int) $projection->event_count)->toBe(4)
+        ->and($afterUndoRows)->toHaveCount(0)
+        ->and(AdminActionReceipt::query()->whereKey($undoReceiptId)->value('undone_at'))->not->toBeNull();
 });
 
 it('freezes a non-identity ordering projection at a publication boundary', function (): void {
