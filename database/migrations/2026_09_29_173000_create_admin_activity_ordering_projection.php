@@ -61,10 +61,10 @@ return new class extends Migration
         $previousByActor = [];
 
         DB::table('audit_events')
-            ->orderBy('admin_user_id')
+            ->select(['id', 'admin_user_id', 'action', 'entity_id', 'occurred_at', 'metadata'])
             ->orderBy('id')
-            ->get(['id', 'admin_user_id', 'action', 'entity_id', 'occurred_at', 'metadata'])
-            ->each(function (object $event) use ($orderingActions, &$previousByActor): void {
+            ->chunkById(500, function ($events) use ($orderingActions, &$previousByActor): void {
+                $events->each(function (object $event) use ($orderingActions, &$previousByActor): void {
                 $actorKey = $event->admin_user_id === null ? 'guest' : 'user:'.(int) $event->admin_user_id;
                 $previous = $previousByActor[$actorKey] ?? null;
                 $isOrdering = in_array((string) $event->action, $orderingActions, true);
@@ -122,11 +122,12 @@ return new class extends Migration
                     'sequence' => $sequence,
                 ]);
 
-                $previousByActor[$actorKey] = [
-                    'event' => $event,
-                    'scope' => $scope,
-                    'group_id' => $groupId,
-                ];
+                    $previousByActor[$actorKey] = [
+                        'event' => $event,
+                        'scope' => $scope,
+                        'group_id' => $groupId,
+                    ];
+                });
             });
     }
 
