@@ -359,7 +359,14 @@ final class AdminActivityFeed
             $entityType = (string) $event->getAttribute('entity_type');
             $entityId = (int) $event->getAttribute('entity_id');
             $definition = AdminActionCatalog::definition($actionKey);
-            $target = $labels[$entityType][$entityId] ?? $this->fallbackTarget($entityType);
+            $metadata = $event->getAttribute('metadata');
+            $metadata = is_array($metadata) ? $metadata : [];
+            $historicalTarget = is_string($metadata['target_label'] ?? null)
+                ? trim($metadata['target_label'])
+                : '';
+            $target = $historicalTarget !== ''
+                ? $historicalTarget
+                : ($labels[$entityType][$entityId] ?? $this->fallbackTarget($entityType));
             /** @var CarbonInterface $occurredAt */
             $occurredAt = $event->getAttribute('occurred_at');
             $adminUser = $event->getRelationValue('adminUser');
@@ -370,8 +377,6 @@ final class AdminActivityFeed
                 ? $checkpointEvent->getRelationValue('checkpoint')
                 : null;
             $publicationEventState = $event->getRelationValue('publicationEventState');
-            $metadata = $event->getAttribute('metadata');
-            $metadata = is_array($metadata) ? $metadata : [];
             $changeSummary = $this->changeSummary($metadata['change_summary'] ?? null);
             $actionLabel = $this->activityLabel($actionKey, $definition, $changeSummary);
 
@@ -423,18 +428,21 @@ final class AdminActivityFeed
             return $definition['label'];
         }
 
-        $labels = collect($summary['items'])
-            ->pluck('label')
-            ->filter(fn (mixed $label): bool => is_string($label) && trim($label) !== '')
-            ->unique()
+        $items = collect($summary['items'])
+            ->filter(static fn (mixed $item): bool => is_array($item)
+                && is_string($item['label'] ?? null)
+                && trim($item['label']) !== '')
+            ->take(2)
             ->values();
 
-        if ($labels->isEmpty()) {
+        if ($items->isEmpty()) {
             return $definition['label'];
         }
 
-        $shown = $labels->take(2)->implode(', ');
-        $remaining = max(0, $summary['count'] - min(2, $labels->count()));
+        $shown = $items
+            ->map(static fn (array $item): string => $item['label'].': '.$item['before'].' → '.$item['after'])
+            ->implode('; ');
+        $remaining = max(0, $summary['count'] - $items->count());
         $suffix = $remaining > 0 ? ' +'.$remaining.' more' : '';
 
         if ($actionKey === 'admin.undo_applied') {
@@ -443,6 +451,10 @@ final class AdminActivityFeed
 
         if (in_array($definition['family'], ['edit', 'settings'], true)) {
             return 'Changed '.$shown.$suffix;
+        }
+
+        if (in_array($definition['family'], ['publish', 'media', 'ordering'], true)) {
+            return $definition['label'].' · '.$shown.$suffix;
         }
 
         return $definition['label'];
