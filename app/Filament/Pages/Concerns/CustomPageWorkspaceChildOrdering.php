@@ -79,8 +79,8 @@ trait CustomPageWorkspaceChildOrdering
             return;
         }
 
-        DB::transaction(function () use ($parents, $children, $published): void {
-            $this->applySelectedChildPublication($children, $published);
+        $changed = DB::transaction(function () use ($parents, $children, $published): bool {
+            $changed = $this->applySelectedChildPublication($children, $published);
 
             foreach ($parents as $target) {
                 $block = $this->componentAt($target['index'], $target['type']);
@@ -88,28 +88,31 @@ trait CustomPageWorkspaceChildOrdering
                     continue;
                 }
                 $block['published'] = $published;
-                app(CustomPageEditorialService::class)->updateBlock(
+                $changed = app(CustomPageEditorialService::class)->updateBlock(
                     $this->settings(),
                     $target['index'],
                     $target['type'],
                     $block,
-                );
+                ) || $changed;
             }
+
+            return $changed;
         });
 
-        $count = count($parents) + count($children);
         $this->clearSelections();
         $this->reloadWorkspace();
-        app(AdminNotifier::class)->feedback(
-            title: $published ? 'Selection published' : 'Selection unpublished',
-            body: $count.' selected '.($count === 1 ? 'item' : 'items').' updated on their own hierarchy levels.',
-            status: 'success',
-        );
+        if ($changed) {
+            app(AdminNotifier::class)->feedback(
+                title: $published ? 'Selection published' : 'Selection unpublished',
+                status: 'success',
+            );
+        }
     }
 
     /** @param list<array<string,mixed>> $targets */
-    private function applySelectedChildPublication(array $targets, bool $published): void
+    private function applySelectedChildPublication(array $targets, bool $published): bool
     {
+        $changed = false;
         $listGroups = [];
         $contactGroups = [];
 
@@ -122,11 +125,25 @@ trait CustomPageWorkspaceChildOrdering
         }
 
         foreach ($listGroups as $componentIndex => $indices) {
-            app(CustomPageEditorialService::class)->setListItemsPublished($this->settings(), (int) $componentIndex, 'list', $indices, $published);
+            $changed = app(CustomPageEditorialService::class)->setListItemsPublished(
+                $this->settings(),
+                (int) $componentIndex,
+                'list',
+                $indices,
+                $published,
+            ) || $changed;
         }
         foreach ($contactGroups as $componentIndex => $types) {
-            app(CustomPageEditorialService::class)->setContactChildrenPublished($this->settings(), (int) $componentIndex, 'contact', $types, $published);
+            $changed = app(CustomPageEditorialService::class)->setContactChildrenPublished(
+                $this->settings(),
+                (int) $componentIndex,
+                'contact',
+                $types,
+                $published,
+            ) || $changed;
         }
+
+        return $changed;
     }
 
     /** @param list<array<string,mixed>> $targets */
