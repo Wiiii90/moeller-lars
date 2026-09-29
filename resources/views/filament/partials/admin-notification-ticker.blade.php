@@ -1,9 +1,15 @@
+@php
+    $initialFeedback = app(\App\Domain\Admin\AdminNotifier::class)->pullQueuedFeedback();
+@endphp
+
 <div
     class="admin-notification-ticker"
     data-admin-notification-ticker
     aria-live="polite"
     aria-atomic="true"
 >
+    <script type="application/json" data-admin-notification-initial>@json($initialFeedback)</script>
+
     <div class="admin-notification-ticker__viewport">
         <div class="admin-notification-ticker__message">
             <span class="admin-notification-ticker__signal" aria-hidden="true"></span>

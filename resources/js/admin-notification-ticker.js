@@ -112,6 +112,22 @@ function enqueue(detail) {
     showNext();
 }
 
+function enqueueInitialFeedback(root) {
+    const source = root.querySelector('[data-admin-notification-initial]');
+    if (!source || source.dataset.consumed === 'true') return;
+
+    source.dataset.consumed = 'true';
+
+    try {
+        const messages = JSON.parse(source.textContent || '[]');
+        if (Array.isArray(messages)) {
+            messages.forEach(enqueue);
+        }
+    } catch {
+        // Malformed queued feedback must not break the admin header.
+    }
+}
+
 export function initializeAdminNotificationTicker() {
     if (!listenerRegistered) {
         window.addEventListener('admin-notification-ticker', (event) => enqueue(event.detail));
@@ -126,5 +142,6 @@ export function initializeAdminNotificationTicker() {
 
     root.dataset.tickerInitialized = 'true';
     root.querySelector('[data-admin-notification-dismiss]')?.addEventListener('click', finishCurrent);
+    enqueueInitialFeedback(root);
     showNext();
 }

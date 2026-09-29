@@ -4,54 +4,75 @@ namespace App\Domain\Admin;
 
 use App\Models\AdminNotification;
 use App\Models\User;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Livewire\Component;
+use Livewire\Livewire;
 
 final class AdminNotifier
 {
     /** @var list<string> */
     private const STATUSES = ['success', 'warning', 'danger', 'info'];
 
-    /**
-     * Fluent transient notification builder for framework hooks that require a
-     * Filament Notification instance. Presentation is still owned by the
-     * project ticker component.
-     */
-    public function transient(): Notification
-    {
-        return Notification::make();
-    }
+    private const FEEDBACK_SESSION_KEY = 'admin.ticker.feedback';
+
+    private const MAX_PENDING_FEEDBACK = 20;
 
     /**
-     * Immediate feedback only. This deliberately does not persist an
-     * AdminNotification row.
+     * Immediate feedback for the current admin action.
+     *
+     * Livewire requests dispatch directly to the project-owned header ticker.
+     * Non-Livewire requests queue feedback for the next admin page render.
      */
-    public function toast(
+    public function feedback(
         string $title,
         ?string $body = null,
         string $status = 'info',
     ): void {
         [$title, $body, $status] = $this->normalizeMessage($title, $body, $status);
 
-        $notification = $this->transient()->title($title);
-        if ($body !== null) {
-            $notification->body($body);
+        $message = [
+            'id' => (string) Str::orderedUuid(),
+            'title' => $title,
+            'body' => $body,
+            'status' => $status,
+        ];
+
+        if (Livewire::isLivewireRequest()) {
+            $component = Livewire::current();
+
+            if ($component instanceof Component) {
+                $component->dispatch('admin-notification-ticker', notification: $message);
+
+                return;
+            }
         }
 
-        match ($status) {
-            'success' => $notification->success(),
-            'warning' => $notification->warning(),
-            'danger' => $notification->danger(),
-            default => $notification->info(),
-        };
-
-        $notification->send();
+        $this->queueFeedback($message);
     }
 
     /**
-     * Persist information that deserves later attention. This method does not
-     * require a browser or a rendered Filament notification.
+     * @return list<array{id:string,title:string,body:?string,status:string}>
+     */
+    public function pullQueuedFeedback(): array
+    {
+        if (! request()->hasSession()) {
+            return [];
+        }
+
+        $queued = request()->session()->pull(self::FEEDBACK_SESSION_KEY, []);
+        if (! is_array($queued)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $queued,
+            static fn (mixed $message): bool => is_array($message),
+        ));
+    }
+
+    /**
+     * Persist information that deserves later attention.
      *
      * Supported context keys:
      * type, action_url, action_label, entity_type, entity_id,
@@ -95,8 +116,7 @@ final class AdminNotifier
     }
 
     /**
-     * Persist the notification and also show immediate feedback in the current
-     * request. Background jobs should normally use inbox() instead.
+     * Persist the condition and surface the same message immediately.
      *
      * @param  array<string, mixed>  $context
      */
@@ -109,9 +129,29 @@ final class AdminNotifier
         array $context = [],
     ): AdminNotification {
         $notification = $this->inbox($user, $sourceId, $title, $body, $status, $context);
-        $this->toast($title, $body, $status);
+        $this->feedback($title, $body, $status);
 
         return $notification;
+    }
+
+    /**
+     * @param  array{id:string,title:string,body:?string,status:string}  $message
+     */
+    private function queueFeedback(array $message): void
+    {
+        if (! request()->hasSession()) {
+            return;
+        }
+
+        $queued = request()->session()->get(self::FEEDBACK_SESSION_KEY, []);
+        $queued = is_array($queued) ? array_values(array_filter($queued, 'is_array')) : [];
+
+        if (count($queued) >= self::MAX_PENDING_FEEDBACK) {
+            $queued = array_slice($queued, -(self::MAX_PENDING_FEEDBACK - 1));
+        }
+
+        $queued[] = $message;
+        request()->session()->put(self::FEEDBACK_SESSION_KEY, $queued);
     }
 
     /** @return array{0:string,1:?string,2:string} */
