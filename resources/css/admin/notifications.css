@@ -93,42 +93,24 @@
 }
 
 @media (min-width: 1024px) {
+    /*
+     * Desktop feedback and page content share the same viewport coordinate
+     * system and the same shell geometry variables. The feedback surface is
+     * fixed inside Filament's sticky topbar so its containing block cannot
+     * change when a page gains or loses a document scrollbar.
+     */
     .admin-header-feedback {
-        /*
-         * Match the exact desktop .fi-main content axis:
-         * fixed Filament sidebar -> centered bounded main -> project visual shift
-         * -> shared workspace gutter. No page DOM measurement is involved.
-         */
-        --admin-header-feedback-main-extra-space: max(
-            0rem,
-            calc(
-                (
-                    100vw
-                    - var(--sidebar-width)
-                    - var(--admin-workspace-max-width)
-                    - var(--admin-workspace-gutter)
-                    - var(--admin-workspace-gutter)
-                ) / 2
-            )
-        );
+        position: fixed;
+        top: calc((var(--admin-topbar-height) - var(--admin-header-control-size)) / 2);
+        inset-block-end: auto;
+        inset-inline-start: var(--admin-workspace-content-inline-start);
+        inset-inline-end: var(--admin-workspace-content-inline-end);
+        margin-block: 0;
+    }
 
-        inset-inline-start: max(
-            calc(1rem + var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap)),
-            calc(
-                var(--sidebar-width)
-                + var(--admin-header-feedback-main-extra-space)
-                + var(--admin-workspace-gutter)
-                - var(--admin-workspace-visual-shift)
-            )
-        );
-        inset-inline-end: max(
-            calc(1rem + var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap)),
-            calc(
-                var(--admin-header-feedback-main-extra-space)
-                + var(--admin-workspace-gutter)
-                + var(--admin-workspace-visual-shift)
-            )
-        );
+    .fi-topbar-end {
+        position: relative;
+        z-index: 2;
     }
 }
 
