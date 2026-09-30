@@ -180,7 +180,7 @@ final class PublicationService
                 return null;
             }
 
-            $pendingAuditEventIds = AuditEvent::query()
+            $stagedAuditEventIds = AuditEvent::query()
                 ->whereDoesntHave('publicationCheckpointEvent')
                 ->orderBy('id')
                 ->pluck('id')
@@ -224,7 +224,7 @@ final class PublicationService
                 $source,
             );
 
-            if ($pendingAuditEventIds !== []) {
+            if ($stagedAuditEventIds !== []) {
                 $createdAt = now();
                 DB::table('publication_checkpoint_events')->insert(array_map(
                     static fn (int $auditEventId): array => [
@@ -232,11 +232,11 @@ final class PublicationService
                         'audit_event_id' => $auditEventId,
                         'created_at' => $createdAt,
                     ],
-                    $pendingAuditEventIds,
+                    $stagedAuditEventIds,
                 ));
 
                 AdminActionReceipt::query()
-                    ->whereIn('audit_event_id', $pendingAuditEventIds)
+                    ->whereIn('audit_event_id', $stagedAuditEventIds)
                     ->delete();
             }
 
