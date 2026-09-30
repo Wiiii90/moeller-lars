@@ -21,7 +21,6 @@ final class SiteStorageDatabaseUsageService
     private const PUBLICATION_TABLES = [
         'publication_checkpoint_events',
         'publication_checkpoints',
-        'publication_event_states',
         'publication_media_cleanups',
         'publication_working_context',
         'publication_version_row_manifests',
