@@ -25,11 +25,39 @@
     --admin-section-gap: 1rem;
     --admin-section-space: 2rem;
     --admin-shell-content-inset: 1.5rem;
+    --admin-topbar-height: 4rem;
     --admin-workspace-max-width: 80rem;
-    --admin-workspace-half-width: 40rem;
     --admin-workspace-gutter: 2rem;
-    --admin-sidebar-width: 18rem;
-    --admin-sidebar-half-width: 9rem;
+    --admin-workspace-outer-max-width: calc(
+        var(--admin-workspace-max-width)
+        + var(--admin-workspace-gutter)
+        + var(--admin-workspace-gutter)
+    );
+    --admin-workspace-main-extra-space: max(
+        0rem,
+        calc(
+            (
+                100vw
+                - var(--sidebar-width)
+                - var(--admin-workspace-outer-max-width)
+            ) / 2
+        )
+    );
+    --admin-workspace-visual-shift: min(
+        var(--admin-workspace-main-extra-space),
+        calc(var(--sidebar-width) / 2)
+    );
+    --admin-workspace-content-inline-start: calc(
+        var(--sidebar-width)
+        + var(--admin-workspace-main-extra-space)
+        + var(--admin-workspace-gutter)
+        - var(--admin-workspace-visual-shift)
+    );
+    --admin-workspace-content-inline-end: calc(
+        var(--admin-workspace-main-extra-space)
+        + var(--admin-workspace-gutter)
+        + var(--admin-workspace-visual-shift)
+    );
     --admin-header-control-size: 2rem;
     --admin-header-feedback-edge-gap: .75rem;
     --admin-status-neutral: var(--admin-faint);
@@ -42,11 +70,6 @@
      * in the shared Visual Stage primitive rather than page-local height rules.
      */
     --admin-visual-stage-height: 23.5rem;
-    --admin-workspace-visual-shift: clamp(
-        0rem,
-        calc(50vw - var(--admin-sidebar-half-width) - var(--admin-workspace-half-width) - var(--admin-workspace-gutter)),
-        var(--admin-sidebar-half-width)
-    );
 }
 
 .dark {
