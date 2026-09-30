@@ -78,6 +78,8 @@ The Publication bootstrap migration freezes the tracked tables and audit entity 
 
 `blog_settings` was not legacy-site evidence. It was an application-owned table from the original dedicated Blog settings model. Its canonical Blog/Journal values were already normalized into `site_sections` / `journal_settings`, it was removed from runtime/Publication authority, and its obsolete `RESTRICT` foreign key was detached before a forward migration retired the table. Historical migrations still mention it only to reconstruct that schema evolution.
 
+Likewise, canonical Exhibition Cover/Gallery usage lives in `journal_entry_media`. The older `exhibition_media` table has no runtime model or writer and is retained only while the current Publication snapshot schema still needs that historical table shape. Its eventual physical drop is a Publication-schema cutover, not a normal runtime cleanup.
+
 The detailed rules are in [MIGRATION-INVARIANTS.md](MIGRATION-INVARIANTS.md).
 
 ## 5. Journal template retention
