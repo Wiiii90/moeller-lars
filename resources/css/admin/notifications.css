@@ -1,4 +1,4 @@
-/* Project-owned ephemeral feedback surface inside the persistent Filament topbar. */
+/* Central ephemeral feedback surface inside Filament's persistent topbar. */
 
 .fi-topbar {
     position: relative;
@@ -7,10 +7,8 @@
 .admin-header-feedback {
     position: absolute;
     inset-block: 0;
-    inset-inline: max(
-        calc(var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap)),
-        calc((100% - var(--admin-workspace-max-width)) / 2)
-    );
+    inset-inline-start: calc(1rem + var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap));
+    inset-inline-end: calc(1rem + var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap));
     z-index: 1;
     box-sizing: border-box;
     height: var(--admin-header-control-size);
@@ -78,33 +76,66 @@
 .admin-header-feedback__counter {
     position: absolute;
     inset-block: 0;
-    right: .65rem;
+    inset-inline-end: .65rem;
     display: inline-grid;
     min-width: 1.65rem;
     height: 1.65rem;
     padding-inline: .35rem;
     place-items: center;
+    margin-block: auto;
     border-radius: 9999px;
     background: color-mix(in srgb, var(--admin-text) 7%, transparent);
     color: var(--admin-muted);
     font-size: var(--admin-font-size-table-compact);
     font-weight: 650;
     line-height: 1;
-    margin-block: auto;
     white-space: nowrap;
 }
 
-.admin-header-feedback__counter[hidden] {
-    display: none;
+@media (min-width: 1024px) {
+    .admin-header-feedback {
+        /*
+         * Match the exact desktop .fi-main content axis:
+         * fixed Filament sidebar -> centered bounded main -> project visual shift
+         * -> shared workspace gutter. No page DOM measurement is involved.
+         */
+        --admin-header-feedback-main-extra-space: max(
+            0rem,
+            calc(
+                (
+                    100vw
+                    - var(--sidebar-width)
+                    - var(--admin-workspace-max-width)
+                    - var(--admin-workspace-gutter)
+                    - var(--admin-workspace-gutter)
+                ) / 2
+            )
+        );
+
+        inset-inline-start: max(
+            calc(1rem + var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap)),
+            calc(
+                var(--sidebar-width)
+                + var(--admin-header-feedback-main-extra-space)
+                + var(--admin-workspace-gutter)
+                - var(--admin-workspace-visual-shift)
+            )
+        );
+        inset-inline-end: max(
+            calc(1rem + var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap)),
+            calc(
+                var(--admin-header-feedback-main-extra-space)
+                + var(--admin-workspace-gutter)
+                + var(--admin-workspace-visual-shift)
+            )
+        );
+    }
 }
 
 @media (max-width: 640px) {
-    .admin-header-feedback {
-        inset-inline: calc(var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap));
-    }
-
     .admin-header-feedback__content {
-        padding-inline: .7rem 3.15rem;
+        padding-inline-start: .7rem;
+        padding-inline-end: 3.15rem;
     }
 
     .admin-header-feedback__body {
@@ -112,6 +143,6 @@
     }
 
     .admin-header-feedback__counter {
-        right: .5rem;
+        inset-inline-end: .5rem;
     }
 }
