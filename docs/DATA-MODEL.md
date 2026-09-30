@@ -128,6 +128,8 @@ Disabling an Exhibition Gallery does not delete its Gallery rows. They remain ca
 
 Legacy inline Journal Rich Text media rows/token identifiers are not a runtime content system. Forward canonicalization converted legacy embedded occurrences to central Markdown `media:<id>` references.
 
+The historical `exhibition_media` table is no longer a runtime domain model or reference source. It is retained only as an inert Publication-schema artifact while retained checkpoints still use the older snapshot schema; canonical Exhibition media is exclusively `journal_entry_media`. Do not add new runtime reads, writes, relations or audit entities for `exhibition_media`.
+
 ## Custom Page / CV / Contact
 
 CV/Vita and Contact are not fixed runtime SiteSection types.
