@@ -1,14 +1,12 @@
 import '../css/admin/selects.css';
 import './admin-selects.js';
 import { initializeAdminModalScrollBehavior } from './admin-modal-scroll.js';
-import { initializeAdminHeaderFeedback } from './admin-header-feedback.js';
 
 let storageRuntimePromise = null;
 let refreshFrame = null;
 let livewireHookRegistered = false;
 
 initializeAdminModalScrollBehavior();
-initializeAdminHeaderFeedback();
 
 function hasStorageVisualization() {
     return document.querySelector('[data-admin-viz="storage-capacity"]') !== null;
@@ -77,10 +75,7 @@ if (document.readyState === 'loading') {
 
 registerLivewireHook();
 document.addEventListener('livewire:init', registerLivewireHook, { once: true });
-document.addEventListener('livewire:navigated', () => {
-    scheduleRefresh();
-    initializeAdminHeaderFeedback();
-});
+document.addEventListener('livewire:navigated', scheduleRefresh);
 document.addEventListener('alpine:navigate', prewarmStorageRuntime);
 
 new MutationObserver(scheduleStorageRefresh).observe(document.documentElement, {
