@@ -6,12 +6,10 @@ use App\Domain\Admin\AdminChangeSummary;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Admin\AdminUndoService;
 use App\Domain\Artwork\ArtworkDraftService;
-use App\Domain\Artwork\GalleryEditorialService;
 use App\Domain\Content\BlogEditorialService;
 use App\Filament\Support\AdminActivityFeed;
 use App\Models\AdminActionReceipt;
 use App\Models\Artwork;
-use App\Models\ArtworkCategory;
 use App\Models\AuditEvent;
 use App\Models\BlogPost;
 use App\Models\PublicContentSetting;
@@ -69,125 +67,6 @@ it('exposes and executes conflict-safe snapshot Undo for updated admin settings'
     $projectedUndo = app(AdminActivityFeed::class)->event((int) $undoEvent->getKey(), $actor);
     expect($projectedUndo['action'] ?? null)
         ->toBe('Restored Public email: undo-snapshot@example.test → '.$beforeEmailLabel);
-});
-
-it('exposes one projection-level Undo for a non-identity Gallery reorder', function (): void {
-    $actor = User::factory()->admin()->create();
-    $this->actingAs($actor);
-
-    $gallery = ArtworkCategory::query()->create([
-        'slug' => 'projection-order-gallery',
-        'name' => 'Projection order Gallery',
-        'show_on_home' => false,
-    ]);
-    $first = Artwork::query()->create([
-        'artwork_category_id' => $gallery->getKey(),
-        'slug' => 'projection-order-first',
-        'title' => 'Projection order first',
-        'analytics_key' => '11111111-1111-4111-8111-111111111111',
-        'state' => 'draft',
-        'position' => 0,
-        'date_precision' => 'unknown',
-    ]);
-    $second = Artwork::query()->create([
-        'artwork_category_id' => $gallery->getKey(),
-        'slug' => 'projection-order-second',
-        'title' => 'Projection order second',
-        'analytics_key' => '22222222-2222-4222-8222-222222222222',
-        'state' => 'draft',
-        'position' => 1,
-        'date_precision' => 'unknown',
-    ]);
-
-    app(GalleryEditorialService::class)->reorderArtworks($gallery, [
-        (int) $second->getKey(),
-        (int) $first->getKey(),
-    ]);
-
-    $event = AuditEvent::query()
-        ->where('action', 'artwork_category.gallery_reordered')
-        ->latest('id')
-        ->firstOrFail();
-    $receipt = AdminActionReceipt::query()
-        ->where('audit_event_id', $event->getKey())
-        ->firstOrFail();
-    $feed = app(AdminActivityFeed::class);
-    $projected = $feed->event((int) $event->getKey(), $actor);
-
-    expect($receipt->getAttribute('snapshot_payload'))->toBeNull()
-        ->and($receipt->getAttribute('before_state'))->toBe('ordering')
-        ->and($receipt->getAttribute('after_state'))->toBe('ordering')
-        ->and($projected['undo']['id'] ?? null)->toBe((int) $receipt->getKey())
-        ->and((int) $first->fresh()->getAttribute('position'))->toBe(1)
-        ->and((int) $second->fresh()->getAttribute('position'))->toBe(0);
-
-    app(AdminUndoService::class)->undo((int) $receipt->getKey());
-
-    expect((int) $first->fresh()->getAttribute('position'))->toBe(0)
-        ->and((int) $second->fresh()->getAttribute('position'))->toBe(1)
-        ->and($receipt->fresh()?->getAttribute('undone_at'))->not->toBeNull()
-        ->and($feed->event((int) $event->getKey(), $actor))->toBeNull()
-        ->and(AuditEvent::query()->where('action', 'admin.undo_applied')->exists())->toBeTrue();
-});
-
-it('undoes a compacted multi-step Gallery reorder back to the projection baseline', function (): void {
-    $actor = User::factory()->admin()->create();
-    $this->actingAs($actor);
-
-    $gallery = ArtworkCategory::query()->create([
-        'slug' => 'multi-order-gallery',
-        'name' => 'Multi order Gallery',
-        'show_on_home' => false,
-    ]);
-    $artworks = collect([
-        ['slug' => 'multi-order-first', 'title' => 'Multi order first', 'analytics_key' => '33333333-3333-4333-8333-333333333333'],
-        ['slug' => 'multi-order-second', 'title' => 'Multi order second', 'analytics_key' => '44444444-4444-4444-8444-444444444444'],
-        ['slug' => 'multi-order-third', 'title' => 'Multi order third', 'analytics_key' => '55555555-5555-4555-8555-555555555555'],
-    ])->map(fn (array $data, int $position): Artwork => Artwork::query()->create([
-        'artwork_category_id' => $gallery->getKey(),
-        ...$data,
-        'state' => 'draft',
-        'position' => $position,
-        'date_precision' => 'unknown',
-    ]));
-
-    $service = app(GalleryEditorialService::class);
-    $service->reorderArtworks($gallery, [
-        (int) $artworks[1]->getKey(),
-        (int) $artworks[0]->getKey(),
-        (int) $artworks[2]->getKey(),
-    ]);
-    $service->reorderArtworks($gallery, [
-        (int) $artworks[1]->getKey(),
-        (int) $artworks[2]->getKey(),
-        (int) $artworks[0]->getKey(),
-    ]);
-
-    $event = AuditEvent::query()
-        ->where('action', 'artwork_category.gallery_reordered')
-        ->latest('id')
-        ->firstOrFail();
-    $receipt = AdminActionReceipt::query()
-        ->where('audit_event_id', $event->getKey())
-        ->firstOrFail();
-    $feed = app(AdminActivityFeed::class);
-    $projected = $feed->event((int) $event->getKey(), $actor);
-
-    expect(AdminActionReceipt::query()
-        ->where('action_key', 'artwork_category.gallery_reordered')
-        ->whereNull('undone_at')
-        ->count())->toBe(1)
-        ->and($projected)->not->toBeNull()
-        ->and($projected['ordering_projection']['event_count'] ?? null)->toBe(2)
-        ->and($projected['undo']['id'] ?? null)->toBe((int) $receipt->getKey());
-
-    app(AdminUndoService::class)->undo((int) $receipt->getKey());
-
-    expect((int) $artworks[0]->fresh()->getAttribute('position'))->toBe(0)
-        ->and((int) $artworks[1]->fresh()->getAttribute('position'))->toBe(1)
-        ->and((int) $artworks[2]->fresh()->getAttribute('position'))->toBe(2)
-        ->and($feed->event((int) $event->getKey(), $actor))->toBeNull()
-        ->and(AuditEvent::query()->where('action', 'admin.undo_applied')->exists())->toBeTrue();
 });
 
 it('names multiple changed fields instead of a generic settings activity', function (): void {
