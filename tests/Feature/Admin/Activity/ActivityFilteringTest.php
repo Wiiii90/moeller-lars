@@ -98,7 +98,7 @@ it('applies Activity filters to commit history and commit timeline data', functi
 
     expect($blog['total'])->toBe(1)
         ->and($blog['changes'])->toBe(2)
-        ->and($blog['events'])->toBe(1)
+        ->and($blog['activities'])->toBe(1)
         ->and($ten['total'])->toBe(1)
         ->and($ten['changes'])->toBe(2)
         ->and(collect($search['commits'])->pluck('id')->all())->toBe([(int) $mediaCommit->getKey()]);
