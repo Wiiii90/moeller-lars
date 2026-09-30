@@ -21,8 +21,8 @@
             <dd>{{ number_format($commit['change_count']) }}</dd>
         </div>
         <div>
-            <dt>Activity events</dt>
-            <dd>{{ number_format($commit['event_count']) }}</dd>
+            <dt>Activities</dt>
+            <dd>{{ number_format($commit['activity_count']) }}</dd>
         </div>
     </dl>
 
@@ -61,13 +61,18 @@
 
     <div class="admin-detail-dialog__field">
         <span>Included activity</span>
-        @if ($commit['events'] !== [])
+        @if ($commit['activities'] !== [])
             <div class="activity-commit-dialog__events">
-                @foreach ($commit['events'] as $event)
+                @foreach ($commit['activities'] as $event)
                     <article>
                         <strong>{{ $event['action'] }}</strong>
-                        <span>{{ $event['area'] }} · {{ $event['entity_type'] }} #{{ $event['entity_id'] }}</span>
-                        <small>{{ $event['actor'] }} · {{ $event['timestamp'] }}</small>
+                        <span>{{ $event['area'] }} · {{ $event['target'] }}</span>
+                        <small>
+                            {{ $event['actor'] }} · {{ $event['timestamp'] }}
+                            @if (($event['ordering_projection']['event_count'] ?? 1) > 1)
+                                · {{ number_format($event['ordering_projection']['event_count']) }} reorder operations
+                            @endif
+                        </small>
                     </article>
                 @endforeach
             </div>
