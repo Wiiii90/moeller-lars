@@ -13,7 +13,7 @@ use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\BlogPost;
 use App\Models\Exhibition;
-use App\Models\ExhibitionMedia;
+use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
@@ -243,11 +243,11 @@ it('removes current content references before logically deleting media', functio
             'state' => 'draft',
             'position' => 0,
         ]);
-        $reference = ExhibitionMedia::create([
+        $reference = JournalEntryMedia::create([
             'exhibition_id' => $exhibition->id,
             'media_asset_id' => $asset->id,
-            'role' => 'additional',
-            'position' => 0,
+            'role' => JournalEntryMedia::ROLE_GALLERY,
+            'position' => 1,
         ]);
     } else {
         $journal = lifecycleJournal(JournalTemplate::Blog->value, 'media-blog');
