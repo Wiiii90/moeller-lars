@@ -10,6 +10,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\Exhibition;
 use App\Models\MediaAsset;
+use App\Models\PublicationCheckpointEvent;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -142,6 +143,9 @@ final class AdminUndoService
     {
         if ((int) $receipt->getAttribute('admin_user_id') !== (int) $actor->getKey()) {
             throw new AuthorizationException('This Undo receipt belongs to another admin.');
+        }
+        if (PublicationCheckpointEvent::query()->where('audit_event_id', (int) $receipt->getAttribute('audit_event_id'))->exists()) {
+            throw ValidationException::withMessages(['undo' => 'This change is already part of a Commit and can no longer be undone individually.']);
         }
         if ((int) $receipt->getAttribute('receipt_version') !== AdminActionReceiptService::RECEIPT_VERSION) {
             throw ValidationException::withMessages(['undo' => 'This Undo receipt uses an unsupported version.']);
