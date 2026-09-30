@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['site_section_id', 'slug', 'title', 'body', 'state', 'position', 'excerpt', 'cover_media_asset_id', 'published_at', 'scheduled_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at'])]
+#[Fillable(['site_section_id', 'slug', 'title', 'body', 'state', 'position', 'excerpt', 'published_at', 'scheduled_at', 'legacy_id', 'legacy_source', 'migration_batch_id', 'migrated_at'])]
 #[Guarded(['id'])]
 class BlogPost extends Model
 {
@@ -28,12 +28,6 @@ class BlogPost extends Model
     public function siteSection(): BelongsTo
     {
         return $this->belongsTo(SiteSection::class);
-    }
-
-    /** Legacy compatibility only. Canonical Journal media uses mediaUsages(). */
-    public function coverMedia(): BelongsTo
-    {
-        return $this->belongsTo(MediaAsset::class, 'cover_media_asset_id');
     }
 
     public function mediaUsages(): HasMany
