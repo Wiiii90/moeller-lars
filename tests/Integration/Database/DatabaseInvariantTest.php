@@ -4,7 +4,7 @@ use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\ArtworkMedia;
 use App\Models\Exhibition;
-use App\Models\ExhibitionMedia;
+use App\Models\JournalEntryMedia;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use App\Models\SiteSection;
@@ -83,10 +83,18 @@ it('enforces at most one exhibition hero inside a Journal', function (): void {
         'state' => 'draft',
         'position' => 0,
     ]);
-    ExhibitionMedia::create(['exhibition_id' => $exhibition->id, 'media_asset_id' => invariantAsset()->id, 'role' => 'hero', 'position' => 0]);
+    JournalEntryMedia::create([
+        'exhibition_id' => $exhibition->id,
+        'media_asset_id' => invariantAsset()->id,
+        'role' => JournalEntryMedia::ROLE_COVER,
+        'position' => 0,
+    ]);
 
-    expect(fn () => ExhibitionMedia::create([
-        'exhibition_id' => $exhibition->id, 'media_asset_id' => invariantAsset()->id, 'role' => 'hero', 'position' => 1,
+    expect(fn () => JournalEntryMedia::create([
+        'exhibition_id' => $exhibition->id,
+        'media_asset_id' => invariantAsset()->id,
+        'role' => JournalEntryMedia::ROLE_COVER,
+        'position' => 1,
     ]))->toThrow(QueryException::class);
 });
 
