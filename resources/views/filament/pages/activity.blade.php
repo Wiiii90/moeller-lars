@@ -504,10 +504,8 @@
                                             <span class="admin-status is-published">Committed</span>
                                             <code>{{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }}</code>
                                         </div>
-                                    @elseif ($event['publication_status'] === 'pending')
-                                        <span class="admin-status" title="Included in next publish">Staged</span>
-                                    @elseif ($event['publication_status'] === 'not_pending')
-                                        <span class="admin-status" title="Later changes neutralized this event">No staged delta</span>
+                                    @elseif ($event['publication_status'] === 'staged')
+                                        <span class="admin-status" title="Current Activity; closes with the next Commit">Staged</span>
                                     @else
                                         <span class="activity-publication-cell__empty" aria-label="No publication state">—</span>
                                     @endif
