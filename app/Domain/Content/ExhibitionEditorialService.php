@@ -45,10 +45,6 @@ final class ExhibitionEditorialService
                 'archived_from_state' => null,
                 'position' => $this->order->nextPosition(new Exhibition, $sectionId),
                 'published_at' => null,
-                'legacy_id' => null,
-                'legacy_source' => null,
-                'migration_batch_id' => null,
-                'migrated_at' => null,
             ]);
             $entry->save();
 
