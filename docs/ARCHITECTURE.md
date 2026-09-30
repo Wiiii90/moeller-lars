@@ -169,7 +169,7 @@ Archived Exhibitions remember their prior state where available. Historical arch
 
 Ordered editorial records persist explicit position. Native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) is the admin interaction mechanism; domain ordering services remain persistence authority.
 
-Ordering Activity uses `AdminAuditService::recordOrdering()` with a stable domain scope and exact canonical before/after identity sequences. `AdminActivityOrderingProjector` composes those states into one net permutation without weakening the append-only `audit_events` contract. A non-identity net permutation produces one visible Activity row and one safe net-order Undo receipt; exact identity produces neither. Composition is state-continuous and publication-bounded, never timer-, debounce- or burst-based.
+Ordering Activity uses `AdminAuditService::recordOrdering()` with a stable domain scope and exact canonical before/after identity sequences. `AdminActivityOrderingProjector` groups a state-continuous sequence into one visible forensic Activity so routine sorting does not create hundreds of rows. The group remains visible regardless of whether its final order equals its starting order; identity only means there is no meaningful inverse to offer as Undo. Composition is publication-bounded and never timer-, debounce- or burst-based.
 
 Filtered/search projections do not silently become canonical reorder sequences. Ranked tables may expose a 1-based Position column as described in `ui-skills.md`.
 
@@ -212,11 +212,11 @@ See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
 
 ## Audit and logical Commit
 
-`audit_events` is append-only administrative history. Normal domain persistence happens independently of logical Commit/checkpoint behavior and independently of notification retention. Activity records successful writes; it is not the persistence trigger and it is not an inbox.
+`audit_events` is append-only forensic evidence for successful administrative mutations. It is the persistence source behind the visible Activity/Commit history, not a second hidden journal. Uncommitted audit events are projected as current Activity; a successful Commit links every still-uncommitted event to that Commit, after which it is inspectable through Commit details and no longer individually Undo-capable.
 
-A shell-level Commit groups already-persisted working changes into the public/live publication state. Commit/restore/reset/revert behavior continues through canonical Publication services rather than through Notifications. Publication failures or blockers may create persistent notifications when they remain actionable.
+A shell-level Commit promotes the current Working state to LIVE and closes the current Activity generation. Publication truth comes from the actual `public.*` versus `committed.*` state, not from per-event pending flags. Commit/restore/reset/revert behavior continues through canonical Publication services rather than through Notifications.
 
-Publication restore rows remain logically full snapshots, but their immutable JSON payloads are content-addressed in the shared `history_payloads` store. Publication manifests and Undo receipts may reference the same payload identity, so shared history data is stored once and garbage-collected only after all recovery roots release it. Activity itself remains permanent; Undo receipts and older Publication restore payloads are bounded/reclaimable recovery data.
+Publication restore rows remain logically full snapshots, but their immutable JSON payloads are content-addressed in the shared `history_payloads` store. Publication manifests and Undo receipts may reference the same payload identity, so shared history data is stored once and garbage-collected only after all recovery roots release it. Audit evidence remains append-only in normal runtime; current Activity is the uncommitted projection of that evidence and committed Activity is viewed through its Commit. Undo receipts and older Publication restore payloads are bounded/reclaimable recovery data.
 
 The Storage allowance is a whole-site logical contract: canonical originals, generated variants and logical persistent database/application data count toward site usage. Raw PostgreSQL physical-file size is an operational metric rather than billable site usage. Storage's explicit reclaim action may clear Undo and older unprotected restore roots, but must protect LIVE/current Working restore context and must never delete Activity history.
 
