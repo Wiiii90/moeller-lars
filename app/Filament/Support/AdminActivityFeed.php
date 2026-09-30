@@ -205,7 +205,7 @@ final class AdminActivityFeed
      * @return array{
      *     staged:int,
      *     staged_groups:list<array{area:string,entity:string,count:int}>,
-     *     staged_events:int,
+     *     current_activities:int,
      *     preflight:array{status:string,label:string,blockers:list<string>},
      *     latest:?array{id:int,message:?string,change_count:int,when:string,timestamp:string,actor:string},
      *     recent:array<int, array{id:int,message:?string,change_count:int,when:string,timestamp:string,actor:string}>
@@ -215,7 +215,7 @@ final class AdminActivityFeed
     {
         $limit = max(1, min(6, $limit));
         $summary = $this->publication->pendingSummary();
-        $stagedEvents = $this->query()->count();
+        $currentActivities = $this->query()->count();
 
         /** @var EloquentCollection<int, PublicationCheckpoint> $checkpointModels */
         $checkpointModels = PublicationCheckpoint::query()
@@ -247,7 +247,7 @@ final class AdminActivityFeed
         return [
             'staged' => $summary['total'],
             'staged_groups' => $summary['groups'],
-            'staged_events' => $stagedEvents,
+            'current_activities' => $currentActivities,
             'preflight' => $this->publication->preflight($summary),
             'latest' => $checkpoints[0] ?? null,
             'recent' => array_slice($checkpoints, 1),
