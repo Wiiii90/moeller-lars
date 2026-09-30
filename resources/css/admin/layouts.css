@@ -48,6 +48,10 @@ html.fi,
     padding-top: var(--admin-shell-content-inset) !important;
 }
 
+.fi-topbar {
+    min-height: var(--admin-topbar-height);
+}
+
 /* Native select controls inherit the active browser color scheme. */
 html.fi select {
     color-scheme: light;
