@@ -6,7 +6,6 @@
     $publicationLabel = match ($event['publication_status'] ?? null) {
         'committed' => 'Committed',
         'pending' => 'Staged for next publish',
-        'not_pending' => 'No current staged delta',
         default => 'Not publication-tracked',
     };
 @endphp
@@ -40,7 +39,7 @@
     @if (is_array($orderingProjection) && ($orderingProjection['event_count'] ?? 1) > 1)
         <div class="admin-detail-dialog__field">
             <span>Ordering sequence</span>
-            <p>{{ $orderingProjection['event_count'] }} raw reorder operations reduced to one net ordering change.</p>
+            <p>{{ $orderingProjection['event_count'] }} raw reorder operations grouped as one Activity.</p>
             @if (($orderingProjection['started_at'] ?? null) && ($orderingProjection['ended_at'] ?? null))
                 <small>{{ $orderingProjection['started_at'] }} → {{ $orderingProjection['ended_at'] }}</small>
             @endif
