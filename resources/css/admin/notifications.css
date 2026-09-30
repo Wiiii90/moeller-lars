@@ -101,7 +101,7 @@
      */
     .admin-header-feedback {
         position: fixed;
-        top: calc((var(--admin-topbar-height) - var(--admin-header-control-size)) / 2);
+        inset-block-start: calc((var(--admin-topbar-height) - var(--admin-header-control-size)) / 2);
         inset-block-end: auto;
         width: var(--admin-workspace-content-width);
         max-width: none;
