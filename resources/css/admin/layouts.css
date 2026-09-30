@@ -271,8 +271,8 @@ html.fi select option:disabled {
     }
 
     .fi-main {
-        width: min(100%, calc(var(--admin-workspace-max-width) + var(--admin-workspace-gutter) + var(--admin-workspace-gutter)));
-        max-width: calc(var(--admin-workspace-max-width) + var(--admin-workspace-gutter) + var(--admin-workspace-gutter)) !important;
+        width: min(100%, var(--admin-workspace-outer-max-width));
+        max-width: var(--admin-workspace-outer-max-width) !important;
         padding-top: var(--admin-shell-content-inset) !important;
     }
 
