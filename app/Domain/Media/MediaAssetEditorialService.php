@@ -13,9 +13,7 @@ use App\Domain\Publication\PublicationMediaCleanupService;
 use App\Domain\Publication\PublicationSnapshot;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
-use App\Models\BlogPost;
 use App\Models\CustomPageSetting;
-use App\Models\ExhibitionMedia;
 use App\Models\HomePresentationSetting;
 use App\Models\MediaAsset;
 use App\Models\PublicContentSetting;
@@ -161,7 +159,6 @@ class MediaAssetEditorialService
                 if ($this->referenceQuery->isReferenced($locked)) {
                     $this->removeCanonicalReferences($locked, $actor);
                 }
-                $this->removeLegacyJournalReferences($locked);
 
                 $locked->variants()->update(['state' => 'deleted']);
                 $locked->setAttribute('state', 'deleted');
@@ -370,65 +367,11 @@ class MediaAssetEditorialService
         return $clean === '' ? null : $clean;
     }
 
-    private function removeLegacyJournalReferences(MediaAsset $asset): void
-    {
-        $assetId = (int) $asset->getKey();
-
-        /** @var EloquentCollection<int, BlogPost> $posts */
-        $posts = BlogPost::query()
-            ->where('cover_media_asset_id', $assetId)
-            ->lockForUpdate()
-            ->get();
-        foreach ($posts as $post) {
-            $post->forceFill(['cover_media_asset_id' => null])->save();
-        }
-
-        /** @var EloquentCollection<int, ExhibitionMedia> $legacy */
-        $legacy = ExhibitionMedia::query()
-            ->where('media_asset_id', $assetId)
-            ->orderBy('exhibition_id')
-            ->orderBy('position')
-            ->lockForUpdate()
-            ->get();
-        $exhibitionIds = $legacy
-            ->pluck('exhibition_id')
-            ->map(static fn (mixed $id): int => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
-
-        if ($legacy->isNotEmpty()) {
-            ExhibitionMedia::query()->where('media_asset_id', $assetId)->delete();
-            foreach ($exhibitionIds as $exhibitionId) {
-                $this->normalizeLegacyExhibitionPositions($exhibitionId);
-            }
-        }
-    }
-
     private function normalizeArtworkAdditionalPositions(int $artworkId): void
     {
         /** @var EloquentCollection<int, ArtworkMedia> $rows */
         $rows = ArtworkMedia::query()
             ->where('artwork_id', $artworkId)
-            ->where('role', 'additional')
-            ->orderBy('position')
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get();
-        foreach ($rows as $index => $usage) {
-            $position = $index + 1;
-            if ((int) $usage->getAttribute('position') !== $position) {
-                $usage->setAttribute('position', $position);
-                $usage->save();
-            }
-        }
-    }
-
-    private function normalizeLegacyExhibitionPositions(int $exhibitionId): void
-    {
-        /** @var EloquentCollection<int, ExhibitionMedia> $rows */
-        $rows = ExhibitionMedia::query()
-            ->where('exhibition_id', $exhibitionId)
             ->where('role', 'additional')
             ->orderBy('position')
             ->orderBy('id')
