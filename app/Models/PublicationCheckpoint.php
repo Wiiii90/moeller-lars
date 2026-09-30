@@ -40,7 +40,7 @@ final class PublicationCheckpoint extends Model
         return $this->belongsTo(User::class, 'admin_user_id');
     }
 
-    public function auditEvents(): HasMany
+    public function auditEventLinks(): HasMany
     {
         return $this->hasMany(PublicationCheckpointEvent::class);
     }
