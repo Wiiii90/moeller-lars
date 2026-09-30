@@ -39,9 +39,6 @@ final class HomeHeroConfigurationService
      *     manual_group_count:int,
      *     rotation_interval:array{count:int,unit:string},
      *     rotation_started_at:?string,
-     *     mode:string,
-     *     hero_artwork_id:?int,
-     *     selection:string,
      *     newest_by:string,
      *     group_size:int,
      *     candidate_filter:string,
@@ -86,8 +83,6 @@ final class HomeHeroConfigurationService
         $candidateFilter = ($artwork['pool_rule'] ?? null) === 'year' ? 'year' : 'all';
         $rotationInterval = $this->readRotationInterval($artwork['rotation_interval'] ?? null);
         $rotationStartedAt = $this->readRotationStartedAt($artwork['rotation_started_at'] ?? null);
-        $heroArtworkId = $legacyFixedId ?? ($manualGroup[0]['artwork_id'] ?? null);
-
         return [
             'group_source' => $groupSource,
             'display_strategy' => $displayStrategy,
@@ -95,10 +90,6 @@ final class HomeHeroConfigurationService
             'manual_group_count' => count($manualGroup),
             'rotation_interval' => $rotationInterval,
             'rotation_started_at' => $rotationStartedAt,
-            // Compatibility aliases for the current admin while the UI is reconciled in the next tranche.
-            'mode' => $groupSource,
-            'hero_artwork_id' => $heroArtworkId,
-            'selection' => $displayStrategy === 'random' ? 'random' : 'newest',
             'newest_by' => $newestBy,
             'group_size' => $this->boundedGroupSize($artwork['group_size'] ?? null),
             'candidate_filter' => $candidateFilter,
@@ -134,11 +125,6 @@ final class HomeHeroConfigurationService
 
             if (array_key_exists('manual_group', $input)) {
                 $manualGroup = $this->normalizeManualGroup($input['manual_group']);
-            } elseif ($groupSource === 'manual' && array_key_exists('hero_artwork_id', $input)) {
-                $heroArtworkId = $this->nullablePositiveInt($input['hero_artwork_id']);
-                $manualGroup = $heroArtworkId === null
-                    ? []
-                    : [['artwork_id' => $heroArtworkId, 'weight' => self::WEIGHT_TOTAL]];
             }
 
             $rotationInterval = $this->requestedRotationInterval($input, $current['rotation_interval']);
@@ -216,9 +202,7 @@ final class HomeHeroConfigurationService
                 ? 'fixed'
                 : ($displayStrategy === 'random' ? 'random' : 'automatic');
             $artwork['automatic_selection'] = $displayStrategy === 'random' ? 'random' : 'newest';
-            $artwork['fixed_artwork_id'] = $groupSource === 'manual'
-                ? $manualGroup[0]['artwork_id']
-                : $current['hero_artwork_id'];
+            $artwork['fixed_artwork_id'] = $manualGroup[0]['artwork_id'] ?? null;
             $artwork['newest_by'] = $newestBy;
             $artwork['group_size'] = $groupSize;
             $artwork['pool_rule'] = $candidateFilter === 'year' ? 'year' : 'newest';
@@ -529,29 +513,17 @@ final class HomeHeroConfigurationService
     /** @param array<string, mixed> $input */
     private function requestedGroupSource(array $input, string $current): string
     {
-        if (array_key_exists('group_source', $input)) {
-            return $this->enum($input['group_source'], ['automatic', 'manual'], $current);
-        }
-        if (array_key_exists('mode', $input)) {
-            return $this->enum($input['mode'], ['automatic', 'manual'], $current);
-        }
-
-        return $current;
+        return array_key_exists('group_source', $input)
+            ? $this->enum($input['group_source'], ['automatic', 'manual'], $current)
+            : $current;
     }
 
     /** @param array<string, mixed> $input */
     private function requestedDisplayStrategy(array $input, string $current): string
     {
-        if (array_key_exists('display_strategy', $input)) {
-            return $this->enum($input['display_strategy'], ['ordered', 'random', 'sequential'], $current);
-        }
-        if (array_key_exists('selection', $input)) {
-            return $this->enum($input['selection'], ['newest', 'random'], 'newest') === 'random'
-                ? 'random'
-                : 'ordered';
-        }
-
-        return $current;
+        return array_key_exists('display_strategy', $input)
+            ? $this->enum($input['display_strategy'], ['ordered', 'random', 'sequential'], $current)
+            : $current;
     }
 
     /** @param array<string, mixed> $input
