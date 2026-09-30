@@ -4,6 +4,7 @@ namespace App\Domain\Artwork;
 
 use App\Domain\Admin\AdminAuditService;
 use App\Domain\Media\MediaIngestService;
+use App\Domain\Media\MediaReferenceQuery;
 use App\Models\Artwork;
 use App\Models\ArtworkMedia;
 use App\Models\MediaAsset;
@@ -21,6 +22,7 @@ class ArtworkEditorialService
     public function __construct(
         private readonly MediaIngestService $mediaIngestService,
         private readonly AdminAuditService $adminAuditService,
+        private readonly MediaReferenceQuery $mediaReferences,
     ) {}
 
     public function publish(Artwork $artwork): Artwork
@@ -467,12 +469,7 @@ class ArtworkEditorialService
 
     private function assetHasReferences(MediaAsset $asset): bool
     {
-        $id = $asset->getKey();
-
-        return DB::table('artwork_media')->where('media_asset_id', $id)->exists()
-            || DB::table('exhibition_media')->where('media_asset_id', $id)->exists()
-            || DB::table('cv_entries')->where('image_media_asset_id', $id)->exists()
-            || DB::table('blog_posts')->where('cover_media_asset_id', $id)->exists();
+        return $this->mediaReferences->isReferenced($asset);
     }
 
     /** @param list<string> $keys */
