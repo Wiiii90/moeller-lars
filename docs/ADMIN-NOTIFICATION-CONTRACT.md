@@ -133,7 +133,9 @@ Admin mutation
   -> admin-header-feedback
 ```
 
-The header feedback surface is static and keeps stable topbar geometry. The newest feedback text is shown in place. Each further feedback event increments the fixed `+N` counter while replacing the visible text with the newest message; identical messages still count as additional feedback. The surface does not scroll, animate, auto-play a queue, dismiss itself or move neighboring header controls. On narrow screens the body text may be suppressed before header controls become inaccessible.
+The header feedback surface is mounted once through the panel-level `TOPBAR_START` hook and is not rendered or positioned by individual pages. Its Alpine state is owned by that central surface; there is no page-navigation initializer, DOM measurement, resize observer or feedback-specific animation runtime.
+
+The surface is static and follows the same shell geometry as the canonical desktop `.fi-main` content axis: Filament sidebar width, bounded workspace width, shared workspace gutter and the existing workspace visual shift. The newest feedback text is shown in place. Each further feedback event increments the fixed `+N` counter while replacing the visible text with the newest message; identical messages still count as additional feedback. The surface does not scroll, animate, auto-play a queue, dismiss itself or move neighboring header controls. On narrow screens the body text may be suppressed before header controls become inaccessible.
 
 Persistent-notification details use the shared admin dialog/viewer primitives. Context actions such as `Open record`, `Open activity`, `Review staged changes` or `Mark unread` appear only when they are semantically available.
 
