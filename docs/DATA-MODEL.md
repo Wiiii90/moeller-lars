@@ -182,13 +182,13 @@ See [ADMIN-NOTIFICATION-CONTRACT.md](ADMIN-NOTIFICATION-CONTRACT.md).
 
 ## Audit, Undo and editorial checkpoints
 
-`audit_events` is durable append-only admin history. Domain writes are persisted/audited independently of logical Commit/checkpoint behavior and independently of notification retention. Activity records successful administrative facts and is not a recovery payload store.
+`audit_events` is durable append-only forensic evidence for successful administrative mutations. Uncommitted events are the source of the current Activity view; `publication_checkpoint_events` links them to the Commit that closes that Activity generation. Committed Activities remain inspectable through Commit details and are no longer individually Undo-capable.
 
-`admin_activity_ordering_projections` is the mutable read/recovery projection for ordering Activity. It stores the exact canonical `before_state` and `after_state` of one state-continuous ordering scope; `admin_activity_ordering_events` links immutable raw ordering audit events to that projection. A non-identity projection is one visible Activity change; an identity projection is omitted from Activity and has no Undo receipt. These tables do not replace or rewrite `audit_events`, and pre-projection ordering history is not reconstructed through compatibility fallbacks.
+`admin_activity_ordering_projections` is the mutable grouping projection for ordering Activity. It stores the exact canonical `before_state` and `after_state` of one state-continuous ordering scope; `admin_activity_ordering_events` links immutable raw reorder audit events to that projection. Every projection is represented as one visible forensic Activity, including projections whose final order equals their starting order. Identity affects only Undo eligibility, not historical visibility.
 
 `admin_action_receipts` stores bounded actor-scoped Undo roots. Snapshot-style receipts reference immutable content-addressed JSON through `snapshot_payload_id` rather than owning a duplicate payload copy.
 
-`publication_checkpoints` stores permanent Commit metadata/lineage. A checkpoint's `snapshot_available` flag states whether its restore payload remains retained. `publication_version_row_manifests` maps a retained checkpoint/table/row identity to `history_payloads`; the transparent `publication_version_rows` interface reconstructs the logical complete snapshot expected by Publication services.
+`publication_checkpoints` stores permanent Commit metadata/lineage. `publication_checkpoint_events` associates every audit event from the closed Activity generation with that Commit. A checkpoint's `snapshot_available` flag states whether its restore payload remains retained. `publication_version_row_manifests` maps a retained checkpoint/table/row identity to `history_payloads`; the transparent `publication_version_rows` interface reconstructs the logical complete snapshot expected by Publication services.
 
 `history_payloads` is the shared immutable payload store for both Publication row manifests and Undo snapshot receipts. Payload rows are collected only when no manifest or receipt still references them.
 
