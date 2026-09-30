@@ -2,6 +2,7 @@
 
 namespace App\Domain\Publication;
 
+use App\Models\AdminActionReceipt;
 use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
@@ -233,6 +234,10 @@ final class PublicationService
                     ],
                     $pendingAuditEventIds,
                 ));
+
+                AdminActionReceipt::query()
+                    ->whereIn('audit_event_id', $pendingAuditEventIds)
+                    ->delete();
             }
 
             $this->versions->clearWorkingContext();
