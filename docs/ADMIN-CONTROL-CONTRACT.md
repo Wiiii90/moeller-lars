@@ -47,6 +47,8 @@ Workspace searches, filters, pager controls and compact inline controls may rema
 
 A native control is not a separate design system. It is another renderer of this contract.
 
+Native single-selects and pager selects use the shared `admin-selects.js` popup layer. Opening a dropdown must never add document height, change the page scrollbar, call window scrolling APIs or reserve layout space for the popup. The popup stays viewport-positioned and constrains overflow to its own internal scrollbar.
+
 ## Persistence semantics
 
 Persistence must never be driven by a debounce timer.
