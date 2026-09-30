@@ -115,7 +115,7 @@ it('keeps the real public layout on committed appearance until one idempotent Co
     $pendingActivity = collect(app(AdminActivityFeed::class)->recent(20))
         ->firstWhere('id', (int) $event->getKey());
     expect($pendingActivity)->not->toBeNull()
-        ->and($pendingActivity['publication_status'])->toBe('pending')
+        ->and($pendingActivity['publication_status'])->toBe('staged')
         ->and($pendingActivity['checkpoint_id'])->toBeNull();
 
     $checkpoint = app(PublicationService::class)->commit($this->actor);
