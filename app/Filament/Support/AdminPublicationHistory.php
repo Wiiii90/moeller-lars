@@ -4,9 +4,7 @@ namespace App\Filament\Support;
 
 use App\Domain\Admin\AdminActionCatalog;
 use App\Domain\Publication\PublicationVersionService;
-use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
-use App\Models\PublicationCheckpointEvent;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -14,7 +12,10 @@ use Illuminate\Support\Facades\DB;
 
 final class AdminPublicationHistory
 {
-    public function __construct(private readonly PublicationVersionService $versions) {}
+    public function __construct(
+        private readonly PublicationVersionService $versions,
+        private readonly AdminActivityFeed $activity,
+    ) {}
 
     /**
      * @return array{commits:list<array<string,mixed>>,paginator:LengthAwarePaginator<int,PublicationCheckpoint>}
@@ -38,11 +39,16 @@ final class AdminPublicationHistory
                 'parent:id,hash,snapshot_available,schema_hash',
                 'source:id,hash,snapshot_available,schema_hash',
             ])
-            ->withCount('auditEvents')
             ->orderByDesc('published_at')
             ->orderByDesc('id')
             ->paginate($perPage, ['*'], 'commits_page')
             ->withQueryString();
+
+        $activityCounts = $this->activity->countsForCheckpoints(
+            $paginator->getCollection()
+                ->map(static fn (PublicationCheckpoint $checkpoint): int => (int) $checkpoint->getKey())
+                ->all(),
+        );
 
         return [
             'commits' => $paginator->getCollection()
@@ -50,6 +56,7 @@ final class AdminPublicationHistory
                     $checkpoint,
                     $liveId === $checkpoint->getKey(),
                     $currentSchemaHash,
+                    $activityCounts[(int) $checkpoint->getKey()] ?? 0,
                 ))
                 ->values()
                 ->all(),
@@ -77,15 +84,17 @@ final class AdminPublicationHistory
             ->groupByRaw($dateExpression);
         $activeDays = DB::query()->fromSub($activeDaysQuery, 'active_days')->count();
 
-        $checkpointIds = (clone $query)->select('publication_checkpoints.id');
+        $checkpointIds = (clone $query)
+            ->pluck('publication_checkpoints.id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+        $activityCounts = $this->activity->countsForCheckpoints($checkpointIds);
 
         return [
-            'total' => (clone $query)->count(),
+            'total' => count($checkpointIds),
             'active_days' => $activeDays,
             'changes' => (int) (clone $query)->sum('change_count'),
-            'events' => PublicationCheckpointEvent::query()
-                ->whereIn('publication_checkpoint_id', $checkpointIds)
-                ->count(),
+            'activities' => array_sum($activityCounts),
             'actors' => (clone $query)
                 ->whereNotNull('admin_user_id')
                 ->distinct()
@@ -156,7 +165,6 @@ final class AdminPublicationHistory
                 'parent:id,hash,snapshot_available,schema_hash',
                 'source:id,hash,snapshot_available,schema_hash',
             ])
-            ->withCount('auditEvents')
             ->find($checkpointId);
         if (! $checkpoint instanceof PublicationCheckpoint) {
             return null;
@@ -164,38 +172,15 @@ final class AdminPublicationHistory
 
         $currentSchemaHash = $this->versions->schemaHash();
         $liveId = $this->versions->currentLiveCheckpoint()?->getKey();
-        $projected = $this->project($checkpoint, $liveId === $checkpoint->getKey(), $currentSchemaHash);
+        $activity = $this->activity->forCheckpoint($checkpointId);
+        $projected = $this->project(
+            $checkpoint,
+            $liveId === $checkpoint->getKey(),
+            $currentSchemaHash,
+            count($activity),
+        );
 
-        $events = AuditEvent::query()
-            ->whereHas('publicationCheckpointEvent', static function ($query) use ($checkpointId): void {
-                $query->where('publication_checkpoint_id', $checkpointId);
-            })
-            ->with('adminUser:id,name')
-            ->orderBy('occurred_at')
-            ->orderBy('id')
-            ->limit(100)
-            ->get()
-            ->map(static function (AuditEvent $event): array {
-                $definition = AdminActionCatalog::definition((string) $event->getAttribute('action'));
-                $occurredAt = $event->getAttribute('occurred_at');
-                $actor = $event->getRelationValue('adminUser');
-
-                return [
-                    'id' => (int) $event->getKey(),
-                    'action' => $definition['label'],
-                    'area' => $definition['area'],
-                    'entity_type' => (string) $event->getAttribute('entity_type'),
-                    'entity_id' => (int) $event->getAttribute('entity_id'),
-                    'actor' => $actor?->getAttribute('name') ?? 'Admin',
-                    'timestamp' => $occurredAt instanceof CarbonInterface
-                        ? $occurredAt->format('Y-m-d H:i')
-                        : (string) $occurredAt,
-                ];
-            })
-            ->values()
-            ->all();
-
-        return [...$projected, 'events' => $events];
+        return [...$projected, 'activities' => $activity];
     }
 
     /** @return array<int, string>|null */
@@ -250,7 +235,7 @@ final class AdminPublicationHistory
     }
 
     /** @return array<string,mixed> */
-    private function project(PublicationCheckpoint $checkpoint, bool $live, string $currentSchemaHash): array
+    private function project(PublicationCheckpoint $checkpoint, bool $live, string $currentSchemaHash, int $activityCount): array
     {
         /** @var CarbonInterface $publishedAt */
         $publishedAt = $checkpoint->getAttribute('published_at');
@@ -278,7 +263,7 @@ final class AdminPublicationHistory
             'schema_hash' => $schemaHash,
             'message' => is_string($message) && trim($message) !== '' ? trim($message) : null,
             'change_count' => (int) $checkpoint->getAttribute('change_count'),
-            'event_count' => (int) ($checkpoint->getAttribute('audit_events_count') ?? 0),
+            'activity_count' => $activityCount,
             'actor' => $adminUser?->getAttribute('name') ?? 'Admin',
             'when' => $publishedAt->diffForHumans(),
             'timestamp' => $publishedAt->format('Y-m-d H:i'),
