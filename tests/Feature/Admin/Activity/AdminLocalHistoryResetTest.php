@@ -86,8 +86,7 @@ it('clears disposable admin history without deleting editorial or publication co
 
     expect(AuditEvent::query()->count())->toBeGreaterThan(0)
         ->and(AdminActionReceipt::query()->count())->toBeGreaterThan(0)
-        ->and(AdminActivityOrderingProjection::query()->count())->toBeGreaterThan(0)
-;
+        ->and(AdminActivityOrderingProjection::query()->count())->toBeGreaterThan(0);
 
     app(AdminLocalHistoryResetService::class)->reset();
 
