@@ -62,11 +62,6 @@ class MediaAsset extends Model
         return $this->hasMany(CvEntry::class, 'image_media_asset_id');
     }
 
-    public function blogPosts(): HasMany
-    {
-        return $this->hasMany(BlogPost::class, 'cover_media_asset_id');
-    }
-
     public function siteIdentitySettings(): HasMany
     {
         return $this->hasMany(PublicContentSetting::class, 'favicon_media_asset_id');
@@ -80,19 +75,6 @@ class MediaAsset extends Model
     public function artworks(): BelongsToMany
     {
         return $this->belongsToMany(Artwork::class, 'artwork_media')
-            ->withPivot(['role', 'position', 'alt_text_override'])->withTimestamps();
-    }
-
-    /** Legacy compatibility only. */
-    public function exhibitionMedia(): HasMany
-    {
-        return $this->hasMany(ExhibitionMedia::class);
-    }
-
-    /** Legacy compatibility only. */
-    public function exhibitions(): BelongsToMany
-    {
-        return $this->belongsToMany(Exhibition::class, 'exhibition_media')
             ->withPivot(['role', 'position', 'alt_text_override'])->withTimestamps();
     }
 
