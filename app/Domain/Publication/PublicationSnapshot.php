@@ -68,7 +68,6 @@ final class PublicationSnapshot
         'journal_entry_media',
         'home_presentation_setting',
         'exhibition',
-        'exhibition_media',
         'blog_post',
         'public_content_setting',
         'redirect',
