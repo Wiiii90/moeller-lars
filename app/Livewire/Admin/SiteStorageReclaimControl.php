@@ -4,7 +4,6 @@ namespace App\Livewire\Admin;
 
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Storage\SiteStorageReclaimService;
-use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use Filament\Actions\Action;
@@ -39,7 +38,7 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
                     status: 'success',
                 );
 
-                $this->redirect(MediaAssetResource::getUrl('index'), navigate: false);
+                $this->dispatch('storage-reclaimed');
             });
 
         return AdminDialog::confirm(
