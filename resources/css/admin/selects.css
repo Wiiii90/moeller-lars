@@ -1,6 +1,6 @@
 /* Shared controlled dropdown layer for native single-select workspace controls.
- * The original <select> remains the Livewire/form authority; the generated
- * listbox owns presentation and always opens below its trigger. */
+ * The original <select> remains the Livewire/form authority. The generated
+ * listbox stays in the viewport and owns its own vertical scrolling. */
 :root {
     --admin-dropdown-max-height: 18rem;
 }
@@ -146,6 +146,10 @@
     z-index: 100;
     box-sizing: border-box;
     display: grid;
+    max-height: min(
+        var(--admin-dropdown-max-height),
+        var(--admin-dropdown-available-height, var(--admin-dropdown-max-height))
+    );
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -248,15 +252,4 @@
 .admin-select__option:disabled {
     opacity: .38;
     cursor: default;
-}
-
-/* Opening a downward-only dropdown creates real document room before the
- * runtime scrolls the trigger just enough to reveal its menu. It never flips
- * the menu upward over labels, headings or preceding content. */
-body.admin-dropdown-open::after {
-    display: block;
-    width: 1px;
-    height: calc(var(--admin-dropdown-max-height) + var(--admin-section-gap));
-    content: '';
-    pointer-events: none;
 }
