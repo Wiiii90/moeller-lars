@@ -32,11 +32,6 @@ final class ArtworkDraftService
         $data['state'] = 'draft';
         $data['published_at'] = null;
         $data['date_precision'] = filled($data['work_date']) ? 'day' : 'unknown';
-        $data['legacy_date_raw'] = null;
-        $data['legacy_id'] = null;
-        $data['legacy_source'] = null;
-        $data['migration_batch_id'] = null;
-        $data['migrated_at'] = null;
 
         $actor = $this->audit->requireActor();
 
