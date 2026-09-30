@@ -98,12 +98,21 @@ function createController(select) {
         const rect = trigger.getBoundingClientRect();
         const viewportPadding = 12;
         const gap = 5;
-        const availableHeight = Math.max(96, window.innerHeight - rect.bottom - gap - viewportPadding);
+        const availableBelow = Math.max(0, window.innerHeight - rect.bottom - gap - viewportPadding);
+        const availableAbove = Math.max(0, rect.top - gap - viewportPadding);
+        const openAbove = availableBelow < 96 && availableAbove > availableBelow;
+        const availableHeight = openAbove ? availableAbove : availableBelow;
 
-        menu.style.top = `${Math.round(rect.bottom + gap)}px`;
+        menu.style.setProperty('--admin-dropdown-available-height', `${Math.max(1, Math.floor(availableHeight))}px`);
         menu.style.left = `${Math.round(Math.max(viewportPadding, Math.min(rect.left, window.innerWidth - rect.width - viewportPadding)))}px`;
         menu.style.width = `${Math.round(Math.min(rect.width, window.innerWidth - (viewportPadding * 2)))}px`;
-        menu.style.maxHeight = `${Math.floor(Math.min(288, availableHeight))}px`;
+
+        const menuHeight = menu.getBoundingClientRect().height;
+        const top = openAbove
+            ? Math.max(viewportPadding, rect.top - gap - menuHeight)
+            : rect.bottom + gap;
+
+        menu.style.top = `${Math.round(top)}px`;
     }
 
     function focusRelativeOption(direction) {
@@ -213,25 +222,12 @@ function createController(select) {
         activeController = controller;
         menu.hidden = false;
         trigger.setAttribute('aria-expanded', 'true');
-        document.body.classList.add('admin-dropdown-open');
         window.addEventListener('resize', positionMenu);
         window.addEventListener('scroll', positionMenu, true);
 
         requestAnimationFrame(() => {
-            const rect = trigger.getBoundingClientRect();
-            const gap = 5;
-            const viewportPadding = 12;
-            const menuHeight = Math.min(menu.scrollHeight, 288);
-            const overflow = rect.bottom + gap + menuHeight + viewportPadding - window.innerHeight;
-
-            if (overflow > 0) {
-                window.scrollBy({ top: overflow, left: 0, behavior: 'auto' });
-            }
-
-            requestAnimationFrame(() => {
-                positionMenu();
-                if (focusOption) focusRelativeOption(1);
-            });
+            positionMenu();
+            if (focusOption) focusRelativeOption(1);
         });
     }
 
@@ -246,7 +242,6 @@ function createController(select) {
 
         if (activeController === controller) {
             activeController = null;
-            document.body.classList.remove('admin-dropdown-open');
         }
     }
 
