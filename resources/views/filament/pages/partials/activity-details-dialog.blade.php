@@ -5,7 +5,7 @@
     unset($metadata['change_summary'], $metadata['target_label'], $metadata['ordering']);
     $publicationLabel = match ($event['publication_status'] ?? null) {
         'committed' => 'Committed',
-        'pending' => 'Staged for next publish',
+        'staged' => 'Current Activity stage',
         default => 'Not publication-tracked',
     };
 @endphp
