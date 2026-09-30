@@ -29,7 +29,6 @@ final class AdminLocalHistoryResetService
             'admin_activity_ordering_events',
             'admin_activity_ordering_projections',
             'admin_action_receipts',
-            'publication_event_states',
             'publication_checkpoint_events',
             'audit_events',
         ];
