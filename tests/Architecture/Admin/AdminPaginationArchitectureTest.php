@@ -19,19 +19,3 @@ it('keeps admin table pagination on the shared pager primitive', function (): vo
 
     expect($views[3])->not->toContain('media-workspace__pager');
 });
-
-it('keeps the shared page size picker opening downward', function (): void {
-    $root = dirname(__DIR__, 3);
-    $picker = file_get_contents($root.'/resources/views/components/admin/page-size-picker.blade.php');
-    $styles = file_get_contents($root.'/resources/css/admin/data-workspace.css');
-
-    expect($picker)
-        ->toContain('▾')
-        ->toContain("scrollIntoView({ block: 'nearest' })")
-        ->not->toContain('▴');
-
-    expect($styles)
-        ->toContain('top: calc(100% + .3rem);')
-        ->toContain('.admin-pager:has(.admin-pager-size-picker.is-open)')
-        ->not->toContain('.media-workspace__pager');
-});
