@@ -214,8 +214,8 @@
                         <strong>{{ number_format($publicationContext['staged']) }}</strong>
                         <small>
                             Working state compared with the current live snapshot
-                            @if ($publicationContext['staged_events'] > 0)
-                                · {{ number_format($publicationContext['staged_events']) }} current activities
+                            @if ($publicationContext['current_activities'] > 0)
+                                · {{ number_format($publicationContext['current_activities']) }} current activities
                             @endif
                         </small>
                     </div>
