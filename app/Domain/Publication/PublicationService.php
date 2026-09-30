@@ -2,6 +2,7 @@
 
 namespace App\Domain\Publication;
 
+use App\Models\AuditEvent;
 use App\Models\PublicationCheckpoint;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -11,14 +12,13 @@ final class PublicationService
 {
     public function __construct(
         private readonly PublicationMediaCleanupService $mediaCleanup,
-        private readonly PublicationEventStateService $eventStates,
         private readonly PublicationSchemaGuard $schemaGuard,
         private readonly PublicationVersionService $versions,
     ) {}
 
     public function hasPendingChanges(): bool
     {
-        return $this->eventStates->hasUncheckpointedPendingEvents();
+        return $this->pendingSummary()['total'] > 0;
     }
 
     /**
@@ -179,7 +179,12 @@ final class PublicationService
                 return null;
             }
 
-            $pendingAuditEventIds = $this->eventStates->pendingEventIdsForCommit();
+            $pendingAuditEventIds = AuditEvent::query()
+                ->whereDoesntHave('publicationCheckpointEvent')
+                ->orderBy('id')
+                ->pluck('id')
+                ->map(static fn (mixed $id): int => (int) $id)
+                ->all();
             /** @var PublicationCheckpoint|null $parent */
             $parent = PublicationCheckpoint::query()
                 ->orderByDesc('published_at')
