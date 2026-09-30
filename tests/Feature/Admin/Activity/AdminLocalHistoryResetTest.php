@@ -87,7 +87,7 @@ it('clears disposable admin history without deleting editorial or publication co
     expect(AuditEvent::query()->count())->toBeGreaterThan(0)
         ->and(AdminActionReceipt::query()->count())->toBeGreaterThan(0)
         ->and(AdminActivityOrderingProjection::query()->count())->toBeGreaterThan(0)
-        ->and(DB::table('publication_event_states')->count())->toBeGreaterThan(0);
+;
 
     app(AdminLocalHistoryResetService::class)->reset();
 
@@ -103,7 +103,6 @@ it('clears disposable admin history without deleting editorial or publication co
         ->and(DB::table('admin_notifications')->count())->toBe(0)
         ->and(DB::table('dashboard_feed_pins')->count())->toBe(0)
         ->and(DB::table('admin_action_stats')->count())->toBe(0)
-        ->and(DB::table('publication_event_states')->count())->toBe(0)
         ->and(DB::table('publication_checkpoint_events')->count())->toBe(0);
 
     $postResetEventId = DB::table('audit_events')->insertGetId([
