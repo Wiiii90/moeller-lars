@@ -23,7 +23,6 @@ use App\Models\Exhibition;
 use App\Models\MediaAsset;
 use App\Models\PublicationCheckpoint;
 use App\Models\PublicationCheckpointEvent;
-use App\Models\PublicationEventState;
 use App\Models\SiteSection;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -57,8 +56,8 @@ final class AdminActivityFeed
         ?string $date = null,
         ?int $hour = null,
     ): array {
-        $query = $this->filteredQuery($area, $family, $days, $search, $date, $hour)
-            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState', 'activityOrderingEvent.projection'])
+        $query = $this->query($area, $family, $days, $search, $date, $hour)
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'activityOrderingEvent.projection'])
             ->orderByDesc('occurred_at')
             ->orderByDesc('id');
 
@@ -76,10 +75,10 @@ final class AdminActivityFeed
     {
         /** @var AuditEvent|null $event */
         $event = AuditEvent::query()
-            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState', 'activityOrderingEvent.projection'])
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'activityOrderingEvent.projection'])
             ->find($eventId);
 
-        if (! $event instanceof AuditEvent) {
+        if (! $event instanceof AuditEvent || $event->getRelationValue('publicationCheckpointEvent') instanceof PublicationCheckpointEvent) {
             return null;
         }
 
@@ -93,16 +92,12 @@ final class AdminActivityFeed
         ) {
             return null;
         }
-        if ($orderingProjectionState instanceof AdminActivityOrderingProjection && $orderingProjectionState->isIdentity()) {
-            return null;
-        }
-
         if (
             $orderingProjectionState instanceof AdminActivityOrderingProjection
             && (int) $orderingProjectionState->getAttribute('last_audit_event_id') !== (int) $event->getKey()
         ) {
             $event = AuditEvent::query()
-                ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState', 'activityOrderingEvent.projection'])
+                ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'activityOrderingEvent.projection'])
                 ->find((int) $orderingProjectionState->getAttribute('last_audit_event_id'));
         }
 
@@ -113,7 +108,7 @@ final class AdminActivityFeed
 
     public function exists(): bool
     {
-        return $this->filteredQuery()->exists();
+        return $this->query()->exists();
     }
 
     /**
@@ -136,7 +131,7 @@ final class AdminActivityFeed
         ?string $date = null,
         ?int $hour = null,
     ): array {
-        $query = $this->filteredQuery($area, $family, $days, $search, $date, $hour);
+        $query = $this->query($area, $family, $days, $search, $date, $hour);
         $driver = $query->getModel()->getConnection()->getDriverName();
         $hourExpression = match ($driver) {
             'sqlite' => "CAST(strftime('%H', occurred_at) AS INTEGER)",
@@ -217,10 +212,7 @@ final class AdminActivityFeed
     {
         $limit = max(1, min(6, $limit));
         $summary = $this->publication->pendingSummary();
-        $stagedEvents = PublicationEventState::query()
-            ->where('status', PublicationEventState::STATUS_PENDING)
-            ->whereDoesntHave('auditEvent.publicationCheckpointEvent')
-            ->count();
+        $stagedEvents = $this->query()->count();
 
         /** @var EloquentCollection<int, PublicationCheckpoint> $checkpointModels */
         $checkpointModels = PublicationCheckpoint::query()
@@ -263,8 +255,8 @@ final class AdminActivityFeed
     public function recent(int $limit = 7): array
     {
         /** @var EloquentCollection<int, AuditEvent> $events */
-        $events = $this->filteredQuery()
-            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'publicationEventState', 'activityOrderingEvent.projection'])
+        $events = $this->query()
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'activityOrderingEvent.projection'])
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')
             ->limit($limit)
@@ -273,7 +265,7 @@ final class AdminActivityFeed
         return $this->project($events);
     }
 
-    private function filteredQuery(
+    public function query(
         ?string $area = null,
         ?string $family = null,
         ?int $days = null,
@@ -281,21 +273,8 @@ final class AdminActivityFeed
         ?string $date = null,
         ?int $hour = null,
     ): Builder {
-        $orderingActions = AdminActionCatalog::keysForFamily('ordering');
-        $query = AuditEvent::query()
-            ->where(function (Builder $activityQuery) use ($orderingActions): void {
-                $activityQuery
-                    ->whereNotIn('action', $orderingActions)
-                    ->orWhereExists(function ($projectionQuery): void {
-                        $projectionQuery
-                            ->selectRaw('1')
-                            ->from('admin_activity_ordering_events as ordering_event')
-                            ->join('admin_activity_ordering_projections as ordering_projection', 'ordering_projection.id', '=', 'ordering_event.projection_id')
-                            ->whereColumn('ordering_event.audit_event_id', 'audit_events.id')
-                            ->whereColumn('ordering_projection.last_audit_event_id', 'audit_events.id')
-                            ->whereColumn('ordering_projection.before_state', '<>', 'ordering_projection.after_state');
-                    });
-            });
+        $query = $this->logicalActivityQuery()
+            ->whereDoesntHave('publicationCheckpointEvent');
         $driver = $query->getModel()->getConnection()->getDriverName();
         $dateExpression = match ($driver) {
             'pgsql' => 'occurred_at::date',
@@ -345,6 +324,79 @@ final class AdminActivityFeed
         }
 
         return $query;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function forCheckpoint(int $checkpointId): array
+    {
+        if ($checkpointId < 1) {
+            return [];
+        }
+
+        /** @var EloquentCollection<int, AuditEvent> $events */
+        $events = $this->logicalActivityQuery()
+            ->whereHas('publicationCheckpointEvent', static function (Builder $query) use ($checkpointId): void {
+                $query->where('publication_checkpoint_id', $checkpointId);
+            })
+            ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'activityOrderingEvent.projection'])
+            ->orderBy('occurred_at')
+            ->orderBy('id')
+            ->get();
+
+        return $this->project($events);
+    }
+
+    /**
+     * @param list<int> $checkpointIds
+     * @return array<int, int>
+     */
+    public function countsForCheckpoints(array $checkpointIds): array
+    {
+        $checkpointIds = array_values(array_unique(array_filter(
+            array_map(static fn (mixed $id): int => (int) $id, $checkpointIds),
+            static fn (int $id): bool => $id > 0,
+        )));
+
+        if ($checkpointIds === []) {
+            return [];
+        }
+
+        return DB::table('publication_checkpoint_events as checkpoint_event')
+            ->join('audit_events as audit_event', 'audit_event.id', '=', 'checkpoint_event.audit_event_id')
+            ->leftJoin('admin_activity_ordering_events as ordering_event', 'ordering_event.audit_event_id', '=', 'audit_event.id')
+            ->leftJoin('admin_activity_ordering_projections as ordering_projection', 'ordering_projection.id', '=', 'ordering_event.projection_id')
+            ->whereIn('checkpoint_event.publication_checkpoint_id', $checkpointIds)
+            ->where(function ($query): void {
+                $query
+                    ->whereNull('ordering_event.audit_event_id')
+                    ->orWhereColumn('ordering_projection.last_audit_event_id', 'audit_event.id');
+            })
+            ->groupBy('checkpoint_event.publication_checkpoint_id')
+            ->pluck(DB::raw('COUNT(*)'), 'checkpoint_event.publication_checkpoint_id')
+            ->mapWithKeys(static fn (mixed $count, mixed $checkpointId): array => [(int) $checkpointId => (int) $count])
+            ->all();
+    }
+
+    /** @return Builder<AuditEvent> */
+    private function logicalActivityQuery(): Builder
+    {
+        $orderingActions = AdminActionCatalog::keysForFamily('ordering');
+
+        return AuditEvent::query()
+            ->where(function (Builder $activityQuery) use ($orderingActions): void {
+                $activityQuery
+                    ->whereNotIn('action', $orderingActions)
+                    ->orWhereExists(function ($projectionQuery): void {
+                        $projectionQuery
+                            ->selectRaw('1')
+                            ->from('admin_activity_ordering_events as ordering_event')
+                            ->join('admin_activity_ordering_projections as ordering_projection', 'ordering_projection.id', '=', 'ordering_event.projection_id')
+                            ->whereColumn('ordering_event.audit_event_id', 'audit_events.id')
+                            ->whereColumn('ordering_projection.last_audit_event_id', 'audit_events.id');
+                    });
+            });
     }
 
     /** @return array<int, string>|null */
@@ -431,7 +483,6 @@ final class AdminActivityFeed
             $checkpoint = $checkpointEvent instanceof PublicationCheckpointEvent
                 ? $checkpointEvent->getRelationValue('checkpoint')
                 : null;
-            $publicationEventState = $event->getRelationValue('publicationEventState');
             $changeSummary = $orderingProjectionState instanceof AdminActivityOrderingProjection
                 ? null
                 : $this->changeSummary($metadata['change_summary'] ?? null);
@@ -467,15 +518,12 @@ final class AdminActivityFeed
                     ? [
                         'event_count' => $orderingCount,
                         'item_count' => (int) $orderingProjectionState->getAttribute('item_count'),
+                        'is_identity' => $orderingProjectionState->isIdentity(),
                         'started_at' => $orderingProjectionState->getAttribute('started_at')?->format('Y-m-d H:i'),
                         'ended_at' => $orderingProjectionState->getAttribute('ended_at')?->format('Y-m-d H:i'),
                     ]
                     : null,
-                'publication_status' => $checkpoint !== null
-                    ? 'committed'
-                    : ($publicationEventState instanceof PublicationEventState
-                        ? (string) $publicationEventState->getAttribute('status')
-                        : null),
+                'publication_status' => $checkpoint !== null ? 'committed' : 'pending',
                 'checkpoint_id' => $checkpoint?->getKey(),
                 'checkpoint_short_hash' => $checkpoint instanceof PublicationCheckpoint ? $checkpoint->shortHash() : null,
                 'checkpoint_message' => $checkpoint?->getAttribute('message'),
