@@ -102,9 +102,11 @@ final class AdminActivityFeed
                 ->find((int) $orderingProjectionState->getAttribute('last_audit_event_id'));
         }
 
-        return $event instanceof AuditEvent
-            ? ($this->project(new EloquentCollection([$event]), $actor)[0] ?? null)
-            : null;
+        if (! $event instanceof AuditEvent || $event->getRelationValue('publicationCheckpointEvent') instanceof PublicationCheckpointEvent) {
+            return null;
+        }
+
+        return $this->project(new EloquentCollection([$event]), $actor)[0] ?? null;
     }
 
     public function exists(): bool
@@ -374,9 +376,10 @@ final class AdminActivityFeed
                     ->whereNull('ordering_event.audit_event_id')
                     ->orWhereColumn('ordering_projection.last_audit_event_id', 'audit_event.id');
             })
+            ->selectRaw('checkpoint_event.publication_checkpoint_id AS checkpoint_id, COUNT(*) AS aggregate')
             ->groupBy('checkpoint_event.publication_checkpoint_id')
-            ->pluck(DB::raw('COUNT(*)'), 'checkpoint_event.publication_checkpoint_id')
-            ->mapWithKeys(static fn (mixed $count, mixed $checkpointId): array => [(int) $checkpointId => (int) $count])
+            ->get()
+            ->mapWithKeys(static fn (object $row): array => [(int) $row->checkpoint_id => (int) $row->aggregate])
             ->all();
     }
 
