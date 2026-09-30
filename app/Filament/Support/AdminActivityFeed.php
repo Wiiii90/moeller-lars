@@ -527,7 +527,7 @@ final class AdminActivityFeed
                         'ended_at' => $orderingProjectionState->getAttribute('ended_at')?->format('Y-m-d H:i'),
                     ]
                     : null,
-                'publication_status' => $checkpoint !== null ? 'committed' : 'pending',
+                'publication_status' => $checkpoint !== null ? 'committed' : 'staged',
                 'checkpoint_id' => $checkpoint?->getKey(),
                 'checkpoint_short_hash' => $checkpoint instanceof PublicationCheckpoint ? $checkpoint->shortHash() : null,
                 'checkpoint_message' => $checkpoint?->getAttribute('message'),
