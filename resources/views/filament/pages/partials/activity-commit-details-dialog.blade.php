@@ -62,15 +62,15 @@
     <div class="admin-detail-dialog__field">
         <span>Included activity</span>
         @if ($commit['activities'] !== [])
-            <div class="activity-commit-dialog__events">
-                @foreach ($commit['activities'] as $event)
+            <div class="activity-commit-dialog__activities">
+                @foreach ($commit['activities'] as $activity)
                     <article>
-                        <strong>{{ $event['action'] }}</strong>
-                        <span>{{ $event['area'] }} · {{ $event['target'] }}</span>
+                        <strong>{{ $activity['action'] }}</strong>
+                        <span>{{ $activity['area'] }} · {{ $activity['target'] }}</span>
                         <small>
-                            {{ $event['actor'] }} · {{ $event['timestamp'] }}
-                            @if (($event['ordering_projection']['event_count'] ?? 1) > 1)
-                                · {{ number_format($event['ordering_projection']['event_count']) }} reorder operations
+                            {{ $activity['actor'] }} · {{ $activity['timestamp'] }}
+                            @if (($activity['ordering_projection']['event_count'] ?? 1) > 1)
+                                · {{ number_format($activity['ordering_projection']['event_count']) }} reorder operations
                             @endif
                         </small>
                     </article>
