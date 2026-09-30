@@ -149,14 +149,11 @@ final class AdminSnapshotReceiptService
         }
 
         $rows = $payload['rows'] ?? null;
-        if (is_array($rows) && array_is_list($rows)) {
-            $snapshots = $rows;
-        } elseif (isset($payload['entity_type'], $payload['table'], $payload['row_id'])) {
-            // Backward compatibility for the first single-row snapshot receipt format.
-            $snapshots = [$payload];
-        } else {
+        if (! is_array($rows) || ! array_is_list($rows)) {
             throw ValidationException::withMessages(['undo' => 'This Undo receipt contains an invalid row snapshot.']);
         }
+
+        $snapshots = $rows;
 
         $validated = [];
         foreach ($snapshots as $snapshot) {
