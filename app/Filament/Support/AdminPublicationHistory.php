@@ -65,7 +65,7 @@ final class AdminPublicationHistory
     }
 
     /**
-     * @return array{total:int,active_days:int,changes:int,events:int,actors:int,latest_at:mixed}
+     * @return array{total:int,active_days:int,changes:int,activities:int,actors:int,latest_at:mixed}
      */
     public function overview(
         ?string $area = null,
