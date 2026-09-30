@@ -13,7 +13,6 @@ final class PublicationVersionService
 {
     public function __construct(
         private readonly AdminAuditService $audit,
-        private readonly PublicationEventStateService $eventStates,
         private readonly PublicationMediaCleanupService $mediaCleanup,
         private readonly PublicationSchemaGuard $schemaGuard,
     ) {}
@@ -80,7 +79,6 @@ final class PublicationVersionService
 
             $this->mediaCleanup->queueAbandonedWorkingMedia();
             $this->replaceWorkingFromCheckpoint($checkpoint);
-            $this->eventStates->clearUncheckpointedPendingStates();
             $this->setWorkingContext('restore', (int) $checkpoint->getKey());
             $this->audit->record(
                 $actor,
@@ -111,7 +109,6 @@ final class PublicationVersionService
 
             $this->mediaCleanup->queueAbandonedWorkingMedia();
             $this->replaceWorkingFromSchema('committed');
-            $this->eventStates->clearUncheckpointedPendingStates();
             $this->clearWorkingContext();
 
             $live = $this->currentLiveCheckpoint();
@@ -153,7 +150,6 @@ final class PublicationVersionService
 
             $this->mediaCleanup->queueAbandonedWorkingMedia();
             $this->replaceWorkingFromCheckpoint($parent);
-            $this->eventStates->clearUncheckpointedPendingStates();
             $this->setWorkingContext('revert', (int) $live->getKey());
             $this->audit->record(
                 $actor,
