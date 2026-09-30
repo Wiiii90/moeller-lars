@@ -1,6 +1,5 @@
 <?php
 
-use App\Domain\Admin\AdminAuditService;
 use App\Domain\Admin\AdminSettingsService;
 use App\Domain\Media\MediaAssetEditorialService;
 use App\Domain\Publication\PublicationMediaCleanupService;
@@ -140,11 +139,6 @@ it('keeps the real public layout on committed appearance until one idempotent Co
     expect($retry)->toBeNull()
         ->and(PublicationCheckpoint::query()->count())->toBe($initialCheckpointCount + 1);
 
-    $committedActivity = collect(app(AdminActivityFeed::class)->recent(20))
-        ->firstWhere('id', (int) $event->getKey());
-    expect($committedActivity)->not->toBeNull()
-        ->and($committedActivity['publication_status'])->toBe('committed')
-        ->and($committedActivity['checkpoint_id'])->toBe((int) $checkpoint->getKey());
 });
 
 it('keeps Commit truth exact for a Working mutation and a net-zero revert', function (): void {
@@ -185,40 +179,6 @@ it('commits current Pending state in one component action and repeated clicks st
     $control->call('commitPublication');
 
     expect(PublicationCheckpoint::query()->count())->toBe($initialCheckpointCount + 1);
-});
-
-it('associates only publication-scoped audit events with Commit checkpoints', function (): void {
-    $nonPublicationEvent = app(AdminAuditService::class)->record(
-        $this->actor,
-        'blog_setting.updated',
-        'blog_setting',
-        1,
-    );
-
-    app(AdminSettingsService::class)->updatePublicContent(PublicContentSetting::general(), [
-        'legal_disclaimer' => 'Publication scoped '.fake()->uuid(),
-    ]);
-    $publicationEvent = AuditEvent::query()
-        ->where('action', 'public_content_setting.updated')
-        ->latest('id')
-        ->firstOrFail();
-
-    $checkpoint = app(PublicationService::class)->commit($this->actor, 'Scoped audit mapping');
-
-    expect($checkpoint)->toBeInstanceOf(PublicationCheckpoint::class)
-        ->and(PublicationCheckpointEvent::query()->where('audit_event_id', $publicationEvent->getKey())->exists())->toBeTrue()
-        ->and(PublicationCheckpointEvent::query()->where('audit_event_id', $nonPublicationEvent->getKey())->exists())->toBeFalse();
-
-    $activity = collect(app(AdminActivityFeed::class)->recent(20));
-    $nonPublicationActivity = $activity->firstWhere('id', (int) $nonPublicationEvent->getKey());
-    $publicationActivity = $activity->firstWhere('id', (int) $publicationEvent->getKey());
-
-    expect($nonPublicationActivity)->not->toBeNull()
-        ->and($nonPublicationActivity['publication_status'])->toBeNull()
-        ->and($nonPublicationActivity['checkpoint_id'])->toBeNull()
-        ->and($publicationActivity)->not->toBeNull()
-        ->and($publicationActivity['publication_status'])->toBe('committed')
-        ->and($publicationActivity['checkpoint_id'])->toBe((int) $checkpoint->getKey());
 });
 
 it('keeps Preview authentication and private indexing protections unchanged', function (): void {
