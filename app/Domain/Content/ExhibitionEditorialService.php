@@ -192,11 +192,6 @@ final class ExhibitionEditorialService
         });
     }
 
-    public function restoreDraft(Exhibition $entry): Exhibition
-    {
-        return $this->restore($entry);
-    }
-
     public function canMove(Exhibition $entry, string $direction): bool
     {
         return $this->order->canMove($entry, $direction);
