@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Attributes\Guarded;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
@@ -48,25 +47,6 @@ class Exhibition extends Model
             ->orderBy('role')
             ->orderBy('position')
             ->orderBy('id');
-    }
-
-    /** Legacy compatibility only. Canonical Journal media uses mediaUsages(). */
-    public function legacyMediaAssets(): BelongsToMany
-    {
-        return $this->legacyMediaRelation();
-    }
-
-    /** Legacy compatibility alias retained for existing read paths. */
-    public function mediaAssets(): BelongsToMany
-    {
-        return $this->legacyMediaRelation();
-    }
-
-    private function legacyMediaRelation(): BelongsToMany
-    {
-        return $this->belongsToMany(MediaAsset::class, 'exhibition_media')
-            ->withPivot(['role', 'position', 'alt_text_override'])
-            ->withTimestamps();
     }
 
     public function temporalState(CarbonInterface $date): string
@@ -218,12 +198,6 @@ class Exhibition extends Model
     public function mapShape(): string
     {
         return app(ExhibitionMapPresentation::class)->shape((string) ($this->getAttribute('map_shape') ?? 'wide'));
-    }
-
-    /** Legacy compatibility for older callers; canonical public UI uses publicMapUrl(). */
-    public function publicDirectionsUrl(): ?string
-    {
-        return $this->publicMapUrl();
     }
 
     protected static function booted(): void
