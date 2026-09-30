@@ -215,7 +215,7 @@
                         <small>
                             Working state compared with the current live snapshot
                             @if ($publicationContext['staged_events'] > 0)
-                                · {{ number_format($publicationContext['staged_events']) }} related activity events
+                                · {{ number_format($publicationContext['staged_events']) }} current activities
                             @endif
                         </small>
                     </div>
@@ -636,7 +636,7 @@
                                     <span class="admin-status {{ $commit['restorable'] ? 'is-published' : '' }}">
                                         {{ $commit['restorable'] ? 'Restorable' : ($commit['legacy'] ? 'Metadata only' : 'Schema changed') }}
                                     </span>
-                                    <small>{{ number_format($commit['change_count']) }} changes · {{ number_format($commit['event_count']) }} events</small>
+                                    <small>{{ number_format($commit['change_count']) }} changes · {{ number_format($commit['activity_count']) }} activities</small>
                                 </td>
                                 <td class="admin-table__actions activity-actions-cell">
                                     <x-admin.toolbar>
