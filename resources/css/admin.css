@@ -58,6 +58,11 @@
         + var(--admin-workspace-gutter)
         + var(--admin-workspace-visual-shift)
     );
+    --admin-workspace-content-width: calc(
+        100vw
+        - var(--admin-workspace-content-inline-start)
+        - var(--admin-workspace-content-inline-end)
+    );
     --admin-header-control-size: 2rem;
     --admin-header-feedback-edge-gap: .75rem;
     --admin-status-neutral: var(--admin-faint);
