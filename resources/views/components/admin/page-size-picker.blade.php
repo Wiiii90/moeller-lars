@@ -11,75 +11,36 @@
 @php
     $currentValue = (int) $value;
     $sizeOptions = collect($options)->map(static fn (mixed $option): int => (int) $option)->values()->all();
+    $usesUrls = is_array($urls) && $urls !== [];
 @endphp
 
-<div
-    {{ $attributes->class(['admin-pager__size']) }}
-    x-data="{ open: false }"
-    x-on:click.outside="open = false"
-    x-on:keydown.escape.window="open = false"
->
+<label {{ $attributes->class(['admin-pager__size']) }}>
     <span>{{ $label }}</span>
-    <div class="admin-pager-size-picker" x-bind:class="{ 'is-open': open }">
-        <button
-            class="admin-pager-size-picker__trigger"
-            type="button"
-            x-on:click="
-                open = ! open;
-                if (open) {
-                    $nextTick(() => $refs.menu?.scrollIntoView({ block: 'nearest' }));
-                }
+
+    <select
+        class="admin-inline-select"
+        aria-label="{{ $ariaLabel }}"
+        @if ($usesUrls)
+            x-on:change="
+                const url = $event.target.selectedOptions[0]?.dataset.url;
+                if (url) window.location.assign(url);
             "
-            x-bind:aria-expanded="open.toString()"
-            aria-haspopup="listbox"
-            aria-label="{{ $ariaLabel }}"
-        >
-            <span>{{ $currentValue }}</span>
-            <span aria-hidden="true">▾</span>
-        </button>
+        @elseif (is_string($wireAction) && $wireAction !== '')
+            wire:change="{{ $wireAction }}($event.target.value)"
+        @elseif (is_string($wireModel) && $wireModel !== '')
+            wire:model.change="{{ $wireModel }}"
+        @endif
+    >
+        @foreach ($sizeOptions as $sizeOption)
+            @php
+                $optionUrl = $usesUrls && isset($urls[$sizeOption]) ? (string) $urls[$sizeOption] : '';
+            @endphp
 
-        <div
-            class="admin-pager-size-picker__menu"
-            role="listbox"
-            aria-label="{{ $ariaLabel }}"
-            x-ref="menu"
-            x-show="open"
-            x-cloak
-        >
-            @foreach ($sizeOptions as $sizeOption)
-                @php
-                    $optionUrl = is_array($urls) && isset($urls[$sizeOption]) ? (string) $urls[$sizeOption] : null;
-                @endphp
-
-                @if (is_string($optionUrl) && $optionUrl !== '')
-                    <a
-                        class="admin-pager-size-picker__option {{ $currentValue === $sizeOption ? 'is-active' : '' }}"
-                        href="{{ $optionUrl }}"
-                        role="option"
-                        aria-selected="{{ $currentValue === $sizeOption ? 'true' : 'false' }}"
-                        x-on:click="open = false"
-                    >
-                        <span class="admin-pager-size-picker__check" aria-hidden="true">{{ $currentValue === $sizeOption ? '✓' : '' }}</span>
-                        <span>{{ $sizeOption }}</span>
-                    </a>
-                @else
-                    <button
-                        class="admin-pager-size-picker__option {{ $currentValue === $sizeOption ? 'is-active' : '' }}"
-                        type="button"
-                        role="option"
-                        aria-selected="{{ $currentValue === $sizeOption ? 'true' : 'false' }}"
-                        @if ($wireAction)
-                            wire:click="{{ $wireAction }}({{ $sizeOption }})"
-                        @elseif ($wireModel)
-                            wire:click="$set('{{ $wireModel }}', {{ $sizeOption }})"
-                        @endif
-                        x-on:click="open = false"
-                    >
-                        <span class="admin-pager-size-picker__check" aria-hidden="true">{{ $currentValue === $sizeOption ? '✓' : '' }}</span>
-                        <span>{{ $sizeOption }}</span>
-                    </button>
-                @endif
-            @endforeach
-        </div>
-    </div>
-</div>
+            <option
+                value="{{ $sizeOption }}"
+                @if ($optionUrl !== '') data-url="{{ $optionUrl }}" @endif
+                @selected($currentValue === $sizeOption)
+            >{{ $sizeOption }}</option>
+        @endforeach
+    </select>
+</label>
