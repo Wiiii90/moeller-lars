@@ -103,8 +103,10 @@
         position: fixed;
         top: calc((var(--admin-topbar-height) - var(--admin-header-control-size)) / 2);
         inset-block-end: auto;
+        width: var(--admin-workspace-content-width);
+        max-width: none;
         inset-inline-start: var(--admin-workspace-content-inline-start);
-        inset-inline-end: var(--admin-workspace-content-inline-end);
+        inset-inline-end: auto;
         margin-block: 0;
     }
 
