@@ -13,44 +13,43 @@ Notification/inbox state is not part of this contract. See [ADMIN-NOTIFICATION-C
 
 ## Activity
 
-`audit_events` is append-only factual history. Successful mutations create new events; undo/reset/restore/revert operations never rewrite or delete the events that came before them.
+`audit_events` is the append-only forensic source for successful administrative mutations. It is not a hidden second history: the Activity workspace is the user-visible projection of this evidence before and after publication.
 
-### Ordering Activity projection
+The publication boundary defines where an Activity is shown:
 
-Ordering has two deliberately different representations:
+- audit events that are not yet linked to a Commit form the current **Activity** view;
+- when a Commit succeeds, every still-uncommitted audit event is linked to that Commit;
+- those events then disappear from the current Activity list and remain inspectable through that Commit's details;
+- only current, uncommitted Activities may expose individual Undo;
+- committed Activities never expose individual Undo; historical reversal happens only through whole-Commit Restore/Revert.
 
-- raw `audit_events` retain every successful persisted reorder mutation for factual history;
-- `AdminActivityFeed` exposes the canonical net permutation for each ordering projection.
+### Ordering Activity grouping
 
-An ordering projection is structural, never time-based. It is identified by admin, action and stable ordering scope. A later reorder composes into the latest projection only when that projection's exact canonical end state equals the mutation's exact canonical start state. Publication of a non-identity representative freezes that projection as historical state. A different scope/action, a different actor, a discontinuous state or a publication boundary starts another projection. There is no timer, debounce window, burst timeout or elapsed-time heuristic anywhere in this contract.
+Ordering can generate many persisted mutations during one editing sequence. To avoid hundreds of rows for routine reordering, ordering events are structurally grouped by actor, action and stable ordering scope.
 
-This is permutation-state reduction, not text deduplication. In particular:
+The grouping is state-continuous and publication-bounded, never timer-, debounce- or burst-based:
 
-- the projection stores canonical `before_state` and `after_state` sequences rather than opaque hashes;
-- Activity represents only the net permutation from the projection's starting order to its current order;
-- when `before_state === after_state`, the net permutation is the identity and there is no visible Activity row or Undo receipt;
-- reaching identity does not itself create history or close the projection; a later continuous reorder may compose from that same canonical identity state;
-- a visible row targets the ordering scope itself (for example Public navigation, the Journal page, Gallery, Artwork, Home or Custom Page) rather than pretending the last moved child is the whole operation;
-- a single drag/reorder that rewrites several persisted row positions still creates one logical ordering audit mutation;
-- pagination and Activity aggregates query the reduced projection, so intermediate reorder events never inflate the visible feed;
-- ordering projections begin only with audit mutations that carry canonical full-state metadata; older/pre-projection ordering events remain raw audit evidence and are not reconstructed or guessed into projections;
-- every visible non-identity projection owns at most one actor-scoped Undo receipt, and that Undo restores the complete canonical starting order only while the current scope still exactly equals the projection's end state.
+- the projection stores the canonical starting and latest ordering sequences plus the number of raw reorder operations;
+- the latest event in the projection represents that whole ordering Activity in the current Activity view and later inside Commit details;
+- publication freezes the projection because its representative event becomes part of the Commit;
+- a different scope/action, a different actor, a discontinuous state or a publication boundary starts another projection;
+- returning to the original order does **not** erase the Activity. The persisted reorder operations happened and remain part of the forensic history;
+- there is no special sequence rule for `A→B→A`, `A→B→C→A` or any other path;
+- an ordering Undo receipt exists only when applying the projection inverse would currently change state safely. A grouped identity Activity remains visible but naturally has nothing to Undo.
 
-The ordering projection never updates or deletes `audit_events`; it is a derived read model over immutable evidence.
+The projection never rewrites or deletes `audit_events`; it only controls how multiple raw ordering mutations are represented as one visible Activity.
 
-Activity uses the shared `AdminActivityFeed` read model. The current Activity table exposes the factual row roles directly:
+Activity uses the shared `AdminActivityFeed` read model. The current Activity table exposes:
 
 ```text
 Change | Who | When | Target | Area | Type | Publication | Actions
 ```
 
-The Activity workspace uses the shared six-unit admin alignment system, but semantic table columns may subdivide or span those units according to the ordinary table contract. Do not preserve an older four-column `Activity | Publication | Who / when | Actions` layout as a compatibility surface.
+`Details` is the stable first row action. When `AdminActionReceiptService` exposes a currently valid actor-scoped receipt for an uncommitted Activity, `Undo` appears immediately after Details. A Commit is a hard Undo boundary: once an Activity belongs to a Commit, that Activity is inspectable through the Commit but is no longer individually reversible.
 
-`Details` is the stable first row action. When `AdminActionReceiptService` exposes a currently valid actor-scoped receipt, `Undo` appears immediately after Details and applies the inverse as a new audited editorial action. Rows without a safe current receipt simply omit Undo; they do not expose a permanently disabled undo control.
+Activity and Commits are two views of the same forensic workspace. Both retain the applicable Search/Area/Type/Date/Time filter context and use bounded pagination with the shared page-size choices `25`, `50` and `100`.
 
-Activity and Commits are two views of the same workspace and switch through the normal View control. Both retain the applicable Search/Area/Type/Date/Time filter context. Activity and Commits use bounded pagination with the shared page-size choices `25`, `50` and `100`.
-
-Both table views implement the shared trailing Selection contract: row checkboxes occupy the far-right rail, the visible select-all checkbox sits directly above them, and the Selection trigger's count badge shares that horizontal axis. The Activity multi-action menu supports Details for exactly one selected event, Undo for selected events that still expose safe receipts, and Clear selection. The Commits menu supports Details for exactly one selected Commit plus Restore or Revert only when exactly one selected Commit is semantically eligible for that operation. Selection never weakens the existing row/domain safety checks.
+Both table views implement the shared trailing Selection contract: row checkboxes occupy the far-right rail, the visible select-all checkbox sits directly above them, and the Selection trigger's count badge shares that horizontal axis. The Activity multi-action menu supports Details for exactly one selected current Activity, Undo only for selected current Activities that still expose safe receipts, and Clear selection. The Commits menu supports Details for exactly one selected Commit plus Restore or Revert only when exactly one selected Commit is semantically eligible for that operation.
 
 ### Date and time filters
 
@@ -59,7 +58,7 @@ Calendar and clock are not decorative secondary controls.
 - Clicking a calendar day applies the actual Activity/Commit date filter for the active view.
 - Clicking an hour applies that hour in addition to the selected date.
 - Date/Time are reflected in the normal filter toolbar and can be cleared there.
-- Without an explicit date filter the table uses the normal bounded Activity window; today's calendar highlight is only visual focus.
+- The Activity timeline counts the same logical current Activities shown by the table, including grouped ordering Activities rather than raw reorder-event volume.
 - Calendar density retains year context so selecting one day does not collapse the visualization itself.
 
 The top visualization and publication stage is shared context for the active Activity/Commits view. Switching views must not create a second Activity page or a parallel publication surface.
@@ -87,7 +86,7 @@ committed.*    = current LIVE state
 
 `PublicationSnapshot::TABLES` is the closed current tracked-table set. Publication delta is the row-level semantic difference between those two states, ignoring framework-only `created_at`/`updated_at` differences.
 
-`PublicationService::pendingSummary()` is the source of truth for **Pending changes**. Pending audit-event count is separate context and must never be presented as the size of the next commit.
+`PublicationService::pendingSummary()` is the source of truth for **Pending changes**, and `PublicationService::hasPendingChanges()` derives from that same Working-vs-LIVE comparison. Audit-event count is forensic context and must never be used as publication truth.
 
 Historical migrations must not import `PublicationSnapshot::TABLES` or other mutable runtime publication constants to define their own past behavior. A migration freezes the publication tables/entity types that existed when that migration was introduced; later changes to the current publication contract are applied by later forward migrations.
 
@@ -137,7 +136,7 @@ Commit metadata is permanent factual history.
 - The explicit Storage action `Free storage now` may relinquish **restore payloads**, not Commit metadata. Released checkpoints remain visible as history with `snapshot_available=false` and cannot be offered as restorable versions.
 - The current LIVE checkpoint and the checkpoint referenced by `publication_working_context.source_publication_checkpoint_id` are protected from that reclaim action.
 
-Undo receipts are intentionally bounded recovery data rather than permanent history: actor-scoped receipts expire after 365 days, retain at most 5,000 receipts per user and are capped at 256 MiB logical payload budget per user. `Free storage now` may clear them immediately. Activity events remain append-only and are never deleted for storage reclamation.
+Undo receipts are intentionally bounded recovery data rather than permanent history: actor-scoped receipts expire after 365 days, retain at most 5,000 receipts per user and are capped at 256 MiB logical payload budget per user. `Free storage now` may clear them immediately. Committing an Activity closes individual Undo for that Activity; the append-only audit evidence remains available through the Commit's forensic details.
 
 Shared `history_payloads` are garbage-collected only after neither a Publication manifest nor an Undo receipt references them. This lets recovery roots be released without duplicating or prematurely deleting payload data still required elsewhere.
 
@@ -282,7 +281,8 @@ Durable tests should prove at least:
 - Revert stages only the current LIVE parent and publishes later as a new Commit;
 - Commit history cannot be deleted at the database boundary;
 - media referenced by any retained version cannot be physically deleted;
-- Activity publication-control events project concrete Commit targets;
+- current Activity contains only uncommitted forensic Activities, while Commit details retain their committed Activities;
+- ordering grouping stays visible even when the final order equals the starting order;
 - date/hour filtering works in both Activity and Commits views beyond the default Activity window;
 - Activity and Commit pagination retain filter/view context and support the shared 25/50/100 page-size choices;
 - Activity aggregate query cost remains bounded;
