@@ -952,55 +952,8 @@ final class Activity extends Page
         CarbonImmutable $start,
         CarbonImmutable $end,
     ): Builder {
-        $query = AuditEvent::query()->whereBetween('occurred_at', [$start, $end]);
-        $areaKeys = $area !== null && $area !== '' ? AdminActionCatalog::keysForArea($area) : null;
-        $familyKeys = $family !== null && $family !== '' ? AdminActionCatalog::keysForFamily($family) : null;
-        $actionKeys = match (true) {
-            $areaKeys === null && $familyKeys === null => null,
-            $areaKeys === null => $familyKeys,
-            $familyKeys === null => $areaKeys,
-            default => array_values(array_intersect($areaKeys, $familyKeys)),
-        };
-
-        if ($actionKeys !== null) {
-            $query->whereIn('action', $actionKeys);
-        }
-
-        $search = mb_strtolower(trim($search));
-        if ($search === '') {
-            return $query;
-        }
-
-        $searchActionKeys = array_values(array_filter(
-            AdminActionCatalog::keys(),
-            static function (string $key) use ($search): bool {
-                $definition = AdminActionCatalog::definition($key);
-
-                foreach ([$definition['label'], $definition['area'], $definition['family']] as $value) {
-                    if (mb_stripos($value, $search) !== false) {
-                        return true;
-                    }
-                }
-
-                return false;
-            },
-        ));
-
-        $query->where(function (Builder $query) use ($searchActionKeys, $search): void {
-            if ($searchActionKeys !== []) {
-                $query->whereIn('action', $searchActionKeys)
-                    ->orWhereHas('adminUser', static function (Builder $adminUserQuery) use ($search): void {
-                        $adminUserQuery->whereRaw('LOWER(name) LIKE ?', ['%'.$search.'%']);
-                    });
-
-                return;
-            }
-
-            $query->whereHas('adminUser', static function (Builder $adminUserQuery) use ($search): void {
-                $adminUserQuery->whereRaw('LOWER(name) LIKE ?', ['%'.$search.'%']);
-            });
-        });
-
-        return $query;
+        return app(AdminActivityFeed::class)
+            ->query($area, $family, search: $search)
+            ->whereBetween('occurred_at', [$start, $end]);
     }
 }
