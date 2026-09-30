@@ -180,7 +180,7 @@ final class BlogEditorialService
     private function createValidated(array $validated, array $editorData, User $actor): BlogPost
     {
         $post = new BlogPost;
-        $post->fill([...$validated, 'legacy_id' => null, 'legacy_source' => null, 'migration_batch_id' => null, 'migrated_at' => null]);
+        $post->fill($validated);
         $this->prepareLifecycle($post, validateMedia: false);
         $post->save();
         if ($this->hasStructuredMediaInput($editorData)) {
