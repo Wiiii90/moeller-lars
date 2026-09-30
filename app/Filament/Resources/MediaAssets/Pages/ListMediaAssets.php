@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\On;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 use Throwable;
@@ -164,6 +165,12 @@ final class ListMediaAssets extends Page
             title: 'Storage measurement refreshed',
             status: 'success',
         );
+    }
+
+    #[On('storage-reclaimed')]
+    public function refreshAfterStorageReclaim(): void
+    {
+        $this->loadStorageOverview();
     }
 
     /** @return array{summary:string,added:int,duplicates:int,failed:int} */
