@@ -4,7 +4,6 @@
 
 .admin-section.media-workspace__library {
     --media-task-surface-header-height: 2.25rem;
-    border-bottom: 0;
 }
 
 .media-workspace__dropzone {
