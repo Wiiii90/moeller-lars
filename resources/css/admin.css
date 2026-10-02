@@ -168,8 +168,19 @@
     text-transform: uppercase;
 }
 
+.admin-workspace__body {
+    padding-bottom: var(--admin-section-gap);
+}
+
 .admin-workspace__body > * + * {
     margin-top: 0;
+}
+
+/* The workspace owns the one canonical page-end gap. A final shared section
+ * must not add a second trailing inset or terminal rule of its own. */
+.admin-workspace__body > .admin-section:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
 }
 
 .admin-workspace__footnote {
@@ -532,6 +543,7 @@
 .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-page-header-main-ctn {
     gap: 0;
     padding-top: 0;
+    padding-bottom: 0;
 }
 
 .fi-page:not(.fi-page-has-sub-navigation):has(.admin-workspace) .fi-header:not(.fi-header-has-breadcrumbs) {
