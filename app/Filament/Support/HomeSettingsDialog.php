@@ -250,7 +250,6 @@ final class HomeSettingsDialog
             ->label($label)
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => $this->heroArtworkOptions($search))
-            ->searchDebounce(300)
             ->searchPrompt('Search eligible Hero Artworks')
             ->noSearchResultsMessage('No matching eligible artworks');
 

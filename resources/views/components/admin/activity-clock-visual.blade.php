@@ -12,29 +12,11 @@
     {{ $attributes->class(['activity-clock']) }}
     x-data="{
         now: new Date(),
-        timer: null,
         timeFormatter: new Intl.DateTimeFormat(undefined, {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
         }),
-        init() {
-            this.now = new Date()
-            if (this.timer !== null) window.clearInterval(this.timer)
-            this.timer = window.setInterval(() => {
-                if (
-                    document.activeElement?.closest?.('.activity-workspace__controls')
-                    || document.querySelector('.fi-modal.fi-modal-open')
-                ) return
-                this.now = new Date()
-            }, 1000)
-        },
-        destroy() {
-            if (this.timer !== null) {
-                window.clearInterval(this.timer)
-                this.timer = null
-            }
-        },
         hourAngle() {
             return ((this.now.getHours() % 12) + (this.now.getMinutes() / 60) + (this.now.getSeconds() / 3600)) * 30
         },
@@ -54,7 +36,7 @@
             class="activity-clock__dial"
             viewBox="0 0 320 320"
             role="img"
-            x-bind:aria-label="`Live local time ${timeLabel()}; {{ $ariaContext }}`"
+            x-bind:aria-label="`Local time ${timeLabel()}; {{ $ariaContext }}`"
         >
             <circle class="activity-clock__activity-track" cx="160" cy="160" r="134" />
             @foreach ($activity as $bucket)

@@ -14,21 +14,13 @@
                     progress: 0,
                     fileCount: 0,
                     result: '',
-                    resultTimer: null,
                     showResult(message) {
-                        window.clearTimeout(this.resultTimer)
                         this.result = message
                         this.phase = 'result'
-                        this.resultTimer = window.setTimeout(() => {
-                            this.phase = 'idle'
-                            this.progress = 0
-                            this.fileCount = 0
-                            this.result = ''
-                        }, 3800)
                     },
                 }"
                 x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
-                x-on:livewire-upload-start="window.clearTimeout(resultTimer); phase = 'uploading'; progress = 0; result = ''"
+                x-on:livewire-upload-start="phase = 'uploading'; progress = 0; result = ''"
                 x-on:livewire-upload-progress="progress = $event.detail.progress"
                 x-on:livewire-upload-finish="
                     progress = 100
@@ -88,7 +80,8 @@
                     <span>Search</span>
                     <input
                         type="search"
-                        wire:model.live.debounce.300ms="search"
+                        wire:model.blur="search"
+                        x-on:keydown.enter.prevent="$el.blur()"
                         placeholder="Title, material, dimensions"
                         autocomplete="off"
                     >

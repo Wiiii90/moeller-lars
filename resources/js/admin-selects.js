@@ -1,5 +1,4 @@
 let activeController = null;
-let enhanceFrame = null;
 let livewireHookRegistered = false;
 let selectId = 0;
 
@@ -225,10 +224,8 @@ function createController(select) {
         window.addEventListener('resize', positionMenu);
         window.addEventListener('scroll', positionMenu, true);
 
-        requestAnimationFrame(() => {
-            positionMenu();
-            if (focusOption) focusRelativeOption(1);
-        });
+        positionMenu();
+        if (focusOption) focusRelativeOption(1);
     }
 
     function close() {
@@ -318,8 +315,6 @@ function createController(select) {
 }
 
 function enhanceWorkspaceSelects() {
-    enhanceFrame = null;
-
     for (const [select, controller] of controllers) {
         if (! select.isConnected || ! controller.root.isConnected) {
             controller.destroy();
@@ -339,16 +334,15 @@ function enhanceWorkspaceSelects() {
     }
 }
 
-function scheduleEnhancement() {
-    if (enhanceFrame !== null) return;
-    enhanceFrame = window.requestAnimationFrame(enhanceWorkspaceSelects);
+function refreshEnhancement() {
+    enhanceWorkspaceSelects();
 }
 
 function registerLivewireHook() {
     if (livewireHookRegistered || ! window.Livewire?.hook) return;
 
     livewireHookRegistered = true;
-    window.Livewire.hook('morph.updated', scheduleEnhancement);
+    window.Livewire.hook('morph.updated', refreshEnhancement);
 }
 
 document.addEventListener('pointerdown', (event) => {
@@ -364,14 +358,14 @@ document.addEventListener('pointerdown', (event) => {
 }, true);
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', scheduleEnhancement, { once: true });
+    document.addEventListener('DOMContentLoaded', refreshEnhancement, { once: true });
 } else {
-    scheduleEnhancement();
+    refreshEnhancement();
 }
 
 registerLivewireHook();
 document.addEventListener('livewire:init', registerLivewireHook, { once: true });
 document.addEventListener('livewire:navigated', () => {
     activeController?.close();
-    scheduleEnhancement();
+    refreshEnhancement();
 });

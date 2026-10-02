@@ -8,7 +8,8 @@
                     min="640"
                     max="1440"
                     step="10"
-                    wire:model.live.debounce.350ms="pageWidth"
+                    wire:model.blur="pageWidth"
+                    x-on:keydown.enter.prevent="$el.blur()"
                 >
                 <small>px</small>
             </span>
@@ -23,7 +24,8 @@
                     min="24"
                     max="180"
                     step="1"
-                    wire:model.live.debounce.350ms="contentPadding"
+                    wire:model.blur="contentPadding"
+                    x-on:keydown.enter.prevent="$el.blur()"
                 >
                 <small>px</small>
             </span>

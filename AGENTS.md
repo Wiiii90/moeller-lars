@@ -315,6 +315,11 @@ The admin is still under browser acceptance. Existing work is a starting point, 
 
 ## Central technology rules
 
+### Event-driven runtime only
+
+Authored application/runtime code must be event-driven. Do not introduce debounce modifiers, timeout/interval timers, polling loops, `requestAnimationFrame` batching or equivalent scheduled bursts. Persistence, search, previews, overlays, upload feedback, menu behavior and visualization refreshes react directly to their owning semantic event or observer. There is no timer/throttle exception for read-only search.
+
+
 ### Rich Text
 
 The canonical stack is:

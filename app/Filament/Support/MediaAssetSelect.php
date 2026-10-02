@@ -126,7 +126,6 @@ final class MediaAssetSelect
             ->label($label)
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => self::searchOptions($search, $imagesOnly, $includeDimensions))
-            ->searchDebounce(350)
             ->searchPrompt('Search Storage by filename')
             ->noSearchResultsMessage('No matching files in Storage')
             ->allowHtml();

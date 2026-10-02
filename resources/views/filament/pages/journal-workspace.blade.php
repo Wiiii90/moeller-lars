@@ -27,7 +27,8 @@
                         <span class="admin-field__label">Search</span>
                         <input
                             type="search"
-                            wire:model.live.debounce.300ms="search"
+                            wire:model.blur="search"
+                            x-on:keydown.enter.prevent="$el.blur()"
                             placeholder="{{ $isBlog ? 'Title or excerpt' : 'Title, venue, place or date' }}"
                             autocomplete="off"
                         >

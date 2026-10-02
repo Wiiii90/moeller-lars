@@ -211,7 +211,8 @@
                         <span>Search</span>
                         <input
                             type="search"
-                            wire:model.live.debounce.300ms="search"
+                            wire:model.blur="search"
+                            x-on:keydown.enter.prevent="$el.blur()"
                             placeholder="Search current report"
                             autocomplete="off"
                         >

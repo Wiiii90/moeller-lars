@@ -116,7 +116,7 @@
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>
-                        <input type="search" wire:model.live.debounce.300ms="sourceSearch" placeholder="Gallery" autocomplete="off">
+                        <input type="search" wire:model.blur="sourceSearch" x-on:keydown.enter.prevent="$el.blur()" placeholder="Gallery" autocomplete="off">
                     </label>
                 </x-slot:search>
 
@@ -288,7 +288,7 @@
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>
-                        <input type="search" wire:model.live.debounce.300ms="componentSearch" placeholder="Components" autocomplete="off">
+                        <input type="search" wire:model.blur="componentSearch" x-on:keydown.enter.prevent="$el.blur()" placeholder="Components" autocomplete="off">
                     </label>
                 </x-slot:search>
 

@@ -3,7 +3,6 @@ import './admin-selects.js';
 import { initializeAdminModalScrollBehavior } from './admin-modal-scroll.js';
 
 let storageRuntimePromise = null;
-let refreshFrame = null;
 let livewireHookRegistered = false;
 
 initializeAdminModalScrollBehavior();
@@ -19,22 +18,15 @@ function ensureStorageRuntime() {
 }
 
 async function refreshVisualizations() {
-    refreshFrame = null;
-
     if (! hasStorageVisualization() && storageRuntimePromise === null) return;
 
     const runtime = await ensureStorageRuntime();
     runtime.refreshStorageVisualizations();
 }
 
-function scheduleRefresh() {
-    if (refreshFrame !== null) return;
-    refreshFrame = window.requestAnimationFrame(refreshVisualizations);
-}
-
-function scheduleStorageRefresh() {
+function refreshStorageIfPresent() {
     if (storageRuntimePromise === null && ! hasStorageVisualization()) return;
-    scheduleRefresh();
+    void refreshVisualizations();
 }
 
 function destinationNeedsStorageRuntime(value) {
@@ -60,7 +52,7 @@ function registerLivewireHook() {
     if (livewireHookRegistered || ! window.Livewire?.hook) return;
 
     livewireHookRegistered = true;
-    window.Livewire.hook('morph.updated', scheduleStorageRefresh);
+    window.Livewire.hook('morph.updated', refreshStorageIfPresent);
 }
 
 if (hasStorageVisualization()) {
@@ -68,17 +60,17 @@ if (hasStorageVisualization()) {
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', scheduleRefresh, { once: true });
+    document.addEventListener('DOMContentLoaded', refreshVisualizations, { once: true });
 } else {
-    scheduleRefresh();
+    refreshVisualizations();
 }
 
 registerLivewireHook();
 document.addEventListener('livewire:init', registerLivewireHook, { once: true });
-document.addEventListener('livewire:navigated', scheduleRefresh);
+document.addEventListener('livewire:navigated', refreshVisualizations);
 document.addEventListener('alpine:navigate', prewarmStorageRuntime);
 
-new MutationObserver(scheduleStorageRefresh).observe(document.documentElement, {
+new MutationObserver(refreshStorageIfPresent).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['class'],
 });

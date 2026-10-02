@@ -9,8 +9,6 @@ const output = 'resources/views/filament/generated/analytics-world-map.blade.php
 const width = 1200;
 const height = 600;
 
-const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
-
 async function downloadSource() {
     let lastError;
 
@@ -18,7 +16,6 @@ async function downloadSource() {
         try {
             const response = await fetch(sourceUrl, {
                 headers: { 'User-Agent': 'moeller-lars-map-builder/1.0' },
-                signal: AbortSignal.timeout(10_000),
             });
 
             if (!response.ok) {
@@ -28,9 +25,7 @@ async function downloadSource() {
             return Buffer.from(await response.arrayBuffer());
         } catch (error) {
             lastError = error;
-            if (attempt < 3) {
-                await sleep(attempt * 500);
-            }
+            if (attempt < 3) continue;
         }
     }
 

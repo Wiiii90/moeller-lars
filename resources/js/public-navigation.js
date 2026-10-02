@@ -1,4 +1,3 @@
-const SUBMENU_TRANSITION_MS = 180;
 const DRAG_THRESHOLD_PX = 4;
 
 function submenuControls(item) {
@@ -32,22 +31,6 @@ function initializeSubmenus(container) {
     entries.forEach(({ controls }) => regionInner.append(controls.submenu));
 
     let activeEntry = null;
-    let closeTimer = null;
-    let hideTimer = null;
-
-    const clearCloseTimer = () => {
-        if (closeTimer !== null) {
-            window.clearTimeout(closeTimer);
-            closeTimer = null;
-        }
-    };
-
-    const clearHideTimer = () => {
-        if (hideTimer !== null) {
-            window.clearTimeout(hideTimer);
-            hideTimer = null;
-        }
-    };
 
     const hideEntryImmediately = (entry) => {
         setExpanded(entry.controls, false);
@@ -56,20 +39,14 @@ function initializeSubmenus(container) {
     };
 
     const closeActive = (restoreFocus = false) => {
-        clearCloseTimer();
-        clearHideTimer();
         if (activeEntry === null) return;
 
         const closingEntry = activeEntry;
         activeEntry = null;
         setExpanded(closingEntry.controls, false);
         closingEntry.item.dataset.submenuOpen = 'false';
+        closingEntry.controls.submenu.hidden = true;
         region.dataset.open = 'false';
-
-        hideTimer = window.setTimeout(() => {
-            closingEntry.controls.submenu.hidden = true;
-            hideTimer = null;
-        }, SUBMENU_TRANSITION_MS);
 
         if (restoreFocus) {
             closingEntry.controls.parentLink.focus();
@@ -77,9 +54,6 @@ function initializeSubmenus(container) {
     };
 
     const openEntry = (entry) => {
-        clearCloseTimer();
-        clearHideTimer();
-
         if (activeEntry !== null && activeEntry !== entry) {
             hideEntryImmediately(activeEntry);
         }
@@ -91,20 +65,6 @@ function initializeSubmenus(container) {
         region.dataset.open = 'true';
     };
 
-    const scheduleClose = (entry) => {
-        clearCloseTimer();
-        closeTimer = window.setTimeout(() => {
-            const focusInside = entry.item.contains(document.activeElement)
-                || entry.controls.submenu.contains(document.activeElement);
-            const hoverInside = entry.item.matches(':hover')
-                || entry.controls.submenu.matches(':hover');
-            if (!focusInside && !hoverInside && activeEntry === entry) {
-                closeActive();
-            }
-            closeTimer = null;
-        }, 150);
-    };
-
     entries.forEach((entry) => {
         const { item, controls } = entry;
         const { parentLink, submenu } = controls;
@@ -113,31 +73,24 @@ function initializeSubmenus(container) {
             if (event.pointerType === 'mouse') openEntry(entry);
         });
         item.addEventListener('pointerleave', (event) => {
-            if (event.pointerType === 'mouse') scheduleClose(entry);
+            if (event.pointerType !== 'mouse') return;
+            const next = event.relatedTarget;
+            if (!(next instanceof Node) || (!item.contains(next) && !submenu.contains(next))) closeActive();
         });
-        submenu.addEventListener('pointerenter', clearCloseTimer);
         submenu.addEventListener('pointerleave', (event) => {
-            if (event.pointerType === 'mouse') scheduleClose(entry);
+            if (event.pointerType !== 'mouse') return;
+            const next = event.relatedTarget;
+            if (!(next instanceof Node) || (!item.contains(next) && !submenu.contains(next))) closeActive();
         });
 
         item.addEventListener('focusin', () => openEntry(entry));
-        item.addEventListener('focusout', () => {
-            window.setTimeout(() => {
-                if (!item.contains(document.activeElement)
-                    && !submenu.contains(document.activeElement)
-                    && activeEntry === entry) {
-                    closeActive();
-                }
-            }, 0);
+        item.addEventListener('focusout', (event) => {
+            const next = event.relatedTarget;
+            if (!(next instanceof Node) || (!item.contains(next) && !submenu.contains(next))) closeActive();
         });
-        submenu.addEventListener('focusout', () => {
-            window.setTimeout(() => {
-                if (!item.contains(document.activeElement)
-                    && !submenu.contains(document.activeElement)
-                    && activeEntry === entry) {
-                    closeActive();
-                }
-            }, 0);
+        submenu.addEventListener('focusout', (event) => {
+            const next = event.relatedTarget;
+            if (!(next instanceof Node) || (!item.contains(next) && !submenu.contains(next))) closeActive();
         });
 
         parentLink.addEventListener('keydown', (event) => {
