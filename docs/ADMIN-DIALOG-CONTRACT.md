@@ -63,6 +63,8 @@ Use `AdminDialog::command()`.
 Confirmation dialogs guard a concrete action without editable form state.
 
 - all confirmations use the shared `Small` width; feature code does not override confirmation width;
+- confirmation is an application-level semantic over a normal Filament Action modal; `requiresConfirmation()` is not used;
+- the optional dialog condition controls whether the modal opens; when false, Filament executes the Action directly instead of opening a modal;
 - the header confirmation icon executes the action;
 - destructive confirmations use the danger treatment and canonical Delete icon;
 - `X` cancels;
@@ -116,7 +118,7 @@ Compact summary/fact cells are optional inside dialogs. They are a layout device
 
 The native Filament close control is always the final top-right control. Filament continues to own modal state, focus trapping and Escape behavior.
 
-Contextual actions are native Filament Actions lifted into the shared header rail. The shared adapter explicitly keeps modal and footer-action alignment at `Start`; Filament's confirmation default centers footer actions and enables a container-query footer layout, which is incompatible with the absolutely positioned shared header rail.
+Contextual actions are native Filament Actions lifted into the shared header rail. The shared adapter explicitly keeps modal and footer-action alignment at `Start`. Confirmation dialogs deliberately remain normal Filament modals so Filament cannot introduce a second confirmation-specific width, alignment, warning-icon, alert-role or footer-layout branch underneath the shared adapter.
 
 
 - `X` is always at the far right;

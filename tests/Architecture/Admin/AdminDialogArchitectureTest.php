@@ -49,8 +49,10 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('AdminDialogSize $size = AdminDialogSize::Large')
         ->toContain('$size === AdminDialogSize::Small ? AdminDialogSize::Small : AdminDialogSize::Large')
         ->toContain('self::base($action, AdminDialogType::Confirm, AdminDialogSize::Small)')
+        ->toContain('->modal($condition)')
         ->toContain('->modalAlignment(Alignment::Start)')
         ->toContain('->modalFooterActionsAlignment(Alignment::Start)')
+        ->not->toContain('->requiresConfirmation(')
         ->not->toContain('AdminDialogSize::Mini');
 
     expect($contract)
@@ -112,4 +114,34 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr));')
         ->toContain('.media-file-dialog__references a,')
         ->toContain('grid-template-columns: minmax(8rem, .55fr) minmax(0, 1fr);');
+});
+
+it('does not reintroduce Filament confirmation mode in admin application code', function (): void {
+    $root = dirname(__DIR__, 3);
+    $scanRoots = [
+        $root.'/app/Filament',
+        $root.'/app/Livewire/Admin',
+    ];
+    $violations = [];
+
+    foreach ($scanRoots as $scanRoot) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($scanRoot, FilesystemIterator::SKIP_DOTS),
+        );
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || ! str_ends_with($file->getFilename(), '.php')) {
+                continue;
+            }
+
+            $source = file_get_contents($file->getPathname());
+            if ($source !== false && str_contains($source, '->requiresConfirmation(')) {
+                $violations[] = str_replace($root.DIRECTORY_SEPARATOR, '', $file->getPathname());
+            }
+        }
+    }
+
+    sort($violations);
+
+    expect($violations)->toBe([]);
 });

@@ -305,14 +305,9 @@ html {
     padding-top: .35rem;
 }
 
-/* Confirmation dialogs use the same shared header-action rail as every other
- * dialog. The confirmation role only changes content density: suppress the
- * stock Filament warning icon and reserve a compact content block below the
- * shared rail. It must never reposition or resize the header actions. */
-.admin-dialog--confirmation .fi-modal-icon-ctn {
-    display: none !important;
-}
-
+/* Confirmation dialogs are normal Filament modals using the same shared
+ * header-action rail as every other dialog. The application-level confirmation
+ * role changes content density only; it must never change modal chrome. */
 .admin-dialog--confirmation .fi-modal-header {
     display: block;
     min-height: 0;

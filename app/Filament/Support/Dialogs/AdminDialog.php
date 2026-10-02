@@ -72,14 +72,16 @@ final class AdminDialog
         string|Closure|null $description = null,
         string $submitLabel = 'Confirm',
         bool $danger = false,
-        bool|Closure $required = true,
+        bool|Closure $condition = true,
         ?AdminIcon $icon = null,
     ): Action {
         $submitIcon = $icon ?? ($danger ? AdminIcon::Delete : AdminIcon::DialogSubmit);
         $submitClass = 'admin-dialog__header-action '.($danger ? 'is-danger' : 'is-primary');
 
         return self::base($action, AdminDialogType::Confirm, AdminDialogSize::Small)
-            ->requiresConfirmation($required)
+            // Confirm is an application semantic, not Filament's confirmation mode.
+            // A false condition deliberately makes the Action execute directly.
+            ->modal($condition)
             ->modalHeading($heading)
             ->modalDescription($description)
             ->modalSubmitAction(fn (Action $action): Action => $action

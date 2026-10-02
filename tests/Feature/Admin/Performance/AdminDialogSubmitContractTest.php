@@ -20,5 +20,17 @@ it('keeps committed dialog submit actions separate from their parent action', fu
         ->and($confirmSubmit->getName())->toBe('submit')
         ->and($confirmSubmit->isIconButton())->toBeTrue()
         ->and($confirm->getName())->toBe('deleteThing')
-        ->and($confirm->isIconButton())->toBeFalse();
+        ->and($confirm->isIconButton())->toBeFalse()
+        ->and($confirm->isConfirmationRequired())->toBeFalse()
+        ->and($confirm->hasModal())->toBeTrue()
+        ->and($confirm->getModalIcon())->toBeNull();
+
+    $direct = AdminDialog::confirm(
+        Action::make('changeType'),
+        'Change component type?',
+        condition: false,
+    );
+
+    expect($direct->isConfirmationRequired())->toBeFalse()
+        ->and($direct->hasModal())->toBeFalse();
 });

@@ -251,7 +251,7 @@ trait CustomPageWorkspaceComponentActions
             'Change component type?',
             $description,
             'Change type',
-            required: fn (array $arguments): bool => $this->componentTypeChangeLosesContent($arguments),
+            condition: fn (array $arguments): bool => $this->componentTypeChangeLosesContent($arguments),
         );
     }
 
