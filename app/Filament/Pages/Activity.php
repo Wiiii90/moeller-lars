@@ -857,7 +857,6 @@ final class Activity extends Page
                 description: (string) $event['undo']['confirmation'],
                 submitLabel: 'Undo',
                 danger: false,
-                size: AdminDialogSize::Mini,
                 icon: AdminIcon::Refresh,
             );
         }

@@ -20,10 +20,15 @@
     pointer-events: auto;
 }
 
-/* Filament icon buttons carry their own size and negative-margin rules. Repeat
- * the canonical rail geometry here, after Filament, so compact confirmation
- * actions cannot grow back into the native hitbox and overlap the close X. */
-.admin-dialog--header-actions .fi-modal-footer-actions > .fi-icon-btn,
+/* Filament icon buttons carry their own size and negative-margin rules.
+ * Actions may render through a wrapper, so harden both the wrapper and the
+ * nested icon button instead of assuming the icon button is a direct child. */
+.admin-dialog--header-actions .fi-modal-footer-actions > * {
+    flex: 0 0 auto;
+    margin: 0 !important;
+}
+
+.admin-dialog--header-actions .fi-modal-footer-actions .fi-icon-btn,
 .admin-dialog--header-actions .fi-modal-close-btn {
     box-sizing: border-box;
     width: var(--admin-dialog-header-action-size) !important;
@@ -33,10 +38,6 @@
     min-height: var(--admin-dialog-header-action-size) !important;
     max-height: var(--admin-dialog-header-action-size) !important;
     margin: 0 !important;
-}
-
-.admin-dialog--confirmation {
-    --admin-dialog-header-action-gap: .625rem;
 }
 
 .admin-dialog--header-actions .fi-modal-close-btn {

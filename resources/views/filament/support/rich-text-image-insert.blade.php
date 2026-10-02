@@ -8,7 +8,7 @@
             x-bind:class="{ 'is-active': source === 'media' }"
             x-bind:aria-selected="source === 'media'"
             x-on:click="source = 'media'; externalError = ''; $nextTick(() => $el.closest('[data-admin-rich-text-image-insert]').querySelector('[role=combobox]')?.focus())"
-        >Media Files</button>
+        >Storage</button>
         <button
             class="admin-rich-text-image-insert__source"
             type="button"

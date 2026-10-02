@@ -120,6 +120,6 @@ trait GalleryWorkspaceUploadSettings
                 }
             });
 
-        return AdminDialog::edit($action, AdminDialogSize::Default);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 }

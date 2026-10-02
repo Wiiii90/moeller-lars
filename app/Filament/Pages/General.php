@@ -126,7 +126,7 @@ final class General extends Page
                                 imagesOnly: true,
                                 includeDimensions: false,
                             )
-                                ->placeholder('Choose from Media Files')
+                                ->placeholder('Choose from Storage')
                                 ->selectablePlaceholder(false)
                                 ->extraFieldWrapperAttributes(['class' => 'admin-favicon-control general-site-icon-control'])
                                 ->nullable()

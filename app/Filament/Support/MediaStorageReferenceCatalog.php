@@ -26,7 +26,7 @@ final class MediaStorageReferenceCatalog
 
     /**
      * Resolve the canonical referenced set in one bounded query through the
-     * exact same MediaReferenceCatalog instance used by Media Files.
+     * exact same MediaReferenceCatalog instance used by Storage.
      *
      * @param  list<int>  $assetIds
      * @return list<int>

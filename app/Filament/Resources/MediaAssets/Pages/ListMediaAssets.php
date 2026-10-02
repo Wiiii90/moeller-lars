@@ -388,7 +388,7 @@ final class ListMediaAssets extends Page
                 $this->saveMetadata($this->actionAsset($arguments), $data);
             });
 
-        return AdminDialog::edit($action, AdminDialogSize::Default);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     public function deleteAction(): Action
@@ -411,7 +411,6 @@ final class ListMediaAssets extends Page
             fn (array $arguments): string => 'Delete '.(string) $this->actionAsset($arguments)->getAttribute('original_filename').'?',
             submitLabel: 'Delete',
             danger: true,
-            size: AdminDialogSize::Default,
         );
     }
 
@@ -508,7 +507,6 @@ final class ListMediaAssets extends Page
             'Delete selected files?',
             submitLabel: 'Delete',
             danger: true,
-            size: AdminDialogSize::Default,
         );
     }
 
@@ -977,7 +975,7 @@ final class ListMediaAssets extends Page
                     ->cancelParentActions('previewEdit'),
             ]);
 
-        return AdminDialog::edit($action, AdminDialogSize::Default);
+        return AdminDialog::edit($action, AdminDialogSize::Large);
     }
 
     private function previewDeleteAction(int $assetId): Action
@@ -1004,7 +1002,6 @@ final class ListMediaAssets extends Page
             fn (): string => 'Delete '.(string) $this->assetById($assetId)->getAttribute('original_filename').'?',
             submitLabel: 'Delete',
             danger: true,
-            size: AdminDialogSize::Default,
         );
     }
 

@@ -129,7 +129,7 @@ final class ArtworkPrimaryMediaService
             ]);
 
             // Media lifecycle is independent from Artwork linkage. The old asset is intentionally
-            // left in Media Files, even when this replacement made it unreferenced.
+            // left in Storage, even when this replacement made it unreferenced.
             return $lockedArtwork->fresh(['category', 'artworkMedia.mediaAsset.variants']);
         });
     }

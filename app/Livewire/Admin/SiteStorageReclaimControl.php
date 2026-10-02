@@ -5,7 +5,6 @@ namespace App\Livewire\Admin;
 use App\Domain\Admin\AdminNotifier;
 use App\Domain\Storage\SiteStorageReclaimService;
 use App\Filament\Support\Dialogs\AdminDialog;
-use App\Filament\Support\Dialogs\AdminDialogSize;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -47,7 +46,6 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
             'This permanently clears Undo history, releases restore data for older publication checkpoints, and removes rebuildable generated thumbnails. Activity remains. The current live restore snapshot and any restore or revert source currently in use stay protected. Generated thumbnails are recreated from their canonical originals when next needed. Logical site usage updates immediately; the physical PostgreSQL file may shrink later during routine maintenance.',
             submitLabel: 'Free storage',
             danger: true,
-            size: AdminDialogSize::Default,
         );
     }
 

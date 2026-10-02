@@ -178,7 +178,7 @@ trait GalleryWorkspaceDirectUpload
 
                     if ($assets->count() !== count($pendingIds)) {
                         throw ValidationException::withMessages([
-                            'artworks' => 'One or more uploaded Media Files are no longer available.',
+                            'artworks' => 'One or more uploaded files in Storage are no longer available.',
                         ]);
                     }
 
@@ -215,7 +215,7 @@ trait GalleryWorkspaceDirectUpload
                     $this->refreshWorkspaceAfterMutation();
                     app(AdminNotifier::class)->feedback(
                         title: $count.' artworks added',
-                        body: 'The new artworks were created as drafts with their uploaded Media Files as primary media.',
+                        body: 'The new artworks were created as drafts with their uploaded files from Storage as primary media.',
                         status: 'success',
                     );
                 }),
@@ -332,7 +332,7 @@ trait GalleryWorkspaceDirectUpload
 
         if ($duplicates > 0) {
             app(AdminNotifier::class)->feedback(
-                title: 'Already in Media Files',
+                title: 'Already in Storage',
                 body: $summary,
                 status: 'info',
             );
@@ -342,11 +342,11 @@ trait GalleryWorkspaceDirectUpload
     private function directUploadSummary(int $total, int $added, int $duplicates, int $failed): string
     {
         if ($added > 0 && $duplicates === 0 && $failed === 0) {
-            return $added.' '.($added === 1 ? 'file' : 'files').' added to Media Files';
+            return $added.' '.($added === 1 ? 'file' : 'files').' added to Storage';
         }
 
         if ($added === 0 && $duplicates > 0 && $failed === 0) {
-            return $duplicates.' '.($duplicates === 1 ? 'file is' : 'files are').' already in Media Files';
+            return $duplicates.' '.($duplicates === 1 ? 'file is' : 'files are').' already in Storage';
         }
 
         $parts = [];
@@ -354,7 +354,7 @@ trait GalleryWorkspaceDirectUpload
             $parts[] = $added.' '.($added === 1 ? 'file added' : 'files added');
         }
         if ($duplicates > 0) {
-            $parts[] = $duplicates.' already in Media Files';
+            $parts[] = $duplicates.' already in Storage';
         }
         if ($failed > 0) {
             $parts[] = $failed.' failed';

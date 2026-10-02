@@ -454,7 +454,7 @@ final class HomePresentationEditorialService
             || (string) $asset->getAttribute('state') !== 'available'
             || ! str_starts_with((string) $asset->getAttribute('mime_type'), 'image/')) {
             throw ValidationException::withMessages([
-                'components' => 'Home images must reference an available image from Media Files.',
+                'components' => 'Home images must reference an available image from Storage.',
             ]);
         }
 
@@ -462,7 +462,7 @@ final class HomePresentationEditorialService
             $alt = $asset->getAttribute('alt_text');
             if (! is_string($alt) || trim($alt) === '') {
                 throw ValidationException::withMessages([
-                    'components' => 'Non-decorative Home images need canonical ALT text in Media Files.',
+                    'components' => 'Non-decorative Home images need canonical ALT text in Storage.',
                 ]);
             }
         }

@@ -74,11 +74,11 @@ class GalleryImagesRelationManager extends RelationManager
                             app(ArtworkEditorialService::class)->ingestAdditionalMedia($artwork, $data['upload']);
                         }),
                     'Upload image',
-                    AdminDialogSize::Default,
+                    AdminDialogSize::Small,
                 ),
                 AdminDialog::command(
                     Action::make('addFromLibrary')
-                        ->label('Add from library')
+                        ->label('Add from Storage')
                         ->icon(AdminIcon::AddFromLibrary)
                         ->schema([
                             Select::make('media_asset_id')
@@ -95,7 +95,7 @@ class GalleryImagesRelationManager extends RelationManager
                             app(ArtworkEditorialService::class)->attachAdditionalMedia($artwork, $asset);
                         }),
                     'Add to gallery',
-                    AdminDialogSize::Default,
+                    AdminDialogSize::Small,
                 ),
             ])
             ->recordActions([
@@ -131,10 +131,9 @@ class GalleryImagesRelationManager extends RelationManager
                             app(ArtworkEditorialService::class)->detachAdditionalMedia($artwork, $record);
                         }),
                     heading: 'Detach image',
-                    description: 'Remove this image from the artwork gallery. The media asset stays in the library and is not deleted.',
+                    description: 'Remove this image from the artwork gallery. The media asset stays in Storage and is not deleted.',
                     submitLabel: 'Detach',
                     danger: true,
-                    size: AdminDialogSize::Mini,
                     icon: AdminIcon::Detach,
                 ),
             ])

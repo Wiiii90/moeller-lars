@@ -77,7 +77,7 @@ trait GalleryWorkspaceFormSupport
                         ->storeFiles(false)
                         ->acceptedFileTypes(self::primaryMimeTypes())
                         ->maxSize((int) ceil(MediaTypePolicy::maxUploadBytes() / 1024))
-                        ->helperText('JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Media Files first.')
+                        ->helperText('JPEG, PNG, WebP, H.264 MP4 or supported WebM. The file is ingested into Storage first.')
                         ->columnSpanFull(),
                     DatePicker::make('work_date')->label('Exact date')->helperText('If set, the year is derived from this date.')->nullable(),
                     Toggle::make('featured_on_home')->label('Feature on home when newest year is shared')->default(false),

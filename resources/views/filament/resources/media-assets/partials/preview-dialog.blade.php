@@ -1,4 +1,4 @@
-<div class="media-file-dialog__content">
+<div class="media-file-dialog__content storage-media-dialog">
     <div class="media-file-dialog__preview">
         @if ($asset['preview_url'] !== null && $asset['kind'] === 'image')
             <img

@@ -445,6 +445,8 @@ Likewise avoid eyebrow/kicker labels on every row/card. Information hierarchy sh
 
 Dialogs are a shared primitive.
 
+Confirmation dialogs use one shared `Small` width. Feature code does not override confirmation width, action spacing or header-action geometry. Confirmation submit actions use the same header rail as every other dialog action, immediately left of the native Filament `X`.
+
 Required behavior:
 
 - viewport-level backdrop;

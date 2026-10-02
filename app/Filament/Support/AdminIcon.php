@@ -6,7 +6,6 @@ enum AdminIcon: string
 {
     case Dashboard = 'heroicon-o-home';
     case General = 'heroicon-o-globe-alt';
-    case MediaFiles = 'heroicon-o-folder-open';
     case Pages = 'heroicon-o-rectangle-stack';
     case Home = 'heroicon-o-building-library';
     case Gallery = 'heroicon-o-photo';

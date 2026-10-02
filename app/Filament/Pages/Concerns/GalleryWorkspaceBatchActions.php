@@ -44,7 +44,7 @@ trait GalleryWorkspaceBatchActions
         return AdminDialog::confirm(
             $action,
             'Remove selected artworks from Gallery?',
-            'Artwork records and Media Files remain. Published artworks must be unpublished first.',
+            'Artwork records and files in Storage remain. Published artworks must be unpublished first.',
             'Remove',
             icon: AdminIcon::Detach,
         );
@@ -81,7 +81,7 @@ trait GalleryWorkspaceBatchActions
         return AdminDialog::confirm(
             $action,
             'Delete selected artworks?',
-            'Only draft artworks can be deleted. Media Files are preserved even when they become unreferenced.',
+            'Only draft artworks can be deleted. Files in Storage are preserved even when they become unreferenced.',
             'Delete',
             danger: true,
         );

@@ -141,23 +141,20 @@ html {
  * and table geometry. Consumers opt in explicitly with one size class.
  */
 :root {
-    --admin-dialog-width-mini: 13.333rem;
     --admin-dialog-width-small: 26.667rem;
     --admin-dialog-width-default: 40rem;
     --admin-dialog-width-large: 53.333rem;
     --admin-dialog-viewport-gutter: 2rem;
     --admin-dialog-header-action-size: 2rem;
-    --admin-dialog-header-action-gap: .35rem;
+    --admin-dialog-header-action-gap: .5rem;
     --admin-dialog-header-action-inset: 1rem;
     --admin-dialog-content-inset: 1.35rem;
 }
 
-.admin-dialog--mini { --admin-dialog-width: var(--admin-dialog-width-mini); }
 .admin-dialog--small { --admin-dialog-width: var(--admin-dialog-width-small); }
 .admin-dialog--default { --admin-dialog-width: var(--admin-dialog-width-default); }
 .admin-dialog--large { --admin-dialog-width: var(--admin-dialog-width-large); }
 
-.admin-dialog--mini,
 .admin-dialog--small,
 .admin-dialog--default,
 .admin-dialog--large {
@@ -180,7 +177,7 @@ html {
 
 .admin-dialog--header-actions .fi-modal-header {
     min-height: calc(var(--admin-dialog-header-action-size) + (2 * var(--admin-dialog-header-action-inset)));
-    padding-inline-end: 7.5rem;
+    padding-inline-end: 9rem;
 }
 
 .admin-dialog--header-actions .fi-modal-footer {

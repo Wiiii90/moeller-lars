@@ -26,7 +26,7 @@ Edits operate on an existing record or settings object.
 
 - editorial edit dialogs use the `Large` width by default;
 - `Small` is reserved for deliberately compact utility editors with only a few controls;
-- `Default` and `Mini` are not edit widths: the shared adapter promotes them to the `Large` editorial baseline;
+- `Default` is not an edit width: the shared adapter promotes it to the `Large` editorial baseline;
 - changed values persist through the canonical discrete autosave path;
 - no Save/Apply/Cancel footer exists;
 - the native Filament `X` closes the dialog and does not trigger another write;
@@ -62,7 +62,7 @@ Use `AdminDialog::command()`.
 
 Confirmation dialogs guard a concrete action without editable form state.
 
-- use the mini width unless the confirmation body contains substantial reference/details content;
+- all confirmations use the shared `Small` width; feature code does not override confirmation width;
 - the header confirmation icon executes the action;
 - destructive confirmations use the danger treatment and canonical Delete icon;
 - `X` cancels;
@@ -86,7 +86,6 @@ Use `AdminDialog::viewer()`.
 
 Dialogs align to the same six-unit desktop workspace used by the admin summary and table geometry. Use `AdminDialogSize` rather than page-local width values:
 
-- `Mini`: 1/6 of the 80rem desktop workspace (`13.333rem`) — compact confirmations;
 - `Small`: 2/6 (`26.667rem`) — compact commands and deliberately small utility forms;
 - `Default`: 3/6 (`40rem`) — intermediate read-only/detail surfaces;
 - `Large`: 4/6 (`53.333rem`) — editorial edit/create forms and media/detail viewers.

@@ -46,7 +46,7 @@ trait GalleryWorkspaceArtworkActions
         return AdminDialog::confirm(
             $action,
             'Remove artwork from Gallery?',
-            'The artwork becomes unassigned. Its Media Files stay intact and reusable.',
+            'The artwork becomes unassigned. Its files in Storage stay intact and reusable.',
             'Remove',
             icon: AdminIcon::Detach,
         );
@@ -104,7 +104,7 @@ trait GalleryWorkspaceArtworkActions
                                     user: $actor,
                                     sourceId: 'media-cleanup:asset-'.(int) $asset->getKey(),
                                     title: 'File cleanup failed',
-                                    body: 'The file was removed from Media Files, but stored file cleanup could not be completed.',
+                                    body: 'The file was removed from Storage, but stored file cleanup could not be completed.',
                                     status: 'danger',
                                     context: [
                                         'type' => 'media.cleanup_failure',
@@ -150,7 +150,6 @@ trait GalleryWorkspaceArtworkActions
             fn (array $arguments): string => 'Delete '.(string) $this->primaryMediaAsset($arguments)->getAttribute('original_filename').'?',
             submitLabel: 'Delete media file',
             danger: true,
-            size: AdminDialogSize::Default,
         );
     }
 

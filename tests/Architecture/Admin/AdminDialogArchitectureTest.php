@@ -8,6 +8,7 @@ it('routes migrated admin dialogs through the shared dialog adapter', function (
         'app/Filament/Pages/HomePresentation.php',
         'app/Filament/Pages/JournalWorkspace.php',
         'app/Filament/Resources/MediaAssets/Pages/ListMediaAssets.php',
+        'app/Livewire/Admin/SiteStorageReclaimControl.php',
         'app/Filament/Pages/Concerns/ManagesSitePageCreateDialog.php',
         'app/Filament/Pages/Concerns/ManagesSitePageEditDialog.php',
         'app/Filament/Pages/Concerns/CustomPageWorkspaceComponentActions.php',
@@ -46,7 +47,9 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
 
     expect($adapter)
         ->toContain('AdminDialogSize $size = AdminDialogSize::Large')
-        ->toContain('$size === AdminDialogSize::Small ? AdminDialogSize::Small : AdminDialogSize::Large');
+        ->toContain('$size === AdminDialogSize::Small ? AdminDialogSize::Small : AdminDialogSize::Large')
+        ->toContain('self::base($action, AdminDialogType::Confirm, AdminDialogSize::Small)')
+        ->not->toContain('AdminDialogSize::Mini');
 
     expect($contract)
         ->toContain('.admin-task-dialog .fi-modal-content')
@@ -56,6 +59,8 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('transform: translate3d(.3rem, -.3rem, 0) scale(.985) !important;')
         ->toContain('transition-duration: 260ms !important;')
         ->toContain('@media (prefers-reduced-motion: reduce)')
+        ->not->toContain('--admin-dialog-width-mini')
+        ->not->toContain('.admin-dialog--mini')
         ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
 
     $modalScroll = file_get_contents($root.'/resources/js/admin-modal-scroll.js');
@@ -94,13 +99,14 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     expect(substr_count($artworkPreview, 'class="media-file-dialog__details"'))->toBe(1);
     expect(substr_count($mediaPreview, 'class="media-file-dialog__details '))->toBe(2);
     expect($mediaPreview)
+        ->toContain('class="media-file-dialog__content storage-media-dialog"')
         ->toContain('class="media-file-dialog__details media-file-dialog__metadata"')
         ->toContain('class="media-file-dialog__details media-file-dialog__usage"')
         ->toContain('class="media-file-dialog__metadata-grid"')
         ->toContain('class="media-file-dialog__references"');
 
     expect($mediaCss)
-        ->toContain('.media-file-dialog .media-file-dialog__metadata-grid')
+        ->toContain('.storage-media-dialog .media-file-dialog__metadata-grid')
         ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr));')
         ->toContain('.media-file-dialog__references a,')
         ->toContain('grid-template-columns: minmax(8rem, .55fr) minmax(0, 1fr);');

@@ -520,16 +520,16 @@ final class HomePresentation extends Page
                 ->schema([
                     Select::make('kind')->label('Component')->options($this->newComponentOptions)->required()->live(),
                     ...$this->homeRichTextFields('kind', 'rich_text', required: true),
-                    MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', true)
+                    MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
                         ->required(fn (callable $get): bool => $get('kind') === 'image')
                         ->visible(fn (callable $get): bool => $get('kind') === 'image'),
                     Toggle::make('image_decorative')->label('Decorative image')
-                        ->helperText('Leave off for content images. Canonical ALT text is managed in Media Files.')
+                        ->helperText('Leave off for content images. Canonical ALT text is managed in Storage.')
                         ->default(false)->visible(fn (callable $get): bool => $get('kind') === 'image'),
                 ])
                 ->modalHeading('Add Home component'),
             'Add component',
-            AdminDialogSize::Default,
+            AdminDialogSize::Large,
         )->action(function (array $data): void {
             $kind = (string) ($data['kind'] ?? '');
             $component = match ($kind) {
@@ -572,14 +572,14 @@ final class HomePresentation extends Page
                     ->required(fn (callable $get): bool => $get('editor_kind') === 'heading')
                     ->visible(fn (callable $get): bool => $get('editor_kind') === 'heading'),
                 ...$this->homeRichTextFields('editor_kind', 'rich_text', required: true),
-                MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', true)
+                MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', true)
                     ->required(fn (callable $get): bool => $get('type') === 'image')
                     ->visible(fn (callable $get): bool => $get('type') === 'image'),
                 Toggle::make('image_decorative')->label('Decorative image')
-                    ->helperText('Leave off for content images. Canonical ALT text is managed in Media Files.')
+                    ->helperText('Leave off for content images. Canonical ALT text is managed in Storage.')
                     ->visible(fn (callable $get): bool => $get('type') === 'image'),
             ])
-            ->modalHeading('Edit Home component'), AdminDialogSize::Default)->action(function (array $data, array $arguments): void {
+            ->modalHeading('Edit Home component'), AdminDialogSize::Large)->action(function (array $data, array $arguments): void {
                 $current = $this->componentFromArguments($arguments);
                 $type = (string) $current['type'];
                 $editorKind = $this->editorKind($current);
@@ -617,7 +617,6 @@ final class HomePresentation extends Page
             description: 'The component is removed from this Home template. Other template configurations are unchanged.',
             submitLabel: 'Delete',
             danger: true,
-            size: AdminDialogSize::Mini,
         )->action(function (array $arguments): void {
             $component = $this->componentFromArguments($arguments);
             app(HomePresentationEditorialService::class)->deleteComponent(
@@ -638,7 +637,6 @@ final class HomePresentation extends Page
             heading: 'Delete selected Home components?',
             submitLabel: 'Delete',
             danger: true,
-            size: AdminDialogSize::Mini,
         )->action(function (): void {
             $targets = $this->selectedComponentTargetData();
             if ($targets === []) {
@@ -1036,8 +1034,8 @@ final class HomePresentation extends Page
             }
             [$primary, $secondary] = match ($filterType) {
                 'image' => [
-                    $asset instanceof MediaAsset ? (string) $asset->getAttribute('original_filename') : 'Choose an image from Media Files',
-                    $asset instanceof MediaAsset && filled($asset->getAttribute('alt_text')) ? 'ALT · '.Str::limit((string) $asset->getAttribute('alt_text'), 90) : 'Media Files image',
+                    $asset instanceof MediaAsset ? (string) $asset->getAttribute('original_filename') : 'Choose an image from Storage',
+                    $asset instanceof MediaAsset && filled($asset->getAttribute('alt_text')) ? 'ALT · '.Str::limit((string) $asset->getAttribute('alt_text'), 90) : 'Storage image',
                 ],
                 'heading' => [$title !== '' ? $title : 'Untitled heading', ''],
                 'rich_text' => [$title !== '' ? $title : (Str::limit($body, 110) ?: 'Empty Rich Text'), $title !== '' ? (Str::limit($body, 110) ?: 'No body text') : ''],

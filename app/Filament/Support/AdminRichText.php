@@ -62,7 +62,7 @@ final class AdminRichText
             'x-on:admin-rich-text-image-insert' => "const markdown = \$event.detail?.markdown; if (typeof markdown === 'string' && markdown !== '') { const current = String(state ?? '').trim(); state = current === '' ? markdown : current + '\\n\\n' + markdown; }",
         ]);
 
-        $picker = MediaAssetSelect::makeId($pickerName, 'Image from Media Files', imagesOnly: true)
+        $picker = MediaAssetSelect::makeId($pickerName, 'Image from Storage', imagesOnly: true)
             ->hiddenLabel()
             ->nullable()
             ->dehydrated(false)
@@ -79,7 +79,7 @@ final class AdminRichText
 
                 $id = filter_var($state, FILTER_VALIDATE_INT);
                 if ($id === false || $id <= 0) {
-                    throw ValidationException::withMessages([$pickerName => 'Choose an image from Media Files.']);
+                    throw ValidationException::withMessages([$pickerName => 'Choose an image from Storage.']);
                 }
 
                 $valid = MediaAsset::query()
@@ -88,7 +88,7 @@ final class AdminRichText
                     ->where('mime_type', 'like', 'image/%')
                     ->exists();
                 if (! $valid) {
-                    throw ValidationException::withMessages([$pickerName => 'Choose an available image from Media Files.']);
+                    throw ValidationException::withMessages([$pickerName => 'Choose an available image from Storage.']);
                 }
 
                 $currentState = $get($name);

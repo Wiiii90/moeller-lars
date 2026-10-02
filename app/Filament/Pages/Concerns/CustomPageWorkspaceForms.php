@@ -55,7 +55,7 @@ trait CustomPageWorkspaceForms
     {
         return match ($type) {
             'image' => [
-                MediaAssetSelect::makeId('media_asset_id', 'Image from Media Files', imagesOnly: true)->required(),
+                MediaAssetSelect::makeId('media_asset_id', 'Image from Storage', imagesOnly: true)->required(),
                 Toggle::make('image_decorative')->label('Decorative image')->default(false),
             ],
             'text' => $isNew

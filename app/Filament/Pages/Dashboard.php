@@ -643,7 +643,6 @@ final class Dashboard extends Page
             description: $description,
             submitLabel: 'Confirm',
             danger: true,
-            size: AdminDialogSize::Mini,
         );
     }
 }

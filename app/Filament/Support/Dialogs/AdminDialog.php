@@ -23,8 +23,8 @@ final class AdminDialog
      * hidden submit buttons participate in persistence.
      *
      * Editorial edits use the large workspace width by default. Small is the
-     * one intentional compact utility-editor exception; older Default/Mini
-     * requests are promoted so an edit surface cannot accidentally collapse
+     * one intentional compact utility-editor exception; older Default requests are
+     * promoted so an edit surface cannot accidentally collapse
      * back into a narrow single-column task.
      *
      * @param  array<mixed>|Closure  $windowAttributes
@@ -71,14 +71,13 @@ final class AdminDialog
         string|Closure|null $description = null,
         string $submitLabel = 'Confirm',
         bool $danger = false,
-        AdminDialogSize $size = AdminDialogSize::Mini,
         bool|Closure $required = true,
         ?AdminIcon $icon = null,
     ): Action {
         $submitIcon = $icon ?? ($danger ? AdminIcon::Delete : AdminIcon::DialogSubmit);
         $submitClass = 'admin-dialog__header-action '.($danger ? 'is-danger' : 'is-primary');
 
-        return self::base($action, AdminDialogType::Confirm, $size)
+        return self::base($action, AdminDialogType::Confirm, AdminDialogSize::Small)
             ->requiresConfirmation($required)
             ->modalHeading($heading)
             ->modalDescription($description)

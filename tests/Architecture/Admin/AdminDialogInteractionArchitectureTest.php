@@ -10,8 +10,9 @@ it('keeps dialog header action hitboxes bounded and independently clickable', fu
         ->toContain('pointer-events: auto;')
         ->toContain('max-width: var(--admin-dialog-header-action-size) !important;')
         ->toContain('max-height: var(--admin-dialog-header-action-size) !important;')
-        ->toContain('.admin-dialog--confirmation {')
-        ->toContain('--admin-dialog-header-action-gap: .625rem;')
+        ->toContain('.fi-modal-footer-actions > * {')
+        ->toContain('.fi-modal-footer-actions .fi-icon-btn,')
+        ->not->toContain('--admin-dialog-header-action-gap: .625rem;')
         ->toContain('z-index: 12;')
         ->toContain('.admin-dialog--header-actions .fi-modal-close-btn:focus-visible');
 });

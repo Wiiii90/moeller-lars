@@ -352,7 +352,7 @@ final class JournalEntryMediaService
         if (! $asset instanceof MediaAsset
             || $asset->getAttribute('state') !== 'available'
             || ! MediaTypePolicy::isImage((string) $asset->getAttribute('mime_type'))) {
-            throw ValidationException::withMessages([$field => 'Journal images must reference an available image in Media Files.']);
+            throw ValidationException::withMessages([$field => 'Journal images must reference an available image in Storage.']);
         }
         try {
             $this->publicMedia->altTextForAsset($asset);
@@ -366,7 +366,7 @@ final class JournalEntryMediaService
     {
         $id = filter_var($value, FILTER_VALIDATE_INT);
         if ($id === false || $id <= 0) {
-            throw ValidationException::withMessages([$field => 'Choose an image from Media Files.']);
+            throw ValidationException::withMessages([$field => 'Choose an image from Storage.']);
         }
 
         return (int) $id;
