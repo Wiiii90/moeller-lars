@@ -59,6 +59,9 @@ final class Activity extends Page
     /** @var list<int> */
     public array $selectedCommitIds = [];
 
+    #[Url(as: 'search', except: '')]
+    public string $search = '';
+
     /** @var array<string, mixed> */
     public array $activityState = [];
 
@@ -78,6 +81,15 @@ final class Activity extends Page
             ? self::VIEW_COMMITS
             : self::VIEW_ACTIVITY;
         $this->activityState = $this->activityStateFromRequest();
+        $this->search = (string) ($this->activityState['search'] ?? '');
+        $this->refreshWorkspaceSnapshot();
+    }
+
+    public function applySearch(): void
+    {
+        $this->search = trim($this->search);
+        $this->activityState['search'] = $this->search;
+        $this->clearSelection();
         $this->refreshWorkspaceSnapshot();
     }
 

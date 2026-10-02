@@ -43,6 +43,9 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     $contract = file_get_contents($root.'/resources/css/admin/dialog-contract.css');
     $layouts = file_get_contents($root.'/resources/css/admin/layouts.css');
     $mediaCss = file_get_contents($root.'/resources/css/admin/media.css');
+    $dashboardFeedCss = file_get_contents($root.'/resources/css/admin/dashboard-feed.css');
+    $dashboardFeedDialog = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed-dialog.blade.php');
+    $activityCommitDialog = file_get_contents($root.'/resources/views/filament/pages/partials/activity-commit-details-dialog.blade.php');
     $homeWorkspace = file_get_contents($root.'/app/Filament/Pages/HomePresentation.php');
     $artworkPreview = file_get_contents($root.'/resources/views/filament/resources/artworks/partials/preview-dialog.blade.php');
     $mediaPreview = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/preview-dialog.blade.php');
@@ -67,7 +70,20 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('@media (prefers-reduced-motion: reduce)')
         ->not->toContain('--admin-dialog-width-mini')
         ->not->toContain('.admin-dialog--mini')
+        ->toContain('/* Shared read-only detail content used by Viewer dialogs. */')
+        ->toContain('.admin-detail-dialog__meta')
+        ->toContain(':has(.admin-detail-dialog--feed) .fi-modal-heading')
+        ->not->toContain(':has(.admin-detail-dialog) .fi-modal-heading')
         ->not->toContain('.admin-task-dialog .fi-modal-content::-webkit-scrollbar {\n    display: none');
+
+    expect($dashboardFeedCss)->not->toContain('.admin-detail-dialog');
+    expect($dashboardFeedDialog)->toContain('admin-detail-dialog admin-detail-dialog--feed');
+    expect(substr_count($activityCommitDialog, '<dt>'))->toBe(3);
+    expect($activityCommitDialog)
+        ->toContain('<dt>Status</dt>')
+        ->toContain('<dt>Commit</dt>')
+        ->toContain('<dt>Published</dt>')
+        ->toContain('<span>Publication</span>');
 
     $modalScroll = file_get_contents($root.'/resources/js/admin-modal-scroll.js');
     $modalBootstrap = file_get_contents($root.'/resources/views/filament/partials/admin-modal-bootstrap.blade.php');
@@ -147,7 +163,6 @@ it('does not reintroduce Filament confirmation mode in admin application code', 
 
     expect($violations)->toBe([]);
 });
-
 
 it('does not use browser-native Livewire confirmation prompts in admin views', function (): void {
     $root = dirname(__DIR__, 3);

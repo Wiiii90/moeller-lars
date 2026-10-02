@@ -12,23 +12,16 @@
             <dt>Published</dt>
             <dd>{{ $commit['timestamp'] }}</dd>
         </div>
-        <div>
-            <dt>Actor</dt>
-            <dd>{{ $commit['actor'] }}</dd>
-        </div>
-        <div>
-            <dt>Changes</dt>
-            <dd>{{ number_format($commit['change_count']) }}</dd>
-        </div>
-        <div>
-            <dt>Activities</dt>
-            <dd>{{ number_format($commit['activity_count']) }}</dd>
-        </div>
     </dl>
 
     <div class="admin-detail-dialog__field">
         <span>Message</span>
         <p>{{ $commit['message'] ?? 'No commit message' }}</p>
+    </div>
+
+    <div class="admin-detail-dialog__field">
+        <span>Publication</span>
+        <p>{{ $commit['actor'] }} · {{ number_format($commit['change_count']) }} change{{ $commit['change_count'] === 1 ? '' : 's' }} · {{ number_format($commit['activity_count']) }} activit{{ $commit['activity_count'] === 1 ? 'y' : 'ies' }}</p>
     </div>
 
     <div class="admin-detail-dialog__field">

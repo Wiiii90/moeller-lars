@@ -263,17 +263,17 @@
                     <div class="activity-publication__actions">
                         <x-admin.toolbar>
                             @if ($publicationContext['staged'] > 0)
-                                <button class="admin-action" type="button" wire:click="openPublicationReview">
+                                <button class="admin-action admin-action--with-icon" type="button" wire:click="openPublicationReview">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Review changes</span>
                                 </button>
-                                <button class="admin-action" type="button" wire:click="mountAction('resetStagedChanges')">
+                                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('resetStagedChanges')">
                                     <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
                                     <span class="admin-action__label">Reset</span>
                                 </button>
                             @endif
                             <button
-                                class="admin-action"
+                                class="admin-action admin-action--with-icon"
                                 type="button"
                                 x-data
                                 x-on:click="$dispatch('publication-commit')"
@@ -304,8 +304,9 @@
                                 value="{{ $search }}"
                                 placeholder="Change, actor, hash or message"
                                 autocomplete="off"
-                                x-data
-                                x-on:input.debounce.350ms="$el.form.requestSubmit()"
+                                wire:model="search"
+                                wire:change="applySearch"
+                                wire:keydown.enter.prevent="applySearch"
                             >
                         </label>
                     </x-slot:search>

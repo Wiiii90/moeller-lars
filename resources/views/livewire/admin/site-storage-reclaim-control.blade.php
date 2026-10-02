@@ -1,6 +1,6 @@
 <div class="admin-storage__reclaim-control">
     <button
-        class="admin-action is-danger"
+        class="admin-action admin-action--with-icon is-danger"
         type="button"
         wire:click="mountAction('freeStorage')"
         aria-label="Free storage"

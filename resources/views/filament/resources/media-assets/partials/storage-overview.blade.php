@@ -198,7 +198,7 @@
 
         <div class="admin-storage__capacity-actions" aria-label="Storage capacity actions">
             <button
-                class="admin-action"
+                class="admin-action admin-action--with-icon"
                 type="button"
                 wire:click="refreshStorageMeasurement"
                 wire:loading.attr="disabled"

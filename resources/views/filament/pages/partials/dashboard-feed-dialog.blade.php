@@ -4,7 +4,7 @@
     $message = $entry['type'] === 'notification' && $body === $title ? '' : $body;
 @endphp
 
-<div class="admin-detail-dialog">
+<div class="admin-detail-dialog admin-detail-dialog--feed">
     <dl class="admin-detail-dialog__meta">
         <div>
             <dt>Type</dt>

@@ -443,7 +443,7 @@ Likewise avoid eyebrow/kicker labels on every row/card. Information hierarchy sh
 
 ## 16. Dialogs and overlays
 
-Dialogs are a shared primitive.
+Dialogs are a shared primitive. Read-only text/detail content uses the shared `admin-detail-dialog` grammar from the dialog contract; do not park shared dialog content geometry in a page-specific stylesheet.
 
 Confirmation dialogs use one shared `Small` width. Feature code does not override confirmation width, action spacing or header-action geometry. Confirmation submit actions use the same header rail as every other dialog action, immediately left of the native Filament `X`. `AdminDialog::confirm()` is a normal Filament Action modal with application-level confirmation semantics; do not call Filament `requiresConfirmation()`, because that introduces separate framework defaults for modal chrome and layout.
 

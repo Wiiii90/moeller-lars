@@ -110,7 +110,9 @@ For media/detail viewers:
 
 - keep the primary visual first;
 - place related metadata/detail sections side by side beneath the visual when two meaningful groups exist;
-- collapse those sections to one column on narrow viewports.
+- collapse those sections to one column on narrow viewports;
+- text/detail viewers use the shared `admin-detail-dialog` / `admin-detail-dialog__meta` presentation owned by `dialog-contract.css`; feature CSS owns only domain-specific inner content;
+- only Dashboard feed details use the `admin-detail-dialog--feed` heading-suppression variant. Other detail viewers keep their normal Filament dialog heading.
 
 Compact summary/fact cells are optional inside dialogs. They are a layout device, not a requirement and not necessarily numerical metrics. Render only meaningful facts, and use exactly as many cells as the content and available width justify; never manufacture or pad a dialog to a fixed metric count.
 

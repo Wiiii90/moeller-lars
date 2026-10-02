@@ -41,6 +41,7 @@ it('keeps shared admin action icons on the semantic icon catalog', function (): 
         ->toContain('AdminIcon::Details->mini()')
         ->toContain('AdminIcon::Undo->mini()')
         ->toContain('AdminIcon::Commit->mini()')
+        ->toContain('class="admin-action admin-action--with-icon"')
         ->not->toContain('class="admin-action is-primary"');
 });
 
