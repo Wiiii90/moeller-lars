@@ -78,7 +78,7 @@ Accepted ADRs are historical decisions and are intentionally not rewritten to mi
 - do not duplicate `server-platform` topology, host paths, credentials or mutable runbooks here;
 - exact transient browser-candidate SHAs/ports belong in continuation prompts, not architecture docs, except where a temporary evidence record is explicitly required;
 - do not turn closed issue/PR numbers into permanent architecture dependencies;
-- migration evidence may describe legacy names, but runtime docs use current domain language: **Gallery**, **Site Node**, **Journal**, **Custom Page**, **Navigation Node**, **Files** and reusable **Contact component**;
+- migration evidence may describe legacy names, but runtime docs use current domain language: **Gallery**, **Site Node**, **Journal**, **Custom Page**, **Navigation Node**, **Storage** and reusable **Contact component**;
 - database/model names may retain historical persistence terminology where renaming adds migration risk; document that boundary explicitly rather than exposing the old name as product language;
 - distinguish `MediaAsset` being referenced from it being publicly deliverable;
 - keep the central Rich Text/media stack singular rather than documenting editor-specific parallel implementations;

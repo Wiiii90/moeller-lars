@@ -81,7 +81,7 @@ Explicit usage relation between Artwork and canonical `MediaAsset` originals.
 
 It stores role, position and where supported an Artwork usage-specific ALT override. Removing/replacing a usage does not implicitly delete the MediaAsset.
 
-Gallery primary visual media is image/video-aware. Files audio support does not automatically create an Artwork primary-audio contract.
+Gallery primary visual media is image/video-aware. Storage audio support does not automatically create an Artwork primary-audio contract.
 
 ## Journals
 
@@ -89,7 +89,7 @@ Gallery primary visual media is image/video-aware. Files audio support does not 
 
 Every Blog Post belongs to a Journal SiteSection. Important concepts include slug/title/body/excerpt, lifecycle, explicit position, publication/schedule timestamps and provenance.
 
-Body is canonical Markdown and may reference Media Files through `media:<id>`.
+Body is canonical Markdown and may reference Storage media through `media:<id>`.
 
 Structured Cover/Gallery usage lives in `journal_entry_media`.
 

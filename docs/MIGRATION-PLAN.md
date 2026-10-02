@@ -155,10 +155,10 @@ A green validator/CI run is not browser/editorial acceptance.
 - Gallery/Artwork contact sheet/editing/ordering/dialog flows;
 - Journal Blog/Exhibitions including template switch, restore, ordering, Exhibition Gallery/Map/editor flow;
 - Custom/CV/Contact hierarchy and bulk/ordering flows;
-- Files search/upload/preview/reference behavior;
+- Storage search/upload/preview/reference/capacity/reclaim behavior;
 - General settings persistence;
 - Analytics degraded/real data behavior;
-- Storage/Activity and shared dialog behavior.
+- Activity and shared dialog behavior.
 
 ## 10. Pre-cutover gate
 

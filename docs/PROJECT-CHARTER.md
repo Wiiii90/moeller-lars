@@ -47,11 +47,10 @@ Canonical responsibilities:
 4. **Gallery / Artworks** — visual artwork workspace, metadata/media/publication/order/assignment.
 5. **Journals** — Blog/Exhibitions workspaces and settings.
 6. **Custom Pages** — safe structured composition including CV/Vita and reusable Contact.
-7. **Files** — canonical reusable MediaAsset library.
+7. **Storage** — canonical reusable MediaAsset library plus artist-facing whole-site allowance/usage across media, generated variants and logical persistent application data; not host-wide infrastructure or raw PostgreSQL physical footprint.
 8. **General** — site identity, contact/social/global legal/public settings; no infrastructure secrets.
 9. **Analytics** — privacy-conscious Matomo reporting plus clearly separate operational aggregates.
 10. **Activity** — durable admin/editorial history.
-11. **Storage** — artist-facing whole-site allowance/usage across media, generated variants and logical persistent application data; not host-wide infrastructure or raw PostgreSQL physical footprint.
 
 Persistent Preview / future logical Commit / Settings utilities may exist at shell level, but normal form persistence is independent of logical Commit/checkpoint concepts.
 
@@ -89,7 +88,7 @@ AdminRichText / Filament MarkdownEditor
   -> public HTML
 ```
 
-Canonical embedded Media Files image references use `media:<id>`. Do not create editor-specific parallel upload/image syntax or resurrect legacy Journal RichEditor/TipTap runtime behavior.
+Canonical embedded Storage media image references use `media:<id>`. Do not create editor-specific parallel upload/image syntax or resurrect legacy Journal RichEditor/TipTap runtime behavior.
 
 ## Media
 
@@ -98,7 +97,7 @@ Canonical embedded Media Files image references use `media:<id>`. Do not create 
 - `MediaReferenceQuery` protects/reports canonical references, including retained inactive Journal content;
 - `PublicMedia` determines current ordinary public eligibility;
 - protected preview does not create another asset type or publish draft content;
-- structured Journal Cover/Gallery uses Media Files ALT at runtime;
+- structured Journal Cover/Gallery uses Storage media ALT at runtime;
 - disabled Exhibition Gallery remains stored/referenced but is not publicly deliverable as Gallery media;
 - generated variants are rebuildable and never replace the original as authority.
 

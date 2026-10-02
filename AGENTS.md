@@ -28,7 +28,7 @@ Use the current artist-facing concepts:
 - Journal with Blog and Exhibitions templates;
 - Custom Page;
 - Navigation Node;
-- Files;
+- Storage;
 - reusable Contact component inside Custom Page content.
 
 Legacy names such as `CV`, `Vita`, persistence model/table names or old migration terms may remain as migration/data-model evidence. They are not permission to recreate obsolete admin IA or parallel runtime concepts.
@@ -327,7 +327,7 @@ AdminRichText / Filament MarkdownEditor
   -> public HTML
 ```
 
-Canonical embedded Media Files images use `media:<id>`. Do not resurrect TipTap/RichEditor, legacy `[[journal-image:...]]` runtime syntax, arbitrary external-image embeds or a second parser/editor.
+Canonical embedded Storage media images use `media:<id>`. Do not resurrect TipTap/RichEditor, legacy `[[journal-image:...]]` runtime syntax, arbitrary external-image embeds or a second parser/editor.
 
 ### Media
 

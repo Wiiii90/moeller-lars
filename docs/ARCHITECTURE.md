@@ -65,9 +65,9 @@ Canonical workspaces:
 - Gallery — visual Artwork workspace;
 - Journal — Blog or Exhibitions collection workspace;
 - Custom Page — structured component editor including CV/Contact composition;
-- Files — canonical reusable MediaAsset library;
+- Storage — canonical reusable MediaAsset library plus whole-site capacity/recovery workspace;
 - General — site identity/contact/social/legal settings;
-- Analytics, Activity and Storage — specialist insight/operations surfaces.
+- Analytics and Activity — specialist insight/history surfaces.
 
 Navigation-only nodes do not get fake editors. Persistence Resource/model names must not become artist-facing IA.
 
@@ -101,7 +101,7 @@ AdminRichText / Filament MarkdownEditor
   -> public HTML
 ```
 
-Canonical embedded Media Files images use:
+Canonical embedded Storage media images use:
 
 ```markdown
 ![](media:<id>)

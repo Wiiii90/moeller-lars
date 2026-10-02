@@ -83,7 +83,7 @@ The image viewer supports close/Escape, visible zoom, wheel/trackpad zoom, touch
 
 Canonical Rich Text public rendering uses Markdown through `SafeRichTextRenderer`.
 
-Embedded Media Files images use canonical `media:<id>` references resolved by central media rendering. Arbitrary external-image URLs and legacy Journal inline-token runtime syntax are not equivalent public formats.
+Embedded Storage media images use canonical `media:<id>` references resolved by central media rendering. Arbitrary external-image URLs and legacy Journal inline-token runtime syntax are not equivalent public formats.
 
 ## Custom Pages, CV and Contact
 
@@ -143,7 +143,7 @@ Only media valid for the requesting public consumer is exposed.
 - required variants must exist where required;
 - public routes do not expose arbitrary storage paths;
 - references remain authoritative when content moves/detaches/disables presentation/deletes;
-- being accepted into Files does not imply universal public-consumer support;
+- being accepted into Storage does not imply universal public-consumer support;
 - protected preview routes do not weaken ordinary public eligibility.
 
 Structured Journal Cover/Gallery runtime ALT uses canonical MediaAsset ALT. Legacy Journal usage overrides are not runtime public authority.

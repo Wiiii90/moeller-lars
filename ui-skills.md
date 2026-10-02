@@ -44,7 +44,7 @@ Do not interpret this as a requirement to add fake metrics or a fake toolbar to 
 
 ## 3. Page/action control group
 
-The canonical action-group geometry is the pattern used by Gallery/Files and should be reused by Home/Custom/Journal when applicable.
+The canonical action-group geometry is the pattern used by Gallery/Storage and should be reused by Home/Custom/Journal when applicable.
 
 Structure:
 
@@ -311,9 +311,9 @@ Position and Drag share the leading ordering region; Selection remains the trail
 
 For Exhibition identity, keep the secondary line concise, e.g. `Venue · City`; do not dump full street/country metadata into the collection row.
 
-## 13. Gallery and Media Files are accepted style references
+## 13. Gallery and Storage are accepted style references
 
-Gallery and Media Files / Files are currently browser/product accepted and are the primary style references for the admin where their geometry applies.
+Gallery and Storage are currently browser/product accepted and are the primary style references for the admin where their geometry applies.
 
 A worker changing another admin page must inspect their actual current Blade/CSS/shared-primitives at the exact working base instead of approximating them from prose.
 
@@ -330,7 +330,7 @@ Use them as authorities for applicable shared presentation dimensions such as:
 Their task surfaces remain distinct:
 
 - Gallery is a visual Artwork/contact-sheet workflow;
-- Media Files is a dense reusable media-library workflow.
+- Storage is a dense reusable media-library workflow.
 
 Do not turn Custom, Journal, Home, Pages or General into the wrong task model merely for consistency. Reuse the **accepted shell, controls and geometry**, then keep the task-specific surface appropriate to the page.
 
@@ -383,7 +383,7 @@ For shared presentation concerns, reuse the existing theme tokens and Blade prim
 - `x-admin.toolbar`;
 - `x-admin.empty-state`;
 - `admin-action` and other existing shared control classes;
-- accepted Gallery and Media Files implementations for concrete composition examples.
+- accepted Gallery and Storage implementations for concrete composition examples.
 
 Persistent bottom-add actions directly below tables/task surfaces use `x-admin.add-row`. Do not recreate their plus mark, typography, dimensions, spacing, hover or focus behavior in page-local markup/CSS.
 
@@ -407,7 +407,7 @@ If the theme or shared primitive cannot express a needed shared pattern, fix or 
 For visual/admin work:
 
 1. read `ui-skills.md`;
-2. inspect the exact accepted Gallery/Media Files reference code relevant to the requested geometry;
+2. inspect the exact accepted Gallery/Storage reference code relevant to the requested geometry;
 3. inspect existing shared Blade primitives and theme tokens;
 4. compose the target page from those authorities;
 5. add feature-local CSS only for task-specific behavior that remains;
@@ -471,9 +471,9 @@ Canonical embedded image reference:
 ![](media:123)
 ```
 
-Media insertion belongs with the editor controls/action area and uses the lazy Media Files picker. Do not add a second free-standing media-upload subsystem, arbitrary external image URLs, TipTap/RichEditor or a parallel parser.
+Media insertion belongs with the editor controls/action area and uses the lazy Storage picker. Do not add a second free-standing media-upload subsystem, arbitrary external image URLs, TipTap/RichEditor or a parallel parser.
 
-Canonical asset ALT should be reused unless a product surface explicitly supports a true occurrence-level override. Journal structured Cover/Gallery currently use Media Files ALT exclusively at runtime.
+Canonical asset ALT should be reused unless a product surface explicitly supports a true occurrence-level override. Journal structured Cover/Gallery currently use Storage ALT exclusively at runtime.
 
 ## 18. Media picker behavior
 
@@ -568,7 +568,7 @@ Static source review, passing focused tests and a running container do not estab
 
 The user's review of the current built candidate is authoritative for presentation. If the user rejects a layout, width, cards/panels, metrics treatment, toolbar, table geometry, typography or wording, that rejected presentation is not a preservation requirement merely because it already exists, passed a source review or is asserted by a temporary test.
 
-When the user names Gallery, Media Files or another accepted current page as a visual reference, inspect the exact reference implementation and reuse its primitives/tokens for the dimensions named. “Keep it consistent” without reading the reference code is not sufficient.
+When the user names Gallery, Storage or another accepted current page as a visual reference, inspect the exact reference implementation and reuse its primitives/tokens for the dimensions named. “Keep it consistent” without reading the reference code is not sufficient.
 
 If a page has survived repeated visual repair passes while retaining the same rejected structure, stop layering patches onto it. Preserve valid domain behavior, persistence, safety guards and central technologies, but rebuild the presentation layer from the accepted reference/shared grammar when necessary.
 
@@ -592,7 +592,7 @@ For every admin slice, inspect at least:
 - filtered reorder behavior;
 - obvious first-click/navigation latency;
 - whether an existing shared component was bypassed by a new local structure;
-- whether the page matches the accepted Gallery/Media Files reference geometry where applicable;
+- whether the page matches the accepted Gallery/Storage reference geometry where applicable;
 - whether page-local CSS duplicates an existing theme token or primitive.
 
 Browser acceptance is allowed to reject a technically correct implementation for poor/inconsistent UI. That feedback becomes the next source requirement.

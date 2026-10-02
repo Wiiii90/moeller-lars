@@ -34,9 +34,9 @@ The admin panel also registers the adapter globally. This protects existing sche
 
 These are intentionally specialized and remain canonical:
 
-- `MediaAssetSelect` for reusable Media Files selection;
+- `MediaAssetSelect` for reusable Storage media selection;
 - `ArtworkMaterialSelect` for material presets and creation;
-- `AdminRichText` for rich text plus canonical Media Files insertion;
+- `AdminRichText` for rich text plus canonical Storage media insertion;
 - `AdminColorControl` for the General appearance color workflow.
 
 Do not create alternative media pickers, rich-text editors, material selectors or color controls for one page.

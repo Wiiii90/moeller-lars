@@ -6,7 +6,7 @@ This document defines the durable performance contract for the authenticated art
 
 For representative data on Validation, ordinary warmed navigation/actions should remain comfortably interactive.
 
-Target server response time for normal warmed Dashboard, Pages, Artwork/Gallery, Files, cached Analytics, cached Storage and ordinary Livewire actions:
+Target server response time for normal warmed Dashboard, Pages, Artwork/Gallery, Storage, cached Analytics and ordinary Livewire actions:
 
 - **target:** <= 500 ms;
 - repeated warmed responses >= 1 s require investigation;
@@ -62,7 +62,7 @@ The typed Site Node tree is projected once from required SiteSection data/eager 
 - explicit refresh and upload admission may perform authoritative measurement;
 - upload admission never trusts stale display cache for quota enforcement.
 
-## Media / Files
+## Storage media library
 
 - list/grid views are bounded/paginated;
 - thumbnail/usage/reference rendering must not create N+1 fanout;
@@ -73,7 +73,7 @@ The typed Site Node tree is projected once from required SiteSection data/eager 
 
 These are source-level areas that warrant measurement when browser review reports slowness; they are not blanket instructions to refactor them without evidence.
 
-1. **MediaReferenceCatalog content-reference index** — reference display can build a request-local global index by scanning Blog/Exhibition/Custom/CV/Home Rich Text/direct content. It is cached per request, but broad scanning may still make normal Files loads expensive.
+1. **MediaReferenceCatalog content-reference index** — reference display can build a request-local global index by scanning Blog/Exhibition/Custom/CV/Home Rich Text/direct content. It is cached per request, but broad scanning may still make normal Storage loads expensive.
 2. **Gallery primary media option preload** — any editor path that preloads/plucks hundreds of MediaAssets instead of using lazy `MediaAssetSelect` is a real candidate for first-open latency.
 3. **Operational metrics middleware** — synchronous daily operational-metric UPSERT work on normal requests/Livewire actions is real request tax; observability must not simply be deleted, but non-critical telemetry should remain bounded/deferred where safe.
 
@@ -117,7 +117,7 @@ For a performance-sensitive exact candidate:
 1. confirm release identity/health;
 2. use representative editorial data;
 3. warm the admin once;
-4. measure repeated Dashboard, Pages, Gallery/Artwork, Files, Analytics, Storage and representative Livewire actions;
+4. measure repeated Dashboard, Pages, Gallery/Artwork, Storage, Analytics and representative Livewire actions;
 5. record browser wall-clock and server/proxy timing separately;
 6. separate cached Analytics from intentional live API miss;
 7. separate cached Storage from authoritative refresh/admission;
