@@ -733,7 +733,7 @@ final class AdminActivityFeed
             'artwork' => ArtworkResource::getUrl('edit', ['record' => $entityId]),
             'artwork_category' => ArtworkResource::getUrl('gallery', ['gallery' => $entityId]),
             'site_section' => SitePages::getUrl(),
-            'media_asset' => MediaAssetResource::getUrl('view', ['record' => $entityId]),
+            'media_asset' => MediaAssetResource::getUrl('index'),
             'cv_entry' => SitePages::getUrl(),
             'exhibition' => ExhibitionResource::getUrl('edit', ['record' => $entityId]),
             'blog_post' => BlogPostResource::getUrl('edit', ['record' => $entityId]),

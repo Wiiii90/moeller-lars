@@ -88,8 +88,8 @@ final class PublicationSnapshot
         'artwork_categories' => ['area' => 'Gallery', 'entity' => 'Galleries'],
         'artworks' => ['area' => 'Gallery', 'entity' => 'Artworks'],
         'artwork_media' => ['area' => 'Gallery', 'entity' => 'Artwork media'],
-        'media_assets' => ['area' => 'Files', 'entity' => 'Media files'],
-        'media_variants' => ['area' => 'Files', 'entity' => 'Media variants'],
+        'media_assets' => ['area' => 'Storage', 'entity' => 'Media files'],
+        'media_variants' => ['area' => 'Storage', 'entity' => 'Media variants'],
     ];
 
     public static function tracksAuditEntityType(string $entityType): bool

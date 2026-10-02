@@ -99,10 +99,10 @@ class GalleryImagesRelationManager extends RelationManager
                 ),
             ])
             ->recordActions([
-                Action::make('preview')
-                    ->label('Inspect')
-                    ->icon(AdminIcon::Inspect)
-                    ->url(fn (ArtworkMedia $record): string => $this->viewerUrl($record))
+                Action::make('storage')
+                    ->label('Open Storage')
+                    ->icon(AdminIcon::Storage)
+                    ->url(MediaAssetResource::getUrl('index'))
                     ->visible(fn (ArtworkMedia $record): bool => $this->asset($record)?->getAttribute('state') === 'available'),
                 Action::make('moveUp')
                     ->label('Move up')
@@ -184,15 +184,6 @@ class GalleryImagesRelationManager extends RelationManager
         );
 
         return $variant instanceof MediaVariant ? route('admin.media.variant', $variant) : null;
-    }
-
-    private function viewerUrl(ArtworkMedia $usage): string
-    {
-        $asset = $this->asset($usage);
-
-        return $asset instanceof MediaAsset
-            ? MediaAssetResource::getUrl('view', ['record' => $asset->getKey(), 'artwork' => $this->getOwnerRecord()->getKey()])
-            : MediaAssetResource::getUrl('index');
     }
 
     private function dimensions(ArtworkMedia $usage): string

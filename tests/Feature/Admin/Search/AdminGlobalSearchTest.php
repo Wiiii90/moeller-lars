@@ -38,6 +38,6 @@ it('returns real resource records through the global admin search provider', fun
 
     expect(ArtworkResource::getGlobalSearchResults('Needle')->count())->toBeGreaterThan(0)
         ->and(MediaAssetResource::getGlobalSearchResults('Needle')->count())->toBeGreaterThan(0)
-        ->and(MediaAssetResource::getGlobalSearchResultUrl($media))->toContain('/admin/storage/'.$media->id)
+        ->and(MediaAssetResource::getGlobalSearchResultUrl($media))->toBe(MediaAssetResource::getUrl('index'))
         ->and(ArtworkResource::getGlobalSearchResultUrl($artwork))->not->toBeNull();
 });
