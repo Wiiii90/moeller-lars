@@ -28,7 +28,9 @@ it('presents upload capacity and distribution in the storage workspace', functio
         ->and(strpos($html, 'admin-storage__capacity-group admin-visual-stage__pane'))->toBeLessThan(strpos($html, 'admin-storage__distribution admin-visual-stage__pane'))
         ->and(strpos($html, 'admin-storage__capacity-actions'))->toBeLessThan(strpos($html, 'admin-storage__distribution admin-visual-stage__pane'))
         ->and($html)->toContain('Refresh storage measurement')
-        ->and($html)->toContain('Free storage now');
+        ->and($html)->toContain('Free storage')
+        ->and($html)->toContain('Frees quota by clearing Undo history, old restore snapshots and rebuildable thumbnails.')
+        ->and($html)->not->toContain('About freeing storage');
 });
 
 it('exposes the canonical storage actions', function (): void {

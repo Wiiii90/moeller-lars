@@ -626,7 +626,7 @@ Rules:
 - vertical divider top/bottom breathing uses the shared divider inset instead of page-local pixel tuning;
 - a page may use a different internal column layout while keeping the same outer height and follow-up rhythm;
 - variable Stage content that can exceed its pane must scroll or clip inside that pane; it must not increase the shared Stage height, append a pseudo-section below the Stage, or silently discard meaningful rows merely to fit;
-- pane actions/help may use a reserved action rail while variable content remains bounded independently. Storage keeps Media Distribution scrollable inside its own pane and places Refresh / `Free storage now` beneath the Capacity visual;
+- pane actions/help may use a reserved action rail while variable content remains bounded independently. Storage keeps Media Distribution scrollable inside its own pane and places Refresh / `Free storage` beneath the Capacity visual;
 - schema-backed Filament pages use the shared `admin-visual-stage-block` / `admin-visual-stage-followup` mechanism so framework grid gaps do not shift their post-stage separator;
 - General may own its internal desktop/mobile matrix divider, but it does not own a separate outer stage height or a compensating post-stage margin.
 

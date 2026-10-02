@@ -21,7 +21,7 @@ final class SiteStorageReclaimControl extends Component implements HasActions, H
     public function freeStorageAction(): Action
     {
         $action = Action::make('freeStorage')
-            ->label('Free storage now')
+            ->label('Free storage')
             ->color('danger')
             ->action(function (): void {
                 $result = app(SiteStorageReclaimService::class)->reclaim();

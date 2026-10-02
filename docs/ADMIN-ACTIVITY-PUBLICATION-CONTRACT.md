@@ -133,10 +133,10 @@ Commit metadata is permanent factual history.
 
 - PostgreSQL rejects deletion of `publication_checkpoints` at the database boundary.
 - Reverting/restoring creates later working state and, once explicitly committed, a new Commit. Existing commits remain in the chain.
-- The explicit Storage action `Free storage now` may relinquish **restore payloads**, not Commit metadata. Released checkpoints remain visible as history with `snapshot_available=false` and cannot be offered as restorable versions.
+- The explicit Storage action `Free storage` may relinquish **restore payloads**, not Commit metadata. Released checkpoints remain visible as history with `snapshot_available=false` and cannot be offered as restorable versions.
 - The current LIVE checkpoint and the checkpoint referenced by `publication_working_context.source_publication_checkpoint_id` are protected from that reclaim action.
 
-Undo receipts are intentionally bounded recovery data rather than permanent history: actor-scoped receipts expire after 365 days, retain at most 5,000 receipts per user and are capped at 256 MiB logical payload budget per user. `Free storage now` may clear them immediately. Committing an Activity closes individual Undo for that Activity; the append-only audit evidence remains available through the Commit's forensic details.
+Undo receipts are intentionally bounded recovery data rather than permanent history: actor-scoped receipts expire after 365 days, retain at most 5,000 receipts per user and are capped at 256 MiB logical payload budget per user. `Free storage` may clear them immediately. Committing an Activity closes individual Undo for that Activity; the append-only audit evidence remains available through the Commit's forensic details.
 
 Shared `history_payloads` are garbage-collected only after neither a Publication manifest nor an Undo receipt references them. This lets recovery roots be released without duplicating or prematurely deleting payload data still required elsewhere.
 
@@ -232,7 +232,7 @@ Physical Media files may be deleted only when none of these still require the as
 - any retained restorable publication version;
 - canonical current media references.
 
-`PublicationMediaCleanupService` checks retained logical `publication_version_rows` before physical deletion. This ensures a retained historical version cannot remain formally restorable while its binary assets have already disappeared. When `Free storage now` releases an older snapshot root, cleanup may finally remove media that has no Working/LIVE/current-reference or other retained recovery dependency.
+`PublicationMediaCleanupService` checks retained logical `publication_version_rows` before physical deletion. This ensures a retained historical version cannot remain formally restorable while its binary assets have already disappeared. When `Free storage` releases an older snapshot root, cleanup may finally remove media that has no Working/LIVE/current-reference or other retained recovery dependency.
 
 ## Activity integration for publication controls
 

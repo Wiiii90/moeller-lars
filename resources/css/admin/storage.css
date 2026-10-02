@@ -109,9 +109,6 @@
     gap: .3rem;
 }
 
-.admin-storage__capacity-actions .admin-help {
-    flex: 0 0 auto;
-}
 
 /* Storage is one exact Stage triptych: Upload | Capacity | Distribution.
  * Each direct pane owns only the same one-cell inset used by the metric row. */
