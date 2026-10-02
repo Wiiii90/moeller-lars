@@ -2,7 +2,7 @@
 
 Admin dialogs are native Filament Action modals with one shared presentation and lifecycle contract. The implementation lives in `App\Filament\Support\Dialogs\AdminDialog` and `resources/css/admin/dialog-contract.css`.
 
-Do not create page-local modal families, custom close behavior or footer button systems.
+Do not create page-local modal families, custom close behavior or footer button systems. Do not use Livewire `wire:confirm` or browser-native confirmation prompts in the admin; confirmations go through `AdminDialog::confirm()`.
 
 ## Placement and naming
 

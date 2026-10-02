@@ -153,8 +153,7 @@
                 @if ($section['can_delete'])
                     <x-admin.row-action
                         :action="\App\Filament\Support\AdminRowAction::Delete"
-                        wire:click="deleteSection({{ $section['id'] }})"
-                        wire:confirm="Delete this page? Page-specific content, child pages, publication and navigation safety rules still apply."
+                        wire:click="mountAction('deletePage', { section: {{ $section['id'] }} })"
                     />
                 @else
                     <span class="admin-pages__action-placeholder" aria-hidden="true"></span>

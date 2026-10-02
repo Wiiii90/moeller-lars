@@ -93,7 +93,7 @@
                             <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
                                 <button class="admin-action" type="button" role="menuitem" wire:click="bulkPublish" @disabled($selectedCount === 0)>Publish selected</button>
                                 <button class="admin-action" type="button" role="menuitem" wire:click="bulkUnpublish" @disabled($selectedCount === 0)>Unpublish selected</button>
-                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="bulkDelete" wire:confirm="Delete the selected pages that satisfy their safety rules?" @disabled($selectedCount === 0)>Delete selected</button>
+                                <button class="admin-action is-danger" type="button" role="menuitem" wire:click="mountAction('deleteSelectedPages')" x-on:click="open = false" @disabled($selectedCount === 0)>Delete selected</button>
                             </div>
                         </div>
                     </div>

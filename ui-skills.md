@@ -459,7 +459,7 @@ Required behavior:
 - responsive sizing;
 - originating workspace state retained after close/save.
 
-Do not fix one broken dialog by creating a page-local fake modal.
+Do not fix one broken dialog by creating a page-local fake modal. Do not use Livewire `wire:confirm` or browser-native confirm prompts for admin actions; route confirmations through `AdminDialog::confirm()`.
 
 Large editorial dialogs should order content according to the actual editorial task, not persistence schema order.
 

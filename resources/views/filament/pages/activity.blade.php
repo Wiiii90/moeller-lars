@@ -263,21 +263,25 @@
                     <div class="activity-publication__actions">
                         <x-admin.toolbar>
                             @if ($publicationContext['staged'] > 0)
-                                <button class="admin-action" type="button" wire:click="openPublicationReview">Review changes</button>
-                                <button
-                                    class="admin-action"
-                                    type="button"
-                                    wire:click="resetStagedChanges"
-                                    wire:confirm="Reset all staged changes? The working state will be restored exactly to the current LIVE version. Activity history is preserved."
-                                >Reset</button>
+                                <button class="admin-action" type="button" wire:click="openPublicationReview">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Details->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Review changes</span>
+                                </button>
+                                <button class="admin-action" type="button" wire:click="mountAction('resetStagedChanges')">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Reset</span>
+                                </button>
                             @endif
                             <button
-                                class="admin-action is-primary"
+                                class="admin-action"
                                 type="button"
                                 x-data
                                 x-on:click="$dispatch('publication-commit')"
                                 @disabled($publicationContext['staged'] < 1 || $publicationContext['preflight']['status'] !== 'ready')
-                            >Commit</button>
+                            >
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Commit->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Commit</span>
+                            </button>
                         </x-admin.toolbar>
                     </div>
                 </aside>
@@ -408,8 +412,7 @@
                                             class="admin-action"
                                             type="button"
                                             role="menuitem"
-                                            wire:click="undoSelectedActivity"
-                                            wire:confirm="Undo all selected changes that are still safely reversible? Newer selected changes are undone first. Activity history remains available."
+                                            wire:click="mountAction('undoSelectedActivity')"
                                             x-on:click="open = false"
                                             @disabled($selectedActivityUndoCount === 0)
                                         >Undo selected</button>
@@ -418,8 +421,7 @@
                                             class="admin-action"
                                             type="button"
                                             role="menuitem"
-                                            wire:click="restoreSelectedCommit"
-                                            wire:confirm="Restore the selected version to the working state? This replaces all current staged work. The LIVE site will not change until you commit."
+                                            wire:click="mountAction('restoreSelectedCommit')"
                                             x-on:click="open = false"
                                             @disabled(! $selectedCommitCanRestore)
                                         >Restore selected</button>
@@ -427,8 +429,7 @@
                                             class="admin-action"
                                             type="button"
                                             role="menuitem"
-                                            wire:click="revertSelectedCommit"
-                                            wire:confirm="Revert the selected LIVE commit? Its parent version will be loaded into the working state for review. Nothing is published until you commit."
+                                            wire:click="mountAction('revertSelectedCommit')"
                                             x-on:click="open = false"
                                             @disabled(! $selectedCommitCanRevert)
                                         >Revert selected</button>
@@ -520,8 +521,7 @@
                                             <button
                                                 class="admin-action"
                                                 type="button"
-                                                wire:click="undo({{ $event['undo']['id'] }})"
-                                                wire:confirm="{{ $event['undo']['confirmation'] }}"
+                                                wire:click="mountAction('undoActivity', { id: {{ $event['id'] }} })"
                                             >
                                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Undo->mini()" class="admin-action__icon" />
                                                 <span class="admin-action__label">Undo</span>
@@ -646,16 +646,14 @@
                                             <button
                                                 class="admin-action"
                                                 type="button"
-                                                wire:click="restoreVersion({{ $commit['id'] }})"
-                                                wire:confirm="Restore version {{ $commit['short_hash'] }} to the working state? This replaces all current staged work. The LIVE site will not change until you commit."
+                                                wire:click="mountAction('restoreVersion', { id: {{ $commit['id'] }} })"
                                             >Restore</button>
                                         @endif
                                         @if ($commit['can_revert'])
                                             <button
                                                 class="admin-action"
                                                 type="button"
-                                                wire:click="revertCurrentCommit"
-                                                wire:confirm="Revert the current LIVE commit {{ $commit['short_hash'] }}? Its parent version will be loaded into the working state for review. Nothing is published until you commit."
+                                                wire:click="mountAction('revertCurrentCommit', { id: {{ $commit['id'] }} })"
                                             >Revert</button>
                                         @endif
                                     </x-admin.toolbar>

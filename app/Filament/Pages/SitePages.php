@@ -343,8 +343,42 @@ final class SitePages extends Page
         );
     }
 
-    public function deleteSection(int $sectionId): void
+    public function deletePageAction(): Action
     {
+        return AdminDialog::confirm(
+            Action::make('deletePage')
+                ->label('Delete')
+                ->action(function (array $arguments): void {
+                    $this->deleteSection((int) ($arguments['section'] ?? 0));
+                }),
+            heading: 'Delete this page?',
+            description: 'The page is removed only when publication, navigation, child-page and content safety rules allow it.',
+            submitLabel: 'Delete',
+            danger: true,
+        );
+    }
+
+    public function deleteSelectedPagesAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('deleteSelectedPages')
+                ->label('Delete selected')
+                ->action(function (): void {
+                    $this->bulkDelete();
+                }),
+            heading: 'Delete selected pages?',
+            description: 'Only selected pages that satisfy the current safety rules are removed. Blocked pages are kept.',
+            submitLabel: 'Delete',
+            danger: true,
+        );
+    }
+
+    private function deleteSection(int $sectionId): void
+    {
+        if ($sectionId <= 0) {
+            return;
+        }
+
         /** @var SiteSection $section */
         $section = SiteSection::query()->findOrFail($sectionId);
         if (! $section->nodeType()->canDelete()) {
@@ -374,7 +408,7 @@ final class SitePages extends Page
         $this->bulkChangeState('hidden');
     }
 
-    public function bulkDelete(): void
+    private function bulkDelete(): void
     {
         $sections = $this->selectedSections()
             ->sortByDesc(static fn (SiteSection $section): int => $section->getAttribute('parent_id') === null ? 0 : 1)

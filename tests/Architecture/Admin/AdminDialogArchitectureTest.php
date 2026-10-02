@@ -3,10 +3,12 @@
 it('routes migrated admin dialogs through the shared dialog adapter', function (): void {
     $root = dirname(__DIR__, 3);
     $files = [
+        'app/Filament/Pages/Activity.php',
         'app/Filament/Pages/Dashboard.php',
         'app/Filament/Pages/General.php',
         'app/Filament/Pages/HomePresentation.php',
         'app/Filament/Pages/JournalWorkspace.php',
+        'app/Filament/Pages/SitePages.php',
         'app/Filament/Resources/MediaAssets/Pages/ListMediaAssets.php',
         'app/Livewire/Admin/SiteStorageReclaimControl.php',
         'app/Filament/Pages/Concerns/ManagesSitePageCreateDialog.php',
@@ -136,6 +138,37 @@ it('does not reintroduce Filament confirmation mode in admin application code', 
 
             $source = file_get_contents($file->getPathname());
             if ($source !== false && str_contains($source, '->requiresConfirmation(')) {
+                $violations[] = str_replace($root.DIRECTORY_SEPARATOR, '', $file->getPathname());
+            }
+        }
+    }
+
+    sort($violations);
+
+    expect($violations)->toBe([]);
+});
+
+
+it('does not use browser-native Livewire confirmation prompts in admin views', function (): void {
+    $root = dirname(__DIR__, 3);
+    $scanRoots = [
+        $root.'/resources/views/filament',
+        $root.'/resources/views/livewire/admin',
+    ];
+    $violations = [];
+
+    foreach ($scanRoots as $scanRoot) {
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($scanRoot, FilesystemIterator::SKIP_DOTS),
+        );
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || ! str_ends_with($file->getFilename(), '.blade.php')) {
+                continue;
+            }
+
+            $source = file_get_contents($file->getPathname());
+            if ($source !== false && str_contains($source, 'wire:confirm=')) {
                 $violations[] = str_replace($root.DIRECTORY_SEPARATOR, '', $file->getPathname());
             }
         }

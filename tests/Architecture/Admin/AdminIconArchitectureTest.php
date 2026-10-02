@@ -37,7 +37,11 @@ it('keeps shared admin action icons on the semantic icon catalog', function (): 
         ->toContain('AdminIcon::DialogSubmit')
         ->toContain('AdminIcon::Delete');
 
-    expect($activityView)->toContain('AdminIcon::Undo->mini()');
+    expect($activityView)
+        ->toContain('AdminIcon::Details->mini()')
+        ->toContain('AdminIcon::Undo->mini()')
+        ->toContain('AdminIcon::Commit->mini()')
+        ->not->toContain('class="admin-action is-primary"');
 });
 
 it('does not hard code heroicons outside the shared admin icon catalog', function (): void {

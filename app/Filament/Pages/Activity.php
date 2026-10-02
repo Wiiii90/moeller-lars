@@ -144,7 +144,7 @@ final class Activity extends Page
         $this->openActivityDetails($id);
     }
 
-    public function undoSelectedActivity(): void
+    private function performUndoSelectedActivity(): void
     {
         $eventIds = $this->normalizeSelectionIds($this->selectedActivityIds);
         rsort($eventIds, SORT_NUMERIC);
@@ -192,7 +192,7 @@ final class Activity extends Page
         );
     }
 
-    public function restoreSelectedCommit(): void
+    private function performRestoreSelectedCommit(): void
     {
         $checkpointId = $this->singleSelectedId($this->selectedCommitIds);
         if ($checkpointId === null) {
@@ -208,11 +208,11 @@ final class Activity extends Page
             return;
         }
 
-        $this->restoreVersion($checkpointId);
+        $this->performRestoreVersion($checkpointId);
         $this->selectedCommitIds = [];
     }
 
-    public function revertSelectedCommit(): void
+    private function performRevertSelectedCommit(): void
     {
         $checkpointId = $this->singleSelectedId($this->selectedCommitIds);
         if ($checkpointId === null) {
@@ -228,7 +228,7 @@ final class Activity extends Page
             return;
         }
 
-        $this->revertCurrentCommit();
+        $this->performRevertCurrentCommit();
         $this->selectedCommitIds = [];
     }
 
@@ -242,7 +242,7 @@ final class Activity extends Page
         $this->workspaceSnapshot = $this->buildWorkspaceSnapshot();
     }
 
-    public function undo(int $receiptId): void
+    private function performUndo(int $receiptId): void
     {
         try {
             $result = app(AdminUndoService::class)->undo($receiptId);
@@ -267,7 +267,7 @@ final class Activity extends Page
         );
     }
 
-    public function resetStagedChanges(): void
+    private function performResetStagedChanges(): void
     {
         $actor = app(AdminAuditService::class)->requireActor();
 
@@ -290,7 +290,7 @@ final class Activity extends Page
         );
     }
 
-    public function restoreVersion(int $checkpointId): void
+    private function performRestoreVersion(int $checkpointId): void
     {
         /** @var PublicationCheckpoint|null $checkpoint */
         $checkpoint = PublicationCheckpoint::query()->find($checkpointId);
@@ -316,7 +316,7 @@ final class Activity extends Page
         );
     }
 
-    public function revertCurrentCommit(): void
+    private function performRevertCurrentCommit(): void
     {
         try {
             $result = app(PublicationVersionService::class)->stageRevertOfCurrent(
@@ -354,6 +354,142 @@ final class Activity extends Page
         abort_unless($this->commitDetails(['id' => $checkpointId]) !== null, 404);
 
         $this->mountAction('commitDetails', ['id' => $checkpointId]);
+    }
+
+    public function resetStagedChangesAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('resetStagedChanges')
+                ->label('Reset')
+                ->action(function (): void {
+                    $this->performResetStagedChanges();
+                }),
+            heading: 'Reset staged changes?',
+            description: 'The working state will be restored exactly to the current LIVE version. Activity history is preserved.',
+            submitLabel: 'Reset',
+            icon: AdminIcon::Undo,
+        );
+    }
+
+    public function undoSelectedActivityAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('undoSelectedActivity')
+                ->label('Undo selected')
+                ->action(function (): void {
+                    $this->performUndoSelectedActivity();
+                }),
+            heading: 'Undo selected changes?',
+            description: 'Newer selected changes are undone first. Changes without a safe Undo receipt are skipped. Activity history remains available.',
+            submitLabel: 'Undo',
+            icon: AdminIcon::Undo,
+        );
+    }
+
+    public function restoreSelectedCommitAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('restoreSelectedCommit')
+                ->label('Restore selected')
+                ->action(function (): void {
+                    $this->performRestoreSelectedCommit();
+                }),
+            heading: 'Restore selected version?',
+            description: 'The selected version will replace all current staged work. The LIVE site will not change until you commit.',
+            submitLabel: 'Restore',
+            icon: AdminIcon::Undo,
+        );
+    }
+
+    public function revertSelectedCommitAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('revertSelectedCommit')
+                ->label('Revert selected')
+                ->action(function (): void {
+                    $this->performRevertSelectedCommit();
+                }),
+            heading: 'Revert selected LIVE commit?',
+            description: 'Its parent version will replace all current staged work for review. Nothing is published until you commit.',
+            submitLabel: 'Revert',
+            icon: AdminIcon::Undo,
+        );
+    }
+
+    public function undoActivityAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('undoActivity')
+                ->label('Undo')
+                ->action(function (array $arguments): void {
+                    $event = $this->activityDetails($arguments);
+                    $receiptId = is_array($event) && is_array($event['undo'] ?? null) && is_numeric($event['undo']['id'] ?? null)
+                        ? (int) $event['undo']['id']
+                        : 0;
+
+                    if ($receiptId <= 0) {
+                        $this->selectionWarning('This change can no longer be undone safely.');
+
+                        return;
+                    }
+
+                    $this->performUndo($receiptId);
+                }),
+            heading: 'Undo change?',
+            description: function (array $arguments): string {
+                $event = $this->activityDetails($arguments);
+
+                return is_array($event) && is_array($event['undo'] ?? null)
+                    ? (string) ($event['undo']['confirmation'] ?? 'Undo this change? Activity history remains available.')
+                    : 'Undo this change? Activity history remains available.';
+            },
+            submitLabel: 'Undo',
+            icon: AdminIcon::Undo,
+        );
+    }
+
+    public function restoreVersionAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('restoreVersion')
+                ->label('Restore')
+                ->action(function (array $arguments): void {
+                    $commit = $this->commitDetails($arguments);
+                    if (! is_array($commit) || ($commit['can_restore'] ?? false) !== true) {
+                        $this->selectionWarning('This commit is not available for restore.');
+
+                        return;
+                    }
+
+                    $this->performRestoreVersion((int) $commit['id']);
+                }),
+            heading: fn (array $arguments): string => 'Restore version '.($this->commitDetails($arguments)['short_hash'] ?? '').'?',
+            description: 'This replaces all current staged work with the selected version. The LIVE site will not change until you commit.',
+            submitLabel: 'Restore',
+            icon: AdminIcon::Undo,
+        );
+    }
+
+    public function revertCurrentCommitAction(): Action
+    {
+        return AdminDialog::confirm(
+            Action::make('revertCurrentCommit')
+                ->label('Revert')
+                ->action(function (array $arguments): void {
+                    $commit = $this->commitDetails($arguments);
+                    if (! is_array($commit) || ($commit['can_revert'] ?? false) !== true) {
+                        $this->selectionWarning('Only the current LIVE commit with a restorable parent can be reverted.');
+
+                        return;
+                    }
+
+                    $this->performRevertCurrentCommit();
+                }),
+            heading: fn (array $arguments): string => 'Revert LIVE commit '.($this->commitDetails($arguments)['short_hash'] ?? '').'?',
+            description: 'Its parent version will replace all current staged work for review. Nothing is published until you commit.',
+            submitLabel: 'Revert',
+            icon: AdminIcon::Undo,
+        );
     }
 
     public function activityDetailsAction(): Action
@@ -847,17 +983,17 @@ final class Activity extends Page
             $actions[] = AdminDialog::confirm(
                 Action::make('undoActivityEvent')
                     ->label('Undo')
-                    ->icon(AdminIcon::Refresh->value)
+                    ->icon(AdminIcon::Undo->value)
                     ->iconButton()
                     ->color('gray')
                     ->action(function () use ($receiptId): void {
-                        $this->undo($receiptId);
+                        $this->performUndo($receiptId);
                     }),
                 heading: 'Undo change?',
                 description: (string) $event['undo']['confirmation'],
                 submitLabel: 'Undo',
                 danger: false,
-                icon: AdminIcon::Refresh,
+                icon: AdminIcon::Undo,
             );
         }
 

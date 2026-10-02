@@ -8,6 +8,7 @@ it('renders editorial row actions through one semantic admin primitive', functio
     $customPage = file_get_contents($root.'/resources/views/filament/pages/partials/custom-page-workspace-sequence.blade.php');
     $customPageCss = file_get_contents($root.'/resources/css/admin/custom-page.css');
     $pages = file_get_contents($root.'/resources/views/filament/pages/partials/site-section-row.blade.php');
+    $pagesView = file_get_contents($root.'/resources/views/filament/pages/site-pages.blade.php');
     $dashboard = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed-row.blade.php');
 
     expect($catalog)
@@ -86,4 +87,8 @@ it('renders editorial row actions through one semantic admin primitive', functio
         ->toContain(':disabled="! $reorderEnabled || ! $section[\'can_move_down\']"')
         ->not->toContain('@disabled(! $reorderEnabled')
         ->not->toContain('admin-action--with-icon');
+
+    expect($pagesView)
+        ->toContain("mountAction('deleteSelectedPages')")
+        ->not->toContain('wire:confirm=');
 });
