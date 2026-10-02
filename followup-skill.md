@@ -22,6 +22,27 @@ The next chat must be able to continue the work without asking the user to recon
 
 A good follow-up prompt tells the next orchestrator **what to do next**, not merely what happened before.
 
+### Fresh-chat access rule
+
+A continuation prompt must not turn one chat's local execution environment into a hard prerequisite for the next chat.
+
+For this repository, identify the project primarily by repository and branch:
+
+- repository: `Wiiii90/moeller-lars`;
+- integration branch: `dev`;
+- canonical local checkout, when available: `P:\moeller-lars`.
+
+The local Windows checkout is useful context, but a fresh chat may not have that filesystem mounted. Therefore:
+
+- tell the next chat to use the available repository/GitHub connector as the primary fallback when the local checkout is unavailable;
+- never instruct it to abort merely because `P:\moeller-lars` cannot be read;
+- before claiming that repository access is unavailable, it must first check the repository tools/connectors actually available in that chat;
+- only report an access blocker when neither the required repository source nor another explicitly required environment is available;
+- do not require cloning, worktrees, sibling copies or invented local paths to compensate for an unavailable checkout;
+- distinguish source work, which can normally proceed through repository access, from local runtime/browser work, which genuinely requires the local preview environment.
+
+When the continuation's immediate task is source-only implementation on `dev`, say so explicitly. Do not make local preview availability a prerequisite unless that task actually requires browser/runtime verification.
+
 ## 2. Before writing the prompt
 
 Read/update the durable repository documentation first when the current chat discovered reusable rules.
@@ -55,8 +76,9 @@ Examples:
 
 Include:
 
-- repository;
-- canonical local path;
+- repository and branch first, because those are portable across chats;
+- exact current head SHA;
+- canonical local path only as an available local-workspace fact, not as proof that the next chat can access it;
 - protected integration/main constraints;
 - current combined branch;
 - exact current head SHA;
@@ -251,8 +273,10 @@ Avoid:
 When the user asks for a follow-up prompt, normally deliver:
 
 1. a short statement of any docs/state updates completed first;
-2. any one-time local `git pull --ff-only` command needed to obtain those docs;
+2. a local `git pull --ff-only` command only when the next chat/user actually needs the local checkout; do not make that command a prerequisite for repository-only work;
 3. the **entire follow-up prompt as one contiguous fenced code block**.
+
+The prompt should start with the mission and portable repository identity, then state how to continue if the local checkout is unavailable. Do not front-load local path assumptions before the next chat has had a chance to use its repository connector.
 
 Do not split the prompt into multiple code blocks that the user has to assemble.
 
