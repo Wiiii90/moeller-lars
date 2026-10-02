@@ -49,6 +49,8 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
         ->toContain('AdminDialogSize $size = AdminDialogSize::Large')
         ->toContain('$size === AdminDialogSize::Small ? AdminDialogSize::Small : AdminDialogSize::Large')
         ->toContain('self::base($action, AdminDialogType::Confirm, AdminDialogSize::Small)')
+        ->toContain('->modalAlignment(Alignment::Start)')
+        ->toContain('->modalFooterActionsAlignment(Alignment::Start)')
         ->not->toContain('AdminDialogSize::Mini');
 
     expect($contract)

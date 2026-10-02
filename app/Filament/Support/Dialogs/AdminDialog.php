@@ -5,6 +5,7 @@ namespace App\Filament\Support\Dialogs;
 use App\Filament\Support\AdminIcon;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\Width;
 
 final class AdminDialog
@@ -122,6 +123,8 @@ final class AdminDialog
             // Filament still owns modal state, focus, Escape and the native X.
             // The shared CSS width modifier is the actual visual authority.
             ->modalWidth(Width::Large)
+            ->modalAlignment(Alignment::Start)
+            ->modalFooterActionsAlignment(Alignment::Start)
             ->extraModalWindowAttributes(['class' => implode(' ', $classes)]);
     }
 }

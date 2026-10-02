@@ -116,7 +116,8 @@ Compact summary/fact cells are optional inside dialogs. They are a layout device
 
 The native Filament close control is always the final top-right control. Filament continues to own modal state, focus trapping and Escape behavior.
 
-Contextual actions are native Filament Actions lifted into the shared header rail:
+Contextual actions are native Filament Actions lifted into the shared header rail. The shared adapter explicitly keeps modal and footer-action alignment at `Start`; Filament's confirmation default centers footer actions and enables a container-query footer layout, which is incompatible with the absolutely positioned shared header rail.
+
 
 - `X` is always at the far right;
 - contextual actions sit immediately to its left in semantic order;
