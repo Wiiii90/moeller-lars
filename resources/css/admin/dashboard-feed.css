@@ -1,5 +1,4 @@
 /* Dashboard feed composition only. Shared table/dialog primitives own chrome. */
-.admin-dashboard__feed-section { border-bottom: 0; }
 
 .admin-dashboard__feed-controls {
     display: grid;
