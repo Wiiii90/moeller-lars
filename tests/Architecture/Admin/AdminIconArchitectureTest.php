@@ -15,6 +15,7 @@ it('keeps shared admin action icons on the semantic icon catalog', function (): 
         ->toContain("case Undo = 'heroicon-o-arrow-uturn-left';")
         ->toContain("case Edit = 'heroicon-o-pencil-square';")
         ->toContain("case Delete = 'heroicon-o-trash';")
+        ->toContain("case ReclaimStorage = 'heroicon-o-archive-box-x-mark';")
         ->toContain("case Remove = 'heroicon-o-x-mark';")
         ->toContain("case Detach = 'heroicon-o-link-slash';")
         ->toContain("case OpenPublic = 'heroicon-o-arrow-top-right-on-square';")

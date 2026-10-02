@@ -23,9 +23,12 @@ it('presents upload capacity and distribution in the storage workspace', functio
     $html = $this->get('/admin/storage')->assertOk()->getContent();
 
     expect($html)->toContain('Upload Media Files')
-        ->and(strpos($html, 'admin-storage__upload'))->toBeLessThan(strpos($html, 'admin-storage__capacity-group'))
-        ->and(strpos($html, 'admin-storage__capacity-group'))->toBeLessThan(strpos($html, 'admin-storage__distribution'))
-        ->and($html)->toContain('Refresh storage measurement');
+        ->and($html)->not->toContain('admin-storage__visual-main')
+        ->and(strpos($html, 'admin-storage__upload admin-visual-stage__pane'))->toBeLessThan(strpos($html, 'admin-storage__capacity-group admin-visual-stage__pane'))
+        ->and(strpos($html, 'admin-storage__capacity-group admin-visual-stage__pane'))->toBeLessThan(strpos($html, 'admin-storage__distribution admin-visual-stage__pane'))
+        ->and(strpos($html, 'admin-storage__capacity-actions'))->toBeLessThan(strpos($html, 'admin-storage__distribution admin-visual-stage__pane'))
+        ->and($html)->toContain('Refresh storage measurement')
+        ->and($html)->toContain('Free storage now');
 });
 
 it('exposes the canonical storage actions', function (): void {
@@ -40,7 +43,8 @@ it('exposes the canonical storage actions', function (): void {
     ]);
 
     expect(AdminIcon::Details->value)->toBe('heroicon-o-information-circle')
-        ->and(AdminIcon::Refresh->value)->toBe('heroicon-o-arrow-path');
+        ->and(AdminIcon::Refresh->value)->toBe('heroicon-o-arrow-path')
+        ->and(AdminIcon::ReclaimStorage->value)->toBe('heroicon-o-archive-box-x-mark');
 
     $this->get('/admin/storage')
         ->assertOk()

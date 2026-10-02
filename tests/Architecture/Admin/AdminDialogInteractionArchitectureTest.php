@@ -16,3 +16,13 @@ it('keeps dialog header action hitboxes bounded and independently clickable', fu
         ->toContain('z-index: 12;')
         ->toContain('.admin-dialog--header-actions .fi-modal-close-btn:focus-visible');
 });
+
+it('keeps persistent help triggers below the Filament modal layer', function (): void {
+    $root = dirname(__DIR__, 3);
+    $forms = file_get_contents($root.'/resources/css/admin/forms.css');
+
+    expect($forms)
+        ->toContain('.admin-help {')
+        ->toContain('z-index: 20;')
+        ->not->toContain('z-index: 120;');
+});

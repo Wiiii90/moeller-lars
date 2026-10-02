@@ -106,106 +106,115 @@
         },
     }"
 >
-    <div class="admin-storage__visual-main admin-visual-stage__pane">
-        <div class="admin-storage__upload">
-            <div class="admin-storage__visual-heading">
-                <p class="admin-storage__eyebrow">Upload Media Files</p>
-            </div>
-
-            <div
-                class="media-workspace__dropzone admin-storage__dropzone"
-                x-data="{
-                    phase: 'idle',
-                    progress: 0,
-                    fileCount: 0,
-                    result: '',
-                    resultTimer: null,
-                    showResult(message) {
-                        window.clearTimeout(this.resultTimer)
-                        this.result = message
-                        this.phase = 'result'
-                        this.resultTimer = window.setTimeout(() => {
-                            this.phase = 'idle'
-                            this.progress = 0
-                            this.fileCount = 0
-                            this.result = ''
-                        }, 3800)
-                    },
-                }"
-                x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
-                x-on:livewire-upload-start="window.clearTimeout(resultTimer); phase = 'uploading'; progress = 0; result = ''"
-                x-on:livewire-upload-progress="progress = $event.detail.progress"
-                x-on:livewire-upload-finish="
-                    progress = 100
-                    phase = 'processing'
-                    $wire.processDirectMedia()
-                        .then((response) => showResult(response?.summary ?? 'Upload complete'))
-                        .catch(() => showResult('Upload failed'))
-                "
-                x-on:livewire-upload-error="$wire.set('directMedia', []); showResult('Upload failed')"
-            >
-                <input
-                    class="media-workspace__file-input"
-                    id="storage-upload"
-                    type="file"
-                    wire:model="directMedia"
-                    x-on:change="fileCount = $event.target.files.length"
-                    x-bind:disabled="phase === 'uploading' || phase === 'processing'"
-                    accept="{{ implode(',', \App\Domain\Media\MediaTypePolicy::uploadAcceptedMimeTypes()) }}"
-                    aria-label="Upload media files"
-                    multiple
-                >
-                <div class="media-workspace__dropzone-copy">
-                    <strong
-                        x-text="
-                            phase === 'uploading'
-                                ? `Uploading ${fileCount} ${fileCount === 1 ? 'file' : 'files'} · ${progress}%`
-                                : phase === 'processing'
-                                    ? `Processing ${fileCount} ${fileCount === 1 ? 'file' : 'files'}…`
-                                    : phase === 'result'
-                                        ? result
-                                        : 'Drop files here or choose from your device'
-                        "
-                    >Drop files here or choose from your device</strong>
-                    <span x-show="phase === 'idle'">JPEG, PNG, WebP, H.264 MP4, VP8/VP9/AV1 WebM, MP3, M4A/AAC, Ogg audio, or WAV.</span>
-                </div>
-                <div
-                    class="media-workspace__upload-progress"
-                    x-show="phase === 'uploading'"
-                    x-cloak
-                    role="progressbar"
-                    aria-label="Upload progress"
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                    x-bind:aria-valuenow="progress"
-                >
-                    <span class="media-workspace__upload-progress-track" aria-hidden="true">
-                        <span class="media-workspace__upload-progress-fill" x-bind:style="`width: ${progress}%`"></span>
-                    </span>
-                </div>
-            </div>
+    <div class="admin-storage__upload admin-visual-stage__pane">
+        <div class="admin-storage__visual-heading">
+            <p class="admin-storage__eyebrow">Upload Media Files</p>
         </div>
 
-        <div class="admin-storage__capacity-group">
-            <div class="admin-storage__visual-heading">
-                <p class="admin-storage__eyebrow">Total Capacity</p>
-                <button
-                    class="admin-icon-action"
-                    type="button"
-                    wire:click="refreshStorageMeasurement"
-                    wire:loading.attr="disabled"
-                    wire:target="refreshStorageMeasurement"
-                    aria-label="Refresh storage measurement"
-                    title="Refresh storage measurement"
-                >
-                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" />
-                </button>
+        <div
+            class="media-workspace__dropzone admin-storage__dropzone"
+            x-data="{
+                phase: 'idle',
+                progress: 0,
+                fileCount: 0,
+                result: '',
+                resultTimer: null,
+                showResult(message) {
+                    window.clearTimeout(this.resultTimer)
+                    this.result = message
+                    this.phase = 'result'
+                    this.resultTimer = window.setTimeout(() => {
+                        this.phase = 'idle'
+                        this.progress = 0
+                        this.fileCount = 0
+                        this.result = ''
+                    }, 3800)
+                },
+            }"
+            x-bind:aria-busy="(phase === 'uploading' || phase === 'processing').toString()"
+            x-on:livewire-upload-start="window.clearTimeout(resultTimer); phase = 'uploading'; progress = 0; result = ''"
+            x-on:livewire-upload-progress="progress = $event.detail.progress"
+            x-on:livewire-upload-finish="
+                progress = 100
+                phase = 'processing'
+                $wire.processDirectMedia()
+                    .then((response) => showResult(response?.summary ?? 'Upload complete'))
+                    .catch(() => showResult('Upload failed'))
+            "
+            x-on:livewire-upload-error="$wire.set('directMedia', []); showResult('Upload failed')"
+        >
+            <input
+                class="media-workspace__file-input"
+                id="storage-upload"
+                type="file"
+                wire:model="directMedia"
+                x-on:change="fileCount = $event.target.files.length"
+                x-bind:disabled="phase === 'uploading' || phase === 'processing'"
+                accept="{{ implode(',', \App\Domain\Media\MediaTypePolicy::uploadAcceptedMimeTypes()) }}"
+                aria-label="Upload media files"
+                multiple
+            >
+            <div class="media-workspace__dropzone-copy">
+                <strong
+                    x-text="
+                        phase === 'uploading'
+                            ? `Uploading ${fileCount} ${fileCount === 1 ? 'file' : 'files'} · ${progress}%`
+                            : phase === 'processing'
+                                ? `Processing ${fileCount} ${fileCount === 1 ? 'file' : 'files'}…`
+                                : phase === 'result'
+                                    ? result
+                                    : 'Drop files here or choose from your device'
+                    "
+                >Drop files here or choose from your device</strong>
+                <span x-show="phase === 'idle'">JPEG, PNG, WebP, H.264 MP4, VP8/VP9/AV1 WebM, MP3, M4A/AAC, Ogg audio, or WAV.</span>
             </div>
+            <div
+                class="media-workspace__upload-progress"
+                x-show="phase === 'uploading'"
+                x-cloak
+                role="progressbar"
+                aria-label="Upload progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                x-bind:aria-valuenow="progress"
+            >
+                <span class="media-workspace__upload-progress-track" aria-hidden="true">
+                    <span class="media-workspace__upload-progress-fill" x-bind:style="`width: ${progress}%`"></span>
+                </span>
+            </div>
+        </div>
+    </div>
 
-            <x-admin.storage-capacity-visual
-                :capacity="$capacity"
-                :breakdown="$storageBreakdown"
-                :segments="$storageSegments"
+    <div class="admin-storage__capacity-group admin-visual-stage__pane">
+        <div class="admin-storage__visual-heading">
+            <p class="admin-storage__eyebrow">Total Capacity</p>
+        </div>
+
+        <x-admin.storage-capacity-visual
+            :capacity="$capacity"
+            :breakdown="$storageBreakdown"
+            :segments="$storageSegments"
+        />
+
+        <div class="admin-storage__capacity-actions" aria-label="Storage capacity actions">
+            <button
+                class="admin-action"
+                type="button"
+                wire:click="refreshStorageMeasurement"
+                wire:loading.attr="disabled"
+                wire:target="refreshStorageMeasurement"
+                aria-label="Refresh storage measurement"
+                title="Refresh storage measurement"
+            >
+                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Refresh->mini()" class="admin-action__icon" />
+                <span class="admin-action__label">Refresh</span>
+            </button>
+
+            <livewire:admin.site-storage-reclaim-control />
+
+            <x-admin.help
+                label="About freeing storage"
+                text="Permanently clears Undo history, releases older publication restore snapshots, and removes rebuildable generated thumbnails. Activity remains available. The current LIVE restore snapshot and any restore or revert source currently in use stay protected."
             />
         </div>
     </div>
@@ -275,14 +284,6 @@
                     <strong title="{{ $storageAttention['largest_file']['filename'] }}">{{ $storageAttention['largest_file']['filename'] }} · {{ $storageAttention['largest_file']['display_bytes'] }}</strong>
                 </div>
             @endif
-        </div>
-
-        <div class="admin-storage__reclaim-footer">
-            <livewire:admin.site-storage-reclaim-control />
-            <x-admin.help
-                label="About freeing storage"
-                text="Permanently clears Undo history, releases older publication restore snapshots, and removes rebuildable generated thumbnails. Activity remains available. The current LIVE restore snapshot and any restore or revert source currently in use stay protected."
-            />
         </div>
     </div>
 </section>

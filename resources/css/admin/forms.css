@@ -399,7 +399,8 @@
 
 .admin-help {
     position: relative;
-    z-index: 120;
+    /* Stay above ordinary workspace chrome but below Filament modal overlay/window (z-40). */
+    z-index: 20;
     display: inline-flex;
     width: 1rem;
     height: 1rem;

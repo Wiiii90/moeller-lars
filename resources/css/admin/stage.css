@@ -83,8 +83,7 @@
  * not use this first-pane inset because their visuals must reach the exact 2/3
  * axis. */
 :is(
-    .admin-visual-stage--rail:not(.general-appearance-stage):not(.analytics-visual-stage):not(.home-hero-surface),
-    .admin-storage__visual-stage
+    .admin-visual-stage--rail:not(.general-appearance-stage):not(.analytics-visual-stage):not(.home-hero-surface)
 ) > :first-child {
     grid-column: 1 / span 2;
     min-width: 0;
@@ -92,8 +91,7 @@
 }
 
 :is(
-    .admin-visual-stage--rail:not(.general-appearance-stage):not(.analytics-visual-stage):not(.home-hero-surface),
-    .admin-storage__visual-stage
+    .admin-visual-stage--rail:not(.general-appearance-stage):not(.analytics-visual-stage):not(.home-hero-surface)
 ) > :last-child {
     grid-column: 3;
     min-width: 0;
@@ -140,17 +138,18 @@
     margin: 0 !important;
 }
 
-/* Storage uses the first 2/3 rail for Upload Media Files | Total Capacity and
- * the final third for Media Distribution. The shared primitive owns only the
- * metric-aligned outer axes; storage.css owns the internal pair's breathing
- * room and bounded Distribution scrolling. */
-.admin-storage__visual-stage > .admin-storage__visual-main {
-    padding-right: 0 !important;
+/* Storage is a direct three-pane Stage so every pane shares the exact same
+ * 2/6 and 4/6 axes as the six-cell metric row above it. */
+.admin-storage__visual-stage > .admin-storage__upload {
+    grid-column: 1;
 }
 
-.admin-storage__visual-main {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 0 !important;
+.admin-storage__visual-stage > .admin-storage__capacity-group {
+    grid-column: 2;
+}
+
+.admin-storage__visual-stage > .admin-storage__distribution {
+    grid-column: 3;
 }
 
 /* Analytics and Home own content, not divider geometry. */
@@ -415,12 +414,10 @@
 
     :is(
         .analytics-visual-stage,
-        .admin-storage__visual-stage,
         .home-hero-surface
     ) > :first-child,
     :is(
         .analytics-visual-stage,
-        .admin-storage__visual-stage,
         .home-hero-surface
     ) > :last-child,
     .activity-publication {
@@ -430,8 +427,16 @@
         border: 0 !important;
     }
 
-    .admin-storage__visual-main {
+    .admin-storage__visual-stage {
         grid-template-columns: 1fr !important;
+    }
+
+    .admin-storage__visual-stage > :is(
+        .admin-storage__upload,
+        .admin-storage__capacity-group,
+        .admin-storage__distribution
+    ) {
+        grid-column: 1;
     }
 
     .admin-storage__capacity-group,
