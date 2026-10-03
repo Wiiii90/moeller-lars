@@ -168,9 +168,9 @@
     object-fit: contain;
 }
 
-/* Dashboard is the canonical visible three-pane special case. */
+/* Dashboard is the canonical visible three-pane special case. It consumes the
+ * shared orbit size unchanged so Storage and Activity scale identically. */
 .admin-dashboard__overview {
-    --admin-stage-orbit-size: clamp(10rem, 20cqw, 17.5rem);
     display: grid;
     height: var(--admin-visual-stage-height);
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -196,33 +196,46 @@
     padding-left: 0 !important;
 }
 
-.admin-dashboard__overview-column:first-child > :is(.admin-dashboard__overview-head, .admin-dashboard__facts) {
+.admin-dashboard__overview-column:first-child > :is(.admin-dashboard__overview-head, .admin-dashboard__storage-stage) {
     position: relative;
     z-index: 2;
 }
 
-.admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual {
+.admin-dashboard__storage-stage {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    grid-row: 2;
+    grid-template-rows: minmax(0, 1fr) var(--admin-stage-orbit-caption-reserve);
+    gap: var(--admin-stage-orbit-gap);
+    overflow: hidden;
+}
+
+.admin-dashboard__storage-visual {
     position: relative;
     z-index: 1;
     inset: auto;
     display: grid;
     width: 100%;
     height: 100% !important;
+    min-width: 0;
     min-height: 0;
-    grid-row: 2;
-    grid-template-rows: minmax(0, 1fr);
-    gap: 0;
+    grid-row: 1;
     place-items: center;
     overflow: hidden;
 }
 
-.admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual::after {
+.admin-dashboard__storage-visual::after {
     display: none;
     content: none;
 }
 
-.admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual > .admin-storage-capacity {
+.admin-dashboard__storage-visual > .admin-storage-capacity {
     grid-row: 1;
+    align-self: center;
+    justify-self: center;
 }
 
 .admin-dashboard__overview-column:nth-child(2) {
