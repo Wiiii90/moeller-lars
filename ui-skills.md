@@ -516,12 +516,50 @@ If the empty state is caused by active filters, distinguish it from a genuinely 
 
 ## 21. Responsive behavior
 
-Desktop alignment is primary for these editorial tables, but responsive behavior must be intentional.
+Responsive behavior is content-driven and follows semantic width states rather than device labels: **Wide**, **Compact**, **Narrow** and **Minimal**. Exact thresholds come from browser fit/acceptance; admin task components should prefer available container/workspace width, while shell-level sidebar/topbar changes may remain viewport-driven.
 
-- use horizontal overflow for wide data tables when preserving column meaning is better than arbitrary wrapping;
-- only collapse to stacked/mobile composition at explicit breakpoints;
-- do not let one child/action toolbar wrap independently and create a pseudo-card inside a table;
-- maintain control labels/action grouping when tool rows wrap.
+### Metrics
+
+- Wide keeps the accepted single-row strip where it fits cleanly.
+- Compact reduces non-essential detail before changing the grid.
+- Six-metric strips normally move to a three-column intermediate grid before the smallest retained two-column grid.
+- Never reduce a metric strip to a one-column list.
+- Minimal may omit the metric strip entirely when it is no longer useful.
+- Metric importance is semantic; do not hide arbitrary nth children merely to fit.
+
+### Toolbars
+
+The canonical order is always **Query / Filter -> Task actions -> Selection**.
+
+- Wide and Compact are one row.
+- Narrow and Minimal may use at most two rows; never create a third toolbar row.
+- Search, filters and Reset stay in the Query/Filter region; Reset is not a task action.
+- Selection stays the terminal, visually distinct bulk-action region.
+- Compact actions deliberately from label+icon to icon-only and finally to essential icons plus an overflow action when necessary.
+- Icon-only actions keep accessible labels/tooltips and semantic DOM order.
+- Do not rely on uncontrolled flex wrapping to invent intermediate layouts.
+
+### Tables and Selection
+
+- Ordinary admin tables do **not** use horizontal scrolling as a responsive strategy. Do not reserve horizontal-scrollbar space and do not merely hide a scrollbar over overflowing content.
+- Fit tables by semantic column priority: essential, supportive, optional. Merge supportive information into a primary cell/second line or remove optional columns before the table would overflow.
+- Tables may enter a narrower state earlier than metrics or stages because each component responds to its own available width.
+- While the surface remains tabular, toolbar Selected-count, header select-all and row checkboxes share one terminal Selection rail at every responsive state.
+- Preserve table semantics where practical; do not default narrow tables to card stacks.
+- Do not reduce shared semantic font sizes merely to recover width.
+
+### Visual Stages
+
+Shared desktop stage geometry does not imply shared narrow composition.
+
+- Never automatically stack the existing desktop panes vertically as the generic responsive solution.
+- Every stage defines an intentional Narrow/Minimal composition for its own task.
+- Preserve required operations and domain state; optional/redundant charts, distribution visuals and parallel previews may disappear.
+- A narrow stage may become one focused surface and may use a small local presentation-only selector when equivalent views still need to be reachable.
+- General may omit parallel Live Preview; Storage may replace desktop Capacity/Distribution visuals with one functional compact surface; Dashboard must prioritize/recompose Storage, Activity and Analytics rather than stack the three desktop panes.
+- Presentation-only switching stays local (CSS/Alpine); Livewire/Laravel do not track resize state.
+
+Browser review must continuously resize through transition regions, not only check named device presets.
 
 ## 22. CSS ownership
 
