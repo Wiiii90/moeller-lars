@@ -29,7 +29,10 @@
     class="general-appearance-stage__preview admin-visual-stage__pane"
     aria-label="Live public preview"
     x-data="{
+        refreshTimer: null,
         resizeObserver: null,
+        zoomHudTimer: null,
+        zoomHudVisible: false,
         fitScale: 1,
         zoom: 1,
         minZoom: 1,
@@ -52,10 +55,19 @@
             })
         },
         destroy() {
+            window.clearTimeout(this.refreshTimer)
+            window.clearTimeout(this.zoomHudTimer)
             this.resizeObserver?.disconnect()
         },
         zoomPercent() {
             return `${Math.round(this.zoom * 100)}%`
+        },
+        showZoomHud() {
+            window.clearTimeout(this.zoomHudTimer)
+            this.zoomHudVisible = true
+            this.zoomHudTimer = window.setTimeout(() => {
+                this.zoomHudVisible = false
+            }, 900)
         },
         fitPreview() {
             const viewport = this.$refs.viewport
@@ -131,6 +143,7 @@
             this.panMode = false
             this.spacePan = false
             this.applyPreviewTransform()
+            this.showZoomHud()
         },
         changeZoom(step) {
             const page = this.$refs.page
@@ -153,6 +166,7 @@
             this.zoom = nextZoom
             this.clampPan()
             this.applyPreviewTransform()
+            this.showZoomHud()
         },
         togglePanMode() {
             if (this.zoom <= this.minZoom) return
@@ -241,9 +255,12 @@
             this.endPan(null)
         },
         refreshPreview() {
-            const url = new URL(this.$refs.frame.src, window.location.origin)
-            url.searchParams.set('_appearance', Date.now().toString())
-            this.$refs.frame.src = url.toString()
+            window.clearTimeout(this.refreshTimer)
+            this.refreshTimer = window.setTimeout(() => {
+                const url = new URL(this.$refs.frame.src, window.location.origin)
+                url.searchParams.set('_appearance', Date.now().toString())
+                this.$refs.frame.src = url.toString()
+            }, 700)
         },
     }"
     x-on:general-appearance-updated.window="refreshPreview()"
@@ -389,7 +406,7 @@
 
                 <div
                     class="general-live-preview__zoom-hud"
-                    x-show="zoom > minZoom"
+                    x-show="zoomHudVisible"
                     x-transition.opacity.duration.120ms
                     x-cloak
                     aria-hidden="true"

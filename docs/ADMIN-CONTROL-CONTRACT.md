@@ -67,11 +67,21 @@ Use discrete semantic commits:
 
 Always normalize and compare with the persisted value before writing. Activity/Audit records successful writes; it is not the persistence trigger.
 
-Timer-driven interaction is not allowed in authored application code. Do not use Livewire/Alpine debounce modifiers, Filament debounce configuration, `setTimeout`, `setInterval`, `requestAnimationFrame`, polling, or equivalent delayed/batched scheduling for persistence, search, previews, overlays, upload feedback, menu behavior or visual refresh. Use the discrete event that owns the state change, observers for structural changes, and direct refresh from that event.
+`wire:model.live.debounce.*`, Filament `->debounce(...)`, `searchDebounce(...)`, `setTimeout`-based persistence and polling-based persistence are forbidden **when they trigger writes**. Changing a timer value does not make timer-driven persistence acceptable.
 
-### Search and typeahead
+### Search and remote typeahead
 
-Workspace search commits on Enter/change/blur. It must not submit or reload on every keystroke and must not use a debounce timer. Searchable framework controls must not add project-level debounce configuration; if a remote picker cannot operate acceptably without timer-based request throttling, redesign that picker around explicit user-triggered search instead of adding a timer exception.
+Search is not persistence. The default workspace-search pattern should still avoid timer-driven server reloads when a normal Enter/change/blur interaction gives equivalent usability.
+
+A remote searchable select may use a short debounce solely as **transport throttling** when every keystroke would otherwise issue a server request. This is an explicit exception for query traffic, not for mutation traffic. It must satisfy all of these conditions:
+
+- the callback is read-only;
+- selecting or clearing the final value is the only semantic state change;
+- the debounce does not save any record or setting;
+- removing the throttle would materially increase request fan-out;
+- the control remains keyboard accessible through Filament's normal listbox behavior.
+
+`MediaAssetSelect` and remote Hero Artwork search are examples of this typeahead case. Do not replace their throttle with `0`; that merely converts a controlled query into a request per keystroke.
 
 ## Dialog ownership
 

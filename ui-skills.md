@@ -133,7 +133,7 @@ Search | Type/Status/etc. | Filter | Selection
 
 Rules:
 
-- search commits on explicit Enter/change/blur semantics; do not use debounce, timeout, interval or frame-scheduled bursts to drive admin search;
+- search is usually live with a bounded debounce such as `wire:model.live.debounce.300ms`;
 - use one control height across inputs/selects/buttons;
 - keep control headings on one line; they must never increase the toolbar height by wrapping, and should ellipsize when a width mistake would otherwise force a second line;
 - prefer one-word headings whenever the meaning stays clear: use `Search`, `Area`, `Type`, `Date`, `Time`; do not repeat the current object or row noun in headings such as `Search exhibitions`, `Editorial area` or `Change type` when the surrounding workspace already supplies that context;

@@ -141,6 +141,7 @@ export function initializeArtworkViewer(root = document) {
     const zoomTracked = new Set();
     let dragStart = null;
     let pinchStart = null;
+    let resizeFrame = null;
     let attentionKey = null;
     let attentionStartedAt = null;
     let attentionAccumulatedMs = 0;
@@ -510,10 +511,14 @@ export function initializeArtworkViewer(root = document) {
     });
 
     const recalculate = () => {
+        resizeFrame = null;
         if (!dialog.open || !currentIsImage() || image.hidden) return;
         fitImageToStage();
         updateTransform();
     };
-    window.addEventListener('resize', recalculate);
-    window.addEventListener('orientationchange', recalculate);
+    const scheduleResize = () => {
+        if (resizeFrame === null) resizeFrame = requestAnimationFrame(recalculate);
+    };
+    window.addEventListener('resize', scheduleResize);
+    window.addEventListener('orientationchange', scheduleResize);
 }

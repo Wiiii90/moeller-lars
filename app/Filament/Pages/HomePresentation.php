@@ -1160,7 +1160,7 @@ final class HomePresentation extends Page
     {
         $select = Select::make($name)->label($label)->searchable()
             ->getSearchResultsUsing(fn (string $search): array => $this->heroArtworkOptions($search))
-            ->searchPrompt('Search eligible Hero Artworks')->noSearchResultsMessage('No matching eligible artworks');
+            ->searchDebounce(300)->searchPrompt('Search eligible Hero Artworks')->noSearchResultsMessage('No matching eligible artworks');
         if ($multiple) {
             $select->multiple()->getOptionLabelsUsing(fn (array $values): array => $this->heroArtworkOptionLabels($values));
         } else {

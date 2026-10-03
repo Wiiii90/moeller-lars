@@ -170,9 +170,10 @@ final class AdminRichText
 
                     if (! bindImageToolbarAction()) {
                         const observer = new MutationObserver(() => {
-                            if (! $el.isConnected || bindImageToolbarAction()) observer.disconnect()
+                            if (bindImageToolbarAction()) observer.disconnect()
                         })
                         observer.observe(scope === document ? document.body : scope, { childList: true, subtree: true })
+                        setTimeout(() => observer.disconnect(), 3000)
                     }
                 JS,
                 'x-on:admin-rich-text-image-open' => "open = true; source = 'media'; externalError = ''; \$nextTick(() => \$el.querySelector('[role=\"combobox\"]')?.focus())",

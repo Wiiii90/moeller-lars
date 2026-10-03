@@ -418,14 +418,25 @@ function scheduleResize(entry, width, height) {
 
     entry.width = nextWidth;
     entry.height = nextHeight;
-    if (! entry.chart.isDisposed()) {
-        entry.chart.resize({
-            width: entry.width,
-            height: entry.height,
-            animation: { duration: 0 },
-            silent: true,
-        });
-    }
+    if (entry.resizeFrame !== null) return;
+
+    entry.resizeFrame = window.requestAnimationFrame(() => {
+        entry.resizeFrame = null;
+        if (! entry.chart.isDisposed()) {
+            entry.chart.resize({
+                width: entry.width,
+                height: entry.height,
+                animation: { duration: 0 },
+                silent: true,
+            });
+        }
+    });
+}
+
+function cancelInspectorReset(entry) {
+    if (entry.inspectorFrame === null) return;
+    window.cancelAnimationFrame(entry.inspectorFrame);
+    entry.inspectorFrame = null;
 }
 
 function bindInspector(element, entry) {
@@ -433,12 +444,17 @@ function bindInspector(element, entry) {
 
     entry.chart.on('mouseover', (params) => {
         if (params?.seriesId !== 'storage-capacity-donut') return;
+        cancelInspectorReset(entry);
         inspectSlice(element, entry.config, params.data);
     });
 
     entry.chart.on('mouseout', (params) => {
         if (params?.seriesId !== 'storage-capacity-donut') return;
-        resetInspector(element, entry.config);
+        cancelInspectorReset(entry);
+        entry.inspectorFrame = window.requestAnimationFrame(() => {
+            entry.inspectorFrame = null;
+            resetInspector(element, entry.config);
+        });
     });
 }
 
@@ -446,6 +462,8 @@ function disposeElement(element) {
     const entry = instances.get(element);
     if (! entry) return;
 
+    cancelInspectorReset(entry);
+    if (entry.resizeFrame !== null) window.cancelAnimationFrame(entry.resizeFrame);
     if (entry.resizeObserver) entry.resizeObserver.disconnect();
     if (! entry.chart.isDisposed()) entry.chart.dispose();
     element.classList.remove('is-ready');
@@ -488,6 +506,8 @@ function mountElement(element) {
         signature,
         theme,
         resizeObserver: null,
+        resizeFrame: null,
+        inspectorFrame: null,
         width: 0,
         height: 0,
     };

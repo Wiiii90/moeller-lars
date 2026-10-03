@@ -3,6 +3,7 @@ import './admin-selects.js';
 import { initializeAdminModalScrollBehavior } from './admin-modal-scroll.js';
 
 let storageRuntimePromise = null;
+let refreshFrame = null;
 let livewireHookRegistered = false;
 
 initializeAdminModalScrollBehavior();
@@ -18,15 +19,22 @@ function ensureStorageRuntime() {
 }
 
 async function refreshVisualizations() {
+    refreshFrame = null;
+
     if (! hasStorageVisualization() && storageRuntimePromise === null) return;
 
     const runtime = await ensureStorageRuntime();
     runtime.refreshStorageVisualizations();
 }
 
-function refreshStorageIfPresent() {
+function scheduleRefresh() {
+    if (refreshFrame !== null) return;
+    refreshFrame = window.requestAnimationFrame(refreshVisualizations);
+}
+
+function scheduleStorageRefresh() {
     if (storageRuntimePromise === null && ! hasStorageVisualization()) return;
-    void refreshVisualizations();
+    scheduleRefresh();
 }
 
 function destinationNeedsStorageRuntime(value) {
@@ -52,7 +60,7 @@ function registerLivewireHook() {
     if (livewireHookRegistered || ! window.Livewire?.hook) return;
 
     livewireHookRegistered = true;
-    window.Livewire.hook('morph.updated', refreshStorageIfPresent);
+    window.Livewire.hook('morph.updated', scheduleStorageRefresh);
 }
 
 if (hasStorageVisualization()) {
@@ -60,17 +68,17 @@ if (hasStorageVisualization()) {
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', refreshVisualizations, { once: true });
+    document.addEventListener('DOMContentLoaded', scheduleRefresh, { once: true });
 } else {
-    refreshVisualizations();
+    scheduleRefresh();
 }
 
 registerLivewireHook();
 document.addEventListener('livewire:init', registerLivewireHook, { once: true });
-document.addEventListener('livewire:navigated', refreshVisualizations);
+document.addEventListener('livewire:navigated', scheduleRefresh);
 document.addEventListener('alpine:navigate', prewarmStorageRuntime);
 
-new MutationObserver(refreshStorageIfPresent).observe(document.documentElement, {
+new MutationObserver(scheduleStorageRefresh).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['class'],
 });

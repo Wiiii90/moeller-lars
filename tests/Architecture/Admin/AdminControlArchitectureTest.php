@@ -23,3 +23,14 @@ it('registers the shared admin control adapter panel wide', function (): void {
         ->toContain('text-overflow: ellipsis;')
         ->toContain('white-space: nowrap;');
 });
+
+
+it('keeps persisted General layout controls on discrete blur commits', function (): void {
+    $root = dirname(__DIR__, 3);
+    $layout = file_get_contents($root.'/resources/views/livewire/admin/general-layout-controls.blade.php');
+
+    expect($layout)
+        ->toContain('wire:model.blur="pageWidth"')
+        ->toContain('wire:model.blur="contentPadding"')
+        ->not->toContain('wire:model.live.debounce');
+});

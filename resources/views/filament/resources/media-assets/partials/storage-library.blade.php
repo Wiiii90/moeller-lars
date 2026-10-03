@@ -21,7 +21,7 @@
         <x-slot:search>
             <label class="admin-data-field">
                 <span>Search</span>
-                <input type="search" wire:model.blur="search" x-on:keydown.enter.prevent="$el.blur()" placeholder="Filename, ALT, credit…">
+                <input type="search" wire:model.live.debounce.300ms="search" placeholder="Filename, ALT, credit…">
             </label>
         </x-slot:search>
 
