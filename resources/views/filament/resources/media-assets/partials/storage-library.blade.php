@@ -86,7 +86,7 @@
         <x-slot:reset>
             <div class="admin-data-control-group">
                 <span class="admin-data-control-label">Filter</span>
-                <button class="admin-action" type="button" wire:click="resetFilters">Reset</button>
+                <x-admin.clear-filters wire:click="resetFilters" />
             </div>
         </x-slot:reset>
 
@@ -145,7 +145,7 @@
                         aria-haspopup="menu"
                         @disabled($selectedAssets === [])
                     >
-                        <span class="admin-action__label">Selected</span>
+                        <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                         <span class="media-workspace__selection-count">{{ count($selectedAssets) }}</span>
                     </button>
                     <div class="media-workspace__multi-action-menu" role="menu" x-show="open" x-cloak>
