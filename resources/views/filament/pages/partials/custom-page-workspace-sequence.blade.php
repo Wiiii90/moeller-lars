@@ -55,6 +55,7 @@
 
                                 <div class="custom-page-component__content admin-hierarchy__content">
                                     <strong>{{ $pageComponent['content']['primary'] }}</strong>
+                                    <small class="admin-responsive-meta">{{ $pageComponent['type_label'] }}</small>
                                     @if ($pageComponent['content']['secondary'] !== '')
                                         <span>{{ $pageComponent['content']['secondary'] }}</span>
                                     @endif
@@ -122,6 +123,7 @@
                                                 <span class="custom-page-child-row__kind">{{ $childKindLabel }}</span>
 
                                                 <div class="custom-page-child-row__content admin-hierarchy__content">
+                                                    <small class="admin-responsive-meta">{{ $childKindLabel }}</small>
                                                     @if ($child['kind'] === 'list')
                                                         <strong>
                                                             @if ($child['date'] !== '')
