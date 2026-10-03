@@ -308,7 +308,7 @@
 }
 
 .admin-table__identity {
-    min-width: 14rem;
+    min-width: 0;
     max-width: 28rem;
 }
 
@@ -410,92 +410,4 @@
     flex-wrap: nowrap;
 }
 
-@media (max-width: 900px) {
-    .admin-control-group {
-        flex: 1 1 auto;
-    }
 
-    .admin-toolbar.admin-pager__actions {
-        justify-content: flex-end;
-    }
-}
-
-@media (max-width: 760px) {
-    .admin-visual-stage--stackable {
-        height: auto;
-    }
-
-    .admin-visual-stage--stackable > .admin-visual-stage__pane {
-        height: var(--admin-visual-stage-height);
-    }
-
-    .admin-control-bar {
-        align-items: stretch;
-    }
-
-    .admin-data-controls {
-        align-items: stretch;
-    }
-
-    .admin-data-controls > :is(
-        .admin-field,
-        .admin-data-field,
-        .admin-task-field,
-        .admin-control-group,
-        .admin-data-control-group,
-        .admin-task-control-group
-    ),
-    .admin-data-controls--has-search > :first-child {
-        width: 100%;
-        max-width: none;
-        flex: 1 1 100%;
-    }
-
-    .admin-field,
-    .admin-control-group,
-    .admin-data-control-group {
-        width: 100%;
-    }
-
-    .admin-control-group__actions {
-        flex-wrap: wrap;
-    }
-
-    .admin-pager {
-        grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    .admin-pager__range {
-        grid-column: 1 / -1;
-        grid-row: 1;
-    }
-
-    .admin-pager__size {
-        grid-column: 1;
-        grid-row: 2;
-    }
-
-    .admin-pager__actions {
-        grid-column: 2;
-        grid-row: 2;
-    }
-}
-
-@media (max-width: 520px) {
-    .admin-pager {
-        grid-template-columns: 1fr;
-    }
-
-    .admin-pager__range,
-    .admin-pager__size,
-    .admin-pager__actions {
-        grid-column: 1;
-        justify-self: start;
-    }
-
-    .admin-pager__range { grid-row: 1; }
-
-    .admin-pager__size { grid-row: 2; }
-
-    .admin-pager__actions { grid-row: 3; }
-}
