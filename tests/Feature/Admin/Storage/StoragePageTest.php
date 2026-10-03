@@ -45,7 +45,7 @@ it('exposes the canonical storage actions', function (): void {
         'alt_text' => 'Action test',
     ]);
 
-    expect(AdminIcon::Details->value)->toBe('heroicon-o-information-circle')
+    expect(AdminIcon::Details->value)->toBe('heroicon-o-magnifying-glass-circle')
         ->and(AdminIcon::Refresh->value)->toBe('heroicon-o-arrow-path')
         ->and(AdminIcon::ReclaimStorage->value)->toBe('heroicon-o-archive-box-x-mark');
 
