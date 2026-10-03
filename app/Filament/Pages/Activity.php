@@ -53,6 +53,15 @@ final class Activity extends Page
     #[Url(as: 'view', except: self::VIEW_ACTIVITY, history: true)]
     public string $viewMode = self::VIEW_ACTIVITY;
 
+    #[Url(as: 'per_page', except: self::DEFAULT_PAGE_SIZE, history: true)]
+    public int $perPage = self::DEFAULT_PAGE_SIZE;
+
+    #[Url(as: 'page', except: 1, history: true)]
+    public int $activityPage = 1;
+
+    #[Url(as: 'commits_page', except: 1, history: true)]
+    public int $commitPage = 1;
+
     /** @var list<int> */
     public array $selectedActivityIds = [];
 
@@ -92,6 +101,9 @@ final class Activity extends Page
         $this->viewMode = $requestedView === self::VIEW_COMMITS
             ? self::VIEW_COMMITS
             : self::VIEW_ACTIVITY;
+        $this->perPage = $this->normalizePageSize($this->perPage);
+        $this->activityPage = max(1, $this->activityPage);
+        $this->commitPage = max(1, $this->commitPage);
         $this->activityState = $this->activityStateFromRequest();
         $this->search = (string) ($this->activityState['search'] ?? '');
         $this->areaFilter = (string) ($this->activityState['area'] ?? '');
@@ -157,8 +169,43 @@ final class Activity extends Page
 
     private function refreshActivityFilters(): void
     {
+        $this->activityPage = 1;
+        $this->commitPage = 1;
         $this->clearSelection();
         $this->refreshWorkspaceSnapshot();
+    }
+
+    public function updatedPerPage(mixed $value): void
+    {
+        $this->perPage = $this->normalizePageSize($value);
+        $this->activityState['perPage'] = $this->perPage;
+        $this->activityPage = 1;
+        $this->commitPage = 1;
+        $this->clearSelection();
+    }
+
+    public function previousActivityPage(): void
+    {
+        $this->activityPage = max(1, $this->activityPage - 1);
+        $this->clearSelection();
+    }
+
+    public function nextActivityPage(): void
+    {
+        $this->activityPage++;
+        $this->clearSelection();
+    }
+
+    public function previousCommitPage(): void
+    {
+        $this->commitPage = max(1, $this->commitPage - 1);
+        $this->clearSelection();
+    }
+
+    public function nextCommitPage(): void
+    {
+        $this->commitPage++;
+        $this->clearSelection();
     }
 
     public function setViewMode(string $viewMode): void
@@ -624,7 +671,7 @@ final class Activity extends Page
         $search = is_string($state['search'] ?? null) ? $state['search'] : '';
         $activeDateValue = is_string($state['activeDate'] ?? null) ? $state['activeDate'] : null;
         $activeHour = is_int($state['activeHour'] ?? null) ? $state['activeHour'] : null;
-        $perPage = is_int($state['perPage'] ?? null) ? $state['perPage'] : self::DEFAULT_PAGE_SIZE;
+        $perPage = $this->normalizePageSize($this->perPage);
         $viewMode = $this->viewMode === self::VIEW_COMMITS ? self::VIEW_COMMITS : self::VIEW_ACTIVITY;
 
         $activity = [];
@@ -641,6 +688,7 @@ final class Activity extends Page
                 date: $activeDateValue,
                 hour: $activeHour,
                 perPage: $perPage,
+                page: $this->commitPage,
             );
             $commits = $history['commits'];
             $commitPaginator = $history['paginator'];
@@ -654,6 +702,7 @@ final class Activity extends Page
                 search: $search,
                 date: $activeDateValue,
                 hour: $activeHour,
+                page: $this->activityPage,
             );
             $activity = $feed['activity'];
             $paginator = $feed['paginator'];
@@ -692,10 +741,7 @@ final class Activity extends Page
         $area = is_string($area) && array_key_exists($area, AdminActionCatalog::areaOptions()) ? $area : null;
         $family = is_string($family) && array_key_exists($family, AdminActionCatalog::familyOptions()) ? $family : null;
         $search = is_string($search) ? trim($search) : '';
-        $requestedPerPage = request()->query('per_page');
-        $perPage = is_scalar($requestedPerPage) && in_array((int) $requestedPerPage, self::PAGE_SIZES, true)
-            ? (int) $requestedPerPage
-            : self::DEFAULT_PAGE_SIZE;
+        $perPage = $this->normalizePageSize($this->perPage);
 
         $today = CarbonImmutable::today();
         $currentYear = (int) $today->format('Y');
@@ -1146,6 +1192,15 @@ final class Activity extends Page
             body: $message,
             status: 'warning',
         );
+    }
+
+    private function normalizePageSize(mixed $value): int
+    {
+        $pageSize = is_numeric($value) ? (int) $value : self::DEFAULT_PAGE_SIZE;
+
+        return in_array($pageSize, self::PAGE_SIZES, true)
+            ? $pageSize
+            : self::DEFAULT_PAGE_SIZE;
     }
 
     private function publicationWarning(ValidationException $exception, string $fallback): void

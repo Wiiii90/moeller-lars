@@ -43,14 +43,6 @@
                     'commits_page' => null,
                 ]);
             }
-            $pageSizeUrls = [];
-            foreach ($pageSizes as $sizeOption) {
-                $pageSizeUrls[$sizeOption] = $activityUrl([
-                    'per_page' => $sizeOption,
-                    'page' => null,
-                    'commits_page' => null,
-                ]);
-            }
             $visiblePublicationGroups = array_slice($publicationContext['staged_groups'], 0, 4);
             $hiddenPublicationGroups = max(0, count($publicationContext['staged_groups']) - count($visiblePublicationGroups));
             $resetUrl = $activityUrl([
@@ -353,7 +345,7 @@
                     <x-slot:reset>
                         <div class="admin-data-control-group activity-control--reset">
                             <span class="admin-data-control-label">Filter</span>
-                            <a class="admin-action admin-action--with-icon" href="{{ $resetUrl }}" aria-label="Clear activity filters">
+                            <a class="admin-action admin-action--with-icon" href="{{ $resetUrl }}" wire:navigate aria-label="Clear activity filters">
                                 <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Clear->mini()" class="admin-action__icon" />
                                 <span class="admin-action__label">Clear</span>
                             </a>
@@ -578,9 +570,9 @@
                     :pages="$paginator->lastPage()"
                     :page-size="$perPage"
                     :page-size-options="$pageSizes"
-                    :page-size-urls="$pageSizeUrls"
-                    :previous-url="$activityUrl(['view' => null, 'page' => $paginator->currentPage() - 1, 'commits_page' => null])"
-                    :next-url="$activityUrl(['view' => null, 'page' => $paginator->currentPage() + 1, 'commits_page' => null])"
+                    page-size-wire-model="perPage"
+                    previous-wire-action="previousActivityPage"
+                    next-wire-action="nextActivityPage"
                     aria-label="Activity pagination"
                 />
             @endif
@@ -716,9 +708,9 @@
                     :pages="$commitPaginator->lastPage()"
                     :page-size="$perPage"
                     :page-size-options="$pageSizes"
-                    :page-size-urls="$pageSizeUrls"
-                    :previous-url="$activityUrl(['view' => 'commits', 'page' => null, 'commits_page' => $commitPaginator->currentPage() - 1])"
-                    :next-url="$activityUrl(['view' => 'commits', 'page' => null, 'commits_page' => $commitPaginator->currentPage() + 1])"
+                    page-size-wire-model="perPage"
+                    previous-wire-action="previousCommitPage"
+                    next-wire-action="nextCommitPage"
                     aria-label="Commit pagination"
                 />
             @endif

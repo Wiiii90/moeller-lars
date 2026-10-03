@@ -8,13 +8,10 @@
     'pageSizeOptions' => [25, 50, 100],
     'pageSizeWireModel' => null,
     'pageSizeWireAction' => null,
-    'pageSizeUrls' => [],
     'pageSizeLabel' => 'Per page',
     'pageSizeAriaLabel' => 'Items per page',
     'previousWireAction' => null,
     'nextWireAction' => null,
-    'previousUrl' => null,
-    'nextUrl' => null,
     'ariaLabel' => 'Pagination',
 ])
 
@@ -23,8 +20,6 @@
     $lastPage = max(1, (int) $pages);
     $previousDisabled = $currentPage <= 1;
     $nextDisabled = $currentPage >= $lastPage;
-    $hasPreviousUrl = is_string($previousUrl) && $previousUrl !== '';
-    $hasNextUrl = is_string($nextUrl) && $nextUrl !== '';
     $hasPreviousAction = is_string($previousWireAction) && $previousWireAction !== '';
     $hasNextAction = is_string($nextWireAction) && $nextWireAction !== '';
 @endphp
@@ -35,7 +30,6 @@
         :options="$pageSizeOptions"
         :wire-model="$pageSizeWireModel"
         :wire-action="$pageSizeWireAction"
-        :urls="$pageSizeUrls"
         :label="$pageSizeLabel"
         :aria-label="$pageSizeAriaLabel"
     />
@@ -49,30 +43,22 @@
     </span>
 
     <div class="admin-pager__actions admin-toolbar">
-        @if (! $previousDisabled && $hasPreviousUrl)
-            <a class="admin-action" href="{{ $previousUrl }}" wire:navigate>Previous</a>
-        @else
-            <button
-                class="admin-action"
-                type="button"
-                @if (! $previousDisabled && $hasPreviousAction)
-                    wire:click="{{ $previousWireAction }}"
-                @endif
-                @disabled($previousDisabled || (! $hasPreviousAction && ! $hasPreviousUrl))
-            >Previous</button>
-        @endif
+        <button
+            class="admin-action"
+            type="button"
+            @if (! $previousDisabled && $hasPreviousAction)
+                wire:click="{{ $previousWireAction }}"
+            @endif
+            @disabled($previousDisabled || ! $hasPreviousAction)
+        >Previous</button>
 
-        @if (! $nextDisabled && $hasNextUrl)
-            <a class="admin-action" href="{{ $nextUrl }}" wire:navigate>Next</a>
-        @else
-            <button
-                class="admin-action"
-                type="button"
-                @if (! $nextDisabled && $hasNextAction)
-                    wire:click="{{ $nextWireAction }}"
-                @endif
-                @disabled($nextDisabled || (! $hasNextAction && ! $hasNextUrl))
-            >Next</button>
-        @endif
+        <button
+            class="admin-action"
+            type="button"
+            @if (! $nextDisabled && $hasNextAction)
+                wire:click="{{ $nextWireAction }}"
+            @endif
+            @disabled($nextDisabled || ! $hasNextAction)
+        >Next</button>
     </div>
 </footer>

@@ -23,8 +23,18 @@ it('keeps admin table pagination on the shared pager primitive', function (): vo
     $pager = file_get_contents($root.'/resources/views/components/admin/pager.blade.php');
 
     expect($picker)
-        ->toContain('Alpine.navigate(url)')
+        ->not->toContain('urls')
+        ->not->toContain('Alpine.navigate')
         ->not->toContain('window.location.assign')
         ->and($pager)
-        ->toContain('wire:navigate');
+        ->not->toContain('pageSizeUrls')
+        ->not->toContain('previousUrl')
+        ->not->toContain('nextUrl')
+        ->not->toContain('wire:navigate')
+        ->and($views[2])
+        ->toContain('page-size-wire-model="perPage"')
+        ->toContain('previous-wire-action="previousActivityPage"')
+        ->toContain('next-wire-action="nextActivityPage"')
+        ->toContain('previous-wire-action="previousCommitPage"')
+        ->toContain('next-wire-action="nextCommitPage"');
 });

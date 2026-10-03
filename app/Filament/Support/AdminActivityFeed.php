@@ -58,6 +58,7 @@ final class AdminActivityFeed
         ?string $search = null,
         ?string $date = null,
         ?int $hour = null,
+        int $page = 1,
     ): array {
         $query = $this->query($area, $family, $days, $search, $date, $hour)
             ->with(['adminUser:id,name', 'publicationCheckpointEvent.checkpoint', 'activityOrderingEvent.projection'])
@@ -65,7 +66,7 @@ final class AdminActivityFeed
             ->orderByDesc('id');
 
         /** @var LengthAwarePaginator<int, AuditEvent> $paginator */
-        $paginator = $query->paginate($perPage)->withQueryString();
+        $paginator = $query->paginate($perPage, ['*'], 'page', max(1, $page))->withQueryString();
 
         return [
             'activity' => $this->project($paginator->getCollection(), $actor),

@@ -27,6 +27,7 @@ final class AdminPublicationHistory
         ?string $date = null,
         ?int $hour = null,
         int $perPage = 20,
+        int $page = 1,
     ): array {
         $perPage = max(10, min(100, $perPage));
         $currentSchemaHash = $this->versions->schemaHash();
@@ -41,7 +42,7 @@ final class AdminPublicationHistory
             ])
             ->orderByDesc('published_at')
             ->orderByDesc('id')
-            ->paginate($perPage, ['*'], 'commits_page')
+            ->paginate($perPage, ['*'], 'commits_page', max(1, $page))
             ->withQueryString();
 
         $activityCounts = $this->activity->countsForCheckpoints(
