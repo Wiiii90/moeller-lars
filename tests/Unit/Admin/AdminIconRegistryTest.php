@@ -13,6 +13,16 @@ use App\Filament\Resources\MediaAssets\MediaAssetResource;
 use App\Filament\Support\AdminIcon;
 use App\Filament\Support\SiteNodePresentation;
 
+
+it('keeps backed admin icon values unique', function (): void {
+    $values = array_map(
+        static fn (AdminIcon $icon): string => $icon->value,
+        AdminIcon::cases(),
+    );
+
+    expect($values)->toHaveCount(count(array_unique($values)));
+});
+
 it('derives compact admin icons from central semantics with explicit solid and custom exceptions', function (): void {
     foreach (AdminIcon::cases() as $icon) {
         if ($icon === AdminIcon::Pinned) {
