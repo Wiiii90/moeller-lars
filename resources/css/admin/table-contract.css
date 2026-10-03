@@ -165,6 +165,14 @@
     padding-left: var(--admin-table-edge-inset);
 }
 
+/* Hierarchy ordering controls follow the same non-clipping rule as ordinary
+ * table ordering rails. */
+.admin-hierarchy__position-cell,
+.admin-pages__drag-cell,
+.custom-page-child-row__drag {
+    overflow: visible !important;
+}
+
 /* Pages uses the same six visual units as its metrics. The first two units
  * contain Position/Drag + Name, Page Type and Template each own one full unit,
  * and Actions + trailing Selection own the final two units. */
