@@ -272,3 +272,54 @@ it('keeps General responsive state monotonic and its social table aligned', func
         ->toContain('.admin-table__col-position { width: 3rem; }')
         ->toContain('.admin-table__col-drag { width: 2rem; }');
 });
+
+
+it('covers Pages Gallery Custom Page and Journal in the shared responsive pass', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+    $tableContract = file_get_contents($root.'/resources/css/admin/table-contract.css');
+    $pages = file_get_contents($root.'/resources/views/filament/pages/site-pages.blade.php');
+    $gallery = file_get_contents($root.'/resources/views/filament/resources/artworks/pages/manage-gallery-artworks.blade.php');
+    $custom = file_get_contents($root.'/resources/views/filament/pages/custom-page-workspace.blade.php');
+    $journal = file_get_contents($root.'/resources/views/filament/pages/journal-workspace.blade.php');
+
+    expect($pages)
+        ->toContain('pages-status-metrics')
+        ->toContain('pages-metric--published')
+        ->toContain('pages-metric--unpublished')
+        ->toContain('pages-metric--navigation');
+
+    expect($gallery)
+        ->toContain('gallery-status-metrics')
+        ->toContain('gallery-metric--artworks')
+        ->toContain('gallery-metric--published')
+        ->toContain('gallery-metric--visits');
+
+    expect($custom)
+        ->toContain('custom-page-status-metrics')
+        ->toContain('custom-page-metric--components')
+        ->toContain('custom-page-metric--visits')
+        ->toContain('custom-page-metric--views');
+
+    expect($journal)
+        ->toContain('journal-status-metrics--blog')
+        ->toContain('journal-status-metrics--exhibitions')
+        ->toContain('admin-table__col-position')
+        ->toContain('admin-table__col-drag')
+        ->toContain('journal-table__actions--exhibitions');
+
+    expect($tableContract)
+        ->toContain('.admin-table__col-position { width: 3rem; }')
+        ->toContain('.admin-table__col-drag { width: 2rem; }')
+        ->toContain('.admin-hierarchy__position-cell,')
+        ->toContain('overflow: visible !important');
+
+    expect($responsive)
+        ->toContain('Pages / Gallery / Custom Page / Journal responsive authority')
+        ->toContain('Cross-feature burger-shell monotonicity')
+        ->toContain('.admin-gallery-grid')
+        ->toContain('.admin-hierarchy--pages .admin-pages__template')
+        ->toContain('.custom-page-component-sequence')
+        ->toContain('.journal-table--blog .journal-col--publication')
+        ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important');
+});
