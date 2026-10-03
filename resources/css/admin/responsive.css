@@ -256,10 +256,6 @@
 /* Compact workspace: keep one toolbar row, but redistribute task controls
  * before Narrow introduces the intentional second row. */
 @container admin-workspace (min-width: 54.01rem) and (max-width: 68rem) {
-    .admin-metric__detail {
-        display: none;
-    }
-
     .admin-dashboard__feed-controls {
         grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
         gap: .45rem !important;
@@ -382,6 +378,33 @@
 @container admin-workspace (max-width: 54rem) {
     .admin-metrics:has(> .admin-metric:nth-child(6)) {
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .admin-dashboard .admin-metric {
+        display: none;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks,
+    .admin-dashboard .admin-dashboard__metric--changes {
+        display: block;
+        border-top: 0 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic {
+        padding-left: 0;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--changes {
+        border-right: 0 !important;
+    }
+
+    .admin-dashboard .admin-metric__label,
+    .admin-dashboard .admin-metric__detail {
+        display: block;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
     }
 
     .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
@@ -513,6 +536,74 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /* Dashboard is simple enough to remain a single toolbar row at Narrow.
+     * Search/Type/Reset/Dashboard/Selection each own one explicit region and
+     * Selection keeps the terminal 2.5rem count rail aligned to the table. */
+    .admin-dashboard__feed-controls {
+        display: grid !important;
+        grid-template-columns:
+            minmax(10rem, 1fr)
+            minmax(4.5rem, .34fr)
+            minmax(3.5rem, .24fr)
+            minmax(4.5rem, .3fr)
+            minmax(6.5rem, .42fr) !important;
+        gap: .35rem !important;
+        align-items: end !important;
+    }
+
+    .admin-dashboard__feed-controls > :first-child {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__filters {
+        display: contents !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility {
+        display: contents !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+        grid-column: 3 !important;
+        grid-row: 1 !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
+        grid-column: 4 !important;
+        grid-row: 1 !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+        grid-column: 5 !important;
+        grid-row: 1 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .admin-dashboard__feed-controls .admin-selection__anchor,
+    .admin-dashboard__feed-controls .admin-selection__trigger {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .admin-dashboard__feed-controls .admin-selection__trigger {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+        gap: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .admin-dashboard__feed-controls .admin-selection__count {
+        margin-left: 0;
+        justify-self: center;
     }
 
     /* Gallery follows the same two-row semantic split without changing its
@@ -1063,6 +1154,24 @@
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
+    .admin-dashboard .admin-dashboard__metric--changes {
+        display: none;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        border-right: 0 !important;
+    }
+
+    .admin-dashboard__feed-controls {
+        grid-template-columns:
+            minmax(8rem, 1fr)
+            minmax(4rem, .34fr)
+            minmax(3.25rem, .24fr)
+            minmax(4.25rem, .3fr)
+            minmax(5.5rem, .42fr) !important;
+        gap: .2rem !important;
+    }
+
     .admin-metrics > .admin-metric {
         border-right: 1px solid var(--admin-line) !important;
         border-top: 1px solid var(--admin-line);
@@ -1215,16 +1324,6 @@
 }
 
 @container admin-table (max-width: 38rem) {
-    /* Dashboard supportive Type/Date columns fold into Title metadata. */
-    .admin-dashboard__feed-table .admin-dashboard__col-type,
-    .admin-dashboard__feed-table .admin-dashboard__col-date {
-        display: none;
-    }
-
-    .admin-dashboard__feed-table .admin-responsive-meta {
-        display: block;
-    }
-
     /* Storage keeps Media | Status | Actions | Selection. Type/size are folded
      * into Media metadata by the Blade row. */
     .media-workspace__table-wrap .media-workspace__col-type,
@@ -1300,12 +1399,51 @@
     }
 }
 
+@container admin-table (max-width: 30rem) {
+    .admin-dashboard__feed-table .admin-dashboard__col-type,
+    .admin-dashboard__feed-table .admin-dashboard__col-date {
+        display: none;
+    }
+
+    .admin-dashboard__feed-table .admin-responsive-meta {
+        display: block;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__col-position {
+        width: 3rem;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__col-drag {
+        width: 1.75rem;
+    }
+
+    .admin-dashboard__feed-table col:nth-last-child(2) {
+        width: 5.75rem;
+    }
+}
+
 /* Ultra-narrow toolbars keep the two-row ceiling by collapsing the filter
  * fields into one local presentation-only overlay. Search + Filters + Reset
  * remain row 1; task actions + Selection remain row 2. */
 @container admin-workspace (max-width: 30rem) {
     .admin-data-controls:has(> .admin-data-controls__filters) {
         position: relative;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__filter-trigger {
+        display: none !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__filters {
+        position: static !important;
+        display: contents !important;
+        width: auto !important;
+        max-height: none !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }
 
     .admin-data-controls__filter-trigger {
