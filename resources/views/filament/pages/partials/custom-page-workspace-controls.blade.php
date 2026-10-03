@@ -29,12 +29,24 @@
                 <div class="admin-data-control-group custom-page-workspace__page">
                     <span class="admin-data-control-label">Custom Page</span>
                     <div class="admin-toolbar custom-page-workspace__page-actions">
-                        <button class="admin-action" type="button" wire:click="mountAction('pageSettings')">Settings</button>
-                        <button class="admin-action" type="button" wire:click="mountAction('addComponent')">Add component</button>
+                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('pageSettings')" aria-label="Custom Page settings">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
+                            <span class="admin-action__label">Settings</span>
+                        </button>
+                        <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('addComponent')" aria-label="Add component">
+                            <x-filament::icon :icon="\App\Filament\Support\AdminIcon::CustomPage->mini()" class="admin-action__icon" />
+                            <span class="admin-action__label">Add component</span>
+                        </button>
                         @if ($previewUrl)
-                            <a class="admin-action" href="{{ $previewUrl }}" target="_blank" rel="noopener">Preview</a>
+                            <a class="admin-action admin-action--with-icon" href="{{ $previewUrl }}" target="_blank" rel="noopener" aria-label="Preview Custom Page">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Preview</span>
+                            </a>
                         @else
-                            <button class="admin-action" type="button" disabled>Preview</button>
+                            <button class="admin-action admin-action--with-icon" type="button" disabled aria-label="Preview Custom Page">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Preview</span>
+                            </button>
                         @endif
                     </div>
                 </div>
