@@ -402,3 +402,25 @@ it('locks Analytics Storage and Activity Minimal metrics to exact halves', funct
         ->toContain('grid-column: 1 !important')
         ->toContain('grid-column: 2 !important');
 });
+
+
+it('locks Analytics Storage Activity metric slots and publication-first Activity stage', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+
+    expect($responsive)
+        ->toContain('Final metric geometry + Activity publication priority authority')
+        ->toContain('.analytics-status-metrics > .analytics-metric--visits')
+        ->toContain('.storage-status-metrics > .storage-metric--used')
+        ->toContain('.activity-status-metrics > .activity-metric--changes')
+        ->toContain('grid-column: 1 !important')
+        ->toContain('grid-column: 2 !important')
+        ->toContain('grid-column: 3 !important')
+        ->toContain('justify-self: stretch !important')
+        ->toContain('border-right: 1px solid var(--admin-line) !important')
+        ->toContain('Activity priority: once Narrow, Next Publication owns the stage')
+        ->toContain('.activity-atlas__visual')
+        ->toContain('display: none !important')
+        ->toContain('.activity-publication__actions .admin-action__label')
+        ->toContain('display: inline !important');
+});
