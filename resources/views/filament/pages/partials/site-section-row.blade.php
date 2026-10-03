@@ -40,6 +40,7 @@
             @else
                 <strong>{{ $label }}</strong>
             @endif
+            <small class="admin-responsive-meta">{{ $section['type_label'] }}</small>
         </div>
     </div>
 
