@@ -531,12 +531,12 @@ Responsive behavior is content-driven and follows semantic width states rather t
 
 The canonical order is always **Query / Filter -> Task actions -> Selection**.
 
-- Wide and Compact are one row.
-- Narrow and Minimal may use at most two rows; never create a third toolbar row.
+- **Every toolbar is exactly one row at every supported responsive state. Two-row toolbars are not allowed.**
 - Search, filters and Reset stay in the Query/Filter region; Reset is not a task action.
 - Selection stays the terminal, visually distinct bulk-action region.
-- Compact actions deliberately from label+icon to icon-only and finally to essential icons plus an overflow action when necessary.
-- At ultra-narrow widths, filter fields may collapse behind one local **Filters** trigger/overlay so the toolbar still obeys the two-row ceiling; the underlying Livewire filter fields remain the same controls and resize state is not sent to the server.
+- Width pressure is solved inside that one row: redistribute tracks, collapse lower-priority filters behind a local **Filters** trigger when necessary, and compact actions from full icon+label directly to icon-only or an explicit overflow action.
+- Never abbreviate action labels into fragments such as `O…`, `P…` or other clipped pseudo-labels. A visible label is complete; otherwise it is hidden and the accessible icon action remains.
+- The underlying Livewire filter fields remain the authoritative controls; presentation-only compaction must not send resize state to the server.
 - Icon-only actions keep accessible labels/tooltips and semantic DOM order.
 - Do not rely on uncontrolled flex wrapping to invent intermediate layouts.
 
