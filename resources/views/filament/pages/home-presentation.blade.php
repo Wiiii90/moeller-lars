@@ -11,7 +11,7 @@
         @endif
 
         @if ($template === 'artwork')
-            <div class="home-hero-surface admin-visual-stage admin-visual-stage--stackable" aria-label="Hero Artwork">
+            <div class="home-hero-surface admin-visual-stage" aria-label="Hero Artwork">
                 <div class="home-hero-surface__visual admin-visual-stage__pane">
                     @if ($currentArtwork && $currentArtwork['thumbnail_url'])
                         <img src="{{ $currentArtwork['thumbnail_url'] }}" alt="" loading="eager" decoding="async">
