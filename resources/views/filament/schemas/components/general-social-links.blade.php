@@ -12,15 +12,15 @@
             <colgroup>
                 <col class="admin-table__col-quarter-unit">
                 <col class="admin-table__col-quarter-unit">
-                <col class="admin-table__col-one-half-units">
-                <col class="admin-table__col-two-units">
-                <col class="admin-table__col-two-units">
+                <col class="admin-table__col-one-half-units general-social-table__col-platform">
+                <col class="admin-table__col-two-units general-social-table__col-url">
+                <col class="admin-table__col-two-units general-social-table__col-actions">
             </colgroup>
             <thead>
                 <tr>
                     <th scope="colgroup" colspan="2" class="admin-table__ordering-heading">Position</th>
-                    <th scope="col">Platform</th>
-                    <th scope="col">Profile URL</th>
+                    <th scope="col" class="general-social-table__platform-head">Platform</th>
+                    <th scope="col" class="general-social-table__url-head">Profile URL</th>
                     <th scope="col" class="admin-table__actions">Actions</th>
                 </tr>
             </thead>
@@ -52,7 +52,8 @@
                             >⋮⋮</button>
                         </td>
                         <td class="general-social-table__platform">
-                            {{ $platformLabel }}
+                            <span>{{ $platformLabel }}</span>
+                            <small class="admin-responsive-meta" title="{{ $url }}">{{ $url }}</small>
                         </td>
                         <td class="general-social-table__url" title="{{ $url }}">
                             {{ $url }}
