@@ -2,28 +2,69 @@
 
 .admin-dashboard__feed-controls {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: .85rem;
+    grid-template-columns:
+        minmax(0, 1fr)
+        7rem
+        4.25rem
+        5.5rem
+        8.5rem;
+    gap: .35rem;
     padding: 0 0 .85rem;
     align-items: end;
 }
 
-.admin-dashboard__feed-controls > * {
+.admin-dashboard__feed-controls > :first-child {
     min-width: 0 !important;
     width: 100%;
+    grid-column: 1;
 }
 
-.admin-dashboard__feed-controls > :first-child { grid-column: span 8; }
-.admin-dashboard__feed-controls > :not(:first-child) { grid-column: span 1; }
+.admin-dashboard__feed-controls > .admin-data-controls__filters,
+.admin-dashboard__feed-controls > .admin-data-controls__utility {
+    display: contents;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
+    min-width: 0 !important;
+    width: 100%;
+    grid-column: 2;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+    min-width: 0 !important;
+    grid-column: 3;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
+    min-width: 0 !important;
+    grid-column: 4;
+}
+
+.admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+    min-width: 0 !important;
+    width: 100%;
+    grid-column: 5;
+}
 
 .admin-dashboard__feed-controls .admin-data-control-group,
-.admin-dashboard__feed-controls .admin-selection__anchor { width: 100%; }
-
+.admin-dashboard__feed-controls .admin-selection__anchor,
 .admin-dashboard__feed-controls .admin-data-control-group > .admin-action,
 .admin-dashboard__feed-controls .admin-selection__trigger {
     width: 100%;
     min-width: 0;
-    padding-inline: .35rem;
+}
+
+.admin-dashboard__feed-controls .admin-selection__trigger {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--admin-table-selection-width);
+    gap: 0;
+    padding-right: 0;
+    justify-content: stretch;
+}
+
+.admin-dashboard__feed-controls .admin-selection__count {
+    margin-left: 0;
+    justify-self: center;
 }
 
 .admin-dashboard .admin-data-row { cursor: default; }
@@ -51,7 +92,7 @@
 }
 
 .admin-dashboard__feed-table col:nth-last-child(2) {
-    width: 7rem;
+    width: 18rem;
 }
 
 .admin-dashboard__feed-table .admin-table__selection-col {
@@ -138,30 +179,42 @@
 
 .admin-dashboard__pin-action.is-active { color: color-mix(in srgb, #9a6800 82%, var(--admin-text)); }
 
-/* Stable four-slot rail keeps every icon on one axis regardless of label. */
+/* Dashboard row actions have two states only: full icon+label while they fit,
+ * then icon-only at the shared compact-table threshold. Never abbreviate a
+ * label to fragments such as "O…" or "P…". */
 .admin-dashboard__feed-actions {
-    display: grid !important;
+    display: flex !important;
     width: 100%;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: .18rem;
+    gap: .22rem;
     align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
 }
 
 .admin-dashboard__feed-actions .admin-action {
-    width: 100%;
+    width: auto;
     min-width: 0;
-    padding-inline: .3rem;
-    justify-content: flex-start;
-    overflow: hidden;
+    padding-inline: .35rem;
+    justify-content: center;
+    overflow: visible;
+    flex: 0 0 auto;
 }
 
-.admin-dashboard__feed-actions .admin-action__icon { flex: 0 0 .9rem; }
+.admin-dashboard__feed-actions .admin-action__icon {
+    flex: 0 0 .9rem;
+}
+
 .admin-dashboard__feed-actions .admin-action__label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: clip;
     white-space: nowrap;
 }
-.admin-dashboard__action-placeholder { display: block; min-width: 0; min-height: 1px; }
+
+.admin-dashboard__action-placeholder {
+    display: block;
+    width: 1.55rem;
+    min-width: 1.55rem;
+    min-height: 1px;
+}
 
 
