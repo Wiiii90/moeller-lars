@@ -197,6 +197,11 @@
                                 @endif
                                 <td class="admin-table__identity journal-col--identity">
                                     <strong>{{ $entry['title'] }}</strong>
+                                    @if ($isBlog)
+                                        <small class="admin-responsive-meta">{{ $entry['publication'] }}</small>
+                                    @elseif ($entry['date_text'] !== '')
+                                        <small class="admin-responsive-meta">{{ $entry['date_text'] }}</small>
+                                    @endif
                                     @if ($isBlog && $entry['excerpt'])
                                         <small>{{ $entry['excerpt'] }}</small>
                                     @elseif (! $isBlog && $entry['location'])
