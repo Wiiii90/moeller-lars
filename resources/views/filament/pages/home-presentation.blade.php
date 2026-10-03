@@ -381,14 +381,27 @@
                                 </td>
                                 <td class="admin-table__actions">
                                     <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
-                                        <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')" @disabled(! $reorderEnabled || ! $component['can_move_up']) aria-label="Move {{ $component['type_label'] }} up">↑</button>
-                                        <button class="admin-action admin-order-action" type="button" wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')" @disabled(! $reorderEnabled || ! $component['can_move_down']) aria-label="Move {{ $component['type_label'] }} down">↓</button>
-                                        @if ($component['editable'])
-                                            <button class="admin-action" type="button" wire:click="mountAction('editComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })">Edit</button>
-                                        @else
-                                            <button class="admin-action" type="button" disabled>Edit</button>
-                                        @endif
-                                        <button class="admin-action is-danger" type="button" wire:click="mountAction('removeComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })">Delete</button>
+                                        <x-admin.row-action
+                                            :action="\App\Filament\Support\AdminRowAction::MoveUp"
+                                            wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'up')"
+                                            :disabled="! $reorderEnabled || ! $component['can_move_up']"
+                                            aria-label="Move {{ $component['type_label'] }} up"
+                                        />
+                                        <x-admin.row-action
+                                            :action="\App\Filament\Support\AdminRowAction::MoveDown"
+                                            wire:click="moveComponent({{ $component['index'] }}, '{{ $component['type'] }}', 'down')"
+                                            :disabled="! $reorderEnabled || ! $component['can_move_down']"
+                                            aria-label="Move {{ $component['type_label'] }} down"
+                                        />
+                                        <x-admin.row-action
+                                            :action="\App\Filament\Support\AdminRowAction::Edit"
+                                            wire:click="mountAction('editComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })"
+                                            :disabled="! $component['editable']"
+                                        />
+                                        <x-admin.row-action
+                                            :action="\App\Filament\Support\AdminRowAction::Delete"
+                                            wire:click="mountAction('removeComponent', { index: {{ $component['index'] }}, type: '{{ $component['type'] }}' })"
+                                        />
                                     </div>
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">
