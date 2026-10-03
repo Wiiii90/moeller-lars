@@ -623,8 +623,11 @@
 
     .admin-dashboard__overview-column {
         display: none !important;
+        min-height: 0;
+        height: 100%;
         grid-column: 1 !important;
         grid-row: 2 !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
         width: 100%;
         padding: .45rem 0 0 !important;
         border-left: 0 !important;
