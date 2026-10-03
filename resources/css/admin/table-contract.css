@@ -45,6 +45,13 @@
     padding-inline: .28rem;
 }
 
+/* Ordering controls are geometry, not truncatable text. Their cells may not
+ * clip the square position badge or drag handle. */
+.admin-table__position,
+.admin-table__drag {
+    overflow: visible !important;
+}
+
 .admin-add-row__mark,
 .custom-page-component-add-row > span {
     width: var(--admin-table-leading-square);
