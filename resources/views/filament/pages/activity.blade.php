@@ -388,7 +388,7 @@
                                     aria-label="Selected {{ $viewMode === 'commits' ? 'commits' : 'activity events' }}: {{ $selectedCount }}"
                                     @disabled($selectedCount === 0)
                                 >
-                                    <span>Selected</span>
+                                    <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                                     <span class="admin-selection__count">{{ $selectedCount }}</span>
                                 </button>
 
