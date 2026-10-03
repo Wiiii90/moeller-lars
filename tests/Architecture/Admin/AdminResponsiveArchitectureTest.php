@@ -51,9 +51,19 @@ it('keeps selection terminal while responsive tables remove supportive data firs
 
     expect($dashboard)
         ->toContain('admin-table__selection admin-table__selection--trailing')
+        ->toContain('admin-dashboard__col-position')
+        ->toContain('admin-dashboard__col-drag')
         ->toContain('admin-dashboard__col-sender')
         ->toContain('admin-dashboard__col-type')
         ->toContain('admin-dashboard__col-date');
+
+    $dashboardPage = file_get_contents($root.'/resources/views/filament/pages/dashboard.blade.php');
+
+    expect($dashboardPage)
+        ->toContain('admin-dashboard__metric--{{ $metricRole }}')
+        ->toContain("'visits' => 'traffic'")
+        ->toContain("'published artworks' => 'artworks'")
+        ->toContain("'recent changes' => 'changes'");
 
     expect($storage)
         ->toContain('media-workspace__selection-head--trailing')
@@ -68,6 +78,8 @@ it('keeps selection terminal while responsive tables remove supportive data firs
 
     expect($responsive)
         ->toContain('.admin-dashboard__feed-table .admin-dashboard__col-sender')
+        ->toContain('.admin-dashboard__feed-controls')
+        ->toContain('.admin-dashboard .admin-dashboard__metric--changes')
         ->toContain('.media-workspace__table-wrap .media-workspace__usage-cell')
         ->toContain('.home-source-table .home-source-table__candidates')
         ->toContain('.general-social-table .general-social-table__url');
