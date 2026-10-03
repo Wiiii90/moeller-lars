@@ -2,9 +2,9 @@
 
 /* Shared flat data/control/table/pager grammar for admin workspaces. */
 
-/* Wide table content must scroll inside its own surface rather than changing
- * the page/shell width. Grid items default to min-width:auto, so explicitly
- * release their min-content contribution at the shared workspace boundary. */
+/* Responsive tables stay inside the workspace without horizontal scrollports.
+ * Grid items default to min-width:auto, so explicitly release their min-content
+ * contribution at the shared workspace boundary. */
 .admin-workspace,
 .admin-workspace__body,
 .admin-visual-stage-followup {
@@ -217,7 +217,8 @@
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    overflow: auto;
+    overflow-x: clip;
+    overflow-y: visible;
 }
 
 .admin-data-table,
@@ -245,12 +246,14 @@
 .admin-table--data table,
 .media-workspace__table {
     width: 100%;
-    min-width: 60rem;
+    min-width: 0;
+    max-width: 100%;
     border-collapse: collapse;
 }
 
 .media-workspace__table {
-    min-width: 68rem;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .admin-table:is(.admin-data-table, .admin-table--data, .media-workspace__table-wrap) thead tr,
@@ -336,22 +339,6 @@
 .media-workspace__table-wrap:has(+ .admin-add-row),
 .admin-table--data:has(+ .admin-add-row) {
     border-bottom: 0 !important;
-}
-
-/* Native horizontal scrollbar gutters read as phantom spacing between the last
- * data row and the canonical add-row separator. Tables that flow directly into
- * an add row keep horizontal scrolling, but do not reserve a visible gutter on
- * desktop. Narrow layouts restore a discoverable thin scrollbar below. */
-:is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row) {
-    overflow-y: hidden;
-    scrollbar-gutter: auto;
-    scrollbar-width: none;
-}
-
-:is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row)::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
 }
 
 .admin-add-row + .admin-pager {
@@ -472,15 +459,6 @@
 
     .admin-control-group__actions {
         flex-wrap: wrap;
-    }
-
-    :is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row) {
-        scrollbar-width: thin;
-    }
-
-    :is(.media-workspace__table-wrap, .admin-table--data):has(+ .admin-add-row)::-webkit-scrollbar {
-        display: block;
-        height: .35rem;
     }
 
     .admin-pager {
