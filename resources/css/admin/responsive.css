@@ -2176,3 +2176,250 @@
         display: none !important;
     }
 }
+
+
+/* General responsive authority
+ * Wide/Compact: all six metrics and the live preview remain available.
+ * Narrow: Public email + Contact delivery + Legal; Appearance owns the full
+ * stage and the parallel preview is removed.
+ * Minimal: Public email + Contact delivery only.
+ * Filament's burger/sidebar shell is not a separate General state: once the
+ * shell is mobile, the preview may not reappear merely because the workspace
+ * gained horizontal room. */
+
+@container admin-workspace (max-width: 54rem) {
+    .admin-general .general-status-metrics > .general-metric {
+        display: none !important;
+    }
+
+    .admin-general .general-status-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .admin-general .general-status-metrics > :is(
+        .general-metric--public-email,
+        .general-metric--contact-delivery,
+        .general-metric--legal
+    ) {
+        display: block !important;
+        min-width: 0;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+    }
+
+    .admin-general .general-metric--public-email,
+    .admin-general .general-metric--contact-delivery {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-general .general-metric--legal {
+        border-right: 0 !important;
+    }
+
+    .general-appearance-stage {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) auto !important;
+    }
+
+    .general-appearance-stage::after {
+        display: none !important;
+    }
+
+    .general-appearance-stage__controls {
+        display: block !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .general-appearance-stage__geometry {
+        display: grid !important;
+        grid-column: 1 / -1 !important;
+        grid-row: 2 !important;
+        width: 100% !important;
+        margin: .75rem 0 0 !important;
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+    }
+
+    .general-appearance-stage__preview {
+        display: none !important;
+    }
+}
+
+@media (max-width: 63.99rem) {
+    .admin-general .general-status-metrics > .general-metric {
+        display: none !important;
+    }
+
+    .admin-general .general-status-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .admin-general .general-status-metrics > :is(
+        .general-metric--public-email,
+        .general-metric--contact-delivery,
+        .general-metric--legal
+    ) {
+        display: block !important;
+        min-width: 0;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+    }
+
+    .admin-general .general-metric--public-email,
+    .admin-general .general-metric--contact-delivery {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-general .general-metric--legal {
+        border-right: 0 !important;
+    }
+
+    .general-appearance-stage {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: minmax(0, 1fr) auto !important;
+    }
+
+    .general-appearance-stage::after {
+        display: none !important;
+    }
+
+    .general-appearance-stage__controls,
+    .general-appearance-stage__geometry {
+        grid-column: 1 / -1 !important;
+        width: 100% !important;
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+    }
+
+    .general-appearance-stage__preview {
+        display: none !important;
+    }
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .admin-general .general-status-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .admin-general .general-status-metrics > .general-metric {
+        display: none !important;
+    }
+
+    .admin-general .general-status-metrics > :is(
+        .general-metric--public-email,
+        .general-metric--contact-delivery
+    ) {
+        display: block !important;
+        min-width: 0;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+    }
+
+    .admin-general .general-metric--public-email {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-general .general-metric--contact-delivery {
+        border-right: 0 !important;
+    }
+}
+
+@media (max-width: 38rem) {
+    .admin-general .general-status-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .admin-general .general-status-metrics > .general-metric {
+        display: none !important;
+    }
+
+    .admin-general .general-status-metrics > :is(
+        .general-metric--public-email,
+        .general-metric--contact-delivery
+    ) {
+        display: block !important;
+        min-width: 0;
+        padding: 1.05rem 1rem !important;
+    }
+
+    .admin-general .general-metric--public-email {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-general .general-metric--contact-delivery {
+        border-right: 0 !important;
+    }
+}
+
+/* General Social Media table: preserve the shared Position/Drag rails, reduce
+ * action chrome before data, and only fold Profile URL into Platform at the
+ * smallest table state. */
+@container admin-table (max-width: 62rem) {
+    .general-social-table col.admin-table__col-position {
+        width: 3rem !important;
+    }
+
+    .general-social-table col.admin-table__col-drag {
+        width: 2rem !important;
+    }
+
+    .general-social-table .general-social-table__col-platform {
+        width: 9rem !important;
+    }
+
+    .general-social-table .general-social-table__col-actions {
+        width: 7rem !important;
+    }
+
+    .general-social-table__actions .admin-toolbar {
+        display: grid !important;
+        width: 100%;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: .08rem !important;
+    }
+
+    .general-social-table__actions .admin-action {
+        min-width: 0;
+        padding-inline: .1rem !important;
+        justify-content: center !important;
+    }
+}
+
+@container admin-table (max-width: 38rem) {
+    .general-social-table .general-social-table__col-url,
+    .general-social-table .general-social-table__url-head,
+    .general-social-table .general-social-table__url {
+        display: none !important;
+    }
+
+    .general-social-table .admin-responsive-meta {
+        display: block !important;
+    }
+
+    .general-social-table .general-social-table__col-platform {
+        width: auto !important;
+    }
+
+    .general-social-table .general-social-table__col-actions {
+        width: 6.5rem !important;
+    }
+
+    .general-social-table .general-social-table__position-cell,
+    .general-social-table .general-social-table__drag-cell {
+        overflow: visible !important;
+    }
+}
