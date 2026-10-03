@@ -221,6 +221,8 @@
     color: var(--public-muted);
 }
 
+/* Custom Page components recompose inside the public Narrow state when their
+ * own content stops fitting; this threshold is intentionally content-driven. */
 @media (max-width: 42rem) {
     .custom-page__image {
         width: min(100%, 20rem);
