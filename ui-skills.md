@@ -525,6 +525,12 @@ Responsive behavior is content-driven and follows semantic width states rather t
 - Six-metric strips normally move to a three-column intermediate grid before the smallest retained two-column grid.
 - **Dashboard is an explicit exception:** Wide and Compact keep all six metrics; Narrow keeps exactly three semantic metrics (Visits, Published Artworks, Recent Changes); Minimal keeps exactly two (Visits, Published Artworks).
 - **General uses 6 / 6 / 3 / 2** across Wide / Compact / Narrow / Minimal. Narrow retains Public email + Contact delivery + Legal; Minimal retains Public email + Contact delivery.
+- **Pages, Gallery, Custom Page and Journal also use 6 / 6 / 3 / 2**, with semantic priorities:
+  - Pages: Published + Unpublished + In navigation -> Published + Unpublished.
+  - Gallery: Artworks + Published + Visits -> Artworks + Published.
+  - Custom Page: Components + Visits + Views -> Components + Visits.
+  - Blog: Published + Scheduled + Draft -> Published + Draft.
+  - Exhibitions: Published + Current + Upcoming -> Current + Upcoming.
 - Dashboard uses four effective presentation states only: Wide, Compact, Narrow and Minimal. The burger/mobile shell is not an additional Dashboard state; shell collapse may force Narrow but must never create a parallel responsive composition.
 - Never reduce a metric strip to a one-column list.
 - Minimal may omit a metric strip entirely only where that feature's own contract allows it; this does not override the Dashboard 6/6/3/2 rule.
@@ -542,6 +548,8 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - The underlying Livewire filter fields remain the authoritative controls; presentation-only compaction must not send resize state to the server.
 - Icon-only actions keep accessible labels/tooltips and semantic DOM order.
 - Do not rely on uncontrolled flex wrapping to invent intermediate layouts.
+- Pages, Custom Page and Journal use elastic one-row toolbars: Search absorbs spare width down to one metric cell; filters and right-side utility controls consume only the width they need, with action labels collapsing to icons before data/filter controls are removed.
+- Gallery uses the same one-row principle in its custom toolbar; its Selection trigger still terminates on the shared Selection rail.
 
 ### Tables and Selection
 
@@ -552,6 +560,9 @@ The canonical order is always **Query / Filter -> Task actions -> Selection**.
 - General Social Media uses the same six-cell ruler at Wide/Compact: Position + Drag + Platform end on 2/6, Profile URL ends on 4/6, Actions owns the final two cells. At narrower table widths Position/Drag become shared fixed rails, action labels collapse first, and Profile URL folds into Platform only at Minimal.
 - For Dashboard, the feed table still follows the six-cell ruler (cell 1 = Position/Drag/Type, cell 2 = Date, cells 3–4 = Title, cell 5 = Sender, cell 6 = Actions + terminal Selection). The toolbar is intentionally more elastic: Type, Clear, Dashboard actions and Selection stay intrinsically compact on the right; Search owns all remaining width and may shrink only as far as one metric cell. Right-side controls therefore consume space from Search only when they actually need it.
 - Dashboard table priority is fixed for narrow widths: Sender yields first; **Type and Date remain standalone columns through Minimal**; Actions compacts to the icon rail before either of those columns may disappear.
+- Pages/Custom Page hierarchies protect Position + Drag geometry centrally; their square position badges must never be clipped. Pages drops Template before Page type; Custom Page folds Component kind into Content before sacrificing identity.
+- Journal drops supportive media/publication/schedule columns before Status/Timing. Blog and Exhibitions keep their action rail icon-only before removing operational state.
+- Gallery remains a contact sheet rather than becoming a table; it moves 3 -> 2 -> 1 cards while its control bar stays one row.
 - While the surface remains tabular, toolbar Selected-count, header select-all and row checkboxes share one terminal Selection rail at every responsive state.
 - Preserve table semantics where practical; do not default narrow tables to card stacks.
 - Do not reduce shared semantic font sizes merely to recover width.
@@ -564,6 +575,7 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - Every stage defines an intentional Narrow/Minimal composition for its own task.
 - Preserve required operations and domain state; optional/redundant charts, distribution visuals and parallel previews may disappear.
 - A narrow stage may become one focused surface and may use a small local presentation-only selector when equivalent views still need to be reachable.
+- Sidebar/burger collapse is monotonic for Pages, Gallery, Custom Page and Journal too: removing the sidebar must never make metrics, columns, labels or Gallery card density jump back to a wider state.
 - General keeps the parallel Live Preview in Wide/Compact. Narrow/Minimal omit it and expand Appearance controls + geometry across the full stage; burger/sidebar collapse may force that Narrow composition and must never make the preview reappear.
 - General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
 - Storage may replace desktop Capacity/Distribution visuals with one functional compact surface.
