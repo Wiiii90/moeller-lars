@@ -82,17 +82,17 @@
     .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-1 > :nth-child(2),
+).admin-data-controls--filters-1 > .admin-data-controls__filters > :nth-child(1),
 :is(
     .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-2 > :nth-child(2),
+).admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(1),
 :is(
     .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
-).admin-data-controls--filters-2 > :nth-child(3) {
+).admin-data-controls--filters-2 > .admin-data-controls__filters > :nth-child(2) {
     grid-column: span 1;
 }
 
@@ -100,9 +100,15 @@
     .admin-data-controls--six-cell,
     .custom-page-workspace__controls,
     .journal-workspace__entries > .admin-data-controls
-) > :not(.admin-data-controls__utility) {
+) > :first-child,
+:is(
+    .admin-data-controls--six-cell,
+    .custom-page-workspace__controls,
+    .journal-workspace__entries > .admin-data-controls
+) > .admin-data-controls__filters > * {
     box-sizing: border-box;
     width: 100%;
+    min-width: 0;
     padding-right: .7rem;
 }
 
