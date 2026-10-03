@@ -50,7 +50,7 @@
 
     <div class="admin-pager__actions admin-toolbar">
         @if (! $previousDisabled && $hasPreviousUrl)
-            <a class="admin-action" href="{{ $previousUrl }}">Previous</a>
+            <a class="admin-action" href="{{ $previousUrl }}" wire:navigate>Previous</a>
         @else
             <button
                 class="admin-action"
@@ -63,7 +63,7 @@
         @endif
 
         @if (! $nextDisabled && $hasNextUrl)
-            <a class="admin-action" href="{{ $nextUrl }}">Next</a>
+            <a class="admin-action" href="{{ $nextUrl }}" wire:navigate>Next</a>
         @else
             <button
                 class="admin-action"

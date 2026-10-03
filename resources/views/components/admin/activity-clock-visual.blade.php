@@ -67,7 +67,7 @@
 
                 @if (is_string($hourUrl) && $hourUrl !== '')
                     <a
-                        href="{{ $hourUrl }}"
+                        href="{{ $hourUrl }}" wire:navigate
                         aria-label="Filter {{ str_pad((string) $bucket['hour'], 2, '0', STR_PAD_LEFT) }}:00, {{ number_format($bucket['count']) }} changes"
                     >
                         <line

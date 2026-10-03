@@ -63,6 +63,12 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->spa()
+            ->spaUrlExceptions(fn (): array => [
+                route('home'),
+                '*/'.trim((string) config('pulse.path', 'pulse'), '/'),
+                '*/'.trim((string) config('pulse.path', 'pulse'), '/').'/*',
+            ])
             ->login(Login::class)
             ->passwordReset(RequestPasswordReset::class, ResetPassword::class)
             ->multiFactorAuthentication([

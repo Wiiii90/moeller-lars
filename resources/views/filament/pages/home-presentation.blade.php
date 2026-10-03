@@ -221,7 +221,7 @@
                                 <td class="home-source-table__candidates">
                                     <div class="home-source-candidates" aria-label="Candidates from {{ $gallery['name'] }}">
                                         @forelse ($gallery['candidates'] as $candidate)
-                                            <a href="{{ $candidate['edit_url'] }}" title="{{ $candidate['title'] }} · {{ $candidate['year'] ?: '—' }}" aria-label="Edit {{ $candidate['title'] }}">
+                                            <a href="{{ $candidate['edit_url'] }}" wire:navigate title="{{ $candidate['title'] }} · {{ $candidate['year'] ?: '—' }}" aria-label="Edit {{ $candidate['title'] }}">
                                                 @if ($candidate['thumbnail_url'])
                                                     <img src="{{ $candidate['thumbnail_url'] }}" alt="" loading="lazy" decoding="async">
                                                 @else
@@ -240,7 +240,7 @@
                                 <td class="admin-table__actions">
                                     <div class="admin-row-actions admin-row-actions--canonical admin-toolbar">
                                         <button class="admin-action admin-action--state" type="button" wire:click="toggleGalleryEligibility({{ $gallery['id'] }})">{{ $gallery['preference_enabled'] ? 'Disable preference' : 'Enable preference' }}</button>
-                                        <a class="admin-action" href="{{ $gallery['workspace_url'] }}">Open Gallery</a>
+                                        <a class="admin-action" href="{{ $gallery['workspace_url'] }}" wire:navigate>Open Gallery</a>
                                     </div>
                                 </td>
                                 <td class="admin-table__selection admin-table__selection--trailing">

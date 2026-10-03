@@ -56,7 +56,7 @@
             >
                 <header class="admin-dashboard__overview-head">
                     <span class="admin-section__kicker">Storage</span>
-                    <a class="admin-action" href="{{ $storage['url'] }}">Open</a>
+                    <a class="admin-action" href="{{ $storage['url'] }}" wire:navigate>Open</a>
                 </header>
 
                 <div class="admin-dashboard__storage-stage">
@@ -95,7 +95,7 @@
             >
                 <header class="admin-dashboard__overview-head">
                     <span class="admin-section__kicker">Activity</span>
-                    <a class="admin-action" href="{{ $activity['url'] }}">Open</a>
+                    <a class="admin-action" href="{{ $activity['url'] }}" wire:navigate>Open</a>
                 </header>
 
                 <x-admin.activity-clock-visual
@@ -114,7 +114,7 @@
             >
                 <header class="admin-dashboard__overview-head">
                     <span class="admin-section__kicker">Analytics</span>
-                    <a class="admin-action" href="{{ $analytics['url'] }}">Open</a>
+                    <a class="admin-action" href="{{ $analytics['url'] }}" wire:navigate>Open</a>
                 </header>
 
                 <figure class="admin-dashboard__analytics-visual">

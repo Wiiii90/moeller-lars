@@ -23,7 +23,7 @@
         @if ($usesUrls)
             x-on:change="
                 const url = $event.target.selectedOptions[0]?.dataset.url;
-                if (url) window.location.assign(url);
+                if (url) Alpine.navigate(url);
             "
         @elseif (is_string($wireAction) && $wireAction !== '')
             wire:change="{{ $wireAction }}($event.target.value)"

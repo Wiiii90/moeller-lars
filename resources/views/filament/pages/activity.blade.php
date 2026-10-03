@@ -557,7 +557,7 @@
                                 <td class="admin-table__empty-cell" colspan="9">
                                     @if ($activitySourceExists)
                                         <x-admin.empty-state title="No matching activity" minimal>
-                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}">Clear filters</a></x-slot:actions>
+                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}" wire:navigate>Clear filters</a></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
                                         <x-admin.empty-state title="No activity yet" minimal />
@@ -695,7 +695,7 @@
                                 <td class="admin-table__empty-cell" colspan="7">
                                     @if ($activitySourceExists)
                                         <x-admin.empty-state title="No matching commits" minimal>
-                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}">Clear filters</a></x-slot:actions>
+                                            <x-slot:actions><a class="admin-action" href="{{ $resetUrl }}" wire:navigate>Clear filters</a></x-slot:actions>
                                         </x-admin.empty-state>
                                     @else
                                         <x-admin.empty-state title="No commits yet" minimal />
