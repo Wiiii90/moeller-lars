@@ -94,7 +94,7 @@
         </x-admin.metrics>
 
         <section class="activity-atlas" aria-label="Activity timeline">
-            <div class="activity-atlas__grid admin-visual-stage admin-visual-stage--stackable" aria-label="Activity timeline">
+            <div class="activity-atlas__grid admin-visual-stage" aria-label="Activity timeline">
                 <div class="activity-atlas__visual admin-visual-stage__pane">
                     <div class="activity-atlas__view activity-calendar">
                         <div class="activity-calendar__header">
