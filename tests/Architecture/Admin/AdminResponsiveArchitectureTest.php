@@ -342,8 +342,8 @@ it('locks every two-metric Minimal strip to exact halves', function (): void {
         ->toContain('.custom-page-status-metrics > .custom-page-metric--components')
         ->toContain('.journal-status-metrics--blog > .journal-metric--published')
         ->toContain('.journal-status-metrics--exhibitions > .journal-metric--current')
-        ->toContain('grid-column: 1 !important')
-        ->toContain('grid-column: 2 !important');
+        ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important')
+        ->toContain('grid-column: auto !important');
 
     expect($general)
         ->not->toContain('width: calc(33.333333% - 5rem) !important')
@@ -423,4 +423,22 @@ it('locks Analytics Storage Activity metric slots and publication-first Activity
         ->toContain('display: none !important')
         ->toContain('.activity-publication__actions .admin-action__label')
         ->toContain('display: inline !important');
+});
+
+
+it('centralizes responsive metric geometry for every six-metric strip', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+
+    expect($responsive)
+        ->toContain('Canonical responsive metric geometry')
+        ->toContain('--admin-metric-columns: 3 !important')
+        ->toContain('grid-template-columns: repeat(3, minmax(0, 1fr)) !important')
+        ->toContain('left: 33.333333%')
+        ->toContain('left: 66.666667%')
+        ->toContain('--admin-metric-columns: 2 !important')
+        ->toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important')
+        ->toContain('left: 50%')
+        ->toContain('grid-column: auto !important')
+        ->toContain('gap: 0 !important');
 });
