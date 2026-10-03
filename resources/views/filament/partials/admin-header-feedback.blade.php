@@ -6,21 +6,36 @@
     class="admin-header-feedback"
     x-data="{
         current: null,
-        additionalCount: 0,
+        dismissTimer: null,
+        displayDurationMs: 4000,
 
         runtime() {
-            return window.__adminHeaderFeedbackRuntime ??= {
+            const runtime = window.__adminHeaderFeedbackRuntime ??= {
                 current: null,
-                additionalCount: 0,
+                expiresAt: null,
                 seen: {},
             }
+
+            runtime.expiresAt ??= null
+            runtime.seen ??= {}
+
+            return runtime
         },
 
         sync() {
             const runtime = this.runtime()
 
+            if (
+                runtime.current !== null
+                && runtime.expiresAt !== null
+                && runtime.expiresAt <= Date.now()
+            ) {
+                runtime.current = null
+                runtime.expiresAt = null
+            }
+
             this.current = runtime.current
-            this.additionalCount = runtime.additionalCount
+            this.armDismissal()
         },
 
         accept(notification) {
@@ -39,21 +54,86 @@
                 runtime.seen[id] = true
             }
 
-            if (runtime.current !== null) {
-                runtime.additionalCount += 1
+            runtime.current = notification
+            runtime.expiresAt = Date.now() + this.displayDurationMs
+            this.current = notification
+            this.armDismissal()
+        },
+
+        armDismissal() {
+            this.cancelDismissal()
+
+            const runtime = this.runtime()
+
+            if (runtime.current === null || runtime.expiresAt === null) {
+                return
             }
 
-            runtime.current = notification
-            this.sync()
+            const currentId = String(runtime.current?.id ?? '')
+            const remainingMs = runtime.expiresAt - Date.now()
+
+            if (remainingMs <= 0) {
+                this.dismissCurrent(currentId)
+
+                return
+            }
+
+            this.dismissTimer = window.setTimeout(
+                () => this.dismissCurrent(currentId),
+                remainingMs,
+            )
+        },
+
+        dismissCurrent(expectedId) {
+            const runtime = this.runtime()
+
+            if (runtime.current === null) {
+                this.current = null
+                this.cancelDismissal()
+
+                return
+            }
+
+            if (String(runtime.current?.id ?? '') !== expectedId) {
+                this.sync()
+
+                return
+            }
+
+            runtime.current = null
+            runtime.expiresAt = null
+            this.current = null
+            this.cancelDismissal()
+        },
+
+        cancelDismissal() {
+            if (this.dismissTimer === null) {
+                return
+            }
+
+            window.clearTimeout(this.dismissTimer)
+            this.dismissTimer = null
         },
 
         init() {
             @js($initialFeedback).forEach((notification) => this.accept(notification))
             this.sync()
         },
+
+        destroy() {
+            this.cancelDismissal()
+        },
     }"
     x-on:admin-header-feedback.window="accept($event.detail?.notification ?? $event.detail)"
     x-bind:data-status="current?.status ?? 'info'"
+    x-cloak
+    x-show="current !== null"
+    x-transition:enter="admin-header-feedback-transition"
+    x-transition:enter-start="admin-header-feedback-transition--hidden"
+    x-transition:enter-end="admin-header-feedback-transition--shown"
+    x-transition:leave="admin-header-feedback-transition"
+    x-transition:leave-start="admin-header-feedback-transition--shown"
+    x-transition:leave-end="admin-header-feedback-transition--hidden"
     role="status"
     aria-live="polite"
     aria-atomic="true"
@@ -72,12 +152,4 @@
             x-text="current?.body ?? ''"
         ></span>
     </div>
-
-    <span
-        class="admin-header-feedback__counter"
-        x-cloak
-        x-show="additionalCount > 0"
-        x-text="'+' + additionalCount"
-        aria-hidden="true"
-    ></span>
 </div>

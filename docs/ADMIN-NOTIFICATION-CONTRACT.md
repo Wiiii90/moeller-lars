@@ -21,7 +21,7 @@ Administrative feedback and persistent notifications originate from structured s
 
 The notifier owns three explicit delivery intents:
 
-- **feedback** — immediate ephemeral feedback for the project-owned static header feedback surface only;
+- **feedback** — immediate ephemeral feedback for the project-owned header feedback surface only;
 - **inbox** — persistent `AdminNotification` only;
 - **both** — immediate header feedback plus a persistent `AdminNotification`.
 
@@ -122,7 +122,7 @@ Notification-specific persistence remains in `AdminNotification`, while common f
 
 ## Header feedback runtime
 
-Transient feedback is rendered only in the project-owned static feedback surface inside the persistent sticky admin header.
+Transient feedback is rendered only in the project-owned feedback surface inside the persistent sticky admin header.
 
 The runtime path is:
 
@@ -133,9 +133,9 @@ Admin mutation
   -> admin-header-feedback
 ```
 
-The header feedback surface is mounted once through the panel-level `TOPBAR_START` hook and is not rendered or positioned by individual pages. Its Alpine state is owned by that central surface; there is no page-navigation initializer, DOM measurement, resize observer or feedback-specific animation runtime.
+The header feedback surface is mounted once through the panel-level `TOPBAR_START` hook and is not rendered or positioned by individual pages. Its Alpine state is owned by that central surface; there is no page-navigation initializer, DOM measurement, resize observer or long-running feedback-specific animation loop.
 
-The surface is static and follows the same shell geometry as the canonical desktop `.fi-main` content axis: Filament sidebar width, bounded workspace width, shared workspace gutter and the existing workspace visual shift. The newest feedback text is shown in place. Each further feedback event increments the fixed `+N` counter while replacing the visible text with the newest message; identical messages still count as additional feedback. The surface does not scroll, animate, auto-play a queue, dismiss itself or move neighboring header controls. On narrow screens the body text may be suppressed before header controls become inaccessible.
+The surface follows the same shell geometry as the canonical desktop `.fi-main` content axis: Filament sidebar width, bounded workspace width, shared workspace gutter and the existing workspace visual shift. It is visually idle when no current feedback exists. A new feedback event shows the newest message, restarts one bounded presentation lifecycle and then returns the surface to the empty state; a newer event replaces the current message instead of building a playback queue. Entry/exit motion is a lightweight local CSS transition, respects reduced-motion preferences and may use one local timeout solely to end the current presentation. The runtime must not use polling, intervals, animation loops, observers, periodic Livewire requests or persistence timers, and it must not move neighboring header controls. On narrow screens the body text may be suppressed before header controls become inaccessible.
 
 Persistent-notification details use the shared admin dialog/viewer primitives. Context actions such as `Open record`, `Open activity`, `Review staged changes` or `Mark unread` appear only when they are semantically available.
 
