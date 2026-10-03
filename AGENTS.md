@@ -343,6 +343,9 @@ Use native Livewire sorting (`wire:sort`, `wire:sort:item`, `wire:sort:handle`) 
 - text fields do not write per keystroke under the current admin contract;
 - persist changed text on the normal change/blur path only when normalized content changed;
 - toggles/selects/media choices may persist on discrete changes;
+- read-only workspace search/typeahead is live with the one canonical 300 ms debounce; it never submits a normal form, navigates, or writes editorial state;
+- local animation, clock and browser-render scheduling may use timing APIs when they remain presentation-only; do not confuse those with persistence/search transport rules;
+- Storage data/capacity refresh is event-driven by completed uploads or explicit refresh, never timer/poll driven;
 - Activity/Audit records successful writes but is not the persistence trigger;
 - publication, destructive operations and media references continue through canonical domain services.
 

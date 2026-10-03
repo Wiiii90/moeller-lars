@@ -21,7 +21,7 @@
         <x-slot:search>
             <label class="admin-data-field">
                 <span>Search</span>
-                <input type="search" wire:model.live.debounce.300ms="search" placeholder="Filename, ALT, credit…">
+                <x-admin.search-input model="search" placeholder="Filename, ALT, credit…" />
             </label>
         </x-slot:search>
 

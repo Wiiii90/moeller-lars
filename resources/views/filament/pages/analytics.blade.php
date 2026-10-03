@@ -209,12 +209,10 @@
                 <x-slot:search>
                     <label class="admin-data-field">
                         <span>Search</span>
-                        <input
-                            type="search"
-                            wire:model.live.debounce.300ms="search"
+                        <x-admin.search-input
+                            model="search"
                             placeholder="Search current report"
-                            autocomplete="off"
-                        >
+                        />
                     </label>
                 </x-slot:search>
 

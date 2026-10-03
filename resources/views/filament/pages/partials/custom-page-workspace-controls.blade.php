@@ -2,7 +2,7 @@
             <x-slot:search>
                 <label class="admin-data-field custom-page-workspace__search">
                     <span>Search</span>
-                    <input type="search" wire:model.live.debounce.300ms="componentSearch" placeholder="Search components and entries">
+                    <x-admin.search-input model="componentSearch" placeholder="Search components and entries" />
                 </label>
             </x-slot:search>
 

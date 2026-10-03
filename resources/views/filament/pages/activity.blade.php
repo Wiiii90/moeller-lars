@@ -287,34 +287,23 @@
                 </aside>
             </div>
 
-            <form method="get" action="{{ $activityBaseUrl }}" class="admin-visual-stage-followup">
-                @if ($viewMode === 'commits')
-                    <input type="hidden" name="view" value="commits">
-                @endif
-                <input type="hidden" name="calendar_year" value="{{ $calendarYear }}">
-                <input type="hidden" name="per_page" value="{{ $perPage }}">
-
+            <div class="admin-visual-stage-followup">
                 <x-admin.controls class="activity-workspace__controls" aria-label="Activity controls">
                     <x-slot:search>
                         <label class="admin-data-field activity-control--search">
                             <span>Search</span>
-                            <input
-                                type="search"
+                            <x-admin.search-input
+                                model="search"
                                 name="search"
-                                value="{{ $search }}"
                                 placeholder="Change, actor, hash or message"
-                                autocomplete="off"
-                                wire:model="search"
-                                wire:change="applySearch"
-                                wire:keydown.enter.prevent="applySearch"
-                            >
+                            />
                         </label>
                     </x-slot:search>
 
                     <x-slot:filters>
                         <label class="admin-data-field activity-control--area">
                             <span>Area</span>
-                            <select name="area" x-on:change="$el.form.requestSubmit()">
+                            <select wire:model.live="areaFilter">
                                 <option value="">All areas</option>
                                 @foreach ($areaOptions as $value => $label)
                                     <option value="{{ $value }}" @selected($area === $value)>{{ $label }}</option>
@@ -323,7 +312,7 @@
                         </label>
                         <label class="admin-data-field activity-control--type">
                             <span>Type</span>
-                            <select name="family" x-on:change="$el.form.requestSubmit()">
+                            <select wire:model.live="familyFilter">
                                 <option value="">All changes</option>
                                 @foreach ($familyOptions as $value => $label)
                                     <option value="{{ $value }}" @selected($family === $value)>{{ $label }}</option>
@@ -334,16 +323,14 @@
                             <span>Date</span>
                             <input
                                 type="date"
-                                name="calendar_date"
-                                value="{{ $activeDate ?? '' }}"
+                                wire:model.live="dateFilter"
                                 min="2000-01-01"
                                 max="{{ $todayDate }}"
-                                x-on:change="$el.form.requestSubmit()"
                             >
                         </label>
                         <label class="admin-data-field activity-control--time">
                             <span>Time</span>
-                            <select name="hour" x-on:change="$el.form.requestSubmit()">
+                            <select wire:model.live="hourFilter">
                                 <option value="">All times</option>
                                 @foreach (range(0, 23) as $hour)
                                     <option value="{{ $hour }}" @selected($activeHour === $hour)>{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}:00–{{ str_pad((string) (($hour + 1) % 24), 2, '0', STR_PAD_LEFT) }}:00</option>
@@ -442,7 +429,7 @@
                         </div>
                     </x-slot:selection>
                 </x-admin.controls>
-            </form>
+            </div>
         </section>
 
         @if ($viewMode === 'activity')

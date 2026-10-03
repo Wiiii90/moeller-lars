@@ -15,6 +15,8 @@ use Filament\Forms\Components\Toggle;
 
 final class AdminControl
 {
+    public const SEARCH_DEBOUNCE_MS = 300;
+
     private const WRAPPER_CLASS = 'admin-control-field admin-form-controls';
 
     public static function register(): void

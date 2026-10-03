@@ -24,13 +24,10 @@
                 <x-slot:search>
                     <label class="admin-task-field">
                         <span>SEARCH</span>
-                        <input
-                            type="search"
-                            value="{{ $search }}"
+                        <x-admin.search-input
+                            model="search"
                             placeholder="Search pages"
-                            wire:model.blur="search"
-                            x-on:keydown.enter.prevent="$el.blur()"
-                        >
+                        />
                     </label>
                 </x-slot:search>
 

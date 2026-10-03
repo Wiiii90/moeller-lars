@@ -15,7 +15,7 @@
         <x-slot:search>
             <label class="admin-data-field">
                 <span>Search</span>
-                <input type="search" wire:model.live.debounce.300ms="feedSearch" placeholder="Title, sender or message" autocomplete="off">
+                <x-admin.search-input model="feedSearch" placeholder="Title, sender or message" />
             </label>
         </x-slot:search>
 

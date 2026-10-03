@@ -16,6 +16,7 @@ use App\Domain\Content\SitePreviewContext;
 use App\Domain\Content\SiteSectionEditorialService;
 use App\Filament\Resources\Artworks\ArtworkResource;
 use App\Filament\Support\AdminRichText;
+use App\Filament\Support\Controls\AdminControl;
 use App\Filament\Support\Dialogs\AdminDialog;
 use App\Filament\Support\Dialogs\AdminDialogSize;
 use App\Filament\Support\Dialogs\InteractsWithAdminEditDialogAutosave;
@@ -1160,7 +1161,7 @@ final class HomePresentation extends Page
     {
         $select = Select::make($name)->label($label)->searchable()
             ->getSearchResultsUsing(fn (string $search): array => $this->heroArtworkOptions($search))
-            ->searchDebounce(300)->searchPrompt('Search eligible Hero Artworks')->noSearchResultsMessage('No matching eligible artworks');
+            ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)->searchPrompt('Search eligible Hero Artworks')->noSearchResultsMessage('No matching eligible artworks');
         if ($multiple) {
             $select->multiple()->getOptionLabelsUsing(fn (array $values): array => $this->heroArtworkOptionLabels($values));
         } else {

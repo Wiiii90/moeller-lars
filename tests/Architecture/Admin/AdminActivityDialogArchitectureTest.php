@@ -22,13 +22,21 @@ it('keeps Activity details stable while the live clock is behind an open dialog'
         ->toContain('> a.fi-icon-btn');
 
     expect($activityView)
-        ->toContain('wire:model="search"')
-        ->toContain('wire:change="applySearch"')
-        ->toContain('wire:keydown.enter.prevent="applySearch"')
+        ->toContain('<x-admin.search-input')
+        ->toContain('model="search"')
+        ->toContain('wire:model.live="areaFilter"')
+        ->toContain('wire:model.live="familyFilter"')
+        ->toContain('wire:model.live="dateFilter"')
+        ->toContain('wire:model.live="hourFilter"')
         ->not->toContain('x-on:input.debounce')
         ->not->toContain('$el.form.requestSubmit()');
 
     expect($activityPage)
         ->toContain("#[Url(as: 'search', except: '')]")
-        ->toContain('public function applySearch(): void');
+        ->toContain("#[Url(as: 'area', except: '')]")
+        ->toContain("#[Url(as: 'family', except: '')]")
+        ->toContain("#[Url(as: 'calendar_date', except: '')]")
+        ->toContain("#[Url(as: 'hour', except: '')]")
+        ->toContain('public function updatedSearch(): void')
+        ->toContain('private function refreshActivityFilters(): void');
 });

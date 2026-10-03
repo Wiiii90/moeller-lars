@@ -62,6 +62,18 @@ final class Activity extends Page
     #[Url(as: 'search', except: '')]
     public string $search = '';
 
+    #[Url(as: 'area', except: '')]
+    public string $areaFilter = '';
+
+    #[Url(as: 'family', except: '')]
+    public string $familyFilter = '';
+
+    #[Url(as: 'calendar_date', except: '')]
+    public string $dateFilter = '';
+
+    #[Url(as: 'hour', except: '')]
+    public string $hourFilter = '';
+
     /** @var array<string, mixed> */
     public array $activityState = [];
 
@@ -82,13 +94,69 @@ final class Activity extends Page
             : self::VIEW_ACTIVITY;
         $this->activityState = $this->activityStateFromRequest();
         $this->search = (string) ($this->activityState['search'] ?? '');
+        $this->areaFilter = (string) ($this->activityState['area'] ?? '');
+        $this->familyFilter = (string) ($this->activityState['family'] ?? '');
+        $this->dateFilter = (string) ($this->activityState['activeDate'] ?? '');
+        $this->hourFilter = isset($this->activityState['activeHour']) ? (string) $this->activityState['activeHour'] : '';
         $this->refreshWorkspaceSnapshot();
     }
 
-    public function applySearch(): void
+    public function updatedSearch(): void
     {
         $this->search = trim($this->search);
         $this->activityState['search'] = $this->search;
+        $this->refreshActivityFilters();
+    }
+
+    public function updatedAreaFilter(): void
+    {
+        if ($this->areaFilter !== '' && ! array_key_exists($this->areaFilter, AdminActionCatalog::areaOptions())) {
+            $this->areaFilter = '';
+        }
+
+        $this->activityState['area'] = $this->areaFilter !== '' ? $this->areaFilter : null;
+        $this->refreshActivityFilters();
+    }
+
+    public function updatedFamilyFilter(): void
+    {
+        if ($this->familyFilter !== '' && ! array_key_exists($this->familyFilter, AdminActionCatalog::familyOptions())) {
+            $this->familyFilter = '';
+        }
+
+        $this->activityState['family'] = $this->familyFilter !== '' ? $this->familyFilter : null;
+        $this->refreshActivityFilters();
+    }
+
+    public function updatedDateFilter(): void
+    {
+        $this->dateFilter = trim($this->dateFilter);
+        $this->activityState['activeDate'] = $this->dateFilter !== '' ? $this->dateFilter : null;
+
+        if ($this->dateFilter !== '') {
+            $currentYear = (int) ($this->activityState['currentYear'] ?? now()->format('Y'));
+            $this->activityState['calendarYear'] = max(2000, min($currentYear, (int) substr($this->dateFilter, 0, 4)));
+        }
+
+        $this->refreshActivityFilters();
+    }
+
+    public function updatedHourFilter(): void
+    {
+        $hour = filter_var($this->hourFilter, FILTER_VALIDATE_INT);
+        if ($this->hourFilter === '' || $hour === false || $hour < 0 || $hour > 23) {
+            $this->hourFilter = '';
+            $this->activityState['activeHour'] = null;
+        } else {
+            $this->hourFilter = (string) $hour;
+            $this->activityState['activeHour'] = $hour;
+        }
+
+        $this->refreshActivityFilters();
+    }
+
+    private function refreshActivityFilters(): void
+    {
         $this->clearSelection();
         $this->refreshWorkspaceSnapshot();
     }

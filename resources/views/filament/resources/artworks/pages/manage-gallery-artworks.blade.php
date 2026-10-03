@@ -86,12 +86,10 @@
             <div class="gallery-workspace__controls" aria-label="Gallery controls">
                 <label class="gallery-workspace__field gallery-workspace__search">
                     <span>Search</span>
-                    <input
-                        type="search"
-                        wire:model.live.debounce.300ms="search"
+                    <x-admin.search-input
+                        model="search"
                         placeholder="Title, material, dimensions"
-                        autocomplete="off"
-                    >
+                    />
                 </label>
 
                 <label class="gallery-workspace__field">

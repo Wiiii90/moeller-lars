@@ -9,6 +9,7 @@ use App\Domain\Content\HomePresentationEditorialService;
 use App\Domain\Content\HomePresentationResolver;
 use App\Domain\Content\HomeTemplate;
 use App\Domain\Content\SiteSectionEditorialService;
+use App\Filament\Support\Controls\AdminControl;
 use App\Models\Artwork;
 use App\Models\ArtworkCategory;
 use App\Models\HomePresentationSetting;
@@ -250,7 +251,7 @@ final class HomeSettingsDialog
             ->label($label)
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => $this->heroArtworkOptions($search))
-            ->searchDebounce(300)
+            ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
             ->searchPrompt('Search eligible Hero Artworks')
             ->noSearchResultsMessage('No matching eligible artworks');
 

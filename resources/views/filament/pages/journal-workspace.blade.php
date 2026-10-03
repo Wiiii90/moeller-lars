@@ -25,12 +25,10 @@
                 <x-slot:search>
                     <label class="admin-field admin-control-bar__search">
                         <span class="admin-field__label">Search</span>
-                        <input
-                            type="search"
-                            wire:model.live.debounce.300ms="search"
+                        <x-admin.search-input
+                            model="search"
                             placeholder="{{ $isBlog ? 'Title or excerpt' : 'Title, venue, place or date' }}"
-                            autocomplete="off"
-                        >
+                        />
                     </label>
                 </x-slot:search>
 

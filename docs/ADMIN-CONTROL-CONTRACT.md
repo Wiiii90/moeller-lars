@@ -51,7 +51,7 @@ Native single-selects and pager selects use the shared `admin-selects.js` popup 
 
 ## Persistence semantics
 
-Persistence must never be driven by a debounce timer.
+Persistence must never be driven by a debounce timer. Read-only search is the one deliberate debounce use-case and is defined separately below. Animation, clocks and browser render scheduling are presentation concerns; they are not persistence timers.
 
 Use discrete semantic commits:
 
@@ -71,17 +71,20 @@ Always normalize and compare with the persisted value before writing. Activity/A
 
 ### Search and remote typeahead
 
-Search is not persistence. The default workspace-search pattern should still avoid timer-driven server reloads when a normal Enter/change/blur interaction gives equivalent usability.
+Search is read-only and intentionally live. All ordinary admin workspace search inputs use the shared `x-admin.search-input` primitive with one canonical **300 ms** debounce. The debounce may only update search/filter projection state; it must never submit a normal form, navigate the page, write editorial data or trigger persistence.
 
-A remote searchable select may use a short debounce solely as **transport throttling** when every keystroke would otherwise issue a server request. This is an explicit exception for query traffic, not for mutation traffic. It must satisfy all of these conditions:
+Remote searchable Filament selects use the same 300 ms transport throttle through `AdminControl::SEARCH_DEBOUNCE_MS`. Their search callback is read-only; choosing or clearing the final option is the semantic state change.
 
-- the callback is read-only;
-- selecting or clearing the final value is the only semantic state change;
-- the debounce does not save any record or setting;
-- removing the throttle would materially increase request fan-out;
-- the control remains keyboard accessible through Filament's normal listbox behavior.
+Rules:
 
-`MediaAssetSelect` and remote Hero Artwork search are examples of this typeahead case. Do not replace their throttle with `0`; that merely converts a controlled query into a request per keystroke.
+- one canonical 300 ms search debounce, not page-specific values;
+- no `requestSubmit()`, browser navigation or full-page GET from a debounced search;
+- no debounce on persisted text, numeric, rich-text, color or settings fields;
+- text-like persisted controls commit on change/blur; Enter may explicitly commit where supported;
+- select/toggle/checkbox/media choices commit on their discrete change;
+- Storage measurements refresh from upload completion or an explicit refresh action, never from a timer or polling loop.
+
+`MediaAssetSelect` and Hero Artwork search are the canonical remote-typeahead examples.
 
 ## Dialog ownership
 

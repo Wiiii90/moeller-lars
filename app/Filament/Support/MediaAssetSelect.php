@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Domain\Media\MediaIngestService;
+use App\Filament\Support\Controls\AdminControl;
 use App\Models\MediaAsset;
 use App\Models\MediaVariant;
 use Closure;
@@ -126,7 +127,7 @@ final class MediaAssetSelect
             ->label($label)
             ->searchable()
             ->getSearchResultsUsing(fn (string $search): array => self::searchOptions($search, $imagesOnly, $includeDimensions))
-            ->searchDebounce(350)
+            ->searchDebounce(AdminControl::SEARCH_DEBOUNCE_MS)
             ->searchPrompt('Search Storage by filename')
             ->noSearchResultsMessage('No matching files in Storage')
             ->allowHtml();
