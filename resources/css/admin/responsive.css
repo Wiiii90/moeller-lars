@@ -2974,7 +2974,7 @@
 /* Cross-feature burger-shell monotonicity for the current responsive pass.
  * Filament removing the sidebar must not reintroduce columns/actions that had
  * already yielded immediately before shell collapse. */
-@media (max-width: 63.99rem) {
+@media (min-width: 38.01rem) and (max-width: 63.99rem) {
     .admin-gallery-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
