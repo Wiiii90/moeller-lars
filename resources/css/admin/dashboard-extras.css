@@ -86,8 +86,4 @@
     align-content: end;
 }
 
-@media (max-width: 760px) {
-    .admin-dashboard__overview-head {
-        margin-inline: 0 !important;
-    }
-}
+
