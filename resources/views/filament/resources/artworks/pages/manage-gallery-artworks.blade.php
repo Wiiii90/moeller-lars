@@ -1,8 +1,19 @@
 <x-filament-panels::page>
     <x-admin.workspace :title="$galleryContext['name']">
-        <x-admin.metrics :columns="6" aria-label="Gallery overview">
+        <x-admin.metrics :columns="6" class="gallery-status-metrics" aria-label="Gallery overview">
             @foreach ($metrics as $metric)
-                <x-admin.metric :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>
+                @php
+                    $metricRole = match ($metric['label']) {
+                        'Artworks' => 'artworks',
+                        'Published' => 'published',
+                        'Visits' => 'visits',
+                        'Views' => 'views',
+                        'Artwork opens' => 'opens',
+                        'Attention' => 'attention',
+                        default => 'secondary',
+                    };
+                @endphp
+                <x-admin.metric class="gallery-metric gallery-metric--{{ $metricRole }}" :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>
             @endforeach
         </x-admin.metrics>
 
