@@ -1645,3 +1645,320 @@
         gap: .2rem;
     }
 }
+
+
+
+/* -------------------------------------------------------------------------
+ * Dashboard responsive authority
+ * -------------------------------------------------------------------------
+ * Dashboard has four effective presentation states:
+ *   Wide / Compact: six metrics + three simultaneous overview panes.
+ *   Narrow:        three metrics + one selected overview pane.
+ *   Minimal:       two metrics + one selected overview pane.
+ *
+ * The mobile Filament shell is not a fifth presentation state. When the
+ * sidebar collapses, Dashboard is forced to at least Narrow so the newly freed
+ * content width can never promote it back to the desktop composition.
+ */
+
+@container admin-workspace (max-width: 54rem) {
+    .admin-dashboard .admin-metric {
+        display: none !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks,
+    .admin-dashboard .admin-dashboard__metric--changes {
+        display: block !important;
+        min-width: 0;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+    }
+
+    .admin-dashboard .admin-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--changes {
+        border-right: 0 !important;
+    }
+
+    .admin-dashboard .admin-metric__label,
+    .admin-dashboard .admin-metric__detail {
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    .admin-dashboard__overview {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: auto minmax(0, 1fr) !important;
+        overflow: hidden !important;
+        background: none !important;
+    }
+
+    .admin-dashboard__overview::before,
+    .admin-dashboard__overview::after {
+        display: none !important;
+    }
+
+    .admin-dashboard__overview-switcher {
+        display: grid !important;
+        grid-row: 1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .2rem;
+        padding-bottom: .45rem;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-dashboard__overview-switcher .admin-action {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+    }
+
+    .admin-dashboard__overview-switcher .admin-action.is-active {
+        border-color: var(--admin-accent);
+        color: var(--admin-accent-strong);
+    }
+
+    .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+        display: none !important;
+        min-width: 0;
+        min-height: 0;
+        width: 100%;
+        height: 100%;
+        grid-column: 1 / -1 !important;
+        grid-row: 2 !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
+        padding: .45rem 0 0 !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .admin-dashboard__overview-column.is-compact-active {
+        display: grid !important;
+    }
+
+    .admin-dashboard__feed-controls {
+        display: grid !important;
+        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
+        gap: 0 !important;
+        align-items: end;
+    }
+
+    .admin-dashboard__feed-controls > :first-child {
+        grid-column: span 6 !important;
+        min-width: 0 !important;
+        padding-right: .45rem !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__filters,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility {
+        display: contents !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+        grid-column: span 4 !important;
+        min-width: 0 !important;
+        padding-inline: .3rem !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2),
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+        grid-column: span 5 !important;
+        min-width: 0 !important;
+        padding-inline: .3rem !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+        margin-left: 0 !important;
+        padding-right: 0 !important;
+    }
+}
+
+@media (max-width: 63.99rem) {
+    .admin-dashboard .admin-metric {
+        display: none !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks,
+    .admin-dashboard .admin-dashboard__metric--changes {
+        display: block !important;
+        min-width: 0;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+    }
+
+    .admin-dashboard .admin-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--changes {
+        border-right: 0 !important;
+    }
+
+    .admin-dashboard__overview {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: auto minmax(0, 1fr) !important;
+        overflow: hidden !important;
+        background: none !important;
+    }
+
+    .admin-dashboard__overview::before,
+    .admin-dashboard__overview::after {
+        display: none !important;
+    }
+
+    .admin-dashboard__overview-switcher {
+        display: grid !important;
+        grid-row: 1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .2rem;
+        padding-bottom: .45rem;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-dashboard__overview-switcher .admin-action.is-active {
+        border-color: var(--admin-accent);
+        color: var(--admin-accent-strong);
+    }
+
+    .admin-dashboard__overview-column,
+    .admin-dashboard__overview-column + .admin-dashboard__overview-column {
+        display: none !important;
+        min-width: 0;
+        min-height: 0;
+        width: 100%;
+        height: 100%;
+        grid-column: 1 / -1 !important;
+        grid-row: 2 !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
+        padding: .45rem 0 0 !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .admin-dashboard__overview-column.is-compact-active {
+        display: grid !important;
+    }
+
+    .admin-dashboard__feed-controls {
+        display: grid !important;
+        grid-template-columns: repeat(24, minmax(0, 1fr)) !important;
+        gap: 0 !important;
+    }
+
+    .admin-dashboard__feed-controls > :first-child {
+        grid-column: span 6 !important;
+        padding-right: .45rem !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__filters,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility {
+        display: contents !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+        grid-column: span 4 !important;
+        padding-inline: .3rem !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2),
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+        grid-column: span 5 !important;
+        padding-inline: .3rem !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+        margin-left: 0 !important;
+        padding-right: 0 !important;
+    }
+}
+
+@container admin-workspace (max-width: 38rem) {
+    .admin-dashboard .admin-metric {
+        display: none !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        display: block !important;
+        min-width: 0;
+        grid-column: auto !important;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--changes {
+        display: none !important;
+    }
+
+    .admin-dashboard .admin-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-auto-flow: row;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        border-right: 0 !important;
+    }
+
+    .admin-dashboard__feed-controls > :first-child {
+        grid-column: span 5 !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child,
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :first-child {
+        grid-column: span 4 !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :nth-child(2) {
+        grid-column: span 5 !important;
+    }
+
+    .admin-dashboard__feed-controls > .admin-data-controls__utility > :last-child {
+        grid-column: span 6 !important;
+    }
+}
+
+@container admin-workspace (max-width: 20rem) {
+    .admin-dashboard .admin-metrics {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        display: block !important;
+        padding: 1.05rem 1rem !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--changes {
+        display: none !important;
+    }
+}
