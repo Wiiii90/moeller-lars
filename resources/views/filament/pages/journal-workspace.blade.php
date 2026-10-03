@@ -14,9 +14,25 @@
     @endphp
 
     <x-admin.workspace :title="$journalTitle" class="journal-workspace">
-        <x-admin.metrics :columns="6" aria-label="{{ $isBlog ? 'Blog overview' : 'Exhibitions overview' }}">
+        <x-admin.metrics :columns="6" class="journal-status-metrics {{ $isBlog ? 'journal-status-metrics--blog' : 'journal-status-metrics--exhibitions' }}" aria-label="{{ $isBlog ? 'Blog overview' : 'Exhibitions overview' }}">
             @foreach ($metrics as $metric)
-                <x-admin.metric :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>
+                @php
+                    $metricRole = match ($metric['label']) {
+                        'Reads · 30d' => 'reads',
+                        'Visits · 30d' => 'visits',
+                        'Views · 30d' => 'views',
+                        'Published' => 'published',
+                        'Scheduled' => 'scheduled',
+                        'Draft' => 'draft',
+                        'Unpublished' => 'unpublished',
+                        'Archived' => 'archived',
+                        'Current' => 'current',
+                        'Upcoming' => 'upcoming',
+                        'Interactions · 30d' => 'interactions',
+                        default => 'secondary',
+                    };
+                @endphp
+                <x-admin.metric class="journal-metric journal-metric--{{ $metricRole }}" :label="$metric['label']" :value="$metric['value']">{{ $metric['description'] }}</x-admin.metric>
             @endforeach
         </x-admin.metrics>
 
@@ -77,12 +93,24 @@
                     <div class="admin-control-group">
                         <span class="admin-control-group__label">Journal</span>
                         <div class="admin-control-group__actions">
-                            <button class="admin-action" type="button" wire:click="mountAction('journalSettings')">Settings</button>
-                            <button class="admin-action" type="button" wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')">Add {{ $entryLabelSingular }}</button>
+                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('journalSettings')" aria-label="Journal settings">
+                                <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Settings</span>
+                            </button>
+                            <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('{{ $isBlog ? 'addPost' : 'addExhibition' }}')" aria-label="Add {{ $entryLabelSingular }}">
+                                <x-filament::icon :icon="$isBlog ? \App\Filament\Support\AdminIcon::BlogPost->mini() : \App\Filament\Support\AdminIcon::Exhibition->mini()" class="admin-action__icon" />
+                                <span class="admin-action__label">Add {{ $entryLabelSingular }}</span>
+                            </button>
                             @if ($journalPublicUrl)
-                                <a class="admin-action" href="{{ $journalPublicUrl }}" target="_blank" rel="noopener">Preview</a>
+                                <a class="admin-action admin-action--with-icon" href="{{ $journalPublicUrl }}" target="_blank" rel="noopener" aria-label="Preview Journal">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Preview</span>
+                                </a>
                             @else
-                                <button class="admin-action" type="button" disabled title="Publish this Journal in Pages before previewing it">Preview</button>
+                                <button class="admin-action admin-action--with-icon" type="button" disabled title="Publish this Journal in Pages before previewing it" aria-label="Preview Journal">
+                                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Preview->mini()" class="admin-action__icon" />
+                                    <span class="admin-action__label">Preview</span>
+                                </button>
                             @endif
                         </div>
                     </div>
@@ -121,8 +149,8 @@
             <x-admin.table class="admin-table--data admin-table--ranked">
                 <table class="admin-table--six-grid journal-table {{ $isBlog ? 'journal-table--blog' : 'journal-table--exhibitions' }}">
                     <colgroup>
-                        <col class="admin-table__col-quarter-unit">
-                        <col class="admin-table__col-quarter-unit">
+                        <col class="admin-table__col-quarter-unit admin-table__col-position">
+                        <col class="admin-table__col-quarter-unit admin-table__col-drag">
                         @if ($isBlog)
                             <col class="admin-table__col-half-unit journal-col--visual">
                             <col class="admin-table__col-one-unit journal-col--identity">
