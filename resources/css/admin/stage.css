@@ -170,7 +170,10 @@
 
 /* Dashboard is the canonical visible three-pane special case. */
 .admin-dashboard__overview {
+    --admin-dashboard-stage-height: clamp(20rem, 30cqw, 23.5rem);
+    --admin-stage-orbit-size: clamp(10rem, 20cqw, 17.5rem);
     display: grid;
+    height: var(--admin-dashboard-stage-height);
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: stretch;
     border-bottom: 0 !important;
@@ -200,26 +203,23 @@
 }
 
 .admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual {
-    position: absolute;
+    position: relative;
     z-index: 1;
-    top: var(--admin-stage-divider-inset);
-    right: var(--admin-stage-pane-space);
-    bottom: var(--admin-stage-divider-inset);
-    left: 0;
+    inset: auto;
     display: grid;
-    width: auto;
-    height: auto !important;
+    width: 100%;
+    height: 100% !important;
     min-height: 0;
-    grid-template-rows: minmax(0, 1fr) var(--admin-stage-orbit-caption-reserve);
-    gap: var(--admin-stage-orbit-gap);
+    grid-row: 2;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
     place-items: center;
+    overflow: hidden;
 }
 
 .admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual::after {
-    display: block;
-    min-height: var(--admin-stage-orbit-caption-reserve);
-    grid-row: 2;
-    content: "";
+    display: none;
+    content: none;
 }
 
 .admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual > .admin-storage-capacity {
@@ -238,18 +238,17 @@
 }
 
 .admin-dashboard__overview-column:nth-child(2) > .admin-dashboard__activity-visual {
-    position: absolute;
+    position: relative;
     z-index: 1;
-    top: var(--admin-stage-divider-inset);
-    right: var(--admin-stage-pane-space);
-    bottom: var(--admin-stage-divider-inset);
-    left: var(--admin-stage-pane-space);
-    width: auto;
-    height: auto !important;
+    inset: auto;
+    width: 100%;
+    height: 100% !important;
     min-height: 0;
+    grid-row: 2;
     grid-template-rows: minmax(0, 1fr) auto !important;
     gap: var(--admin-stage-orbit-gap);
     place-items: center;
+    overflow: hidden;
 }
 
 .admin-dashboard__overview-column:last-child {
