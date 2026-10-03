@@ -25,7 +25,8 @@ it('keeps admin responsiveness container-driven and table overflow-free', functi
         ->toContain('.general-appearance-stage__preview')
         ->toContain('.admin-storage__distribution')
         ->toContain('.admin-dashboard__overview-column:nth-child(n + 2)')
-        ->toContain('.custom-page-component-sequence .admin-responsive-meta');
+        ->toContain('.custom-page-component-sequence .admin-responsive-meta')
+        ->not->toContain('admin-visual-stage--stackable');
 
     expect($flow)
         ->toContain('Ordinary admin tables do not become horizontal scrollports')
