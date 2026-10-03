@@ -80,9 +80,9 @@
     object-fit: contain;
 }
 
-/* Facts occupy only their actual text height below the canonical stage. */
+/* Generic facts occupy their content height. Storage overrides this with the
+ * shared orbit-caption reserve so its donut and caption match Activity. */
 .admin-dashboard__facts {
-    min-height: 0;
     align-content: end;
 }
 
