@@ -1237,6 +1237,23 @@
         padding-left: 0;
     }
 
+    /* Dashboard overrides the generic two-column metric nth-child grammar:
+     * only Visits + Published Artworks remain, with stable inset and one
+     * separator between them. */
+    .admin-dashboard .admin-dashboard__metric--traffic,
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--traffic {
+        border-right: 1px solid var(--admin-line) !important;
+    }
+
+    .admin-dashboard .admin-dashboard__metric--artworks {
+        border-right: 0 !important;
+    }
+
     .admin-data-controls,
     .admin-task-controls--pages,
     .custom-page-workspace__controls {
