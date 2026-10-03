@@ -330,6 +330,7 @@
     }
 
     .admin-row-actions .admin-action__label,
+    .activity-actions-cell .admin-action__label,
     .media-workspace__row-actions .admin-action__label,
     .journal-row-actions .admin-action__label,
     .admin-pages__row-actions .admin-action__label,
@@ -338,6 +339,7 @@
     }
 
     .admin-row-actions .admin-action,
+    .activity-actions-cell .admin-action,
     .media-workspace__row-actions .admin-action,
     .journal-row-actions .admin-action,
     .admin-pages__row-actions .admin-action,
@@ -892,8 +894,15 @@
         display: none;
     }
 
-    .home-components-table .admin-responsive-meta {
+    .home-components-table .admin-responsive-meta,
+    .journal-table .admin-responsive-meta,
+    .activity-events-table .admin-responsive-meta,
+    .activity-commits-table .admin-responsive-meta {
         display: block;
+    }
+
+    .admin-responsive-meta--minimal {
+        display: none !important;
     }
 
     .home-components-table .admin-row-actions {
@@ -1072,21 +1081,25 @@
         display: none !important;
     }
 
+    .admin-hierarchy--pages .admin-responsive-meta,
+    .activity-events-table .admin-responsive-meta--minimal {
+        display: block !important;
+    }
+
     .admin-hierarchy--pages .admin-pages__header,
     .admin-hierarchy--pages .admin-pages__row {
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     }
 
-    /* Seven Blog actions stay reachable without horizontal table overflow.
-     * Two compact icon rows are preferable to a scrollport; future product
-     * review may promote lower-priority actions into an overflow menu. */
+    /* Narrow row actions remain a single icon rail; they do not grow table
+     * rows just because labels disappeared. */
     .journal-row-actions--blog {
-        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
         grid-auto-rows: minmax(1.8rem, auto);
     }
 
     .journal-row-actions--exhibitions {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
         grid-auto-rows: minmax(1.8rem, auto);
     }
 
