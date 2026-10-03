@@ -598,12 +598,6 @@
     margin-top: 0;
 }
 
-@media (max-width: 1050px) {
-    :root {
-        --admin-visual-stage-height: min(23.5rem, 50vw);
-    }
-}
-
 @media (max-width: 900px) {
     .admin-workspace__header {
         grid-template-columns: 1fr;
@@ -622,8 +616,3 @@
     }
 }
 
-@media (max-width: 720px) {
-    :root {
-        --admin-visual-stage-height: min(23.5rem, 58.8235vw);
-    }
-}
