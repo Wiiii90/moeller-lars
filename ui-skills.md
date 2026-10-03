@@ -588,7 +588,7 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - General Site icon reserves a stable field footprint whether empty or selected; media thumbnail appearance must not move the controls below it.
 - Analytics Narrow/Minimal keeps the world map as the focused surface and removes the parallel Geography rail.
 - Storage Narrow/Minimal becomes one functional compact surface: Upload remains the main area; a compact Used/Remaining/Allowance strip plus Refresh/Reclaim stays available; the donut and Distribution visualization disappear.
-- Activity Narrow keeps Calendar + a compact Publication rail and removes Clock. Minimal keeps Calendar + a compact Publication footer; Review/Reset/Commit operations remain reachable.
+- Activity is publication-first below Compact: Narrow and Minimal give **Next Publication the full shared stage** and remove Calendar + Clock. Pending state, Preflight/current-live context and Review/Reset/Commit remain visible/reachable; supportive calendar visualization yields before publication operations.
 - **Dashboard keeps Storage | Activity | Analytics as three simultaneous stage cells through Wide, Compact and Narrow. Only Minimal may switch to the local Storage / Activity / Analytics selector and show one stage cell at a time.** Burger/sidebar collapse alone must not trigger the one-cell Dashboard stage.
 - Dashboard stage captions/facts remain visible and one-line through Narrow. The Dashboard stage owns a smooth container-relative height; footer wrapping must never change graphic vertical position.
 - Presentation-only switching stays local (CSS/Alpine); Livewire/Laravel do not track resize state.
@@ -709,3 +709,4 @@ Shared admin navigation/action semantics use `App\Filament\Support\AdminIcon`. P
 See `docs/ADMIN-BROWSER-WORKFLOW.md` for the direct/worker browser-reconciliation loop around these contracts.
 
 - **Minimal:** retain exactly two semantic metrics. The split is exact 50/50: each retained metric owns one explicit grid column; hidden source siblings or original DOM position must never create a 1/3–2/3 layout.
+- Analytics/Storage/Activity metric cells explicitly own their Narrow/Minimal columns and stretch to the full cell. Narrow is exact thirds with two dividers; Minimal is exact halves with one centered divider.
