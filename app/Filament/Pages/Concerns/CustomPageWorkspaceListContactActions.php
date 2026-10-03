@@ -26,7 +26,7 @@ trait CustomPageWorkspaceListContactActions
                 app(CustomPageEditorialService::class)->addListItem($this->settings(), $index, $type, $this->listItemPayload($data));
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'List entry added',
                     status: 'success',
                 );
@@ -59,7 +59,7 @@ trait CustomPageWorkspaceListContactActions
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'List entry saved',
                         status: 'success',
                     );
@@ -80,7 +80,7 @@ trait CustomPageWorkspaceListContactActions
         );
         $this->loadComponentProjection(refreshCvCount: false);
         if ($changed) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 $published ? 'List entry published' : 'List entry unpublished',
                 status: 'success',
             );
@@ -102,7 +102,7 @@ trait CustomPageWorkspaceListContactActions
         $this->clearSelections();
         $this->loadComponentProjection(refreshCvCount: false);
         if ($changed) {
-            app(AdminNotifier::class)->feedback('List entry order updated', status: 'success');
+            app(AdminNotifier::class)->notification('List entry order updated', status: 'success');
         }
     }
 
@@ -117,7 +117,7 @@ trait CustomPageWorkspaceListContactActions
                 app(CustomPageEditorialService::class)->deleteListItem($this->settings(), $index, $type, $itemIndex);
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'List entry deleted',
                     status: 'success',
                 );
@@ -149,7 +149,7 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Contact item added',
                     status: 'success',
                 );
@@ -186,7 +186,7 @@ trait CustomPageWorkspaceListContactActions
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Contact item saved',
                         status: 'success',
                     );
@@ -207,7 +207,7 @@ trait CustomPageWorkspaceListContactActions
         );
         $this->loadComponentProjection(refreshCvCount: false);
         if ($changed) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 $published ? 'Contact item published' : 'Contact item unpublished',
                 status: 'success',
             );
@@ -229,7 +229,7 @@ trait CustomPageWorkspaceListContactActions
         $this->clearSelections();
         $this->loadComponentProjection(refreshCvCount: false);
         if ($changed) {
-            app(AdminNotifier::class)->feedback('Contact item order updated', status: 'success');
+            app(AdminNotifier::class)->notification('Contact item order updated', status: 'success');
         }
     }
 
@@ -248,7 +248,7 @@ trait CustomPageWorkspaceListContactActions
                 );
                 $this->clearSelections();
                 $this->loadComponentProjection(refreshCvCount: false);
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Contact item deleted',
                     status: 'success',
                 );

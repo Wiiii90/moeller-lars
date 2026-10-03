@@ -262,7 +262,7 @@ final class Dashboard extends Page
     {
         app(DashboardFeed::class)->markContactUnread($contactMessageId);
 
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'Contact message marked unread',
             status: 'success',
         );
@@ -273,7 +273,7 @@ final class Dashboard extends Page
         app(DashboardFeedPins::class)->forget('contact:'.$contactMessageId);
         app(DashboardFeed::class)->deleteContact($contactMessageId);
 
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'Contact message deleted',
             status: 'success',
         );
@@ -344,7 +344,7 @@ final class Dashboard extends Page
 
                 $this->refreshFeedFromFirstPage();
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(title: 'Dashboard settings saved', status: 'success');
+                    app(AdminNotifier::class)->notification(title: 'Dashboard settings saved', status: 'success');
                 }
             });
     }

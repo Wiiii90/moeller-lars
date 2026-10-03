@@ -73,7 +73,7 @@ trait ManagesSitePageCreateDialog
                 $this->pageNumber = 1;
                 $this->loadSections();
 
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: $section->nodeType()->label().' added',
                     status: 'success',
                 );

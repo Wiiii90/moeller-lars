@@ -22,7 +22,7 @@ class RequestPasswordReset extends BaseRequestPasswordReset
         try {
             $this->rateLimit(2);
         } catch (TooManyRequestsException $exception) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Too many attempts',
                 body: 'Try again in '.$exception->secondsUntilAvailable.' seconds.',
                 status: 'danger',
@@ -59,7 +59,7 @@ class RequestPasswordReset extends BaseRequestPasswordReset
             },
         );
 
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'Check your inbox',
             body: 'If an administrator account exists for that email address, a password reset link has been sent.',
             status: 'success',

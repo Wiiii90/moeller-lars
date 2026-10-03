@@ -4,9 +4,9 @@ namespace App\Domain\Admin;
 
 use App\Models\AuditEvent;
 
-final class AdminFeedbackContext
+final class AdminActivityNotificationContext
 {
-    private const REQUEST_ATTRIBUTE = 'admin.activity.feedback';
+    private const REQUEST_ATTRIBUTE = 'admin.activity.notification';
 
     private const MAX_MESSAGES = 9;
 

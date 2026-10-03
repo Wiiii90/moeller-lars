@@ -30,7 +30,7 @@ trait CustomPageWorkspaceChildOrdering
             $this->clearSelections();
             $this->loadComponentProjection();
             if ($changed) {
-                app(AdminNotifier::class)->feedback('List entry order updated', status: 'success');
+                app(AdminNotifier::class)->notification('List entry order updated', status: 'success');
             }
 
             return;
@@ -47,7 +47,7 @@ trait CustomPageWorkspaceChildOrdering
             $this->clearSelections();
             $this->loadComponentProjection();
             if ($changed) {
-                app(AdminNotifier::class)->feedback('Contact item order updated', status: 'success');
+                app(AdminNotifier::class)->notification('Contact item order updated', status: 'success');
             }
 
             return;
@@ -102,7 +102,7 @@ trait CustomPageWorkspaceChildOrdering
         $this->clearSelections();
         $this->reloadWorkspace();
         if ($changed) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: $published ? 'Selection published' : 'Selection unpublished',
                 status: 'success',
             );

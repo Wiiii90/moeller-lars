@@ -54,7 +54,7 @@ final class GeneralLayoutControls extends Component
 
         $this->dispatch('general-appearance-updated');
 
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'Changes saved',
             body: match ($field) {
                 'public_page_width' => 'Public page width updated.',

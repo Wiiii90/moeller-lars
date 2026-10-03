@@ -2,8 +2,8 @@
 
 @script
 <script>
-    if (! window.__publicationStateInterceptorRegistered) {
-        window.__publicationStateInterceptorRegistered = true
+    if (! window.__publicationStateControlRegistered) {
+        window.__publicationStateControlRegistered = true
 
         Livewire.interceptRequest(({ onResponse }) => {
             onResponse(({ response }) => {

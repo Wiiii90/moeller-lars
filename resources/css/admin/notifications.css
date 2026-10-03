@@ -4,13 +4,13 @@
     position: relative;
 }
 
-.admin-header-feedback {
-    --admin-header-feedback-flare: var(--admin-accent);
+.admin-header-notification {
+    --admin-header-notification-flare: var(--admin-accent);
 
     position: absolute;
     inset-block: 0;
-    inset-inline-start: calc(1rem + var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap));
-    inset-inline-end: calc(1rem + var(--admin-header-control-size) + var(--admin-header-feedback-edge-gap));
+    inset-inline-start: calc(1rem + var(--admin-header-control-size) + var(--admin-header-notification-edge-gap));
+    inset-inline-end: calc(1rem + var(--admin-header-control-size) + var(--admin-header-notification-edge-gap));
     z-index: 1;
     box-sizing: border-box;
     display: grid;
@@ -35,31 +35,31 @@
     will-change: clip-path, filter, opacity, transform;
 }
 
-.admin-header-feedback[data-status="success"] {
-    --admin-header-feedback-flare: var(--admin-success);
+.admin-header-notification[data-status="success"] {
+    --admin-header-notification-flare: var(--admin-success);
 }
 
-.admin-header-feedback[data-status="warning"] {
-    --admin-header-feedback-flare: var(--admin-accent);
+.admin-header-notification[data-status="warning"] {
+    --admin-header-notification-flare: var(--admin-accent);
 }
 
-.admin-header-feedback[data-status="danger"] {
-    --admin-header-feedback-flare: var(--admin-danger);
+.admin-header-notification[data-status="danger"] {
+    --admin-header-notification-flare: var(--admin-danger);
 }
 
-.dark .admin-header-feedback {
+.dark .admin-header-notification {
     background: rgba(20, 20, 20, .88);
 }
 
-.admin-header-feedback::before,
-.admin-header-feedback::after {
+.admin-header-notification::before,
+.admin-header-notification::after {
     position: absolute;
     z-index: 1;
     content: "";
     pointer-events: none;
 }
 
-.admin-header-feedback::before {
+.admin-header-notification::before {
     inset-block: -95%;
     inset-inline-start: -42%;
     width: 34%;
@@ -68,9 +68,9 @@
         linear-gradient(
             90deg,
             transparent,
-            color-mix(in srgb, var(--admin-header-feedback-flare) 34%, transparent) 28%,
-            color-mix(in srgb, white 92%, var(--admin-header-feedback-flare)) 52%,
-            color-mix(in srgb, var(--admin-header-feedback-flare) 46%, transparent) 70%,
+            color-mix(in srgb, var(--admin-header-notification-flare) 34%, transparent) 28%,
+            color-mix(in srgb, white 92%, var(--admin-header-notification-flare)) 52%,
+            color-mix(in srgb, var(--admin-header-notification-flare) 46%, transparent) 70%,
             transparent
         );
     filter: blur(.18rem);
@@ -78,76 +78,76 @@
     transform: skewX(-13deg);
 }
 
-.admin-header-feedback::after {
+.admin-header-notification::after {
     inset-block: 0;
     inset-inline-start: 0;
     width: .18rem;
     opacity: 0;
-    background: color-mix(in srgb, white 80%, var(--admin-header-feedback-flare));
+    background: color-mix(in srgb, white 80%, var(--admin-header-notification-flare));
     box-shadow:
-        0 0 .7rem .18rem color-mix(in srgb, var(--admin-header-feedback-flare) 82%, transparent),
-        0 0 1.5rem .32rem color-mix(in srgb, var(--admin-header-feedback-flare) 52%, transparent),
+        0 0 .7rem .18rem color-mix(in srgb, var(--admin-header-notification-flare) 82%, transparent),
+        0 0 1.5rem .32rem color-mix(in srgb, var(--admin-header-notification-flare) 52%, transparent),
         0 0 2.4rem .42rem color-mix(in srgb, white 28%, transparent);
 }
 
-.admin-header-feedback[data-phase="entering"] {
-    animation: admin-header-feedback-materialize 900ms cubic-bezier(.12, .84, .16, 1) both;
+.admin-header-notification[data-phase="entering"] {
+    animation: admin-header-notification-materialize 900ms cubic-bezier(.12, .84, .16, 1) both;
 }
 
-.admin-header-feedback[data-phase="entering"]::before {
-    animation: admin-header-feedback-beam-in 900ms cubic-bezier(.12, .84, .16, 1) both;
+.admin-header-notification[data-phase="entering"]::before {
+    animation: admin-header-notification-beam-in 900ms cubic-bezier(.12, .84, .16, 1) both;
 }
 
-.admin-header-feedback[data-phase="entering"]::after {
-    animation: admin-header-feedback-edge-in 900ms cubic-bezier(.12, .84, .16, 1) both;
+.admin-header-notification[data-phase="entering"]::after {
+    animation: admin-header-notification-edge-in 900ms cubic-bezier(.12, .84, .16, 1) both;
 }
 
-.admin-header-feedback[data-phase="leaving"] {
-    animation: admin-header-feedback-dematerialize 700ms cubic-bezier(.62, .01, .82, .18) both;
+.admin-header-notification[data-phase="leaving"] {
+    animation: admin-header-notification-dematerialize 700ms cubic-bezier(.62, .01, .82, .18) both;
 }
 
-.admin-header-feedback[data-phase="leaving"]::before {
-    animation: admin-header-feedback-beam-out 700ms cubic-bezier(.62, .01, .82, .18) both;
+.admin-header-notification[data-phase="leaving"]::before {
+    animation: admin-header-notification-beam-out 700ms cubic-bezier(.62, .01, .82, .18) both;
 }
 
-.admin-header-feedback[data-phase="leaving"]::after {
-    animation: admin-header-feedback-edge-out 700ms cubic-bezier(.62, .01, .82, .18) both;
+.admin-header-notification[data-phase="leaving"]::after {
+    animation: admin-header-notification-edge-out 700ms cubic-bezier(.62, .01, .82, .18) both;
 }
 
-.admin-header-feedback[data-phase="entering"] .admin-header-feedback__icon,
-.admin-header-feedback[data-phase="entering"] .admin-header-feedback__content,
-.admin-header-feedback[data-phase="entering"] .admin-header-feedback__meta {
-    animation: admin-header-feedback-content-in 900ms cubic-bezier(.12, .84, .16, 1) both;
+.admin-header-notification[data-phase="entering"] .admin-header-notification__icon,
+.admin-header-notification[data-phase="entering"] .admin-header-notification__content,
+.admin-header-notification[data-phase="entering"] .admin-header-notification__meta {
+    animation: admin-header-notification-content-in 900ms cubic-bezier(.12, .84, .16, 1) both;
 }
 
-.admin-header-feedback[data-phase="leaving"] .admin-header-feedback__icon,
-.admin-header-feedback[data-phase="leaving"] .admin-header-feedback__content,
-.admin-header-feedback[data-phase="leaving"] .admin-header-feedback__meta {
-    animation: admin-header-feedback-content-out 700ms cubic-bezier(.62, .01, .82, .18) both;
+.admin-header-notification[data-phase="leaving"] .admin-header-notification__icon,
+.admin-header-notification[data-phase="leaving"] .admin-header-notification__content,
+.admin-header-notification[data-phase="leaving"] .admin-header-notification__meta {
+    animation: admin-header-notification-content-out 700ms cubic-bezier(.62, .01, .82, .18) both;
 }
 
-.admin-header-feedback__icon,
-.admin-header-feedback__content,
-.admin-header-feedback__meta {
+.admin-header-notification__icon,
+.admin-header-notification__content,
+.admin-header-notification__meta {
     position: relative;
     z-index: 2;
 }
 
-.admin-header-feedback__icon {
+.admin-header-notification__icon {
     display: grid;
     width: 1rem;
     height: 1rem;
     place-items: center;
-    color: var(--admin-header-feedback-flare);
+    color: var(--admin-header-notification-flare);
 }
 
-.admin-header-feedback__icon svg {
+.admin-header-notification__icon svg {
     grid-area: 1 / 1;
     width: 1rem;
     height: 1rem;
 }
 
-.admin-header-feedback__content {
+.admin-header-notification__content {
     display: flex;
     height: 100%;
     min-width: 0;
@@ -158,9 +158,9 @@
     white-space: nowrap;
 }
 
-.admin-header-feedback__title,
-.admin-header-feedback__separator,
-.admin-header-feedback__body {
+.admin-header-notification__title,
+.admin-header-notification__separator,
+.admin-header-notification__body {
     display: inline-flex;
     height: 100%;
     min-width: 0;
@@ -171,7 +171,7 @@
     white-space: nowrap;
 }
 
-.admin-header-feedback__title {
+.admin-header-notification__title {
     flex: 0 1 auto;
     color: var(--admin-text);
     font-size: var(--admin-font-size-table-support);
@@ -179,37 +179,37 @@
     letter-spacing: -.01em;
 }
 
-.admin-header-feedback__separator {
+.admin-header-notification__separator {
     flex: 0 0 auto;
     color: var(--admin-faint);
     font-size: var(--admin-font-size-table-compact);
 }
 
-.admin-header-feedback__body {
+.admin-header-notification__body {
     flex: 1 1 auto;
     color: var(--admin-muted);
     font-size: var(--admin-font-size-table-compact);
 }
 
-.admin-header-feedback[data-status="warning"] .admin-header-feedback__title,
-.admin-header-feedback[data-status="warning"] .admin-header-feedback__icon {
+.admin-header-notification[data-status="warning"] .admin-header-notification__title,
+.admin-header-notification[data-status="warning"] .admin-header-notification__icon {
     color: var(--admin-accent-strong);
 }
 
-.admin-header-feedback[data-status="danger"] .admin-header-feedback__title,
-.admin-header-feedback[data-status="danger"] .admin-header-feedback__icon {
+.admin-header-notification[data-status="danger"] .admin-header-notification__title,
+.admin-header-notification[data-status="danger"] .admin-header-notification__icon {
     color: var(--admin-danger);
 }
 
-.admin-header-feedback__meta {
+.admin-header-notification__meta {
     display: flex;
     flex: 0 0 auto;
     gap: .3rem;
     align-items: center;
 }
 
-.admin-header-feedback__timer,
-.admin-header-feedback__counter {
+.admin-header-notification__timer,
+.admin-header-notification__counter {
     display: inline-grid;
     min-width: 1.8rem;
     height: 1.42rem;
@@ -226,12 +226,12 @@
     white-space: nowrap;
 }
 
-.admin-header-feedback__counter {
+.admin-header-notification__counter {
     min-width: 1.55rem;
     color: var(--admin-text);
 }
 
-@keyframes admin-header-feedback-materialize {
+@keyframes admin-header-notification-materialize {
     0% {
         opacity: 0;
         clip-path: inset(0 100% 0 0 round .28rem);
@@ -259,7 +259,7 @@
     }
 }
 
-@keyframes admin-header-feedback-dematerialize {
+@keyframes admin-header-notification-dematerialize {
     0% {
         opacity: 1;
         clip-path: inset(0 0 0 0 round .28rem);
@@ -282,7 +282,7 @@
     }
 }
 
-@keyframes admin-header-feedback-content-in {
+@keyframes admin-header-notification-content-in {
     0%,
     24% {
         opacity: 0;
@@ -306,7 +306,7 @@
     }
 }
 
-@keyframes admin-header-feedback-content-out {
+@keyframes admin-header-notification-content-out {
     0% {
         opacity: 1;
         clip-path: inset(0);
@@ -327,7 +327,7 @@
     }
 }
 
-@keyframes admin-header-feedback-beam-in {
+@keyframes admin-header-notification-beam-in {
     0% {
         opacity: 0;
         transform: translateX(0) skewX(-13deg);
@@ -347,7 +347,7 @@
     }
 }
 
-@keyframes admin-header-feedback-beam-out {
+@keyframes admin-header-notification-beam-out {
     0% {
         opacity: 0;
         transform: translateX(540%) skewX(-13deg);
@@ -367,7 +367,7 @@
     }
 }
 
-@keyframes admin-header-feedback-edge-in {
+@keyframes admin-header-notification-edge-in {
     0% {
         opacity: 0;
         inset-inline-start: 0;
@@ -387,7 +387,7 @@
     }
 }
 
-@keyframes admin-header-feedback-edge-out {
+@keyframes admin-header-notification-edge-out {
     0% {
         opacity: 0;
         inset-inline-start: calc(100% - .18rem);
@@ -414,7 +414,7 @@
      * fixed inside Filament's sticky topbar so its containing block cannot
      * change when a page gains or loses a document scrollbar.
      */
-    .admin-header-feedback {
+    .admin-header-notification {
         position: fixed;
         inset-block-start: calc((var(--admin-topbar-height) - var(--admin-header-control-size)) / 2);
         inset-block-end: auto;
@@ -432,41 +432,41 @@
 }
 
 @media (max-width: 640px) {
-    .admin-header-feedback {
+    .admin-header-notification {
         gap: .4rem;
         padding-inline: .55rem .45rem;
     }
 
-    .admin-header-feedback__body,
-    .admin-header-feedback__separator {
+    .admin-header-notification__body,
+    .admin-header-notification__separator {
         display: none;
     }
 
-    .admin-header-feedback__timer,
-    .admin-header-feedback__counter {
+    .admin-header-notification__timer,
+    .admin-header-notification__counter {
         min-width: 1.45rem;
         padding-inline: .24rem;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .admin-header-feedback[data-phase="entering"],
-    .admin-header-feedback[data-phase="leaving"],
-    .admin-header-feedback[data-phase="entering"]::before,
-    .admin-header-feedback[data-phase="entering"]::after,
-    .admin-header-feedback[data-phase="leaving"]::before,
-    .admin-header-feedback[data-phase="leaving"]::after,
-    .admin-header-feedback[data-phase="entering"] .admin-header-feedback__icon,
-    .admin-header-feedback[data-phase="entering"] .admin-header-feedback__content,
-    .admin-header-feedback[data-phase="entering"] .admin-header-feedback__meta,
-    .admin-header-feedback[data-phase="leaving"] .admin-header-feedback__icon,
-    .admin-header-feedback[data-phase="leaving"] .admin-header-feedback__content,
-    .admin-header-feedback[data-phase="leaving"] .admin-header-feedback__meta {
+    .admin-header-notification[data-phase="entering"],
+    .admin-header-notification[data-phase="leaving"],
+    .admin-header-notification[data-phase="entering"]::before,
+    .admin-header-notification[data-phase="entering"]::after,
+    .admin-header-notification[data-phase="leaving"]::before,
+    .admin-header-notification[data-phase="leaving"]::after,
+    .admin-header-notification[data-phase="entering"] .admin-header-notification__icon,
+    .admin-header-notification[data-phase="entering"] .admin-header-notification__content,
+    .admin-header-notification[data-phase="entering"] .admin-header-notification__meta,
+    .admin-header-notification[data-phase="leaving"] .admin-header-notification__icon,
+    .admin-header-notification[data-phase="leaving"] .admin-header-notification__content,
+    .admin-header-notification[data-phase="leaving"] .admin-header-notification__meta {
         animation: none;
     }
 
-    .admin-header-feedback::before,
-    .admin-header-feedback::after {
+    .admin-header-notification::before,
+    .admin-header-notification::after {
         display: none;
     }
 }

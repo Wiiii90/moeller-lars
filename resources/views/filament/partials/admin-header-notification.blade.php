@@ -1,11 +1,17 @@
 @php
-    $initialFeedback = app(\App\Domain\Admin\AdminNotifier::class)->pullPendingFeedback();
+    $initialNotifications = request()->hasHeader('X-Livewire-Navigate')
+        ? []
+        : app(\App\Domain\Admin\AdminNotifier::class)->pullPendingNotifications();
 @endphp
 
+@persist('admin-header-notification')
 <div
-    class="admin-header-feedback"
+    class="admin-header-notification"
     x-data="{
         current: null,
+        queue: [],
+        seen: [],
+        expiresAt: null,
         pendingCount: 0,
         secondsRemaining: 0,
         phase: 'idle',
@@ -17,102 +23,36 @@
         lifecycleTimer: null,
         countdownTimer: null,
 
-        runtime() {
-            const runtime = window.__adminHeaderFeedbackRuntime ??= {
-                current: null,
-                queue: [],
-                expiresAt: null,
-                seen: [],
-            }
-
-            if (! Array.isArray(runtime.queue)) {
-                runtime.queue = []
-            }
-
-            if (! Array.isArray(runtime.seen)) {
-                runtime.seen = []
-            }
-
-            runtime.expiresAt ??= null
-
-            return runtime
-        },
-
-        syncFromRuntime() {
-            this.cancelTimers()
-
-            const runtime = this.runtime()
-
-            if (
-                runtime.current !== null
-                && runtime.expiresAt !== null
-                && runtime.expiresAt <= Date.now()
-            ) {
-                runtime.current = null
-                runtime.expiresAt = null
-            }
-
-            this.current = runtime.current
-            this.pendingCount = runtime.queue.length
-
-            if (runtime.current === null) {
-                if (runtime.queue.length > 0) {
-                    this.promoteNext()
-                } else {
-                    this.phase = 'idle'
-                    this.secondsRemaining = 0
-                }
-
-                return
-            }
-
-            this.phase = 'visible'
-            this.armLifecycle()
-            this.updateCountdown()
-        },
-
         accept(notification) {
             if (! notification) return
 
-            const runtime = this.runtime()
             const id = String(notification.id ?? '')
-
-            if (id !== '' && runtime.seen.includes(id)) {
-                this.syncFromRuntime()
-
-                return
-            }
+            if (id !== '' && this.seen.includes(id)) return
 
             if (id !== '') {
-                runtime.seen.push(id)
-
-                if (runtime.seen.length > this.seenLimit) {
-                    runtime.seen = runtime.seen.slice(-this.seenLimit)
+                this.seen.push(id)
+                if (this.seen.length > this.seenLimit) {
+                    this.seen = this.seen.slice(-this.seenLimit)
                 }
             }
 
-            if (runtime.current === null) {
+            if (this.current === null) {
                 this.startNotification(notification)
-
                 return
             }
 
-            if (runtime.queue.length >= this.queueLimit) {
-                runtime.queue.shift()
+            if (this.queue.length >= this.queueLimit) {
+                this.queue.shift()
             }
 
-            runtime.queue.push(notification)
-            this.pendingCount = runtime.queue.length
+            this.queue.push(notification)
+            this.pendingCount = this.queue.length
         },
 
         startNotification(notification) {
-            const runtime = this.runtime()
-
-            runtime.current = notification
-            runtime.expiresAt = Date.now() + this.displayDurationMs
-
             this.current = notification
-            this.pendingCount = runtime.queue.length
+            this.expiresAt = Date.now() + this.displayDurationMs
+            this.pendingCount = this.queue.length
             this.secondsRemaining = Math.ceil(this.displayDurationMs / 1000)
             this.messageRevision += 1
             this.phase = 'entering'
@@ -122,18 +62,14 @@
         },
 
         promoteNext() {
-            const runtime = this.runtime()
-            const next = runtime.queue.shift() ?? null
-
-            this.pendingCount = runtime.queue.length
+            const next = this.queue.shift() ?? null
+            this.pendingCount = this.queue.length
 
             if (next === null) {
-                runtime.current = null
-                runtime.expiresAt = null
                 this.current = null
+                this.expiresAt = null
                 this.phase = 'idle'
                 this.secondsRemaining = 0
-
                 return
             }
 
@@ -143,18 +79,13 @@
         armLifecycle() {
             this.cancelLifecycle()
 
-            const runtime = this.runtime()
+            if (this.current === null || this.expiresAt === null) return
 
-            if (runtime.current === null || runtime.expiresAt === null) {
-                return
-            }
-
-            const currentId = String(runtime.current?.id ?? '')
-            const remainingMs = runtime.expiresAt - Date.now()
+            const currentId = String(this.current?.id ?? '')
+            const remainingMs = this.expiresAt - Date.now()
 
             if (remainingMs <= 0) {
                 this.beginLeave(currentId)
-
                 return
             }
 
@@ -165,14 +96,10 @@
         },
 
         beginLeave(expectedId) {
-            const runtime = this.runtime()
-
             if (
-                runtime.current === null
-                || String(runtime.current?.id ?? '') !== expectedId
+                this.current === null
+                || String(this.current?.id ?? '') !== expectedId
             ) {
-                this.syncFromRuntime()
-
                 return
             }
 
@@ -192,26 +119,21 @@
         },
 
         finishCurrent(expectedId) {
-            const runtime = this.runtime()
-
             if (
-                runtime.current !== null
-                && String(runtime.current?.id ?? '') !== expectedId
+                this.current !== null
+                && String(this.current?.id ?? '') !== expectedId
             ) {
-                this.syncFromRuntime()
-
                 return
             }
 
-            runtime.current = null
-            runtime.expiresAt = null
             this.current = null
-            this.pendingCount = runtime.queue.length
+            this.expiresAt = null
+            this.pendingCount = this.queue.length
             this.phase = 'idle'
             this.secondsRemaining = 0
             this.cancelTimers()
 
-            if (runtime.queue.length > 0) {
+            if (this.queue.length > 0) {
                 this.$nextTick(() => this.promoteNext())
             }
         },
@@ -219,20 +141,15 @@
         updateCountdown() {
             this.cancelCountdown()
 
-            const runtime = this.runtime()
-
-            if (runtime.current === null || runtime.expiresAt === null) {
+            if (this.current === null || this.expiresAt === null) {
                 this.secondsRemaining = 0
-
                 return
             }
 
-            const remainingMs = Math.max(0, runtime.expiresAt - Date.now())
+            const remainingMs = Math.max(0, this.expiresAt - Date.now())
             this.secondsRemaining = Math.ceil(remainingMs / 1000)
 
-            if (remainingMs <= 0) {
-                return
-            }
+            if (remainingMs <= 0) return
 
             this.countdownTimer = window.setTimeout(
                 () => this.updateCountdown(),
@@ -241,18 +158,14 @@
         },
 
         cancelLifecycle() {
-            if (this.lifecycleTimer === null) {
-                return
-            }
+            if (this.lifecycleTimer === null) return
 
             window.clearTimeout(this.lifecycleTimer)
             this.lifecycleTimer = null
         },
 
         cancelCountdown() {
-            if (this.countdownTimer === null) {
-                return
-            }
+            if (this.countdownTimer === null) return
 
             window.clearTimeout(this.countdownTimer)
             this.countdownTimer = null
@@ -264,17 +177,15 @@
         },
 
         init() {
-            this.syncFromRuntime();
-
-            const initialFeedback = @js($initialFeedback);
-            initialFeedback.forEach((notification) => this.accept(notification))
+            const initialNotifications = @js($initialNotifications)
+            initialNotifications.forEach((notification) => this.accept(notification))
         },
 
         destroy() {
             this.cancelTimers()
         },
     }"
-    x-on:admin-header-feedback.window="accept($event.detail?.notification ?? $event.detail)"
+    x-on:admin-header-notification.window="accept($event.detail?.notification ?? $event.detail)"
     x-bind:data-status="current?.status ?? 'info'"
     x-bind:data-phase="phase"
     x-bind:data-message-revision="messageRevision"
@@ -285,7 +196,7 @@
     aria-atomic="true"
     aria-relevant="additions text"
 >
-    <span class="admin-header-feedback__icon" aria-hidden="true">
+    <span class="admin-header-notification__icon" aria-hidden="true">
         <x-filament::icon
             :icon="\App\Filament\Support\AdminIcon::NotificationSuccess->mini()"
             x-show="current?.status === 'success'"
@@ -304,38 +215,39 @@
         />
     </span>
 
-    <div class="admin-header-feedback__content">
+    <div class="admin-header-notification__content">
         <strong
-            class="admin-header-feedback__title"
+            class="admin-header-notification__title"
             x-text="current?.title ?? ''"
         ></strong>
 
         <span
-            class="admin-header-feedback__separator"
+            class="admin-header-notification__separator"
             x-cloak
             x-show="Boolean(current?.body)"
             aria-hidden="true"
         >:</span>
 
         <span
-            class="admin-header-feedback__body"
+            class="admin-header-notification__body"
             x-cloak
             x-show="Boolean(current?.body)"
             x-text="current?.body ?? ''"
         ></span>
     </div>
 
-    <div class="admin-header-feedback__meta" aria-hidden="true">
+    <div class="admin-header-notification__meta" aria-hidden="true">
         <span
-            class="admin-header-feedback__timer"
+            class="admin-header-notification__timer"
             x-text="secondsRemaining + 's'"
         ></span>
 
         <span
-            class="admin-header-feedback__counter"
+            class="admin-header-notification__counter"
             x-cloak
             x-show="pendingCount > 0"
             x-text="'+' + pendingCount"
         ></span>
     </div>
 </div>
+@endpersist

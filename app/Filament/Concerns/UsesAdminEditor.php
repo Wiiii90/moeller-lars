@@ -22,7 +22,7 @@ trait UsesAdminEditor
     protected function getSavedNotification(): ?Notification
     {
         if ($this->adminEditorMutationChanged) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: $this->adminEditorSavedNotificationTitle(),
                 status: 'success',
             );

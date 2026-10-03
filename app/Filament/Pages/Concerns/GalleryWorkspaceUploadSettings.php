@@ -80,7 +80,7 @@ trait GalleryWorkspaceUploadSettings
                 $this->loadMoveTargets();
                 $this->refreshWorkspaceAfterMutation();
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Gallery settings saved',
                         status: 'success',
                     );
@@ -113,7 +113,7 @@ trait GalleryWorkspaceUploadSettings
             ->action(function (array $data): void {
                 $changed = app(ArtworkMaterialPresetService::class)->sync(is_array($data['presets'] ?? null) ? $data['presets'] : []);
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Material presets saved',
                         status: 'success',
                     );

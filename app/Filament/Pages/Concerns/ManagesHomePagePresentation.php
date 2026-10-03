@@ -31,7 +31,7 @@ trait ManagesHomePagePresentation
             }
 
             if (app(HomeSettingsDialog::class)->changeTemplate($homeTemplate)) {
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Home template updated',
                     status: 'success',
                 );
@@ -59,7 +59,7 @@ trait ManagesHomePagePresentation
                     $changed = $dialog->save($data);
                     $this->loadSections();
                     if ($changed) {
-                        app(AdminNotifier::class)->feedback(
+                        app(AdminNotifier::class)->notification(
                             title: 'Home routing updated',
                             status: 'success',
                         );

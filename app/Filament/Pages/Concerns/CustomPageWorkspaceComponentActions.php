@@ -26,7 +26,7 @@ trait CustomPageWorkspaceComponentActions
         $this->reloadWorkspace();
 
         if ($changed) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Component order updated',
                 status: 'success',
             );
@@ -59,7 +59,7 @@ trait CustomPageWorkspaceComponentActions
         $this->reloadWorkspace();
 
         if ($changed) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Component order updated',
                 status: 'success',
             );
@@ -119,7 +119,7 @@ trait CustomPageWorkspaceComponentActions
         $this->reloadWorkspace();
 
         if ($changed) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Selection moved',
                 body: $count.' selected '.($count === 1 ? 'item' : 'items').' updated in '.($parents !== [] && $children !== [] ? 'their own scopes.' : 'order.'),
                 status: 'success',
@@ -139,7 +139,7 @@ trait CustomPageWorkspaceComponentActions
         $changed = app(CustomPageEditorialService::class)->updateBlock($this->settings(), $index, $type, $block);
         $this->loadComponentProjection();
         if ($changed) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 $published ? 'Component published' : 'Component unpublished',
                 status: 'success',
             );
@@ -174,7 +174,7 @@ trait CustomPageWorkspaceComponentActions
 
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Component added',
                     status: 'success',
                 );
@@ -208,7 +208,7 @@ trait CustomPageWorkspaceComponentActions
                 $this->clearSelections();
                 $this->reloadWorkspace();
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Component saved',
                         status: 'success',
                     );
@@ -239,7 +239,7 @@ trait CustomPageWorkspaceComponentActions
                 $this->reloadWorkspace();
 
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Component type updated',
                         status: 'success',
                     );
@@ -265,7 +265,7 @@ trait CustomPageWorkspaceComponentActions
                 app(CustomPageEditorialService::class)->deleteBlock($this->settings(), $index, $type);
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Component deleted',
                     status: 'success',
                 );
@@ -296,7 +296,7 @@ trait CustomPageWorkspaceComponentActions
                 $count = count($parents) + count($children);
                 $this->clearSelections();
                 $this->reloadWorkspace();
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Selection deleted',
                     body: $count.' selected '.($count === 1 ? 'item' : 'items').' processed.',
                     status: 'success',

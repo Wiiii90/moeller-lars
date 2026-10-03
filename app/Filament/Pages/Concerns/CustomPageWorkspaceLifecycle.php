@@ -211,7 +211,7 @@ trait CustomPageWorkspaceLifecycle
                 $this->loadAnalyticsSnapshot($section);
                 $this->reloadWorkspace();
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Page settings saved',
                         status: 'success',
                     );

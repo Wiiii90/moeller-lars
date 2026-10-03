@@ -15,19 +15,19 @@ final class AdminNotifier
     /** @var list<string> */
     private const STATUSES = ['success', 'warning', 'danger', 'info'];
 
-    private const FEEDBACK_SESSION_KEY = 'admin.header.feedback';
+    private const HEADER_NOTIFICATION_SESSION_KEY = 'admin.header.notification';
 
-    private const MAX_PENDING_FEEDBACK = 9;
+    private const MAX_PENDING_NOTIFICATIONS = 9;
 
-    public function __construct(private readonly AdminFeedbackContext $feedbackContext) {}
+    public function __construct(private readonly AdminActivityNotificationContext $notificationContext) {}
 
     /**
-     * Immediate feedback for the current admin action.
+     * Immediate notification for the current admin action.
      *
-     * Livewire requests dispatch directly to the project-owned header feedback surface.
-     * Non-Livewire requests keep bounded pending feedback for the next admin page render.
+     * Livewire requests dispatch directly to the project-owned header notification surface.
+     * Non-Livewire requests keep bounded pending notifications for the next admin page render.
      */
-    public function feedback(
+    public function notification(
         string $title,
         ?string $body = null,
         string $status = 'info',
@@ -35,11 +35,11 @@ final class AdminNotifier
         [$title, $body, $status] = $this->normalizeMessage($title, $body, $status);
 
         if ($status === 'success') {
-            $activityMessages = $this->feedbackContext->consumeRecorded();
+            $activityMessages = $this->notificationContext->consumeRecorded();
 
             if ($activityMessages !== []) {
                 foreach ($activityMessages as $activityMessage) {
-                    $this->deliverFeedback(
+                    $this->deliverNotification(
                         (string) $activityMessage['change'],
                         $activityMessage['details'] ?? null,
                         'success',
@@ -50,19 +50,19 @@ final class AdminNotifier
             }
         }
 
-        $this->deliverFeedback($title, $body, $status);
+        $this->deliverNotification($title, $body, $status);
     }
 
     /**
      * @return list<array<string, mixed>>
      */
-    public function pullPendingFeedback(): array
+    public function pullPendingNotifications(): array
     {
         if (! request()->hasSession()) {
             return [];
         }
 
-        $pending = request()->session()->pull(self::FEEDBACK_SESSION_KEY, []);
+        $pending = request()->session()->pull(self::HEADER_NOTIFICATION_SESSION_KEY, []);
         if (! is_array($pending)) {
             return [];
         }
@@ -131,18 +131,18 @@ final class AdminNotifier
         array $context = [],
     ): AdminNotification {
         $notification = $this->inbox($user, $sourceId, $title, $body, $status, $context);
-        $this->feedbackContext->discard();
-        $this->deliverFeedback($title, $body, $status);
+        $this->notificationContext->discard();
+        $this->deliverNotification($title, $body, $status);
 
         return $notification;
     }
 
-    private function deliverFeedback(string $title, ?string $body, string $status): void
+    private function deliverNotification(string $title, ?string $body, string $status): void
     {
         [$title, $body, $status] = $this->normalizeMessage($title, $body, $status);
 
         if ($status !== 'success') {
-            $this->feedbackContext->discard();
+            $this->notificationContext->discard();
         }
 
         $message = [
@@ -156,33 +156,33 @@ final class AdminNotifier
             $component = app(LivewireManager::class)->current();
 
             if ($component instanceof Component) {
-                $component->dispatch('admin-header-feedback', notification: $message);
+                $component->dispatch('admin-header-notification', notification: $message);
 
                 return;
             }
         }
 
-        $this->storePendingFeedback($message);
+        $this->storePendingNotification($message);
     }
 
     /**
      * @param  array{id:string,title:string,body:?string,status:string}  $message
      */
-    private function storePendingFeedback(array $message): void
+    private function storePendingNotification(array $message): void
     {
         if (! request()->hasSession()) {
             return;
         }
 
-        $pending = request()->session()->get(self::FEEDBACK_SESSION_KEY, []);
+        $pending = request()->session()->get(self::HEADER_NOTIFICATION_SESSION_KEY, []);
         $pending = is_array($pending) ? array_values(array_filter($pending, 'is_array')) : [];
 
-        if (count($pending) >= self::MAX_PENDING_FEEDBACK) {
-            $pending = array_slice($pending, -(self::MAX_PENDING_FEEDBACK - 1));
+        if (count($pending) >= self::MAX_PENDING_NOTIFICATIONS) {
+            $pending = array_slice($pending, -(self::MAX_PENDING_NOTIFICATIONS - 1));
         }
 
         $pending[] = $message;
-        request()->session()->put(self::FEEDBACK_SESSION_KEY, $pending);
+        request()->session()->put(self::HEADER_NOTIFICATION_SESSION_KEY, $pending);
     }
 
     /** @return array{0:string,1:?string,2:string} */

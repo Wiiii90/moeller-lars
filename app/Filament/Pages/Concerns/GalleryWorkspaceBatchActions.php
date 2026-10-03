@@ -35,7 +35,7 @@ trait GalleryWorkspaceBatchActions
                 $count = $artworks->count();
                 $this->clearSelection();
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: $count.' selected '.($count === 1 ? 'artwork was' : 'artworks were').' removed',
                     status: 'success',
                 );
@@ -72,7 +72,7 @@ trait GalleryWorkspaceBatchActions
                 $count = $artworks->count();
                 $this->clearSelection();
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: $count.' '.($count === 1 ? 'artwork deleted' : 'artworks deleted'),
                     status: 'success',
                 );
@@ -114,7 +114,7 @@ trait GalleryWorkspaceBatchActions
 
                 $this->refreshWorkspaceAfterMutation();
                 if ($changed > 0) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: $changed === 1 ? 'Artwork published' : $changed.' artworks published',
                         status: 'success',
                     );
@@ -143,7 +143,7 @@ trait GalleryWorkspaceBatchActions
 
                 $this->refreshWorkspaceAfterMutation();
                 if ($changed > 0) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: $changed === 1 ? 'Artwork unpublished' : $changed.' artworks unpublished',
                         status: 'success',
                     );

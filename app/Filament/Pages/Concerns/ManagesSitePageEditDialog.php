@@ -101,7 +101,7 @@ trait ManagesSitePageEditDialog
 
                 $this->loadSections();
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Page updated',
                         status: 'success',
                     );
@@ -124,7 +124,7 @@ trait ManagesSitePageEditDialog
                 $changed = $dialog->save($data);
                 $this->loadSections();
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Home settings saved',
                         status: 'success',
                     );

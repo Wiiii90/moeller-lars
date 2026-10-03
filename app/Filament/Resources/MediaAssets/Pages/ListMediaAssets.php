@@ -161,7 +161,7 @@ final class ListMediaAssets extends Page
         app(MediaCapacityService::class)->forgetCachedSnapshot();
         $this->loadStorageOverview(measure: true);
 
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'Storage measurement refreshed',
             status: 'success',
         );
@@ -239,19 +239,19 @@ final class ListMediaAssets extends Page
                 $details[] = '+'.($failed - 4).' more';
             }
 
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: ($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed',
                 body: implode("\n", $details),
                 status: ($added + $duplicates) > 0 ? 'warning' : 'danger',
             );
         } elseif ($added > 0) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: $total === 1 ? 'File uploaded' : 'Files uploaded',
                 body: $this->directUploadSummary($total, $added, $duplicates, 0),
                 status: 'success',
             );
         } elseif ($duplicates > 0) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Already in Storage',
                 body: $total === 1 ? null : $duplicates.' files already exist in Storage',
                 status: 'info',
@@ -427,7 +427,7 @@ final class ListMediaAssets extends Page
                 $this->normalizeSelection();
                 $ids = $this->selectedAssets;
                 if ($ids === []) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'No files selected',
                         status: 'warning',
                     );
@@ -487,7 +487,7 @@ final class ListMediaAssets extends Page
                         $details[] = '+'.(count($failed) - 4).' more';
                     }
 
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Some selected files need attention',
                         body: $deleted.' deleted. '.implode(' ', $details),
                         status: 'warning',
@@ -496,7 +496,7 @@ final class ListMediaAssets extends Page
                     return;
                 }
 
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Selected files deleted',
                     status: 'success',
                 );
@@ -914,7 +914,7 @@ final class ListMediaAssets extends Page
 
         $this->loadLibrary();
         if ($updated->wasChanged()) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'File metadata saved',
                 status: 'success',
             );
@@ -1046,7 +1046,7 @@ final class ListMediaAssets extends Page
                 return true;
             }
 
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'File not deleted',
                 body: $exception instanceof ValidationException
                     ? $this->validationMessage($exception)
@@ -1060,7 +1060,7 @@ final class ListMediaAssets extends Page
         $this->removeSelection($assetId);
         $this->loadLibrary();
         $this->refreshStorageOverviewAfterMutation();
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'File deleted',
             status: 'success',
         );

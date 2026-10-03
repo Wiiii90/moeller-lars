@@ -44,7 +44,7 @@ final class AdminAppAuthentication extends AppAuthentication
                         }
                     });
 
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: __('filament-panels::auth/multi-factor/app/actions/set-up.notifications.enabled.title'),
                         status: 'success',
                     );
@@ -63,7 +63,7 @@ final class AdminAppAuthentication extends AppAuthentication
                         'recoveryCodes' => $recoveryCodes,
                     ]);
 
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: __('filament-panels::auth/multi-factor/app/actions/regenerate-recovery-codes.notifications.regenerated.title'),
                         status: 'success',
                     );
@@ -83,7 +83,7 @@ final class AdminAppAuthentication extends AppAuthentication
                         }
                     });
 
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: __('filament-panels::auth/multi-factor/app/actions/disable.notifications.disabled.title'),
                         status: 'success',
                     );

@@ -37,7 +37,7 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Artwork removed from Gallery',
                     status: 'success',
                 );
@@ -128,7 +128,7 @@ trait GalleryWorkspaceArtworkActions
                         return;
                     }
 
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Media file was not deleted',
                         body: 'The file could not be deleted.',
                         status: 'danger',
@@ -139,7 +139,7 @@ trait GalleryWorkspaceArtworkActions
 
                 $this->detachGalleryArtworksAfterPrimaryMediaDelete($affectedArtworkIds);
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'File deleted',
                     status: 'success',
                 );
@@ -167,7 +167,7 @@ trait GalleryWorkspaceArtworkActions
                 }
 
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Artwork published',
                     status: 'success',
                 );
@@ -181,7 +181,7 @@ trait GalleryWorkspaceArtworkActions
             ->action(function (array $arguments): void {
                 app(ArtworkPublicationService::class)->unpublish($this->actionArtwork($arguments));
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Artwork unpublished',
                     status: 'success',
                 );

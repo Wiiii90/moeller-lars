@@ -10,7 +10,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
-final class PublicationStateBridge extends Component
+final class PublicationStateControl extends Component
 {
     public function commitPublication(): void
     {
@@ -52,7 +52,7 @@ final class PublicationStateBridge extends Component
             return;
         }
 
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'Website committed',
             status: 'success',
         );
@@ -60,6 +60,6 @@ final class PublicationStateBridge extends Component
 
     public function render(): View
     {
-        return view('livewire.admin.publication-state-bridge');
+        return view('livewire.admin.publication-state-control');
     }
 }

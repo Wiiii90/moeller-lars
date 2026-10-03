@@ -58,7 +58,7 @@ trait GalleryWorkspaceArtworkDialogs
 
                 $this->pendingPrimaryMediaAssetId = null;
                 $this->refreshWorkspaceAfterMutation();
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Artwork draft created',
                     status: 'success',
                 );
@@ -141,7 +141,7 @@ trait GalleryWorkspaceArtworkDialogs
 
                 $this->refreshWorkspaceAfterMutation();
                 if ($before !== $after) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Artwork saved',
                         status: 'success',
                     );

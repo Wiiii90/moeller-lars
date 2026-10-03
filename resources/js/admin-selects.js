@@ -363,12 +363,7 @@ document.addEventListener('pointerdown', (event) => {
     activeController.close();
 }, true);
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', scheduleEnhancement, { once: true });
-} else {
-    scheduleEnhancement();
-}
-
+scheduleEnhancement();
 registerLivewireHook();
 document.addEventListener('livewire:init', registerLivewireHook, { once: true });
 document.addEventListener('livewire:navigated', () => {

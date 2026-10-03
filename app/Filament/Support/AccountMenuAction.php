@@ -94,7 +94,7 @@ final class AccountMenuAction
                         return;
                     }
 
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Too many attempts',
                         body: 'Try again in a minute.',
                         status: 'danger',
@@ -114,7 +114,7 @@ final class AccountMenuAction
                         ]);
                     }
 
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Account updated',
                         status: 'success',
                     );

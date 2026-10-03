@@ -68,7 +68,7 @@ class ResetPassword extends BaseResetPassword
         }
 
         if ($status === Password::PASSWORD_RESET) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: __($status),
                 status: 'success',
             );
@@ -76,7 +76,7 @@ class ResetPassword extends BaseResetPassword
             return app(PasswordResetResponse::class);
         }
 
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: __($status),
             status: 'danger',
         );
@@ -137,7 +137,7 @@ class ResetPassword extends BaseResetPassword
 
     private function rateLimitedFeedback(TooManyRequestsException $exception): void
     {
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'Too many attempts',
             body: 'Try again in '.$exception->secondsUntilAvailable.' seconds.',
             status: 'danger',

@@ -213,7 +213,7 @@ trait GalleryWorkspaceDirectUpload
                     $count = count($rows);
                     $this->pendingBatchArtworkMedia = [];
                     $this->refreshWorkspaceAfterMutation();
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: $count.' artworks added',
                         body: 'The new artworks were created as drafts with their uploaded files from Storage as primary media.',
                         status: 'success',
@@ -311,7 +311,7 @@ trait GalleryWorkspaceDirectUpload
                 $details[] = '+'.(count($failures) - 4).' more';
             }
 
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: ($added + $duplicates) > 0 ? 'Upload completed with issues' : 'Upload failed',
                 body: implode("\n", $details),
                 status: ($added + $duplicates) > 0 ? 'warning' : 'danger',
@@ -321,7 +321,7 @@ trait GalleryWorkspaceDirectUpload
         }
 
         if ($added > 0) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: $added === 1 ? 'File uploaded' : 'Files uploaded',
                 body: $summary,
                 status: 'success',
@@ -331,7 +331,7 @@ trait GalleryWorkspaceDirectUpload
         }
 
         if ($duplicates > 0) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Already in Storage',
                 body: $summary,
                 status: 'info',

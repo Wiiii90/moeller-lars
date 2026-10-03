@@ -52,7 +52,7 @@ trait GalleryWorkspaceReadinessSupport
 
     private function notifyValidationFailure(string $title, ValidationException $exception): void
     {
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: $title,
             body: $this->firstValidationMessage($exception),
             status: 'danger',

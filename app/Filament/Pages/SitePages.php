@@ -193,7 +193,7 @@ final class SitePages extends Page
     public function sortSection(int $sectionId, int $position, int|string|null $groupId = null): void
     {
         if (! $this->reorderEnabled) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Reordering is unavailable for this view',
                 body: $this->filtersActive
                     ? 'Reset Search, Type and Status before changing page order.'
@@ -208,7 +208,7 @@ final class SitePages extends Page
         $parentId = null;
         if ($groupId !== null && $groupId !== '' && $groupId !== 'root') {
             if (! ctype_digit((string) $groupId)) {
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Page order unchanged',
                     status: 'danger',
                 );
@@ -223,7 +223,7 @@ final class SitePages extends Page
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             if ($this->orderService()->moveTo($section, $parentId, $position)) {
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Page order updated',
                     status: 'success',
                 );
@@ -238,7 +238,7 @@ final class SitePages extends Page
     public function moveSection(int $sectionId, string $direction): void
     {
         if (! $this->reorderEnabled) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Show the complete unfiltered page order before reordering',
                 status: 'warning',
             );
@@ -250,7 +250,7 @@ final class SitePages extends Page
             /** @var SiteSection $section */
             $section = SiteSection::query()->findOrFail($sectionId);
             if ($this->orderService()->move($section, $direction)) {
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Page order updated',
                     status: 'success',
                 );
@@ -305,7 +305,7 @@ final class SitePages extends Page
                             $parentId,
                         );
                         if ($updated->wasChanged()) {
-                            app(AdminNotifier::class)->feedback(
+                            app(AdminNotifier::class)->notification(
                                 title: 'Page placement updated',
                                 status: 'success',
                             );
@@ -387,7 +387,7 @@ final class SitePages extends Page
 
         try {
             $this->deleteSectionRecord($section);
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Page removed',
                 status: 'success',
             );
@@ -442,7 +442,7 @@ final class SitePages extends Page
             $section = SiteSection::query()->findOrFail($sectionId);
             if ($section->nodeType()->value !== $targetType) {
                 app(SiteSectionEditorialService::class)->convertType($section, $targetType);
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Page type updated',
                     status: 'success',
                 );
@@ -461,7 +461,7 @@ final class SitePages extends Page
             $section = SiteSection::query()->findOrFail($sectionId);
             if ($section->journalTemplate()?->value !== $template) {
                 app(SiteSectionEditorialService::class)->updateJournalTemplate($section, $template);
-                app(AdminNotifier::class)->feedback(
+                app(AdminNotifier::class)->notification(
                     title: 'Journal template updated',
                     status: 'success',
                 );
@@ -511,7 +511,7 @@ final class SitePages extends Page
             $this->newPageParent = '';
             $this->pageNumber = 1;
             $this->loadSections();
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: $message,
                 status: 'success',
             );
@@ -819,7 +819,7 @@ final class SitePages extends Page
                 $visible,
                 $section->getAttribute('parent_id') === null ? null : (int) $section->getAttribute('parent_id'),
             );
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Page settings updated',
                 status: 'success',
             );
@@ -915,7 +915,7 @@ final class SitePages extends Page
     private function validationNotification(string $title, ValidationException $exception): void
     {
         $message = collect($exception->errors())->flatten()->first();
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: $title,
             body: is_string($message) ? $message : 'The requested change is not safe.',
             status: 'danger',
@@ -928,7 +928,7 @@ final class SitePages extends Page
             return;
         }
 
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: $action.' selection complete',
             body: $blocked > 0
                 ? $changed.' changed · '.$blocked.' blocked by page safety rules'

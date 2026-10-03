@@ -23,7 +23,7 @@ class AdminAuditService
         private readonly AdminMutationSnapshotBuffer $mutationSnapshots,
         private readonly AdminChangeSummary $changeSummary,
         private readonly AdminActivityPresentation $activityPresentation,
-        private readonly AdminFeedbackContext $feedbackContext,
+        private readonly AdminActivityNotificationContext $notificationContext,
         private readonly AdminUndoContext $undoContext,
         private readonly AdminActivityOrderingProjector $orderingProjector,
     ) {}
@@ -101,7 +101,7 @@ class AdminAuditService
                     'item_count' => (int) $projection->getAttribute('item_count'),
                 ],
             );
-            $this->feedbackContext->push((int) $event->getKey(), $presentation);
+            $this->notificationContext->push((int) $event->getKey(), $presentation);
 
             return $event;
         });
@@ -180,7 +180,7 @@ class AdminAuditService
                 $targetLabel ?? '',
                 $summary,
             );
-            $this->feedbackContext->push((int) $event->getKey(), $presentation);
+            $this->notificationContext->push((int) $event->getKey(), $presentation);
         }
 
         return $event;

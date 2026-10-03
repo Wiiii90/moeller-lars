@@ -95,7 +95,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::TOPBAR_START,
-                fn (): string => view('filament.partials.admin-header-feedback')->render(),
+                fn (): string => view('filament.partials.admin-header-notification')->render(),
             )
             ->renderHook(
                 PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
@@ -119,7 +119,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::BODY_END,
-                fn (): string => view('filament.partials.publication-state-bridge-hook')->render(),
+                fn (): string => view('filament.partials.publication-state-control-hook')->render(),
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

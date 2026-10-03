@@ -123,7 +123,7 @@ class CreateArtwork extends CreateRecord
             ],
         };
 
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: $title,
             body: $body,
             status: $status,
@@ -133,7 +133,7 @@ class CreateArtwork extends CreateRecord
     /**
      * Filament 5.7.6 calls this hook after every successful CreateRecord operation.
      * Returning null suppresses the framework toast because project-owned mutation
-     * feedback is emitted centrally through AdminNotifier in afterCreate().
+     * notification is emitted centrally through AdminNotifier in afterCreate().
      */
     protected function getCreatedNotification(): ?FilamentNotification
     {

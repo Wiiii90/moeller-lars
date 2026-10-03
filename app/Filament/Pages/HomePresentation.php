@@ -413,7 +413,7 @@ final class HomePresentation extends Page
                 $this->showHomeInNavigation = (bool) ($data['show_in_navigation'] ?? false);
                 $this->reloadWorkspace();
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Home settings saved',
                         status: 'success',
                     );
@@ -433,7 +433,7 @@ final class HomePresentation extends Page
         )->action(function (array $data): void {
             app(HomeHeroConfigurationService::class)->addManualMember($this->settings(), (int) $data['artwork_id']);
             $this->reloadWorkspace();
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Artwork added to Home group',
                 status: 'success',
             );
@@ -444,7 +444,7 @@ final class HomePresentation extends Page
     {
         app(HomeHeroConfigurationService::class)->removeManualMember($this->settings(), $artworkId);
         $this->reloadWorkspace();
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'Artwork removed from Home group',
             status: 'success',
         );
@@ -468,7 +468,7 @@ final class HomePresentation extends Page
         $changed = app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
         $this->reloadWorkspace();
         if ($changed) {
-            app(AdminNotifier::class)->feedback('Home group order updated', status: 'success');
+            app(AdminNotifier::class)->notification('Home group order updated', status: 'success');
         }
     }
 
@@ -490,7 +490,7 @@ final class HomePresentation extends Page
         $changed = app(HomeHeroConfigurationService::class)->reorderManualGroup($this->settings(), $ids);
         $this->reloadWorkspace();
         if ($changed) {
-            app(AdminNotifier::class)->feedback('Home group order updated', status: 'success');
+            app(AdminNotifier::class)->notification('Home group order updated', status: 'success');
         }
     }
 
@@ -510,7 +510,7 @@ final class HomePresentation extends Page
         );
         $this->reloadWorkspace();
         if ($changed) {
-            app(AdminNotifier::class)->feedback('Home artwork percentage updated', status: 'success');
+            app(AdminNotifier::class)->notification('Home artwork percentage updated', status: 'success');
         }
     }
 
@@ -545,7 +545,7 @@ final class HomePresentation extends Page
             };
             app(HomePresentationEditorialService::class)->addComponent($this->settings(), $this->componentTemplate(), $component);
             $this->reloadWorkspace();
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Home component added',
                 status: 'success',
             );
@@ -602,7 +602,7 @@ final class HomePresentation extends Page
                 );
                 $this->reloadWorkspace();
                 if ($changed) {
-                    app(AdminNotifier::class)->feedback(
+                    app(AdminNotifier::class)->notification(
                         title: 'Home component saved',
                         status: 'success',
                     );
@@ -624,7 +624,7 @@ final class HomePresentation extends Page
                 $this->settings(), $this->componentTemplate(), (int) $arguments['index'], (string) $component['type'],
             );
             $this->reloadWorkspace();
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Home component deleted',
                 status: 'success',
             );
@@ -646,7 +646,7 @@ final class HomePresentation extends Page
             app(HomePresentationEditorialService::class)->deleteComponents($this->settings(), $this->componentTemplate(), $targets);
             $count = count($targets);
             $this->reloadWorkspace();
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Selected Home components deleted',
                 body: $count.' component'.($count === 1 ? '' : 's').' deleted.',
                 status: 'success',
@@ -664,7 +664,7 @@ final class HomePresentation extends Page
         );
         $this->reloadWorkspace();
         if ($changed) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Home component order updated',
                 status: 'success',
             );
@@ -691,7 +691,7 @@ final class HomePresentation extends Page
         );
         $this->reloadWorkspace();
         if ($changed) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Home component order updated',
                 status: 'success',
             );
@@ -713,7 +713,7 @@ final class HomePresentation extends Page
         $count = count($targets);
         $this->reloadWorkspace();
         if ($changed) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: 'Selected Home components moved',
                 body: $count.' component'.($count === 1 ? '' : 's').' updated.',
                 status: 'success',
@@ -732,7 +732,7 @@ final class HomePresentation extends Page
         ]);
         $this->clearSourceSelection();
         $this->reloadWorkspace();
-        app(AdminNotifier::class)->feedback(
+        app(AdminNotifier::class)->notification(
             title: 'Home source preference updated',
             status: 'success',
         );
@@ -778,7 +778,7 @@ final class HomePresentation extends Page
         $this->clearSourceSelection();
         $this->reloadWorkspace();
         if ($changed > 0) {
-            app(AdminNotifier::class)->feedback(
+            app(AdminNotifier::class)->notification(
                 title: $enabled ? 'Home source preferences enabled' : 'Home source preferences disabled',
                 body: $changed.' '.($changed === 1 ? 'Gallery' : 'Galleries').' updated.',
                 status: 'success',

@@ -67,16 +67,11 @@ if (hasStorageVisualization()) {
     ensureStorageRuntime();
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', scheduleRefresh, { once: true });
-} else {
-    scheduleRefresh();
-}
-
+scheduleRefresh();
 registerLivewireHook();
 document.addEventListener('livewire:init', registerLivewireHook, { once: true });
+document.addEventListener('livewire:navigate', prewarmStorageRuntime);
 document.addEventListener('livewire:navigated', scheduleRefresh);
-document.addEventListener('alpine:navigate', prewarmStorageRuntime);
 
 new MutationObserver(scheduleStorageRefresh).observe(document.documentElement, {
     attributes: true,
