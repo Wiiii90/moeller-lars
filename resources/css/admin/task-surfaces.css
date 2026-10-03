@@ -52,6 +52,25 @@
     white-space: nowrap;
 }
 
+.admin-selection__trigger-label {
+    display: inline-flex;
+    min-width: 0;
+    gap: .3rem;
+    align-items: center;
+    overflow: hidden;
+}
+
+.admin-selection__trigger-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-selection__trigger-icon {
+    flex: 0 0 .9rem;
+}
+
 .admin-selection__count,
 .gallery-workspace__selection-count,
 .media-workspace__selection-count {
