@@ -4457,3 +4457,204 @@
         display: inline !important;
     }
 }
+
+
+/* Canonical responsive metric geometry.
+ * This is the single layout authority for every six-metric strip.
+ * Feature rules decide WHICH metrics remain visible; this block alone decides
+ * HOW the visible metrics occupy space. No child keeps a source-position span.
+ */
+@container admin-workspace (max-width: 54rem) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) {
+        --admin-metric-columns: 3 !important;
+        position: relative;
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row !important;
+        gap: 0 !important;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
+        box-sizing: border-box;
+        grid-column: auto !important;
+        grid-row: auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        justify-self: stretch !important;
+        align-self: stretch !important;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+        border-right: 0 !important;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6))::before,
+    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: var(--admin-line);
+        content: "";
+        pointer-events: none;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6))::before {
+        left: 33.333333%;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+        left: 66.666667%;
+    }
+}
+
+@media (min-width: 38.01rem) and (max-width: 63.99rem) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) {
+        --admin-metric-columns: 3 !important;
+        position: relative;
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row !important;
+        gap: 0 !important;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
+        grid-column: auto !important;
+        grid-row: auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        justify-self: stretch !important;
+        border-right: 0 !important;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6))::before,
+    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: var(--admin-line);
+        content: "";
+        pointer-events: none;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6))::before {
+        left: 33.333333%;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+        left: 66.666667%;
+    }
+}
+
+/* Minimal is always exact 50/50. The second column can never inherit a
+ * two-track span from its original six-cell source position. */
+@container admin-workspace (max-width: 38rem) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) {
+        --admin-metric-columns: 2 !important;
+        position: relative;
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-auto-flow: row !important;
+        gap: 0 !important;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
+        grid-column: auto !important;
+        grid-row: auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        justify-self: stretch !important;
+        align-self: stretch !important;
+        padding: 1.05rem 1rem !important;
+        border-top: 0 !important;
+        border-right: 0 !important;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6))::before {
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 1px;
+        background: var(--admin-line);
+        content: "";
+        pointer-events: none;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+        display: none !important;
+        content: none !important;
+    }
+}
+
+/* Viewport fallback for the Filament burger shell. It also owns semantic
+ * visibility at Minimal so a widened content box cannot leave a third metric
+ * alive or restore a source-position span. */
+@media (max-width: 38rem) {
+    .admin-metrics:has(> .admin-metric:nth-child(6)) {
+        --admin-metric-columns: 2 !important;
+        position: relative;
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-auto-flow: row !important;
+        gap: 0 !important;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6)) > .admin-metric {
+        grid-column: auto !important;
+        grid-row: auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        justify-self: stretch !important;
+        border-right: 0 !important;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6))::before {
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 1px;
+        background: var(--admin-line);
+        content: "";
+        pointer-events: none;
+    }
+
+    .admin-metrics:has(> .admin-metric:nth-child(6))::after {
+        display: none !important;
+        content: none !important;
+    }
+
+    .admin-dashboard .admin-metric,
+    .admin-general .general-status-metrics > .general-metric,
+    .pages-status-metrics > .pages-metric,
+    .gallery-status-metrics > .gallery-metric,
+    .custom-page-status-metrics > .custom-page-metric,
+    .journal-status-metrics > .journal-metric,
+    .analytics-status-metrics > .analytics-metric,
+    .storage-status-metrics > .storage-metric,
+    .activity-status-metrics > .activity-metric {
+        display: none !important;
+    }
+
+    .admin-dashboard :is(.admin-dashboard__metric--traffic, .admin-dashboard__metric--artworks),
+    .admin-general .general-status-metrics > :is(.general-metric--public-email, .general-metric--contact-delivery),
+    .pages-status-metrics > :is(.pages-metric--published, .pages-metric--unpublished),
+    .gallery-status-metrics > :is(.gallery-metric--artworks, .gallery-metric--published),
+    .custom-page-status-metrics > :is(.custom-page-metric--components, .custom-page-metric--visits),
+    .journal-status-metrics--blog > :is(.journal-metric--published, .journal-metric--draft),
+    .journal-status-metrics--exhibitions > :is(.journal-metric--current, .journal-metric--upcoming),
+    .analytics-status-metrics > :is(.analytics-metric--visits, .analytics-metric--unique),
+    .storage-status-metrics > :is(.storage-metric--used, .storage-metric--remaining),
+    .activity-status-metrics > :is(.activity-metric--changes, .activity-metric--pending) {
+        display: block !important;
+    }
+}
