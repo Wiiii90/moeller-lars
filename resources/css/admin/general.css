@@ -1,13 +1,13 @@
 /* General appearance controls and device-aware public preview. */
 
 /*
- * General intentionally uses only one device-dependent split:
+ * General wide/compact preview split:
  * - desktop preview: settings 1/2 | preview 1/2
  * - phone preview:   settings 2/3 | preview 1/3
  *
- * Appearance controls use the available upper-left stage area and scroll
- * internally when more settings are added. Page geometry stays anchored below
- * them while the preview owns the full right-hand stage height.
+ * Narrow/Minimal intentionally remove the parallel preview and expand the
+ * Appearance controls/geometry across the full shared stage. The burger shell
+ * is not a separate General state and must never make the preview reappear.
  */
 .general-appearance-stage {
     position: relative;
