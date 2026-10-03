@@ -213,7 +213,25 @@ it('keeps the shared Visual Stage height fixed across responsive widths', functi
         ->not->toContain('--admin-dashboard-stage-height');
 
     expect($dashboard)
+        ->toContain('.admin-dashboard__storage-stage > .admin-dashboard__facts')
+        ->toContain('width: min(100%, var(--admin-stage-orbit-size))')
         ->toContain('height: var(--admin-stage-orbit-caption-reserve)')
         ->toContain('justify-content: center')
         ->toContain('text-align: center');
+});
+
+
+it('uses the shared orbit size for Dashboard Storage and Activity', function (): void {
+    $root = dirname(__DIR__, 3);
+    $stage = file_get_contents($root.'/resources/css/admin/stage.css');
+    $dashboard = file_get_contents($root.'/resources/views/filament/pages/dashboard.blade.php');
+
+    expect($stage)
+        ->toContain('--admin-stage-orbit-size: clamp(12rem, 20vw, 17.5rem)')
+        ->not->toContain('--admin-stage-orbit-size: clamp(10rem, 20cqw, 17.5rem)')
+        ->toContain('.admin-dashboard__storage-stage')
+        ->toContain('grid-template-rows: minmax(0, 1fr) var(--admin-stage-orbit-caption-reserve)');
+
+    expect($dashboard)
+        ->toContain('class="admin-dashboard__storage-stage"');
 });
