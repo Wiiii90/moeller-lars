@@ -22,7 +22,6 @@ enum AdminIcon: string
     case FeedbackSuccess = 'heroicon-o-exclamation-circle';
     case FeedbackWarning = 'heroicon-o-exclamation-triangle';
     case FeedbackDanger = 'heroicon-o-x-circle';
-    case FeedbackInfo = 'heroicon-o-information-circle';
     case PreviewZoom = 'heroicon-o-magnifying-glass';
     case PreviewZoomOut = 'heroicon-o-magnifying-glass-minus';
     case PreviewPan = 'heroicon-o-hand-raised';
