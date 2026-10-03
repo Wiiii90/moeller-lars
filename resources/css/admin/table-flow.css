@@ -1,11 +1,13 @@
-/* Canonical scrollport contract for admin tables.
+/* Canonical admin table flow contract.
  *
- * Do not suppress horizontal scrollbars globally. Some admin tables genuinely
- * overflow and their controls must remain discoverable and reachable. The
- * no-gutter exception for a data table immediately followed by an add row is
- * scoped in data-workspace.css, where it cannot affect unrelated tables.
+ * Ordinary admin tables do not become horizontal scrollports. Responsive
+ * column priority and action compaction must keep the surface inside the
+ * available workspace width without reserving scrollbar space.
  */
 .admin-table {
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
+    max-width: 100%;
+    overflow-x: clip !important;
+    scrollbar-gutter: auto !important;
 }
