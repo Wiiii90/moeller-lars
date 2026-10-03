@@ -76,6 +76,7 @@
 .admin-table__col-one-half-units { width: var(--admin-table-one-half-units); }
 .admin-table__col-two-units { width: var(--admin-table-two-units); }
 .admin-table__col-two-units-minus-selection { width: calc(var(--admin-table-two-units) - var(--admin-table-selection-width)); }
+.admin-table__col-one-unit-minus-selection { width: calc(var(--admin-table-one-unit) - var(--admin-table-selection-width)); }
 .admin-table__selection-col { width: var(--admin-table-selection-width); }
 
 .admin-action--with-icon {
