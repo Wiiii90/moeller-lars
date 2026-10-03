@@ -256,6 +256,12 @@ html.fi select option:disabled {
     color: var(--admin-sidebar-selected-ink) !important;
 }
 
+@media (max-width: 1023px) {
+    .fi-main {
+        padding-top: var(--admin-shell-content-inset) !important;
+    }
+}
+
 @media (min-width: 1024px) {
     /*
      * Keep the desktop shell on one horizontal coordinate system regardless of
