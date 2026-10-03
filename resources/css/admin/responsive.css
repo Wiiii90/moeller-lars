@@ -1723,7 +1723,7 @@
         height: auto;
         grid-column: auto !important;
         grid-row: auto !important;
-        grid-template-rows: auto var(--admin-visual-stage-height) auto !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
         padding: 1.2rem 1rem 1.25rem 0 !important;
         border: 0 !important;
         box-shadow: none !important;
@@ -1731,7 +1731,7 @@
 
     .admin-dashboard__overview-column + .admin-dashboard__overview-column {
         padding-left: 1rem !important;
-        border-left: 1px solid var(--admin-line) !important;
+        border-left: 0 !important;
     }
 
     .admin-dashboard__overview-column:last-child {
@@ -1831,7 +1831,7 @@
         height: auto;
         grid-column: auto !important;
         grid-row: auto !important;
-        grid-template-rows: auto var(--admin-visual-stage-height) auto !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
         padding: 1.2rem 1rem 1.25rem 0 !important;
         border: 0 !important;
         box-shadow: none !important;
@@ -1839,7 +1839,7 @@
 
     .admin-dashboard__overview-column + .admin-dashboard__overview-column {
         padding-left: 1rem !important;
-        border-left: 1px solid var(--admin-line) !important;
+        border-left: 0 !important;
     }
 
     .admin-dashboard__overview-column:last-child {
@@ -2006,6 +2006,31 @@
 }
 
 
+/* Dashboard stage footer authority: one-line captions never disappear or
+ * participate in stage-height changes. Compact states abbreviate Storage only. */
+@container admin-workspace (max-width: 68rem) {
+    .admin-dashboard__fact-label--long {
+        display: none;
+    }
+
+    .admin-dashboard__fact-label--short {
+        display: inline;
+    }
+}
+
+@container admin-workspace (min-width: 38.01rem) {
+    .admin-dashboard__facts,
+    .admin-dashboard__analytics-caption,
+    .admin-dashboard__activity-visual .activity-clock__caption {
+        display: flex !important;
+        visibility: visible !important;
+    }
+
+    .admin-dashboard__activity-visual .activity-clock__caption {
+        flex-direction: column;
+    }
+}
+
 /* Dashboard toolbar width authority.
  * Right-side controls consume only their intrinsic width. Search owns all
  * remaining space but never shrinks below one sixth of the toolbar. */
@@ -2065,5 +2090,89 @@
     .admin-dashboard__feed-controls > .admin-data-controls__filters > :first-child {
         width: 5.25rem !important;
         min-width: 5.25rem !important;
+    }
+}
+
+
+/* Dashboard feed column priority authority.
+ * Preserve Type + Date through Minimal. Sender yields first; Actions stays a
+ * compact icon rail so data columns keep the available width. */
+@container admin-table (max-width: 50rem) {
+    .admin-dashboard__feed-table col.admin-dashboard__col-sender {
+        display: none !important;
+    }
+
+    .admin-dashboard__feed-table th.admin-dashboard__col-sender,
+    .admin-dashboard__feed-table td.admin-dashboard__col-sender {
+        display: none !important;
+    }
+
+    .admin-dashboard__feed-table col.admin-dashboard__col-type,
+    .admin-dashboard__feed-table col.admin-dashboard__col-date {
+        display: table-column !important;
+    }
+
+    .admin-dashboard__feed-table th.admin-dashboard__col-type,
+    .admin-dashboard__feed-table td.admin-dashboard__col-type,
+    .admin-dashboard__feed-table th.admin-dashboard__col-date,
+    .admin-dashboard__feed-table td.admin-dashboard__col-date {
+        display: table-cell !important;
+    }
+
+    .admin-dashboard__feed-table .admin-responsive-meta {
+        display: none !important;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__col-position {
+        width: 3rem !important;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__col-drag {
+        width: 1.5rem !important;
+    }
+
+    .admin-dashboard__feed-table col.admin-dashboard__col-type {
+        width: 5.25rem !important;
+    }
+
+    .admin-dashboard__feed-table col.admin-dashboard__col-date {
+        width: 6.25rem !important;
+    }
+
+    .admin-dashboard__feed-table col:nth-last-child(2) {
+        width: 5.25rem !important;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions {
+        gap: .12rem !important;
+    }
+
+    .admin-dashboard__feed-table .admin-dashboard__feed-actions .admin-action {
+        padding-inline: .1rem !important;
+    }
+}
+
+@container admin-table (max-width: 30rem) {
+    .admin-dashboard__feed-table col.admin-dashboard__col-type {
+        width: 4.75rem !important;
+    }
+
+    .admin-dashboard__feed-table col.admin-dashboard__col-date {
+        width: 5.25rem !important;
+    }
+
+    .admin-dashboard__feed-table col:nth-last-child(2) {
+        width: 5rem !important;
+    }
+
+    .admin-dashboard__feed-table th.admin-dashboard__col-type,
+    .admin-dashboard__feed-table td.admin-dashboard__col-type,
+    .admin-dashboard__feed-table th.admin-dashboard__col-date,
+    .admin-dashboard__feed-table td.admin-dashboard__col-date {
+        display: table-cell !important;
+    }
+
+    .admin-dashboard__feed-table .admin-responsive-meta {
+        display: none !important;
     }
 }
