@@ -33,14 +33,17 @@
         <x-slot:reset>
             <div class="admin-data-control-group">
                 <span class="admin-data-control-label">Filter</span>
-                <button class="admin-action" type="button" wire:click="resetFeed">Reset</button>
+                <x-admin.clear-filters wire:click="resetFeed" />
             </div>
         </x-slot:reset>
 
         <x-slot:actions>
             <div class="admin-data-control-group">
                 <span class="admin-data-control-label">Dashboard</span>
-                <button class="admin-action" type="button" wire:click="mountAction('dashboardSettings')">Settings</button>
+                <button class="admin-action admin-action--with-icon" type="button" wire:click="mountAction('dashboardSettings')">
+                    <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Settings->mini()" class="admin-action__icon" />
+                    <span class="admin-action__label">Settings</span>
+                </button>
             </div>
         </x-slot:actions>
 
@@ -56,7 +59,7 @@
                         aria-haspopup="menu"
                         @disabled($selectedCount === 0)
                     >
-                        <span>Selected</span>
+                        <x-admin.selection-trigger-label>Selected</x-admin.selection-trigger-label>
                         <span class="admin-selection__count">{{ $selectedCount }}</span>
                     </button>
                     <div class="admin-selection__menu" x-cloak x-show="open" x-on:click.outside="open = false" role="menu">
@@ -80,11 +83,11 @@
             <colgroup>
                 <col class="admin-table__col-quarter-unit admin-dashboard__col-position">
                 <col class="admin-table__col-quarter-unit admin-dashboard__col-drag">
-                <col class="admin-table__col-three-quarter-unit admin-dashboard__col-type">
-                <col class="admin-table__col-three-quarter-unit admin-dashboard__col-date">
-                <col class="admin-table__col-one-half-units admin-dashboard__col-title">
-                <col class="admin-table__col-half-unit admin-dashboard__col-sender">
-                <col class="admin-table__col-two-units-minus-selection">
+                <col class="admin-table__col-half-unit admin-dashboard__col-type">
+                <col class="admin-table__col-one-unit admin-dashboard__col-date">
+                <col class="admin-table__col-two-units admin-dashboard__col-title">
+                <col class="admin-table__col-one-unit admin-dashboard__col-sender">
+                <col class="admin-table__col-one-unit-minus-selection">
                 <col class="admin-table__selection-col">
             </colgroup>
             <thead>
