@@ -448,13 +448,13 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            <th scope="col">Change</th>
-                            <th scope="col">Who</th>
-                            <th scope="col">When</th>
-                            <th scope="col">Target</th>
-                            <th scope="col">Area</th>
-                            <th scope="col">Type</th>
-                            <th scope="col">Publication</th>
+                            <th scope="col" class="activity-col--change">Change</th>
+                            <th scope="col" class="activity-col--who">Who</th>
+                            <th scope="col" class="activity-col--when">When</th>
+                            <th scope="col" class="activity-col--target">Target</th>
+                            <th scope="col" class="activity-col--area">Area</th>
+                            <th scope="col" class="activity-col--type">Type</th>
+                            <th scope="col" class="activity-col--publication">Publication</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
@@ -487,7 +487,7 @@
                                 <td class="activity-target-cell" title="{{ $event['target'] }}"><strong>{{ $event['target'] }}</strong></td>
                                 <td class="activity-area-cell"><span>{{ $event['area'] }}</span></td>
                                 <td class="activity-type-cell"><span>{{ $event['type'] }}</span></td>
-                                <td class="activity-publication-cell">
+                                <td class="activity-publication-cell activity-commit-col--publication">
                                     @if ($event['publication_status'] === 'committed')
                                         <div class="activity-publication-cell__stack" title="Commit {{ $event['checkpoint_short_hash'] ?? '#'.$event['checkpoint_id'] }} · {{ $event['checkpoint_at'] }}{{ $event['checkpoint_message'] ? ' · '.$event['checkpoint_message'] : '' }}">
                                             <span class="admin-status is-published">Committed</span>
@@ -572,11 +572,11 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            <th scope="col">Commit</th>
-                            <th scope="col">Who</th>
-                            <th scope="col">When</th>
-                            <th scope="col">Summary</th>
-                            <th scope="col">Publication</th>
+                            <th scope="col" class="activity-commit-col--commit">Commit</th>
+                            <th scope="col" class="activity-commit-col--who">Who</th>
+                            <th scope="col" class="activity-commit-col--when">When</th>
+                            <th scope="col" class="activity-commit-col--summary">Summary</th>
+                            <th scope="col" class="activity-commit-col--publication">Publication</th>
                             <th scope="col" class="admin-table__actions">Actions</th>
                             <th scope="col" class="admin-table__selection admin-table__selection--trailing">
                                 <input
@@ -600,18 +600,18 @@
                     <tbody>
                         @forelse ($commits as $commit)
                             <tr class="{{ in_array((int) $commit['id'], $selectedCommitIds, true) ? 'is-selected' : '' }}">
-                                <td class="activity-commit-cell">
+                                <td class="activity-commit-cell activity-commit-col--commit">
                                     <div class="activity-commit-cell__heading">
                                         <code>{{ $commit['short_hash'] }}</code>
                                         @if ($commit['live'])<span class="admin-status is-published">LIVE</span>@endif
                                     </div>
                                 </td>
-                                <td class="activity-who-cell"><strong>{{ $commit['actor'] }}</strong></td>
-                                <td class="activity-when-cell">
+                                <td class="activity-who-cell activity-commit-col--who"><strong>{{ $commit['actor'] }}</strong></td>
+                                <td class="activity-when-cell activity-commit-col--when">
                                     <time datetime="{{ str_replace(' ', 'T', $commit['timestamp']) }}" title="{{ $commit['timestamp'] }}">{{ $commit['when'] }}</time>
                                     <small>{{ $commit['timestamp'] }}</small>
                                 </td>
-                                <td class="activity-commit-summary">
+                                <td class="activity-commit-summary activity-commit-col--summary">
                                     <strong>{{ $commit['message'] ?? 'No commit message' }}</strong>
                                     <small>
                                         {{ $commit['operation_label'] }}
