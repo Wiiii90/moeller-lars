@@ -19,10 +19,10 @@
 @endphp
 
 <x-admin.metrics :columns="6" class="general-status-metrics" aria-label="General status">
-    <x-admin.metric label="Last changed" :value="$lastChangedValue" description="General settings" />
-    <x-admin.metric label="Changes · 30d" :value="(string) $changesLast30Days" description="General updates" />
-    <x-admin.metric label="Public email" :value="$publicEmailStatus" description="Public contact" />
-    <x-admin.metric label="Contact delivery" :value="$contactDeliveryStatus" description="Private recipient" />
-    <x-admin.metric label="Social profiles" :value="(string) $socialProfilesCount" description="Configured" />
-    <x-admin.metric label="Legal" :value="$legalStatus" description="Copyright + disclaimer" />
+    <x-admin.metric class="general-metric general-metric--last-changed" label="Last changed" :value="$lastChangedValue" description="General settings" />
+    <x-admin.metric class="general-metric general-metric--changes" label="Changes · 30d" :value="(string) $changesLast30Days" description="General updates" />
+    <x-admin.metric class="general-metric general-metric--public-email" label="Public email" :value="$publicEmailStatus" description="Public contact" />
+    <x-admin.metric class="general-metric general-metric--contact-delivery" label="Contact delivery" :value="$contactDeliveryStatus" description="Private recipient" />
+    <x-admin.metric class="general-metric general-metric--social" label="Social profiles" :value="(string) $socialProfilesCount" description="Configured" />
+    <x-admin.metric class="general-metric general-metric--legal" label="Legal" :value="$legalStatus" description="Copyright + disclaimer" />
 </x-admin.metrics>
