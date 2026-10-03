@@ -17,8 +17,6 @@ enum AdminIcon: string
     case Storage = 'heroicon-o-circle-stack';
     case Preview = 'heroicon-o-viewfinder-circle';
     case Details = 'heroicon-o-information-circle';
-    case Settings = 'heroicon-o-cog-6-tooth';
-    case Materials = 'heroicon-o-swatch';
     case FeedbackSuccess = 'heroicon-o-exclamation-circle';
     case FeedbackWarning = 'heroicon-o-exclamation-triangle';
     case FeedbackDanger = 'heroicon-o-x-circle';
