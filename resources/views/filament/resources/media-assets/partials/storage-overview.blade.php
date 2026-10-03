@@ -196,6 +196,12 @@
             :segments="$storageSegments"
         />
 
+        <div class="admin-storage__compact-capacity" aria-label="Storage capacity summary">
+            <span><small>Used</small><strong>{{ $capacity['authoritative'] ?? '—' }}</strong></span>
+            <span><small>Remaining</small><strong>{{ $capacity['remaining'] ?? '—' }}</strong></span>
+            <span><small>Allowance</small><strong>{{ $capacity['allowance'] ?? '—' }}</strong></span>
+        </div>
+
         <div class="admin-storage__capacity-actions" aria-label="Storage capacity actions">
             <button
                 class="admin-action admin-action--with-icon"
