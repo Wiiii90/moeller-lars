@@ -112,13 +112,27 @@
     @endphp
 
     <x-admin.workspace title="Analytics" class="analytics-dashboard">
-        <x-admin.metrics :columns="6" aria-label="Traffic summary">
+        <x-admin.metrics :columns="6" class="analytics-status-metrics" aria-label="Traffic summary">
             @foreach ($kpis as $kpi)
+                @php
+                    $metricRole = match ($kpi['key'] ?? null) {
+                        'nb_visits' => 'visits',
+                        'nb_uniq_visitors' => 'unique',
+                        'nb_actions' => 'actions',
+                        'nb_actions_per_visit' => 'actions-per-visit',
+                        'avg_time_on_site' => 'average-visit',
+                        'bounce_rate' => 'bounce-rate',
+                        default => 'secondary',
+                    };
+                    $metricTone = is_numeric($kpi['delta']) && $kpi['delta'] > 0
+                        ? 'is-up'
+                        : (is_numeric($kpi['delta']) && $kpi['delta'] < 0 ? 'is-down' : '');
+                @endphp
                 <x-admin.metric
                     :label="$kpi['label']"
                     :value="$kpi['value']"
                     :description="$kpi['comparison']"
-                    class="{{ is_numeric($kpi['delta']) && $kpi['delta'] > 0 ? 'is-up' : (is_numeric($kpi['delta']) && $kpi['delta'] < 0 ? 'is-down' : '') }}"
+                    class="analytics-metric analytics-metric--{{ $metricRole }} {{ $metricTone }}"
                 />
             @endforeach
         </x-admin.metrics>
