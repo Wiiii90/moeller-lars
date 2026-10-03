@@ -9,8 +9,9 @@
         pendingCount: 0,
         secondsRemaining: 0,
         phase: 'idle',
+        messageRevision: 0,
         displayDurationMs: 8000,
-        exitDurationMs: 520,
+        exitDurationMs: 700,
         queueLimit: 8,
         seenLimit: 48,
         lifecycleTimer: null,
@@ -113,6 +114,7 @@
             this.current = notification
             this.pendingCount = runtime.queue.length
             this.secondsRemaining = Math.ceil(this.displayDurationMs / 1000)
+            this.messageRevision += 1
             this.phase = 'entering'
 
             this.armLifecycle()
@@ -205,13 +207,12 @@
             runtime.expiresAt = null
             this.current = null
             this.pendingCount = runtime.queue.length
+            this.phase = 'idle'
+            this.secondsRemaining = 0
             this.cancelTimers()
 
             if (runtime.queue.length > 0) {
-                this.promoteNext()
-            } else {
-                this.phase = 'idle'
-                this.secondsRemaining = 0
+                this.$nextTick(() => this.promoteNext())
             }
         },
 
@@ -276,6 +277,7 @@
     x-on:admin-header-feedback.window="accept($event.detail?.notification ?? $event.detail)"
     x-bind:data-status="current?.status ?? 'info'"
     x-bind:data-phase="phase"
+    x-bind:data-message-revision="messageRevision"
     x-cloak
     x-show="current !== null"
     role="status"
@@ -284,7 +286,22 @@
     aria-relevant="additions text"
 >
     <span class="admin-header-feedback__icon" aria-hidden="true">
-        <x-filament::icon :icon="\App\Filament\Support\AdminIcon::Feedback->mini()" />
+        <x-filament::icon
+            :icon="\App\Filament\Support\AdminIcon::FeedbackSuccess->mini()"
+            x-show="current?.status === 'success'"
+        />
+        <x-filament::icon
+            :icon="\App\Filament\Support\AdminIcon::FeedbackWarning->mini()"
+            x-show="current?.status === 'warning'"
+        />
+        <x-filament::icon
+            :icon="\App\Filament\Support\AdminIcon::FeedbackDanger->mini()"
+            x-show="current?.status === 'danger'"
+        />
+        <x-filament::icon
+            :icon="\App\Filament\Support\AdminIcon::FeedbackInfo->mini()"
+            x-show="! ['success', 'warning', 'danger'].includes(current?.status ?? '')"
+        />
     </span>
 
     <div class="admin-header-feedback__content">
