@@ -2,6 +2,9 @@
     $body = trim((string) ($entry['body'] ?? ''));
     $title = trim((string) ($entry['title'] ?? ''));
     $message = $entry['type'] === 'notification' && $body === $title ? '' : $body;
+    $linkPath = is_string($entry['link'] ?? null) ? parse_url($entry['link'], PHP_URL_PATH) : null;
+    $linkNavigatesInAdmin = is_string($linkPath)
+        && ($linkPath === '/admin' || str_starts_with($linkPath, '/admin/'));
 @endphp
 
 <div class="admin-detail-dialog admin-detail-dialog--feed">
@@ -31,13 +34,13 @@
             @if ($entry['link'] !== null && $entry['link_label'] !== null)
                 <div>
                     <dt>Reference</dt>
-                    <dd><a href="{{ $entry['link'] }}">{{ $entry['link_label'] }}</a></dd>
+                    <dd><a href="{{ $entry['link'] }}" @if ($linkNavigatesInAdmin) wire:navigate @endif>{{ $entry['link_label'] }}</a></dd>
                 </div>
             @endif
         @elseif ($entry['link'] !== null && $entry['link_label'] !== null)
             <div>
                 <dt>Reference</dt>
-                <dd><a href="{{ $entry['link'] }}">{{ $entry['link_label'] }}</a></dd>
+                <dd><a href="{{ $entry['link'] }}" @if ($linkNavigatesInAdmin) wire:navigate @endif>{{ $entry['link_label'] }}</a></dd>
             </div>
         @endif
     </dl>
@@ -63,6 +66,6 @@
     @endif
 
     @if ($entry['type'] !== 'contact' && $entry['link'] !== null && $entry['link_label'] !== null)
-        <a class="admin-detail-dialog__link" href="{{ $entry['link'] }}">{{ $entry['link_label'] }}</a>
+        <a class="admin-detail-dialog__link" href="{{ $entry['link'] }}" @if ($linkNavigatesInAdmin) wire:navigate @endif>{{ $entry['link_label'] }}</a>
     @endif
 </div>

@@ -80,7 +80,12 @@
                 <div class="media-file-dialog__references">
                     @foreach ($asset['references'] as $reference)
                         @if ($reference['url'])
-                            <a href="{{ $reference['url'] }}">
+                            @php
+                                $referencePath = parse_url((string) $reference['url'], PHP_URL_PATH);
+                                $referenceNavigatesInAdmin = is_string($referencePath)
+                                    && ($referencePath === '/admin' || str_starts_with($referencePath, '/admin/'));
+                            @endphp
+                            <a href="{{ $reference['url'] }}" @if ($referenceNavigatesInAdmin) wire:navigate @endif>
                                 <strong>{{ $reference['type'] }}</strong>
                                 <span>{{ $reference['label'] }}</span>
                             </a>
