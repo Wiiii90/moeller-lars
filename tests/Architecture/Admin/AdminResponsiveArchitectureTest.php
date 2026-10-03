@@ -19,6 +19,8 @@ it('keeps admin responsiveness container-driven and table overflow-free', functi
         ->toContain('@container admin-workspace (max-width: 54rem)')
         ->toContain('@container admin-workspace (max-width: 38rem)')
         ->toContain('@container admin-workspace (max-width: 30rem)')
+        ->toContain('Toolbar is always exactly one row')
+        ->toContain('grid-template-columns: repeat(3, minmax(0, 1fr)) !important')
         ->toContain('@container admin-table (max-width: 62rem)')
         ->toContain('@container admin-table (max-width: 50rem)')
         ->toContain('@container admin-table (max-width: 38rem)')
@@ -46,8 +48,14 @@ it('keeps selection terminal while responsive tables remove supportive data firs
     $root = dirname(__DIR__, 3);
     $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
     $dashboard = file_get_contents($root.'/resources/views/filament/pages/partials/dashboard-feed.blade.php');
+    $dashboardCss = file_get_contents($root.'/resources/css/admin/dashboard-feed.css');
     $storage = file_get_contents($root.'/resources/views/filament/resources/media-assets/partials/storage-library.blade.php');
     $home = file_get_contents($root.'/resources/views/filament/pages/home-presentation.blade.php');
+
+    expect($dashboardCss)
+        ->toContain('Dashboard row actions have two states only')
+        ->toContain('width: 18rem')
+        ->not->toContain('text-overflow: ellipsis');
 
     expect($dashboard)
         ->toContain('admin-table__selection admin-table__selection--trailing')
