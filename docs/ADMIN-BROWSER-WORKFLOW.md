@@ -79,7 +79,8 @@ Rules:
 - a pane may reserve a final action rail while variable content remains bounded independently. Storage keeps Media Distribution scrollable in its own pane and places Refresh / `Free storage` beneath Total Capacity;
 - schema-backed Filament pages must neutralize framework grid gaps around the stage/follow-up boundary instead of compensating with page-local margins;
 - `admin-visual-stage-block` / `admin-visual-stage-followup` are the shared mechanism for that schema-backed boundary;
-- General may own its internal matrix divider because its desktop/mobile composition differs, but it must not own a separate outer stage height or post-stage spacing system.
+- General may own its internal desktop divider, but it must not own a separate outer stage height or post-stage spacing system;
+- responsive Visual Stages never generically stack their desktop panes: each feature owns an intentional Narrow/Minimal composition that preserves required operations and may omit redundant visualization/parallel preview.
 
 The current smaller desktop stage is intentional. Do not reintroduce an older/taller value through a second token declaration or later override.
 
