@@ -82,6 +82,10 @@
     display: contents;
 }
 
+.admin-dashboard__overview-switcher {
+    display: none;
+}
+
 /* Wide/Compact: preserve the accepted one-row toolbar grammar even when the
  * browser viewport happens to trigger an older feature media query. */
 @container admin-workspace (min-width: 54.01rem) {
@@ -594,17 +598,40 @@
     .admin-dashboard__overview {
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: auto minmax(0, 1fr) !important;
     }
 
-    .admin-dashboard__overview-column:first-child {
-        display: grid !important;
-        grid-column: 1;
+    .admin-dashboard__overview-switcher {
+        display: grid;
+        grid-row: 1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .2rem;
+        padding-bottom: .45rem;
+        border-bottom: 1px solid var(--admin-line);
+    }
+
+    .admin-dashboard__overview-switcher .admin-action {
         width: 100%;
-        padding: 0 !important;
+        min-width: 0;
+        justify-content: center;
     }
 
-    .admin-dashboard__overview-column:nth-child(n + 2) {
+    .admin-dashboard__overview-switcher .admin-action.is-active {
+        border-color: var(--admin-accent);
+        color: var(--admin-accent-strong);
+    }
+
+    .admin-dashboard__overview-column {
         display: none !important;
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+        width: 100%;
+        padding: .45rem 0 0 !important;
+        border-left: 0 !important;
+    }
+
+    .admin-dashboard__overview-column.is-compact-active {
+        display: grid !important;
     }
 
     .admin-dashboard__overview-column:first-child > .admin-dashboard__storage-visual {
