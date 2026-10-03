@@ -56,9 +56,9 @@ it('keeps selection terminal while responsive tables remove supportive data firs
 
     expect($dashboardCss)
         ->toContain('Dashboard row actions have two states only')
-        ->toContain('width: 18rem')
         ->toContain('.admin-dashboard__feed-actions .admin-action__label')
-        ->toContain('text-overflow: clip');
+        ->toContain('text-overflow: clip')
+        ->toContain('Compact row-action rail');
 
     expect($dashboard)
         ->toContain('admin-table__selection admin-table__selection--trailing')
@@ -115,7 +115,8 @@ it('keeps Dashboard responsive state monotonic across sidebar collapse', functio
         ->not->toContain('admin-dashboard__action-placeholder');
 
     expect($layouts)
-        ->toContain('@media (max-width: 1023px)')
+        ->toContain('.fi-main:has(.admin-workspace)')
+        ->toContain('.fi-page:has(.admin-workspace)')
         ->toContain('padding-top: var(--admin-shell-content-inset) !important');
 });
 
@@ -151,8 +152,8 @@ it('aligns the wide Dashboard feed and toolbar to the six-cell metric grid', fun
         ->toContain('admin-table__col-one-unit-minus-selection');
 
     expect($feedCss)
-        ->toContain('grid-column: span 8')
-        ->toContain('grid-column: span 4')
+        ->toContain('minmax(16.666667%, 1fr)')
+        ->toContain('max-content')
         ->toContain('justify-content: flex-start !important');
 
     expect($tableContract)
@@ -170,4 +171,28 @@ it('keeps all three Dashboard stage panes through Narrow and switches only at Mi
         ->toContain('@media (max-width: 63.99rem)')
         ->toContain('@container admin-workspace (max-width: 38rem)')
         ->toContain('.admin-dashboard__overview-column.is-compact-active');
+});
+
+
+it('preserves Dashboard stage captions and Type Date through Minimal', function (): void {
+    $root = dirname(__DIR__, 3);
+    $responsive = file_get_contents($root.'/resources/css/admin/responsive.css');
+    $dashboardCss = file_get_contents($root.'/resources/css/admin/dashboard.css');
+    $stage = file_get_contents($root.'/resources/css/admin/stage.css');
+
+    expect($dashboardCss)
+        ->toContain('flex-wrap: nowrap')
+        ->toContain('admin-dashboard__fact-label--short')
+        ->toContain('white-space: nowrap');
+
+    expect($stage)
+        ->toContain('--admin-dashboard-stage-height: clamp(20rem, 30cqw, 23.5rem)')
+        ->toContain('height: var(--admin-dashboard-stage-height)')
+        ->not->toContain('admin-dashboard__overview-column + .admin-dashboard__overview-column {\n    padding-left: 1rem;\n    border-left');
+
+    expect($responsive)
+        ->toContain('Dashboard feed column priority authority')
+        ->toContain('display: table-cell !important')
+        ->toContain('col.admin-dashboard__col-type')
+        ->toContain('col.admin-dashboard__col-date');
 });
