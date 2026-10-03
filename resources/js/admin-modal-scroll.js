@@ -9,10 +9,9 @@ const SCROLL_LOCK_KEYS = new Set([
 ]);
 
 let initialized = false;
-let softScrollLockCount = 0;
+const softLockedModalIds = new Set();
 let lockedScrollX = 0;
 let lockedScrollY = 0;
-const softLockedModals = new WeakSet();
 
 export function isDocumentScrollKey(key) {
     return SCROLL_LOCK_KEYS.has(key);
@@ -81,56 +80,40 @@ function detachSoftScrollLockListeners() {
     window.removeEventListener('scroll', restoreLockedWindowScroll);
 }
 
-function acquireSoftScrollLock() {
-    if (softScrollLockCount === 0) {
+function modalIdFromEvent(event) {
+    const id = event.detail?.id;
+
+    return id === undefined || id === null || id === '' ? null : String(id);
+}
+
+function acquireAdminTaskDialogSoftLock(event) {
+    const id = modalIdFromEvent(event);
+    if (id === null || softLockedModalIds.has(id)) return;
+
+    const modal = document.getElementById(id);
+    if (! modal?.classList.contains('fi-modal')) return;
+    if (! adminTaskDialogWindow(modal)) return;
+
+    if (softLockedModalIds.size === 0) {
         lockedScrollX = window.scrollX;
         lockedScrollY = window.scrollY;
         attachSoftScrollLockListeners();
     }
 
-    softScrollLockCount++;
+    softLockedModalIds.add(id);
 }
 
-function releaseSoftScrollLock() {
-    if (softScrollLockCount === 0) return;
-
-    softScrollLockCount--;
-
-    if (softScrollLockCount > 0) return;
+function releaseAdminTaskDialogSoftLock(event) {
+    const id = modalIdFromEvent(event);
+    if (id === null || ! softLockedModalIds.delete(id)) return;
+    if (softLockedModalIds.size > 0) return;
 
     detachSoftScrollLockListeners();
     restoreLockedWindowScroll();
 }
 
-function modalFromEvent(event) {
-    const id = event.detail?.id;
-    if (id === undefined || id === null || id === '') return null;
-
-    const modal = document.getElementById(String(id));
-    if (! modal?.classList.contains('fi-modal')) return null;
-    if (! adminTaskDialogWindow(modal)) return null;
-
-    return modal;
-}
-
-function acquireAdminTaskDialogSoftLock(event) {
-    const modal = modalFromEvent(event);
-    if (! modal || softLockedModals.has(modal)) return;
-
-    softLockedModals.add(modal);
-    acquireSoftScrollLock();
-}
-
-function releaseAdminTaskDialogSoftLock(event) {
-    const modal = modalFromEvent(event);
-    if (! modal || ! softLockedModals.has(modal)) return;
-
-    softLockedModals.delete(modal);
-    releaseSoftScrollLock();
-}
-
 function resetSoftScrollLock() {
-    softScrollLockCount = 0;
+    softLockedModalIds.clear();
     detachSoftScrollLockListeners();
 }
 
@@ -143,5 +126,6 @@ export function initializeAdminModalScrollBehavior() {
     // These listeners provide the blocking behavior without touching <html>.
     window.addEventListener('open-modal', acquireAdminTaskDialogSoftLock, true);
     window.addEventListener('modal-closed', releaseAdminTaskDialogSoftLock);
+    document.addEventListener('livewire:navigating', resetSoftScrollLock);
     document.addEventListener('livewire:navigated', resetSoftScrollLock);
 }

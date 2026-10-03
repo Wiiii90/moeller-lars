@@ -54,7 +54,8 @@ it('persists an authenticated admin Notification and projects it into the header
             $message = $params['notification'] ?? [];
 
             return $event === 'admin-header-notification'
-                && str_starts_with((string) ($message['id'] ?? ''), 'notification:')
+                && is_string($message['id'] ?? null)
+                && ($message['notification_id'] ?? null) !== null
                 && ($message['title'] ?? null) === 'Changes saved'
                 && ($message['body'] ?? null) === 'Background gradient updated.'
                 && ($message['status'] ?? null) === 'success';
@@ -101,6 +102,23 @@ it('persists structured Notifications without requiring a browser session', func
         ->and($notification->getAttribute('entity_type'))->toBe('media_asset')
         ->and($notification->getAttribute('entity_id'))->toBe(72)
         ->and($notification->getAttribute('metadata'))->toBe(['variant' => 'preview']);
+});
+
+it('still projects a repeated idempotent source immediately without duplicating the mailbox row', function (): void {
+    $user = User::factory()->admin()->create();
+    $this->actingAs($user);
+
+    $component = Livewire::test(AdminHeaderNotificationProbe::class);
+    $component->call('emitIdempotent', (int) $user->getKey())
+        ->assertDispatched('admin-header-notification');
+
+    $component->call('emitIdempotent', (int) $user->getKey())
+        ->assertDispatched('admin-header-notification');
+
+    expect(AdminNotification::query()
+        ->where('user_id', $user->getKey())
+        ->where('source_id', 'media-cleanup:asset-72')
+        ->count())->toBe(1);
 });
 
 it('deduplicates an explicit Notification source for one recipient', function (): void {

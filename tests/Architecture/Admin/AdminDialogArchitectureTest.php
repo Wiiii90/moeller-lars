@@ -107,8 +107,12 @@ it('keeps editorial dialog geometry and storage preview details on the shared la
     expect($modalScroll)
         ->toContain("window.addEventListener('open-modal', acquireAdminTaskDialogSoftLock, true)")
         ->toContain("window.addEventListener('modal-closed', releaseAdminTaskDialogSoftLock)")
+        ->toContain("const softLockedModalIds = new Set()")
+        ->toContain("softLockedModalIds.delete(id)")
         ->toContain("window.addEventListener('scroll', restoreLockedWindowScroll)")
         ->toContain("document.addEventListener('wheel', preventBackgroundWheel")
+        ->not->toContain('softScrollLockCount')
+        ->not->toContain('WeakSet')
         ->not->toContain('state.acquireScrollLock = function ()')
         ->not->toContain('document.documentElement.style')
         ->not->toContain('document.documentElement.classList');

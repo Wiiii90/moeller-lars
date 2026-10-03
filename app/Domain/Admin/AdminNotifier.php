@@ -4,6 +4,7 @@ namespace App\Domain\Admin;
 
 use App\Models\AdminNotification;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Livewire\Component;
@@ -99,8 +100,8 @@ final class AdminNotifier
     }
 
     /**
-     * Persist one canonical Notification and project a newly created record into
-     * the current admin shell when the recipient is the authenticated actor.
+     * Persist one canonical Notification and project the current Notification action into
+     * the admin shell when the recipient is the authenticated actor.
      *
      * @param  array<string, mixed>  $context
      */
@@ -136,15 +137,13 @@ final class AdminNotifier
                 ],
             );
 
-            if (! $notification->wasRecentlyCreated) {
-                return;
-            }
         }
 
         $message = [
-            'id' => $notification instanceof AdminNotification
-                ? 'notification:'.$notification->getKey()
-                : $messageUuid,
+            'id' => $messageUuid,
+            'notification_id' => $notification instanceof AdminNotification
+                ? (int) $notification->getKey()
+                : null,
             'title' => $title,
             'body' => $body,
             'status' => $status,
@@ -154,7 +153,7 @@ final class AdminNotifier
     }
 
     /**
-     * @param  array{id:string,title:string,body:?string,status:string}  $message
+     * @param  array{id:string,notification_id:?int,title:string,body:?string,status:string}  $message
      */
     private function surfaceNotification(?int $recipientId, array $message): void
     {
@@ -187,8 +186,8 @@ final class AdminNotifier
             return $user > 0 ? $user : null;
         }
 
-        $authenticated = auth()->user();
-        if (! $authenticated instanceof User) {
+        $authenticated = Auth::guard('web')->user();
+        if (! $authenticated instanceof User || ! (bool) $authenticated->getAttribute('is_admin')) {
             return null;
         }
 
