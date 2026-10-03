@@ -291,15 +291,17 @@ it('covers Pages Gallery Custom Page and Journal in the shared responsive pass',
 
     expect($gallery)
         ->toContain('gallery-status-metrics')
-        ->toContain('gallery-metric--artworks')
-        ->toContain('gallery-metric--published')
-        ->toContain('gallery-metric--visits');
+        ->toContain('gallery-metric--{{ $metricRole }}')
+        ->toContain("'Artworks' => 'artworks'")
+        ->toContain("'Published' => 'published'")
+        ->toContain("'Visits' => 'visits'");
 
     expect($custom)
         ->toContain('custom-page-status-metrics')
-        ->toContain('custom-page-metric--components')
-        ->toContain('custom-page-metric--visits')
-        ->toContain('custom-page-metric--views');
+        ->toContain('custom-page-metric--{{ $metricRole }}')
+        ->toContain("'Components' => 'components'")
+        ->toContain("'Visits' => 'visits'")
+        ->toContain("'Views' => 'views'");
 
     expect($journal)
         ->toContain('journal-status-metrics--blog')
