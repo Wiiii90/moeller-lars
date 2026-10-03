@@ -19,7 +19,7 @@ enum AdminIcon: string
     case Details = 'heroicon-o-magnifying-glass-circle';
     case Settings = 'heroicon-o-cog-6-tooth';
     case Materials = 'heroicon-o-swatch';
-    case NotificationSuccess = 'heroicon-o-exclamation-circle';
+    case NotificationSuccess = 'heroicon-o-check-badge';
     case NotificationWarning = 'heroicon-o-exclamation-triangle';
     case NotificationDanger = 'heroicon-o-x-circle';
     case NotificationInfo = 'heroicon-o-information-circle';
