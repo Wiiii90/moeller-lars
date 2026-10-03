@@ -602,15 +602,6 @@
     table-layout: fixed;
 }
 
-.general-social-table__col-platform {
-    width: calc(33.333333% - 5rem) !important;
-}
-
-.general-social-table__col-url,
-.general-social-table__col-actions {
-    width: 33.333333% !important;
-}
-
 .general-social-table__order-cell {
     display: flex;
     gap: .65rem;
