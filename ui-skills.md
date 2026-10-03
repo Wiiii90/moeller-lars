@@ -561,7 +561,8 @@ Shared desktop stage geometry does not imply shared narrow composition.
 - Every stage defines an intentional Narrow/Minimal composition for its own task.
 - Preserve required operations and domain state; optional/redundant charts, distribution visuals and parallel previews may disappear.
 - A narrow stage may become one focused surface and may use a small local presentation-only selector when equivalent views still need to be reachable.
-- General may omit parallel Live Preview; Storage may replace desktop Capacity/Distribution visuals with one functional compact surface; Dashboard must prioritize/recompose Storage, Activity and Analytics rather than stack the three desktop panes.
+- General may omit parallel Live Preview; Storage may replace desktop Capacity/Distribution visuals with one functional compact surface.
+- **Dashboard keeps Storage | Activity | Analytics as three simultaneous stage cells through Wide, Compact and Narrow. Only Minimal may switch to the local Storage / Activity / Analytics selector and show one stage cell at a time.** Burger/sidebar collapse alone must not trigger the one-cell Dashboard stage.
 - Presentation-only switching stays local (CSS/Alpine); Livewire/Laravel do not track resize state.
 
 Browser review must continuously resize through transition regions, not only check named device presets.
